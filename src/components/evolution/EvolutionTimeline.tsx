@@ -3,7 +3,7 @@ import { format, differenceInCalendarDays, parseISO, startOfDay } from "date-fns
 import { ptBR } from "date-fns/locale";
 import {
   ChevronDown, ChevronUp, Copy, Trash2, ShieldCheck, ShieldOff,
-  Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X, Star, Zap, Printer,
+  Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X, Star, Zap, Printer, CheckCircle2,
 } from "lucide-react";
 import { printEvolution } from "@/lib/printEvolution";
 import { resolvePatientHeader } from "@/lib/resolvePatientHeader";
@@ -70,6 +70,8 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
   const [suspendReason, setSuspendReason] = useState("");
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
   const [validateDialogId, setValidateDialogId] = useState<string | null>(null);
+  const [justValidatedEvo, setJustValidatedEvo] = useState<EvolutionRecord | null>(null);
+  const printPromptTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Filters
   const [filterStatus, setFilterStatus] = useState<"all" | "draft" | "validated" | "suspended">("all");
@@ -152,7 +154,6 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
 
   const handleValidate = async () => {
     if (!validateDialogId) return;
-    // Save any pending edits first
     const local = localEdits[validateDialogId];
     if (local) {
       await onUpdate(validateDialogId, {
@@ -160,10 +161,58 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
         vital_signs: local.vitals,
         physical_exam: local.exam,
       });
-      setLocalEdits(prev => { const n = { ...prev }; delete n[validateDialogId]; return n; });
+      setLocalEdits(prev => { const n = { ...prev }; delete n[validateDialogId!]; return n; });
     }
-    await onValidate(validateDialogId);
+    const success = await onValidate(validateDialogId);
+    const validatedId = validateDialogId;
     setValidateDialogId(null);
+    if (success !== false) {
+      const evo = evolutions.find(e => e.id === validatedId);
+      if (evo) {
+        setJustValidatedEvo(evo);
+        if (printPromptTimerRef.current) clearTimeout(printPromptTimerRef.current);
+        printPromptTimerRef.current = setTimeout(() => setJustValidatedEvo(null), 30_000);
+      }
+    }
+  };
+
+  const handlePrintEvolution = async (evo: EvolutionRecord) => {
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      let fallbackName: string | null = evo.patient_name || null;
+      if ((!fallbackName || !fallbackName.trim()) && patientId) {
+        const { data: pRow } = await supabase.from("patients").select("name").eq("id", patientId).maybeSingle();
+        if ((pRow as any)?.name?.trim()) fallbackName = (pRow as any).name.trim();
+      }
+      const resolved = await resolvePatientHeader(
+        patientId || null,
+        fallbackName,
+        currentHospital?.id || null,
+        (evo as any).patient_registry_id || null,
+      );
+      let currentBed = evo.patient_bed || undefined;
+      let currentSector = evo.patient_sector || undefined;
+      if (patientId) {
+        const { data: pRow } = await supabase.from("patients").select("bed_number, sector").eq("id", patientId).maybeSingle();
+        if (pRow?.bed_number) currentBed = pRow.bed_number;
+        if (pRow?.sector) currentSector = pRow.sector;
+      }
+      await printEvolution(evo, {
+        patientName: resolved.name || evo.patient_name,
+        patientBed: currentBed,
+        patientSector: currentSector,
+        patientRecord: resolved.prontuario || patientRecord || undefined,
+        patientAtendimento: resolved.atendimento || undefined,
+        patientSocialName: resolved.socialName || undefined,
+        patientCpf: resolved.cpf || undefined,
+        patientCns: resolved.cns || undefined,
+        cidPrimary,
+        cidSecondary,
+      });
+    } catch (err) {
+      console.error("Falha ao imprimir evolução:", err);
+      toast.error("Não foi possível resolver os dados do paciente para impressão");
+    }
   };
 
   const handleSuspend = async () => {
@@ -321,6 +370,32 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        )}
+
+        {/* Banner pós-validação */}
+        {justValidatedEvo && (
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/8 dark:bg-emerald-500/10">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="text-xs font-medium text-emerald-800 dark:text-emerald-300 flex-1">
+              Evolução validada com sucesso
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 text-xs border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"
+              onClick={() => { handlePrintEvolution(justValidatedEvo); setJustValidatedEvo(null); }}
+            >
+              <Printer className="h-3.5 w-3.5" /> Imprimir Evolução
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs text-muted-foreground"
+              onClick={() => setJustValidatedEvo(null)}
+            >
+              Fechar
+            </Button>
           </div>
         )}
 
