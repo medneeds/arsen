@@ -373,6 +373,32 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
           </div>
         )}
 
+        {/* Banner pós-validação */}
+        {justValidatedEvo && (
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/8 dark:bg-emerald-500/10">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="text-xs font-medium text-emerald-800 dark:text-emerald-300 flex-1">
+              Evolução validada com sucesso
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 text-xs border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"
+              onClick={() => { handlePrintEvolution(justValidatedEvo); setJustValidatedEvo(null); }}
+            >
+              <Printer className="h-3.5 w-3.5" /> Imprimir Evolução
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs text-muted-foreground"
+              onClick={() => setJustValidatedEvo(null)}
+            >
+              Fechar
+            </Button>
+          </div>
+        )}
+
         {filteredEvolutions.length === 0 && (
           <div className="rounded-lg border border-dashed border-border p-6 text-center">
             <p className="text-xs text-muted-foreground">Nenhuma evolução encontrada com os filtros atuais.</p>
