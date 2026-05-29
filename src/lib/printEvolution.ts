@@ -52,6 +52,8 @@ export interface PrintEvolutionContext {
   patientCpf?: string;
   /** CNS — opcional */
   patientCns?: string;
+  /** Data de nascimento — formato DD/MM/AAAA */
+  patientBirthDate?: string;
   cidPrimary?: string;
   cidSecondary?: string;
 }
@@ -74,35 +76,30 @@ export const printEvolution = async (
     ? `${baseName} (NOME SOCIAL: ${ctx.patientSocialName})`
     : baseName;
 
+  const doctorName = evo.validated_by_name || evo.created_by_name || "Médico Assistente";
+
+  const SEP = `<span style="color:#94a3b8;margin:0 3pt">|</span>`;
+  const F = (label: string, value: string) =>
+    `<span style="font-weight:600">${label}</span>&nbsp;${value}`;
+
+  const birthDisplay = ctx?.patientBirthDate ? ctx.patientBirthDate : "—";
+
   const patientHeader = `
-    <table class="nz" style="margin-bottom:8pt">
-      <tbody>
-        <tr>
-          <th style="width:120px">Paciente</th>
-          <td>${escape(fullName)}</td>
-          <th style="width:90px">Leito</th>
-          <td style="width:90px">${escape(ctx?.patientBed || evo.patient_bed || "—")}</td>
-        </tr>
-        <tr>
-          <th>Setor</th>
-          <td>${escape(getSectorDisplayLabel(ctx?.patientSector || evo.patient_sector) || "—")}</td>
-          <th>Prontuário</th>
-          <td>${escape(ctx?.patientRecord || "—")}</td>
-        </tr>
-        <tr>
-          <th>Atendimento</th>
-          <td>${escape(ctx?.patientAtendimento || "—")}</td>
-          <th>${ctx?.patientCpf ? "CPF" : "CNS"}</th>
-          <td>${escape(ctx?.patientCpf || ctx?.patientCns || "—")}</td>
-        </tr>
-        <tr>
-          <th>Registro em</th>
-          <td>${createdAt}</td>
-          <th>${validatedAt ? "Validada em" : "Status"}</th>
-          <td>${validatedAt ? validatedAt : escape(evo.status)}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:3pt;padding:4pt 8pt;font-size:8pt;line-height:1.5;margin-bottom:8pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+      ${F("Atend.:", escape(ctx?.patientAtendimento || "—"))}
+      ${SEP}
+      ${F("Pront.:", escape(ctx?.patientRecord || "—"))}
+      ${SEP}
+      ${F("Paciente:", escape(fullName.toUpperCase()))}
+      ${SEP}
+      ${F("Leito:", escape(ctx?.patientBed || evo.patient_bed || "—"))}
+      ${SEP}
+      ${F("Setor:", escape(getSectorDisplayLabel(ctx?.patientSector || evo.patient_sector) || "—"))}
+      ${SEP}
+      ${F("Médico:", escape(doctorName))}
+      ${SEP}
+      ${F("Data nasc.:", escape(birthDisplay))}
+    </div>
   `;
 
   const hypothesesText = (evo as any).diagnostic_hypotheses?.toString().trim() || "";
@@ -182,7 +179,7 @@ export const printEvolution = async (
     `;
   }
 
-  const doctorName = evo.validated_by_name || evo.created_by_name || "Médico Assistente";
+
 
   const html = buildNormaZeroDocument({
     title: intercurrence ? "Intercorrência Clínica" : "Evolução Clínica",
