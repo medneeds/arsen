@@ -3,7 +3,7 @@ import { format, differenceInCalendarDays, parseISO, startOfDay } from "date-fns
 import { ptBR } from "date-fns/locale";
 import {
   ChevronDown, ChevronUp, Copy, Trash2, ShieldCheck, ShieldOff,
-  Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X, Star, Zap, Printer,
+  Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X, Star, Zap, Printer, CheckCircle2,
 } from "lucide-react";
 import { printEvolution } from "@/lib/printEvolution";
 import { resolvePatientHeader } from "@/lib/resolvePatientHeader";
