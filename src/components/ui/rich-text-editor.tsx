@@ -1,6 +1,6 @@
 import * as React from "react";
 import DOMPurify from "dompurify";
-import { Bold, Italic, Underline as UnderlineIcon, List, RotateCcw } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, List, RotateCcw, AlignLeft, AlignCenter, AlignRight, AlignJustify } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -12,11 +12,23 @@ import { cn } from "@/lib/utils";
  */
 
 const ALLOWED_TAGS = ["p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "span", "div"];
-const ALLOWED_ATTR: string[] = [];
+const ALLOWED_ATTR = ["style"];
 
 export function sanitizeRichHtml(html: string): string {
   if (!html) return "";
-  return DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR });
+  const clean = DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR });
+  // Filtra style para preservar SOMENTE text-align
+  const tmp = document.createElement("div");
+  tmp.innerHTML = clean;
+  tmp.querySelectorAll("[style]").forEach((el) => {
+    const ta = (el as HTMLElement).style.textAlign;
+    if (ta && ta !== "left" && ta !== "start") {
+      (el as HTMLElement).setAttribute("style", `text-align: ${ta}`);
+    } else {
+      (el as HTMLElement).removeAttribute("style");
+    }
+  });
+  return tmp.innerHTML;
 }
 
 /** Converte texto legado (sem HTML) em parágrafos HTML, ou retorna HTML sanitizado. */
@@ -112,6 +124,23 @@ export function RichTextEditor({
     handleInput();
   };
 
+  const execAlign = (justify: "justifyLeft" | "justifyCenter" | "justifyRight" | "justifyFull") => {
+    if (disabled) return;
+    ref.current?.focus();
+    document.execCommand(justify, false);
+    handleInput();
+  };
+
+  const getActiveAlign = (): "left" | "center" | "right" | "full" => {
+    if (typeof document === "undefined") return "left";
+    try {
+      if (document.queryCommandState("justifyCenter")) return "center";
+      if (document.queryCommandState("justifyRight")) return "right";
+      if (document.queryCommandState("justifyFull")) return "full";
+    } catch { /* noop */ }
+    return "left";
+  };
+
   const handleInput = () => {
     const el = ref.current;
     if (!el) return;
@@ -162,6 +191,43 @@ export function RichTextEditor({
         <BtnIcon cmd="underline" Icon={UnderlineIcon} label="Sublinhado (Ctrl+U)" />
         <span className="mx-1 h-4 w-px bg-border/60" />
         <BtnIcon cmd="insertUnorderedList" Icon={List} label="Lista" />
+        <span className="mx-1 h-4 w-px bg-border/60" />
+        <button
+          type="button" tabIndex={-1}
+          onMouseDown={(e) => { e.preventDefault(); execAlign("justifyLeft"); }}
+          title="Alinhar à esquerda" disabled={disabled}
+          className={cn(
+            "h-7 w-7 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40",
+            getActiveAlign() === "left" && "bg-muted text-foreground"
+          )}
+        ><AlignLeft className="h-3.5 w-3.5" /></button>
+        <button
+          type="button" tabIndex={-1}
+          onMouseDown={(e) => { e.preventDefault(); execAlign("justifyCenter"); }}
+          title="Centralizar" disabled={disabled}
+          className={cn(
+            "h-7 w-7 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40",
+            getActiveAlign() === "center" && "bg-muted text-foreground"
+          )}
+        ><AlignCenter className="h-3.5 w-3.5" /></button>
+        <button
+          type="button" tabIndex={-1}
+          onMouseDown={(e) => { e.preventDefault(); execAlign("justifyRight"); }}
+          title="Alinhar à direita" disabled={disabled}
+          className={cn(
+            "h-7 w-7 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40",
+            getActiveAlign() === "right" && "bg-muted text-foreground"
+          )}
+        ><AlignRight className="h-3.5 w-3.5" /></button>
+        <button
+          type="button" tabIndex={-1}
+          onMouseDown={(e) => { e.preventDefault(); execAlign("justifyFull"); }}
+          title="Justificado" disabled={disabled}
+          className={cn(
+            "h-7 w-7 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40",
+            getActiveAlign() === "full" && "bg-muted text-foreground"
+          )}
+        ><AlignJustify className="h-3.5 w-3.5" /></button>
         <span className="ml-auto" />
         <BtnIcon cmd="removeFormat" Icon={RotateCcw} label="Limpar formatação" />
       </div>
