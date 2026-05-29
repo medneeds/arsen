@@ -175,42 +175,10 @@ export function RichTextEditor({
         <span className="mx-1 h-4 w-px bg-border/60" />
         <BtnIcon cmd="insertUnorderedList" Icon={List} label="Lista" />
         <span className="mx-1 h-4 w-px bg-border/60" />
-        <button
-          type="button" tabIndex={-1}
-          onMouseDown={(e) => { e.preventDefault(); execAlign("justifyLeft"); }}
-          title="Alinhar à esquerda" disabled={disabled}
-          className={cn(
-            "h-7 w-7 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40",
-            getActiveAlign() === "left" && "bg-muted text-foreground"
-          )}
-        ><AlignLeft className="h-3.5 w-3.5" /></button>
-        <button
-          type="button" tabIndex={-1}
-          onMouseDown={(e) => { e.preventDefault(); execAlign("justifyCenter"); }}
-          title="Centralizar" disabled={disabled}
-          className={cn(
-            "h-7 w-7 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40",
-            getActiveAlign() === "center" && "bg-muted text-foreground"
-          )}
-        ><AlignCenter className="h-3.5 w-3.5" /></button>
-        <button
-          type="button" tabIndex={-1}
-          onMouseDown={(e) => { e.preventDefault(); execAlign("justifyRight"); }}
-          title="Alinhar à direita" disabled={disabled}
-          className={cn(
-            "h-7 w-7 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40",
-            getActiveAlign() === "right" && "bg-muted text-foreground"
-          )}
-        ><AlignRight className="h-3.5 w-3.5" /></button>
-        <button
-          type="button" tabIndex={-1}
-          onMouseDown={(e) => { e.preventDefault(); execAlign("justifyFull"); }}
-          title="Justificado" disabled={disabled}
-          className={cn(
-            "h-7 w-7 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40",
-            getActiveAlign() === "full" && "bg-muted text-foreground"
-          )}
-        ><AlignJustify className="h-3.5 w-3.5" /></button>
+        <BtnIcon cmd="justifyLeft"   Icon={AlignLeft}    label="Alinhar à esquerda" />
+        <BtnIcon cmd="justifyCenter" Icon={AlignCenter}  label="Centralizar" />
+        <BtnIcon cmd="justifyRight"  Icon={AlignRight}   label="Alinhar à direita" />
+        <BtnIcon cmd="justifyFull"   Icon={AlignJustify} label="Justificar" />
         <span className="ml-auto" />
         <BtnIcon cmd="removeFormat" Icon={RotateCcw} label="Limpar formatação" />
       </div>
