@@ -6081,6 +6081,29 @@ const PrescricaoPage = () => {
         const sourceItems = Array.isArray(lastValidated?.items) ? lastValidated!.items as unknown as PrescriptionItem[] : [];
         if (!lastValidated?.id || sourceItems.length === 0) return;
 
+        // Detecta se a última validada cruzou a janela das 05h SP do plantão atual.
+        // Se sim → flag needsShiftRevalidation=true (tooltip didático no ValidationDot).
+        // Status permanece 'active' em ambos os casos para não quebrar filtros existentes
+        // (renewalPendingCount, validatedCount, isItemEditLocked etc.).
+        const hasCrossedShiftBoundary = (iso: string | null | undefined): boolean => {
+          if (!iso) return false;
+          try {
+            const now = new Date();
+            const todayInSP = now.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+            const [d, m, y] = todayInSP.split('/');
+            const boundary5am = new Date(`${y}-${m}-${d}T05:00:00-03:00`);
+            const activeBoundary = now < boundary5am
+              ? new Date(boundary5am.getTime() - 24 * 60 * 60 * 1000)
+              : boundary5am;
+            const lastValidatedAt = new Date(iso);
+            if (isNaN(lastValidatedAt.getTime())) return false;
+            return lastValidatedAt < activeBoundary;
+          } catch {
+            return false;
+          }
+        };
+        const crossedShift = hasCrossedShiftBoundary(lastValidated.created_at);
+
         // Renova: novo id por item, sem validação, sem suspensão, status active
         const renewedItems: PrescriptionItem[] = sourceItems.map((it) => ({
           ...it,
@@ -6090,16 +6113,24 @@ const PrescricaoPage = () => {
           status: 'active' as const,
           suspensionReason: undefined,
           suspendedAt: undefined,
+          needsShiftRevalidation: crossedShift,
         }));
         setItems(renewedItems);
         setDigitalSignature(null);
         setCurrentPrescriptionId(null); // próximo "Salvar" cria registro novo → preserva original
         setSelectedIds(new Set());
         const when = format(new Date(lastValidated.created_at), "dd/MM 'às' HH:mm", { locale: ptBR });
-        toast.info(`Última prescrição validada (${when}) carregada como rascunho`, {
-          description: `${renewedItems.length} itens renovados — revise e valide para o ciclo de hoje. A original permanece intocada no histórico.`,
-          duration: 8000,
-        });
+        if (crossedShift) {
+          toast.info(`Última prescrição validada (${when}) carregada — renovação de plantão necessária`, {
+            description: `${renewedItems.length} itens precisam ser revalidados pelo médico do plantão atual (corte 05:00). A original permanece intocada no histórico.`,
+            duration: 8000,
+          });
+        } else {
+          toast.info(`Última prescrição validada (${when}) carregada como rascunho`, {
+            description: `${renewedItems.length} itens renovados — revise e valide para o ciclo de hoje. A original permanece intocada no histórico.`,
+            duration: 8000,
+          });
+        }
       } catch (err) {
         console.error('[autoLoadPrescription] failed', err);
       }
