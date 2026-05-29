@@ -935,11 +935,22 @@ export async function printRequisitionGuide(
             <th>Leito</th><td>${escapeHtml(request.patient_bed || "—")}</td>
           </tr>
           <tr>
-            <th>Prontuário</th><td>${escapeHtml(medicalRecord || "—")}</td>
-            <th>Prioridade</th><td><span class="prio-badge" style="${priorityCssLocal}">${escapeHtml(priorityLabelLocal)}</span></td>
+            <th>Prontuário</th>
+            <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(medicalRecord || "—")}</td>
+            <th>Nº Atendimento</th>
+            <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(encounterCode || "—")}</td>
           </tr>
           <tr>
-            <th>Solicitante</th><td colspan="3">${escapeHtml(request.requested_by_name || "—")}</td>
+            <th>Data Nasc.</th>
+            <td>${escapeHtml(fmtBirthDate(birthDate))}</td>
+            <th>Idade</th>
+            <td>${ageY !== null ? ageY + " anos" : "—"}</td>
+          </tr>
+          <tr>
+            <th>Solicitante</th>
+            <td>${escapeHtml(request.requested_by_name || "—")}</td>
+            <th>Prioridade</th>
+            <td><span class="prio-badge" style="${priorityCssLocal}">${escapeHtml(priorityLabelLocal)}</span></td>
           </tr>
           ${request.clinical_indication ? `<tr><th>Justificativa</th><td colspan="3" class="just-cell">${escapeHtml(request.clinical_indication)}</td></tr>` : ""}
         </tbody>
