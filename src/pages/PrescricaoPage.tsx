@@ -6035,6 +6035,7 @@ const PrescricaoPage = () => {
   //  4) NÃO faz autosave. Rascunho só persiste se o médico clicar "Salvar Rascunho".
   const autoLoadAttemptedRef = useRef(false);
   const [autoLoadDone, setAutoLoadDone] = useState(false);
+  const loadGenerationRef = useRef(0); // incrementa a cada troca de paciente — cancela loads antigos
   const loadPrescriptionRef = useRef<((id: string) => Promise<void>) | null>(null);
   useEffect(() => {
     if (autoLoadAttemptedRef.current) return;
