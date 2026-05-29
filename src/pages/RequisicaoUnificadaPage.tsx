@@ -872,10 +872,7 @@ const RequisicaoUnificadaPage = () => {
                     <RichTextEditor
                       value={formIndication}
                       onChange={(html) => {
-                        const next = richHtmlToPlainText(html).length > PARECER_HARD
-                          ? formIndication
-                          : html;
-                        setFormIndication(next);
+                        setFormIndication(html);
                       }}
                       placeholder="Ex.: Paciente 54a, sepse de foco abdominal D3, em uso de meropenem. Lactato em queda, mas mantém disfunção renal (Cr 2,8). Solicito avaliação da Nefrologia quanto à indicação de TRS."
                       minHeight={170}
@@ -900,7 +897,7 @@ const RequisicaoUnificadaPage = () => {
                         "font-mono tabular-nums",
                         overHard ? "text-destructive font-bold" : nearLimit ? "text-amber-700 font-semibold" : "text-muted-foreground"
                       )}>
-                        {used}/{PARECER_HARD} caracteres
+                        {PARECER_HARD - used} restantes
                       </span>
                     </div>
 
