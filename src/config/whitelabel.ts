@@ -3,7 +3,7 @@
  * Baseada na Norma Zero (MAN.05-001) do HMDM – Socorrão I
  */
 
-import bighelpLogo from "@/assets/bighelp-map-logo.png";
+import arsenLogo from "@/assets/arsen-logo.png";
 import socorraoLogo from "@/assets/socorrao-logo.jpg";
 
 export const whitelabel = {
@@ -43,8 +43,8 @@ export const whitelabel = {
   },
 
   logos: {
-    networkFull: bighelpLogo,
-    networkCompact: bighelpLogo,
+    networkFull: arsenLogo,
+    networkCompact: arsenLogo,
     hospital: socorraoLogo,
     /** Logo institucional para cabeçalhos de documentos (padrão Norma Zero) */
     institutionalHeader: socorraoLogo,

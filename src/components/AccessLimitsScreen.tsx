@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment, type Department, DEPARTMENT_TO_SECTOR, SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
 import { whitelabel } from "@/config/whitelabel";
-import { BigHelpLogo } from "./BigHelpLogo";
+
 import { AuthBackgroundFx } from "./auth/AuthBackgroundFx";
 import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
 import arsenLogo from "@/assets/bighelp-symbol.png";
@@ -202,11 +202,11 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           >
-            {/* Arsen (BigHelp symbol) */}
+            {/* Arsen logo */}
             <div className="relative">
               <div className="absolute inset-0 rounded-2xl blur-lg bg-primary/20 -m-1.5" />
-              <div className="relative h-12 w-12 rounded-2xl bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border border-border/60 flex items-center justify-center shadow-md shadow-primary/10">
-                <BigHelpLogo size="xs" />
+              <div className="relative h-12 w-12 rounded-2xl bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border border-border/60 flex items-center justify-center shadow-md shadow-primary/10 p-1.5">
+                <img src={arsenLogo} alt="Arsen" className="h-full w-full object-contain" />
               </div>
             </div>
 
@@ -445,18 +445,7 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
           </motion.div>
         </motion.div>
 
-        {/* BigHelp signature */}
-        <motion.div
-          className="flex items-center justify-center gap-2 mt-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-        >
-          <BigHelpLogo size="xs" />
-          <span className="preserve-case text-[10px] tracking-[0.2em] uppercase text-foreground/55 font-medium">
-            Powered by BigHelp Map
-          </span>
-        </motion.div>
+
 
         {/* Footer compliance */}
         <motion.div

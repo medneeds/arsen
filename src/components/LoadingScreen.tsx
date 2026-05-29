@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { whitelabel } from "@/config/whitelabel";
 import { useHospital } from "@/contexts/HospitalContext";
-import { BigHelpLogo } from "./BigHelpLogo";
 import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
 
 const SERIF = "'Playfair Display', Georgia, serif";
@@ -61,8 +60,8 @@ export function LoadingScreen({ onComplete, duration = 1400 }: LoadingScreenProp
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
         >
-          <div className="relative h-14 w-14 rounded-xl bg-card/60 border border-border/50 flex items-center justify-center backdrop-blur-sm">
-            <BigHelpLogo size="sm" />
+          <div className="relative h-14 w-14 rounded-xl bg-card/60 border border-border/50 flex items-center justify-center backdrop-blur-sm p-2">
+            <img src={socorraoCrossLogo} alt="Arsen" className="h-full w-full object-contain" />
           </div>
 
           <span className="h-1 w-1 rounded-full bg-primary/60" />

@@ -7,7 +7,7 @@ import { PatientCockpit } from "@/components/PatientCockpit";
 import { SapsPendingAlert } from "@/components/SapsPendingAlert";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import bighelpLogo from "@/assets/bighelp-map-logo.png";
+import arsenLogo from "@/assets/arsen-logo.png";
 import {
   NotebookPen, Plus, Loader2, AlertTriangle, ChevronDown, Sun, Moon, Zap,
 } from "lucide-react";
@@ -586,7 +586,7 @@ const EvolucaoPage = () => {
             <p className="font-bold text-sm">EVOLUÇÃO CLÍNICA</p>
             <p>{format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
           </div>
-          <img src={bighelpLogo} className="h-6" alt="Logo" />
+          <img src={arsenLogo} className="h-6" alt="Arsen" />
         </div>
         <div className="grid grid-cols-4 gap-2 mb-2 border border-black/30 p-1.5 rounded">
           <div><strong>Paciente:</strong> {patient.name}</div>

@@ -5,9 +5,8 @@ import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import ReactMarkdown from "react-markdown";
 import { format, addDays, isAfter, setHours, setMinutes, setSeconds, startOfDay } from "date-fns";
-import bighelpLogo from "@/assets/bighelp-map-logo.png";
+import arsenLogo from "@/assets/arsen-logo.png";
 import socorraoLogo from "@/assets/socorrao1-logo.png";
-import { BigHelpLogo } from "@/components/BigHelpLogo";
 import { NormaZeroPrintHeader, NormaZeroPrintFooter, generatePrintDocCode } from "@/components/NormaZeroPrintHeader";
 import { ptBR } from "date-fns/locale";
 import {
@@ -7103,7 +7102,7 @@ const PrescricaoPage = () => {
       <div className="max-w-6xl mx-auto p-4 sm:p-6 flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
         <div className="flex flex-col items-center gap-6">
           <div className="animate-pulse">
-            <BigHelpLogo size="md" glow />
+            <img src={arsenLogo} alt="Arsen" className="h-16 w-16 object-contain" />
           </div>
           <div className="flex flex-col items-center gap-2">
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -9262,7 +9261,7 @@ const PrescricaoPage = () => {
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-border text-[10px] text-muted-foreground">
                 <span>Dispensado por: {user?.email?.split('@')[0] || '—'}</span>
-                <span>BigHelp Map · Dispensação Digital</span>
+                <span>Arsen · Dispensação Digital</span>
               </div>
             </div>
           )}
@@ -9287,7 +9286,7 @@ const PrescricaoPage = () => {
                     printW.document.write(`<div class="item"><span class="mono muted" style="width:16px;text-align:right">${i+1}.</span><div><strong>${item.name}</strong>${item.presentation && item.presentation !== '-' ? ` (${item.presentation})` : ''} — ${item.quantity||'1'} ${item.quantityUnit||'un'}${item.dose && item.dose !== '-' ? ` · ${item.dose}` : ''}${item.route && item.route !== '-' ? ` · ${item.route}` : ''}</div></div>`);
                   });
                   printW.document.write('</div>');
-                  printW.document.write(`<div class="sep footer"><span>Dispensado por: ${user?.email?.split('@')[0] || '—'}</span><span>BigHelp Map</span></div>`);
+                  printW.document.write(`<div class="sep footer"><span>Dispensado por: ${user?.email?.split('@')[0] || '—'}</span><span>Arsen</span></div>`);
                   printW.document.write('</div></body></html>');
                   printW.document.close();
                   printW.print();

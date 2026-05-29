@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { whitelabel } from "@/config/whitelabel";
-import { BigHelpLogo } from "@/components/BigHelpLogo";
+import arsenLogo from "@/assets/arsen-logo.png";
 import {
   Activity,
   Brain,
@@ -68,7 +68,7 @@ export default function LandingPage() {
             onClick={() => navigate("/")}
             className="flex items-center gap-3 group"
           >
-            <BigHelpLogo size="xs" />
+            <img src={arsenLogo} alt="Arsen" className="h-6 w-6 object-contain" />
             <span
               className="preserve-case text-lg font-light tracking-[0.25em] text-slate-800"
               style={{ fontFamily: SERIF }}
@@ -137,7 +137,7 @@ export default function LandingPage() {
             transition={{ duration: 0.7, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
             className="flex justify-center mb-8"
           >
-            <BigHelpLogo size="lg" />
+            <img src={arsenLogo} alt="Arsen" className="h-16 w-16 object-contain" />
           </motion.div>
 
           {/* Brand name — serif elegante */}
@@ -287,7 +287,7 @@ export default function LandingPage() {
       <footer className="border-t border-slate-100 bg-slate-50/50 py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <BigHelpLogo size="xs" />
+            <img src={arsenLogo} alt="Arsen" className="h-6 w-6 object-contain" />
             <span
               className="preserve-case text-sm font-light tracking-[0.25em] text-slate-700"
               style={{ fontFamily: SERIF }}
