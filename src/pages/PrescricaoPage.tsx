@@ -6032,6 +6032,7 @@ const PrescricaoPage = () => {
   //     encounter → prescrição em branco (não vaza prescrição de alta anterior).
   //  4) NÃO faz autosave. Rascunho só persiste se o médico clicar "Salvar Rascunho".
   const autoLoadAttemptedRef = useRef(false);
+  const [autoLoadDone, setAutoLoadDone] = useState(false);
   const loadPrescriptionRef = useRef<((id: string) => Promise<void>) | null>(null);
   useEffect(() => {
     if (autoLoadAttemptedRef.current) return;
