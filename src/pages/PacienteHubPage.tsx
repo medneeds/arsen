@@ -438,7 +438,7 @@ export default function PacienteHubPage() {
                   onClick={(e) => { e.stopPropagation(); handlePrintAdmission(); }}
                   title="Imprimir admissão (Norma Zero)"
                   aria-label="Imprimir admissão"
-                  className="absolute top-2 right-2 z-10 inline-flex items-center justify-center h-7 w-7 rounded-md bg-white/95 border border-emerald-200 text-emerald-700 shadow-sm hover:bg-emerald-50 hover:scale-105 transition"
+                  className="absolute top-2 right-2 z-10 inline-flex items-center justify-center h-7 w-7 rounded-md bg-card/95 border border-emerald-200 text-emerald-700 shadow-sm hover:bg-emerald-50 hover:scale-105 transition"
                 >
                   <Printer className="h-3.5 w-3.5" />
                 </button>
