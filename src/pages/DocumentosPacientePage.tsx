@@ -155,7 +155,15 @@ const DocumentosPacientePage = () => {
                 <FileSignature className="h-4 w-4" />
                 Emitir documento médico
               </Button>
-            </div>
+          </div>
+
+          {/* PATIENT CONTEXT STRIP — identidade do paciente no corpo do módulo */}
+          <PatientContextStrip
+            name={patientName}
+            bed={patientBed}
+            unit={patientSector}
+            className=""
+          />
           </div>
 
           {/* Quick CTAs */}
