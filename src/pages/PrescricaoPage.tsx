@@ -6132,6 +6132,7 @@ const PrescricaoPage = () => {
           if (!crossedShift) {
             // ── MESMO DIA CLÍNICO: carrega o registro REAL com status preservado ──
             if (loadPrescriptionRef.current) {
+              if (capturedGeneration !== loadGenerationRef.current) return false;
               await loadPrescriptionRef.current(row.id);
               toast.success('Prescrição do dia carregada', {
                 description: 'Exibindo a última prescrição validada deste plantão.',
@@ -6155,6 +6156,7 @@ const PrescricaoPage = () => {
             suspendedAt: undefined,
             needsShiftRevalidation: true,
           }));
+          if (capturedGeneration !== loadGenerationRef.current) return false;
           setItems(renewedItems);
           setDigitalSignature(null);
           setCurrentPrescriptionId(null);
