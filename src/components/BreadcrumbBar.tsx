@@ -158,7 +158,10 @@ export function BreadcrumbBar({
       </div>
 
       {actions && (
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className={cn(
+          "flex items-center gap-1.5 flex-shrink-0",
+          isInstitutional && "[&_button]:text-white [&_button]:hover:bg-white/15 [&_svg]:text-white"
+        )}>
           {actions}
         </div>
       )}
