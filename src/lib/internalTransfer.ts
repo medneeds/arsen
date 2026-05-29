@@ -266,7 +266,25 @@ export async function signalInternalTransfer(
       encounterCode = enc?.encounter_code ?? null;
     } catch { /* não-bloqueante */ }
 
-    const snapshot = { ...source };
+    // Busca identidade permanente ANTES de zerar o leito origem,
+    // para que a Etapa 2 (completeInternalTransfer) possa restaurá-la
+    // no leito destino mesmo após o clear feito aqui.
+    const { data: sourceDbRowSignal } = await supabase
+      .from("patients")
+      .select("patient_registry_id, medical_record, admitted_at")
+      .eq("id", source.id)
+      .maybeSingle();
+
+    const sourceRegistryIdSignal = (sourceDbRowSignal as any)?.patient_registry_id ?? null;
+    const sourceMedicalRecordSignal = (sourceDbRowSignal as any)?.medical_record ?? null;
+    const sourceAdmittedAtSignal = (sourceDbRowSignal as any)?.admitted_at ?? null;
+
+    const snapshot = {
+      ...source,
+      _registryId: sourceRegistryIdSignal,
+      _medicalRecord: sourceMedicalRecordSignal,
+      _admittedAt: sourceAdmittedAtSignal,
+    };
     const { data: inserted, error: insertError } = await (supabase as any)
       .from("internal_transfer_requests")
       .insert({
@@ -385,17 +403,23 @@ export async function completeInternalTransfer(
     const needsSaps: boolean = req.requires_saps;
     const sourcePatientId: string = req.source_patient_id;
 
-    // Busca identidade permanente (registry/prontuário/admissão) ainda preservada
-    // no leito origem para garantir que documentação clínica acompanhe o paciente.
-    const { data: sourceDbRow } = await supabase
-      .from("patients")
-      .select("patient_registry_id, medical_record, admitted_at")
-      .eq("id", sourcePatientId)
-      .maybeSingle();
+    // Identidade permanente (registry/prontuário/admissão) lida do snapshot
+    // salvo na Etapa 1, pois o leito origem já foi zerado em signalInternalTransfer.
+    // Fallback: tenta colunas dedicadas em internal_transfer_requests se existirem.
+    const sourceRegistryId =
+      (req as any).source_registry_id ??
+      (snapshot as any)._registryId ??
+      null;
 
-    const sourceRegistryId = (sourceDbRow as any)?.patient_registry_id ?? null;
-    const sourceMedicalRecord = (sourceDbRow as any)?.medical_record ?? null;
-    const sourceAdmittedAt = (sourceDbRow as any)?.admitted_at ?? null;
+    const sourceMedicalRecord =
+      (req as any).source_medical_record ??
+      (snapshot as any)._medicalRecord ??
+      null;
+
+    const sourceAdmittedAt =
+      (req as any).source_admitted_at ??
+      (snapshot as any)._admittedAt ??
+      null;
 
     const destinationAdmissionStatus = needsSaps
       ? "saps_pendente"
