@@ -4146,6 +4146,7 @@ const PrescricaoPage = () => {
     setDispensations([]);
     setPosologySuggestion(null);
     autoLoadAttemptedRef.current = false;
+    setAutoLoadDone(false);
     draftRestoreAttemptedRef.current = false;
   }, [urlPatientId, searchParams]);
 
