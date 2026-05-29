@@ -455,35 +455,35 @@ export default function PacienteHubPage() {
               >
                 <div className={cn(
                   "relative flex flex-col items-center justify-center aspect-square rounded-lg overflow-hidden transition-all",
-                  "bg-slate-50 border",
+                  "bg-card border",
                   locked
-                    ? "opacity-40 grayscale border-slate-200 cursor-not-allowed"
-                    : "bg-white border-slate-200 hover:scale-[1.02] hover:shadow-md cursor-pointer",
+                    ? "opacity-40 grayscale border-border cursor-not-allowed"
+                    : "bg-card border-border hover:scale-[1.02] hover:shadow-md cursor-pointer",
                 )}>
                   <span className={cn(
                     "absolute top-0 left-0 right-0 h-1",
-                    locked ? "bg-slate-300" : "bg-blue-400",
+                    locked ? "bg-muted-foreground/30" : "bg-primary/70",
                   )} />
                   {locked && (
                     <span className="absolute top-2 right-2">
-                      <Lock className="w-3.5 h-3.5 text-slate-400" strokeWidth={2} />
+                      <Lock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2} />
                     </span>
                   )}
                   <div className={cn(
                     "p-3 rounded-xl mb-3",
-                    locked ? "bg-transparent" : "bg-slate-100 group-hover:bg-blue-50 transition-colors",
+                    locked ? "bg-transparent" : "bg-muted group-hover:bg-primary/10 transition-colors",
                   )}>
                     <Icon
                       className={cn(
                         "w-7 h-7",
-                        locked ? "text-slate-400" : "text-slate-600 group-hover:text-blue-600 transition-colors",
+                        locked ? "text-muted-foreground/40" : "text-muted-foreground group-hover:text-primary transition-colors",
                       )}
                       strokeWidth={1.5}
                     />
                   </div>
                   <span className={cn(
                     "text-[11px] font-bold tracking-[0.15em] uppercase text-center",
-                    locked ? "text-slate-600" : "text-slate-900",
+                    locked ? "text-foreground/50" : "text-foreground",
                   )}>
                     {label}
                   </span>
