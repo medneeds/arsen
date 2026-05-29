@@ -3,6 +3,7 @@ import { formatPresentation } from "@/lib/formatPresentation";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { PatientContextStrip } from "@/components/PatientContextStrip";
 import ReactMarkdown from "react-markdown";
 import { format, addDays, isAfter, setHours, setMinutes, setSeconds, startOfDay } from "date-fns";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
