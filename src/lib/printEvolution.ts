@@ -52,6 +52,8 @@ export interface PrintEvolutionContext {
   patientCpf?: string;
   /** CNS — opcional */
   patientCns?: string;
+  /** Data de nascimento — formato DD/MM/AAAA */
+  patientBirthDate?: string;
   cidPrimary?: string;
   cidSecondary?: string;
 }
