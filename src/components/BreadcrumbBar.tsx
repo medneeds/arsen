@@ -158,10 +158,20 @@ export function BreadcrumbBar({
       </div>
 
       {actions && (
-        <div className={cn(
-          "flex items-center gap-1.5 flex-shrink-0",
-          isInstitutional && "[&_button]:text-white [&_button]:hover:bg-white/15 [&_svg]:text-white"
-        )}>
+        <div
+          className={cn(
+            "flex items-center gap-1.5 flex-shrink-0",
+            isInstitutional && [
+              "[&_button]:bg-white/12",
+              "[&_button]:text-white/90",
+              "[&_button]:border-white/25",
+              "[&_button:hover]:bg-white/25",
+              "[&_button:hover]:border-white/40",
+              "[&_svg]:text-white/90",
+              "[&_svg]:opacity-100",
+            ].join(" ")
+          )}
+        >
           {actions}
         </div>
       )}
