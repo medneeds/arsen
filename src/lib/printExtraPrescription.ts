@@ -213,11 +213,6 @@ export async function printExtraPrescription(opts: ExtraPrintOptions) {
           const flagsChip = (it.flags || []).length
             ? `<span style="background:#334155;color:#fff;font-size:6pt;font-weight:700;padding:0.5pt 4pt;border-radius:2pt;margin-left:4pt;letter-spacing:0.3pt">${escape((it.flags || []).join(', ').toUpperCase())}</span>`
             : '';
-          const headerLine = [
-            it.dose && it.dose !== '-' ? escape(it.dose) : null,
-            it.route && it.route !== '-' ? escape(it.route) : null,
-            it.posology && it.posology !== '-' ? escape(it.posology) : null,
-          ].filter(Boolean).join(' · ');
           return `
         <tr style="page-break-inside:avoid">
           <td style="border:0.5pt solid #cbd5e1;width:22pt;text-align:center;vertical-align:top;font-weight:800;font-size:7.5pt;color:#0f172a;padding:3pt 0;background:${idx % 2 === 0 ? '#fff' : '#fafbfc'}">${idx + 1}</td>
