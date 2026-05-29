@@ -4147,6 +4147,7 @@ const PrescricaoPage = () => {
     setPosologySuggestion(null);
     autoLoadAttemptedRef.current = false;
     setAutoLoadDone(false);
+    loadGenerationRef.current += 1; // ← cancela qualquer load em andamento
     draftRestoreAttemptedRef.current = false;
   }, [urlPatientId, searchParams]);
 
