@@ -343,6 +343,13 @@ const EvolucaoPage = () => {
       <div className="flex print:hidden">
         <div className="flex-1 min-w-0 p-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* SAPS pending alert removed */}
+        {/* PATIENT CONTEXT STRIP — identidade do paciente no corpo do módulo */}
+        <PatientContextStrip
+          name={patient.name}
+          bed={patient.bed}
+          unit={patient.unit}
+          className="mb-2"
+        />
         {/* Page Header */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="hidden sm:flex items-center gap-3">
