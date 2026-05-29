@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
-import { PatientContextStrip } from "@/components/PatientContextStrip";
 
 
 import { PatientCockpit } from "@/components/PatientCockpit";
@@ -343,21 +342,26 @@ const EvolucaoPage = () => {
       <div className="flex print:hidden">
         <div className="flex-1 min-w-0 p-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* SAPS pending alert removed */}
-        {/* PATIENT CONTEXT STRIP — identidade do paciente no corpo do módulo */}
-        <PatientContextStrip
-          name={patient.name}
-          bed={patient.bed}
-          unit={patient.unit}
-          className="mb-2"
-        />
-        {/* Page Header */}
+        {/* Page Header — title + patient identity inline */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="hidden sm:flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <NotebookPen className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-foreground">Evolução Clínica</h1>
+          <div className="hidden sm:flex items-center gap-3 min-w-0 flex-1">
+            {patient.bed && (
+              <div className="flex flex-col items-center justify-center h-10 w-10 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
+                <span className="text-[7px] font-bold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
+                <span className="text-sm font-extrabold text-primary leading-tight mt-0.5">{patient.bed}</span>
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-lg font-bold text-foreground uppercase tracking-wide">EVOLUÇÃO CLÍNICA</h1>
+                {patient.name && <div className="h-4 w-px bg-border/60 hidden sm:block" />}
+                {patient.name && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-foreground uppercase tracking-wide truncate max-w-[220px]">{patient.name}</span>
+                    {patient.unit && <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap">{patient.unit}</span>}
+                  </div>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">Timeline de evoluções do paciente</p>
             </div>
           </div>
