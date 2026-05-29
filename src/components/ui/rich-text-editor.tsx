@@ -117,28 +117,11 @@ export function RichTextEditor({
     if (autoFocus) ref.current?.focus();
   }, [autoFocus]);
 
-  const exec = (cmd: "bold" | "italic" | "underline" | "insertUnorderedList" | "insertOrderedList" | "removeFormat") => {
+  const exec = (cmd: "bold" | "italic" | "underline" | "insertUnorderedList" | "insertOrderedList" | "removeFormat" | "justifyLeft" | "justifyCenter" | "justifyRight" | "justifyFull") => {
     if (disabled) return;
     ref.current?.focus();
     document.execCommand(cmd, false);
     handleInput();
-  };
-
-  const execAlign = (justify: "justifyLeft" | "justifyCenter" | "justifyRight" | "justifyFull") => {
-    if (disabled) return;
-    ref.current?.focus();
-    document.execCommand(justify, false);
-    handleInput();
-  };
-
-  const getActiveAlign = (): "left" | "center" | "right" | "full" => {
-    if (typeof document === "undefined") return "left";
-    try {
-      if (document.queryCommandState("justifyCenter")) return "center";
-      if (document.queryCommandState("justifyRight")) return "right";
-      if (document.queryCommandState("justifyFull")) return "full";
-    } catch { /* noop */ }
-    return "left";
   };
 
   const handleInput = () => {
