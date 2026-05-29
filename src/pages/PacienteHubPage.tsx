@@ -286,7 +286,7 @@ export default function PacienteHubPage() {
   const locked = lockReason !== null;
 
   return (
-    <div className="flex flex-col h-full bg-slate-50">
+    <div className="flex flex-col h-full bg-background">
       <div className="px-2 sm:px-4 pt-3">
         <BreadcrumbBar variant="institutional" />
       </div>
@@ -295,25 +295,25 @@ export default function PacienteHubPage() {
         <div className="w-full max-w-6xl flex flex-col gap-8">
           {/* Patient identity */}
           <div className="text-center space-y-3">
-            <span className="text-[10px] uppercase tracking-[0.3em] font-semibold text-slate-400">
+            <span className="text-[10px] uppercase tracking-[0.3em] font-semibold text-muted-foreground">
               Paciente Selecionado
             </span>
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight uppercase">
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight uppercase">
               {ctx.patientName || "—"}
             </h1>
             <div className="flex flex-wrap items-center justify-center gap-2">
               {ctx.patientBed && (
-                <span className="px-3 py-1 bg-white border border-slate-200 text-slate-600 text-[11px] font-bold tracking-wider uppercase rounded-sm shadow-sm">
+                <span className="px-3 py-1 bg-card border border-border text-muted-foreground text-[11px] font-bold tracking-wider uppercase rounded-sm shadow-sm">
                   Leito {ctx.patientBed}
                 </span>
               )}
               {sectorLabel && (
-                <span className="px-3 py-1 bg-white border border-slate-200 text-slate-600 text-[11px] font-bold tracking-wider uppercase rounded-sm shadow-sm">
+                <span className="px-3 py-1 bg-card border border-border text-muted-foreground text-[11px] font-bold tracking-wider uppercase rounded-sm shadow-sm">
                   {sectorLabel}
                 </span>
               )}
               {ageDisplay && (
-                <span className="px-3 py-1 bg-white border border-slate-200 text-slate-600 text-[11px] font-bold tracking-wider uppercase rounded-sm shadow-sm">
+                <span className="px-3 py-1 bg-card border border-border text-muted-foreground text-[11px] font-bold tracking-wider uppercase rounded-sm shadow-sm">
                   {ageDisplay}
                 </span>
               )}
@@ -392,30 +392,30 @@ export default function PacienteHubPage() {
                 )}
                 <div className={cn(
                   "relative flex flex-col items-center justify-center aspect-square rounded-lg overflow-hidden transition-transform",
-                  "bg-white",
+                  "bg-card",
                   isPreAdmitted
                     ? "border-2 border-amber-400 shadow-lg group-hover:scale-[1.02]"
                     : isAdmitted
                     ? "border border-emerald-300 group-hover:scale-[1.02] group-hover:shadow-md"
-                    : "border border-slate-200 group-hover:scale-[1.02] group-hover:shadow-md",
+                    : "border border-border group-hover:scale-[1.02] group-hover:shadow-md",
                 )}>
                   <span className={cn(
                     "absolute top-0 left-0 right-0 h-1",
-                    isPreAdmitted ? "bg-amber-400" : isAdmitted ? "bg-emerald-400" : "bg-slate-300",
+                    isPreAdmitted ? "bg-amber-400" : isAdmitted ? "bg-emerald-400" : "bg-muted-foreground/30",
                   )} />
                   <div className={cn(
                     "p-3 rounded-xl mb-3",
-                    isPreAdmitted ? "bg-amber-50" : isAdmitted ? "bg-emerald-50" : "bg-slate-100",
+                    isPreAdmitted ? "bg-amber-50" : isAdmitted ? "bg-emerald-50" : "bg-muted",
                   )}>
                     <AdmissionIcon
                       className={cn(
                         "w-7 h-7",
-                        isPreAdmitted ? "text-amber-600" : isAdmitted ? "text-emerald-600" : "text-slate-500",
+                        isPreAdmitted ? "text-amber-600" : isAdmitted ? "text-emerald-600" : "text-muted-foreground",
                       )}
                       strokeWidth={1.75}
                     />
                   </div>
-                  <span className="text-[11px] font-bold text-slate-900 tracking-[0.15em] uppercase">
+                  <span className="text-[11px] font-bold text-foreground tracking-[0.15em] uppercase">
                     Admissão
                   </span>
                   {isPreAdmitted && (
@@ -438,7 +438,7 @@ export default function PacienteHubPage() {
                   onClick={(e) => { e.stopPropagation(); handlePrintAdmission(); }}
                   title="Imprimir admissão (Norma Zero)"
                   aria-label="Imprimir admissão"
-                  className="absolute top-2 right-2 z-10 inline-flex items-center justify-center h-7 w-7 rounded-md bg-white/95 border border-emerald-200 text-emerald-700 shadow-sm hover:bg-emerald-50 hover:scale-105 transition"
+                  className="absolute top-2 right-2 z-10 inline-flex items-center justify-center h-7 w-7 rounded-md bg-card/95 border border-emerald-200 text-emerald-700 shadow-sm hover:bg-emerald-50 hover:scale-105 transition"
                 >
                   <Printer className="h-3.5 w-3.5" />
                 </button>
@@ -455,35 +455,35 @@ export default function PacienteHubPage() {
               >
                 <div className={cn(
                   "relative flex flex-col items-center justify-center aspect-square rounded-lg overflow-hidden transition-all",
-                  "bg-slate-50 border",
+                  "bg-card border",
                   locked
-                    ? "opacity-40 grayscale border-slate-200 cursor-not-allowed"
-                    : "bg-white border-slate-200 hover:scale-[1.02] hover:shadow-md cursor-pointer",
+                    ? "opacity-40 grayscale border-border cursor-not-allowed"
+                    : "bg-card border-border hover:scale-[1.02] hover:shadow-md cursor-pointer",
                 )}>
                   <span className={cn(
                     "absolute top-0 left-0 right-0 h-1",
-                    locked ? "bg-slate-300" : "bg-blue-400",
+                    locked ? "bg-muted-foreground/30" : "bg-primary/70",
                   )} />
                   {locked && (
                     <span className="absolute top-2 right-2">
-                      <Lock className="w-3.5 h-3.5 text-slate-400" strokeWidth={2} />
+                      <Lock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2} />
                     </span>
                   )}
                   <div className={cn(
                     "p-3 rounded-xl mb-3",
-                    locked ? "bg-transparent" : "bg-slate-100 group-hover:bg-blue-50 transition-colors",
+                    locked ? "bg-transparent" : "bg-muted group-hover:bg-primary/10 transition-colors",
                   )}>
                     <Icon
                       className={cn(
                         "w-7 h-7",
-                        locked ? "text-slate-400" : "text-slate-600 group-hover:text-blue-600 transition-colors",
+                        locked ? "text-muted-foreground/40" : "text-muted-foreground group-hover:text-primary transition-colors",
                       )}
                       strokeWidth={1.5}
                     />
                   </div>
                   <span className={cn(
                     "text-[11px] font-bold tracking-[0.15em] uppercase text-center",
-                    locked ? "text-slate-600" : "text-slate-900",
+                    locked ? "text-foreground/50" : "text-foreground",
                   )}>
                     {label}
                   </span>
@@ -493,7 +493,7 @@ export default function PacienteHubPage() {
           </div>
 
           {/* Footer */}
-          <p className="text-center text-[10px] uppercase tracking-[0.3em] font-semibold text-slate-400">
+          <p className="text-center text-[10px] uppercase tracking-[0.3em] font-semibold text-muted-foreground">
             {isPreAdmitted
               ? "Inicie pela admissão para liberar os demais módulos"
               : sapsExpired
