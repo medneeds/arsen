@@ -576,6 +576,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       </div>
                       ); })() : (
                       <EvolutionForm
+                        hidePlan={isIntercurrence(evo)}
                         soap={data.soap}
                         vitals={data.vitals}
                         physicalExam={data.exam}

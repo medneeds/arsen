@@ -87,6 +87,8 @@ interface EvolutionFormProps {
   onCopyExamFromAdmission?: () => void;
   /** Callback opcional — quando definido, exibe botão "Copiar da admissão" nos Sinais Vitais. */
   onCopyVitalsFromAdmission?: () => void;
+  /** When true, hides the "Plano" section entirely (used by complementary evolutions). */
+  hidePlan?: boolean;
 }
 
 type SectionKey = 'vitals' | 'evolucao' | 'objective' | 'plan' | 'review';
@@ -130,6 +132,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   cidSecondary,
   onCopyExamFromAdmission,
   onCopyVitalsFromAdmission,
+  hidePlan = false,
 }) => {
   const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'devices', 'evolucao', 'complementares', 'plan']);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
@@ -501,6 +504,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           />
         </SectionItem>
 
+        {!hidePlan && (
         <SectionItem
           id="plan"
           icon={FileText}
@@ -528,6 +532,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             minHeight={120}
           />
         </SectionItem>
+        )}
 
         <SectionItem
           id="review"
