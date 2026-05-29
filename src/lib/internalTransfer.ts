@@ -266,7 +266,25 @@ export async function signalInternalTransfer(
       encounterCode = enc?.encounter_code ?? null;
     } catch { /* não-bloqueante */ }
 
-    const snapshot = { ...source };
+    // Busca identidade permanente ANTES de zerar o leito origem,
+    // para que a Etapa 2 (completeInternalTransfer) possa restaurá-la
+    // no leito destino mesmo após o clear feito aqui.
+    const { data: sourceDbRowSignal } = await supabase
+      .from("patients")
+      .select("patient_registry_id, medical_record, admitted_at")
+      .eq("id", source.id)
+      .maybeSingle();
+
+    const sourceRegistryIdSignal = (sourceDbRowSignal as any)?.patient_registry_id ?? null;
+    const sourceMedicalRecordSignal = (sourceDbRowSignal as any)?.medical_record ?? null;
+    const sourceAdmittedAtSignal = (sourceDbRowSignal as any)?.admitted_at ?? null;
+
+    const snapshot = {
+      ...source,
+      _registryId: sourceRegistryIdSignal,
+      _medicalRecord: sourceMedicalRecordSignal,
+      _admittedAt: sourceAdmittedAtSignal,
+    };
     const { data: inserted, error: insertError } = await (supabase as any)
       .from("internal_transfer_requests")
       .insert({
