@@ -7,7 +7,7 @@
  */
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 import { describeInsulinPlan, type InsulinPlan } from "@/lib/insulinTherapy";
-import { assembleInhalationInstruction } from "@/lib/inhalationInstruction";
+
 
 export interface ExtraPrintItem {
   id: string;
@@ -118,102 +118,78 @@ function regulatoryChip(it: ExtraPrintItem): string {
   return '';
 }
 
-function detailBlock(it: ExtraPrintItem): string {
-  const blocks: string[] = [];
+const SEP = `<span style="color:#94a3b8;margin:0 3pt">|</span>`;
+
+function buildLine2(it: ExtraPrintItem): string {
+  // Insulinoterapia — bloco especial preservado (não é IV padrão)
+  if (it.insulinPlan) return '';
+
   const isInhalation = it.category === 'inhalation';
-  const insulinDesc = it.insulinPlan ? describeInsulinPlan(it.insulinPlan) : null;
   const isNutrition = it.category === 'nutrition';
-  const hasIvPreparo = !isInhalation && !isNutrition && (it.diluent || it.diluentVolume || it.accessType || it.infusionTime || it.infusionRate || it.volumeTotal || it.concentration);
 
-  // Insulinoterapia (cor MAV)
-  if (insulinDesc) {
-    const lines = insulinDesc.lines.map(ln => `<div style="font-weight:${ln.startsWith('  •') ? 500 : 600};padding-left:${ln.startsWith('  •') ? '6pt' : 0}">${escape(ln.replace(/^  •\s*/, '• '))}</div>`).join('');
-    blocks.push(`
-      <div style="font-size:7pt;color:#1e293b;line-height:1.3;margin-top:3pt;padding:3pt 6pt 3pt 8pt;border-left:2pt solid #991b1b;background:#fef2f2;border-radius:0 2pt 2pt 0">
-        <div style="font-weight:800;font-size:7pt;color:#991b1b;text-transform:uppercase;letter-spacing:0.3pt;margin-bottom:1pt">${escape(insulinDesc.headline)}</div>
-        ${lines}
-      </div>`);
-  }
-
-  // Inalatórios
   if (isInhalation) {
-    const phrase = assembleInhalationInstruction(it as any);
-    if (phrase) {
-      const tags: string[] = [];
-      if (it.spacer) tags.push('c/ espaçador');
-      if (it.gargle) tags.push('gargarejo após');
-      blocks.push(`
-        <div style="font-size:7pt;color:#1e293b;line-height:1.3;margin-top:2pt;padding-left:8pt;border-left:2pt solid #0891b2;font-weight:500">
-          <span style="background:#0891b2;color:#fff;font-size:5.5pt;font-weight:800;padding:0.5pt 4pt;border-radius:2pt;letter-spacing:0.3pt;margin-right:4pt">INALATÓRIO</span>
-          ${escape(phrase)}${tags.length ? ` <span style="font-style:italic;color:#475569">· ${escape(tags.join(' · '))}</span>` : ''}
-        </div>`);
-    }
-  }
-
-  // Preparo IV
-  if (hasIvPreparo && !insulinDesc) {
     const parts = [
-      it.diluent && it.diluent !== '-' && it.diluent !== 'sem_diluente' ? `${it.diluent}${it.diluentVolume ? ` ${it.diluentVolume}mL` : ''}` : it.diluent === 'sem_diluente' ? 'Sem diluição' : null,
-      it.accessType && it.accessType !== '-' ? it.accessType : null,
-      it.volumeTotal ? `Vol total: ${it.volumeTotal}mL` : null,
-      it.infusionTime ? `Correr em ${it.infusionTime}${(it.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
-      it.infusionRate ? `${it.infusionRate} ${it.infusionMode === 'gts' ? 'gts/min' : 'mL/h'}` : null,
-      it.concentration ? `Conc: ${it.concentration}` : null,
-    ].filter(Boolean).join(' · ');
-    blocks.push(`<div style="font-size:7pt;color:#1e293b;line-height:1.3;margin-top:2pt;padding-left:8pt;border-left:2pt solid #0c4a6e;font-weight:500">${escape(parts)}</div>`);
+      it.dose && it.dose !== '-' ? escape(it.dose) : null,
+      it.route && it.route !== '-' ? escape(it.route) : null,
+      it.posology && it.posology !== '-' ? escape(it.posology) : null,
+      it.inhalationMode ? escape(it.inhalationMode) : null,
+      it.oxygenFlow ? `O₂ ${escape(it.oxygenFlow)}` : null,
+      it.spacer ? 'c/ espaçador' : null,
+      it.gargle ? 'gargarejo após' : null,
+    ].filter(Boolean);
+    if (!parts.length) return '';
+    return `<div style="font-size:8pt;color:#444;line-height:1.4;margin-top:2pt">${parts.join(` ${SEP} `)}</div>`;
   }
 
-  // Nutrição
-  if (it.category === 'nutrition') {
-    // Branch — adição manual: só recomendações (instruções livres)
-    if (it.nutManual) {
-      if (it.instructions) {
-        blocks.push(`
-          <div style="font-size:7pt;color:#1e293b;line-height:1.3;margin-top:2pt;padding:3pt 6pt 3pt 8pt;border-left:2pt solid #16a34a;background:#f0fdf4;border-radius:0 2pt 2pt 0">
-            <span style="background:#16a34a;color:#fff;font-size:5.5pt;font-weight:800;padding:0.5pt 4pt;border-radius:2pt;letter-spacing:0.3pt;margin-right:4pt">NUTRIÇÃO · MANUAL</span>
-            ${escape(it.instructions)}
-          </div>`);
-      }
-    } else {
-      const scheduleText = it.nutScheduleMode === 'steps'
-        ? (it.nutSteps ? `${it.nutSteps} ${it.nutSteps === '1' ? 'etapa/dia' : 'etapas/dia'}` : null)
-        : (it.dietInterval ? `Intervalo: ${it.dietInterval}` : null);
-      const rateUnit = it.nutRateMode === 'gtt' ? 'gts/min' : 'mL/h';
-      const parts = [
-        it.dietType || null,
-        it.dietProfile ? `Perfil: ${it.dietProfile}` : null,
-        it.nutConsistency ? it.nutConsistency.replace(/\s*\(IDDSI[^)]*\)/i, '') : null,
-        scheduleText,
-        it.nutVolDay ? `Vol/dia: ${it.nutVolDay} mL` : null,
-        it.nutMode || null,
-        it.infusionRate ? `Correr em: ${it.infusionRate} ${rateUnit}` : null,
-        it.nutFraction ? `Frac: ${it.nutFraction}` : null,
-        it.nutProgression ? `Progressão: ${it.nutProgression}` : null,
-        it.nutNightPause ? `Pausa noturna: ${it.nutNightPause}` : null,
-        it.nutBedHead ? `Cabeceira: ${it.nutBedHead}°` : null,
-        it.nutAccess ? `Acesso: ${it.nutAccess}` : null,
-        it.nutComposition || null,
-        it.nutMonitoring ? `Monit: ${it.nutMonitoring}` : null,
-        it.nutResidualCheck ? `Resíduo: ${it.nutResidualCheck}` : null,
-        it.nutWaterVolPerAdmin ? `Água: ${it.nutWaterVolPerAdmin} mL` : null,
-        it.nutWaterFreq || null,
-        it.nutZeroReason ? `Motivo jejum: ${it.nutZeroReason}` : null,
-      ].filter(Boolean).join(' · ');
-      if (parts) {
-        blocks.push(`<div style="font-size:7pt;color:#1e293b;line-height:1.3;margin-top:2pt;padding-left:8pt;border-left:2pt solid #16a34a;font-weight:500">${escape(parts)}</div>`);
-      }
-      if (it.instructions) {
-        blocks.push(`<div style="font-size:6.5pt;color:#475569;line-height:1.3;margin-top:1pt;padding-left:8pt;font-style:italic">Obs.: ${escape(it.instructions)}</div>`);
-      }
-    }
+  if (isNutrition) {
+    const scheduleText = it.nutScheduleMode === 'steps'
+      ? (it.nutSteps ? `${it.nutSteps} etapa(s)/dia` : null)
+      : (it.dietInterval ? `Intervalo: ${escape(it.dietInterval)}` : null);
+    const rateUnit = it.nutRateMode === 'gtt' ? 'gts/min' : 'mL/h';
+    const parts = [
+      it.dietType ? escape(it.dietType) : null,
+      it.dietProfile ? `Perfil: ${escape(it.dietProfile)}` : null,
+      it.nutVolDay ? `Vol/dia: ${escape(it.nutVolDay)} mL` : null,
+      it.nutMode ? escape(it.nutMode) : null,
+      scheduleText,
+      it.infusionRate ? `Vazão: ${escape(it.infusionRate)} ${rateUnit}` : null,
+      it.nutAccess ? `Acesso: ${escape(it.nutAccess)}` : null,
+      it.nutBedHead ? `Cab: ${escape(it.nutBedHead)}°` : null,
+      it.nutZeroReason ? `Jejum: ${escape(it.nutZeroReason)}` : null,
+    ].filter(Boolean);
+    if (!parts.length) return '';
+    return `<div style="font-size:8pt;color:#444;line-height:1.4;margin-top:2pt">${parts.join(` ${SEP} `)}</div>`;
   }
 
-  // Instruções livres (apenas se não houver detalhamento específico)
-  if (it.instructions && !hasIvPreparo && !insulinDesc && !isInhalation && !isNutrition) {
-    blocks.push(`<div style="font-size:7pt;color:#1e293b;line-height:1.3;margin-top:2pt;padding-left:8pt;border-left:2pt solid #0c4a6e;font-weight:500">${escape(it.instructions)}</div>`);
+  // Medicação / Hidratação / ATB / High Alert — campos explícitos, SEM frases automáticas
+  const parts: string[] = [];
+
+  if (it.dose && it.dose !== '-') parts.push(escape(it.dose));
+
+  if (it.diluent && it.diluent !== '-' && it.diluent !== 'sem_diluente') {
+    parts.push(`Diluente: ${escape(it.diluent)}${it.diluentVolume ? ` ${escape(it.diluentVolume)} mL` : ''}`);
+  } else if (it.diluent === 'sem_diluente') {
+    parts.push('Sem diluição');
   }
 
-  return blocks.join('');
+  if (it.volumeTotal) parts.push(`Vol. final: ${escape(it.volumeTotal)} mL`);
+  if (it.route && it.route !== '-') parts.push(escape(it.route));
+  if (it.posology && it.posology !== '-') parts.push(escape(it.posology));
+
+  if (it.infusionTime) {
+    const unit = it.infusionTimeUnit === 'h' ? 'h' : 'min';
+    parts.push(`Tempo: ${escape(it.infusionTime)}${unit}`);
+  }
+
+  if (it.infusionRate) {
+    const rateUnit = it.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
+    parts.push(`Vazão: ${escape(it.infusionRate)} ${rateUnit}`);
+  }
+
+  if (it.infusionMode === 'BIC') parts.push('BIC');
+
+  if (!parts.length) return '';
+  return `<div style="font-size:8pt;color:#444;line-height:1.4;margin-top:2pt">${parts.join(` ${SEP} `)}</div>`;
 }
 
 export async function printExtraPrescription(opts: ExtraPrintOptions) {
@@ -237,24 +213,28 @@ export async function printExtraPrescription(opts: ExtraPrintOptions) {
           const flagsChip = (it.flags || []).length
             ? `<span style="background:#334155;color:#fff;font-size:6pt;font-weight:700;padding:0.5pt 4pt;border-radius:2pt;margin-left:4pt;letter-spacing:0.3pt">${escape((it.flags || []).join(', ').toUpperCase())}</span>`
             : '';
-          const headerLine = [
-            it.dose && it.dose !== '-' ? escape(it.dose) : null,
-            it.route && it.route !== '-' ? escape(it.route) : null,
-            it.posology && it.posology !== '-' ? escape(it.posology) : null,
-          ].filter(Boolean).join(' · ');
           return `
         <tr style="page-break-inside:avoid">
           <td style="border:0.5pt solid #cbd5e1;width:22pt;text-align:center;vertical-align:top;font-weight:800;font-size:7.5pt;color:#0f172a;padding:3pt 0;background:${idx % 2 === 0 ? '#fff' : '#fafbfc'}">${idx + 1}</td>
           <td style="border:0.5pt solid #cbd5e1;padding:3pt 6pt;vertical-align:top;background:${idx % 2 === 0 ? '#fff' : '#fafbfc'}">
-            <div style="font-size:8pt;line-height:1.4;color:#0f172a">
+            <div style="font-size:9pt;font-weight:bold;color:#0f172a;line-height:1.4">
               ${regulatoryChip(it)}
               ${it.doubleCheck ? '<span style="display:inline-block;background:#0f172a;color:#fff;font-size:5.5pt;font-weight:800;padding:0.5pt 3pt;border-radius:2pt;margin-right:4pt;letter-spacing:0.3pt">2x CHECK</span>' : ''}
-              <span style="font-weight:800">${escape(it.name)}</span>
-              ${it.presentation && it.presentation !== '-' ? `<span style="color:#334155;font-weight:500;font-size:7.5pt"> (${escape(it.presentation)})</span>` : ''}
+              ${escape(it.name)}
+              ${it.presentation && it.presentation !== '-' ? `<span style="color:#334155;font-weight:500;font-size:8pt"> (${escape(it.presentation)})</span>` : ''}
+              ${it.concentration ? `<span style="color:#334155;font-weight:500"> — ${escape(it.concentration)}</span>` : ''}
               <span style="background:#fff7ed;color:#9a3412;font-size:5.5pt;font-weight:800;padding:0.5pt 4pt;border-radius:2pt;margin-left:4pt;border:0.5pt solid #fdba74;letter-spacing:0.3pt">EXTRA</span>
+              ${flagsChip}
             </div>
-            ${headerLine ? `<div style="font-size:7.5pt;color:#1e293b;line-height:1.35;margin-top:2pt;font-weight:600">${headerLine}${flagsChip}</div>` : ''}
-            ${detailBlock(it)}
+            ${buildLine2(it)}
+            ${it.insulinPlan ? (() => {
+              const insulinDesc = describeInsulinPlan(it.insulinPlan!);
+              const lines = insulinDesc.lines.map(ln =>
+                `<div style="font-weight:${ln.startsWith('  •') ? 500 : 600};padding-left:${ln.startsWith('  •') ? '6pt' : 0}">${escape(ln.replace(/^  •\s*/, '• '))}</div>`
+              ).join('');
+              return `<div style="font-size:7pt;color:#1e293b;line-height:1.3;margin-top:3pt;padding:3pt 6pt 3pt 8pt;border-left:2pt solid #991b1b;background:#fef2f2;border-radius:0 2pt 2pt 0"><div style="font-weight:800;font-size:7pt;color:#991b1b;text-transform:uppercase;letter-spacing:0.3pt;margin-bottom:1pt">${escape(insulinDesc.headline)}</div>${lines}</div>`;
+            })() : ''}
+            ${it.instructions ? `<div style="font-size:8pt;font-style:italic;color:#444;line-height:1.4;margin-top:2pt">Recomendações: ${escape(it.instructions)}</div>` : ''}
           </td>
           <td style="border:0.5pt solid #cbd5e1;width:170pt;vertical-align:top;background:#fff;padding:4pt 6pt">
             <div style="font-size:6.5pt;color:#94a3b8;font-weight:700;letter-spacing:0.3pt;text-transform:uppercase;margin-bottom:2pt">Aprazamento ${it.schedule ? `· ${escape(it.schedule)}` : ''}</div>
