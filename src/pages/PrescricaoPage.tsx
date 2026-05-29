@@ -564,6 +564,86 @@ function getPresetsForPosology(posology: string): typeof SCHEDULE_PRESETS[string
 // Ordem padronizada (segura p/ enfermagem):
 //   SOLUTO > SOLUÇÃO > VIA > TEMPO/VAZÃO > INTERVALO
 // Ex.: "Diluir 100 mg (10 mL) em 100 mL de SF 0,9%. EV. Correr em 4h (25 mL/h). Dose única."
+// Tokens estruturados para Line 2 do novo padrão de prescrição
+function buildLine2Tokens(item: PrescriptionItem): Array<{ text: string; isBadge?: boolean }> {
+  const tokens: Array<{ text: string; isBadge?: boolean }> = [];
+
+  // Rotas enteral/subcutânea: apenas dose | via | intervalo
+  const isEnteralOrSC = /subcutânea|SC|oral|VO|sublingual|intramuscular|IM|retal|tópica|nasal|ocular|ótica/i.test(item.route || '');
+  const soluto = buildSolutoToken(item);
+
+  if (isEnteralOrSC) {
+    if (soluto) tokens.push({ text: soluto });
+    if (item.route && item.route !== '-') tokens.push({ text: routeShort(item.route) });
+    if (item.posology && item.posology !== '-') tokens.push({ text: item.posology });
+    return tokens;
+  }
+
+  // Liofilizado — reconstituição antes da diluição
+  if (item.reconstitutionSolvent && item.reconstitutionVolume) {
+    const solvent = item.reconstitutionSolvent.replace(/\bABD\b/gi, 'AD');
+    tokens.push({ text: `Reconstituir: ${solvent} ${item.reconstitutionVolume} mL →` });
+  }
+
+  // Dose
+  if (soluto) tokens.push({ text: soluto });
+
+  // Diluente
+  const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
+  if (hasDiluent) {
+    const dilStr = item.diluentVolume ? `${item.diluent} ${item.diluentVolume} mL` : item.diluent!;
+    tokens.push({ text: `Diluente: ${dilStr}` });
+  }
+
+  // Volume final (quando distinto do diluente)
+  const volTotalNum = parseFloat((item.volumeTotal || '').replace(',', '.'));
+  const volDilNum = parseFloat((item.diluentVolume || '').replace(',', '.'));
+  if (item.volumeTotal && volTotalNum > 0 && (!item.diluentVolume || !volDilNum || volTotalNum !== volDilNum)) {
+    tokens.push({ text: `Vol. final: ${item.volumeTotal} mL` });
+  }
+
+  // Via
+  if (item.route && item.route !== '-') tokens.push({ text: routeShort(item.route) });
+
+  // Intervalo
+  if (item.posology && item.posology !== '-') tokens.push({ text: item.posology });
+
+  // Tempo de infusão
+  if (item.infusionTime) {
+    const unit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
+    tokens.push({ text: `${item.infusionTime} ${unit}` });
+  }
+
+  // Vazão
+  if (item.ivBolus) {
+    tokens.push({ text: 'Bolus EV' });
+  } else if (item.volumeTotal && item.infusionTime) {
+    const vol = parseFloat((item.volumeTotal || '').replace(',', '.'));
+    const timeRaw = parseFloat((item.infusionTime || '').replace(',', '.'));
+    const timeMin = item.infusionTimeUnit === 'h' ? timeRaw * 60 : timeRaw;
+    if (vol > 0 && timeMin > 0) {
+      const mlh = (vol / (timeMin / 60)).toFixed(1).replace(/\.0$/, '');
+      if (item.infusionMode === 'gts') {
+        const gtsRaw = (vol * 20) / timeMin;
+        const gts = roundGtsToHospital(gtsRaw);
+        tokens.push({ text: `Vazão: ${mlh} mL/h · ${gts} gts/min` });
+      } else {
+        tokens.push({ text: `Vazão: ${mlh} mL/h` });
+      }
+    }
+  } else if (item.infusionRate) {
+    const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
+    tokens.push({ text: `Vazão: ${item.infusionRate} ${modeLabel}` });
+  }
+
+  // Badge BIC
+  if (item.infusionMode === 'BIC' || (!item.infusionMode && hasDiluent)) {
+    tokens.push({ text: 'BIC', isBadge: true });
+  }
+
+  return tokens;
+}
+
 function buildSolutoToken(item: PrescriptionItem): string {
   const qtyRaw = (item.quantity || '').trim();
   const qty = qtyRaw && qtyRaw !== '0' ? qtyRaw : '';
@@ -2761,14 +2841,28 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 );
               })()}
 
-              {/* Auto-synced preparation description */}
+              {/* Line 2 — formato estruturado de preparo */}
               {(() => {
-                const autoDesc = buildPrepDescription(item);
-                return autoDesc ? (
-                  <p className="text-[11px] text-muted-foreground italic px-2.5 py-1 rounded bg-muted/20 border border-border/20 leading-relaxed">
-                    {autoDesc}
-                  </p>
-                ) : null;
+                const tokens = buildLine2Tokens(item);
+                if (tokens.length === 0) return null;
+                return (
+                  <div className="flex items-center flex-wrap gap-x-1.5 gap-y-1 px-2.5 py-1 rounded bg-muted/20 border border-border/20">
+                    {tokens.map((tok, i) => (
+                      <React.Fragment key={i}>
+                        {i > 0 && !tok.isBadge && !tokens[i - 1]?.isBadge && (
+                          <span className="text-[10px] text-muted-foreground/40 select-none">|</span>
+                        )}
+                        {tok.isBadge ? (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30 tracking-wide">
+                            {tok.text}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-foreground/80">{tok.text}</span>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                );
               })()}
               {/* ATB day badge agora vive no header inline (acima) — faixa removida */}
               {/* Additional manual notes */}
@@ -2943,7 +3037,7 @@ function ExtraPrescriptionDialog({
       dose: med.defaultDose,
       route: med.defaultRoute,
       posology: med.defaultPosology,
-      schedule: med.defaultSchedule,
+      schedule: '',
       instructions: "", // Recomendação sempre em branco — preenchimento exclusivo do médico
 
       category: med.category,
@@ -5234,7 +5328,7 @@ const PrescricaoPage = () => {
       dose: med.defaultDose,
       route: med.defaultRoute,
       posology: med.defaultPosology,
-      schedule: med.defaultSchedule,
+      schedule: '',
       instructions: "", // Recomendação sempre em branco — preenchimento exclusivo do médico
       category: med.category,
       flags: med.instructions?.toLowerCase().includes('bomba de infusão') ? ['bi' as PrescriptionFlag] : [],
