@@ -344,25 +344,43 @@ const EvolucaoPage = () => {
         {/* SAPS pending alert removed */}
         {/* Page Header — title + patient identity inline */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="hidden sm:flex items-center gap-3 min-w-0 flex-1">
-            {patient.bed && (
-              <div className="flex flex-col items-center justify-center h-10 w-10 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
-                <span className="text-[7px] font-bold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
-                <span className="text-sm font-extrabold text-primary leading-tight mt-0.5">{patient.bed}</span>
+          <div className="hidden sm:flex items-center justify-between gap-4 min-w-0 flex-1">
+            {/* ESQUERDA: identidade do paciente */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              {patient.bed && (
+                <div className="flex flex-col items-center justify-center h-12 w-12 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
+                  <span className="text-[7px] font-bold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
+                  <span className="text-base font-extrabold text-primary leading-tight mt-0.5">{patient.bed}</span>
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-base font-extrabold text-foreground uppercase tracking-wide leading-tight truncate">
+                  {patient.name || "—"}
+                </p>
+                <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                  {patient.unit && <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold uppercase tracking-wide">{patient.unit}</span>}
+                  {patient.age && <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold">{patient.age}</span>}
+                  {patient.birthDate && (
+                    <>
+                      <span className="text-muted-foreground/40 text-[10px]">·</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {(() => { try { const d = new Date(patient.birthDate + 'T12:00:00'); return isNaN(d.getTime()) ? patient.birthDate : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch { return patient.birthDate; } })()}
+                      </span>
+                    </>
+                  )}
+                  {prontuarioReal && (
+                    <>
+                      <span className="text-muted-foreground/40 text-[10px]">·</span>
+                      <span className="text-[10px] text-muted-foreground font-mono">Pront. {prontuarioReal}</span>
+                    </>
+                  )}
+                </div>
               </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-lg font-bold text-foreground uppercase tracking-wide">EVOLUÇÃO CLÍNICA</h1>
-                {patient.name && <div className="h-4 w-px bg-border/60 hidden sm:block" />}
-                {patient.name && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold text-foreground uppercase tracking-wide truncate max-w-[220px]">{patient.name}</span>
-                    {patient.unit && <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap">{patient.unit}</span>}
-                  </div>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">Timeline de evoluções do paciente</p>
+            </div>
+            {/* DIREITA: título do módulo */}
+            <div className="text-right shrink-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground leading-tight">EVOLUÇÃO CLÍNICA</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Timeline de evoluções do paciente</p>
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">

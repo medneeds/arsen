@@ -130,27 +130,28 @@ const DocumentosPacientePage = () => {
         <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4 max-w-5xl mx-auto">
           {/* Title — patient identity inline */}
           <div className="flex items-center justify-between gap-3">
-            <div className="hidden sm:flex items-center gap-3 min-w-0 flex-1">
-              {patientBed && (
-                <div className="flex flex-col items-center justify-center h-10 w-10 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
-                  <span className="text-[7px] font-bold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
-                  <span className="text-sm font-extrabold text-primary leading-tight mt-0.5">{patientBed}</span>
+            <div className="hidden sm:flex items-center justify-between gap-4 min-w-0 flex-1">
+              {/* ESQUERDA */}
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                {patientBed && (
+                  <div className="flex flex-col items-center justify-center h-12 w-12 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
+                    <span className="text-[7px] font-bold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
+                    <span className="text-base font-extrabold text-primary leading-tight mt-0.5">{patientBed}</span>
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-base font-extrabold text-foreground uppercase tracking-wide leading-tight truncate">
+                    {patientName || "—"}
+                  </p>
+                  <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                    {patientSector && <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold uppercase tracking-wide">{patientSector}</span>}
+                  </div>
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h1 className="text-lg font-bold text-foreground uppercase tracking-wide">DOCUMENTOS DO PACIENTE</h1>
-                  {patientName && <div className="h-4 w-px bg-border/60 hidden sm:block" />}
-                  {patientName && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-bold text-foreground uppercase tracking-wide truncate max-w-[220px]">{patientName}</span>
-                      {patientSector && <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap">{patientSector}</span>}
-                    </div>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground truncate">
-                  Solicitações, requisições e documentos clínicos vinculados
-                </p>
+              </div>
+              {/* DIREITA */}
+              <div className="text-right shrink-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground leading-tight">DOCUMENTOS DO PACIENTE</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Documentos clínicos vinculados</p>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
