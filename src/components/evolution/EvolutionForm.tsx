@@ -87,6 +87,8 @@ interface EvolutionFormProps {
   onCopyExamFromAdmission?: () => void;
   /** Callback opcional — quando definido, exibe botão "Copiar da admissão" nos Sinais Vitais. */
   onCopyVitalsFromAdmission?: () => void;
+  /** When true, hides the "Plano" section entirely (used by complementary evolutions). */
+  hidePlan?: boolean;
 }
 
 type SectionKey = 'vitals' | 'evolucao' | 'objective' | 'plan' | 'review';
