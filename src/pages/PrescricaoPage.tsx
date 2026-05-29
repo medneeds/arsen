@@ -8695,29 +8695,51 @@ const PrescricaoPage = () => {
       />
 
         {!autoLoadDone && !!patient.name && !currentPrescriptionId && (
-          <div className="flex flex-col items-center justify-center py-20 gap-6">
-            <div className="relative">
-              <div className="h-14 w-14 rounded-full border-4 border-primary/20" />
-              <div className="absolute inset-0 h-14 w-14 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Pill className="h-3.5 w-3.5 text-primary" />
+          <div className="flex flex-col items-center justify-center py-24 gap-8 select-none">
+            {/* Anéis concêntricos pulsantes */}
+            <div className="relative flex items-center justify-center">
+              {/* Anel externo — pulsa lento */}
+              <div className="absolute h-24 w-24 rounded-full border border-primary/15 animate-ping [animation-duration:2s]" />
+              {/* Anel médio — pulsa médio */}
+              <div className="absolute h-16 w-16 rounded-full border border-primary/25 animate-ping [animation-duration:1.5s] [animation-delay:0.3s]" />
+              {/* Círculo spinner */}
+              <div className="relative h-14 w-14">
+                <div className="absolute inset-0 rounded-full border-2 border-primary/15" />
+                <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent border-r-transparent animate-spin [animation-duration:0.9s]" />
+                {/* Ícone central */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Pill className="h-4 w-4 text-primary/70" />
                 </div>
               </div>
             </div>
-            <div className="text-center space-y-1.5">
-              <p className="text-sm font-semibold text-foreground uppercase tracking-wide">
-                Carregando prescrição
+
+            {/* Texto */}
+            <div className="text-center space-y-2">
+              <p className="text-sm font-bold text-foreground uppercase tracking-[0.18em]">
+                Carregando Prescrição
               </p>
-              <p className="text-xs text-muted-foreground max-w-[240px]">
+              <p className="text-xs text-muted-foreground">
                 {patient.name
-                  ? `Buscando a última prescrição de ${patient.name.split(' ')[0]}...`
-                  : 'Buscando a última prescrição validada...'}
+                  ? `Buscando prescrição de ${patient.name.split(' ').slice(0, 2).join(' ')}…`
+                  : 'Buscando última prescrição validada…'}
               </p>
             </div>
-            <div className="w-48 h-1 bg-muted rounded-full overflow-hidden">
-              <div className="h-full bg-primary/60 rounded-full animate-pulse w-1/2" />
+
+            {/* Barra de progresso indeterminada */}
+            <div className="w-40 h-0.5 bg-muted rounded-full overflow-hidden relative">
+              <div
+                className="absolute inset-y-0 left-0 w-1/3 bg-primary/60 rounded-full"
+                style={{ animation: 'slideProgress 1.4s ease-in-out infinite' }}
+              />
             </div>
+
+            {/* Keyframe inline via style tag */}
+            <style>{`
+              @keyframes slideProgress {
+                0% { left: -33%; }
+                100% { left: 133%; }
+              }
+            `}</style>
           </div>
         )}
 
