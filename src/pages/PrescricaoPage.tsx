@@ -8695,51 +8695,51 @@ const PrescricaoPage = () => {
       />
 
         {!autoLoadDone && !!patient.name && !currentPrescriptionId && (
-          <div className="flex flex-col items-center justify-center py-24 gap-8 select-none">
-            {/* Anéis concêntricos pulsantes */}
-            <div className="relative flex items-center justify-center">
-              {/* Anel externo — pulsa lento */}
-              <div className="absolute h-24 w-24 rounded-full border border-primary/15 animate-ping [animation-duration:2s]" />
-              {/* Anel médio — pulsa médio */}
-              <div className="absolute h-16 w-16 rounded-full border border-primary/25 animate-ping [animation-duration:1.5s] [animation-delay:0.3s]" />
-              {/* Círculo spinner */}
-              <div className="relative h-14 w-14">
-                <div className="absolute inset-0 rounded-full border-2 border-primary/15" />
-                <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent border-r-transparent animate-spin [animation-duration:0.9s]" />
-                {/* Ícone central */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Pill className="h-4 w-4 text-primary/70" />
+          <div className="flex flex-col items-center justify-center py-16 px-6 gap-7 rounded-xl border border-border/50 bg-card/60 animate-in fade-in duration-300">
+
+            {/* Spinner com ícone central */}
+            <div className="relative w-16 h-16">
+              <div className="absolute inset-0 rounded-full border-2 border-primary/15 animate-pulse" />
+              <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Pill className="h-4 w-4 text-primary" />
                 </div>
               </div>
             </div>
 
+            {/* Chip do paciente */}
+            {patient.bed && (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/60 bg-background text-xs text-muted-foreground">
+                <BedDouble className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span className="font-semibold text-primary">{patient.bed}</span>
+                <span className="text-border">·</span>
+                <span className="font-medium text-foreground uppercase tracking-wide truncate max-w-[220px]">
+                  {patient.name}
+                </span>
+              </div>
+            )}
+
             {/* Texto */}
-            <div className="text-center space-y-2">
-              <p className="text-sm font-bold text-foreground uppercase tracking-[0.18em]">
-                Carregando Prescrição
+            <div className="text-center space-y-1.5">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-foreground">
+                Carregando prescrição
               </p>
-              <p className="text-xs text-muted-foreground">
-                {patient.name
-                  ? `Buscando prescrição de ${patient.name.split(' ').slice(0, 2).join(' ')}…`
-                  : 'Buscando última prescrição validada…'}
+              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+                Buscando a última versão validada
+                <span className="inline-flex gap-0.5 items-center">
+                  <span className="w-1 h-1 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:0ms]" />
+                  <span className="w-1 h-1 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:150ms]" />
+                  <span className="w-1 h-1 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:300ms]" />
+                </span>
               </p>
             </div>
 
-            {/* Barra de progresso indeterminada */}
-            <div className="w-40 h-0.5 bg-muted rounded-full overflow-hidden relative">
-              <div
-                className="absolute inset-y-0 left-0 w-1/3 bg-primary/60 rounded-full"
-                style={{ animation: 'slideProgress 1.4s ease-in-out infinite' }}
-              />
+            {/* Barra de progresso */}
+            <div className="w-44 h-0.5 rounded-full bg-border/40 overflow-hidden">
+              <div className="h-full w-2/5 rounded-full bg-primary/70 animate-shimmer" />
             </div>
 
-            {/* Keyframe inline via style tag */}
-            <style>{`
-              @keyframes slideProgress {
-                0% { left: -33%; }
-                100% { left: 133%; }
-              }
-            `}</style>
           </div>
         )}
 
