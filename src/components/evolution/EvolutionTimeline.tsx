@@ -154,7 +154,6 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
 
   const handleValidate = async () => {
     if (!validateDialogId) return;
-    // Save any pending edits first
     const local = localEdits[validateDialogId];
     if (local) {
       await onUpdate(validateDialogId, {
@@ -162,10 +161,58 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
         vital_signs: local.vitals,
         physical_exam: local.exam,
       });
-      setLocalEdits(prev => { const n = { ...prev }; delete n[validateDialogId]; return n; });
+      setLocalEdits(prev => { const n = { ...prev }; delete n[validateDialogId!]; return n; });
     }
-    await onValidate(validateDialogId);
+    const success = await onValidate(validateDialogId);
+    const validatedId = validateDialogId;
     setValidateDialogId(null);
+    if (success !== false) {
+      const evo = evolutions.find(e => e.id === validatedId);
+      if (evo) {
+        setJustValidatedEvo(evo);
+        if (printPromptTimerRef.current) clearTimeout(printPromptTimerRef.current);
+        printPromptTimerRef.current = setTimeout(() => setJustValidatedEvo(null), 30_000);
+      }
+    }
+  };
+
+  const handlePrintEvolution = async (evo: EvolutionRecord) => {
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      let fallbackName: string | null = evo.patient_name || null;
+      if ((!fallbackName || !fallbackName.trim()) && patientId) {
+        const { data: pRow } = await supabase.from("patients").select("name").eq("id", patientId).maybeSingle();
+        if ((pRow as any)?.name?.trim()) fallbackName = (pRow as any).name.trim();
+      }
+      const resolved = await resolvePatientHeader(
+        patientId || null,
+        fallbackName,
+        currentHospital?.id || null,
+        (evo as any).patient_registry_id || null,
+      );
+      let currentBed = evo.patient_bed || undefined;
+      let currentSector = evo.patient_sector || undefined;
+      if (patientId) {
+        const { data: pRow } = await supabase.from("patients").select("bed_number, sector").eq("id", patientId).maybeSingle();
+        if (pRow?.bed_number) currentBed = pRow.bed_number;
+        if (pRow?.sector) currentSector = pRow.sector;
+      }
+      await printEvolution(evo, {
+        patientName: resolved.name || evo.patient_name,
+        patientBed: currentBed,
+        patientSector: currentSector,
+        patientRecord: resolved.prontuario || patientRecord || undefined,
+        patientAtendimento: resolved.atendimento || undefined,
+        patientSocialName: resolved.socialName || undefined,
+        patientCpf: resolved.cpf || undefined,
+        patientCns: resolved.cns || undefined,
+        cidPrimary,
+        cidSecondary,
+      });
+    } catch (err) {
+      console.error("Falha ao imprimir evolução:", err);
+      toast.error("Não foi possível resolver os dados do paciente para impressão");
+    }
   };
 
   const handleSuspend = async () => {
