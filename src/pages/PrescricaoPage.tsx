@@ -6181,6 +6181,7 @@ const PrescricaoPage = () => {
             .order('created_at', { ascending: false })
             .limit(1);
           if (encErr) throw encErr;
+          if (capturedGeneration !== loadGenerationRef.current) return;
           const encRow = (encRows || [])[0];
           if (encRow?.id && (encRow as any).patient_registry_id === patientRegistryId) {
             if (await loadValidatedPrescription(encRow as any)) return;
@@ -6200,6 +6201,7 @@ const PrescricaoPage = () => {
           .order('created_at', { ascending: false })
           .limit(1);
         if (vErr) throw vErr;
+        if (capturedGeneration !== loadGenerationRef.current) return;
         const lastValidated = (validatedRows || [])[0];
         // Dupla verificação anti-avulsa
         if (!lastValidated?.id || (lastValidated as any).patient_registry_id !== patientRegistryId) return;
