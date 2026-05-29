@@ -3,6 +3,7 @@ import { formatPresentation } from "@/lib/formatPresentation";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { PatientContextStrip } from "@/components/PatientContextStrip";
 import ReactMarkdown from "react-markdown";
 import { format, addDays, isAfter, setHours, setMinutes, setSeconds, startOfDay } from "date-fns";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
@@ -7171,13 +7172,26 @@ const PrescricaoPage = () => {
         </div>
       )}
 
+      {/* ===== PATIENT CONTEXT STRIP — identidade do paciente no corpo do módulo ===== */}
+      <PatientContextStrip
+        name={patient.name}
+        bed={patient.bed}
+        unit={patient.unit}
+        age={patient.age}
+        birthDate={patient.birthDate}
+        className="mb-3"
+      />
+
       {/* ===== UNIFIED HEADER — title + context (peso/alergias/data/templates) + actions ===== */}
       <div className="print:hidden rounded-xl border border-border bg-card/60 shadow-[0_4px_18px_-8px_hsl(var(--primary)/0.18),0_1px_2px_-1px_hsl(var(--foreground)/0.06)] hover:shadow-[0_6px_24px_-8px_hsl(var(--primary)/0.22),0_1px_2px_-1px_hsl(var(--foreground)/0.08)] transition-shadow duration-300">
         {/* Row 0 — Title + meta */}
         <div className="hidden sm:flex items-center justify-between gap-3 flex-wrap px-3 pt-2.5 pb-2">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10 shrink-0">
-              <Pill className="h-4 w-4 text-primary" />
+            <div className="flex flex-col items-center justify-center h-10 w-10 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
+              <span className="text-[7px] font-bold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
+              <span className="text-sm font-extrabold text-primary leading-tight mt-0.5">
+                {patient.bed || "—"}
+              </span>
             </div>
             <div className="min-w-0">
               <h1 className="text-lg font-semibold text-foreground leading-tight">Prescrição médica diária</h1>

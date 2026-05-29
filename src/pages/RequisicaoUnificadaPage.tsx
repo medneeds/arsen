@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { PatientContextStrip } from "@/components/PatientContextStrip";
 
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { SapsPendingAlert } from "@/components/SapsPendingAlert";
@@ -550,6 +551,14 @@ const RequisicaoUnificadaPage = () => {
           </div>
         </div>
       </div>
+
+      {/* PATIENT CONTEXT STRIP — identidade do paciente no corpo do módulo */}
+      <PatientContextStrip
+        name={formPatientName}
+        bed={formPatientBed}
+        unit={formPatientSector}
+        className="mb-1"
+      />
 
       {/* Identificação do paciente fica integralmente no cockpit à direita
           (com Prontuário, Atendimento e botão "Ver dados do prontuário"). */}
