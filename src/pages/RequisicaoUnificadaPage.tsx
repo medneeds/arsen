@@ -897,7 +897,7 @@ const RequisicaoUnificadaPage = () => {
                         "font-mono tabular-nums",
                         overHard ? "text-destructive font-bold" : nearLimit ? "text-amber-700 font-semibold" : "text-muted-foreground"
                       )}>
-                        {used}/{PARECER_HARD} caracteres
+                        {PARECER_HARD - used} restantes
                       </span>
                     </div>
 
