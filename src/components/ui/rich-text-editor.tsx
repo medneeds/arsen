@@ -12,11 +12,23 @@ import { cn } from "@/lib/utils";
  */
 
 const ALLOWED_TAGS = ["p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "span", "div"];
-const ALLOWED_ATTR: string[] = [];
+const ALLOWED_ATTR = ["style"];
 
 export function sanitizeRichHtml(html: string): string {
   if (!html) return "";
-  return DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR });
+  const clean = DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR });
+  // Filtra style para preservar SOMENTE text-align
+  const tmp = document.createElement("div");
+  tmp.innerHTML = clean;
+  tmp.querySelectorAll("[style]").forEach((el) => {
+    const ta = (el as HTMLElement).style.textAlign;
+    if (ta && ta !== "left" && ta !== "start") {
+      (el as HTMLElement).setAttribute("style", `text-align: ${ta}`);
+    } else {
+      (el as HTMLElement).removeAttribute("style");
+    }
+  });
+  return tmp.innerHTML;
 }
 
 /** Converte texto legado (sem HTML) em parágrafos HTML, ou retorna HTML sanitizado. */
