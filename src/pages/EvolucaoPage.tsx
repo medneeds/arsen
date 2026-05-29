@@ -213,7 +213,9 @@ const EvolucaoPage = () => {
     const result = await createEvolution(
       patient.name, patient.bed, patient.unit,
       soapWithExtras, newVitals, newExam,
-      diagnosticHypotheses
+      diagnosticHypotheses,
+      cidPrimary || null,
+      Array.isArray(cidSecondary) && cidSecondary.length > 0 ? cidSecondary : null
     );
     setCreating(false);
     if (result) {
