@@ -538,48 +538,109 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
         </SectionItem>
         )}
 
-        <SectionItem
-          id="review"
-          icon={Eye}
-          iconColor="text-primary"
-          label="Revisão"
-          hint="Pré-visualização final antes de validar"
-          complete={false}
-          required={false}
-          customStatus={requiredComplete ? (
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3" /> Pronto
-            </span>
-          ) : (
-            <span className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" /> Pendente
-            </span>
-          )}
-        >
-          {!requiredComplete && (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 space-y-1 mb-3">
-              <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
-                <AlertCircle className="h-3.5 w-3.5" /> Pendências para validação
-              </p>
-              <ul className="text-[11px] text-amber-700/80 dark:text-amber-400/80 space-y-0.5 ml-5 list-disc">
-                {!completion.diagnostics && <li>Definir <strong>CID-10 primário</strong> em Diagnósticos</li>}
-                {!completion.evolucao && <li>Preencher <strong>Evolução</strong> (mín. 10 caracteres)</li>}
-                {!completion.plan && <li>Preencher <strong>Plano</strong> (mín. 10 caracteres)</li>}
-              </ul>
-            </div>
-          )}
-          {diagnosticsReviewSlot && (
-            <div className="mb-3 rounded-lg border border-border bg-muted/20 p-2.5">
-              <p className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-2">
-                DIAGNÓSTICOS — REVISÃO
-              </p>
-              {diagnosticsReviewSlot}
-            </div>
-          )}
-          <ReadOnlyView soap={soap} vitals={vitals} physicalExam={physicalExam} devices={devices} culturesHtml={culturesHtml} />
-
-        </SectionItem>
       </Accordion>
+
+      {/* Revisão — abre modal em vez de expandir inline */}
+      <div className="border-0 border-t border-border rounded-xl border bg-card overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowReviewModal(true)}
+          className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-muted/30 transition-colors"
+        >
+          <span className={cn(
+            "flex items-center justify-center h-6 w-6 rounded-full shrink-0",
+            requiredComplete ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"
+          )}>
+            {requiredComplete
+              ? <CheckCircle2 className="h-3.5 w-3.5" />
+              : <Eye className={cn("h-3.5 w-3.5 text-primary")} />}
+          </span>
+          <span className="text-xs font-semibold text-foreground">Revisão</span>
+          <span className="text-[10px] text-muted-foreground hidden md:inline">— Pré-visualização final antes de validar</span>
+          <div className="ml-auto flex items-center gap-2">
+            {requiredComplete ? (
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" /> Pronto
+              </span>
+            ) : (
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" /> Pendente
+              </span>
+            )}
+            <Eye className="h-4 w-4 text-muted-foreground" />
+          </div>
+        </button>
+      </div>
+
+      {/* Modal de Revisão */}
+      <Dialog open={showReviewModal} onOpenChange={setShowReviewModal}>
+        <DialogContent className="max-w-2xl w-full p-0 gap-0">
+          <DialogHeader className="px-4 pt-4 pb-2 border-b border-border">
+            <DialogTitle className="text-sm font-semibold flex items-center gap-2">
+              <Eye className="h-4 w-4 text-primary" />
+              Revisão da Evolução
+              {requiredComplete ? (
+                <span className="ml-auto text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-normal">
+                  <CheckCircle2 className="h-3 w-3" /> Pronto para validar
+                </span>
+              ) : (
+                <span className="ml-auto text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1 font-normal">
+                  <AlertCircle className="h-3 w-3" /> Pendências
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="overflow-y-auto max-h-[65vh] px-4 py-3 space-y-3">
+            {!requiredComplete && (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 space-y-1">
+                <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                  <AlertCircle className="h-3.5 w-3.5" /> Pendências para validação
+                </p>
+                <ul className="text-[11px] text-amber-700/80 dark:text-amber-400/80 space-y-0.5 ml-5 list-disc">
+                  {!completion.diagnostics && <li>Definir <strong>CID-10 primário</strong> em Diagnósticos</li>}
+                  {!completion.evolucao && <li>Preencher <strong>Evolução</strong> (mín. 10 caracteres)</li>}
+                  {!completion.plan && <li>Preencher <strong>Plano</strong> (mín. 10 caracteres)</li>}
+                </ul>
+              </div>
+            )}
+            {diagnosticsReviewSlot && (
+              <div className="rounded-lg border border-border bg-muted/20 p-2.5">
+                <p className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-2">DIAGNÓSTICOS — REVISÃO</p>
+                {diagnosticsReviewSlot}
+              </div>
+            )}
+            <ReadOnlyView
+              soap={soap}
+              vitals={vitals}
+              physicalExam={physicalExam}
+              devices={devices}
+              culturesHtml={culturesHtml}
+            />
+          </div>
+
+          <DialogFooter className="px-4 py-3 border-t border-border flex-row gap-2">
+            <button
+              type="button"
+              onClick={() => setShowReviewModal(false)}
+              className="flex-1 sm:flex-none px-3 py-1.5 rounded-md border border-border text-xs font-medium hover:bg-muted transition-colors"
+            >
+              Voltar e Editar
+            </button>
+            {onValidate && !isValidated && (
+              <button
+                type="button"
+                onClick={() => { setShowReviewModal(false); onValidate(); }}
+                disabled={!requiredComplete}
+                className="flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-medium gap-1.5 flex items-center justify-center transition-colors"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" /> Validar e Assinar
+              </button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Actions */}
       <div className="flex items-center gap-2 flex-wrap">
