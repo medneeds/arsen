@@ -132,6 +132,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   cidSecondary,
   onCopyExamFromAdmission,
   onCopyVitalsFromAdmission,
+  hidePlan = false,
 }) => {
   const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'devices', 'evolucao', 'complementares', 'plan']);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
