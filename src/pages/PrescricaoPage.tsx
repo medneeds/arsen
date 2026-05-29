@@ -8669,15 +8669,34 @@ const PrescricaoPage = () => {
         }}
       />
 
-        {items.length === 0 && !!patientRegistryId && !!activeEncounterId && !currentPrescriptionId && !autoLoadDone && (
-          <div className="rounded-xl border border-dashed border-border bg-muted/10 p-10 flex items-center justify-center">
-            <div className="animate-pulse text-muted-foreground text-sm">
-              Carregando última prescrição validada...
+        {!autoLoadDone && !!patient.name && !currentPrescriptionId && (
+          <div className="flex flex-col items-center justify-center py-20 gap-6">
+            <div className="relative">
+              <div className="h-14 w-14 rounded-full border-4 border-primary/20" />
+              <div className="absolute inset-0 h-14 w-14 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Pill className="h-3.5 w-3.5 text-primary" />
+                </div>
+              </div>
+            </div>
+            <div className="text-center space-y-1.5">
+              <p className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                Carregando prescrição
+              </p>
+              <p className="text-xs text-muted-foreground max-w-[240px]">
+                {patient.name
+                  ? `Buscando a última prescrição de ${patient.name.split(' ')[0]}...`
+                  : 'Buscando a última prescrição validada...'}
+              </p>
+            </div>
+            <div className="w-48 h-1 bg-muted rounded-full overflow-hidden">
+              <div className="h-full bg-primary/60 rounded-full animate-pulse w-1/2" />
             </div>
           </div>
         )}
 
-        {items.length === 0 && !(!!patientRegistryId && !!activeEncounterId && !currentPrescriptionId && !autoLoadDone) && (() => {
+        {items.length === 0 && autoLoadDone && !currentPrescriptionId && (() => {
           const admissionTpls = quickTemplates.filter(t => t.clinical_category === 'admissao');
           return (
             <div className="rounded-xl border border-dashed border-border bg-gradient-to-br from-primary/5 via-background to-muted/20 p-6">
