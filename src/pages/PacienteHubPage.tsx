@@ -493,7 +493,7 @@ export default function PacienteHubPage() {
           </div>
 
           {/* Footer */}
-          <p className="text-center text-[10px] uppercase tracking-[0.3em] font-semibold text-slate-400">
+          <p className="text-center text-[10px] uppercase tracking-[0.3em] font-semibold text-muted-foreground">
             {isPreAdmitted
               ? "Inicie pela admissão para liberar os demais módulos"
               : sapsExpired
