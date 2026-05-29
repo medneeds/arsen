@@ -6045,8 +6045,25 @@ const PrescricaoPage = () => {
     // Sem isso, esperamos (evita vazamento entre encounters do mesmo leito).
     if (!patientRegistryId || !activeEncounterId) return;
     autoLoadAttemptedRef.current = true;
+    const capturedGeneration = loadGenerationRef.current; // captura geração atual
     (async () => {
       try {
+        // Guard extra: confere que o registry resolvido pelo hook bate com o
+        // registry atual do urlPatientId no banco (anti-stale entre trocas de leito).
+        if (!urlPatientId) { setAutoLoadDone(true); return; }
+        const { data: currentBedRow } = await supabase
+          .from('patients')
+          .select('patient_registry_id')
+          .eq('id', urlPatientId)
+          .maybeSingle();
+        if (capturedGeneration !== loadGenerationRef.current) return;
+        const freshRegistryId = (currentBedRow as any)?.patient_registry_id;
+        if (!freshRegistryId || freshRegistryId !== patientRegistryId) {
+          // Ainda stale — re-tenta quando patientRegistryId atualizar
+          autoLoadAttemptedRef.current = false;
+          return;
+        }
+
         const clinicalStart = getClinicalDayWindowSP().start.toISOString();
 
         // Guard reforçado: patientRegistryId precisa ser UUID válido (não null/curto).
@@ -6091,11 +6108,13 @@ const PrescricaoPage = () => {
         }
         const { data: draftRows, error: draftErr } = await draftQuery;
         if (draftErr) throw draftErr;
+        if (capturedGeneration !== loadGenerationRef.current) return;
         const draft = (draftRows || [])[0];
         // Segurança anti-avulsa: rejeitar se patient_registry_id não bate
         if (draft && (draft as any).patient_registry_id && (draft as any).patient_registry_id !== patientRegistryId) return;
         const draftItems = Array.isArray(draft?.items) ? draft!.items : [];
         if (draft?.id && draftItems.length > 0 && loadPrescriptionRef.current) {
+          if (capturedGeneration !== loadGenerationRef.current) return;
           await loadPrescriptionRef.current(draft.id);
           return;
         }
