@@ -45,6 +45,8 @@ export interface EvolutionRecord {
   status: "draft" | "validated" | "suspended";
   evolution_type?: string;
   diagnostic_hypotheses?: string | null;
+  cid_primary?: string | null;
+  cid_secondary?: string[] | null;
   validated_at: string | null;
   validated_by: string | null;
   validated_by_name: string | null;
