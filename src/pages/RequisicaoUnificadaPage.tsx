@@ -552,6 +552,14 @@ const RequisicaoUnificadaPage = () => {
         </div>
       </div>
 
+      {/* PATIENT CONTEXT STRIP — identidade do paciente no corpo do módulo */}
+      <PatientContextStrip
+        name={formPatientName}
+        bed={formPatientBed}
+        unit={formPatientSector}
+        className="mb-1"
+      />
+
       {/* Identificação do paciente fica integralmente no cockpit à direita
           (com Prontuário, Atendimento e botão "Ver dados do prontuário"). */}
 
