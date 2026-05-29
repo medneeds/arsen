@@ -100,7 +100,7 @@ export function BreadcrumbBar({
           className={cn(
             "hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border font-semibold",
             isInstitutional
-              ? "bg-white/20 text-white border-white/30 backdrop-blur shadow-sm"
+              ? "bg-white/25 text-white border-white/40 backdrop-blur shadow-md font-bold"
               : "bg-muted/60 text-muted-foreground border-border/50",
           )}
         >
@@ -110,7 +110,7 @@ export function BreadcrumbBar({
 
         {showSector && (
           <>
-            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
+            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/80" : "text-muted-foreground/50")} />
             <SectorSelector variant={isInstitutional ? "dark" : "light"} />
           </>
         )}
@@ -118,7 +118,7 @@ export function BreadcrumbBar({
         {/* Nav tabs (Mapa/Painel) — desktop only on patient flows to avoid 2nd row on mobile */}
         {showNavTabs && (
           <>
-            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
+            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/80" : "text-muted-foreground/50")} />
             <span className={cn(showPatient ? "hidden sm:inline-flex" : "inline-flex")}>
               <ClinicalNavTabs hideSector />
             </span>
@@ -127,7 +127,7 @@ export function BreadcrumbBar({
 
         {showPatient && (
           <>
-            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
+            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/80" : "text-muted-foreground/50")} />
             <PatientSwitcher variant={isInstitutional ? "dark" : "default"} />
           </>
         )}
@@ -135,7 +135,7 @@ export function BreadcrumbBar({
         {/* Module tabs — desktop only; on mobile the moduleLabel chip below carries the context */}
         {showModules && (
           <>
-            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
+            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/80" : "text-muted-foreground/50")} />
             <span className="hidden sm:inline-flex">
               <ClinicalModuleTabs variant={isInstitutional ? "dark" : "default"} />
             </span>
@@ -144,7 +144,7 @@ export function BreadcrumbBar({
 
         {moduleLabel && (
           <>
-            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
+            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/80" : "text-muted-foreground/50")} />
             <span
               className={cn(
                 "px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md uppercase tracking-wide text-[10px] sm:text-xs whitespace-nowrap flex-shrink-0",
@@ -158,7 +158,10 @@ export function BreadcrumbBar({
       </div>
 
       {actions && (
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className={cn(
+          "flex items-center gap-1.5 flex-shrink-0",
+          isInstitutional && "[&_button]:text-white [&_button]:hover:bg-white/15 [&_svg]:text-white"
+        )}>
           {actions}
         </div>
       )}
