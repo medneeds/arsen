@@ -6045,48 +6045,11 @@ const PrescricaoPage = () => {
       try {
         const clinicalStart = getClinicalDayWindowSP().start.toISOString();
 
-        // Etapa 1 — rascunho do dia clínico atual deste encounter
-        const { data: draftRows, error: draftErr } = await supabase
-          .from('prescriptions')
-          .select('id, items, created_at')
-          .eq('hospital_unit_id', currentHospital.id)
-          .eq('state_id', currentState.id)
-          .eq('patient_registry_id', patientRegistryId)
-          .eq('encounter_id', activeEncounterId)
-          .eq('status', 'draft')
-          .is('archived_at', null)
-          .gte('created_at', clinicalStart)
-          .order('created_at', { ascending: false })
-          .limit(1);
-        if (draftErr) throw draftErr;
-        const draft = (draftRows || [])[0];
-        const draftItems = Array.isArray(draft?.items) ? draft!.items : [];
-        if (draft?.id && draftItems.length > 0 && loadPrescriptionRef.current) {
-          await loadPrescriptionRef.current(draft.id);
-          return;
-        }
+        // Guard reforçado: patientRegistryId precisa ser UUID válido (não null/curto).
+        // Sem isso a query pode degenerar e bater em prescrições avulsas (encounter_id NULL).
+        if (!patientRegistryId || patientRegistryId.length < 10) return;
 
-        // Etapa 2 — última validada/assinada do mesmo encounter (qualquer data)
-        const { data: validatedRows, error: vErr } = await supabase
-          .from('prescriptions')
-          .select('id, items, created_at, version')
-          .eq('hospital_unit_id', currentHospital.id)
-          .eq('state_id', currentState.id)
-          .eq('patient_registry_id', patientRegistryId)
-          .eq('encounter_id', activeEncounterId)
-          .neq('status', 'draft')
-          .is('archived_at', null)
-          .order('created_at', { ascending: false })
-          .limit(1);
-        if (vErr) throw vErr;
-        const lastValidated = (validatedRows || [])[0];
-        const sourceItems = Array.isArray(lastValidated?.items) ? lastValidated!.items as unknown as PrescriptionItem[] : [];
-        if (!lastValidated?.id || sourceItems.length === 0) return;
-
-        // Detecta se a última validada cruzou a janela das 05h SP do plantão atual.
-        // Se sim → flag needsShiftRevalidation=true (tooltip didático no ValidationDot).
-        // Status permanece 'active' em ambos os casos para não quebrar filtros existentes
-        // (renewalPendingCount, validatedCount, isItemEditLocked etc.).
+        // Helper: detecta se uma prescrição cruzou a janela das 05h SP do plantão atual.
         const hasCrossedShiftBoundary = (iso: string | null | undefined): boolean => {
           if (!iso) return false;
           try {
@@ -6104,35 +6067,106 @@ const PrescricaoPage = () => {
             return false;
           }
         };
-        const crossedShift = hasCrossedShiftBoundary(lastValidated.created_at);
 
-        // Renova: novo id por item, sem validação, sem suspensão, status active
-        const renewedItems: PrescriptionItem[] = sourceItems.map((it) => ({
-          ...it,
-          id: crypto.randomUUID(),
-          validated: false,
-          validatedAt: undefined,
-          status: 'active' as const,
-          suspensionReason: undefined,
-          suspendedAt: undefined,
-          needsShiftRevalidation: crossedShift,
-        }));
-        setItems(renewedItems);
-        setDigitalSignature(null);
-        setCurrentPrescriptionId(null); // próximo "Salvar" cria registro novo → preserva original
-        setSelectedIds(new Set());
-        const when = format(new Date(lastValidated.created_at), "dd/MM 'às' HH:mm", { locale: ptBR });
-        if (crossedShift) {
-          toast.info(`Última prescrição validada (${when}) carregada — renovação de plantão necessária`, {
-            description: `${renewedItems.length} itens precisam ser revalidados pelo médico do plantão atual (corte 05:00). A original permanece intocada no histórico.`,
-            duration: 8000,
-          });
-        } else {
-          toast.info(`Última prescrição validada (${when}) carregada como rascunho`, {
-            description: `${renewedItems.length} itens renovados — revise e valide para o ciclo de hoje. A original permanece intocada no histórico.`,
-            duration: 8000,
-          });
+        // Etapa 1 — rascunho do dia clínico atual deste encounter
+        // Só aplica .eq('encounter_id', ...) se o encounter é válido (não null) —
+        // evita IS NULL matching que pegaria rascunhos avulsos.
+        let draftQuery = supabase
+          .from('prescriptions')
+          .select('id, items, created_at, patient_registry_id, encounter_id')
+          .eq('hospital_unit_id', currentHospital.id)
+          .eq('state_id', currentState.id)
+          .eq('patient_registry_id', patientRegistryId)
+          .eq('status', 'draft')
+          .is('archived_at', null)
+          .gte('created_at', clinicalStart)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (activeEncounterId && activeEncounterId.length > 10) {
+          draftQuery = draftQuery.eq('encounter_id', activeEncounterId);
         }
+        const { data: draftRows, error: draftErr } = await draftQuery;
+        if (draftErr) throw draftErr;
+        const draft = (draftRows || [])[0];
+        // Segurança anti-avulsa: rejeitar se patient_registry_id não bate
+        if (draft && (draft as any).patient_registry_id && (draft as any).patient_registry_id !== patientRegistryId) return;
+        const draftItems = Array.isArray(draft?.items) ? draft!.items : [];
+        if (draft?.id && draftItems.length > 0 && loadPrescriptionRef.current) {
+          await loadPrescriptionRef.current(draft.id);
+          return;
+        }
+
+        // Etapa 2 — última validada/assinada (com fallback para legados sem encounter)
+        const renewAndLoad = (row: { id: string; items: unknown; created_at: string }) => {
+          const sourceItems = Array.isArray(row.items) ? row.items as unknown as PrescriptionItem[] : [];
+          if (sourceItems.length === 0) return false;
+          const crossedShift = hasCrossedShiftBoundary(row.created_at);
+          const renewedItems: PrescriptionItem[] = sourceItems.map((it) => ({
+            ...it,
+            id: crypto.randomUUID(),
+            validated: false,
+            validatedAt: undefined,
+            status: 'active' as const,
+            suspensionReason: undefined,
+            suspendedAt: undefined,
+            needsShiftRevalidation: crossedShift,
+          }));
+          setItems(renewedItems);
+          setDigitalSignature(null);
+          setCurrentPrescriptionId(null);
+          setSelectedIds(new Set());
+          const when = format(new Date(row.created_at), "dd/MM 'às' HH:mm", { locale: ptBR });
+          if (crossedShift) {
+            toast.info(`Última prescrição validada (${when}) carregada — renovação de plantão necessária`, {
+              description: `${renewedItems.length} itens precisam ser revalidados pelo médico do plantão atual (corte 05:00). A original permanece intocada no histórico.`,
+              duration: 8000,
+            });
+          } else {
+            toast.info(`Última prescrição validada (${when}) carregada como rascunho`, {
+              description: `${renewedItems.length} itens renovados — revise e valide para o ciclo de hoje. A original permanece intocada no histórico.`,
+              duration: 8000,
+            });
+          }
+          return true;
+        };
+
+        // 2a) Tenta com encounter (se disponível e válido)
+        if (activeEncounterId && activeEncounterId.length > 10) {
+          const { data: encRows, error: encErr } = await supabase
+            .from('prescriptions')
+            .select('id, items, created_at, version, patient_registry_id')
+            .eq('hospital_unit_id', currentHospital.id)
+            .eq('state_id', currentState.id)
+            .eq('patient_registry_id', patientRegistryId)
+            .eq('encounter_id', activeEncounterId)
+            .neq('status', 'draft')
+            .is('archived_at', null)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          if (encErr) throw encErr;
+          const encRow = (encRows || [])[0];
+          if (encRow?.id && (encRow as any).patient_registry_id === patientRegistryId) {
+            if (renewAndLoad(encRow as any)) return;
+          }
+        }
+
+        // 2b) Fallback: sem filtro de encounter_id (cobre prescrições legadas)
+        // NUNCA usa .eq('encounter_id', null) — só patient_registry_id (anti-avulsa).
+        const { data: validatedRows, error: vErr } = await supabase
+          .from('prescriptions')
+          .select('id, items, created_at, version, patient_registry_id')
+          .eq('hospital_unit_id', currentHospital.id)
+          .eq('state_id', currentState.id)
+          .eq('patient_registry_id', patientRegistryId)
+          .neq('status', 'draft')
+          .is('archived_at', null)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (vErr) throw vErr;
+        const lastValidated = (validatedRows || [])[0];
+        // Dupla verificação anti-avulsa
+        if (!lastValidated?.id || (lastValidated as any).patient_registry_id !== patientRegistryId) return;
+        renewAndLoad(lastValidated as any);
       } catch (err) {
         console.error('[autoLoadPrescription] failed', err);
       }
