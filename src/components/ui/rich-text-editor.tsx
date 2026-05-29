@@ -1,6 +1,6 @@
 import * as React from "react";
 import DOMPurify from "dompurify";
-import { Bold, Italic, Underline as UnderlineIcon, List, RotateCcw } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, List, RotateCcw, AlignLeft, AlignCenter, AlignRight, AlignJustify } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
