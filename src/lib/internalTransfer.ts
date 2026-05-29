@@ -403,17 +403,23 @@ export async function completeInternalTransfer(
     const needsSaps: boolean = req.requires_saps;
     const sourcePatientId: string = req.source_patient_id;
 
-    // Busca identidade permanente (registry/prontuário/admissão) ainda preservada
-    // no leito origem para garantir que documentação clínica acompanhe o paciente.
-    const { data: sourceDbRow } = await supabase
-      .from("patients")
-      .select("patient_registry_id, medical_record, admitted_at")
-      .eq("id", sourcePatientId)
-      .maybeSingle();
+    // Identidade permanente (registry/prontuário/admissão) lida do snapshot
+    // salvo na Etapa 1, pois o leito origem já foi zerado em signalInternalTransfer.
+    // Fallback: tenta colunas dedicadas em internal_transfer_requests se existirem.
+    const sourceRegistryId =
+      (req as any).source_registry_id ??
+      (snapshot as any)._registryId ??
+      null;
 
-    const sourceRegistryId = (sourceDbRow as any)?.patient_registry_id ?? null;
-    const sourceMedicalRecord = (sourceDbRow as any)?.medical_record ?? null;
-    const sourceAdmittedAt = (sourceDbRow as any)?.admitted_at ?? null;
+    const sourceMedicalRecord =
+      (req as any).source_medical_record ??
+      (snapshot as any)._medicalRecord ??
+      null;
+
+    const sourceAdmittedAt =
+      (req as any).source_admitted_at ??
+      (snapshot as any)._admittedAt ??
+      null;
 
     const destinationAdmissionStatus = needsSaps
       ? "saps_pendente"
