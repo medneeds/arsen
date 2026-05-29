@@ -52,7 +52,7 @@ export function ClinicalNavTabs({ variant = "default", hideSector = false }: Cli
       <div className={cn(
         "flex gap-1 rounded-lg p-1 border shadow-inner",
         variant === "dark"
-          ? "bg-primary/35 border-white/25"
+          ? "bg-white/10 border-white/30 shadow-inner"
           : "bg-primary/10 border-primary/20"
       )}>
         {tabs.map((tab) => {
@@ -62,17 +62,17 @@ export function ClinicalNavTabs({ variant = "default", hideSector = false }: Cli
               key={tab.path}
               onClick={() => navigate(tab.path)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold tracking-wide transition-all duration-200 hover:-translate-y-0.5",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold tracking-wide transition-all duration-150 hover:-translate-y-0.5",
                 variant === "dark"
                   ? isActive
-                    ? "bg-white text-primary shadow-lg ring-2 ring-accent/70"
-                    : "bg-primary/80 text-primary-foreground shadow-sm ring-1 ring-white/35 hover:bg-accent hover:text-accent-foreground hover:ring-white/70 hover:shadow-lg"
+                    ? "bg-white text-primary shadow-lg ring-2 ring-white/60"
+                    : "bg-white/20 text-white shadow-sm ring-1 ring-white/50 hover:bg-white/35 hover:ring-white/70 hover:shadow-md"
                   : isActive
                     ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30"
                     : "bg-background text-primary shadow-sm ring-1 ring-primary/25 hover:bg-accent hover:text-accent-foreground hover:ring-accent/50 hover:shadow-md"
               )}
             >
-              <tab.icon className="h-3.5 w-3.5" />
+              <tab.icon className={cn("h-3.5 w-3.5 shrink-0", variant === "dark" && !isActive && "text-white/90")} />
               <span className="hidden sm:inline">{tab.label}</span>
             </button>
           );
