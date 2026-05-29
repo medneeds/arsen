@@ -504,6 +504,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           />
         </SectionItem>
 
+        {!hidePlan && (
         <SectionItem
           id="plan"
           icon={FileText}
@@ -531,6 +532,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             minHeight={120}
           />
         </SectionItem>
+        )}
 
         <SectionItem
           id="review"
