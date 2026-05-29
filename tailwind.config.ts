@@ -168,6 +168,10 @@ export default {
             opacity: "0.4",
           },
         },
+        "shimmer": {
+          "0%": { transform: "translateX(-150%)" },
+          "100%": { transform: "translateX(350%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -178,6 +182,7 @@ export default {
         "fade-in": "fade-in 0.6s ease-out forwards",
         "scale-in": "scale-in 0.5s ease-out forwards",
         "pulse-soft": "pulse-soft 2.5s ease-in-out infinite",
+        "shimmer": "shimmer 1.6s ease-in-out infinite",
       },
     },
   },
