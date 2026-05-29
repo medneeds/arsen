@@ -7172,29 +7172,41 @@ const PrescricaoPage = () => {
         </div>
       )}
 
-      {/* ===== PATIENT CONTEXT STRIP — identidade do paciente no corpo do módulo ===== */}
-      <PatientContextStrip
-        name={patient.name}
-        bed={patient.bed}
-        unit={patient.unit}
-        age={patient.age}
-        birthDate={patient.birthDate}
-        className="mb-3"
-      />
-
       {/* ===== UNIFIED HEADER — title + context (peso/alergias/data/templates) + actions ===== */}
       <div className="print:hidden rounded-xl border border-border bg-card/60 shadow-[0_4px_18px_-8px_hsl(var(--primary)/0.18),0_1px_2px_-1px_hsl(var(--foreground)/0.06)] hover:shadow-[0_6px_24px_-8px_hsl(var(--primary)/0.22),0_1px_2px_-1px_hsl(var(--foreground)/0.08)] transition-shadow duration-300">
-        {/* Row 0 — Title + meta */}
+        {/* Row 0 — Title + patient identity inline */}
         <div className="hidden sm:flex items-center justify-between gap-3 flex-wrap px-3 pt-2.5 pb-2">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="flex flex-col items-center justify-center h-10 w-10 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
               <span className="text-[7px] font-bold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
               <span className="text-sm font-extrabold text-primary leading-tight mt-0.5">
                 {patient.bed || "—"}
               </span>
             </div>
-            <div className="min-w-0">
-              <h1 className="text-lg font-semibold text-foreground leading-tight">Prescrição médica diária</h1>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-sm font-bold text-foreground uppercase tracking-wide leading-tight whitespace-nowrap">
+                  Prescrição Médica Diária
+                </h1>
+                {patient.name && <div className="h-4 w-px bg-border/60 shrink-0 hidden sm:block" />}
+                {patient.name && (
+                  <div className="flex items-center gap-2 flex-wrap min-w-0">
+                    <span className="text-xs font-bold text-foreground uppercase tracking-wide truncate max-w-[220px]">
+                      {patient.name}
+                    </span>
+                    {patient.unit && (
+                      <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap">
+                        {patient.unit}
+                      </span>
+                    )}
+                    {patient.age && (
+                      <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold whitespace-nowrap">
+                        {patient.age}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 {currentPrescriptionId && <Badge variant="outline" className="text-[9px] h-4 px-1.5 text-primary border-primary/30">Salva</Badge>}
                 {patient.encounterCode && <span className="font-mono text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded"><Hash className="inline h-3 w-3 mr-0.5" />{patient.encounterCode}</span>}
