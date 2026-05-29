@@ -204,7 +204,9 @@ export function useEvolutions(
     soapData?: typeof EMPTY_SOAP,
     vitalSigns?: typeof EMPTY_VITALS,
     physicalExam?: typeof EMPTY_EXAM,
-    diagnosticHypotheses?: string
+    diagnosticHypotheses?: string,
+    cidPrimary?: string | null,
+    cidSecondary?: string[] | null,
   ): Promise<EvolutionRecord | null> => {
     if (!user || !currentHospital || !currentState) {
       toast.error("Contexto hospitalar não disponível");
