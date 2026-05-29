@@ -286,7 +286,7 @@ export default function PacienteHubPage() {
   const locked = lockReason !== null;
 
   return (
-    <div className="flex flex-col h-full bg-slate-50">
+    <div className="flex flex-col h-full bg-background">
       <div className="px-2 sm:px-4 pt-3">
         <BreadcrumbBar variant="institutional" />
       </div>
@@ -295,25 +295,25 @@ export default function PacienteHubPage() {
         <div className="w-full max-w-6xl flex flex-col gap-8">
           {/* Patient identity */}
           <div className="text-center space-y-3">
-            <span className="text-[10px] uppercase tracking-[0.3em] font-semibold text-slate-400">
+            <span className="text-[10px] uppercase tracking-[0.3em] font-semibold text-muted-foreground">
               Paciente Selecionado
             </span>
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight uppercase">
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight uppercase">
               {ctx.patientName || "—"}
             </h1>
             <div className="flex flex-wrap items-center justify-center gap-2">
               {ctx.patientBed && (
-                <span className="px-3 py-1 bg-white border border-slate-200 text-slate-600 text-[11px] font-bold tracking-wider uppercase rounded-sm shadow-sm">
+                <span className="px-3 py-1 bg-card border border-border text-muted-foreground text-[11px] font-bold tracking-wider uppercase rounded-sm shadow-sm">
                   Leito {ctx.patientBed}
                 </span>
               )}
               {sectorLabel && (
-                <span className="px-3 py-1 bg-white border border-slate-200 text-slate-600 text-[11px] font-bold tracking-wider uppercase rounded-sm shadow-sm">
+                <span className="px-3 py-1 bg-card border border-border text-muted-foreground text-[11px] font-bold tracking-wider uppercase rounded-sm shadow-sm">
                   {sectorLabel}
                 </span>
               )}
               {ageDisplay && (
-                <span className="px-3 py-1 bg-white border border-slate-200 text-slate-600 text-[11px] font-bold tracking-wider uppercase rounded-sm shadow-sm">
+                <span className="px-3 py-1 bg-card border border-border text-muted-foreground text-[11px] font-bold tracking-wider uppercase rounded-sm shadow-sm">
                   {ageDisplay}
                 </span>
               )}
