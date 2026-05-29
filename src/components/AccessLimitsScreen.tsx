@@ -11,7 +11,7 @@ import { whitelabel } from "@/config/whitelabel";
 
 import { AuthBackgroundFx } from "./auth/AuthBackgroundFx";
 import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
-import arsenLogo from "@/assets/bighelp-symbol.png";
+import arsenLogo from "@/assets/arsen-logo.png";
 
 /** Mapeia o "departamento amplo" do permissionamento para os subsetores reais selecionáveis */
 const DEPARTMENT_EXPANSION: Record<string, Department[]> = {

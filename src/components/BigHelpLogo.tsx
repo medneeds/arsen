@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-interface BigHelpLogoProps {
+interface ArsenLogoProps {
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   showText?: boolean;
   className?: string;
@@ -16,7 +16,7 @@ const sizes = {
   xl: { icon: 120, pin: 140, text: "text-5xl" },
 };
 
-export function BigHelpLogo({ size = "md", showText = false, className, glow = false }: BigHelpLogoProps) {
+export function BigHelpLogo({ size = "md", showText = false, className, glow = false }: ArsenLogoProps) {
   const s = sizes[size];
   const viewW = s.pin;
   const viewH = s.pin + Math.round(s.pin * 0.17);
@@ -108,8 +108,7 @@ export function BigHelpLogo({ size = "md", showText = false, className, glow = f
       </div>
       {showText && (
         <div className={cn(s.text, "text-white tracking-tight leading-none")}>
-          <span className="font-extrabold">BigHelp</span>
-          <span className="font-extralight opacity-70 ml-0.5">Map</span>
+          <span className="font-extrabold">Arsen</span>
         </div>
       )}
     </div>
