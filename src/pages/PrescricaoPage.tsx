@@ -1764,6 +1764,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
       ? "Validado — para retirar, suspenda o item"
       : isBlocked
       ? `Bloqueado — preencha: ${missingFields.join(', ')}`
+      : item.needsShiftRevalidation
+      ? "Renovação de plantão — clique para revalidar"
       : prescriptionLocked
       ? "Pendente — clique para validar com senha"
       : "Use 'Validar prescrição' para validar todos os itens";
