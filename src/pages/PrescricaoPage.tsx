@@ -175,6 +175,7 @@ interface PrescriptionItem {
   flags: PrescriptionFlag[];
   highAlert: boolean;
   status: 'active' | 'suspended';
+  needsShiftRevalidation?: boolean; // Renovado a partir de prescrição validada de plantão anterior (cruzou 05h SP) — flag informativa para tooltip; status permanece 'active'
   suspensionReason?: string;
   suspendedAt?: string;
   validated?: boolean;
