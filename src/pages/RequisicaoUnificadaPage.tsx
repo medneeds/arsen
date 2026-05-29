@@ -539,26 +539,30 @@ const RequisicaoUnificadaPage = () => {
       <div className="flex print:block">
         <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4 max-w-6xl mx-auto print:p-0 print:m-0">
         {/* SAPS pending alert removed */}
-      {/* Header */}
+      {/* Header — title + patient identity inline */}
       <div className="hidden sm:block print:hidden">
         <div className="flex items-center gap-3 mb-1">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10">
-            <ClipboardList className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground leading-tight">Requisições</h1>
+          {formPatientBed && (
+            <div className="flex flex-col items-center justify-center h-10 w-10 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
+              <span className="text-[7px] font-bold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
+              <span className="text-sm font-extrabold text-primary leading-tight mt-0.5">{formPatientBed}</span>
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-lg font-bold text-foreground uppercase tracking-wide">REQUISIÇÕES</h1>
+              {formPatientName && <div className="h-4 w-px bg-border/60 hidden sm:block" />}
+              {formPatientName && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-foreground uppercase tracking-wide truncate max-w-[220px]">{formPatientName}</span>
+                  {formPatientSector && <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap">{formPatientSector}</span>}
+                </div>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">Solicitação e acompanhamento de exames e pareceres</p>
           </div>
         </div>
       </div>
-
-      {/* PATIENT CONTEXT STRIP — identidade do paciente no corpo do módulo */}
-      <PatientContextStrip
-        name={formPatientName}
-        bed={formPatientBed}
-        unit={formPatientSector}
-        className="mb-1"
-      />
 
       {/* Identificação do paciente fica integralmente no cockpit à direita
           (com Prontuário, Atendimento e botão "Ver dados do prontuário"). */}
