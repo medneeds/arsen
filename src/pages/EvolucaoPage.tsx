@@ -242,6 +242,8 @@ const EvolucaoPage = () => {
   /** Aplica a duplicação real (sem confirmação). Mantém o comportamento original:
    *  copia SOAP, sinais vitais, exame físico, dispositivos, culturas e hipóteses da fonte. */
   const performDuplicate = (source: EvolutionRecord) => {
+    // Limpa qualquer estado sujo de interações anteriores antes de popular.
+    resetNewForm();
     const srcSoap: any = source.soap_data || {};
     const { devices: srcDevices, culturesHtml: srcCulturesHtml, ...soapBase } = srcSoap;
     setNewSoap({ ...soapBase });
@@ -250,11 +252,12 @@ const EvolucaoPage = () => {
     setNewDevices(Array.isArray(srcDevices) ? srcDevices : []);
     setNewCulturesHtml(typeof srcCulturesHtml === "string" ? srcCulturesHtml : "");
     const srcHypo = (source as any).diagnostic_hypotheses;
-    if (typeof srcHypo === "string") setDiagnosticHypotheses(srcHypo);
+    setDiagnosticHypotheses(typeof srcHypo === "string" ? srcHypo : "");
     setShowNewForm(true);
     setDiagnosticsReplicated(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
 
   /** Confirmação leve antes de duplicar — evita cópia acidental sobre rascunho em andamento. */
   const handleDuplicate = async (source: EvolutionRecord) => {
