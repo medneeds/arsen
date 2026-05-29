@@ -8620,7 +8620,15 @@ const PrescricaoPage = () => {
         }}
       />
 
-        {items.length === 0 && (() => {
+        {items.length === 0 && !!patientRegistryId && !!activeEncounterId && !currentPrescriptionId && !autoLoadDone && (
+          <div className="rounded-xl border border-dashed border-border bg-muted/10 p-10 flex items-center justify-center">
+            <div className="animate-pulse text-muted-foreground text-sm">
+              Carregando última prescrição validada...
+            </div>
+          </div>
+        )}
+
+        {items.length === 0 && !(!!patientRegistryId && !!activeEncounterId && !currentPrescriptionId && !autoLoadDone) && (() => {
           const admissionTpls = quickTemplates.filter(t => t.clinical_category === 'admissao');
           return (
             <div className="rounded-xl border border-dashed border-border bg-gradient-to-br from-primary/5 via-background to-muted/20 p-6">
