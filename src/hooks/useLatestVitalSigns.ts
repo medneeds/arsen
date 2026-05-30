@@ -54,7 +54,7 @@ export function useLatestVitalSigns(patientId: string | null, patientName?: stri
     // tentamos por patientName + hospitalUnitId se disponível.
     // Apenas para leitura — nunca usado para gravar.
     if (!error && (!data || data.length === 0) && patientName) {
-      const { data: fallbackData } = await supabase
+      const { data: fallbackData } = await (supabase as any)
         .from("vital_signs")
         .select("id, recorded_at, recorded_by_name, systolic_bp, diastolic_bp, heart_rate, respiratory_rate, spo2, temperature, news2_score, news2_risk, lactate, potassium")
         .eq("patient_name", patientName.trim())
