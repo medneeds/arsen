@@ -4245,6 +4245,8 @@ const PrescricaoPage = () => {
     setDispensations([]);
     setPosologySuggestion(null);
     autoLoadAttemptedRef.current = false;
+    autoLoadReadyRef.current = false;
+    setAutoLoadTriggered(false);
     setAutoLoadDone(false);
     loadGenerationRef.current += 1; // ← cancela qualquer load em andamento
     draftRestoreAttemptedRef.current = false;
@@ -6133,6 +6135,7 @@ const PrescricaoPage = () => {
   //     encounter → prescrição em branco (não vaza prescrição de alta anterior).
   //  4) NÃO faz autosave. Rascunho só persiste se o médico clicar "Salvar Rascunho".
   const autoLoadAttemptedRef = useRef(false);
+  const [autoLoadTriggered, setAutoLoadTriggered] = useState(false); // sinaliza que pode executar
   // 🔒 FIX: autoLoadDone começa como false quando há paciente real na URL,
   // garantindo que o spinner cubra 100% da área de prescrição desde o primeiro
   // frame — sem piscar itens demo intermediários.
@@ -6146,7 +6149,6 @@ const PrescricaoPage = () => {
     if (autoLoadDone) return;
     if (!hasRealPatientUrl) return;
     const t = setTimeout(() => {
-      if (!autoLoadAttemptedRef.current) return; // ainda não iniciou
       console.warn('[PrescricaoPage] safety timeout: forçando autoLoadDone=true');
       setAutoLoadDone(true);
     }, 10_000);
@@ -6154,14 +6156,68 @@ const PrescricaoPage = () => {
   }, [autoLoadDone, hasRealPatientUrl, urlPatientId]);
   const loadGenerationRef = useRef(0); // incrementa a cada troca de paciente — cancela loads antigos
   const loadPrescriptionRef = useRef<((id: string) => Promise<void>) | null>(null);
+
+  // 🔒 ESPERA PROGRESSIVA: aguarda registry e encounter resolverem,
+  // mas não aborta se encounter não chegar — usa fallback após 3s.
+  // Isso garante que pacientes legados (sem encounter vinculado) também
+  // tenham sua prescrição carregada.
+  const autoLoadReadyRef = useRef(false);
   useEffect(() => {
     if (autoLoadAttemptedRef.current) return;
     if (!currentHospital || !currentState || !patient.name.trim()) return;
     if (currentPrescriptionId) return;
-    // Só auto-carrega se já temos identidade segura: registry resolvido E encounter ativo.
-    // Sem isso, esperamos (evita vazamento entre encounters do mesmo leito).
-    if (!patientRegistryId || !activeEncounterId) return;
-    autoLoadAttemptedRef.current = true;
+    if (!hasRealPatientUrl) return;
+
+    // Registry ainda não resolveu — aguardar (sem timeout, sem abortar)
+    if (!patientRegistryId) return;
+
+    // Registry chegou — marcar como pronto para disparar
+    autoLoadReadyRef.current = true;
+  }, [currentHospital, currentState, patient.name, patientRegistryId, currentPrescriptionId, hasRealPatientUrl]);
+
+  useEffect(() => {
+    if (autoLoadAttemptedRef.current) return;
+    if (!autoLoadReadyRef.current) return;
+    if (!currentHospital || !currentState || !patient.name.trim()) return;
+    if (currentPrescriptionId) return;
+    if (!patientRegistryId) return;
+
+    // 🔒 Aguardar encounter por até 3s antes de prosseguir sem ele.
+    // Se encounter chegar: usa como filtro (ideal).
+    // Se não chegar em 3s: dispara com fallback por registry_id apenas.
+    const ENCOUNTER_WAIT_MS = 3000;
+    const startedAt = Date.now();
+
+    const tryLoad = () => {
+      if (autoLoadAttemptedRef.current) return;
+      const elapsed = Date.now() - startedAt;
+      const encounterReady = !!(activeEncounterId && activeEncounterId.length > 10);
+      const timedOut = elapsed >= ENCOUNTER_WAIT_MS;
+
+      // Ainda esperando encounter e não deu timeout
+      if (!encounterReady && !timedOut) {
+        setTimeout(tryLoad, 300);
+        return;
+      }
+
+      if (autoLoadAttemptedRef.current) return;
+      autoLoadAttemptedRef.current = true;
+      setAutoLoadTriggered(true); // dispara o useEffect executor
+
+      if (!encounterReady) {
+        console.warn('[PrescricaoPage] encounter não resolveu em 3s — carregando sem filtro de encounter');
+      }
+    };
+
+    tryLoad();
+  }, [patientRegistryId, activeEncounterId, currentHospital, currentState, patient.name, currentPrescriptionId]);
+
+  useEffect(() => {
+    // Este effect executa o corpo do auto-load após autoLoadTriggered ser setado
+    // pelo effect de espera progressiva acima.
+    if (!autoLoadTriggered) return;
+    if (currentPrescriptionId) return;
+    if (!patientRegistryId) return;
     const capturedGeneration = loadGenerationRef.current; // captura geração atual
     (async () => {
       try {
@@ -6331,7 +6387,7 @@ const PrescricaoPage = () => {
         setAutoLoadDone(true);
       }
     })();
-  }, [currentHospital, currentState, patient.name, patientRegistryId, activeEncounterId, currentPrescriptionId]);
+  }, [autoLoadTriggered, currentHospital, currentState, patientRegistryId, activeEncounterId, currentPrescriptionId;
 
 
   // Fetch version history for a prescription (by patient_name in same hospital)
