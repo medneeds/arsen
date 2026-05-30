@@ -6401,7 +6401,7 @@ const PrescricaoPage = () => {
         setAutoLoadDone(true);
       }
     })();
-  }, [autoLoadTriggered, currentHospital, currentState, patientRegistryId, activeEncounterId, currentPrescriptionId]);
+  }, [autoLoadTriggered, currentHospital, currentState, patientRegistryId, activeEncounterId, currentPrescriptionId;
 
 
   // Fetch version history for a prescription (by patient_name in same hospital)
@@ -7257,7 +7257,7 @@ const PrescricaoPage = () => {
     <div className="animate-fade-in">
       <ClinicalHeader moduleLabel="Prescrição Médica" />
       <div className="flex print:block">
-        <div className="flex-1 min-w-0 max-w-6xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-5">
+        <div className="flex-1 min-w-0 p-3 sm:p-6 space-y-4 sm:space-y-5">
         {/* SAPS pending alert removed */}
       {/* Print styles — hide everything except portal */}
       <style dangerouslySetInnerHTML={{ __html: `

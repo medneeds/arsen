@@ -536,7 +536,7 @@ const RequisicaoUnificadaPage = () => {
         <ClinicalHeader moduleLabel="Requisições" />
       </div>
       <div className="flex print:block">
-        <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4 max-w-6xl mx-auto print:p-0 print:m-0">
+        <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4 print:p-0 print:m-0">
         {/* SAPS pending alert removed */}
       {/* Header — title + patient identity inline */}
       <div className="hidden sm:block print:hidden">
