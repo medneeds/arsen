@@ -3855,6 +3855,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
         open={isReleasePreAdmissionOpen}
         onOpenChange={setIsReleasePreAdmissionOpen}
         patient={patient}
+        userRole={role}
         onConfirm={async (payload) => {
           if (onReleasePreAdmissionBed) {
             await onReleasePreAdmissionBed(patient.id, payload);

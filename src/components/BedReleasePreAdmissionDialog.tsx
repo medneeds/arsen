@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, Bed, ClipboardList, FileText, Info, Stethoscope, UserMinus, UserCheck, ArrowRight } from "lucide-react";
+import { AlertTriangle, Bed, ClipboardList, FileText, Info, Stethoscope, UserMinus, UserCheck, ArrowRight, Lock } from "lucide-react";
 import { MovementConfirmDialog, type MovementBlocker, type MovementWarning } from "./MovementConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -52,9 +52,11 @@ export interface BedReleasePreAdmissionDialogProps {
   onOpenChange: (open: boolean) => void;
   patient: Patient | null;
   onConfirm: (payload: { reason: string; reasonNote: string }) => Promise<void> | void;
+  /** Role do usuário logado — gestor e admin podem fazer desalocação excepcional */
+  userRole?: string | null;
 }
 
-export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onConfirm }: BedReleasePreAdmissionDialogProps) {
+export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onConfirm, userRole }: BedReleasePreAdmissionDialogProps) {
   const navigate = useNavigate();
   const isPostDischarge =
     patient?.admissionStatus === "alta_dada"
@@ -196,12 +198,12 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
     }
   };
 
-  // BLOQUEIO DURO: paciente sem sinalização não pode ser desalocado pelo Mapa.
-  // Único caminho permitido é sinalizar a saída pelo Painel Clínico (alta/óbito/transferência).
-  // Casos de "cadastro errado/leito sujo" ficam no Dev Console / Edição Avançada, fora deste fluxo.
-  // Não há mais bloqueio duro — casos excepcionais passam por senha + justificativa
-  // (igual ao fluxo normal, com aviso adicional de que a alta não foi sinalizada).
-  const blockReleaseHard = false;
+  // 🔒 CONTROLE DE PERMISSÃO: desalocação excepcional (sem sinalização) é
+  // restrita a gestores e admins. Médicos e demais perfis veem o cadeado
+  // com instrução para sinalizar pelo Painel Clínico antes de desalocar.
+  const canDoExceptional = userRole === 'gestor' || userRole === 'admin';
+  // Bloqueia o fluxo excepcional para não-gestores
+  const blockReleaseHard = isExceptional && !canDoExceptional;
 
   return (
     <>
@@ -238,63 +240,106 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                 </p>
                 {isExceptional ? (
                   <>
-                    <div className="rounded-md border-2 border-amber-500/70 bg-amber-50 dark:bg-amber-950/40 p-3 text-amber-900 dark:text-amber-100">
-                      <p className="font-bold text-sm flex items-center gap-1.5">
-                        <AlertTriangle className="h-4 w-4" />
-                        Pare — este paciente ainda NÃO foi sinalizado
-                      </p>
-                      <p className="mt-1.5">
-                        O paciente está marcado como <strong>admitido</strong> e não há alta, óbito ou transferência sinalizada no Painel Clínico. <strong>O caminho correto é sinalizar a saída antes de liberar o leito</strong> — isso garante prontuário completo, documento clínico assinado, número de atendimento preservado e tarja correta no mapa.
-                      </p>
-                    </div>
+                    {blockReleaseHard ? (
+                      /* ── CADEADO: usuário sem permissão para desalocação excepcional ── */
+                      <div className="space-y-3">
+                        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-border bg-muted/30 py-8 px-4">
+                          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted border-2 border-border">
+                            <Lock className="h-7 w-7 text-muted-foreground" />
+                          </div>
+                          <div className="text-center space-y-1">
+                            <p className="text-sm font-bold text-foreground">Ação restrita</p>
+                            <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
+                              A desalocação excepcional de pacientes <strong>sem sinalização</strong> é exclusiva para gestores.
+                            </p>
+                          </div>
+                        </div>
 
-                    <div className="rounded-md border border-primary/40 bg-primary/5 p-3">
-                      <p className="font-semibold text-foreground mb-2 flex items-center gap-1.5">
-                        <Stethoscope className="h-4 w-4 text-primary" />
-                        Como sinalizar pelo Painel Clínico (passo a passo)
-                      </p>
-                      <ol className="list-decimal pl-5 space-y-1 text-foreground/90">
-                        <li>Abra o <strong>Painel Clínico</strong> (no menu lateral) e localize o paciente no setor.</li>
-                        <li>Clique no <strong>card do paciente</strong> para abrir o cockpit.</li>
-                        <li>Na barra de ações superior, clique em <strong>"Movimentações e Desfechos"</strong>.</li>
-                        <li>Escolha o subtipo: <strong>Alta Médica</strong>, <strong>Óbito</strong>, <strong>Transferência Interna</strong> ou <strong>Externa</strong>.</li>
-                        <li>Preencha destino/médico/observações e <strong>confirme</strong>. O card no Mapa passa a exibir a <strong>tarja correspondente</strong>.</li>
-                        <li>Volte ao Mapa e clique novamente em <strong>"Liberar leito"</strong> — agora aparecerá o fluxo normal de liberação.</li>
-                      </ol>
-                      <Button
-                        type="button"
-                        size="sm"
-                        className="mt-3 w-full gap-1.5"
-                        onClick={() => {
-                          const id = patient.id;
-                          const url = id ? `/painel-clinico?patientId=${id}` : "/painel-clinico";
-                          onOpenChange(false);
-                          navigate(url);
-                        }}
-                      >
-                        <Stethoscope className="h-4 w-4" />
-                        Ir para o Painel Clínico agora
-                        <ArrowRight className="h-4 w-4" />
-                       </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="mt-2 w-full gap-1.5 border-amber-500 text-amber-700 hover:bg-amber-50"
-                        onClick={goToFormStep}
-                      >
-                        <UserMinus className="h-4 w-4" />
-                        Prosseguir com desalocação mesmo assim
-                      </Button>
-                      <p className="text-[10px] text-muted-foreground mt-1 leading-snug text-center">
-                        Use apenas se o paciente já saiu fisicamente e não é possível sinalizar pelo Painel Clínico. A ação ficará registrada no histórico com justificativa obrigatória.
-                      </p>
-                    </div>
+                        <div className="rounded-md border border-primary/40 bg-primary/5 p-3">
+                          <p className="font-semibold text-foreground mb-2 flex items-center gap-1.5 text-sm">
+                            <Stethoscope className="h-4 w-4 text-primary" />
+                            O fluxo correto é sinalizar primeiro
+                          </p>
+                          <ol className="list-decimal pl-5 space-y-1 text-xs text-foreground/90">
+                            <li>Abra o <strong>Painel Clínico</strong> e localize o paciente.</li>
+                            <li>Clique no card → <strong>Movimentações e Desfechos</strong>.</li>
+                            <li>Escolha: <strong>Alta Médica</strong>, <strong>Óbito</strong> ou <strong>Transferência</strong>.</li>
+                            <li>Confirme. O leito receberá a <strong>tarja de sinalização</strong>.</li>
+                            <li>Volte ao Mapa → <strong>Desalocar leito</strong> — agora liberado.</li>
+                          </ol>
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="mt-3 w-full gap-1.5"
+                            onClick={() => {
+                              const id = patient.id;
+                              const url = id ? `/painel-clinico?patientId=${id}` : "/painel-clinico";
+                              onOpenChange(false);
+                              navigate(url);
+                            }}
+                          >
+                            <Stethoscope className="h-4 w-4" />
+                            Ir para o Painel Clínico agora
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* ── GESTOR/ADMIN: fluxo excepcional com aviso ── */
+                      <>
+                        <div className="rounded-md border-2 border-amber-500/70 bg-amber-50 dark:bg-amber-950/40 p-3 text-amber-900 dark:text-amber-100">
+                          <p className="font-bold text-sm flex items-center gap-1.5">
+                            <AlertTriangle className="h-4 w-4" />
+                            Pare — este paciente ainda NÃO foi sinalizado
+                          </p>
+                          <p className="mt-1.5 text-xs">
+                            O paciente está marcado como <strong>admitido</strong> e não há alta, óbito ou transferência sinalizada. <strong>O caminho correto é sinalizar a saída antes de liberar o leito.</strong>
+                          </p>
+                        </div>
 
-                    <p className="text-[11px] text-muted-foreground leading-snug">
-                      Não há atalho "excepcional" aqui — a saída do leito sempre passa pela sinalização no Painel Clínico para preservar prontuário, documento clínico assinado e número de atendimento.
-                    </p>
-
+                        <div className="rounded-md border border-primary/40 bg-primary/5 p-3">
+                          <p className="font-semibold text-foreground mb-2 flex items-center gap-1.5 text-sm">
+                            <Stethoscope className="h-4 w-4 text-primary" />
+                            Como sinalizar pelo Painel Clínico
+                          </p>
+                          <ol className="list-decimal pl-5 space-y-1 text-xs text-foreground/90">
+                            <li>Abra o <strong>Painel Clínico</strong> e localize o paciente no setor.</li>
+                            <li>Clique no card → <strong>"Movimentações e Desfechos"</strong>.</li>
+                            <li>Escolha: <strong>Alta Médica</strong>, <strong>Óbito</strong>, <strong>Transferência Interna</strong> ou <strong>Externa</strong>.</li>
+                            <li>Preencha e <strong>confirme</strong>. O card exibirá a tarja correspondente.</li>
+                            <li>Volte ao Mapa → <strong>"Desalocar leito"</strong> — fluxo normal.</li>
+                          </ol>
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="mt-3 w-full gap-1.5"
+                            onClick={() => {
+                              const id = patient.id;
+                              const url = id ? `/painel-clinico?patientId=${id}` : "/painel-clinico";
+                              onOpenChange(false);
+                              navigate(url);
+                            }}
+                          >
+                            <Stethoscope className="h-4 w-4" />
+                            Ir para o Painel Clínico agora
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="mt-2 w-full gap-1.5 border-amber-500 text-amber-700 hover:bg-amber-50"
+                            onClick={goToFormStep}
+                          >
+                            <UserMinus className="h-4 w-4" />
+                            Prosseguir com desalocação excepcional (gestor)
+                          </Button>
+                          <p className="text-[10px] text-muted-foreground mt-1 leading-snug text-center">
+                            Use apenas se o paciente já saiu fisicamente. Ação registrada no histórico com justificativa e senha obrigatórias.
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </>
                 ) : isPostDischarge ? (
                   <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
@@ -322,14 +367,14 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:flex-wrap">
             <AlertDialogCancel className="w-full sm:w-auto">{isExceptional ? "Fechar" : "Cancelar"}</AlertDialogCancel>
-            {!blockReleaseHard && (
+            {!blockReleaseHard && !isExceptional && (
               <Button
                 type="button"
-                variant={isExceptional ? "outline" : "default"}
+                variant="default"
                 onClick={goToFormStep}
                 className="w-full sm:w-auto whitespace-normal leading-snug"
               >
-                {isExceptional ? "Prosseguir como excepcional" : "Entendi, continuar"}
+                Entendi, continuar
               </Button>
             )}
           </AlertDialogFooter>
