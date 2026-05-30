@@ -39,7 +39,6 @@ import {
   type SubtypeDef,
 } from "@/data/movementFlow";
 import { DischargeDocumentForm } from "@/components/DischargeDocumentForm";
-import { signalInternalTransfer } from "@/lib/internalTransfer";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { DischargeConfirmDialog } from "@/components/DischargeConfirmDialog";
 import { MovementConfirmDialog, type MovementConsequence, type MovementSummaryItem } from "@/components/MovementConfirmDialog";
@@ -357,25 +356,48 @@ export function PatientMovementDialog({
         if (trErr) throw trErr;
 
         // 🔒 Para transferência INTERNA: criar registro na fila virtual do setor destino.
-        // Sem isso, o paciente some após a desalocação — não aparece em
-        // "Aguardando alocação" no setor destino escolhido pelo médico.
+        // IMPORTANTE: NÃO chamamos signalInternalTransfer aqui porque ele zera o leito
+        // de origem automaticamente (Etapa 1 do fluxo de 2 etapas). O médico deve
+        // desalocar manualmente pelo mapa de leitos — isso preserva a sinalização
+        // visual no card e mantém o paciente visível até o médico confirmar a saída.
+        // Aqui apenas criamos o registro em internal_transfer_requests para que o
+        // setor destino veja "Aguardando alocação por transferência interna".
         if (subtypeDef.id === "TRANSFERENCIA_INTERNA" && currentHospital && currentState) {
           const finalDest = destination === "OUTRO" ? customDestination : destination;
           const sectorCode = finalDest ? DESTINATION_TO_SECTOR_CODE[finalDest.trim().toUpperCase()] ?? null : null;
           if (sectorCode) {
             const { data: { user: authUser } } = await supabase.auth.getUser();
-            await signalInternalTransfer({
-              source: patient as any,
-              targetSectorCode: sectorCode,
-              reason: notes?.trim() || finalDest || undefined,
-              currentUserId: authUser?.id ?? null,
-              hospitalUnitId: currentHospital.id,
-              stateId: currentState.id,
+            // Buscar encounter_code ativo do paciente para preservar no registro da fila
+            const { data: encData } = await supabase
+              .from("patient_encounters")
+              .select("id, encounter_code")
+              .eq("patient_id", (patient as any).id)
+              .in("status", ["active", "pending"])
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            // Classificar a transferência para informar o setor destino
+            const { classifyTransfer, requiresSaps } = await import("@/lib/sectorComplexity");
+            const classification = classifyTransfer((patient as any).sector, sectorCode);
+            const needsSaps = requiresSaps(classification);
+
+            // Criar apenas o registro de fila — SEM zerar o leito de origem
+            await supabase.from("internal_transfer_requests").insert({
+              source_patient_id: (patient as any).id,
+              target_sector_code: sectorCode,
+              classification,
+              requires_saps: needsSaps,
+              status: "pending",
+              created_by: authUser?.id ?? null,
+              hospital_unit_id: currentHospital.id,
+              state_id: currentState.id,
               department: currentDepartment ?? null,
-            });
-            // signalInternalTransfer já zera o leito de origem internamente —
-            // mas aqui o admission_status já foi setado acima, então o clear
-            // não causa conflito (o leito já tem a tarja de transf. sinalizada).
+              encounter_code: (encData as any)?.encounter_code ?? null,
+              encounter_id: (encData as any)?.id ?? null,
+              reason: notes?.trim() || finalDest || null,
+              patient_snapshot: patient as any,
+            } as any);
           }
         }
       }

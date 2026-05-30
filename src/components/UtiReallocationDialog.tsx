@@ -25,6 +25,7 @@ import { ArrowRightLeft, BedDouble, Check, User, MapPin, ClipboardList, Eye, His
 import { Badge } from "@/components/ui/badge";
 import { MovementConfirmDialog } from "@/components/MovementConfirmDialog";
 import { classifyTransfer, requiresSaps, requiresNewAdmission, classificationLabel } from "@/lib/sectorComplexity";
+import { isExtraBed } from "@/utils/bedNaming";
 
 interface UtiReallocationDialogProps {
   patient: Patient | null;
@@ -65,7 +66,11 @@ export function UtiReallocationDialog({
       const isUti1 = p.sector === "red";
       const isEmpty = !p.name || p.name.trim() === "";
       const isNotCurrentPatient = p.id !== patient?.id;
-      return isUti1 && isEmpty && isNotCurrentPatient;
+      // 🔒 Excluir leitos EXTRA que foram arquivados (excluídos pelo gestor)
+      // Leitos extras arquivados têm bedNumber começando com EXTRA e estão
+      // vazios mas não devem aparecer como opção de realocação.
+      const isArchivedExtra = isExtraBed(p.bedNumber) && isEmpty;
+      return isUti1 && isEmpty && isNotCurrentPatient && !isArchivedExtra;
     }).sort((a, b) => {
       const numA = parseInt(a.bedNumber) || 0;
       const numB = parseInt(b.bedNumber) || 0;
@@ -76,7 +81,9 @@ export function UtiReallocationDialog({
       const isUti2 = p.sector === "yellow";
       const isEmpty = !p.name || p.name.trim() === "";
       const isNotCurrentPatient = p.id !== patient?.id;
-      return isUti2 && isEmpty && isNotCurrentPatient;
+      // 🔒 Excluir leitos EXTRA arquivados
+      const isArchivedExtra = isExtraBed(p.bedNumber) && isEmpty;
+      return isUti2 && isEmpty && isNotCurrentPatient && !isArchivedExtra;
     }).sort((a, b) => {
       const numA = parseInt(a.bedNumber) || 0;
       const numB = parseInt(b.bedNumber) || 0;
@@ -140,6 +147,23 @@ export function UtiReallocationDialog({
         ? 'pre_admitido'
         : (patient.admissionStatus ?? 'admitido');
 
+      // 🔒 ORDEM CORRIGIDA: repoint ANTES de qualquer update no banco.
+      // Antes: update target → repoint → clear source (se repoint falhasse,
+      //   dados já estavam escritos no destino — estado inconsistente).
+      // Agora: repoint → update target → clear source (atômico: se repoint
+      //   falhar, nada foi escrito e a operação pode ser repetida).
+      const { repointPatientHistory } = await import("@/lib/repointPatientHistory");
+      const repointFirst = await repointPatientHistory(
+        patient.id,
+        targetBedPatient.id,
+        `Realocação UTI: ${originalBedNumber} → ${targetBedPatient.bedNumber}`,
+      );
+      if (!repointFirst.ok) {
+        throw new Error(
+          `Falha ao migrar histórico clínico (${repointFirst.error}). Nenhuma alteração foi feita — tente novamente.`,
+        );
+      }
+
       // Step 1: Move patient data to the target bed (update target bed with patient data)
       const { error: targetError } = await supabase
         .from('patients')
@@ -202,21 +226,7 @@ export function UtiReallocationDialog({
           .neq('status', 'closed');
       }
 
-      // Step 1.5: Migrar histórico clínico (evoluções, prescrições, exames,
-      // culturas, condutas, prontuário, etc.) do leito de ORIGEM para o
-      // leito de DESTINO antes de esvaziar a origem. Garante continuidade
-      // assistencial sem orfanizar o histórico vinculado ao patient_id antigo.
-      const { repointPatientHistory } = await import("@/lib/repointPatientHistory");
-      const repoint = await repointPatientHistory(
-        patient.id,
-        targetBedPatient.id,
-        `Realocação UTI: ${originalBedNumber} → ${targetBedPatient.bedNumber}`,
-      );
-      if (!repoint.ok) {
-        throw new Error(
-          `Falha ao migrar histórico clínico do leito de origem (${repoint.error}). Operação abortada para preservar integridade.`,
-        );
-      }
+      // Repoint já foi executado antes do update (ver acima)
 
       // Step 2: Clear the original bed (make it empty)
       const { error: sourceError } = await supabase

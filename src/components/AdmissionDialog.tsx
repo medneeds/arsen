@@ -36,7 +36,7 @@ const draftKeyFor = (patientId: string) => `admission_draft:v1:${patientId}`;
 const ReqLabel = ({ children, missing }: { children: React.ReactNode; missing?: boolean }) => (
   <Label className={cn(
     "text-xs flex items-center gap-1.5",
-    missing ? "text-rose-700" : "text-slate-700"
+    missing ? "text-rose-700" : "text-foreground"
   )}>
     <span>{children}</span>
     <span className={cn(
@@ -84,7 +84,7 @@ const computeImc = (weightStr: string, heightStr: string) => {
   const imc = w / (h * h);
   if (!Number.isFinite(imc) || imc <= 0) return null;
   let label = "";
-  let color = "text-slate-600";
+  let color = "text-muted-foreground";
   if (imc < 18.5) { label = "Baixo peso"; color = "text-amber-600"; }
   else if (imc < 25) { label = "Eutrófico"; color = "text-emerald-600"; }
   else if (imc < 30) { label = "Sobrepeso"; color = "text-amber-600"; }
@@ -130,21 +130,21 @@ const Section = ({
   tone?: "slate" | "blue" | "emerald" | "amber";
 }) => {
   const tones = {
-    slate: "border-slate-200 bg-slate-50/40",
-    blue: "border-blue-200 bg-blue-50/40",
-    emerald: "border-emerald-200 bg-emerald-50/40",
+    slate: "border-border bg-muted/30",
+    blue: "border-blue-500/40 bg-blue-50/40",
+    emerald: "border-emerald-500/20 bg-emerald-500/5",
     amber: "border-amber-200 bg-amber-50/40",
   } as const;
   const iconTones = {
-    slate: "text-slate-500", blue: "text-blue-600",
+    slate: "text-muted-foreground", blue: "text-blue-600",
     emerald: "text-emerald-600", amber: "text-amber-600",
   } as const;
   return (
     <section className={cn("rounded-lg border p-4 space-y-3", tones[tone])}>
       <header className="flex items-center gap-2 -mt-1">
         <Icon className={cn("h-4 w-4", iconTones[tone])} />
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-700">{title}</h4>
-        {hint && <span className="ml-auto text-[10px] text-slate-500">{hint}</span>}
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">{title}</h4>
+        {hint && <span className="ml-auto text-[10px] text-muted-foreground">{hint}</span>}
       </header>
       {children}
     </section>
@@ -556,22 +556,22 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0 gap-0">
         {/* Cabeçalho elegante — identidade unificada */}
-        <DialogHeader className="px-6 pt-5 pb-4 border-b bg-gradient-to-r from-emerald-50/70 via-white to-white space-y-3">
-          <DialogTitle className="flex items-center gap-2 uppercase text-slate-800">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-emerald-100 text-emerald-700">
+        <DialogHeader className="px-6 pt-5 pb-4 border-b bg-gradient-to-r from-emerald-900/10 via-card to-card dark:from-emerald-900/20 space-y-3">
+          <DialogTitle className="flex items-center gap-2 uppercase text-foreground">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
               <Stethoscope className="h-4 w-4" />
             </span>
             Admissão Hospitalar
-            <Badge variant="outline" className="ml-2 border-emerald-300 bg-emerald-50 text-emerald-700">
+            <Badge variant="outline" className="ml-2 border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
               {isUti ? "UTI / UCI" : "ENFERMARIA"}
             </Badge>
           </DialogTitle>
-          <DialogDescription className="text-xs text-slate-600">
+          <DialogDescription className="text-xs text-muted-foreground">
             Esta admissão será registrada como <strong>D0</strong> e aparecerá como primeira entrada na linha do tempo (ADMISSÃO HOSPITALAR). Após assinada, só pode ser editada via adendo ou suspensa com justificativa.
           </DialogDescription>
 
           {/* Identificação do paciente — fonte única (mesmo cabeçalho do Painel Clínico) */}
-          <div className="rounded-md border border-emerald-200/60 bg-white/70 p-3">
+          <div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 p-3">
             <PatientIdentityHeader
               patientId={patient.id}
               fallbackName={patient.name}
@@ -607,7 +607,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
 
         <div className="px-6 py-5">
           <Tabs defaultValue="anamnese" className="w-full">
-            <TabsList className="grid grid-cols-4 w-full bg-slate-100">
+            <TabsList className="grid grid-cols-4 w-full bg-muted">
               <TabsTrigger value="anamnese">Anamnese</TabsTrigger>
               <TabsTrigger value="exame">Exame Físico</TabsTrigger>
               <TabsTrigger value="plano">Plano / CID</TabsTrigger>
@@ -654,12 +654,12 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                   <div>
                     <Label className="text-xs">IMC</Label>
                     <div className={cn(
-                      "mt-1 h-10 rounded-md border bg-white px-3 flex items-center justify-between text-sm",
-                      imc ? "border-blue-200" : "border-slate-200 text-slate-400"
+                      "mt-1 h-10 rounded-md border bg-background px-3 flex items-center justify-between text-sm",
+                      imc ? "border-blue-500/40" : "border-border text-muted-foreground/60"
                     )}>
                       {imc ? (
                         <>
-                          <span className="font-semibold text-slate-800">{imc.value}</span>
+                          <span className="font-semibold text-foreground">{imc.value}</span>
                           <span className={cn("text-[11px] uppercase tracking-wide", imc.color)}>{imc.label}</span>
                         </>
                       ) : (
@@ -731,7 +731,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                   placeholder={"Ex.:\nSepse de foco pulmonar\nSuspeita de TEP associado\nDM2 descompensado"}
                   className="mt-1 font-mono text-xs"
                 />
-                <p className="text-[11px] text-slate-600 mt-1">
+                <p className="text-[11px] text-muted-foreground mt-1">
                   📝 Cada linha vira uma hipótese no card do paciente. Esse campo passa a ser <strong>somente leitura no mapa</strong> e só é atualizado por nova evolução clínica.
                 </p>
               </Section>
@@ -756,13 +756,13 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                       className="mt-1"
                     />
                   </div>
-                  <label className="flex items-center gap-2 text-xs text-slate-700 pb-2 select-none">
+                  <label className="flex items-center gap-2 text-xs text-foreground pb-2 select-none">
                     <Checkbox checked={noPrediction} onCheckedChange={v => setNoPrediction(v === true)} />
                     Sem previsão
                   </label>
                 </div>
-                <p className="text-[11px] text-slate-600">
-                  Resultado: <strong className="text-slate-800">{dischargePredictionLabel}</strong>
+                <p className="text-[11px] text-muted-foreground">
+                  Resultado: <strong className="text-foreground">{dischargePredictionLabel}</strong>
                 </p>
               </Section>
             </TabsContent>
@@ -779,7 +779,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                 </Section>
 
                 <Section icon={ShieldCheck} title="Ficha SAPS 3 — Aviso" tone="amber">
-                  <p className="text-[11px] text-slate-700 leading-relaxed">
+                  <p className="text-[11px] text-foreground leading-relaxed">
                     A admissão UTI/UCI gera automaticamente uma <strong>Ficha SAPS 3 pendente</strong>, com prazo de{" "}
                     <strong className="text-amber-700">24 horas</strong> a partir da pré-admissão (janela operacional / AMIB).
                     A admissão pode ser <strong>validada e impressa normalmente</strong>; a SAPS 3 segue como tarefa paralela
@@ -787,7 +787,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                   </p>
                   <label className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50/70 p-3 cursor-pointer select-none">
                     <Checkbox checked={sapsAck} onCheckedChange={v => setSapsAck(v === true)} className="mt-0.5" />
-                    <span className="text-xs text-slate-800">
+                    <span className="text-xs text-foreground">
                       <strong className="uppercase tracking-wide text-amber-800">Ciência (opcional)</strong> — declaro estar
                       ciente de que a ficha SAPS 3 está pendente e deve ser finalizada em até 24 h.
                     </span>
@@ -798,7 +798,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
           </Tabs>
         </div>
 
-        <DialogFooter className="px-6 py-4 border-t bg-slate-50/60 gap-2 sm:justify-between">
+        <DialogFooter className="px-6 py-4 border-t bg-muted/60 gap-2 sm:justify-between">
           <Button variant="outline" onClick={handlePrint} disabled={submitting} className="gap-2">
             <Printer className="h-4 w-4" /> Imprimir Admissão (Norma Zero)
           </Button>
