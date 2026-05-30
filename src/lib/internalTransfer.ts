@@ -142,7 +142,6 @@ export async function executeInternalTransfer(params: {
         relevant_exams: source.relevantExams?.join("\n") || null,
         pendencies: source.pendencies?.join("\n") || null,
         schedule: source.schedule?.join("\n") || null,
-        admission_history: source.admissionHistory || null,
         admission_date: coerceToIsoTimestamp(source.admissionDate),
         highlighted_diagnoses: source.highlightedDiagnoses || null,
         highlighted_medical_history: source.highlightedMedicalHistory || null,
