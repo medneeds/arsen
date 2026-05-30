@@ -6136,6 +6136,20 @@ const PrescricaoPage = () => {
   //  4) NÃO faz autosave. Rascunho só persiste se o médico clicar "Salvar Rascunho".
   const autoLoadAttemptedRef = useRef(false);
   const [autoLoadTriggered, setAutoLoadTriggered] = useState(false); // sinaliza que pode executar
+
+  // 🔒 Reset ao montar — garante que o auto-load dispare mesmo quando
+  // o componente é reusado pelo React (mesma key, mesmo patientId).
+  // Acontece ao navegar entre módulos (Evolução → Prescrição) com o
+  // mesmo paciente: sem este reset, autoLoadAttemptedRef ficaria true
+  // da sessão anterior e o auto-load nunca redispararia.
+  useEffect(() => {
+    autoLoadAttemptedRef.current = false;
+    autoLoadReadyRef.current = false;
+    setAutoLoadTriggered(false);
+    setAutoLoadDone(!hasRealPatientUrl);
+    loadGenerationRef.current += 1;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // [] = executa apenas na montagem
   // 🔒 FIX: autoLoadDone começa como false quando há paciente real na URL,
   // garantindo que o spinner cubra 100% da área de prescrição desde o primeiro
   // frame — sem piscar itens demo intermediários.

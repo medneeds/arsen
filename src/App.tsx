@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route, Navigate, useSearchParams } from "react-router-dom";
+import { Routes, Route, Navigate, useSearchParams, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/MainLayout";
 import { IpRestricted } from "@/components/IpRestricted";
@@ -124,15 +124,54 @@ function ProfileHomeRedirect() {
 }
 
 /**
- * 🔒 EvolucaoPageWrapper — força remontagem completa ao trocar de paciente.
- * key={patientId} faz React desmontar e remontar EvolucaoPage inteiramente
- * quando o patientId muda — todos os hooks reiniciam do zero, garantindo
- * sincronização perfeita entre cabeçalho superior e corpo da evolução.
+ * 🔒 Wrappers clínicos — força remontagem completa ao trocar de paciente.
+ *
+ * PROBLEMA: sem key, React reutiliza a instância do componente ao navegar
+ * entre pacientes ou ao voltar ao mesmo módulo. Hooks com estado interno
+ * (autoLoadAttemptedRef, usePatientLive, useEvolutions…) ficam stale —
+ * o auto-load não redispara, causando travamento e conteúdo desatualizado.
+ *
+ * SOLUÇÃO: key={patientId} força desmontagem e remontagem completa sempre
+ * que o paciente muda. Aplicado em todos os módulos clínicos.
+ *
+ * NAVEGAÇÃO ENTRE MÓDULOS (mesmo paciente): key não muda → React reutiliza
+ * a instância → estado preservado corretamente (sem reload desnecessário).
+ * O auto-load é controlado internamente por flags de estado/ref.
  */
-function EvolucaoPageWrapper() {
+function usePatientKey() {
   const [searchParams] = useSearchParams();
+  const { pathname } = useLocation();
+  // Inclui pathname na key para forçar remontagem ao trocar de módulo
+  // (ex: Evolução → Prescrição com o mesmo paciente).
+  // Isso garante que autoLoadAttemptedRef e demais estados resetem
+  // inteiramente a cada troca de módulo — sem conteúdo travado.
   const patientId = searchParams.get("patientId") || "no-patient";
-  return <EvolucaoPage key={patientId} />;
+  return `${pathname}::${patientId}`;
+}
+
+function EvolucaoPageWrapper() {
+  const key = usePatientKey();
+  return <EvolucaoPage key={key} />;
+}
+
+function PrescricaoPageWrapper() {
+  const key = usePatientKey();
+  return <PrescricaoPage key={key} />;
+}
+
+function RequisicaoPageWrapper() {
+  const key = usePatientKey();
+  return <RequisicaoUnificadaPage key={key} />;
+}
+
+function HistoricoPageWrapper() {
+  const key = usePatientKey();
+  return <HistoricoPacientePage key={key} />;
+}
+
+function DocumentosPageWrapper() {
+  const key = usePatientKey();
+  return <DocumentosPacientePage key={key} />;
 }
 
 const App = () => {
@@ -198,13 +237,13 @@ const App = () => {
               <Route path="/therapeutic-templates" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><TherapeuticTemplatesPage /></MainLayout></ProtectedRoute>} />
               <Route path="/round" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RoundPage /></MainLayout></ProtectedRoute>} />
               <Route path="/relatorio" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RelatorioPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/requisicoes" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/requisicoes" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoPageWrapper /></MainLayout></ProtectedRoute>} />
               <Route path="/requisicao/laboratorio" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
               <Route path="/requisicao/imagens" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
               <Route path="/requisicao/parecer" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
               <Route path="/monitoramento" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MonitoramentoClinicoPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/documentos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DocumentosPacientePage /></MainLayout></ProtectedRoute>} />
-              <Route path="/prescricao" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><PrescricaoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documentos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DocumentosPageWrapper /></MainLayout></ProtectedRoute>} />
+              <Route path="/prescricao" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><PrescricaoPageWrapper /></MainLayout></ProtectedRoute>} />
               <Route path="/evolucao" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><EvolucaoPageWrapper /></MainLayout></ProtectedRoute>} />
               <Route path="/movimentacoes" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MovimentacoesPage /></MainLayout></ProtectedRoute>} />
               <Route path="/catalogo-medicamentos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MedicationCatalogPage /></MainLayout></ProtectedRoute>} />
@@ -223,7 +262,7 @@ const App = () => {
               <Route path="/ue-vertical" element={<ProtectedRoute><UeVerticalPage /></ProtectedRoute>} />
               <Route path="/ue-horizontal" element={<ProtectedRoute><UeHorizontalPage /></ProtectedRoute>} />
               <Route path="/ficha-atendimento" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><FichaAtendimentoPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/historico-paciente" element={<ProtectedRoute><HistoricoPacientePage /></ProtectedRoute>} />
+              <Route path="/historico-paciente" element={<ProtectedRoute><HistoricoPageWrapper /></ProtectedRoute>} />
               <Route path="/dev-console" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IpRestricted moduleKey="dev_console" moduleLabel="Console Dev"><DevConsolePage /></IpRestricted></MainLayout></ProtectedRoute>} />
               <Route path="/admin/ip-allowlist" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IpAllowlistPage /></MainLayout></ProtectedRoute>} />
               <Route path="/relatorio-1" element={<Relatorio1Page />} />
