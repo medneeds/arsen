@@ -142,7 +142,6 @@ export async function executeInternalTransfer(params: {
         relevant_exams: source.relevantExams?.join("\n") || null,
         pendencies: source.pendencies?.join("\n") || null,
         schedule: source.schedule?.join("\n") || null,
-        admission_history: source.admissionHistory || null,
         admission_date: coerceToIsoTimestamp(source.admissionDate),
         highlighted_diagnoses: source.highlightedDiagnoses || null,
         highlighted_medical_history: source.highlightedMedicalHistory || null,
@@ -532,7 +531,7 @@ export async function completeInternalTransfer(
         relevant_exams: snapshot.relevantExams?.join("\n") || null,
         pendencies: snapshot.pendencies?.join("\n") || null,
         schedule: snapshot.schedule?.join("\n") || null,
-        admission_history: snapshot.admissionHistory || null,
+        
         admission_date: coerceToIsoTimestamp(snapshot.admissionDate),
         highlighted_diagnoses: snapshot.highlightedDiagnoses || null,
         highlighted_medical_history: snapshot.highlightedMedicalHistory || null,
