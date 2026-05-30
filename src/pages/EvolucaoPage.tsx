@@ -431,10 +431,10 @@ const EvolucaoPage = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5 text-xs border-amber-500/40 text-amber-700 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400 flex-1 sm:flex-none min-h-9"
+                  className="gap-1.5 text-xs border-border text-muted-foreground hover:bg-muted hover:text-foreground flex-1 sm:flex-none min-h-9"
                   disabled={showIntercurrenceForm || showNewForm}
                 >
-                  <Zap className="h-3.5 w-3.5" /> Evolução complementar
+                  Evolução complementar
                   <ChevronDown className="h-3 w-3 opacity-70" />
                 </Button>
               </DropdownMenuTrigger>
