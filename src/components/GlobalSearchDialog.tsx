@@ -303,6 +303,21 @@ export const GlobalSearchDialog = forwardRef<GlobalSearchHandle, GlobalSearchDia
                       {sectorLabel[p.sector] || p.sector} • {p.department}
                     </p>
                   </div>
+                  <button
+                    type="button"
+                    onPointerDown={(e) => {
+                      // Impede o CommandItem de capturar o clique e disparar o handleSelectPatient
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setOpen(false);
+                      navigate(`/historico-paciente?patientId=${p.id}`);
+                    }}
+                    title="Abrir histórico do prontuário"
+                    className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-1 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0"
+                  >
+                    <FileSearch className="h-3 w-3" />
+                    Histórico
+                  </button>
                   <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                 </CommandItem>
               ))}
