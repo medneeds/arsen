@@ -5,7 +5,8 @@ import { ptBR } from "date-fns/locale";
 import {
   ArrowLeft, Search, Filter, Download, Clock, User as UserIcon,
   Stethoscope, Pill, FlaskConical, Activity, BedDouble, FileText,
-  Microscope, Truck, ClipboardEdit, Hospital, Loader2, Printer
+  Microscope, Truck, ClipboardEdit, Hospital, Loader2, Printer,
+  HeartPulse, Users, FileCheck
 } from "lucide-react";
 import {
   usePatientTimeline,
@@ -42,6 +43,9 @@ const ICONS: Record<TimelineEventType, React.ElementType> = {
   bed_status: BedDouble,
   dispensation: Pill,
   dhd: Pill,
+  vital_signs: HeartPulse,
+  round: Users,
+  discharge_document: FileCheck,
 };
 
 export default function HistoricoPacientePage() {
