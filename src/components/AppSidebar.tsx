@@ -78,6 +78,7 @@ import { useIsDev } from "@/hooks/useIsDev";
 import { supabase } from "@/integrations/supabase/client";
 import type { AccessProfile } from "@/config/userProfiles";
 import { useIsCoordenador } from "@/hooks/useIsCoordenador";
+import { SidebarPatientSearch } from "@/components/SidebarPatientSearch";
 
 function DevConsoleLink({ isCollapsed, onNavigate }: { isCollapsed: boolean; onNavigate: () => void }) {
   const { isDev } = useIsDev();
