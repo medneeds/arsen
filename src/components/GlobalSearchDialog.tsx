@@ -2,7 +2,7 @@ import { useState, useEffect, forwardRef, useImperativeHandle, useRef, useCallba
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
-import { Search, ArrowRight, History, BedDouble, Loader2 } from "lucide-react";
+import { Search, ArrowRight, History, BedDouble, Loader2, FileSearch } from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
