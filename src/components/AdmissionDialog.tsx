@@ -64,7 +64,9 @@ interface AdmissionDialogProps {
     sector: string;
     age?: string | number;
     department?: string;
+    patient_registry_id?: string | null;
   };
+
   onSuccess?: () => void;
 }
 

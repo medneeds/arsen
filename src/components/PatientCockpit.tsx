@@ -275,26 +275,27 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         )}
         {/* Expanded content */}
         <div className={cn("flex flex-col flex-1 min-h-0", variant === "fixed" && !isExpanded && "hidden")}>
-        {variant === "fixed" && isExpanded && (
-          <div className="flex justify-end px-2 pt-2 bg-gradient-to-b from-[hsl(217,55%,40%)]/[0.06] via-[hsl(217,55%,40%)]/[0.03] to-transparent border-b border-[hsl(217,30%,86%)]/40 dark:border-[hsl(217,30%,26%)]/40">
-            <button
-              type="button"
-              title={pinned ? "Desafixar (recolher ao tirar o mouse)" : "Fixar painel aberto"}
-              onClick={() => setPinned((v) => !v)}
-              className={cn(
-                "inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full transition-all duration-200",
-                pinned
-                  ? "bg-gradient-to-r from-[hsl(217,70%,40%)] to-[hsl(217,72%,36%)] text-white shadow-sm hover:shadow-md"
-                  : "bg-muted/60 text-muted-foreground hover:bg-[hsl(217,55%,40%)]/10 hover:text-[hsl(217,72%,32%)]"
-              )}
-            >
-              <ChevronRight className={cn("h-3 w-3 transition-transform", pinned ? "rotate-90" : "rotate-180")} />
-              {pinned ? "Fixado" : "Fixar"}
-            </button>
-          </div>
-        )}
-        {/* ===== ZONA 1: IDENTIDADE (sticky) ===== */}
-        <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2.5 sm:pb-3 border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
+        {/* ===== ZONA 1: IDENTIDADE (sticky) — integra a barra de fixar no mesmo gradiente ===== */}
+        <div className="px-3 sm:px-4 pt-2 pb-2.5 sm:pb-3 border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
+          {variant === "fixed" && isExpanded && (
+            <div className="flex justify-end -mx-1 mb-1.5">
+              <button
+                type="button"
+                title={pinned ? "Desafixar (recolher ao tirar o mouse)" : "Fixar painel aberto"}
+                onClick={() => setPinned((v) => !v)}
+                className={cn(
+                  "inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full transition-all duration-200",
+                  pinned
+                    ? "bg-gradient-to-r from-[hsl(217,70%,40%)] to-[hsl(217,72%,36%)] text-white shadow-sm hover:shadow-md"
+                    : "bg-muted/60 text-muted-foreground hover:bg-[hsl(217,55%,40%)]/10 hover:text-[hsl(217,72%,32%)]"
+                )}
+              >
+                <ChevronRight className={cn("h-3 w-3 transition-transform", pinned ? "rotate-90" : "rotate-180")} />
+                {pinned ? "Fixado" : "Fixar"}
+              </button>
+            </div>
+          )}
+
           <PatientIdentityHeader
             patientId={patient.id}
             fallbackName={patient.name}
