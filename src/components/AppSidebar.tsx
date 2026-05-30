@@ -168,8 +168,9 @@ export function AppSidebar({
   // Hook for pending password reset requests
   const { pendingCount: pendingResets } = usePendingPasswordResets();
   
-  // Check if user is COORDENADOR
-  const isCoordinator = user?.email === "coordenador@sistema.local";
+  // Check if user is COORDENADOR (server-side via profiles.access_profile/access_profiles)
+  const { isCoordenador, kind: coordKind } = useIsCoordenador();
+  const isCoordinator = isCoordenador;
   
   // Check if user is Gestor Master (full access without password)
   const isGestorMaster = user?.email === "artur.batista@sistema.local";
