@@ -114,22 +114,16 @@ export function useEvolutions(
         .is("archived_at", null)
         .order("created_at", { ascending: false });
 
-      // 🔒 Aplicar barreira de setor se disponível.
-      // OR cobre os dois formatos históricos: código interno ("yellow") e nome de exibição ("UTI 2"),
-      // além de registros sem patient_sector (gravados antes da padronização do campo).
-      const sectorDisplayNames: Record<string, string> = {
-        "red": "UTI 1", "yellow": "UTI 2", "blue": "UCI 1", "outside": "UCI 2",
-      };
-      const sectorDisplayName = normalizedSector ? (sectorDisplayNames[normalizedSector] ?? normalizedSector) : null;
-      if (normalizedSector && sectorDisplayName && normalizedSector !== sectorDisplayName) {
-        query = query.or(
-          `patient_sector.eq.${normalizedSector},patient_sector.eq.${sectorDisplayName},patient_sector.is.null`
-        );
-      } else if (normalizedSector) {
-        query = query.or(`patient_sector.eq.${normalizedSector},patient_sector.is.null`);
-      }
+      // 🔒 Barreira de setor: só aplicada quando NÃO temos registry_id.
+      // Quando registry_id está disponível, ele identifica o paciente permanentemente
+      // através de todos os setores — não faz sentido filtrar por setor porque o
+      // paciente pode ter evoluções gravadas em setores anteriores (ex: José Ribamar
+      // tinha evoluções de "outside" antes de chegar em "yellow").
+      // A barreira de setor só protege contra vazamento quando usamos patient_id
+      // como filtro principal (patient_id muda por leito, registry_id não).
 
       if (resolvedRegistryId) {
+        // Com registry: sem barreira de setor — registry já garante isolamento.
         // 🔒 Quando temos registry_id como âncora, ele é suficiente para identificar
         // o paciente de forma segura. NÃO filtramos por encounter_id aqui porque:
         // - Evoluções D1-D6 podem ter encounter_id de um encounter antigo (fechado/reaberto)
@@ -141,7 +135,16 @@ export function useEvolutions(
           `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${safePatientId})`
         );
       } else if (safePatientId && activeEncounterId) {
-        // Sem registry: buscar por patient_id, cobrindo encounter ativo e legados sem encounter
+        // Sem registry: aplicar barreira de setor + filtro por patient_id
+        if (normalizedSector) {
+          const sectorDisplayNames2: Record<string, string> = { "red": "UTI 1", "yellow": "UTI 2", "blue": "UCI 1", "outside": "UCI 2" };
+          const sectorDisplayName2 = sectorDisplayNames2[normalizedSector] ?? normalizedSector;
+          if (normalizedSector !== sectorDisplayName2) {
+            query = query.or(`patient_sector.eq.${normalizedSector},patient_sector.eq.${sectorDisplayName2},patient_sector.is.null`);
+          } else {
+            query = query.or(`patient_sector.eq.${normalizedSector},patient_sector.is.null`);
+          }
+        }
         query = query
           .eq("patient_id", safePatientId)
           .or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
