@@ -77,6 +77,7 @@ import { useTheme } from "next-themes";
 import { useIsDev } from "@/hooks/useIsDev";
 import { supabase } from "@/integrations/supabase/client";
 import type { AccessProfile } from "@/config/userProfiles";
+import { useIsCoordenador } from "@/hooks/useIsCoordenador";
 
 function DevConsoleLink({ isCollapsed, onNavigate }: { isCollapsed: boolean; onNavigate: () => void }) {
   const { isDev } = useIsDev();
