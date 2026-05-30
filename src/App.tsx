@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useSearchParams } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/MainLayout";
 import { IpRestricted } from "@/components/IpRestricted";
@@ -123,6 +123,18 @@ function ProfileHomeRedirect() {
   return <ClinicalDashboardPage />;
 }
 
+/**
+ * 🔒 EvolucaoPageWrapper — força remontagem completa ao trocar de paciente.
+ * key={patientId} faz React desmontar e remontar EvolucaoPage inteiramente
+ * quando o patientId muda — todos os hooks reiniciam do zero, garantindo
+ * sincronização perfeita entre cabeçalho superior e corpo da evolução.
+ */
+function EvolucaoPageWrapper() {
+  const [searchParams] = useSearchParams();
+  const patientId = searchParams.get("patientId") || "no-patient";
+  return <EvolucaoPage key={patientId} />;
+}
+
 const App = () => {
   const [isHandoverOpen, setIsHandoverOpen] = useState(false);
 
@@ -193,7 +205,7 @@ const App = () => {
               <Route path="/monitoramento" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MonitoramentoClinicoPage /></MainLayout></ProtectedRoute>} />
               <Route path="/documentos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DocumentosPacientePage /></MainLayout></ProtectedRoute>} />
               <Route path="/prescricao" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><PrescricaoPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/evolucao" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><EvolucaoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/evolucao" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><EvolucaoPageWrapper /></MainLayout></ProtectedRoute>} />
               <Route path="/movimentacoes" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MovimentacoesPage /></MainLayout></ProtectedRoute>} />
               <Route path="/catalogo-medicamentos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MedicationCatalogPage /></MainLayout></ProtectedRoute>} />
               <Route path="/painel-gestor" element={<ProtectedRoute><IpRestricted moduleKey="gestor" moduleLabel="Painel Gestor"><GestorPanelPage /></IpRestricted></ProtectedRoute>} />

@@ -55,16 +55,29 @@ const EvolucaoPage = () => {
   const { currentHospital } = useHospital();
   const [searchParams] = useSearchParams();
 
-  const initialPatientName = searchParams.get("patientName") || "";
-  const initialPatientBed = searchParams.get("patientBed") || "";
+  // ─── Parâmetros da URL — reativos, atualizados a cada troca de paciente ───
+  const initialPatientName   = searchParams.get("patientName")   || "";
+  const initialPatientBed    = searchParams.get("patientBed")    || "";
   const initialPatientSector = searchParams.get("patientSector") || "";
-  const initialPatientId = searchParams.get("patientId") || "";
-  const sectorMap: Record<string, string> = { red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2" };
+  const initialPatientId     = searchParams.get("patientId")     || "";
 
-  const [patient] = useState<PatientHeader>(() => {
-    // ⚠️  CRÍTICO: nunca usar dados-demo (L09/L10/L11 = "Maria das Graças")
-    // quando há patientId real na URL — esse override era a causa do PDF de
-    // evolução vir com cabeçalho de outro paciente em UTI 2 leito 10.
+  const sectorMap: Record<string, string> = {
+    red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2",
+  };
+
+  // ─── FIX: cabeçalho dessincronizado ao alternar pacientes ──────────────────
+  // ANTES: useState(() => {...}) executa UMA VEZ na montagem — ao trocar o
+  //   paciente via URL, searchParams muda mas `patient` permanecia stale,
+  //   causando o cabeçalho superior mostrar o novo paciente enquanto o corpo
+  //   da evolução ainda exibia o anterior.
+  //
+  // DEPOIS: useMemo reavalia toda vez que qualquer searchParam muda, mantendo
+  //   cabeçalho superior e corpo SEMPRE sincronizados com o paciente ativo.
+  //
+  // ⚠️  CRÍTICO: nunca usar dados-demo (L09/L10/L11 = "Maria das Graças")
+  //   quando há patientId real na URL — esse override era a causa do PDF de
+  //   evolução vir com cabeçalho de outro paciente em UTI 2 leito 10.
+  const patient = useMemo<PatientHeader>(() => {
     const hasRealPatient = !!initialPatientId;
     const demoPatients: Record<string, Omit<PatientHeader, "bed" | "unit">> = {
       L09: { name: "Iglesio Ferreira da Silva", birthDate: "1953-07-14", age: "72 anos", sex: "Masculino", record: "PRN-2024-08451", admissionDate: "2026-03-15", weight: "78", allergies: "Dipirona, Sulfa" },
@@ -80,7 +93,8 @@ const EvolucaoPage = () => {
       bed: initialPatientBed,
       unit: sectorMap[initialPatientSector] || initialPatientSector,
     };
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPatientId, initialPatientName, initialPatientBed, initialPatientSector]);
 
   const {
     evolutions, loading,

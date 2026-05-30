@@ -55,6 +55,15 @@ export function usePatientLive(patientId: string | null) {
     setLoading(false);
   }, [patientId]);
 
+  // 🔒 Reset imediato ao trocar de paciente — evita que dados stale do
+  // paciente anterior apareçam no cockpit/cabeçalho durante o fetch.
+  // O wrapper EvolucaoPageWrapper já força remontagem via key={patientId},
+  // mas este reset protege outros contextos que usem usePatientLive.
+  useEffect(() => {
+    setPatient(null);
+    setLoading(true);
+  }, [patientId]);
+
   useEffect(() => { fetchOnce(); }, [fetchOnce]);
 
   useEffect(() => {
