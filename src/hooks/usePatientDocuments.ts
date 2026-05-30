@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { asUuidOrNull } from "@/lib/utils";
 import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
+import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
 
 /**
  * Tipo unificado para qualquer documento clínico vinculado a um paciente.
@@ -106,6 +107,8 @@ export function usePatientDocuments({
   const validId = asUuidOrNull(patientId);
   // Fase B.2 — filtro por encounter ativo (evita vazamento do ocupante anterior do leito)
   const { encounterId: activeEncounterId } = useActiveEncounterId(validId);
+  // 🔒 Registry resolvido para cobertura de evoluções legadas (patient_registry_id=NULL)
+  const { registryId: resolvedRegistryId } = useResolvedRegistryId(validId);
 
   const fetchAll = useCallback(async () => {
     if (!hospitalUnitId || !stateId) return;
@@ -146,6 +149,7 @@ export function usePatientDocuments({
       if (encounterOr) cultureQuery = cultureQuery.or(encounterOr);
 
       // ── clinical_evolutions ──
+      // OR cobre evoluções legadas (patient_registry_id=NULL gravadas antes do registry)
       let evolQuery = supabase
         .from("clinical_evolutions")
         .select("id, patient_name, patient_sector, patient_bed, status, created_at, created_by_name")
@@ -155,8 +159,15 @@ export function usePatientDocuments({
         .is("archived_at", null)
         .order("created_at", { ascending: false })
         .limit(50);
-      if (validId) evolQuery = evolQuery.eq("patient_id", validId);
-      else if (patientName) evolQuery = evolQuery.eq("patient_name", patientName);
+      if (resolvedRegistryId && validId) {
+        evolQuery = evolQuery.or(
+          `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${validId})`
+        );
+      } else if (validId) {
+        evolQuery = evolQuery.eq("patient_id", validId);
+      } else if (patientName) {
+        evolQuery = evolQuery.eq("patient_name", patientName);
+      }
       if (encounterOr) evolQuery = evolQuery.or(encounterOr);
 
       const [examRes, cultureRes, evolRes] = await Promise.all([examQuery, cultureQuery, evolQuery]);
@@ -232,7 +243,7 @@ export function usePatientDocuments({
     } finally {
       setLoading(false);
     }
-  }, [validId, patientName, hospitalUnitId, stateId, activeEncounterId]);
+  }, [validId, patientName, hospitalUnitId, stateId, activeEncounterId, resolvedRegistryId]);
 
   useEffect(() => {
     fetchAll();

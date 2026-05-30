@@ -346,6 +346,11 @@ export async function signalInternalTransfer(
       .eq("id", source.id);
     if (clearError) throw clearError;
 
+    // 🔒 Invalida o cache de registry do leito origem imediatamente após o clear,
+    // evitando que o TTL de 30s propague dados do paciente anterior para um
+    // próximo ocupante do mesmo leito enquanto o cache estiver quente.
+    invalidateResolvedRegistry(source.id);
+
     await supabase.from("patient_movements").insert({
       patient_id: source.id,
       patient_name: source.name,
@@ -499,7 +504,11 @@ export async function completeInternalTransfer(
       hospital_unit_id: hospitalUnitId,
     });
 
+    // 🔒 Invalida o cache TANTO do leito destino (que recebeu o paciente)
+    // QUANTO do leito origem (que foi zerado na Etapa 1) — garante que
+    // um próximo ocupante do leito de origem não herde o registry antigo.
     invalidateResolvedRegistry(targetBedRow.id);
+    invalidateResolvedRegistry(sourcePatientId);
 
     return { ok: true, classification, needsSaps };
   } catch (err: any) {

@@ -45,12 +45,17 @@ export function useActivePrescription(
       .is("archived_at", null)
       .neq("status", "draft");
 
-    if (resolvedRegistryId && activeEncounterId) {
-      // Caminho ideal: registry resolvido + encounter ativo
-      // Aceita encounter_id NULL (legado) p/ não esconder prescrições antigas.
+    if (resolvedRegistryId && activeEncounterId && patientId) {
+      // Caminho ideal: registry + encounter + patient_id.
+      // OR duplo cobre prescrições legadas (patient_registry_id=NULL ou encounter=NULL).
       query = query
-        .eq("patient_registry_id", resolvedRegistryId)
+        .or(`patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${patientId})`)
         .or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
+    } else if (resolvedRegistryId && patientId) {
+      // Sem encounter: cobre registry + legados sem registry
+      query = query.or(
+        `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${patientId})`
+      );
     } else if (resolvedRegistryId) {
       query = query.eq("patient_registry_id", resolvedRegistryId);
     } else if (patientId && activeEncounterId) {
@@ -103,7 +108,8 @@ export function useActivePrescription(
           const row: any = payload.new || payload.old;
           if (
             (resolvedRegistryId && row?.patient_registry_id === resolvedRegistryId) ||
-            (!resolvedRegistryId && row?.patient_name?.trim() === patientName.trim())
+            (patientId && row?.patient_id === patientId) ||
+            (!resolvedRegistryId && !patientId && row?.patient_name?.trim() === patientName.trim())
           ) {
             fetch();
           }

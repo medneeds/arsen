@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
+import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
 
 export interface PatientMovement {
   id: string;
@@ -28,6 +29,8 @@ export function usePatientMovements(
 
   // Fase B.1 — isola pelo atendimento ativo
   const { encounterId: activeEncounterId } = useActiveEncounterId(patientId);
+  // 🔒 Registry para cobertura pós-transferência (patient_id é repontado pelo RPC)
+  const { registryId: resolvedRegistryId } = useResolvedRegistryId(patientId);
 
   const fetchMovements = useCallback(async () => {
     if (!patientId && !patientName) { setMovements([]); return; }
@@ -62,7 +65,7 @@ export function usePatientMovements(
       })));
     }
     setLoading(false);
-  }, [patientId, patientName, hospitalUnitId, activeEncounterId]);
+  }, [patientId, patientName, hospitalUnitId, activeEncounterId, resolvedRegistryId]);
 
   useEffect(() => { fetchMovements(); }, [fetchMovements]);
 

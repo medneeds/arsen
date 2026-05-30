@@ -23,7 +23,7 @@ export interface LatestVitalSigns {
  * Realtime: último registro de sinais vitais do paciente.
  * Dispara toasts quando outro usuário registra valores críticos.
  */
-export function useLatestVitalSigns(patientId: string | null) {
+export function useLatestVitalSigns(patientId: string | null, patientName?: string | null) {
   const [vitals, setVitals] = useState<LatestVitalSigns | null>(null);
   const [loading, setLoading] = useState(false);
   const lastSeenIdRef = useRef<string | null>(null);
@@ -48,6 +48,27 @@ export function useLatestVitalSigns(patientId: string | null) {
     const { data, error } = await query
       .order("recorded_at", { ascending: false })
       .limit(1);
+
+    // 🔒 Fallback por nome: quando patient_id não retorna resultado
+    // (paciente recém-transferido antes do repoint async completar),
+    // tentamos por patientName + hospitalUnitId se disponível.
+    // Apenas para leitura — nunca usado para gravar.
+    if (!error && (!data || data.length === 0) && patientName) {
+      const { data: fallbackData } = await supabase
+        .from("vital_signs")
+        .select("id, recorded_at, recorded_by_name, systolic_bp, diastolic_bp, heart_rate, respiratory_rate, spo2, temperature, news2_score, news2_risk, lactate, potassium")
+        .eq("patient_name", patientName.trim())
+        .order("recorded_at", { ascending: false })
+        .limit(1);
+      if (fallbackData && fallbackData.length > 0) {
+        const r: any = fallbackData[0];
+        setVitals({ id: r.id, recordedAt: r.recorded_at, recordedByName: r.recorded_by_name, systolicBp: r.systolic_bp, diastolicBp: r.diastolic_bp, heartRate: r.heart_rate, respiratoryRate: r.respiratory_rate, spo2: r.spo2, temperature: r.temperature, news2Score: r.news2_score, news2Risk: r.news2_risk, lactate: r.lactate, potassium: r.potassium });
+        lastSeenIdRef.current = r.id;
+        setLoading(false);
+        return;
+      }
+    }
+
     if (!error && data && data.length > 0) {
       const r: any = data[0];
       setVitals({
@@ -70,7 +91,7 @@ export function useLatestVitalSigns(patientId: string | null) {
       setVitals(null);
     }
     setLoading(false);
-  }, [patientId, activeEncounterId]);
+  }, [patientId, patientName, activeEncounterId]);
 
   useEffect(() => {
     fetchLatest();

@@ -91,8 +91,10 @@ export function useActiveEncounterId(patientId: string | null): {
         () => { resolve().catch(() => {}); },
       )
       .on(
+        // 🔒 Escuta mudanças no leito (patients) — detecta transferências que
+        // alteram patient_registry_id, disparando re-resolução do encounter.
         "postgres_changes",
-        { event: "*", schema: "public", table: "patients", filter: `id=eq.${patientId}` },
+        { event: "UPDATE", schema: "public", table: "patients", filter: `id=eq.${patientId}` },
         () => { resolve().catch(() => {}); },
       )
       .subscribe();
