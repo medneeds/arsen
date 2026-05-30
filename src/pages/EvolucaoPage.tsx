@@ -9,6 +9,7 @@ import { SapsPendingAlert } from "@/components/SapsPendingAlert";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import arsenLogo from "@/assets/arsen-logo.png";
+import { NormaZeroPrintHeader, generatePrintDocCode } from "@/components/NormaZeroPrintHeader";
 import {
   NotebookPen, Plus, Loader2, AlertTriangle, ChevronDown, Sun, Moon, Zap,
 } from "lucide-react";
@@ -595,23 +596,96 @@ const EvolucaoPage = () => {
       </div>
 
       {/* Print layout */}
-      <div className="hidden print:block p-4 text-black text-[10px] leading-tight">
-        <div className="flex items-center justify-between border-b border-black pb-1 mb-2">
-          <div>
-            <p className="font-bold text-sm">EVOLUÇÃO CLÍNICA</p>
-            <p>{format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
+      {/* ═══ IMPRESSÃO / PDF — Evolução Clínica ═══
+           Layout idêntico ao da Prescrição: NormaZeroPrintHeader institucional
+           + tabela de 3 linhas com todos os dados do paciente bem distribuídos.
+           Nunca mostrado na tela (hidden print:block). */}
+      <div className="hidden print:block" style={{ fontFamily: '"Helvetica Neue", "Segoe UI", Inter, Arial, sans-serif', color: '#1e293b', width: '186mm', margin: '0 auto', lineHeight: 1.3 }}>
+        {(() => {
+          const docCode = generatePrintDocCode('EVOL');
+          const printDate = format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR });
+
+          const cellSt: React.CSSProperties = { border: '0.5px solid #94a3b8', padding: '3px 6px', fontSize: '7.5pt', lineHeight: 1.3, verticalAlign: 'top' };
+          const labelSt: React.CSSProperties = { ...cellSt, fontWeight: 700, fontSize: '6.5pt', backgroundColor: '#f1f5f9', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.3px' };
+
+          const fmt = (d?: string) => {
+            if (!d) return '—';
+            try { return format(new Date(d + 'T12:00:00'), 'dd/MM/yyyy'); } catch { return d; }
+          };
+
+          return (
+            <>
+              {/* Cabeçalho institucional Norma Zero */}
+              <NormaZeroPrintHeader
+                documentLabel="Evolução Clínica"
+                documentCode={printDate}
+                documentSubtitle={docCode}
+                width="186mm"
+                variant="compact"
+              />
+
+              {/* Tabela de dados do paciente — 3 linhas, 8 colunas */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '6px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                <tbody>
+                  {/* Linha 1: Nome (destaque) */}
+                  <tr>
+                    <td style={labelSt}>Paciente</td>
+                    <td style={{ ...cellSt, fontWeight: 800, fontSize: '9pt', letterSpacing: '-0.01em' }} colSpan={7}>
+                      {patient.name || '—'}
+                    </td>
+                  </tr>
+                  {/* Linha 2: Leito / Setor / Prontuário / Atendimento */}
+                  <tr>
+                    <td style={labelSt}>Leito</td>
+                    <td style={{ ...cellSt, fontWeight: 700 }}>{patient.bed || '—'}</td>
+                    <td style={labelSt}>Setor / Unidade</td>
+                    <td style={{ ...cellSt, fontWeight: 600 }}>{patient.unit || '—'}</td>
+                    <td style={labelSt}>Prontuário</td>
+                    <td style={{ ...cellSt, fontWeight: 700 }}>{patient.record || '—'}</td>
+                    <td style={labelSt}>Nº Atendimento</td>
+                    <td style={{ ...cellSt, fontWeight: 700 }}>{patient.encounterCode ? `#${patient.encounterCode}` : '—'}</td>
+                  </tr>
+                  {/* Linha 3: Idade / Nascimento / Admissão / Sexo / Peso / Alergias */}
+                  <tr>
+                    <td style={labelSt}>Idade</td>
+                    <td style={cellSt}>{patient.age || '—'}</td>
+                    <td style={labelSt}>Data de Nasc.</td>
+                    <td style={cellSt}>{fmt(patient.birthDate)}</td>
+                    <td style={labelSt}>Admissão</td>
+                    <td style={cellSt}>{fmt(patient.admissionDate)}</td>
+                    <td style={{ ...labelSt, color: '#dc2626', fontSize: '6pt' }}>⚠ ALERGIAS</td>
+                    <td style={{ ...cellSt, fontWeight: 700, color: '#991b1b', backgroundColor: '#fef2f2', fontSize: '7.5pt' }}>
+                      {patient.allergies || 'NDAM'}
+                    </td>
+                  </tr>
+                  {/* Linha 4: Sexo / Peso — linha compacta complementar */}
+                  <tr>
+                    <td style={labelSt}>Sexo</td>
+                    <td style={cellSt}>{patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'Masculino' : 'Feminino') : '—'}</td>
+                    <td style={labelSt}>Peso</td>
+                    <td style={cellSt}>{patient.weight ? `${patient.weight} kg` : '—'}</td>
+                    <td colSpan={4} style={{ ...cellSt, color: '#64748b', fontSize: '7pt', fontStyle: 'italic' }}>
+                      Documento gerado em {printDate} · {docCode}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </>
+          );
+        })()}
+
+        {/* Rodapé de assinatura */}
+        <div style={{ marginTop: '32px', paddingTop: '12px', borderTop: '0.8px solid #1e293b', display: 'flex', justifyContent: 'space-between', fontSize: '7.5pt', color: '#1e293b' }}>
+          <div style={{ textAlign: 'center', flex: 1 }}>
+            <div style={{ borderTop: '0.8px solid #94a3b8', width: '160px', margin: '0 auto 4px' }}/>
+            <div>Médico responsável</div>
+            <div style={{ color: '#475569', fontSize: '7pt' }}>Nome · CRM</div>
           </div>
-          <img src={arsenLogo} className="h-6" alt="Arsen" />
-        </div>
-        <div className="grid grid-cols-4 gap-2 mb-2 border border-black/30 p-1.5 rounded">
-          <div><strong>Paciente:</strong> {patient.name}</div>
-          <div><strong>Leito:</strong> {patient.bed} — {patient.unit}</div>
-          <div><strong>Idade:</strong> {patient.age} | <strong>Sexo:</strong> {patient.sex}</div>
-          <div><strong>Peso:</strong> {patient.weight}kg | <strong>Alergias:</strong> {patient.allergies}</div>
-        </div>
-        <div className="mt-8 pt-4 border-t border-black text-center">
-          <p>_________________________________</p>
-          <p>Médico responsável — CRM</p>
+          <div style={{ textAlign: 'center', flex: 1 }}>
+            <div style={{ borderTop: '0.8px solid #94a3b8', width: '160px', margin: '0 auto 4px' }}/>
+            <div>Enfermeiro(a) responsável</div>
+            <div style={{ color: '#475569', fontSize: '7pt' }}>Nome · COREN</div>
+          </div>
         </div>
       </div>
 
