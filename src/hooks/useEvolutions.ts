@@ -129,14 +129,14 @@ export function useEvolutions(
         query = query.or(`patient_sector.eq.${normalizedSector},patient_sector.is.null`);
       }
 
-      if (resolvedRegistryId && activeEncounterId) {
-        // Caminho ideal: registry resolvido + encounter ativo.
-        // OR cobre evoluções legadas gravadas sem patient_registry_id (ex.: L12, L13, L18 UTI 2).
-        query = query
-          .or(`patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${safePatientId})`)
-          .or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
-      } else if (resolvedRegistryId) {
-        // Sem encounter mas com registry: OR cobre legados sem registry
+      if (resolvedRegistryId) {
+        // 🔒 Quando temos registry_id como âncora, ele é suficiente para identificar
+        // o paciente de forma segura. NÃO filtramos por encounter_id aqui porque:
+        // - Evoluções D1-D6 podem ter encounter_id de um encounter antigo (fechado/reaberto)
+        // - Evoluções gravadas antes do encounter ainda têm encounter_id = null
+        // - O registry_id já garante isolamento — evoluções de outro paciente
+        //   nunca compartilharão o mesmo registry_id.
+        // OR adicional cobre legados sem patient_registry_id (vinculados só por patient_id).
         query = query.or(
           `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${safePatientId})`
         );
