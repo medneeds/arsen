@@ -12,7 +12,7 @@ export interface InternalTransferRequestRow {
   encounter_code: string | null;
   target_sector_code: string;
   target_sector_label: string | null;
-  classification: "escalada_critica" | "desescalada" | "lateral_critica" | "lateral_comum";
+  classification: "escalada_critica" | "escalada_intermediaria" | "escalada_simples" | "desescalada" | "lateral_critica" | "lateral_comum";
   requires_saps: boolean;
   reason: string | null;
   status: "pending" | "completed" | "cancelled";
