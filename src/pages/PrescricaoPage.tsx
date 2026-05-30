@@ -6401,7 +6401,7 @@ const PrescricaoPage = () => {
         setAutoLoadDone(true);
       }
     })();
-  }, [autoLoadTriggered, currentHospital, currentState, patientRegistryId, activeEncounterId, currentPrescriptionId;
+  }, [autoLoadTriggered, currentHospital, currentState, patientRegistryId, activeEncounterId, currentPrescriptionId]);
 
 
   // Fetch version history for a prescription (by patient_name in same hospital)
