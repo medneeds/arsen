@@ -30,6 +30,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
 import { calculateNEWS2, news2RiskLabels, parseVitalNumber } from "@/lib/news2";
+import { ItemListEditor } from "@/components/ItemListEditor";
 
 interface SOAPData {
   subjective: string;
@@ -92,6 +93,12 @@ interface EvolutionFormProps {
   onCopyVitalsFromAdmission?: () => void;
   /** When true, hides the "Plano" section entirely (used by complementary evolutions). */
   hidePlan?: boolean;
+  /** Plano terapêutico por itens (array). Se fornecido, usa ItemListEditor em vez de RichText. */
+  planItems?: string[];
+  onPlanItemsChange?: (items: string[]) => void;
+  /** Programações e pendências — campo opcional retraído */
+  pendenciasItems?: string[];
+  onPendenciasItemsChange?: (items: string[]) => void;
 }
 
 type SectionKey = 'vitals' | 'evolucao' | 'objective' | 'plan' | 'review';
@@ -136,8 +143,13 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   onCopyExamFromAdmission,
   onCopyVitalsFromAdmission,
   hidePlan = false,
+  planItems,
+  onPlanItemsChange,
+  pendenciasItems,
+  onPendenciasItemsChange,
 }) => {
   const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'devices', 'evolucao', 'complementares', 'plan']);
+  const [showPendencias, setShowPendencias] = useState(false);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const { currentHospital } = useHospital();
@@ -513,28 +525,79 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           id="plan"
           icon={FileText}
           iconColor="text-purple-500"
-          label="Plano"
-          hint="Condutas, solicitações, ajustes terapêuticos"
+          label="Plano Terapêutico"
+          hint="Condutas e ajustes — por item, sincroniza com o mapa"
           complete={completion.plan}
           required
         >
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-muted-foreground">
-              {richHtmlToPlainText(soap.plan).length}/10+ caracteres
-            </span>
-            <FieldTemplates
-              scope="evolution.plan"
-              currentValue={soap.plan}
-              onApply={(v) => onSOAPChange('plan', v)}
-              hospitalUnitId={hospitalId}
-            />
-          </div>
-          <RichTextEditor
-            value={soap.plan}
-            onChange={(html) => onSOAPChange('plan', html)}
-            placeholder="Condutas, solicitações, ajustes terapêuticos, metas para próximas 24h..."
-            minHeight={120}
-          />
+          {onPlanItemsChange ? (
+            /* Modo por itens (novo) */
+            <div className="space-y-2">
+              <ItemListEditor
+                items={planItems && planItems.length > 0 ? planItems : [""]}
+                onChange={onPlanItemsChange}
+                placeholder="Ex: Ajustar antibiótico para meropeném 1g 8/8h EV..."
+                addLabel="+ Conduta / Ajuste"
+                numbered
+                numberColor="text-purple-500"
+                showReorder={false}
+              />
+              <p className="text-[9px] text-muted-foreground">
+                Cada item é uma conduta ou ajuste terapêutico. Sincroniza com o mapa de leitos.
+              </p>
+
+              {/* Programações e Pendências — opcional, retraído */}
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowPendencias(p => !p)}
+                  className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+                  <span className={cn(
+                    "inline-flex items-center justify-center h-3.5 w-3.5 rounded-full border text-[8px] font-bold transition-colors",
+                    showPendencias ? "border-orange-400 text-orange-500 bg-orange-50 dark:bg-orange-950/30" : "border-border"
+                  )}>
+                    {showPendencias ? "−" : "+"}
+                  </span>
+                  <span className="font-medium">Programações e Pendências</span>
+                  <span className="text-muted-foreground/60">(opcional — sincroniza com o mapa)</span>
+                </button>
+
+                {showPendencias && onPendenciasItemsChange && (
+                  <div className="mt-2 rounded-md border border-orange-200/60 dark:border-orange-800/40 bg-orange-50/30 dark:bg-orange-950/10 p-2 space-y-1.5">
+                    <ItemListEditor
+                      items={pendenciasItems && pendenciasItems.length > 0 ? pendenciasItems : [""]}
+                      onChange={onPendenciasItemsChange}
+                      placeholder="Ex: Aguardar resultado de hemocultura..."
+                      addLabel="+ Programação / Pendência"
+                      showReorder={false}
+                      numberColor="text-orange-500"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Modo texto livre (legado) */
+            <>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] text-muted-foreground">
+                  {richHtmlToPlainText(soap.plan).length}/10+ caracteres
+                </span>
+                <FieldTemplates
+                  scope="evolution.plan"
+                  currentValue={soap.plan}
+                  onApply={(v) => onSOAPChange('plan', v)}
+                  hospitalUnitId={hospitalId}
+                />
+              </div>
+              <RichTextEditor
+                value={soap.plan}
+                onChange={(html) => onSOAPChange('plan', html)}
+                placeholder="Condutas, solicitações, ajustes terapêuticos, metas para próximas 24h..."
+                minHeight={120}
+              />
+            </>
+          )}
         </SectionItem>
         )}
 

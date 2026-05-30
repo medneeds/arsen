@@ -152,7 +152,10 @@ const EvolucaoPage = () => {
   const [newCulturesHtml, setNewCulturesHtml] = useState("");
   const [creating, setCreating] = useState(false);
   const [diagnosticsReplicated, setDiagnosticsReplicated] = useState(false);
-  const [diagnosticHypotheses, setDiagnosticHypotheses] = useState("");
+  const [diagnosticHypotheses, setDiagnosticHypotheses] = useState<string[]>([]);
+  const [antecedentes, setAntecedentes] = useState<string[]>([]);
+  const [planItems, setPlanItems] = useState<string[]>([]);
+  const [pendenciasItems, setPendenciasItems] = useState<string[]>([]);
   const [pendingDuplicate, setPendingDuplicate] = useState<EvolutionRecord | null>(null);
 
   // CID state — persisted to admission_histories via usePatientCid
@@ -226,12 +229,18 @@ const EvolucaoPage = () => {
       devices: newDevices,
       culturesHtml: newCulturesHtml,
     } as any;
+    const hypoStr = Array.isArray(diagnosticHypotheses)
+      ? diagnosticHypotheses.filter(Boolean).join("\n")
+      : diagnosticHypotheses;
     const result = await createEvolution(
       patient.name, patient.bed, patient.unit,
       soapWithExtras, newVitals, newExam,
-      diagnosticHypotheses,
+      hypoStr,
       cidPrimary || null,
-      Array.isArray(cidSecondary) && cidSecondary.length > 0 ? cidSecondary : null
+      Array.isArray(cidSecondary) && cidSecondary.length > 0 ? cidSecondary : null,
+      antecedentes.filter(Boolean),
+      planItems.filter(Boolean),
+      pendenciasItems.filter(Boolean),
     );
     setCreating(false);
     if (result) {
@@ -279,6 +288,7 @@ const EvolucaoPage = () => {
     setNewDevices(Array.isArray(srcDevices) ? srcDevices : []);
     setNewCulturesHtml(typeof srcCulturesHtml === "string" ? srcCulturesHtml : "");
     const srcHypo = (source as any).diagnostic_hypotheses;
+    const srcAntecedentes = (source as any).antecedentes;
     setDiagnosticHypotheses(typeof srcHypo === "string" ? srcHypo : "");
     setShowNewForm(true);
     setDiagnosticsReplicated(true);
@@ -358,7 +368,9 @@ const EvolucaoPage = () => {
       isolationPrecautions={isolationPrecautions}
       onIsolationChange={updateIsolationPrecautions}
       diagnosticHypotheses={diagnosticHypotheses}
-      onDiagnosticHypothesesChange={setDiagnosticHypotheses}
+      onDiagnosticHypothesesChange={(v) => setDiagnosticHypotheses(Array.isArray(v) ? v : v.split("\n").filter(Boolean))}
+      antecedentes={antecedentes}
+      onAntecedentesChange={setAntecedentes}
       showUtiPrediction={isUtiSector}
       replicated={diagnosticsReplicated}
       onClearAll={handleClearDiagnostics}
@@ -531,6 +543,10 @@ const EvolucaoPage = () => {
               saving={creating}
               diagnosticsSlot={diagnosticsSlot}
               diagnosticsReviewSlot={diagnosticsSlot}
+              planItems={planItems}
+              onPlanItemsChange={setPlanItems}
+              pendenciasItems={pendenciasItems}
+              onPendenciasItemsChange={setPendenciasItems}
               cidPrimary={cidPrimary}
               cidSecondary={cidSecondary}
               devices={newDevices}

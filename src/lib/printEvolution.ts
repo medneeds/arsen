@@ -140,7 +140,25 @@ export const printEvolution = async (
     `
     : "";
 
-  let bodyHtml = patientHeader + diagnosticsHtml;
+  // Antecedentes clínicos — exibidos no PDF logo após diagnósticos
+  const soapAntecedentes: string[] = Array.isArray((evo.soap_data as any)?.antecedentes)
+    ? (evo.soap_data as any).antecedentes.filter(Boolean)
+    : [];
+  // Fallback: ctx pode trazer antecedentes se o chamador os conhecer
+  const antecedentesArr = soapAntecedentes;
+
+  const antecedentesHtml = antecedentesArr.length > 0
+    ? `<h2 class="nz-section">Antecedentes Clínicos</h2>
+       <table style="width:100%;border-collapse:collapse;background:#fffbeb;border:1px solid #fde68a;border-radius:3pt;margin-bottom:6pt">
+         <tbody>
+           ${antecedentesArr.map((a, i) =>
+             `<tr><td style="width:18pt;padding:2pt 4pt;font-weight:700;color:#b45309;vertical-align:top;font-size:8pt">${i+1}.</td><td style="padding:2pt 4pt;font-size:8.5pt;line-height:1.35">${escape(a)}</td></tr>`
+           ).join("")}
+         </tbody>
+       </table>`
+    : "";
+
+  let bodyHtml = patientHeader + diagnosticsHtml + antecedentesHtml;
 
   if (intercurrence) {
     bodyHtml += `
@@ -194,14 +212,29 @@ export const printEvolution = async (
           ? `<h2 class="nz-section">Exames Complementares</h2><div class="nz-rich" style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8.5pt;line-height:1.35">${renderRich(s.objective)}</div>`
           : ""
       }
-      ${
-        richHtmlToPlainText(toRichHtml(s.plan))
-          ? `<h2 class="nz-section">Plano</h2>
-             <div class="nz-rich" style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8.5pt;line-height:1.35">
-               ${renderRich(s.plan)}
-             </div>`
-          : ""
-      }
+      ${(() => {
+        // Plano por itens (novo) ou texto livre (legado)
+        const planItemsArr: string[] = Array.isArray((s as any).planItems) ? (s as any).planItems.filter(Boolean) : [];
+        const planText = richHtmlToPlainText(toRichHtml(s.plan));
+        if (planItemsArr.length > 0) {
+          const rows = planItemsArr.map((item, i) =>
+            `<tr><td style="width:18pt;padding:2pt 4pt;font-weight:700;color:#6d28d9;vertical-align:top;font-size:8pt">${i+1}.</td><td style="padding:2pt 4pt;font-size:8.5pt;line-height:1.35">${escape(item)}</td></tr>`
+          ).join("");
+          return `<h2 class="nz-section">Plano Terapêutico</h2><table style="width:100%;border-collapse:collapse;background:#faf5ff;border:1px solid #ddd6fe;border-radius:3pt"><tbody>${rows}</tbody></table>`;
+        } else if (planText) {
+          return `<h2 class="nz-section">Plano Terapêutico</h2><div class="nz-rich" style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8.5pt;line-height:1.35">${renderRich(s.plan)}</div>`;
+        }
+        return "";
+      })()}
+      ${(() => {
+        // Programações e Pendências (opcional)
+        const pendArr: string[] = Array.isArray((s as any).pendenciasItems) ? (s as any).pendenciasItems.filter(Boolean) : [];
+        if (pendArr.length === 0) return "";
+        const rows = pendArr.map((item, i) =>
+          `<tr><td style="width:18pt;padding:2pt 4pt;font-weight:700;color:#c2410c;vertical-align:top;font-size:8pt">${i+1}.</td><td style="padding:2pt 4pt;font-size:8.5pt;line-height:1.35">${escape(item)}</td></tr>`
+        ).join("");
+        return `<h2 class="nz-section">Programações e Pendências</h2><table style="width:100%;border-collapse:collapse;background:#fff7ed;border:1px solid #fed7aa;border-radius:3pt"><tbody>${rows}</tbody></table>`;
+      })()}
     `;
   }
 

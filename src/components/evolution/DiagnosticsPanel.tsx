@@ -12,6 +12,7 @@ import { CidSearchInput } from "@/components/CidSearchInput";
 import { cn } from "@/lib/utils";
 import { format, parseISO, isValid as isValidDate } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ItemListEditor } from "@/components/ItemListEditor";
 
 interface DiagnosticsPanelProps {
   cidPrimary?: string;
@@ -33,8 +34,11 @@ interface DiagnosticsPanelProps {
   onIsolationChange: (value: string) => void;
 
   /** Texto livre de hipóteses diagnósticas (uma por linha). Sincroniza com mapa de leitos. */
-  diagnosticHypotheses?: string;
-  onDiagnosticHypothesesChange?: (value: string) => void;
+  diagnosticHypotheses?: string | string[];
+  onDiagnosticHypothesesChange?: (value: string | string[]) => void;
+  /** Antecedentes clínicos — novo campo por itens */
+  antecedentes?: string[];
+  onAntecedentesChange?: (items: string[]) => void;
 
   /** Quando true, exibe também o calendário de alta da UTI (setores UTI/UCI). */
   showUtiPrediction?: boolean;
@@ -106,6 +110,8 @@ export function DiagnosticsPanel({
   onIsolationChange,
   diagnosticHypotheses = "",
   onDiagnosticHypothesesChange,
+  antecedentes = [],
+  onAntecedentesChange,
   showUtiPrediction = false,
   onClearAll,
   replicated = false,
@@ -204,33 +210,62 @@ export function DiagnosticsPanel({
         </div>
       </div>
 
-      {/* Hipóteses Diagnósticas (texto livre) — sincroniza com o mapa de leitos */}
-      {onDiagnosticHypothesesChange && (
-        <div className="rounded-md border border-border/60 bg-background/40 p-2.5 space-y-1.5">
+      {/* Hipóteses Diagnósticas — por item, ordenável, sincroniza com mapa de leitos */}
+      {onDiagnosticHypothesesChange && (() => {
+        // Normalizar: aceita string (legado) ou string[]
+        const hypoItems: string[] = Array.isArray(diagnosticHypotheses)
+          ? diagnosticHypotheses as string[]
+          : (diagnosticHypotheses as string).split("\n").filter(Boolean);
+        return (
+          <div className="rounded-md border border-border/60 bg-background/40 p-2.5 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-1.5">
+                <Stethoscope className="h-3 w-3" />
+                Hipóteses / Diagnósticos
+                <span className="text-[9px] normal-case tracking-normal text-muted-foreground/60">(prioridade = ordem)</span>
+              </Label>
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 text-[9px] font-medium">
+                <Lock className="h-2.5 w-2.5" />
+                Sincroniza com o mapa
+              </span>
+            </div>
+            <ItemListEditor
+              items={hypoItems.length > 0 ? hypoItems : [""]}
+              onChange={(arr) => onDiagnosticHypothesesChange(arr)}
+              placeholder="Ex: Sepse de foco pulmonar..."
+              addLabel="+ Hipótese"
+              numbered
+              numberColor="text-primary"
+              showReorder
+            />
+            <p className="text-[9px] text-muted-foreground leading-tight">
+              O item no topo é a hipótese principal. A ordem define prioridade no mapa de leitos.
+            </p>
+          </div>
+        );
+      })()}
+
+      {/* Antecedentes Clínicos — novo campo por item, sincroniza com mapa de leitos */}
+      {onAntecedentesChange && (
+        <div className="rounded-md border border-border/60 bg-background/40 p-2.5 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <Label className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-1.5">
-              <Stethoscope className="h-3 w-3" />
-              Hipóteses / Diagnósticos
-              <span className="text-[9px] normal-case tracking-normal text-muted-foreground/70">
-                (uma por linha)
-              </span>
+              <Stethoscope className="h-3 w-3 text-amber-500" />
+              Antecedentes Clínicos
             </Label>
-            <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 text-[9px] font-medium">
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 text-[9px] font-medium">
               <Lock className="h-2.5 w-2.5" />
               Sincroniza com o mapa
             </span>
           </div>
-          <Textarea
-            value={diagnosticHypotheses}
-            onChange={(e) => onDiagnosticHypothesesChange(e.target.value)}
-            placeholder={"1. Sepse de foco pulmonar\n2. Insuficiência renal aguda KDIGO 2\n3. Diabetes mellitus tipo 2 descompensado"}
-            rows={4}
-            className="text-xs resize-y min-h-[88px]"
+          <ItemListEditor
+            items={antecedentes.length > 0 ? antecedentes : [""]}
+            onChange={onAntecedentesChange}
+            placeholder="Ex: HAS, DM2, Tabagismo..."
+            addLabel="+ Antecedente"
+            showReorder={false}
+            numberColor="text-amber-600"
           />
-          <p className="text-[9px] text-muted-foreground leading-tight">
-            O preenchimento aqui substitui as hipóteses no mapa de leitos ao salvar a evolução.
-            O mapa fica bloqueado para edição direta.
-          </p>
         </div>
       )}
 

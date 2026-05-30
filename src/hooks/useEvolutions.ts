@@ -239,6 +239,9 @@ export function useEvolutions(
     diagnosticHypotheses?: string,
     cidPrimary?: string | null,
     cidSecondary?: string[] | null,
+    antecedentes?: string[],
+    planItems?: string[],
+    pendenciasItems?: string[],
   ): Promise<EvolutionRecord | null> => {
     if (!user || !currentHospital || !currentState) {
       toast.error("Contexto hospitalar não disponível");
@@ -256,7 +259,12 @@ export function useEvolutions(
           patient_name: patientName,
           patient_bed: patientBed,
           patient_sector: patientSector,
-          soap_data: soapData || EMPTY_SOAP,
+          soap_data: {
+            ...(soapData || EMPTY_SOAP),
+            // Campos por item — armazenados no JSON do soap_data
+            planItems: planItems?.filter(Boolean) ?? [],
+            pendenciasItems: pendenciasItems?.filter(Boolean) ?? [],
+          },
           vital_signs: vitalSigns || EMPTY_VITALS,
           physical_exam: physicalExam || EMPTY_EXAM,
           diagnostic_hypotheses: diagnosticHypotheses ?? null,
@@ -273,16 +281,34 @@ export function useEvolutions(
 
       if (error) throw error;
 
-      // Sincroniza hipóteses → mapa de leitos (patients.diagnoses)
-      if (safePatientId && diagnosticHypotheses !== undefined) {
-        const arr = parseDiagnosesText(diagnosticHypotheses);
-        try {
-          await supabase
-            .from("patients")
-            .update({ diagnoses: arr } as any)
-            .eq("id", safePatientId);
-        } catch (syncErr) {
-          console.warn("[useEvolutions] sync diagnoses error", syncErr);
+      // 🔒 Sincronização com o mapa de leitos
+      if (safePatientId) {
+        const patientUpdates: Record<string, unknown> = {};
+
+        // Hipóteses → patients.diagnoses
+        if (diagnosticHypotheses !== undefined) {
+          patientUpdates.diagnoses = parseDiagnosesText(diagnosticHypotheses);
+        }
+
+        // Antecedentes → patients.medical_history
+        if (antecedentes && antecedentes.length > 0) {
+          patientUpdates.medical_history = antecedentes.filter(Boolean).join("\n");
+        }
+
+        // Pendências → patients.pendencies
+        if (pendenciasItems && pendenciasItems.length > 0) {
+          patientUpdates.pendencies = pendenciasItems.filter(Boolean).join("\n");
+        }
+
+        if (Object.keys(patientUpdates).length > 0) {
+          try {
+            await supabase
+              .from("patients")
+              .update(patientUpdates as any)
+              .eq("id", safePatientId);
+          } catch (syncErr) {
+            console.warn("[useEvolutions] sync mapa error", syncErr);
+          }
         }
       }
 
