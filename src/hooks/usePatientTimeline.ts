@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type TimelineEventType =
@@ -13,7 +14,10 @@ export type TimelineEventType =
   | "conduct_change"
   | "bed_status"
   | "dispensation"
-  | "dhd";
+  | "dhd"
+  | "vital_signs"
+  | "round"
+  | "discharge_document";
 
 export interface TimelineEvent {
   event_id: string;
@@ -43,6 +47,28 @@ export interface UsePatientTimelineOptions {
   enabled?: boolean;
 }
 
+/**
+ * Tabelas-fonte que alimentam a view patient_timeline.
+ * Subscritas via realtime para invalidar o cache da timeline.
+ */
+const TIMELINE_SOURCE_TABLES = [
+  "pre_admissions",
+  "patient_encounters",
+  "admission_histories",
+  "clinical_evolutions",
+  "prescriptions",
+  "exam_requests",
+  "culture_results",
+  "patient_movements",
+  "conduct_history",
+  "bed_status_history",
+  "dispensations",
+  "dhd_patients",
+  "vital_signs",
+  "round_sessions",
+  "discharge_documents",
+] as const;
+
 export function usePatientTimeline(opts: UsePatientTimelineOptions) {
   const {
     patientRegistryId,
@@ -55,17 +81,44 @@ export function usePatientTimeline(opts: UsePatientTimelineOptions) {
     enabled = true,
   } = opts;
 
+  const queryClient = useQueryClient();
+
+  const queryKey = [
+    "patient-timeline",
+    patientRegistryId,
+    patientId,
+    eventTypes,
+    fromDate,
+    toDate,
+    search,
+    limit,
+  ];
+
+  // Realtime: invalida a query quando qualquer tabela-fonte muda para o paciente
+  useEffect(() => {
+    if (!enabled || (!patientRegistryId && !patientId)) return;
+
+    const channel = supabase.channel(`timeline-${patientRegistryId ?? patientId}`);
+
+    TIMELINE_SOURCE_TABLES.forEach((table) => {
+      channel.on(
+        "postgres_changes" as any,
+        { event: "*", schema: "public", table },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["patient-timeline"] });
+        }
+      );
+    });
+
+    channel.subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [enabled, patientRegistryId, patientId, queryClient]);
+
   return useQuery({
-    queryKey: [
-      "patient-timeline",
-      patientRegistryId,
-      patientId,
-      eventTypes,
-      fromDate,
-      toDate,
-      search,
-      limit,
-    ],
+    queryKey,
     enabled: enabled && (!!patientRegistryId || !!patientId),
     queryFn: async (): Promise<TimelineEvent[]> => {
       const { data, error } = await supabase.rpc("get_patient_timeline", {
@@ -96,6 +149,9 @@ export const EVENT_TYPE_LABELS: Record<TimelineEventType, string> = {
   bed_status: "Leito",
   dispensation: "Dispensação",
   dhd: "DHD",
+  vital_signs: "Sinais vitais",
+  round: "Round multiprofissional",
+  discharge_document: "Alta / Óbito",
 };
 
 export const EVENT_TYPE_COLORS: Record<TimelineEventType, string> = {
@@ -111,4 +167,7 @@ export const EVENT_TYPE_COLORS: Record<TimelineEventType, string> = {
   bed_status: "bg-slate-500/10 text-slate-600 border-slate-500/30",
   dispensation: "bg-pink-500/10 text-pink-600 border-pink-500/30",
   dhd: "bg-purple-500/10 text-purple-600 border-purple-500/30",
+  vital_signs: "bg-red-500/10 text-red-600 border-red-500/30",
+  round: "bg-fuchsia-500/10 text-fuchsia-600 border-fuchsia-500/30",
+  discharge_document: "bg-zinc-700/10 text-zinc-700 border-zinc-700/30",
 };
