@@ -145,7 +145,7 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
             <DialogDescription>
               {target?.requires_saps
                 ? "Escalada para setor crítico — após alocar o leito, o paciente entrará com status SAPS pendente e o timer de cobrança será iniciado."
-                : r.classification === "escalada_intermediaria"
+                : target?.classification === "escalada_intermediaria"
                   ? "Escalada para UCI 1 — será aberta nova admissão no destino. Histórico anterior preservado no prontuário."
                   : "Continuidade do mesmo atendimento — sem nova admissão, histórico integral preservado."}
             </DialogDescription>
