@@ -36,8 +36,13 @@ const escape = (s: string) =>
     .replace(/>/g, "&gt;")
     .replace(/\n/g, "<br/>");
 
-const isIntercurrence = (evo: EvolutionRecord) =>
-  (evo.soap_data as any)?.type === "intercurrence";
+// 🔒 Considera como complementar qualquer tipo específico:
+// intercurrence (intercorrência), vespertina, noturna.
+// Esses tipos têm apenas campo 'subjective' — sem Plano.
+const isIntercurrence = (evo: EvolutionRecord) => {
+  const t = (evo.soap_data as any)?.type;
+  return t === "intercurrence" || t === "vespertina" || t === "noturna";
+};
 
 export interface PrintEvolutionContext {
   patientName?: string;
@@ -84,22 +89,39 @@ export const printEvolution = async (
 
   const birthDisplay = ctx?.patientBirthDate ? ctx.patientBirthDate : "—";
 
+  // Estilos da tabela de paciente — idêntico ao PrintablePrescription
+  const cellS = "border:0.5px solid #94a3b8;padding:3px 6px;font-size:7.5pt;line-height:1.3;vertical-align:top";
+  const labelS = `${cellS};font-weight:700;font-size:6.5pt;background:#f1f5f9;color:#334155;text-transform:uppercase;letter-spacing:0.3px`;
+
   const patientHeader = `
-    <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:3pt;padding:4pt 8pt;font-size:8pt;line-height:1.5;margin-bottom:8pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-      ${F("Atend.:", escape(ctx?.patientAtendimento || "—"))}
-      ${SEP}
-      ${F("Pront.:", escape(ctx?.patientRecord || "—"))}
-      ${SEP}
-      ${F("Paciente:", escape(fullName.toUpperCase()))}
-      ${SEP}
-      ${F("Leito:", escape(ctx?.patientBed || evo.patient_bed || "—"))}
-      ${SEP}
-      ${F("Setor:", escape(getSectorDisplayLabel(ctx?.patientSector || evo.patient_sector) || "—"))}
-      ${SEP}
-      ${F("Médico:", escape(doctorName))}
-      ${SEP}
-      ${F("Data nasc.:", escape(birthDisplay))}
-    </div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:6pt;page-break-inside:avoid">
+      <tbody>
+        <tr>
+          <td style="${labelS}">Paciente</td>
+          <td style="${cellS};font-weight:800;font-size:9pt;letter-spacing:-0.01em" colspan="7">
+            ${escape(fullName.toUpperCase())}
+          </td>
+        </tr>
+        <tr>
+          <td style="${labelS}">Leito</td>
+          <td style="${cellS};font-weight:700">${escape(ctx?.patientBed || evo.patient_bed || "—")}</td>
+          <td style="${labelS}">Setor / Unidade</td>
+          <td style="${cellS};font-weight:600">${escape(getSectorDisplayLabel(ctx?.patientSector || evo.patient_sector) || "—")}</td>
+          <td style="${labelS}">Prontuário</td>
+          <td style="${cellS};font-weight:700">${escape(ctx?.patientRecord || "—")}</td>
+          <td style="${labelS}">Nº Atendimento</td>
+          <td style="${cellS};font-weight:700">${ctx?.patientAtendimento ? "#" + escape(ctx.patientAtendimento) : "—"}</td>
+        </tr>
+        <tr>
+          <td style="${labelS}">Data de Nasc.</td>
+          <td style="${cellS}">${escape(birthDisplay)}</td>
+          <td style="${labelS}">Médico</td>
+          <td style="${cellS}" colspan="3">${escape(doctorName)}</td>
+          <td style="${labelS};color:#dc2626;font-size:6pt">⚠ ALERGIAS</td>
+          <td style="${cellS};font-weight:700;color:#991b1b;background:#fef2f2;font-size:7.5pt">—</td>
+        </tr>
+      </tbody>
+    </table>
   `;
 
   const hypothesesText = (evo as any).diagnostic_hypotheses?.toString().trim() || "";
@@ -172,10 +194,14 @@ export const printEvolution = async (
           ? `<h2 class="nz-section">Exames Complementares</h2><div class="nz-rich" style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8.5pt;line-height:1.35">${renderRich(s.objective)}</div>`
           : ""
       }
-      <h2 class="nz-section">Plano</h2>
-      <div class="nz-rich" style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8.5pt;line-height:1.35">
-        ${renderRich(s.plan)}
-      </div>
+      ${
+        richHtmlToPlainText(toRichHtml(s.plan))
+          ? `<h2 class="nz-section">Plano</h2>
+             <div class="nz-rich" style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8.5pt;line-height:1.35">
+               ${renderRich(s.plan)}
+             </div>`
+          : ""
+      }
     `;
   }
 
