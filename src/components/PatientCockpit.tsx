@@ -240,12 +240,14 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         onMouseLeave={() => variant === "fixed" && setHovering(false)}
         className={cn(
           variant === "fixed" && [
-            "hidden lg:flex shrink-0 border-l border-[hsl(217,30%,82%)]/70 dark:border-[hsl(217,30%,24%)]/70 bg-card self-start",
-            "shadow-[inset_1px_0_0_hsl(217,40%,98%)] dark:shadow-[inset_1px_0_0_hsl(217,30%,16%)]",
+            "hidden lg:flex shrink-0 border-l border-[hsl(217,30%,82%)]/70 dark:border-[hsl(217,30%,24%)]/70 bg-card self-start relative z-30",
+            "shadow-[-12px_0_24px_-12px_hsl(217,40%,18%/0.18),-4px_0_10px_-6px_hsl(217,40%,18%/0.12),inset_1px_0_0_hsl(217,40%,98%)]",
+            "dark:shadow-[-12px_0_28px_-12px_hsl(0,0%,0%/0.55),-4px_0_10px_-6px_hsl(0,0%,0%/0.4),inset_1px_0_0_hsl(217,30%,16%)]",
             "rounded-b-xl ring-1 ring-[hsl(217,40%,92%)]/60 dark:ring-[hsl(217,40%,20%)]/40",
             "transition-[width] duration-200 ease-out",
             isExpanded ? "w-96" : "w-12",
           ],
+
           variant === "inline" && "w-full h-full bg-card border border-[hsl(217,30%,82%)]/70 dark:border-[hsl(217,30%,24%)]/70 rounded-lg overflow-hidden",
           "flex-col print:hidden",
           className
