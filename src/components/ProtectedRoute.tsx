@@ -32,7 +32,13 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [checkingTerms, setCheckingTerms] = useState(true);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showAccessLimits, setShowAccessLimits] = useState(false);
-  const [accessLimitsShown, setAccessLimitsShown] = useState(false);
+  // 🔒 Persistir no sessionStorage para sobreviver a F5/reload da página.
+  // Sem isso, cada reload reseta o estado e força a re-seleção do setor.
+  const [accessLimitsShown, setAccessLimitsShown] = useState(() => {
+    try {
+      return sessionStorage.getItem("access_limits_shown") === "1";
+    } catch { return false; }
+  });
 
   // Verificar se é um usuário genérico legado (não precisa de aprovação nem termos)
   const isLegacyGenericUser = user?.email && LEGACY_GENERIC_USERS.includes(user.email.toLowerCase());
@@ -73,6 +79,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && !user) {
+      // Limpar flags de sessão ao deslogar
+      try { sessionStorage.removeItem("access_limits_shown"); } catch {}
       navigate("/auth");
     } else if (!loading && user && !hasShownLoading) {
       setShowLoadingScreen(true);
@@ -109,6 +117,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         setShowAccessLimits(true);
       } else if (skipAccessLimits) {
         setAccessLimitsShown(true);
+        try { sessionStorage.setItem("access_limits_shown", "1"); } catch {}
       }
     }} />;
   }
@@ -134,6 +143,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         onProceed={() => {
           setShowAccessLimits(false);
           setAccessLimitsShown(true);
+          try { sessionStorage.setItem("access_limits_shown", "1"); } catch {}
         }}
       />
     );

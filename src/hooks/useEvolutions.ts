@@ -87,10 +87,19 @@ export function useEvolutions(
   // clínica permanente) a partir do bed-row atual e priorizamos ele no filtro.
   // Assim, ao transferir ou realocar o paciente entre leitos, a timeline de
   // evoluções continua junto — independente do `patients.id` da linha do leito.
-  const { registryId: resolvedRegistryId } = useResolvedRegistryId(safePatientId);
+  const { registryId: resolvedRegistryId, isResolving: registryIsResolving } = useResolvedRegistryId(safePatientId);
 
   const loadEvolutions = useCallback(async (silent: boolean = false) => {
     if (!currentHospital || !currentState) return;
+    // 🔒 Aguardar o registry resolver antes de disparar a query.
+    // Sem isso, a primeira execução cai no fallback por patient_id (sem registry),
+    // podendo perder evoluções que estão vinculadas ao registry_id mas com
+    // patient_id diferente do leito atual (ex: após repoint por transferência).
+    // O hook re-dispara quando registryIsResolving muda para false com o valor.
+    if (safePatientId && registryIsResolving) {
+      if (!silent) setLoading(true);
+      return; // aguardar próxima execução quando registry resolver
+    }
     if (!silent) setLoading(true);
     try {
       // 🔒 BARREIRA DE SETOR: filtrar evoluções pelo setor esperado do paciente.
@@ -223,7 +232,7 @@ export function useEvolutions(
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [safePatientId, fbName, fbBed, fbSector, currentHospital, currentState, activeEncounterId, resolvedRegistryId]);
+  }, [safePatientId, fbName, fbBed, fbSector, currentHospital, currentState, activeEncounterId, resolvedRegistryId, registryIsResolving]);
 
   const fetchEvolutions = useCallback(() => loadEvolutions(false), [loadEvolutions]);
   const refreshSilently = useCallback(() => loadEvolutions(true), [loadEvolutions]);
