@@ -696,7 +696,11 @@ export function AppSidebar({
           </SidebarGroup>
         )}
 
-
+        {/* ── Busca rápida de prontuário (qualquer paciente, ativo/alta/óbito) ── */}
+        <SidebarPatientSearch
+          isCollapsed={isCollapsed}
+          onNavigate={() => { if (isMobile) setOpenMobile(false); }}
+        />
 
         {menuItems.map((section, index) => (
           <div key={section.title}>
