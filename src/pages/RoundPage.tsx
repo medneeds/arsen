@@ -646,7 +646,7 @@ export default function RoundPage() {
         <div className="mt-4">
           <SectionLoader message="Carregando round" subMessage="Buscando sessão do paciente" size="sm" />
         </div>
-      )}}
+      )}
 
       {/* Printable layout */}
       {selectedPatient && (
