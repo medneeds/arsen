@@ -1,103 +1,120 @@
+## Estado atual (o que JÁ existe)
 
-# Plano — Nomenclatura unificada, bloqueios didáticos e correção do leito 4
+- Página `/historico-paciente` agrupa eventos **por dia** (mais recente → mais antigo), com filtros de texto, intervalo de datas e checkbox de tipos
+- View `patient_timeline` + RPC `get_patient_timeline` no banco
+- Hook `usePatientTimeline` recebe paciente via `patientRegistryId` ou `patientId`
+- Diálogo global `GlobalSearchDialog` (Cmd+K) já busca pacientes
+- Infraestrutura de PDF "Norma Zero" (timbrado A4, código de documento) pronta em `src/lib/printNormaZero.ts`
+- Perfis `coord_medico`, `coord_enfermagem`, `coord_multi` já existem em `userProfiles.ts` + hook `useIsCoordenador`
 
-## Princípio central
-**Painel Clínico = SINALIZA. Mapa de Leitos = DESALOCA.**  
-Toda movimentação clínica (alta, óbito, transferência interna/externa) é **sinalizada** no Painel Clínico. O Mapa de Leitos apenas **executa a desalocação física** do leito a partir da sinalização. Se não houver sinalização, o Mapa abre pop-up didático ensinando o caminho.
+## O que falta (9 gaps identificados)
 
----
+| # | Gap | Camada |
+|---|-----|--------|
+| G1 | Export PDF do histórico usa `window.print()` cru, sem timbrado | Dados/Layout |
+| G2 | Timeline não tem realtime | Dados |
+| G3 | Faltam 4 tipos de evento na timeline: `vital_signs`, `round`, `parecer`, `discharge` | Dados (view SQL) |
+| G4 | Sidebar não tem campo visível de busca de paciente | Layout |
+| G5 | `GlobalSearchDialog` ao escolher paciente vai pro mapa — não dá opção "Abrir histórico" | Layout |
+| G6 | Coordenadores caem no menu fallback (vazio) | Layout (Sidebar) |
+| G7 | `isCoordinator` na sidebar é hardcoded por e-mail | Auditoria |
+| G8 | Busca global não cobre `patient_registry` (pacientes com alta somem) | Dados |
+| G9 | Permissão de visualizar o histórico não está formalizada por perfil | Auditoria |
 
-## CAMADA 1 — Mapa de Leitos: menu enxuto e didático
+## Plano — 4 fases independentes (cada uma com aprovação)
 
-**Arquivos:** `src/components/PatientCard.tsx`, `src/components/UtiPatientCard.tsx`
+### Fase 1 — Completar a timeline (banco + hook) — G2, G3, G8
 
-Hoje o menu tem **3 opções confusas** ("Transferir agora", "Sinalizar pré-admissão p/ outro setor", "Liberar leito"). Vou consolidar em **2 opções claras**:
+```text
+Migration:
+  ALTER VIEW patient_timeline para incluir:
+   - vital_signs        (de public.vital_signs)
+   - round              (de public.round_sessions)
+   - parecer            (de public.pareceres)
+   - discharge          (de public.discharge_documents — apenas suspended_at IS NULL)
 
-| Nova opção | O que faz |
-|---|---|
-| **Desalocar leito** | Libera o leito mantendo prontuário. Só prossegue se houver sinalização. Sem sinalização → pop-up didático. |
-| **Desalocar e pré-sinalizar p/ outro setor** | Libera + cria pré-admissão no destino, mesmo atendimento (fluxo atual de `signalTransferOpen`). |
+Hook usePatientTimeline:
+  + adicionar realtime via supabase.channel em 4 tabelas-fonte
+    (invalidate queryKey ao receber INSERT/UPDATE)
+  + adicionar 4 novos TimelineEventType ao enum
+  + adicionar 4 ícones + labels + cores
 
-A opção "Transferir agora (direto)" some do menu — ela é, na prática, uma sinalização de transferência interna, e o caminho correto é Painel Clínico → tarja → desalocar. Mantemos `UtiReallocationDialog` apenas para o **NIR** (autonomia operacional).
+Hook novo usePatientRegistrySearch:
+  Busca em patient_registry por nome/CPF/CNS/prontuário (NFD normalizado)
+  Inclui pacientes COM e SEM internação ativa
+```
 
-Texto rodapé do menu mantém: *"Sinalizações de alta, óbito e transferências são feitas pelo Painel Clínico (Cockpit)."*
+**Não toca:** lógica de agrupamento por dia, filtros, layout da página.
 
----
+### Fase 2 — Busca na Sidebar — G4, G5
 
-## CAMADA 2 — Bloqueio didático ao desalocar sem sinalização
+```text
+src/components/AppSidebar.tsx
+  + bloco "Buscar prontuário" entre Setor Ativo e menus
+  + <Input> com debounce 250ms → chama usePatientRegistrySearch
+  + dropdown de até 8 resultados (nome, prontuário, CPF, leito atual ou "alta")
+  + clique → navega para /historico-paciente?patientRegistryId=...
 
-**Arquivo:** `src/components/BedReleasePreAdmissionDialog.tsx` (já existe o pop-up didático para `isExceptional`)
+src/components/GlobalSearchDialog.tsx
+  + segundo botão "Abrir histórico" ao lado de "Ir para o leito"
+  + (Cmd+K continua funcionando como hoje)
+```
 
-- Reaproveitar o pop-up atual (Stage 1 "Pare — paciente não sinalizado") como **único caminho** quando o usuário clica em "Desalocar leito" sem tarja.
-- A "Desalocar e pré-sinalizar" também precisa **bloquear** se o paciente tem desfecho pendente (alta/óbito sinalizados) — não faz sentido pré-sinalizar transferência sobre alta.
-- Estados que **liberam desalocação direta** (sem pop-up):
-  - `transferencia_interna_pendente`, `transferencia_externa_pendente`, `alta_dada`, `obito`, `pre_admitido`, `suspenso`.
-- Estado `admitido` puro → sempre pop-up didático com botão "Ir ao Painel Clínico".
+**Não toca:** estrutura geral da sidebar, GlobalSearchDialog atual, navegação para o mapa.
 
----
+### Fase 3 — Export PDF Norma Zero — G1
 
-## CAMADA 3 — Painel Clínico: nomenclatura "Sinalizar"
+```text
+src/lib/printPatientTimeline.ts  (NOVO)
+  - usa buildNormaZeroDocument (timbrado, A4 retrato, código DOC)
+  - cabeçalho: paciente, prontuário, CPF, internação atual
+  - corpo: cada dia = bloco com data por extenso + lista de eventos
+    (hora HH:mm, badge tipo, autor, resumo, payload resumido)
+  - rodapé Norma Zero (página x de y, gerado por, data/hora)
+  - aceita os MESMOS filtros aplicados na tela (search, datas, tipos)
 
-**Arquivo:** `src/components/PatientMovementDialog.tsx`
+HistoricoPacientePage.tsx
+  - botão "Imprimir/Exportar PDF" agora chama printPatientTimeline(filtros)
+  - remove window.print() puro
+```
 
-Renomear o título do diálogo e o botão de confirmação conforme o subtipo escolhido:
+**Não toca:** view do banco, hooks, agrupamento.
 
-| Subtipo | Título do diálogo | Botão final |
-|---|---|---|
-| ALTA_MEDICA / ALTA_* | "Sinalizar alta hospitalar" | "Confirmar sinalização de alta" |
-| OBITO | "Sinalizar óbito" | "Confirmar sinalização de óbito" |
-| TRANSFERENCIA_INTERNA | "Sinalizar transferência interna" | "Confirmar sinalização de transferência" |
-| TRANSFERENCIA_EXTERNA | "Sinalizar transferência externa" | "Confirmar sinalização de transferência" |
-| (demais) | mantém atual | "Confirmar sinalização" |
+### Fase 4 — Acesso por coordenação — G6, G7, G9
 
-Subtítulo explicativo no header: *"Esta ação sinaliza o desfecho no prontuário. A desalocação física do leito é feita no Mapa de Leitos."*
+```text
+src/components/AppSidebar.tsx
+  - substituir isCoordinator hardcoded por useIsCoordenador()
+  - adicionar bloco de menu próprio para coord_medico/enfermagem/multi
+    contendo: Mapa, Histórico do Paciente, Painel Clínico (read-only),
+              Round Multiprofissional, Relatórios
 
----
+src/pages/HistoricoPacientePage.tsx
+  - guard de entrada: permite admin, medico, coord_medico,
+    coord_enfermagem, coord_multi, e o médico assistente do leito atual
+  - bloqueia demais perfis com mensagem didática
 
-## CAMADA 4 — Cockpit: estado "sinalizado" visível e editável
+Migration:
+  - função SQL can_view_patient_timeline(_user_id, _patient_registry_id)
+    para uso futuro em RLS / RPC, sem mudar regras vigentes agora
+```
 
-**Arquivo:** `src/components/PatientCockpit.tsx` (banner de status já existe parcialmente)
+**Não toca:** dados clínicos, fluxos de movimentação, prescrição, evolução.
 
-Adicionar **banner persistente no topo do cockpit** quando há sinalização ativa:
+## Garantias (Princípios Imutáveis)
 
-- **Alta sinalizada:** chip verde "ALTA SINALIZADA em DD/MM HH:MM por Dr(a). X" + 2 botões → *Imprimir sumário de alta* | *Editar/cancelar sinalização*.
-- **Óbito sinalizado:** chip cinza-escuro "ÓBITO SINALIZADO …" + *Imprimir declaração* | *Editar*.
-- **Transferência interna/externa pendente:** chip azul "TRANSF. INT/EXT SINALIZADA → Destino: <setor>" + *Editar destino* | *Cancelar sinalização*.
+- **Camadas separadas:** cada fase mexe APENAS na camada declarada
+- **Zero perda de dado clínico:** todas as mudanças são aditivas (novas colunas/eventos/hooks)
+- **Sem regressão:** página atual continua funcionando entre fases
+- **Cada fase é mergeável sozinha** e tem rollback trivial
 
-Botão "Editar" reabre `PatientMovementDialog` no subtipo correspondente para revisão; "Cancelar sinalização" usa pop-up de confirmação com motivo (já existe `suspend_discharge_document` para alta — reaproveitar para os demais via update `admission_status='admitido'` + audit).
+## Ordem de execução sugerida
 
----
+1. **Fase 1 primeiro** (sem ela, as outras não têm o que mostrar)
+2. **Fase 4** (libera os coordenadores a usarem)
+3. **Fase 2** (ponto de entrada visível)
+4. **Fase 3** (export consolidado — depende de Fase 1)
 
-## CAMADA 5 — Bug do leito 4 (TRANSF. INT sinalizada não desaloca)
+## Decisão que preciso de você
 
-Reproduzir e revisar o caminho:
-1. Card mostra tarja TRANSF. INT (correto — `transferencia_interna_pendente`).
-2. Usuário clica "Desalocar leito" no menu.
-3. Hoje `BedReleasePreAdmissionDialog` entra no branch `isExceptional` (porque `admissionStatus !== 'admitido'` mas também não está em whitelist de desfecho).
-
-**Causa provável:** o branch `isPostDischarge` cobre apenas `alta_dada | obito`, não cobre `transferencia_interna_pendente | transferencia_externa_pendente`. Resultado: cai no branch `isExceptional` e bloqueia.
-
-**Correção:** estender o branch "pós-sinalização" para incluir os dois status de transferência pendente. Nesses casos o diálogo segue direto para Stage 2 (form + senha) com motivo pré-preenchido "Desalocação pós-sinalização de transferência interna/externa".
-
----
-
-## Resumo de arquivos tocados
-
-| Arquivo | O quê |
-|---|---|
-| `PatientCard.tsx` | Menu enxuto: 2 opções |
-| `UtiPatientCard.tsx` | Menu enxuto: 2 opções |
-| `BedReleasePreAdmissionDialog.tsx` | Reconhecer `transferencia_*_pendente` como pós-sinalização (fix bug leito 4) |
-| `PatientMovementDialog.tsx` | Título + botão "Sinalizar/Confirmar sinalização" por subtipo |
-| `PatientCockpit.tsx` | Banner persistente de sinalização ativa com ações (imprimir/editar/cancelar) |
-
-## NÃO será tocado
-- Schema do banco, RPCs (`archive_patient_bed_data`, `repoint_patient_history`, `suspend_discharge_document`), triggers
-- `usePatients.releaseBedPreAdmission`, `bedLifecycle.ts`, `internalTransfer.ts`
-- Fluxo do NIR e `UtiReallocationDialog`
-- Lógica de impressão de sumário de alta/óbito (apenas o botão de atalho)
-- Edge functions, RLS, auth
-
----
-
-**Aguardo "ok" para aplicar.**
+Confirma este plano e a ordem das fases? Posso começar pela **Fase 1** (migration da view + realtime no hook) assim que você responder `ok`.
