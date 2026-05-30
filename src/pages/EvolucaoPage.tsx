@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { SectionLoader } from "@/components/SectionLoader";
 
 
 import { PatientCockpit } from "@/components/PatientCockpit";
@@ -548,12 +549,12 @@ const EvolucaoPage = () => {
           </div>
         )}
 
-        {/* Loading */}
+        {/* Loading — SectionLoader cobre toda a área até evoluções estarem prontas */}
         {loading && (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-sm text-muted-foreground">Carregando evoluções...</span>
-          </div>
+          <SectionLoader
+            message="Carregando evoluções"
+            subMessage="Buscando registros clínicos do paciente"
+          />
         )}
 
         {/* Timeline */}

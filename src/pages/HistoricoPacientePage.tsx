@@ -27,6 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { SectionLoader } from "@/components/SectionLoader";
 
 const ICONS: Record<TimelineEventType, React.ElementType> = {
   pre_admission: Hospital,
@@ -188,9 +189,10 @@ export default function HistoricoPacientePage() {
       {/* Conteúdo */}
       <div className="container mx-auto px-4 py-6">
         {isLoading ? (
-          <div className="flex items-center justify-center py-20 text-muted-foreground text-sm">
-            <Loader2 className="h-4 w-4 animate-spin mr-2" /> Carregando histórico...
-          </div>
+          <SectionLoader
+            message="Carregando histórico"
+            subMessage="Buscando todos os registros longitudinais do paciente"
+          />
         ) : events.length === 0 ? (
           <Card className="p-12 text-center">
             <Clock className="h-10 w-10 mx-auto text-muted-foreground/40 mb-2" />

@@ -19,6 +19,7 @@ import {
   PatientDocumentsPanel,
 } from "@/components/PatientDocumentsPanel";
 import {
+import { SectionLoader } from "@/components/SectionLoader";
   usePatientDocuments,
   type DocumentType,
   type PatientDocument,

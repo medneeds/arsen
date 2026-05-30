@@ -1199,7 +1199,7 @@ const RequisicaoUnificadaPage = () => {
         {/* ════════════════════════════════════════════ */}
         <TabsContent value="solicitados" className="mt-4 space-y-3">
           {loading ? (
-            <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            <SectionLoader message="Carregando requisições" subMessage="Buscando dados do paciente" size="sm" />
           ) : pendingRequests.length === 0 ? (
             <EmptyState icon={CatIcon} message={`Nenhuma requisição pendente de ${catConfig.shortLabel.toLowerCase()}`} />
           ) : (
@@ -1220,7 +1220,7 @@ const RequisicaoUnificadaPage = () => {
         {/* ════════════════════════════════════════════ */}
         <TabsContent value="resultados" className="mt-4 space-y-3">
           {loading ? (
-            <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            <SectionLoader message="Carregando requisições" subMessage="Buscando dados do paciente" size="sm" />
           ) : completedRequests.length === 0 ? (
             <EmptyState icon={CheckCircle2} message="Nenhum resultado disponível" />
           ) : (
@@ -2228,6 +2228,7 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
 
 // ── Lab Comparative View ──
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { SectionLoader } from "@/components/SectionLoader";
 
 const CHART_COLORS = [
   "hsl(var(--primary))",

@@ -72,6 +72,7 @@ const STATUS_BADGE_COLORS: Record<string, string> = {
 };
 
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
+import { SectionLoader } from "@/components/SectionLoader";
 const getSectorLabel = (sector: string): string => getSectorDisplayLabel(sector) || sector;
 
 export default function RoundPage() {
@@ -642,11 +643,10 @@ export default function RoundPage() {
       )}
 
       {selectedPatient && loadingSession && (
-        <div className="flex items-center justify-center py-12">
-          <Clock className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
-          <span className="text-sm text-muted-foreground">Carregando round...</span>
+        <div className="mt-4">
+          <SectionLoader message="Carregando round" subMessage="Buscando sessão do paciente" size="sm" />
         </div>
-      )}
+      )}}
 
       {/* Printable layout */}
       {selectedPatient && (
