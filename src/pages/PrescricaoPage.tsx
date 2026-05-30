@@ -4034,11 +4034,17 @@ const PrescricaoPage = () => {
     };
   });
 
-  // Corpo da prescrição-demo é preservado por leito (L09/L10/L11/L12-L18) mesmo
-  // quando há patientId real, pois a identificação do cabeçalho já é resolvida
-  // separadamente pelo registry (usePatientIdentifiers + sync). Assim o NI do
-  // L10 mantém os itens prescritos sem herdar nome de outro paciente.
+  // 🔒 FIX: items demo NUNCA aparecem quando há patientId real na URL.
+  // Antes, initialDemoItems era sempre calculado por leito — mesmo com paciente
+  // real — fazendo itens fictícios aparecerem por 1-2s antes da prescrição
+  // real chegar, gerando sensação de bug/travamento para o usuário.
+  //
+  // Agora: demo só existe no modo apresentação puro (sem patientId na URL).
+  // Com paciente real → items começa vazio → spinner cobre tudo → prescrição
+  // validada aparece pronta, sem nenhum "pulo" visual intermediário.
+  const hasRealPatientUrl = !!(searchParams.get('patientId') || '');
   const initialDemoItems = useMemo(() => {
+    if (hasRealPatientUrl) return []; // paciente real → sem demo
     return initialPatientBed ? getDemoPrescriptionItems(initialPatientBed) : [];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -6127,7 +6133,25 @@ const PrescricaoPage = () => {
   //     encounter → prescrição em branco (não vaza prescrição de alta anterior).
   //  4) NÃO faz autosave. Rascunho só persiste se o médico clicar "Salvar Rascunho".
   const autoLoadAttemptedRef = useRef(false);
-  const [autoLoadDone, setAutoLoadDone] = useState(false);
+  // 🔒 FIX: autoLoadDone começa como false quando há paciente real na URL,
+  // garantindo que o spinner cubra 100% da área de prescrição desde o primeiro
+  // frame — sem piscar itens demo intermediários.
+  // Sem paciente real (modo apresentação): começa true (sem loading desnecessário).
+  const [autoLoadDone, setAutoLoadDone] = useState(!hasRealPatientUrl);
+
+  // 🔒 Safety timeout: se o auto-load não completar em 10s (rede lenta, erro
+  // silencioso, race condition), força autoLoadDone=true para não prender o
+  // usuário indefinidamente no spinner.
+  useEffect(() => {
+    if (autoLoadDone) return;
+    if (!hasRealPatientUrl) return;
+    const t = setTimeout(() => {
+      if (!autoLoadAttemptedRef.current) return; // ainda não iniciou
+      console.warn('[PrescricaoPage] safety timeout: forçando autoLoadDone=true');
+      setAutoLoadDone(true);
+    }, 10_000);
+    return () => clearTimeout(t);
+  }, [autoLoadDone, hasRealPatientUrl, urlPatientId]);
   const loadGenerationRef = useRef(0); // incrementa a cada troca de paciente — cancela loads antigos
   const loadPrescriptionRef = useRef<((id: string) => Promise<void>) | null>(null);
   useEffect(() => {
@@ -8787,7 +8811,7 @@ const PrescricaoPage = () => {
         }}
       />
 
-        {!autoLoadDone && !!patient.name && !currentPrescriptionId && (
+        {!autoLoadDone && (hasRealPatientUrl || !!patient.name) && !currentPrescriptionId && (
           <div className="flex flex-col items-center justify-center py-16 px-6 gap-7 rounded-xl border border-border/50 bg-card/60 animate-in fade-in duration-300">
 
             {/* Spinner com ícone central */}
