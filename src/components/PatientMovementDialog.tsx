@@ -39,6 +39,8 @@ import {
   type SubtypeDef,
 } from "@/data/movementFlow";
 import { DischargeDocumentForm } from "@/components/DischargeDocumentForm";
+import { signalInternalTransfer } from "@/lib/internalTransfer";
+import { useDepartment } from "@/contexts/DepartmentContext";
 import { DischargeConfirmDialog } from "@/components/DischargeConfirmDialog";
 import { MovementConfirmDialog, type MovementConsequence, type MovementSummaryItem } from "@/components/MovementConfirmDialog";
 import {
@@ -46,6 +48,26 @@ import {
   type DischargeDocPayload,
   printDischargeDocument,
 } from "@/lib/dischargeDocuments";
+
+// Mapeamento: texto do destino de transferência interna → código de setor do banco
+const DESTINATION_TO_SECTOR_CODE: Record<string, string> = {
+  "UTI 01": "red",
+  "UTI 02": "yellow",
+  "UCI 01": "blue",
+  "UCI 02": "outside",
+  "ENFERMARIA NEURO 01": "neuro_01",
+  "ENFERMARIA NEURO 02": "neuro_02",
+  "ENFERMARIA CLÍNICA CIRÚRGICA": "clinica_cirurgica",
+  "ENFERMARIA DE TRANSIÇÃO": "enfermaria_transicao",
+  "UCC (UNIDADE DE CUIDADOS CLÍNICOS)": "ucc",
+  "ENFERMARIA VASCULAR (ANEXO)": "enfermaria_vascular",
+  "CENTRO CIRÚRGICO": "cc_bloco",
+  "RIV (REFERÊNCIA DE INTERNAÇÃO VASCULAR)": "riv",
+  "SALA VERMELHA": "sala_vermelha",
+  "SALA LARANJA": "sala_laranja",
+  "OBSERVAÇÃO CLÍNICA": "observacao_clinica",
+  "INTERNAÇÃO UE": "internacao_ue",
+};
 
 interface PatientMovementDialogProps {
   patient: Patient | null;
@@ -103,6 +125,7 @@ export function PatientMovementDialog({
 
   const { toast } = useToast();
   const { currentState, currentHospital } = useHospital();
+  const { currentDepartment } = useDepartment();
   const navigate = useNavigate();
 
   // Pre-fill when called from card with a specific type
@@ -332,6 +355,29 @@ export function PatientMovementDialog({
           .update({ admission_status: newAdmissionStatus, updated_at: new Date().toISOString() })
           .eq("id", (patient as any).id);
         if (trErr) throw trErr;
+
+        // 🔒 Para transferência INTERNA: criar registro na fila virtual do setor destino.
+        // Sem isso, o paciente some após a desalocação — não aparece em
+        // "Aguardando alocação" no setor destino escolhido pelo médico.
+        if (subtypeDef.id === "TRANSFERENCIA_INTERNA" && currentHospital && currentState) {
+          const finalDest = destination === "OUTRO" ? customDestination : destination;
+          const sectorCode = finalDest ? DESTINATION_TO_SECTOR_CODE[finalDest.trim().toUpperCase()] ?? null : null;
+          if (sectorCode) {
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            await signalInternalTransfer({
+              source: patient as any,
+              targetSectorCode: sectorCode,
+              reason: notes?.trim() || finalDest || undefined,
+              currentUserId: authUser?.id ?? null,
+              hospitalUnitId: currentHospital.id,
+              stateId: currentState.id,
+              department: currentDepartment ?? null,
+            });
+            // signalInternalTransfer já zera o leito de origem internamente —
+            // mas aqui o admission_status já foi setado acima, então o clear
+            // não causa conflito (o leito já tem a tarja de transf. sinalizada).
+          }
+        }
       }
 
       // Sinalização de saída sem documento clínico (EVASÃO / ALTA A PEDIDO):

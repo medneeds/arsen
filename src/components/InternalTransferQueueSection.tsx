@@ -83,6 +83,8 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
     refresh();
   };
 
+  // Não renderiza nada se não há transferências pendentes —
+  // o card informativo fica apenas quando há itens na fila.
   if (rows.length === 0) return null;
 
   return (
@@ -109,7 +111,7 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
                     <p className="font-medium text-sm">{r.patient_name}</p>
                     <p className="text-xs text-muted-foreground">
                       Origem: {sectorLabelFromCode(r.source_sector ?? "")} • Leito {r.source_bed ?? "—"}
-                      {r.encounter_code && <> • Atend. {r.encounter_code}</>}
+                      {r.encounter_code && <> • <strong>Atend. #{r.encounter_code}</strong></>}
                     </p>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                       <Badge variant="outline" className="text-[10px]">{classificationLabel(r.classification)}</Badge>
