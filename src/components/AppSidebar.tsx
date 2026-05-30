@@ -77,6 +77,7 @@ import { useTheme } from "next-themes";
 import { useIsDev } from "@/hooks/useIsDev";
 import { supabase } from "@/integrations/supabase/client";
 import type { AccessProfile } from "@/config/userProfiles";
+import { useIsCoordenador } from "@/hooks/useIsCoordenador";
 
 function DevConsoleLink({ isCollapsed, onNavigate }: { isCollapsed: boolean; onNavigate: () => void }) {
   const { isDev } = useIsDev();
@@ -167,8 +168,9 @@ export function AppSidebar({
   // Hook for pending password reset requests
   const { pendingCount: pendingResets } = usePendingPasswordResets();
   
-  // Check if user is COORDENADOR
-  const isCoordinator = user?.email === "coordenador@sistema.local";
+  // Check if user is COORDENADOR (server-side via profiles.access_profile/access_profiles)
+  const { isCoordenador, kind: coordKind } = useIsCoordenador();
+  const isCoordinator = isCoordenador;
   
   // Check if user is Gestor Master (full access without password)
   const isGestorMaster = user?.email === "artur.batista@sistema.local";
@@ -431,6 +433,23 @@ export function AppSidebar({
           { name: "Fonoaudiologia", link: "/mapa", profiles: ["multi"], badge: "Em breve" },
         ]},
         { title: "Round Multiprofissional", icon: ClipboardCheck, link: "/round", profiles: ["multi"] },
+      ];
+    }
+    // Coordenação (médica / enfermagem / multi): consulta transversal, somente leitura clínica
+    if (isCoordinator) {
+      const coordLabel = coordKind === "medico"
+        ? "Coord. Médica"
+        : coordKind === "enfermagem"
+          ? "Coord. Enfermagem"
+          : "Coord. Multi";
+      return [
+        { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: [accessProfile] },
+        { title: "Painel Clínico", icon: ClipboardList, link: "/painel-clinico", profiles: [accessProfile] },
+        { title: coordLabel, icon: Shield, profiles: [accessProfile], items: [
+          { name: "Histórico de Paciente", link: "/global-search?intent=historico", profiles: [accessProfile] },
+          { name: "Round Multiprofissional", link: "/round", profiles: [accessProfile] },
+          { name: "Relatórios", link: "/relatorios", profiles: [accessProfile] },
+        ]},
       ];
     }
     // Filter sections by profile, then filter sub-items within each section
