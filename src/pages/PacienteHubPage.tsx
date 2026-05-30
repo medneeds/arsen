@@ -517,7 +517,7 @@ export default function PacienteHubPage() {
             // 🔒 patient_registry_id é essencial para vincular a evolução de admissão
             // ao prontuário permanente do paciente. Sem isso, clinical_evolutions
             // fica sem o campo registry e fica inacessível pelo hook useEvolutions.
-            patient_registry_id: identifiers.patientRegistryId ?? undefined,
+            patient_registry_id: identifiers.registry?.id ?? undefined,
           }}
           onSuccess={() => {
             setAdmissionOpen(false);
