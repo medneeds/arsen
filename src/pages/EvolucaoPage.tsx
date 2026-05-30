@@ -191,7 +191,7 @@ const EvolucaoPage = () => {
     setNewDevices([]);
     setNewCulturesHtml("");
     setDiagnosticsReplicated(false);
-    setDiagnosticHypotheses("");
+    setDiagnosticHypotheses([]);
   };
 
   /**
@@ -217,7 +217,7 @@ const EvolucaoPage = () => {
     if (hospitalDischargePrediction) updateHospitalDischargePrediction("");
     if (isPalliative) updateIsPalliative(false);
     if (isolationPrecautions) updateIsolationPrecautions("");
-    setDiagnosticHypotheses("");
+    setDiagnosticHypotheses([]);
     setDiagnosticsReplicated(false);
   };
 
@@ -289,7 +289,7 @@ const EvolucaoPage = () => {
     setNewCulturesHtml(typeof srcCulturesHtml === "string" ? srcCulturesHtml : "");
     const srcHypo = (source as any).diagnostic_hypotheses;
     const srcAntecedentes = (source as any).antecedentes;
-    setDiagnosticHypotheses(typeof srcHypo === "string" ? srcHypo : "");
+    setDiagnosticHypotheses(typeof srcHypo === "string" ? srcHypo.split("\n").filter(Boolean) : Array.isArray(srcHypo) ? srcHypo : []);
     setShowNewForm(true);
     setDiagnosticsReplicated(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -659,7 +659,7 @@ const EvolucaoPage = () => {
                     <td style={labelSt}>Prontuário</td>
                     <td style={{ ...cellSt, fontWeight: 700 }}>{patient.record || '—'}</td>
                     <td style={labelSt}>Nº Atendimento</td>
-                    <td style={{ ...cellSt, fontWeight: 700 }}>{patient.encounterCode ? `#${patient.encounterCode}` : '—'}</td>
+                    <td style={{ ...cellSt, fontWeight: 700 }}>{ids.atendimento ? `#${ids.atendimento}` : '—'}</td>
                   </tr>
                   {/* Linha 3: Idade / Nascimento / Admissão / Sexo / Peso / Alergias */}
                   <tr>
