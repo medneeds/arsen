@@ -241,8 +241,8 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         className={cn(
           variant === "fixed" && [
             "hidden lg:flex shrink-0 border-l border-[hsl(217,30%,82%)]/70 dark:border-[hsl(217,30%,24%)]/70 bg-card self-start relative z-30",
-            "shadow-[-12px_0_24px_-12px_hsl(217,40%,18%/0.18),-4px_0_10px_-6px_hsl(217,40%,18%/0.12),inset_1px_0_0_hsl(217,40%,98%)]",
-            "dark:shadow-[-12px_0_28px_-12px_hsl(0,0%,0%/0.55),-4px_0_10px_-6px_hsl(0,0%,0%/0.4),inset_1px_0_0_hsl(217,30%,16%)]",
+            "shadow-[-24px_0_44px_-14px_hsl(217,45%,15%/0.32),-10px_0_20px_-8px_hsl(217,45%,15%/0.22),-2px_0_6px_-1px_hsl(217,45%,15%/0.16),inset_1px_0_0_hsl(217,40%,98%)]",
+            "dark:shadow-[-24px_0_48px_-14px_hsl(0,0%,0%/0.75),-10px_0_22px_-8px_hsl(0,0%,0%/0.6),-2px_0_6px_-1px_hsl(0,0%,0%/0.5),inset_1px_0_0_hsl(217,30%,16%)]",
             "rounded-b-xl ring-1 ring-[hsl(217,40%,92%)]/60 dark:ring-[hsl(217,40%,20%)]/40",
             "transition-[width] duration-200 ease-out",
             isExpanded ? "w-96" : "w-12",
