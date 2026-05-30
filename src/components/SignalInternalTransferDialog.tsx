@@ -10,7 +10,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { supabase } from "@/integrations/supabase/client";
 import { HOSPITAL_SECTOR_GROUPS, sectorLabelFromCode } from "@/lib/hospitalSectors";
-import { classifyTransfer, requiresSaps, classificationLabel } from "@/lib/sectorComplexity";
+import { classifyTransfer, requiresSaps, requiresNewAdmission, classificationLabel, classificationBadgeClass } from "@/lib/sectorComplexity";
 import { signalInternalTransfer } from "@/lib/internalTransfer";
 import type { Patient } from "@/types/patient";
 import { AlertTriangle, ArrowRightLeft, BedDouble, Info } from "lucide-react";
@@ -42,6 +42,7 @@ export function SignalInternalTransferDialog({ patient, open, onOpenChange, onSu
     [patient, targetSector],
   );
   const needsSaps = classification ? requiresSaps(classification) : false;
+  const needsNewAdmission = classification ? requiresNewAdmission(classification) : false;
 
   const handleConfirm = async () => {
     if (!patient || !targetSector) return;

@@ -24,7 +24,7 @@ import { useDepartment } from "@/contexts/DepartmentContext";
 import { ArrowRightLeft, BedDouble, Check, User, MapPin, ClipboardList, Eye, History, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MovementConfirmDialog } from "@/components/MovementConfirmDialog";
-import { classifyTransfer, requiresSaps, classificationLabel } from "@/lib/sectorComplexity";
+import { classifyTransfer, requiresSaps, requiresNewAdmission, classificationLabel } from "@/lib/sectorComplexity";
 
 interface UtiReallocationDialogProps {
   patient: Patient | null;
@@ -128,15 +128,16 @@ export function UtiReallocationDialog({
       const destinationSectorCode = targetBedPatient.sector;
       const transferClass = classifyTransfer(patient.sector, destinationSectorCode);
       const needsSaps = requiresSaps(transferClass);
+      const needsNewAdmission = requiresNewAdmission(transferClass);
 
       // Status do destino:
-      // - Escalada crítica (vindo de setor não-crítico) → 'saps_pendente'
-      //   para disparar o fluxo SAPS 3 já existente (timer pós-alocação).
-      // - Demais casos → preserva o status atual do paciente (admitido,
-      //   transferência pendente, etc.), mantendo o princípio de 1
-      //   atendimento até o desfecho final.
+      // - Escalada crítica (→ UTI/UCI 2) → 'saps_pendente' + nova admissão
+      // - Escalada intermediária (→ UCI 1) → 'pre_admitido' + nova admissão
+      // - Lateral/desescalada → preserva status atual (continuidade)
       const destinationAdmissionStatus = needsSaps
         ? 'saps_pendente'
+        : needsNewAdmission
+        ? 'pre_admitido'
         : (patient.admissionStatus ?? 'admitido');
 
       // Step 1: Move patient data to the target bed (update target bed with patient data)
@@ -171,11 +172,35 @@ export function UtiReallocationDialog({
           // Preserva flag de desfecho (óbito/alta/transferência pendente) ao mover paciente entre leitos,
           // OU marca 'saps_pendente' quando for escalada de não-crítico para crítico.
           admission_status: destinationAdmissionStatus,
+          // Em escalada: admitted_at é null até conclusão da admissão clínica
+          admitted_at: needsNewAdmission ? null : undefined,
           updated_at: new Date().toISOString(),
         })
         .eq('id', targetBedPatient.id);
 
       if (targetError) throw targetError;
+
+      // 🔒 Em ESCALADA: fechar encounter ativo do setor de origem.
+      // Preserva a timeline (início/fim por setor) e evita que evoluções
+      // do setor anterior apareçam como pertencentes ao novo atendimento.
+      if (needsNewAdmission) {
+        const { data: srcRow } = await supabase
+          .from('patients')
+          .select('patient_registry_id')
+          .eq('id', patient.id)
+          .maybeSingle();
+        const srcRegistryId = (srcRow as any)?.patient_registry_id ?? null;
+        if (srcRegistryId) {
+          await supabase.from('patient_encounters')
+            .update({ status: 'closed', ended_at: new Date().toISOString() })
+            .eq('registry_id', srcRegistryId)
+            .neq('status', 'closed');
+        }
+        await supabase.from('patient_encounters')
+          .update({ status: 'closed', ended_at: new Date().toISOString() })
+          .eq('patient_id', patient.id)
+          .neq('status', 'closed');
+      }
 
       // Step 1.5: Migrar histórico clínico (evoluções, prescrições, exames,
       // culturas, condutas, prontuário, etc.) do leito de ORIGEM para o

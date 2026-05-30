@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { repointPatientHistory } from "@/lib/repointPatientHistory";
-import { classifyTransfer, requiresSaps, type TransferClassification } from "@/lib/sectorComplexity";
+import { classifyTransfer, requiresSaps, requiresNewAdmission, type TransferClassification } from "@/lib/sectorComplexity";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 import { invalidateResolvedRegistry } from "@/hooks/useResolvedRegistryId";
 import type { Patient } from "@/types/patient";
@@ -40,9 +40,17 @@ function coerceToIsoTimestamp(value: unknown): string | null {
  *    medical_records, patient_encounters) é repointado via RPC atômica
  *    `repoint_patient_history`.
  *  - Origem fica 100% vazia após a transferência (sem resíduo).
- *  - Em escalada para setor crítico (UTI/UCI 2 vindo de não-crítico),
- *    o destino entra com `admission_status = 'saps_pendente'`, disparando
- *    o fluxo SAPS 3 já existente (timer pós-alocação).
+ *
+ *  REGRAS DE ADMISSÃO POR NÍVEL DE COMPLEXIDADE:
+ *  ┌─────────────────────────────────────────────────────────────┐
+ *  │ Mesma complexidade  → SEM nova admissão, encounter mantido  │
+ *  │ Desescalada         → SEM nova admissão, encounter mantido  │
+ *  │ Escalada → Nível 3  → COM nova admissão (UCI 1), sem SAPS   │
+ *  │ Escalada → Nível 1-2→ COM nova admissão + SAPS obrigatório  │
+ *  └─────────────────────────────────────────────────────────────┘
+ *  Em ESCALADA: o encounter anterior é FECHADO (ended_at = now()),
+ *  a admission_history é preservada no snapshot e no patient_movements,
+ *  e o destino recebe admission_status adequado ao nível de complexidade.
  *
  * NÃO usar para:
  *  - Alta / óbito / transferência externa (são desfechos finais)
@@ -76,24 +84,53 @@ export async function executeInternalTransfer(params: {
 
   const classification = classifyTransfer(source.sector, targetBedRow.sector);
   const needsSaps = requiresSaps(classification);
+  const needsNewAdmission = requiresNewAdmission(classification);
 
   try {
     // 0. Busca identidade permanente (registry/prontuário/admissão) do leito origem
     //    para garantir que documentação clínica acompanhe o paciente no destino.
     const { data: sourceDbRow } = await supabase
       .from("patients")
-      .select("patient_registry_id, medical_record, admitted_at")
+      .select("patient_registry_id, medical_record, admitted_at, admission_history")
       .eq("id", source.id)
       .maybeSingle();
 
     const sourceRegistryId = (sourceDbRow as any)?.patient_registry_id ?? null;
     const sourceMedicalRecord = (sourceDbRow as any)?.medical_record ?? null;
     const sourceAdmittedAt = (sourceDbRow as any)?.admitted_at ?? null;
+    const sourceAdmissionHistory = (sourceDbRow as any)?.admission_history ?? null;
+
+    // 🔒 Em ESCALADA: fechar o encounter ativo do setor de origem antes de abrir
+    // o novo no destino. Isso preserva a timeline correta (início e fim por setor)
+    // e garante que evoluções antigas continuem vinculadas ao encounter correto.
+    if (needsNewAdmission && sourceRegistryId) {
+      await supabase
+        .from("patient_encounters")
+        .update({ status: "closed", ended_at: new Date().toISOString() })
+        .eq("registry_id", sourceRegistryId)
+        .neq("status", "closed");
+    } else if (needsNewAdmission && source.id) {
+      await supabase
+        .from("patient_encounters")
+        .update({ status: "closed", ended_at: new Date().toISOString() })
+        .eq("patient_id", source.id)
+        .neq("status", "closed");
+    }
 
     // 1. Preenche o leito destino com os dados do paciente.
+    // Em escalada: nova admissão → admission_history é resetada para o novo setor.
+    // Em lateral/desescalada: mantém admission_history original (continuidade).
     const destinationAdmissionStatus = needsSaps
       ? "saps_pendente"
+      : needsNewAdmission
+      ? "pre_admitido"
       : (source.admissionStatus ?? "admitido");
+
+    // Em escalada, a admission_history do setor anterior vai para o snapshot/histórico
+    // mas o destino começa limpo para a nova admissão clínica.
+    const destinationAdmissionHistory = needsNewAdmission
+      ? null  // nova admissão: médico preenche no destino
+      : sourceAdmissionHistory; // continuidade: preserva história
 
     const { error: targetError } = await supabase
       .from("patients")
@@ -123,10 +160,12 @@ export async function executeInternalTransfer(params: {
         uti_daily_conducts: source.utiDailyConducts?.join("\n") || null,
         clinical_status: source.clinicalStatus || null,
         psm_status: source.psmStatus || null,
+        admission_history: destinationAdmissionHistory,
         admission_status: destinationAdmissionStatus,
+        // Em escalada: admitted_at é null até concluir a admissão clínica no destino
+        admitted_at: needsNewAdmission ? null : sourceAdmittedAt,
         patient_registry_id: sourceRegistryId,
         medical_record: sourceMedicalRecord,
-        admitted_at: sourceAdmittedAt,
         is_vacant: false,
         updated_at: new Date().toISOString(),
       } as any)
@@ -134,6 +173,8 @@ export async function executeInternalTransfer(params: {
     if (targetError) throw targetError;
 
     // 2. Repointa o histórico clínico (RPC atômica auditada).
+    // Em ESCALADA: o repoint preserva todas as evoluções/prescrições anteriores
+    // vinculadas ao encounter fechado — ficam visíveis no histórico do paciente.
     const repoint = await repointPatientHistory(
       source.id,
       targetBedRow.id,
@@ -284,6 +325,9 @@ export async function signalInternalTransfer(
       _registryId: sourceRegistryIdSignal,
       _medicalRecord: sourceMedicalRecordSignal,
       _admittedAt: sourceAdmittedAtSignal,
+      // Preserva admission_history do setor de origem para o histórico
+      // (visível em HistoricoPacientePage e no painel do paciente)
+      _admissionHistory: (source as any).admissionHistory ?? null,
     };
     const { data: inserted, error: insertError } = await (supabase as any)
       .from("internal_transfer_requests")
@@ -308,6 +352,26 @@ export async function signalInternalTransfer(
       .select("id")
       .single();
     if (insertError) throw insertError;
+
+    // 🔒 Em ESCALADA: fechar encounter ativo na Etapa 1 (sinalização).
+    // O encounter do setor de origem é fechado aqui para que a timeline
+    // registre o início e fim corretos por setor. O encounter do destino
+    // será criado quando o médico concluir a admissão clínica no novo leito.
+    const needsNewAdmissionSignal = requiresNewAdmission(classification);
+    if (needsNewAdmissionSignal) {
+      if (sourceRegistryIdSignal) {
+        await supabase
+          .from("patient_encounters")
+          .update({ status: "closed", ended_at: new Date().toISOString() })
+          .eq("registry_id", sourceRegistryIdSignal)
+          .neq("status", "closed");
+      }
+      await supabase
+        .from("patient_encounters")
+        .update({ status: "closed", ended_at: new Date().toISOString() })
+        .eq("patient_id", source.id)
+        .neq("status", "closed");
+    }
 
     const { error: clearError } = await supabase
       .from("patients")
@@ -406,6 +470,7 @@ export async function completeInternalTransfer(
     const snapshot = req.patient_snapshot as Patient;
     const classification = req.classification as TransferClassification;
     const needsSaps: boolean = req.requires_saps;
+    const needsNewAdmission = requiresNewAdmission(classification);
     const sourcePatientId: string = req.source_patient_id;
 
     // Identidade permanente (registry/prontuário/admissão) lida do snapshot
@@ -426,9 +491,36 @@ export async function completeInternalTransfer(
       (snapshot as any)._admittedAt ??
       null;
 
+    const sourceAdmissionHistory =
+      (snapshot as any)._admissionHistory ??
+      null;
+
+    // 🔒 Em ESCALADA: o encounter do setor de origem já foi fechado na Etapa 1
+    // (signalInternalTransfer). Aqui garantimos que não haja encounter aberto
+    // residual vinculado ao sourcePatientId antes de criar o do destino.
+    if (needsNewAdmission && sourcePatientId) {
+      await supabase
+        .from("patient_encounters")
+        .update({ status: "closed", ended_at: new Date().toISOString() })
+        .eq("patient_id", sourcePatientId)
+        .neq("status", "closed");
+      if (sourceRegistryId) {
+        await supabase
+          .from("patient_encounters")
+          .update({ status: "closed", ended_at: new Date().toISOString() })
+          .eq("registry_id", sourceRegistryId)
+          .neq("status", "closed");
+      }
+    }
+
     const destinationAdmissionStatus = needsSaps
       ? "saps_pendente"
+      : needsNewAdmission
+      ? "pre_admitido"
       : (snapshot.admissionStatus ?? "admitido");
+
+    // Em escalada: destino começa sem admission_history (nova admissão clínica)
+    const destinationAdmissionHistory = needsNewAdmission ? null : sourceAdmissionHistory;
 
     const { error: targetError } = await supabase
       .from("patients")
@@ -458,10 +550,11 @@ export async function completeInternalTransfer(
         uti_daily_conducts: snapshot.utiDailyConducts?.join("\n") || null,
         clinical_status: snapshot.clinicalStatus || null,
         psm_status: snapshot.psmStatus || null,
+        admission_history: destinationAdmissionHistory,
         admission_status: destinationAdmissionStatus,
+        admitted_at: needsNewAdmission ? null : sourceAdmittedAt,
         patient_registry_id: sourceRegistryId,
         medical_record: sourceMedicalRecord,
-        admitted_at: sourceAdmittedAt,
         is_vacant: false,
         updated_at: new Date().toISOString(),
       } as any)
