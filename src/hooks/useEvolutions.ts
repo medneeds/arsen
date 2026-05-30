@@ -93,6 +93,17 @@ export function useEvolutions(
     if (!currentHospital || !currentState) return;
     if (!silent) setLoading(true);
     try {
+      // 🔒 BARREIRA DE SETOR: filtrar evoluções pelo setor esperado do paciente.
+      // Impede que evoluções de outro setor vazem para o leito atual,
+      // especialmente em casos de reassociação de leito ou registro legado.
+      // fbSector pode ser o nome de exibição ("UTI 2") ou o código interno ("yellow").
+      // Mapeamos ambos para garantir cobertura.
+      const sectorCodeMap: Record<string, string> = {
+        "UTI 1": "red", "UTI 2": "yellow", "UCI 1": "blue", "UCI 2": "outside",
+        "red": "red", "yellow": "yellow", "blue": "blue", "outside": "outside",
+      };
+      const normalizedSector = fbSector ? (sectorCodeMap[fbSector] ?? fbSector) : null;
+
       let query = supabase
         .from("clinical_evolutions")
         .select("*")
@@ -103,25 +114,46 @@ export function useEvolutions(
         .is("archived_at", null)
         .order("created_at", { ascending: false });
 
+      // 🔒 Aplicar barreira de setor se disponível.
+      // OR cobre os dois formatos históricos: código interno ("yellow") e nome de exibição ("UTI 2"),
+      // além de registros sem patient_sector (gravados antes da padronização do campo).
+      const sectorDisplayNames: Record<string, string> = {
+        "red": "UTI 1", "yellow": "UTI 2", "blue": "UCI 1", "outside": "UCI 2",
+      };
+      const sectorDisplayName = normalizedSector ? (sectorDisplayNames[normalizedSector] ?? normalizedSector) : null;
+      if (normalizedSector && sectorDisplayName && normalizedSector !== sectorDisplayName) {
+        query = query.or(
+          `patient_sector.eq.${normalizedSector},patient_sector.eq.${sectorDisplayName},patient_sector.is.null`
+        );
+      } else if (normalizedSector) {
+        query = query.or(`patient_sector.eq.${normalizedSector},patient_sector.is.null`);
+      }
+
       if (resolvedRegistryId && activeEncounterId) {
-        // Caminho ideal: registry resolvido + encounter ativo
+        // Caminho ideal: registry resolvido + encounter ativo.
+        // OR cobre evoluções legadas gravadas sem patient_registry_id (ex.: L12, L13, L18 UTI 2).
         query = query
-          .eq("patient_registry_id", resolvedRegistryId)
-          .eq("encounter_id", activeEncounterId);
+          .or(`patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${safePatientId})`)
+          .or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
       } else if (resolvedRegistryId) {
-        // Sem encounter mas com registry: filtrar só por registry
-        query = query.eq("patient_registry_id", resolvedRegistryId);
+        // Sem encounter mas com registry: OR cobre legados sem registry
+        query = query.or(
+          `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${safePatientId})`
+        );
       } else if (safePatientId && activeEncounterId) {
-        // Sem registry: exigir patient_id + encounter_id (não aceitar encounter NULL)
+        // Sem registry: buscar por patient_id, cobrindo encounter ativo e legados sem encounter
         query = query
           .eq("patient_id", safePatientId)
-          .eq("encounter_id", activeEncounterId);
+          .or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
       } else if (safePatientId) {
-        // Sem registry nem encounter: não buscar para evitar vazamento
-        console.warn('[useEvolutions] sem encounter ativo — não buscando para evitar vazamento');
-        setEvolutions([]);
-        if (!silent) setLoading(false);
-        return;
+        // ⚠️ Sem registry nem encounter resolvido: buscar por patient_id direto como
+        // fallback defensivo. Isso evita que pacientes com patient_registry_id = NULL
+        // (registros legados ou admitidos antes da implementação do registry) percam
+        // o acesso às suas evoluções.
+        // Barreira: filtramos apenas evoluções archived_at IS NULL (já aplicado acima)
+        // e limitamos ao hospital_unit_id (também já aplicado) para evitar vazamento.
+        console.warn('[useEvolutions] sem encounter/registry — usando fallback por patient_id');
+        query = query.eq("patient_id", safePatientId);
       } else {
         setEvolutions([]);
         if (!silent) setLoading(false);
