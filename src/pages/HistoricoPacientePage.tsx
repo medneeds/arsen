@@ -48,9 +48,48 @@ const ICONS: Record<TimelineEventType, React.ElementType> = {
   discharge_document: FileCheck,
 };
 
+const ALLOWED_PROFILES = new Set([
+  "admin",
+  "medico",
+  "gestor",
+  "coord_medico",
+  "coord_enfermagem",
+  "coord_multi",
+]);
+
 export default function HistoricoPacientePage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // ── Access guard (G9): só perfis clínicos/coordenação podem ver histórico longitudinal ──
+  const accessProfile = typeof window !== "undefined"
+    ? (sessionStorage.getItem("active_access_profile") || localStorage.getItem("access_profile") || "")
+    : "";
+  const profilesRaw = typeof window !== "undefined"
+    ? sessionStorage.getItem("available_access_profiles")
+    : null;
+  let availableProfiles: string[] = [];
+  try { availableProfiles = profilesRaw ? JSON.parse(profilesRaw) : []; } catch { /* ignore */ }
+  const hasAccess = ALLOWED_PROFILES.has(accessProfile)
+    || availableProfiles.some((p) => ALLOWED_PROFILES.has(p));
+  if (!hasAccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <Card className="max-w-md p-6 text-center space-y-3">
+          <Hospital className="h-10 w-10 mx-auto text-muted-foreground" />
+          <h1 className="text-lg font-semibold">ACESSO RESTRITO</h1>
+          <p className="text-sm text-muted-foreground">
+            O histórico longitudinal do prontuário é restrito a médicos, gestores e coordenações
+            (médica, enfermagem, multiprofissional).
+          </p>
+          <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
 
   const patientId = searchParams.get("patientId");
   const patientRegistryId = searchParams.get("patientRegistryId");
