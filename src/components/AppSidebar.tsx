@@ -435,6 +435,23 @@ export function AppSidebar({
         { title: "Round Multiprofissional", icon: ClipboardCheck, link: "/round", profiles: ["multi"] },
       ];
     }
+    // Coordenação (médica / enfermagem / multi): consulta transversal, somente leitura clínica
+    if (isCoordinator) {
+      const coordLabel = coordKind === "medico"
+        ? "Coord. Médica"
+        : coordKind === "enfermagem"
+          ? "Coord. Enfermagem"
+          : "Coord. Multi";
+      return [
+        { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: [accessProfile] },
+        { title: "Painel Clínico", icon: ClipboardList, link: "/painel-clinico", profiles: [accessProfile] },
+        { title: coordLabel, icon: Shield, profiles: [accessProfile], items: [
+          { name: "Histórico de Paciente", link: "/global-search?intent=historico", profiles: [accessProfile] },
+          { name: "Round Multiprofissional", link: "/round", profiles: [accessProfile] },
+          { name: "Relatórios", link: "/relatorios", profiles: [accessProfile] },
+        ]},
+      ];
+    }
     // Filter sections by profile, then filter sub-items within each section
     return (allMenuItems as any[])
       .filter((section: any) => !section.profiles || section.profiles.includes(accessProfile))
