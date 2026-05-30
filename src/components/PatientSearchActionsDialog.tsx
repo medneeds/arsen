@@ -211,6 +211,18 @@ export function PatientSearchActionsDialog({
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
+      // ─────────────────────────────────────────────────────────────────
+      // FLUXO CORRIGIDO: Pré-admissão é o ato administrativo que aloca
+      // o paciente e GERA o número de atendimento. O encounter é
+      // consequência da pré-admissão, não o contrário.
+      //
+      // Dois caminhos:
+      //   A) Com sinalização de setor: cria pré-admissão → cria encounter
+      //      vinculado → encounter_code aparece na pré-admissão
+      //   B) Sem sinalização de setor: cria encounter direto (triagem
+      //      sem alocação imediata — semanticamente correto)
+      // ─────────────────────────────────────────────────────────────────
+
       // 1) Localiza prontuário oficial vinculado ao registry
       let medicalRecordId: string | null = null;
       try {
@@ -240,31 +252,13 @@ export function PatientSearchActionsDialog({
         }
       }
 
-      // 3) Cria o atendimento
-      const { data: enc, error: encErr } = await supabase
-        .from("patient_encounters")
-        .insert({
-          patient_name: patient.full_name,
-          registry_id: patient.id,
-          medical_record_id: medicalRecordId,
-          encounter_code: preGeneratedCode || undefined,
-          hospital_unit_id: hospitalUnitId,
-          state_id: stateId,
-          department,
-          destination_sector: selectedSector?.label || null,
-          status: "active",
-          triage_status: "encaminhado",
-          created_by: user?.id,
-        } as any)
-        .select()
-        .single();
+      let encounterCode: string;
+      let preAdmissionId: string | null = null;
 
-      if (encErr) throw encErr;
-      const encounterCode = (enc as any).encounter_code as string;
-
-      // 4) Sinaliza pré-admissão (opcional)
       if (signalPreAdmission && selectedSector) {
-        const { error: paErr } = await supabase
+        // ── CAMINHO A: Pré-admissão com setor ─────────────────────────
+        // 3A) Cria a pré-admissão PRIMEIRO — ato administrativo de alocação
+        const { data: pa, error: paErr } = await supabase
           .from("pre_admissions")
           .insert({
             patient_name: patient.full_name,
@@ -283,23 +277,76 @@ export function PatientSearchActionsDialog({
             state_id: stateId,
             department,
             created_by: user?.id,
-            notes: `Aberto via busca no Mapa de Leitos • Atendimento ${encounterCode}`,
-          } as any);
-        if (paErr) {
-          console.error("Erro ao criar pré-admissão:", paErr);
-          toast({
-            title: "Atendimento criado, mas falha ao sinalizar setor",
-            description: paErr.message,
-            variant: "destructive",
-          });
+            notes: `Pré-admissão administrativa via busca no Mapa de Leitos`,
+          } as any)
+          .select("id")
+          .single();
+
+        if (paErr) throw paErr;
+        preAdmissionId = (pa as any).id ?? null;
+
+        // 4A) Cria o encounter vinculado à pré-admissão
+        const { data: enc, error: encErr } = await supabase
+          .from("patient_encounters")
+          .insert({
+            patient_name: patient.full_name,
+            registry_id: patient.id,
+            medical_record_id: medicalRecordId,
+            encounter_code: preGeneratedCode || undefined,
+            hospital_unit_id: hospitalUnitId,
+            state_id: stateId,
+            department,
+            destination_sector: selectedSector.label || null,
+            status: "active",
+            triage_status: "encaminhado",
+            created_by: user?.id,
+            // Vincula ao pre_admission_id para rastreabilidade
+            pre_admission_id: preAdmissionId,
+          } as any)
+          .select()
+          .single();
+
+        if (encErr) throw encErr;
+        encounterCode = (enc as any).encounter_code as string;
+
+        // 5A) Atualiza a pré-admissão com o encounter_code gerado
+        if (encounterCode && preAdmissionId) {
+          await supabase
+            .from("pre_admissions")
+            .update({ notes: `Pré-admissão administrativa via busca no Mapa de Leitos • Atendimento ${encounterCode}` })
+            .eq("id", preAdmissionId);
         }
+
+      } else {
+        // ── CAMINHO B: Apenas abre atendimento, sem alocar setor ───────
+        // Triagem ou atendimento administrativo sem alocação imediata.
+        // Neste caso o encounter é criado diretamente — sem pré-admissão.
+        const { data: enc, error: encErr } = await supabase
+          .from("patient_encounters")
+          .insert({
+            patient_name: patient.full_name,
+            registry_id: patient.id,
+            medical_record_id: medicalRecordId,
+            encounter_code: preGeneratedCode || undefined,
+            hospital_unit_id: hospitalUnitId,
+            state_id: stateId,
+            department,
+            status: "active",
+            triage_status: "encaminhado",
+            created_by: user?.id,
+          } as any)
+          .select()
+          .single();
+
+        if (encErr) throw encErr;
+        encounterCode = (enc as any).encounter_code as string;
       }
 
       toast({
-        title: "Atendimento aberto",
+        title: signalPreAdmission && selectedSector ? "Pré-admissão registrada" : "Atendimento aberto",
         description: signalPreAdmission && selectedSector
-          ? `Código ${encounterCode} • sinalizado em ${selectedSector.mapTitle}`
-          : `Código ${encounterCode}`,
+          ? `Atend. ${encounterCode} • aguardando leito em ${selectedSector.mapTitle}`
+          : `Código ${encounterCode} • sem alocação de setor`,
       });
 
       handleClose(false);
@@ -317,27 +364,28 @@ export function PatientSearchActionsDialog({
     { label: "Paciente", value: patient.full_name },
     ...(patient.medical_record ? [{ label: "Prontuário", value: patient.medical_record }] : []),
     ...(patient.cpf ? [{ label: "CPF", value: patient.cpf }] : []),
-    { label: "Ação", value: "Abrir novo atendimento" },
     {
-      label: "Sinalizar pré-admissão",
+      label: "Ação",
       value: signalPreAdmission && selectedSector
-        ? `Sim → ${selectedSector.mapTitle}`
-        : "Não",
+        ? "Pré-admissão administrativa (aloca + gera atendimento)"
+        : "Abrir atendimento sem alocação de setor",
     },
-    { label: "Código de atendimento", value: "Gerado na confirmação (12 dígitos)" },
+    {
+      label: signalPreAdmission && selectedSector ? "Setor de destino" : "Alocação",
+      value: signalPreAdmission && selectedSector
+        ? selectedSector.mapTitle
+        : "Nenhuma (sem pré-admissão)",
+    },
+    { label: "Nº de atendimento", value: "Gerado automaticamente (12 dígitos)" },
   ];
 
-  const consequences: MovementConsequence[] = [
-    { icon: FilePlus, text: <>Será criado um novo <b>encounter</b> vinculado ao prontuário existente.</> },
-    { icon: ChevronRight, text: <>Um <b>código sequencial global de 12 dígitos</b> será emitido neste momento.</> },
-    ...(signalPreAdmission && selectedSector
-      ? [{
-          icon: BedDouble,
-          text: (
-            <>O paciente entrará na fila <b>"Aguardando Pré-admissão (Alocação) em Leito"</b> do setor <b>{selectedSector.mapTitle}</b>.</>
-          ),
-        }] as MovementConsequence[]
-      : []),
+  const consequences: MovementConsequence[] = signalPreAdmission && selectedSector ? [
+    { icon: BedDouble, text: (<>Será criada uma <b>pré-admissão</b> no setor <b>{selectedSector.mapTitle}</b> — ato administrativo de alocação.</>) },
+    { icon: FilePlus, text: <>O <b>número de atendimento</b> (12 dígitos) é gerado como parte da pré-admissão e vinculado ao prontuário.</> },
+    { icon: ChevronRight, text: <>O paciente aparecerá em <b>"Aguardando Pré-admissão (Alocação) em Leito"</b> no setor escolhido.</> },
+  ] : [
+    { icon: FilePlus, text: <>Será criado um <b>atendimento</b> vinculado ao prontuário, sem alocação de leito.</> },
+    { icon: ChevronRight, text: <>Um <b>código sequencial global de 12 dígitos</b> será emitido. O paciente não será sinalizado em nenhum setor.</> },
   ];
 
   return (
@@ -619,10 +667,12 @@ export function PatientSearchActionsDialog({
         description="Confirme a abertura do atendimento e, se aplicável, a sinalização de pré-admissão no setor."
         summary={summary}
         consequences={consequences}
-        confirmLabel={signalPreAdmission ? "Confirmar e sinalizar setor" : "Confirmar abertura"}
+        confirmLabel={signalPreAdmission && selectedSector ? "Confirmar pré-admissão" : "Confirmar abertura de atendimento"}
         cancelLabel="Voltar"
         finalNote={
-          <>O código de atendimento é <b>imutável</b> após a emissão e ficará vinculado ao prontuário do paciente.</>
+          signalPreAdmission && selectedSector
+            ? <>A pré-admissão aloca o paciente no setor e gera o <b>número de atendimento imutável</b>. A admissão médica é feita pelo médico ao avaliar o paciente no leito.</>
+            : <>O código de atendimento é <b>imutável</b> após a emissão e ficará vinculado ao prontuário do paciente.</>
         }
       />
     </>
