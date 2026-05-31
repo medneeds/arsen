@@ -44,6 +44,14 @@ interface EvolutionTimelineProps {
    *  como 1ª seção colapsável do EvolutionForm ao editar rascunho na Timeline.
    *  Sem isso, a Revisão lista "Definir CID-10 primário" mas o campo não aparece. */
   diagnosticsSlot?: React.ReactNode;
+  /** Factory para slot de diagnósticos com callback por evolução.
+   *  Recebe o ID da evolução, callback para salvar hipótese e valor atual.
+   *  Quando presente, substitui `diagnosticsSlot` para evoluções existentes. */
+  diagnosticsSlotFactory?: (
+    evoId: string,
+    onDiagHypoChange: (v: string) => void,
+    currentDiagHypo: string
+  ) => React.ReactNode;
   onUpdate: (id: string, updates: any) => Promise<boolean>;
   onValidate: (id: string) => Promise<boolean>;
   onSuspend: (id: string, reason: string) => Promise<boolean>;
