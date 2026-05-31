@@ -257,16 +257,28 @@ export function MedicalRecordEditDialog({
         .maybeSingle();
 
       let regRow: RegistryRow | null = null;
-      let registryId: string | null = (rec as any)?.patient_registry_id || null;
 
-      // 2) patients.patient_registry_id como fallback
-      if (!registryId) {
-        const { data: pat } = await supabase
-          .from("patients")
-          .select("patient_registry_id")
-          .eq("id", patientId)
-          .maybeSingle();
-        registryId = (pat as any)?.patient_registry_id || null;
+      // Resolve patient_registry_id com PRIORIDADE ao vínculo vivo do paciente
+      // (patients.patient_registry_id). O medical_records.patient_registry_id pode estar
+      // desalinhado quando o leito foi reusado e a linha de prontuário herdou o registry
+      // do ocupante anterior — abrir esse registry causaria edição cruzada de identidade
+      // e violação de UNIQUE em patient_registry.medical_record.
+      const { data: patRow } = await supabase
+        .from("patients")
+        .select("patient_registry_id, name")
+        .eq("id", patientId)
+        .maybeSingle();
+      const patRegistryId: string | null = (patRow as any)?.patient_registry_id || null;
+      const recRegistryId: string | null = (rec as any)?.patient_registry_id || null;
+
+      let registryId: string | null = patRegistryId || recRegistryId;
+
+      if (patRegistryId && recRegistryId && patRegistryId !== recRegistryId) {
+        console.warn(
+          "[MedicalRecordEditDialog] divergência registry: patients=%s medical_records=%s — usando patients (vínculo vivo)",
+          patRegistryId,
+          recRegistryId
+        );
       }
 
       if (registryId) {
