@@ -6883,31 +6883,18 @@ const PrescricaoPage = () => {
     }
   };
 
-  // Sign prescription
+  // Assinatura digital removida da UI/PDF — handlers mantidos no arquivo apenas
+  // para preservar referências internas. Nunca são acionados (botões removidos do JSX)
+  // e jamais populam digitalSignature (state permanece null para novas prescrições).
   const handleRequestSign = () => {
-    if (!canPrescribe) { toast.error("Preencha o peso e as alergias antes de assinar"); return; }
-    if (!patient.name.trim()) { toast.error("Preencha o nome do paciente antes de assinar"); return; }
-    if (activeItemsCount === 0) { toast.error("Nenhum item ativo para assinar"); return; }
-    setSignDialogOpen(true);
+    /* no-op: assinatura digital descontinuada */
   };
 
-  const confirmSign = useCallback(async (sig: DigitalSignature) => {
-    // Se já existe assinatura prévia, esta é uma REASSINATURA → preserva versão anterior
-    // imutável e cria nova versão com a assinatura do médico atual (parent_id encadeado).
-    const isResign = !!digitalSignature;
-    setDigitalSignature(sig);
+  const confirmSign = useCallback(async (_sig: DigitalSignature) => {
+    // Garantia defensiva: mesmo que algum gatilho residual chame, NÃO populamos a assinatura.
+    setDigitalSignature(null);
     setSignDialogOpen(false);
-    // Persistência IMEDIATA da assinatura — não pode ficar só em memória
-    try {
-      await persistItems(items, { sigOverride: sig, mode: isResign ? 'newVersion' : 'update' });
-      toast.success(isResign ? "Prescrição reassinada digitalmente" : "Prescrição assinada digitalmente", {
-        description: `Dr(a). ${sig.doctorName} — CRM ${sig.crm} — Hash: ${sig.hash}`,
-        duration: 5000,
-      });
-    } catch {
-      // persistItems já reportou o erro
-    }
-  }, [items, persistItems, digitalSignature]);
+  }, []);
 
   // Salvar rascunho — preserva itens pendentes de validação (visível só p/ médico que salvou)
   const [savingDraft, setSavingDraft] = useState(false);
