@@ -183,6 +183,18 @@ export async function executeInternalTransfer(params: {
       throw new Error(`Falha ao migrar histórico clínico (${repoint.error}). Operação abortada.`);
     }
 
+    // Sincroniza admission_histories: garante que a admissão ativa segue o paciente
+    // após transferência interna. Não arquiva — apenas aponta para o novo patient_id.
+    try {
+      await supabase
+        .from("admission_histories")
+        .update({ patient_id: targetBedRow.id, updated_at: new Date().toISOString() })
+        .eq("patient_id", source.id)
+        .is("archived_at", null);
+    } catch (e) {
+      console.warn("[internalTransfer] sync admission_histories:", e);
+    }
+
     // 3. Esvazia o leito de origem (100% limpo, sem resíduo).
     const { error: sourceError } = await supabase
       .from("patients")
@@ -567,6 +579,17 @@ export async function completeInternalTransfer(
     );
     if (!repoint.ok) {
       throw new Error(`Falha ao migrar histórico (${repoint.error}).`);
+    }
+
+    // Sincroniza admission_histories após repoint (Etapa 2)
+    try {
+      await supabase
+        .from("admission_histories")
+        .update({ patient_id: targetBedRow.id, updated_at: new Date().toISOString() })
+        .eq("patient_id", sourcePatientId)
+        .is("archived_at", null);
+    } catch (e) {
+      console.warn("[internalTransfer] sync admission_histories (complete):", e);
     }
 
     await (supabase as any)
