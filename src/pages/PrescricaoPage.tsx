@@ -10559,33 +10559,44 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
         );
       })()}
 
-      {/* Signature */}
-      <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'space-between', gap: '20px', pageBreakInside: 'avoid' }}>
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          {digitalSignature ? (
-            <div style={{ border: '1.5px solid #0c4a6e', borderRadius: '6px', padding: '8px 16px', display: 'inline-block', backgroundColor: '#f0f9ff' }}>
-              <div style={{ fontSize: '7pt', fontWeight: 800, color: '#0c4a6e', letterSpacing: '1px' }}>✓ ASSINADO DIGITALMENTE</div>
-              <div style={{ fontSize: '8pt', fontWeight: 700, color: '#0f172a', marginTop: '3px' }}>{digitalSignature.doctorName}</div>
-              <div style={{ fontSize: '6.5pt', color: '#475569', marginTop: '1px' }}>CRM: {digitalSignature.crm} · {digitalSignature.signedAt}</div>
-              <div style={{ fontSize: '5pt', color: '#94a3b8', fontFamily: 'monospace', marginTop: '3px', borderTop: '0.5px solid #e2e8f0', paddingTop: '2px' }}>Hash: {digitalSignature.hash}</div>
-            </div>
-          ) : (
-            <div style={{ paddingTop: '14px' }}>
-              <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
-              <div style={{ fontSize: '7pt', fontWeight: 700 }}>Assinatura / Carimbo do Médico</div>
-              <div style={{ fontSize: '6.5pt', color: '#64748b' }}>CRM: _______________</div>
-            </div>
-          )}
+      {/* Signature — assinatura digital REMOVIDA. Apenas espaço físico para carimbo + caneta.
+          Nota âmbar avisa que o PDF só tem validade legal após assinatura manual. */}
+      <div style={{ marginTop: '14px', pageBreakInside: 'avoid' }}>
+        <div style={{
+          background: '#fffbeb',
+          border: '1px solid #f59e0b',
+          borderRadius: '4px',
+          padding: '6px 10px',
+          marginBottom: '10px',
+          fontSize: '7pt',
+          color: '#92400e',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '6px',
+          lineHeight: 1.3,
+        }}>
+          <span style={{ fontSize: '9pt', lineHeight: 1, fontWeight: 700 }}>⚠</span>
+          <span>
+            <strong>ATENÇÃO:</strong> Este documento <strong>não substitui</strong> a assinatura manual e o carimbo do médico responsável.
+            A prescrição só tem validade legal após assinatura física e identificação do prescritor.
+          </span>
         </div>
-        <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
-          <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
-          <div style={{ fontSize: '7pt', fontWeight: 700 }}>Enfermeiro(a) Responsável</div>
-          <div style={{ fontSize: '6.5pt', color: '#64748b' }}>COREN: _______________</div>
-        </div>
-        <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
-          <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
-          <div style={{ fontSize: '7pt', fontWeight: 700 }}>Farmacêutico</div>
-          <div style={{ fontSize: '6.5pt', color: '#64748b' }}>CRF: _______________</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px' }}>
+          <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
+            <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
+            <div style={{ fontSize: '7pt', fontWeight: 700 }}>Assinatura / Carimbo do Médico</div>
+            <div style={{ fontSize: '6.5pt', color: '#64748b' }}>CRM: _______________</div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
+            <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
+            <div style={{ fontSize: '7pt', fontWeight: 700 }}>Enfermeiro(a) Responsável</div>
+            <div style={{ fontSize: '6.5pt', color: '#64748b' }}>COREN: _______________</div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
+            <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
+            <div style={{ fontSize: '7pt', fontWeight: 700 }}>Farmacêutico</div>
+            <div style={{ fontSize: '6.5pt', color: '#64748b' }}>CRF: _______________</div>
+          </div>
         </div>
       </div>
 
