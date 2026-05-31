@@ -7368,15 +7368,6 @@ const PrescricaoPage = () => {
           <ShieldCheck className="h-4 w-4 shrink-0" />
           <div className="text-[12px] leading-snug min-w-0">
             <strong className="font-semibold">PRESCRIÇÃO VALIDADA HOJE</strong>
-            {digitalSignature && (
-              <>
-                {" — registrada por "}
-                <span className="font-semibold">{digitalSignature.doctorName}</span>
-                {digitalSignature.crm && <> (CRM {digitalSignature.crm})</>}
-                {" às "}
-                <span className="font-mono">{digitalSignature.signedAt}</span>
-              </>
-            )}
             {". "}
             <span className="opacity-80">A assinatura legal é feita manualmente (carimbo + caneta) no PDF impresso.</span>
           </div>
@@ -9080,11 +9071,6 @@ const PrescricaoPage = () => {
               <Pause className="h-3 w-3" /> {suspendedItemsCount} suspenso{suspendedItemsCount > 1 ? 's' : ''}
             </Badge>
           )}
-          {digitalSignature && (
-            <Badge variant="outline" className="gap-1 text-[10px] border-green-300 text-green-700 bg-green-50">
-              <ShieldCheck className="h-3 w-3" /> Assinado — {digitalSignature.doctorName}
-            </Badge>
-          )}
           <span className="text-xs text-muted-foreground">
             {TAB_ORDER.map(cat => {
               const count = itemsByCategory[cat].length;
@@ -9109,16 +9095,8 @@ const PrescricaoPage = () => {
             <Save className="h-3.5 w-3.5" />
             {savingDraft ? "Salvando..." : "Salvar Rascunho"}
           </Button>
-          <Button
-            size="sm"
-            onClick={handleRequestSign}
-            disabled={!canPrescribe || activeItemsCount === 0}
-            className="gap-1.5 text-xs"
-            title={digitalSignature ? "Reassinar como médico do plantão — gera nova versão e atualiza o PDF" : "Assinar prescrição"}
-          >
-            <ShieldCheck className="h-3.5 w-3.5" />
-            {digitalSignature ? "Reassinar Prescrição" : "Assinar Prescrição"}
-          </Button>
+          {/* Botão "Assinar Prescrição" removido: assinatura é manual (carimbo + caneta) no PDF impresso.
+              Fluxo de Validar permanece intacto. */}
           {/* Validar — espelha o botão do topo para conveniência do médico */}
           <Button
             size="sm"
@@ -9174,13 +9152,9 @@ const PrescricaoPage = () => {
         activeCount={activeItemsCount}
         suspendedCount={suspendedItemsCount}
       />
-      <SignPrescriptionDialog
-        open={signDialogOpen}
-        onClose={() => setSignDialogOpen(false)}
-        onConfirm={confirmSign}
-        totalItems={totalItems}
-        activeItems={activeItemsCount}
-      />
+      {/* SignPrescriptionDialog desmontado: assinatura digital removida da UI.
+          Componente e handlers (handleRequestSign/confirmSign) permanecem no arquivo
+          para preservar referências, mas nunca são acionados. */}
 
       {/* ===== PRÉ-VISUALIZAÇÃO DO PERFIL DE CUIDADO ===== */}
       <Dialog open={!!careProfilePreview} onOpenChange={(o) => { if (!o) setCareProfilePreview(null); }}>
