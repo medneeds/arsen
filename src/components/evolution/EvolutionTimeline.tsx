@@ -704,8 +704,24 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         patientRecord={patientRecord || null}
                         cidPrimary={cidPrimary || null}
                         cidSecondary={cidSecondary || null}
-                        diagnosticsSlot={diagnosticsSlot}
-                        diagnosticsReviewSlot={diagnosticsSlot}
+                        diagnosticsSlot={
+                          diagnosticsSlotFactory
+                            ? diagnosticsSlotFactory(
+                                evo.id,
+                                (v) => updateLocalDiagHypo(evo.id, v),
+                                localEdits[evo.id]?.diagHypo ?? ((evo as any).diagnostic_hypotheses || "")
+                              )
+                            : diagnosticsSlot
+                        }
+                        diagnosticsReviewSlot={
+                          diagnosticsSlotFactory
+                            ? diagnosticsSlotFactory(
+                                evo.id,
+                                (v) => updateLocalDiagHypo(evo.id, v),
+                                localEdits[evo.id]?.diagHypo ?? ((evo as any).diagnostic_hypotheses || "")
+                              )
+                            : diagnosticsSlot
+                        }
                       />
                     )}
                   </div>
