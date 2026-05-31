@@ -589,6 +589,32 @@ const EvolucaoPage = () => {
             cidPrimary={cidPrimary}
             cidSecondary={Array.isArray(cidSecondary) ? cidSecondary.join(", ") : cidSecondary}
             diagnosticsSlot={diagnosticsSlot}
+            diagnosticsSlotFactory={(evoId, onDiagHypoChange, currentDiagHypo) => (
+              <DiagnosticsPanel
+                cidPrimary={cidPrimary}
+                cidSecondary={cidSecondary}
+                onCidPrimaryChange={updateCidPrimary}
+                onCidSecondaryChange={updateCidSecondary}
+                utiDischargePrediction={utiDischargePrediction}
+                onUtiDischargePredictionChange={updateUtiDischargePrediction}
+                hospitalDischargePrediction={hospitalDischargePrediction}
+                onHospitalDischargePredictionChange={updateHospitalDischargePrediction}
+                isPalliative={isPalliative}
+                onPalliativeChange={updateIsPalliative}
+                isolationPrecautions={isolationPrecautions}
+                onIsolationChange={updateIsolationPrecautions}
+                diagnosticHypotheses={currentDiagHypo}
+                onDiagnosticHypothesesChange={(v) => {
+                  const str = Array.isArray(v) ? v.filter(Boolean).join("\n") : v;
+                  onDiagHypoChange(str);
+                }}
+                antecedentes={antecedentes}
+                onAntecedentesChange={setAntecedentes}
+                showUtiPrediction={isUtiSector}
+                replicated={false}
+                onClearAll={handleClearDiagnostics}
+              />
+            )}
             onUpdate={updateEvolution}
             onValidate={validateEvolution}
             onSuspend={suspendEvolution}

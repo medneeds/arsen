@@ -44,6 +44,14 @@ interface EvolutionTimelineProps {
    *  como 1ª seção colapsável do EvolutionForm ao editar rascunho na Timeline.
    *  Sem isso, a Revisão lista "Definir CID-10 primário" mas o campo não aparece. */
   diagnosticsSlot?: React.ReactNode;
+  /** Factory para slot de diagnósticos com callback por evolução.
+   *  Recebe o ID da evolução, callback para salvar hipótese e valor atual.
+   *  Quando presente, substitui `diagnosticsSlot` para evoluções existentes. */
+  diagnosticsSlotFactory?: (
+    evoId: string,
+    onDiagHypoChange: (v: string) => void,
+    currentDiagHypo: string
+  ) => React.ReactNode;
   onUpdate: (id: string, updates: any) => Promise<boolean>;
   onValidate: (id: string) => Promise<boolean>;
   onSuspend: (id: string, reason: string) => Promise<boolean>;
@@ -58,14 +66,14 @@ const STATUS_CONFIG = {
 };
 
 export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
-  evolutions, admissionDate, patientRecord, cidPrimary, cidSecondary, patientId, diagnosticsSlot, onUpdate, onValidate, onSuspend, onDelete, onDuplicate,
+  evolutions, admissionDate, patientRecord, cidPrimary, cidSecondary, patientId, diagnosticsSlot, diagnosticsSlotFactory, onUpdate, onValidate, onSuspend, onDelete, onDuplicate,
 }) => {
   const { user } = useAuth();
   const { currentHospital } = useHospital();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [collapsedDays, setCollapsedDays] = useState<Set<number>>(new Set());
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [localEdits, setLocalEdits] = useState<Record<string, { soap: any; vitals: any; exam: any }>>({});
+  const [localEdits, setLocalEdits] = useState<Record<string, { soap: any; vitals: any; exam: any; diagHypo?: string }>>({});
   const [suspendDialogId, setSuspendDialogId] = useState<string | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
@@ -139,15 +147,32 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     });
   };
 
+  const updateLocalDiagHypo = (id: string, value: string) => {
+    setLocalEdits(prev => {
+      const evo = evolutions.find(e => e.id === id);
+      if (!evo) return prev;
+      const current = prev[id] || {
+        soap: { ...evo.soap_data },
+        vitals: { ...evo.vital_signs },
+        exam: { ...evo.physical_exam },
+      };
+      return { ...prev, [id]: { ...current, diagHypo: value } };
+    });
+  };
+
   const handleSave = async (id: string) => {
     const local = localEdits[id];
     if (!local) return;
     setSavingId(id);
-    await onUpdate(id, {
+    const updates: any = {
       soap_data: local.soap,
       vital_signs: local.vitals,
       physical_exam: local.exam,
-    });
+    };
+    if (local.diagHypo !== undefined) {
+      updates.diagnostic_hypotheses = local.diagHypo;
+    }
+    await onUpdate(id, updates);
     setLocalEdits(prev => { const n = { ...prev }; delete n[id]; return n; });
     setSavingId(null);
   };
@@ -156,11 +181,15 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     if (!validateDialogId) return;
     const local = localEdits[validateDialogId];
     if (local) {
-      await onUpdate(validateDialogId, {
+      const updates: any = {
         soap_data: local.soap,
         vital_signs: local.vitals,
         physical_exam: local.exam,
-      });
+      };
+      if (local.diagHypo !== undefined) {
+        updates.diagnostic_hypotheses = local.diagHypo;
+      }
+      await onUpdate(validateDialogId, updates);
       setLocalEdits(prev => { const n = { ...prev }; delete n[validateDialogId!]; return n; });
     }
     const success = await onValidate(validateDialogId);
@@ -675,8 +704,24 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         patientRecord={patientRecord || null}
                         cidPrimary={cidPrimary || null}
                         cidSecondary={cidSecondary || null}
-                        diagnosticsSlot={diagnosticsSlot}
-                        diagnosticsReviewSlot={diagnosticsSlot}
+                        diagnosticsSlot={
+                          diagnosticsSlotFactory
+                            ? diagnosticsSlotFactory(
+                                evo.id,
+                                (v) => updateLocalDiagHypo(evo.id, v),
+                                localEdits[evo.id]?.diagHypo ?? ((evo as any).diagnostic_hypotheses || "")
+                              )
+                            : diagnosticsSlot
+                        }
+                        diagnosticsReviewSlot={
+                          diagnosticsSlotFactory
+                            ? diagnosticsSlotFactory(
+                                evo.id,
+                                (v) => updateLocalDiagHypo(evo.id, v),
+                                localEdits[evo.id]?.diagHypo ?? ((evo as any).diagnostic_hypotheses || "")
+                              )
+                            : diagnosticsSlot
+                        }
                       />
                     )}
                   </div>
