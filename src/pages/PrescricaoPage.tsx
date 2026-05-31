@@ -4657,6 +4657,7 @@ const PrescricaoPage = () => {
       const basePayload = {
         patient_name: patient.name.trim(),
         patient_registry_id: patientRegistryId,
+        encounter_id: (activeEncounterId && activeEncounterId.length > 10) ? activeEncounterId : null,
         patient_data: patient as any,
         items: nextItems as any,
         digital_signature: sig as any,
@@ -4733,7 +4734,7 @@ const PrescricaoPage = () => {
       }
       throw err;
     }
-  }, [currentHospital, currentState, patient, digitalSignature, currentPrescriptionId, user?.id, initialPatientSector]);
+  }, [currentHospital, currentState, patient, digitalSignature, currentPrescriptionId, user?.id, initialPatientSector, activeEncounterId, patientRegistryId]);
 
   // ============= AUTOSAVE DE RASCUNHO (CRÍTICO) =============
   // Persiste automaticamente qualquer alteração em `items` ~800ms após a última edição,
@@ -6705,6 +6706,7 @@ const PrescricaoPage = () => {
       const payload = {
         patient_name: patient.name.trim(),
         patient_registry_id: patientRegistryId,
+        encounter_id: (activeEncounterId && activeEncounterId.length > 10) ? activeEncounterId : null,
         patient_data: patient as any,
         items: items as any,
         digital_signature: digitalSignature as any,
@@ -6982,6 +6984,7 @@ const PrescricaoPage = () => {
           .insert({
             patient_name: patient.name.trim(),
             patient_registry_id: patientRegistryId,
+            encounter_id: (activeEncounterId && activeEncounterId.length > 10) ? activeEncounterId : null,
             patient_data: patient as any,
             items: renewedItems as any,
             digital_signature: null,
