@@ -200,17 +200,21 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
 
   // Autosave (debounced 2s) for editing existing drafts in Timeline
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 🔒 Ref para onSave — evita resetar o timer a cada re-render do pai
+  // (onSave costuma vir como arrow `() => handleSave(evo.id)`, ref nova a cada render).
+  const onSaveRef = useRef<() => void>(onSave);
+  useEffect(() => { onSaveRef.current = onSave; }, [onSave]);
   useEffect(() => {
     if (!autoSave || readOnly || !hasUnsaved) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(() => {
-      onSave();
+      onSaveRef.current();
       setAutoSavedAt(new Date());
     }, 2000);
     return () => {
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     };
-  }, [soap, vitals, physicalExam, autoSave, readOnly, hasUnsaved, onSave]);
+  }, [soap, vitals, physicalExam, autoSave, readOnly, hasUnsaved]);
 
   // Read-only mode shows everything stacked (no accordion)
   if (readOnly) {
