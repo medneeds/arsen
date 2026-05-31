@@ -6455,7 +6455,9 @@ const PrescricaoPage = () => {
           unit: prev.unit || snapshot.unit,
         }));
         setItems(data.items as unknown as PrescriptionItem[]);
-        setDigitalSignature(data.digital_signature as unknown as DigitalSignature | null);
+        // Assinatura digital descontinuada: NÃO herda do registro legado para não
+        // reencadear assinatura ao salvar nova versão. Dado no banco fica intacto.
+        setDigitalSignature(null);
         setCurrentPrescriptionId(data.id);
         setSelectedIds(new Set());
         toast.success("Prescrição carregada", { description: `v${data.version} — ${data.patient_name}` });
@@ -6883,31 +6885,18 @@ const PrescricaoPage = () => {
     }
   };
 
-  // Sign prescription
+  // Assinatura digital removida da UI/PDF — handlers mantidos no arquivo apenas
+  // para preservar referências internas. Nunca são acionados (botões removidos do JSX)
+  // e jamais populam digitalSignature (state permanece null para novas prescrições).
   const handleRequestSign = () => {
-    if (!canPrescribe) { toast.error("Preencha o peso e as alergias antes de assinar"); return; }
-    if (!patient.name.trim()) { toast.error("Preencha o nome do paciente antes de assinar"); return; }
-    if (activeItemsCount === 0) { toast.error("Nenhum item ativo para assinar"); return; }
-    setSignDialogOpen(true);
+    /* no-op: assinatura digital descontinuada */
   };
 
-  const confirmSign = useCallback(async (sig: DigitalSignature) => {
-    // Se já existe assinatura prévia, esta é uma REASSINATURA → preserva versão anterior
-    // imutável e cria nova versão com a assinatura do médico atual (parent_id encadeado).
-    const isResign = !!digitalSignature;
-    setDigitalSignature(sig);
+  const confirmSign = useCallback(async (_sig: DigitalSignature) => {
+    // Garantia defensiva: mesmo que algum gatilho residual chame, NÃO populamos a assinatura.
+    setDigitalSignature(null);
     setSignDialogOpen(false);
-    // Persistência IMEDIATA da assinatura — não pode ficar só em memória
-    try {
-      await persistItems(items, { sigOverride: sig, mode: isResign ? 'newVersion' : 'update' });
-      toast.success(isResign ? "Prescrição reassinada digitalmente" : "Prescrição assinada digitalmente", {
-        description: `Dr(a). ${sig.doctorName} — CRM ${sig.crm} — Hash: ${sig.hash}`,
-        duration: 5000,
-      });
-    } catch {
-      // persistItems já reportou o erro
-    }
-  }, [items, persistItems, digitalSignature]);
+  }, []);
 
   // Salvar rascunho — preserva itens pendentes de validação (visível só p/ médico que salvou)
   const [savingDraft, setSavingDraft] = useState(false);
@@ -7368,15 +7357,6 @@ const PrescricaoPage = () => {
           <ShieldCheck className="h-4 w-4 shrink-0" />
           <div className="text-[12px] leading-snug min-w-0">
             <strong className="font-semibold">PRESCRIÇÃO VALIDADA HOJE</strong>
-            {digitalSignature && (
-              <>
-                {" — registrada por "}
-                <span className="font-semibold">{digitalSignature.doctorName}</span>
-                {digitalSignature.crm && <> (CRM {digitalSignature.crm})</>}
-                {" às "}
-                <span className="font-mono">{digitalSignature.signedAt}</span>
-              </>
-            )}
             {". "}
             <span className="opacity-80">A assinatura legal é feita manualmente (carimbo + caneta) no PDF impresso.</span>
           </div>
@@ -9080,11 +9060,6 @@ const PrescricaoPage = () => {
               <Pause className="h-3 w-3" /> {suspendedItemsCount} suspenso{suspendedItemsCount > 1 ? 's' : ''}
             </Badge>
           )}
-          {digitalSignature && (
-            <Badge variant="outline" className="gap-1 text-[10px] border-green-300 text-green-700 bg-green-50">
-              <ShieldCheck className="h-3 w-3" /> Assinado — {digitalSignature.doctorName}
-            </Badge>
-          )}
           <span className="text-xs text-muted-foreground">
             {TAB_ORDER.map(cat => {
               const count = itemsByCategory[cat].length;
@@ -9109,16 +9084,8 @@ const PrescricaoPage = () => {
             <Save className="h-3.5 w-3.5" />
             {savingDraft ? "Salvando..." : "Salvar Rascunho"}
           </Button>
-          <Button
-            size="sm"
-            onClick={handleRequestSign}
-            disabled={!canPrescribe || activeItemsCount === 0}
-            className="gap-1.5 text-xs"
-            title={digitalSignature ? "Reassinar como médico do plantão — gera nova versão e atualiza o PDF" : "Assinar prescrição"}
-          >
-            <ShieldCheck className="h-3.5 w-3.5" />
-            {digitalSignature ? "Reassinar Prescrição" : "Assinar Prescrição"}
-          </Button>
+          {/* Botão "Assinar Prescrição" removido: assinatura é manual (carimbo + caneta) no PDF impresso.
+              Fluxo de Validar permanece intacto. */}
           {/* Validar — espelha o botão do topo para conveniência do médico */}
           <Button
             size="sm"
@@ -9174,13 +9141,9 @@ const PrescricaoPage = () => {
         activeCount={activeItemsCount}
         suspendedCount={suspendedItemsCount}
       />
-      <SignPrescriptionDialog
-        open={signDialogOpen}
-        onClose={() => setSignDialogOpen(false)}
-        onConfirm={confirmSign}
-        totalItems={totalItems}
-        activeItems={activeItemsCount}
-      />
+      {/* SignPrescriptionDialog desmontado: assinatura digital removida da UI.
+          Componente e handlers (handleRequestSign/confirmSign) permanecem no arquivo
+          para preservar referências, mas nunca são acionados. */}
 
       {/* ===== PRÉ-VISUALIZAÇÃO DO PERFIL DE CUIDADO ===== */}
       <Dialog open={!!careProfilePreview} onOpenChange={(o) => { if (!o) setCareProfilePreview(null); }}>
@@ -10585,33 +10548,44 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
         );
       })()}
 
-      {/* Signature */}
-      <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'space-between', gap: '20px', pageBreakInside: 'avoid' }}>
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          {digitalSignature ? (
-            <div style={{ border: '1.5px solid #0c4a6e', borderRadius: '6px', padding: '8px 16px', display: 'inline-block', backgroundColor: '#f0f9ff' }}>
-              <div style={{ fontSize: '7pt', fontWeight: 800, color: '#0c4a6e', letterSpacing: '1px' }}>✓ ASSINADO DIGITALMENTE</div>
-              <div style={{ fontSize: '8pt', fontWeight: 700, color: '#0f172a', marginTop: '3px' }}>{digitalSignature.doctorName}</div>
-              <div style={{ fontSize: '6.5pt', color: '#475569', marginTop: '1px' }}>CRM: {digitalSignature.crm} · {digitalSignature.signedAt}</div>
-              <div style={{ fontSize: '5pt', color: '#94a3b8', fontFamily: 'monospace', marginTop: '3px', borderTop: '0.5px solid #e2e8f0', paddingTop: '2px' }}>Hash: {digitalSignature.hash}</div>
-            </div>
-          ) : (
-            <div style={{ paddingTop: '14px' }}>
-              <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
-              <div style={{ fontSize: '7pt', fontWeight: 700 }}>Assinatura / Carimbo do Médico</div>
-              <div style={{ fontSize: '6.5pt', color: '#64748b' }}>CRM: _______________</div>
-            </div>
-          )}
+      {/* Signature — assinatura digital REMOVIDA. Apenas espaço físico para carimbo + caneta.
+          Nota âmbar avisa que o PDF só tem validade legal após assinatura manual. */}
+      <div style={{ marginTop: '14px', pageBreakInside: 'avoid' }}>
+        <div style={{
+          background: '#fffbeb',
+          border: '1px solid #f59e0b',
+          borderRadius: '4px',
+          padding: '6px 10px',
+          marginBottom: '10px',
+          fontSize: '7pt',
+          color: '#92400e',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '6px',
+          lineHeight: 1.3,
+        }}>
+          <span style={{ fontSize: '9pt', lineHeight: 1, fontWeight: 700 }}>⚠</span>
+          <span>
+            <strong>ATENÇÃO:</strong> Este documento <strong>não substitui</strong> a assinatura manual e o carimbo do médico responsável.
+            A prescrição só tem validade legal após assinatura física e identificação do prescritor.
+          </span>
         </div>
-        <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
-          <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
-          <div style={{ fontSize: '7pt', fontWeight: 700 }}>Enfermeiro(a) Responsável</div>
-          <div style={{ fontSize: '6.5pt', color: '#64748b' }}>COREN: _______________</div>
-        </div>
-        <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
-          <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
-          <div style={{ fontSize: '7pt', fontWeight: 700 }}>Farmacêutico</div>
-          <div style={{ fontSize: '6.5pt', color: '#64748b' }}>CRF: _______________</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px' }}>
+          <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
+            <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
+            <div style={{ fontSize: '7pt', fontWeight: 700 }}>Assinatura / Carimbo do Médico</div>
+            <div style={{ fontSize: '6.5pt', color: '#64748b' }}>CRM: _______________</div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
+            <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
+            <div style={{ fontSize: '7pt', fontWeight: 700 }}>Enfermeiro(a) Responsável</div>
+            <div style={{ fontSize: '6.5pt', color: '#64748b' }}>COREN: _______________</div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
+            <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
+            <div style={{ fontSize: '7pt', fontWeight: 700 }}>Farmacêutico</div>
+            <div style={{ fontSize: '6.5pt', color: '#64748b' }}>CRF: _______________</div>
+          </div>
         </div>
       </div>
 
