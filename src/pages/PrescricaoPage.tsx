@@ -6455,7 +6455,9 @@ const PrescricaoPage = () => {
           unit: prev.unit || snapshot.unit,
         }));
         setItems(data.items as unknown as PrescriptionItem[]);
-        setDigitalSignature(data.digital_signature as unknown as DigitalSignature | null);
+        // Assinatura digital descontinuada: NÃO herda do registro legado para não
+        // reencadear assinatura ao salvar nova versão. Dado no banco fica intacto.
+        setDigitalSignature(null);
         setCurrentPrescriptionId(data.id);
         setSelectedIds(new Set());
         toast.success("Prescrição carregada", { description: `v${data.version} — ${data.patient_name}` });
