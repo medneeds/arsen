@@ -147,15 +147,32 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     });
   };
 
+  const updateLocalDiagHypo = (id: string, value: string) => {
+    setLocalEdits(prev => {
+      const evo = evolutions.find(e => e.id === id);
+      if (!evo) return prev;
+      const current = prev[id] || {
+        soap: { ...evo.soap_data },
+        vitals: { ...evo.vital_signs },
+        exam: { ...evo.physical_exam },
+      };
+      return { ...prev, [id]: { ...current, diagHypo: value } };
+    });
+  };
+
   const handleSave = async (id: string) => {
     const local = localEdits[id];
     if (!local) return;
     setSavingId(id);
-    await onUpdate(id, {
+    const updates: any = {
       soap_data: local.soap,
       vital_signs: local.vitals,
       physical_exam: local.exam,
-    });
+    };
+    if (local.diagHypo !== undefined) {
+      updates.diagnostic_hypotheses = local.diagHypo;
+    }
+    await onUpdate(id, updates);
     setLocalEdits(prev => { const n = { ...prev }; delete n[id]; return n; });
     setSavingId(null);
   };
@@ -164,11 +181,15 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     if (!validateDialogId) return;
     const local = localEdits[validateDialogId];
     if (local) {
-      await onUpdate(validateDialogId, {
+      const updates: any = {
         soap_data: local.soap,
         vital_signs: local.vitals,
         physical_exam: local.exam,
-      });
+      };
+      if (local.diagHypo !== undefined) {
+        updates.diagnostic_hypotheses = local.diagHypo;
+      }
+      await onUpdate(validateDialogId, updates);
       setLocalEdits(prev => { const n = { ...prev }; delete n[validateDialogId!]; return n; });
     }
     const success = await onValidate(validateDialogId);
