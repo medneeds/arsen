@@ -279,6 +279,15 @@ export function MedicalRecordEditDialog({
           patRegistryId,
           recRegistryId
         );
+
+        // Auto-reparo: realinha medical_records.patient_registry_id ao vínculo vivo
+        // (best-effort; falha silenciosa se RLS bloquear)
+        if (rec?.id) {
+          await supabase
+            .from("medical_records")
+            .update({ patient_registry_id: patRegistryId } as any)
+            .eq("id", rec.id);
+        }
       }
 
       if (registryId) {
