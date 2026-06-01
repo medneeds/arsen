@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { EvolutionRecord } from "@/hooks/useEvolutions";
 import { EvolutionForm } from "./EvolutionForm";
+import { DiagnosticsPanel } from "./DiagnosticsPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -161,10 +162,17 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     if (Array.isArray(soapToSave.planItems) && soapToSave.planItems.some((p: string) => p.trim())) {
       soapToSave.plan = "";
     }
+    // Incluir diagnostic_hypotheses como string para sincronizar com mapa de leitos
+    const hypoArr = Array.isArray(soapToSave.diagnosticHypotheses)
+      ? soapToSave.diagnosticHypotheses
+      : typeof soapToSave.diagnosticHypotheses === "string"
+        ? soapToSave.diagnosticHypotheses.split("\n").filter(Boolean)
+        : [];
     await onUpdate(id, {
       soap_data: soapToSave,
       vital_signs: local.vitals,
       physical_exam: local.exam,
+      diagnostic_hypotheses: hypoArr.filter(Boolean).join("\n") || null,
     });
     setLocalEdits(prev => { const n = { ...prev }; delete n[id]; return n; });
     setSavingId(null);
@@ -670,38 +678,74 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         )}
                       </div>
                       ); })() : (
-                      <EvolutionForm
-                        hidePlan={isIntercurrence(evo)}
-                        soap={data.soap}
-                        vitals={data.vitals}
-                        physicalExam={data.exam}
-                        onSOAPChange={(k, v) => updateLocal(evo.id, "soap", k, v)}
-                        onVitalsChange={(k, v) => updateLocal(evo.id, "vitals", k, v)}
-                        onPhysicalExamChange={(k, v) => updateLocal(evo.id, "exam", k, v)}
-                        onSave={() => handleSave(evo.id)}
-                        onValidate={isEditable ? () => setValidateDialogId(evo.id) : undefined}
-                        saving={savingId === evo.id}
-                        readOnly={!isEditable}
-                        isValidated={evo.status === "validated"}
-                        autoSave={isEditable}
-                        hasUnsaved={hasUnsaved}
-                        devices={Array.isArray((data.soap as any).devices) ? (data.soap as any).devices : []}
-                        onDevicesChange={(next) => updateLocal(evo.id, "soap", "devices", next)}
-                        culturesHtml={typeof (data.soap as any).culturesHtml === "string" ? (data.soap as any).culturesHtml : ""}
-                        onCulturesChange={(html) => updateLocal(evo.id, "soap", "culturesHtml", html)}
-                        admissionDate={admissionDate || null}
-                        evo={evo}
-                        patientId={patientId || null}
-                        patientRecord={patientRecord || null}
-                        cidPrimary={cidPrimary || null}
-                        cidSecondary={cidSecondary || null}
-                        diagnosticsSlot={diagnosticsSlot}
-                        diagnosticsReviewSlot={diagnosticsSlot}
-                        planItems={Array.isArray((data.soap as any).planItems) ? (data.soap as any).planItems : []}
-                        onPlanItemsChange={(items) => updateLocal(evo.id, "soap", "planItems", items)}
-                        pendenciasItems={Array.isArray((data.soap as any).pendenciasItems) ? (data.soap as any).pendenciasItems : []}
-                        onPendenciasItemsChange={(items) => updateLocal(evo.id, "soap", "pendenciasItems", items)}
-                      />
+                      {(() => {
+                        // 🔒 Slot de diagnósticos LOCAL — roteia hipóteses e antecedentes
+                        // para localEdits em vez do estado da EvolucaoPage.
+                        // Sem isso, ao salvar rascunho existente, hipóteses e antecedentes
+                        // editados não são persistidos (ficam só no estado da página).
+                        const localDiagnosticsSlot = isEditable ? (
+                          <DiagnosticsPanel
+                            cidPrimary={cidPrimary || null}
+                            cidSecondary={cidSecondary || null}
+                            onCidPrimaryChange={() => {}}
+                            onCidSecondaryChange={() => {}}
+                            diagnosticHypotheses={
+                              Array.isArray((data.soap as any).diagnosticHypotheses)
+                                ? (data.soap as any).diagnosticHypotheses
+                                : typeof (data.soap as any).diagnosticHypotheses === "string"
+                                  ? (data.soap as any).diagnosticHypotheses
+                                  : []
+                            }
+                            onDiagnosticHypothesesChange={(v) =>
+                              updateLocal(evo.id, "soap", "diagnosticHypotheses",
+                                Array.isArray(v) ? v : v.split("\n").filter(Boolean))
+                            }
+                            antecedentes={
+                              Array.isArray((data.soap as any).antecedentes)
+                                ? (data.soap as any).antecedentes
+                                : []
+                            }
+                            onAntecedentesChange={(items) =>
+                              updateLocal(evo.id, "soap", "antecedentes", items)
+                            }
+                          />
+                        ) : diagnosticsSlot;
+
+                        return (
+                          <EvolutionForm
+                            hidePlan={isIntercurrence(evo)}
+                            soap={data.soap}
+                            vitals={data.vitals}
+                            physicalExam={data.exam}
+                            onSOAPChange={(k, v) => updateLocal(evo.id, "soap", k, v)}
+                            onVitalsChange={(k, v) => updateLocal(evo.id, "vitals", k, v)}
+                            onPhysicalExamChange={(k, v) => updateLocal(evo.id, "exam", k, v)}
+                            onSave={() => handleSave(evo.id)}
+                            onValidate={isEditable ? () => setValidateDialogId(evo.id) : undefined}
+                            saving={savingId === evo.id}
+                            readOnly={!isEditable}
+                            isValidated={evo.status === "validated"}
+                            autoSave={isEditable}
+                            hasUnsaved={hasUnsaved}
+                            devices={Array.isArray((data.soap as any).devices) ? (data.soap as any).devices : []}
+                            onDevicesChange={(next) => updateLocal(evo.id, "soap", "devices", next)}
+                            culturesHtml={typeof (data.soap as any).culturesHtml === "string" ? (data.soap as any).culturesHtml : ""}
+                            onCulturesChange={(html) => updateLocal(evo.id, "soap", "culturesHtml", html)}
+                            admissionDate={admissionDate || null}
+                            evo={evo}
+                            patientId={patientId || null}
+                            patientRecord={patientRecord || null}
+                            cidPrimary={cidPrimary || null}
+                            cidSecondary={cidSecondary || null}
+                            diagnosticsSlot={localDiagnosticsSlot}
+                            diagnosticsReviewSlot={localDiagnosticsSlot}
+                            planItems={Array.isArray((data.soap as any).planItems) ? (data.soap as any).planItems : []}
+                            onPlanItemsChange={(items) => updateLocal(evo.id, "soap", "planItems", items)}
+                            pendenciasItems={Array.isArray((data.soap as any).pendenciasItems) ? (data.soap as any).pendenciasItems : []}
+                            onPendenciasItemsChange={(items) => updateLocal(evo.id, "soap", "pendenciasItems", items)}
+                          />
+                        );
+                      })()}
                     )}
                   </div>
                 </div>
