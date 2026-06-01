@@ -220,7 +220,17 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   if (readOnly) {
     return (
       <div className="space-y-3">
-        <ReadOnlyView soap={soap} vitals={vitals} physicalExam={physicalExam} devices={devices} culturesHtml={culturesHtml} />
+        <ReadOnlyView
+          soap={soap}
+          vitals={vitals}
+          physicalExam={physicalExam}
+          devices={devices}
+          culturesHtml={culturesHtml}
+          planItems={planItems}
+          pendenciasItems={pendenciasItems}
+          diagnosticHypotheses={(soap as any).diagnosticHypotheses ?? null}
+          antecedentes={Array.isArray((soap as any).antecedentes) ? (soap as any).antecedentes : []}
+        />
         {isValidated && (
           <div className="flex items-center gap-2 justify-end">
             <Button
@@ -270,6 +280,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                     patientSocialName: resolved.socialName || undefined,
                     patientCpf: resolved.cpf || undefined,
                     patientCns: resolved.cns || undefined,
+                    patientBirthDate: resolved.birthDate || undefined,
                     cidPrimary: cidPrimary || undefined,
                     cidSecondary: (Array.isArray(cidSecondary) ? cidSecondary.filter(Boolean).join("; ") : cidSecondary) || undefined,
                   });
@@ -683,6 +694,10 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               physicalExam={physicalExam}
               devices={devices}
               culturesHtml={culturesHtml}
+              planItems={planItems}
+              pendenciasItems={pendenciasItems}
+              diagnosticHypotheses={(soap as any).diagnosticHypotheses ?? null}
+              antecedentes={Array.isArray((soap as any).antecedentes) ? (soap as any).antecedentes : []}
             />
           </div>
 
@@ -799,7 +814,11 @@ const ReadOnlyView: React.FC<{
   physicalExam: PhysicalExam;
   devices?: EvolutionDevice[];
   culturesHtml?: string;
-}> = ({ soap, vitals, physicalExam, devices, culturesHtml }) => {
+  planItems?: string[];
+  pendenciasItems?: string[];
+  diagnosticHypotheses?: string | string[] | null;
+  antecedentes?: string[];
+}> = ({ soap, vitals, physicalExam, devices, culturesHtml, planItems, pendenciasItems, diagnosticHypotheses, antecedentes }) => {
   const hasVitals = Object.values(vitals).some(v => v.trim());
   const hasExam = Object.values(physicalExam).some(v => v.trim());
   const hasDevices = Array.isArray(devices) && devices.length > 0;
@@ -901,13 +920,68 @@ const ReadOnlyView: React.FC<{
           />
         </div>
       )}
-      {richHtmlToPlainText(soap.plan) && (
+      {/* Antecedentes clínicos */}
+      {Array.isArray(antecedentes) && antecedentes.filter(Boolean).length > 0 && (
         <div>
-          <strong className="text-purple-500">Plano:</strong>{" "}
-          <span
-            className="prose prose-sm max-w-none text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
-            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(toRichHtml(soap.plan)) }}
-          />
+          <strong className="text-indigo-500 dark:text-indigo-400">Antecedentes Clínicos:</strong>
+          <ol className="ml-4 mt-0.5 text-foreground/90 list-decimal space-y-0.5">
+            {antecedentes.filter(Boolean).map((a, i) => (
+              <li key={i}>{a}</li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      {/* Hipóteses diagnósticas */}
+      {(() => {
+        const hypos: string[] = Array.isArray(diagnosticHypotheses)
+          ? diagnosticHypotheses.filter(Boolean)
+          : typeof diagnosticHypotheses === "string" && diagnosticHypotheses.trim()
+            ? diagnosticHypotheses.split("\n").filter(Boolean)
+            : [];
+        return hypos.length > 0 ? (
+          <div>
+            <strong className="text-cyan-600 dark:text-cyan-400">Hipóteses Diagnósticas:</strong>
+            <ol className="ml-4 mt-0.5 text-foreground/90 list-decimal space-y-0.5">
+              {hypos.map((h, i) => <li key={i}>{h}</li>)}
+            </ol>
+          </div>
+        ) : null;
+      })()}
+
+      {/* Plano terapêutico — itens ou texto livre */}
+      {(() => {
+        const items = Array.isArray(planItems) ? planItems.filter(Boolean) : [];
+        const planText = richHtmlToPlainText(soap.plan);
+        if (items.length > 0) return (
+          <div>
+            <strong className="text-purple-500">Plano:</strong>
+            <ol className="ml-4 mt-0.5 text-foreground/90 list-decimal space-y-0.5">
+              {items.map((p, i) => <li key={i}>{p}</li>)}
+            </ol>
+          </div>
+        );
+        if (planText) return (
+          <div>
+            <strong className="text-purple-500">Plano:</strong>{" "}
+            <span
+              className="prose prose-sm max-w-none text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(toRichHtml(soap.plan)) }}
+            />
+          </div>
+        );
+        return null;
+      })()}
+
+      {/* Programações e Pendências */}
+      {Array.isArray(pendenciasItems) && pendenciasItems.filter(Boolean).length > 0 && (
+        <div>
+          <strong className="text-orange-500 dark:text-orange-400">Programações e Pendências:</strong>
+          <ol className="ml-4 mt-0.5 text-foreground/90 list-decimal space-y-0.5">
+            {pendenciasItems.filter(Boolean).map((p, i) => (
+              <li key={i}>{p}</li>
+            ))}
+          </ol>
         </div>
       )}
     </div>

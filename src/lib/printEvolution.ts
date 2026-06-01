@@ -8,6 +8,7 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { supabase } from "@/integrations/supabase/client";
 import { toRichHtml, richHtmlToPlainText } from "@/components/ui/rich-text-editor";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
@@ -145,12 +146,31 @@ export const printEvolution = async (
     `
     : "";
 
-  // Antecedentes clínicos — exibidos no PDF logo após diagnósticos
+  // Antecedentes clínicos — buscar em múltiplas fontes:
+  // 1. soap_data.antecedentes (novo formato — array de itens)
+  // 2. evo.antecedentes (campo raiz da tabela, legado)
+  // 3. ctx.antecedentes (passado pelo chamador)
   const soapAntecedentes: string[] = Array.isArray((evo.soap_data as any)?.antecedentes)
     ? (evo.soap_data as any).antecedentes.filter(Boolean)
     : [];
-  // Fallback: ctx pode trazer antecedentes se o chamador os conhecer
-  const antecedentesArr = soapAntecedentes;
+
+  // Buscar antecedentes do registro do paciente (patients.medical_history)
+  // quando não estão no soap_data — cobre evoluções anteriores ao fix
+  let patientAntecedentes: string[] = [];
+  if (soapAntecedentes.length === 0 && (evo as any).patient_id) {
+    try {
+      const { data: pRow } = await supabase
+        .from("patients")
+        .select("medical_history")
+        .eq("id", (evo as any).patient_id)
+        .maybeSingle();
+      if ((pRow as any)?.medical_history?.trim()) {
+        patientAntecedentes = (pRow as any).medical_history.split("\n").filter(Boolean);
+      }
+    } catch { /* falha silenciosa — antecedentes ficam vazios */ }
+  }
+
+  const antecedentesArr = soapAntecedentes.length > 0 ? soapAntecedentes : patientAntecedentes;
 
   const antecedentesHtml = antecedentesArr.length > 0
     ? `<h2 class="nz-section">Antecedentes Clínicos</h2>
@@ -162,6 +182,14 @@ export const printEvolution = async (
          </tbody>
        </table>`
     : "";
+
+  // Pendências/Programações no PDF
+  const pendItems: string[] = Array.isArray((evo.soap_data as any)?.pendenciasItems)
+    ? (evo.soap_data as any).pendenciasItems.filter(Boolean)
+    : [];
+  const pendenciasHtml = pendItems.length > 0
+    ? `<h2 class="nz-section">Programações e Pendências</h2><ul class="nz-list">${pendItems.map((p, i) => `<li>${i + 1}. ${p}</li>`).join('')}</ul>`
+    : '';
 
   let bodyHtml = patientHeader + diagnosticsHtml + antecedentesHtml;
 
