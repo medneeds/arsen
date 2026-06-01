@@ -779,7 +779,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             onPendenciasItemsChange={(items) => updateLocal(evo.id, "soap", "pendenciasItems", items)}
                           />
                         );
-                      })()}
+                      })()
                     )}
                   </div>
                 </div>
