@@ -371,7 +371,10 @@ const ResourcesPage = () => {
               </div>
               <div>
                 <p className="text-sm font-semibold uppercase">Pacientes Disponíveis</p>
-                <p className="text-2xl font-bold text-primary">{patients.length}</p>
+                <p className="text-2xl font-bold text-primary">{patients.filter(p => {
+                  const bed = (p.bedNumber || '').toString().toUpperCase();
+                  return !bed.startsWith('EXTRA');
+                }).length}</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30 border border-border/50">

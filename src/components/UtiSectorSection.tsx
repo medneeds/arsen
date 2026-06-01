@@ -266,7 +266,12 @@ export function UtiSectorSection({
               </Button>
             )}
             <div className={`flex items-center justify-center h-8 w-8 backdrop-blur-sm rounded-lg border print:h-6 print:w-6 ${counterClass}`}>
-              <p className={`text-base font-bold print:text-[10px] ${titleClass}`}>{patients.length}</p>
+              <p className={`text-base font-bold print:text-[10px] ${titleClass}`}>
+                {regularBedCount(patients)}
+                {sectorCapacity(sector) > 0 && (
+                  <span className="text-xs font-normal opacity-60">/{sectorCapacity(sector)}</span>
+                )}
+              </p>
             </div>
           </div>
         </div>

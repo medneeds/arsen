@@ -195,7 +195,12 @@ export default function GestorPanelPage() {
           if (!p.is_vacant && p.name?.trim()) bySector[p.sector].occupied++;
         });
 
-        setBedStats({ total: patients.length, occupied: occupied.length, vacant: vacant.length, doorPatients: doorPatients.length, bySector });
+        // Total de leitos = apenas leitos regulares (sem EXTRAs)
+        const regularTotal = patients.filter(p => {
+          const bed = (p.bedNumber || '').toString().toUpperCase();
+          return !bed.startsWith('EXTRA');
+        }).length;
+        setBedStats({ total: regularTotal, occupied: occupied.length, vacant: vacant.length, doorPatients: doorPatients.length, bySector });
         setOccupiedPatientsList(occupied);
         setVacantBedsList(vacant);
         setDoorPatientsList(doorPatients);

@@ -30,8 +30,12 @@ export function RegisterHandoverDialog({ open, onOpenChange, patients }: Registe
   const { toast } = useToast();
   const { currentDepartment } = useDepartment();
 
-  const occupiedBeds = patients.filter(p => p.name.trim() !== "").length;
-  const totalPatients = patients.length;
+  const regularPatients = patients.filter(p => {
+    const bed = (p.bedNumber || '').toString().toUpperCase();
+    return !bed.startsWith('EXTRA');
+  });
+  const occupiedBeds = regularPatients.filter(p => p.name.trim() !== "").length;
+  const totalPatients = regularPatients.length;
 
   const handleTranscription = (data: {
     summary: string;

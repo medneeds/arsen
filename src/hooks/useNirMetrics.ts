@@ -128,8 +128,14 @@ export function useNirMetrics(hospitalUnitId: string | undefined, filters: NirFi
     );
 
     // Occupancy by sector
+    // Capacidade por setor: usar SECTOR_BED_CONFIG como fonte da verdade
+    // para evitar que leitos EXTRA inflacionem o total
+    const sectorCapacityMap: Record<string, number> = {};
     const occupancyBySector = Object.entries(
-      beds.reduce((acc, b: any) => {
+      filteredBeds.reduce((acc, b: any) => {
+        const bed = (b.bed_number || b.bedNumber || '').toString().toUpperCase();
+        const isExtra = bed.startsWith('EXTRA') && !b.name?.trim();
+        if (isExtra) return acc; // excluir EXTRAs vagos do cálculo
         if (!acc[b.sector]) acc[b.sector] = { total: 0, occupied: 0 };
         acc[b.sector].total += 1;
         if (b.status === "ocupado") acc[b.sector].occupied += 1;

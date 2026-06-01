@@ -90,6 +90,28 @@ export function isExtraBed(bedNumber: string): boolean {
 }
 
 /**
+ * Conta apenas os leitos REGULARES de um array de pacientes/leitos.
+ * Leitos EXTRA (criados temporariamente pelo gestor) são excluídos da contagem.
+ * Essa é a fonte de verdade para exibição de capacidade nos setores.
+ *
+ * @param patients Array de objetos com bedNumber (ou bed_number)
+ */
+export function regularBedCount(patients: Array<{ bedNumber?: string; bed_number?: string }>): number {
+  return patients.filter(p => {
+    const bed = (p.bedNumber || (p as any).bed_number || '').toString();
+    return !isExtraBed(bed);
+  }).length;
+}
+
+/**
+ * Retorna a capacidade fixa de um setor conforme SECTOR_BED_CONFIG.
+ * Preferir isso em vez de contar registros do banco (que pode incluir EXTRAs).
+ */
+export function sectorCapacity(sectorCode: string): number {
+  return SECTOR_BED_CONFIG[sectorCode]?.maxRegularBeds ?? 0;
+}
+
+/**
  * Returns the display label for a bed number.
  */
 export function formatBedDisplay(bedNumber: string): string {
