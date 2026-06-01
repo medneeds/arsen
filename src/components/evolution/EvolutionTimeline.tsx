@@ -135,19 +135,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     setLocalEdits(prev => {
       const evo = evolutions.find(e => e.id === id);
       if (!evo) return prev;
-      // 🔒 Ao inicializar current, garantir que soap inclui planItems e pendenciasItems
-      // do soap_data salvo — sem isso eles são perdidos ao editar outros campos.
-      const soapBase = { ...(evo.soap_data as any) };
-      const current = prev[id] || {
-        soap: {
-          ...soapBase,
-          planItems: Array.isArray(soapBase.planItems) ? soapBase.planItems : [],
-          pendenciasItems: Array.isArray(soapBase.pendenciasItems) ? soapBase.pendenciasItems : [],
-          antecedentes: Array.isArray(soapBase.antecedentes) ? soapBase.antecedentes : [],
-        },
-        vitals: { ...evo.vital_signs },
-        exam: { ...evo.physical_exam },
-      };
+      const current = prev[id] || { soap: { ...evo.soap_data }, vitals: { ...evo.vital_signs }, exam: { ...evo.physical_exam } };
       return { ...prev, [id]: { ...current, [field]: { ...current[field], [key]: value } } };
     });
   };
@@ -156,23 +144,10 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     const local = localEdits[id];
     if (!local) return;
     setSavingId(id);
-    // 🔒 Se planItems tem itens preenchidos, limpar soap.plan (texto legado)
-    // para evitar que o modo legado seja exibido após o save.
-    const soapToSave = { ...local.soap };
-    if (Array.isArray(soapToSave.planItems) && soapToSave.planItems.some((p: string) => p.trim())) {
-      soapToSave.plan = "";
-    }
-    // Incluir diagnostic_hypotheses como string para sincronizar com mapa de leitos
-    const hypoArr = Array.isArray(soapToSave.diagnosticHypotheses)
-      ? soapToSave.diagnosticHypotheses
-      : typeof soapToSave.diagnosticHypotheses === "string"
-        ? soapToSave.diagnosticHypotheses.split("\n").filter(Boolean)
-        : [];
     await onUpdate(id, {
-      soap_data: soapToSave,
+      soap_data: local.soap,
       vital_signs: local.vitals,
       physical_exam: local.exam,
-      diagnostic_hypotheses: hypoArr.filter(Boolean).join("\n") || null,
     });
     setLocalEdits(prev => { const n = { ...prev }; delete n[id]; return n; });
     setSavingId(null);
@@ -269,53 +244,19 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
   const isIntercurrence = (evo: EvolutionRecord) => getComplementaryKind(evo) !== null;
 
   const buildSummary = (evo: EvolutionRecord) => {
-    const s = evo.soap_data as any;
+    const s = evo.soap_data;
     const subj = richHtmlToPlainText(s.subjective);
-    const obj  = richHtmlToPlainText(s.objective);
-    const ass  = richHtmlToPlainText(s.assessment);
+    const ass = richHtmlToPlainText(s.assessment);
     const plan = richHtmlToPlainText(s.plan);
-
-    // Campos por item (novo formato)
-    const planItems: string[] = Array.isArray(s.planItems) ? s.planItems.filter(Boolean) : [];
-    const pendItems: string[] = Array.isArray(s.pendenciasItems) ? s.pendenciasItems.filter(Boolean) : [];
-    const hasDevices = Array.isArray(s.devices) && s.devices.length > 0;
-    const hasCultures = typeof s.culturesHtml === "string" && s.culturesHtml.trim().length > 10;
-
-    // Evoluções complementares
     const kind = getComplementaryKind(evo);
     if (kind) {
       const label = COMPLEMENTARY_BADGE[kind].label;
-      return subj ? `${label}: ${subj.slice(0, 140)}` : `${label} sem descrição`;
+      return subj ? `${label}: ${subj.slice(0, 120)}` : `${label} sem descrição`;
     }
-
+    const evolucao = [subj, ass].filter(Boolean).join(" — ");
     const parts: string[] = [];
-
-    // Corpo da evolução (subjetivo + avaliação)
-    const evolucaoText = [subj, ass].filter(Boolean).join(" — ");
-    if (evolucaoText) parts.push(evolucaoText.slice(0, 160));
-
-    // Objetivo (exames)
-    if (obj) parts.push(`Obj.: ${obj.slice(0, 80)}`);
-
-    // Plano — itens ou texto livre
-    if (planItems.length > 0) {
-      const planSummary = planItems.slice(0, 3).join(" · ");
-      parts.push(`Plano: ${planSummary.slice(0, 100)}${planItems.length > 3 ? ` +${planItems.length - 3}` : ""}`);
-    } else if (plan) {
-      parts.push(`Plano: ${plan.slice(0, 80)}`);
-    }
-
-    // Pendências
-    if (pendItems.length > 0) {
-      parts.push(`Pendências: ${pendItems[0].slice(0, 60)}${pendItems.length > 1 ? ` +${pendItems.length - 1}` : ""}`);
-    }
-
-    // Indicadores adicionais
-    const extras: string[] = [];
-    if (hasDevices) extras.push("Dispositivos");
-    if (hasCultures) extras.push("Culturas");
-    if (extras.length > 0) parts.push(extras.join(" · "));
-
+    if (evolucao) parts.push(`Evolução: ${evolucao.slice(0, 100)}`);
+    if (plan) parts.push(`Plano: ${plan.slice(0, 60)}`);
     return parts.length > 0 ? parts.join(" | ") : "Evolução sem conteúdo";
   };
 
@@ -623,7 +564,6 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             patientSocialName: resolved.socialName || undefined,
                             patientCpf: resolved.cpf || undefined,
                             patientCns: resolved.cns || undefined,
-                            patientBirthDate: resolved.birthDate || undefined,
                             cidPrimary,
                             cidSecondary,
                           });
@@ -711,84 +651,63 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           </div>
                         )}
                       </div>
-                      ); })() : (
-                      (() => {
-                        // 🔒 Slot de diagnósticos LOCAL — roteia hipóteses e antecedentes
-                        // para localEdits em vez do estado da EvolucaoPage.
-                        // Sem isso, ao salvar rascunho existente, hipóteses e antecedentes
-                        // editados não são persistidos (ficam só no estado da página).
-                        const localDiagnosticsSlot = isEditable ? (
-                          <DiagnosticsPanel
-                            cidPrimary={cidPrimary || null}
-                            cidSecondary={Array.isArray(cidSecondary) ? cidSecondary : cidSecondary ? [cidSecondary] : []}
-                            onCidPrimaryChange={() => {}}
-                            onCidSecondaryChange={() => {}}
-                            diagnosticHypotheses={
-                              Array.isArray((data.soap as any).diagnosticHypotheses)
-                                ? (data.soap as any).diagnosticHypotheses
-                                : typeof (data.soap as any).diagnosticHypotheses === "string"
-                                  ? (data.soap as any).diagnosticHypotheses
-                                  : []
-                            }
-                            onDiagnosticHypothesesChange={(v) =>
-                              updateLocal(evo.id, "soap", "diagnosticHypotheses",
-                                Array.isArray(v) ? v : v.split("\n").filter(Boolean))
-                            }
-                            antecedentes={
-                              Array.isArray((data.soap as any).antecedentes)
-                                ? (data.soap as any).antecedentes
-                                : []
-                            }
-                            onAntecedentesChange={(items) =>
-                              updateLocal(evo.id, "soap", "antecedentes", items)
-                            }
-                            utiDischargePrediction=""
-                            onUtiDischargePredictionChange={() => {}}
-                            hospitalDischargePrediction=""
-                            onHospitalDischargePredictionChange={() => {}}
-                            isPalliative={false}
-                            onPalliativeChange={() => {}}
-                            isolationPrecautions=""
-                            onIsolationChange={() => {}}
-                          />
-                        ) : diagnosticsSlot;
-
-                        return (
-                          <EvolutionForm
-                            hidePlan={isIntercurrence(evo)}
-                            soap={data.soap}
-                            vitals={data.vitals}
-                            physicalExam={data.exam}
-                            onSOAPChange={(k, v) => updateLocal(evo.id, "soap", k, v)}
-                            onVitalsChange={(k, v) => updateLocal(evo.id, "vitals", k, v)}
-                            onPhysicalExamChange={(k, v) => updateLocal(evo.id, "exam", k, v)}
-                            onSave={() => handleSave(evo.id)}
-                            onValidate={isEditable ? () => setValidateDialogId(evo.id) : undefined}
-                            saving={savingId === evo.id}
-                            readOnly={!isEditable}
-                            isValidated={evo.status === "validated"}
-                            autoSave={isEditable}
-                            hasUnsaved={hasUnsaved}
-                            devices={Array.isArray((data.soap as any).devices) ? (data.soap as any).devices : []}
-                            onDevicesChange={(next) => updateLocal(evo.id, "soap", "devices", next)}
-                            culturesHtml={typeof (data.soap as any).culturesHtml === "string" ? (data.soap as any).culturesHtml : ""}
-                            onCulturesChange={(html) => updateLocal(evo.id, "soap", "culturesHtml", html)}
-                            admissionDate={admissionDate || null}
-                            evo={evo}
-                            patientId={patientId || null}
-                            patientRecord={patientRecord || null}
-                            cidPrimary={cidPrimary || null}
-                            cidSecondary={cidSecondary || null}
-                            diagnosticsSlot={localDiagnosticsSlot}
-                            diagnosticsReviewSlot={localDiagnosticsSlot}
-                            planItems={Array.isArray((data.soap as any).planItems) ? (data.soap as any).planItems : []}
-                            onPlanItemsChange={(items) => updateLocal(evo.id, "soap", "planItems", items)}
-                            pendenciasItems={Array.isArray((data.soap as any).pendenciasItems) ? (data.soap as any).pendenciasItems : []}
-                            onPendenciasItemsChange={(items) => updateLocal(evo.id, "soap", "pendenciasItems", items)}
-                          />
-                        );
-                      })()
-                    )}
+                      );
+                    })() : (() => {
+                      const localDiagnosticsSlot = isEditable ? (
+                        <DiagnosticsPanel
+                          cidPrimary={cidPrimary || null}
+                          cidSecondary={cidSecondary || null}
+                          onCidPrimaryChange={() => {}}
+                          onCidSecondaryChange={() => {}}
+                          diagnosticHypotheses={
+                            Array.isArray((data.soap as any).diagnosticHypotheses)
+                              ? (data.soap as any).diagnosticHypotheses
+                              : typeof (data.soap as any).diagnosticHypotheses === "string"
+                                ? (data.soap as any).diagnosticHypotheses : []
+                          }
+                          onDiagnosticHypothesesChange={(v) =>
+                            updateLocal(evo.id, "soap", "diagnosticHypotheses",
+                              Array.isArray(v) ? v : v.split("\n").filter(Boolean))
+                          }
+                          antecedentes={Array.isArray((data.soap as any).antecedentes) ? (data.soap as any).antecedentes : []}
+                          onAntecedentesChange={(items) => updateLocal(evo.id, "soap", "antecedentes", items)}
+                        />
+                      ) : diagnosticsSlot;
+                      return (
+                        <EvolutionForm
+                          hidePlan={isIntercurrence(evo)}
+                          soap={data.soap}
+                          vitals={data.vitals}
+                          physicalExam={data.exam}
+                          onSOAPChange={(k, v) => updateLocal(evo.id, "soap", k, v)}
+                          onVitalsChange={(k, v) => updateLocal(evo.id, "vitals", k, v)}
+                          onPhysicalExamChange={(k, v) => updateLocal(evo.id, "exam", k, v)}
+                          onSave={() => handleSave(evo.id)}
+                          onValidate={isEditable ? () => setValidateDialogId(evo.id) : undefined}
+                          saving={savingId === evo.id}
+                          readOnly={!isEditable}
+                          isValidated={evo.status === "validated"}
+                          autoSave={isEditable}
+                          hasUnsaved={hasUnsaved}
+                          devices={Array.isArray((data.soap as any).devices) ? (data.soap as any).devices : []}
+                          onDevicesChange={(next) => updateLocal(evo.id, "soap", "devices", next)}
+                          culturesHtml={typeof (data.soap as any).culturesHtml === "string" ? (data.soap as any).culturesHtml : ""}
+                          onCulturesChange={(html) => updateLocal(evo.id, "soap", "culturesHtml", html)}
+                          admissionDate={admissionDate || null}
+                          evo={evo}
+                          patientId={patientId || null}
+                          patientRecord={patientRecord || null}
+                          cidPrimary={cidPrimary || null}
+                          cidSecondary={cidSecondary || null}
+                          diagnosticsSlot={localDiagnosticsSlot}
+                          diagnosticsReviewSlot={localDiagnosticsSlot}
+                          planItems={Array.isArray((data.soap as any).planItems) ? (data.soap as any).planItems : []}
+                          onPlanItemsChange={(items) => updateLocal(evo.id, "soap", "planItems", items)}
+                          pendenciasItems={Array.isArray((data.soap as any).pendenciasItems) ? (data.soap as any).pendenciasItems : []}
+                          onPendenciasItemsChange={(items) => updateLocal(evo.id, "soap", "pendenciasItems", items)}
+                        />
+                      );
+                    })()}
                   </div>
                 </div>
               )}
