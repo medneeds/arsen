@@ -142,6 +142,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
           ...soapBase,
           planItems: Array.isArray(soapBase.planItems) ? soapBase.planItems : [],
           pendenciasItems: Array.isArray(soapBase.pendenciasItems) ? soapBase.pendenciasItems : [],
+          antecedentes: Array.isArray(soapBase.antecedentes) ? soapBase.antecedentes : [],
         },
         vitals: { ...evo.vital_signs },
         exam: { ...evo.physical_exam },

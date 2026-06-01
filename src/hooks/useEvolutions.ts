@@ -276,6 +276,8 @@ export function useEvolutions(
             // Campos por item — armazenados no JSON do soap_data
             planItems: planItems?.filter(Boolean) ?? [],
             pendenciasItems: pendenciasItems?.filter(Boolean) ?? [],
+            // Antecedentes também no soap_data para o PDF da evolução
+            antecedentes: antecedentes?.filter(Boolean) ?? [],
           },
           vital_signs: vitalSigns || EMPTY_VITALS,
           physical_exam: physicalExam || EMPTY_EXAM,
