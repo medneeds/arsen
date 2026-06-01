@@ -84,8 +84,35 @@ export default function PacienteHubPage() {
       .eq("id", ctx.patientId)
       .maybeSingle();
     const row: any = data || {};
-    setAdmissionStatus((row.admission_status as AdmissionStatus) ?? "admitido");
+    let effectiveStatus: AdmissionStatus = (row.admission_status as AdmissionStatus) ?? "admitido";
     setDepartment(row.department ?? null);
+
+    // Defesa em profundidade (self-heal admissão):
+    // Se patients.admission_status='pre_admitido' mas existe admission_histories
+    // ATIVA (não arquivada) com CID primário E HDA preenchidos, a admissão clínica
+    // foi de fato concluída — promove para 'admitido' na UI e cura o flag silenciosamente.
+    // Mesmo padrão do self-heal de SAPS abaixo. Não toca movimentação nem layout.
+    if (effectiveStatus === "pre_admitido") {
+      const { data: ah } = await supabase
+        .from("admission_histories")
+        .select("id, cid_primary, clinical_history")
+        .eq("patient_id", ctx.patientId)
+        .is("archived_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const a: any = ah || null;
+      if (a && a.cid_primary && a.clinical_history && String(a.clinical_history).trim().length > 0) {
+        effectiveStatus = "admitido";
+        supabase
+          .from("patients")
+          .update({ admission_status: "admitido" } as any)
+          .eq("id", ctx.patientId)
+          .then(() => { /* self-heal silencioso */ });
+      }
+    }
+
+    setAdmissionStatus(effectiveStatus);
 
     let stillPending = !!row.saps_pending && !row.saps_completed_at;
 
