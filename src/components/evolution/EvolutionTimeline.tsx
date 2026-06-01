@@ -742,6 +742,14 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             onAntecedentesChange={(items) =>
                               updateLocal(evo.id, "soap", "antecedentes", items)
                             }
+                            utiDischargePrediction=""
+                            onUtiDischargePredictionChange={() => {}}
+                            hospitalDischargePrediction=""
+                            onHospitalDischargePredictionChange={() => {}}
+                            isPalliative={false}
+                            onPalliativeChange={() => {}}
+                            isolationPrecautions=""
+                            onIsolationChange={() => {}}
                           />
                         ) : diagnosticsSlot;
 
