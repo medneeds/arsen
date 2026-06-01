@@ -3,16 +3,25 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type TodaysPrescriptionStatus = "signed" | "validated" | "pending";
 
+const normalizeName = (raw: string | null | undefined): string => {
+  if (!raw) return "";
+  return raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // remove acentos
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+};
+
 /**
- * Subscribes to prescriptions of a hospital unit and returns a map of
- * patientName (trimmed, uppercased) → status for the CURRENT day.
+ * Painel Clínico — bolinha verde "Validada" = prescrição ASSINADA pelo médico hoje
+ * (validação clínica, não farmacêutica).
  *
- * - "signed": there is at least one prescription with status='signed' whose
- *   created_at is within today (local time).
- * - "pending": otherwise (no signed prescription today; may have draft).
+ * - "validated": existe ≥1 prescrição com status='signed' (ou legacy 'validated')
+ *   criada hoje na unidade, ativa (archived_at IS NULL).
+ * - "pending": caso contrário.
  *
- * Used by the Painel Clínico list dot indicator. Realtime keeps it in sync
- * when prescriptions are signed/validated in another tab.
+ * Realtime mantém em sincronia ao assinar em outra aba.
  */
 export function useTodaysPrescriptions(hospitalUnitId: string | null) {
   const [signedToday, setSignedToday] = useState<Set<string>>(new Set());
@@ -26,9 +35,10 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
     start.setHours(0, 0, 0, 0);
     const { data, error } = await supabase
       .from("prescriptions")
-      .select("patient_name, status, created_at")
+      .select("patient_name, status, created_at, archived_at")
       .eq("hospital_unit_id", hospitalUnitId)
       .in("status", ["signed", "validated"])
+      .is("archived_at", null)
       .gte("created_at", start.toISOString());
     if (error || !data) {
       setSignedToday(new Set());
@@ -36,7 +46,8 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
     }
     const next = new Set<string>();
     for (const row of data as any[]) {
-      if (row?.patient_name) next.add(String(row.patient_name).trim().toUpperCase());
+      const key = normalizeName(row?.patient_name);
+      if (key) next.add(key);
     }
     setSignedToday(next);
   }, [hospitalUnitId]);
@@ -67,8 +78,9 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
 
   const getStatus = useCallback(
     (patientName: string | null | undefined): TodaysPrescriptionStatus => {
-      if (!patientName) return "pending";
-      return signedToday.has(patientName.trim().toUpperCase()) ? "validated" : "pending";
+      const key = normalizeName(patientName);
+      if (!key) return "pending";
+      return signedToday.has(key) ? "validated" : "pending";
     },
     [signedToday],
   );
