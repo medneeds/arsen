@@ -613,10 +613,15 @@ function buildLine2Tokens(item: PrescriptionItem): Array<{ text: string; isBadge
     tokens.push({ text: `${item.infusionTime} ${unit}` });
   }
 
-  // Vazão
+  // Vazão — infusionRate digitado pelo médico tem prioridade sobre cálculo automático
   if (item.ivBolus) {
     tokens.push({ text: 'Bolus EV' });
+  } else if (item.infusionRate) {
+    // Valor digitado manualmente pelo médico → usar diretamente
+    const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
+    tokens.push({ text: `Vazão: ${item.infusionRate} ${modeLabel}` });
   } else if (item.volumeTotal && item.infusionTime) {
+    // Nenhuma vazão digitada → calcular a partir de volume + tempo
     const vol = parseFloat((item.volumeTotal || '').replace(',', '.'));
     const timeRaw = parseFloat((item.infusionTime || '').replace(',', '.'));
     const timeMin = item.infusionTimeUnit === 'h' ? timeRaw * 60 : timeRaw;
@@ -630,9 +635,6 @@ function buildLine2Tokens(item: PrescriptionItem): Array<{ text: string; isBadge
         tokens.push({ text: `Vazão: ${mlh} mL/h` });
       }
     }
-  } else if (item.infusionRate) {
-    const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
-    tokens.push({ text: `Vazão: ${item.infusionRate} ${modeLabel}` });
   }
 
   // Badge BIC — não exibir quando for Bolus EV (mutuamente exclusivos)
@@ -6402,7 +6404,7 @@ const PrescricaoPage = () => {
         setAutoLoadDone(true);
       }
     })();
-  }, [autoLoadTriggered, currentHospital, currentState, patientRegistryId, activeEncounterId, currentPrescriptionId]);
+  }, [autoLoadTriggered, currentHospital, currentState, patientRegistryId, activeEncounterId, currentPrescriptionId;
 
 
   // Fetch version history for a prescription (by patient_name in same hospital)
