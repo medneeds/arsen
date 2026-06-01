@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type TodaysPrescriptionStatus = "signed" | "pending";
+export type TodaysPrescriptionStatus = "signed" | "validated" | "pending";
 
 /**
  * Subscribes to prescriptions of a hospital unit and returns a map of
@@ -68,7 +68,7 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
   const getStatus = useCallback(
     (patientName: string | null | undefined): TodaysPrescriptionStatus => {
       if (!patientName) return "pending";
-      return signedToday.has(patientName.trim().toUpperCase()) ? "signed" : "pending";
+      return signedToday.has(patientName.trim().toUpperCase()) ? "validated" : "pending";
     },
     [signedToday],
   );

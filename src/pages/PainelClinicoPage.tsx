@@ -97,7 +97,8 @@ const getResponsibleDoctor = (patient: Patient): string => {
 };
 
 const getPrescriptionStatus = (status: TodaysPrescriptionStatus): { label: string; variant: "default" | "secondary" | "outline" | "destructive"; dotColor: string; pulsing: boolean } => {
-  if (status === "signed") {
+  // 🔒 Bolinha verde vinculada à VALIDAÇÃO — não à assinatura digital
+  if (status === "signed" || status === "validated") {
     return { label: "Validada", variant: "default", dotColor: "bg-emerald-500", pulsing: false };
   }
   return { label: "Pendente", variant: "secondary", dotColor: "bg-amber-500", pulsing: true };
