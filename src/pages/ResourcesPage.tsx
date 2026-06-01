@@ -372,7 +372,7 @@ const ResourcesPage = () => {
               <div>
                 <p className="text-sm font-semibold uppercase">Pacientes Disponíveis</p>
                 <p className="text-2xl font-bold text-primary">{patients.filter(p => {
-                  const bed = (p.bedNumber || '').toString().toUpperCase();
+                  const bed = (p.bed_number || '').toString().toUpperCase();
                   return !bed.startsWith('EXTRA');
                 }).length}</p>
               </div>
