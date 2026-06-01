@@ -299,7 +299,7 @@ const EvolucaoPage = () => {
     setAntecedentes(Array.isArray(srcAntecSoap) ? srcAntecSoap : []);
     const srcHypo = (source as any).diagnostic_hypotheses;
     const srcAntecedentes = (source as any).antecedentes;
-    setDiagnosticHypotheses(typeof srcHypo === "string" ? srcHypo : "");
+    setDiagnosticHypotheses(Array.isArray(srcHypo) ? srcHypo : typeof srcHypo === "string" && srcHypo ? srcHypo.split("\n").filter(Boolean) : []);
     if (Array.isArray(srcAntecedentes) && srcAntecedentes.length > 0) {
       setAntecedentes(srcAntecedentes);
     }
