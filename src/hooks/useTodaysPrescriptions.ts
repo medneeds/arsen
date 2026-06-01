@@ -39,21 +39,21 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
       setSignedToday(new Set());
       return;
     }
+    // Normalizar nome: remove espaços duplos, trim, uppercase
+    const normName = (n: string) => String(n).replace(/\s+/g, " ").trim().toUpperCase();
+    const isValidated = (row: any): boolean => {
+      if (row.status === "signed" || row.status === "validated") return true;
+      // Fallback: draft com todos os itens ativos com validated=true
+      if (Array.isArray(row.items)) {
+        const active = row.items.filter((i: any) => i.status === "active");
+        if (active.length > 0 && active.every((i: any) => !!i.validated)) return true;
+      }
+      return false;
+    };
     const next = new Set<string>();
     for (const row of data as any[]) {
       if (!row?.patient_name) continue;
-      // Status explícito de validação
-      if (row.status === "signed" || row.status === "validated") {
-        next.add(String(row.patient_name).trim().toUpperCase());
-        continue;
-      }
-      // Fallback: draft com todos os itens ativos validados (bug legado no banco)
-      if (row.status === "draft" && Array.isArray(row.items)) {
-        const activeItems = row.items.filter((i: any) => i.status === "active");
-        if (activeItems.length > 0 && activeItems.every((i: any) => i.validated)) {
-          next.add(String(row.patient_name).trim().toUpperCase());
-        }
-      }
+      if (isValidated(row)) next.add(normName(row.patient_name));
     }
     setSignedToday(next);
   }, [hospitalUnitId]);
@@ -85,7 +85,8 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
   const getStatus = useCallback(
     (patientName: string | null | undefined): TodaysPrescriptionStatus => {
       if (!patientName) return "pending";
-      return signedToday.has(patientName.trim().toUpperCase()) ? "validated" : "pending";
+      const normalized = String(patientName).replace(/\s+/g, " ").trim().toUpperCase();
+      return signedToday.has(normalized) ? "validated" : "pending";
     },
     [signedToday],
   );
