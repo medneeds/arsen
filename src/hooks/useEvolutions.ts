@@ -296,7 +296,13 @@ export function useEvolutions(
       if (error) throw error;
 
       // 🔒 Sincronização com o mapa de leitos
-      if (safePatientId) {
+      // Só sincroniza quando a evolução é de ROTINA (não complementar).
+      // Complementares (vespertina/noturna/intercorrência) servem só como registro
+      // pontual e NÃO devem sobrescrever os campos do card no Painel Clínico.
+      const evoType = (soapData as any)?.type as string | undefined;
+      const isComplementary = evoType === "intercurrence" || evoType === "vespertina" || evoType === "noturna";
+
+      if (safePatientId && !isComplementary) {
         const patientUpdates: Record<string, unknown> = {};
 
         // Hipóteses → patients.diagnoses
@@ -307,6 +313,11 @@ export function useEvolutions(
         // Antecedentes → patients.medical_history
         if (antecedentes && antecedentes.length > 0) {
           patientUpdates.medical_history = antecedentes.filter(Boolean).join("\n");
+        }
+
+        // Plano Terapêutico → patients.uti_daily_conducts (mapeia para utiDailyConducts)
+        if (planItems && planItems.length > 0) {
+          patientUpdates.uti_daily_conducts = planItems.filter(Boolean);
         }
 
         // Pendências → patients.pendencies
