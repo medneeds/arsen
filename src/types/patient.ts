@@ -27,6 +27,7 @@ export interface Patient {
   id: string;
   bedNumber: string;
   name: string;
+  registryId?: string | null; // patient_registry_id — vínculo com o prontuário permanente
   age: string | number;
   sector: SectorType;
   diagnoses: string[];

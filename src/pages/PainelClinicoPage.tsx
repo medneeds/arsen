@@ -294,7 +294,7 @@ export default function PainelClinicoPage() {
             <div className="md:hidden flex flex-col gap-2">
               {filteredPatients.map(patient => {
                 const days = calcDaysInternment(patient.admissionDate);
-                const prescStatus = getPrescriptionStatus(getTodaysPrescriptionStatus(patient.name));
+                const prescStatus = getPrescriptionStatus(getTodaysPrescriptionStatus(patient.name, patient.registryId));
                 const pendencies = parseTextArray(patient.pendencies);
                 const saps = sapsScores[patient.name];
                 return (
@@ -359,7 +359,7 @@ export default function PainelClinicoPage() {
               <TableBody>
                 {filteredPatients.map(patient => {
                   const days = calcDaysInternment(patient.admissionDate);
-                  const prescStatus = getPrescriptionStatus(getTodaysPrescriptionStatus(patient.name));
+                  const prescStatus = getPrescriptionStatus(getTodaysPrescriptionStatus(patient.name, patient.registryId));
                   const pendencies = parseTextArray(patient.pendencies);
                   
                   return (

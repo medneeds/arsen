@@ -95,6 +95,7 @@ export function usePatients(department?: Department, sector?: string) {
           ? undefined
           : ((p as any).admission_status as Patient['admissionStatus']) ?? undefined,
         admittedAt: (p as any).admitted_at ?? null,
+        registryId: (p as any).patient_registry_id ?? null,
       }));
 
       // Filtrar shells de leitos arquivados (ARQ-* / ARCHIVED-*) — linhas residuais
