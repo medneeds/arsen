@@ -191,7 +191,11 @@ const EvolucaoPage = () => {
     setNewDevices([]);
     setNewCulturesHtml("");
     setDiagnosticsReplicated(false);
-    setDiagnosticHypotheses([]);
+    setDiagnosticHypotheses("");
+    // 🔒 Resetar campos por item — sem isso persistem entre evoluções
+    setPlanItems([]);
+    setPendenciasItems([]);
+    setAntecedentes([]);
   };
 
   /**
@@ -217,7 +221,7 @@ const EvolucaoPage = () => {
     if (hospitalDischargePrediction) updateHospitalDischargePrediction("");
     if (isPalliative) updateIsPalliative(false);
     if (isolationPrecautions) updateIsolationPrecautions("");
-    setDiagnosticHypotheses([]);
+    setDiagnosticHypotheses("");
     setDiagnosticsReplicated(false);
   };
 
@@ -281,15 +285,24 @@ const EvolucaoPage = () => {
       updateCidSecondary(srcCidSecondary);
     }
     const srcSoap: any = source.soap_data || {};
-    const { devices: srcDevices, culturesHtml: srcCulturesHtml, ...soapBase } = srcSoap;
+    const { devices: srcDevices, culturesHtml: srcCulturesHtml,
+            planItems: srcPlanItems, pendenciasItems: srcPendencias,
+            antecedentes: srcAntecSoap, ...soapBase } = srcSoap;
     setNewSoap({ ...soapBase });
     setNewVitals({ ...source.vital_signs });
     setNewExam({ ...source.physical_exam });
     setNewDevices(Array.isArray(srcDevices) ? srcDevices : []);
     setNewCulturesHtml(typeof srcCulturesHtml === "string" ? srcCulturesHtml : "");
+    // 🔒 Popula campos por item a partir do soap_data salvo
+    setPlanItems(Array.isArray(srcPlanItems) ? srcPlanItems : []);
+    setPendenciasItems(Array.isArray(srcPendencias) ? srcPendencias : []);
+    setAntecedentes(Array.isArray(srcAntecSoap) ? srcAntecSoap : []);
     const srcHypo = (source as any).diagnostic_hypotheses;
     const srcAntecedentes = (source as any).antecedentes;
-    setDiagnosticHypotheses(typeof srcHypo === "string" ? srcHypo.split("\n").filter(Boolean) : Array.isArray(srcHypo) ? srcHypo : []);
+    setDiagnosticHypotheses(typeof srcHypo === "string" ? srcHypo : "");
+    if (Array.isArray(srcAntecedentes) && srcAntecedentes.length > 0) {
+      setAntecedentes(srcAntecedentes);
+    }
     setShowNewForm(true);
     setDiagnosticsReplicated(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -431,10 +444,10 @@ const EvolucaoPage = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5 text-xs border-border text-muted-foreground hover:bg-muted hover:text-foreground flex-1 sm:flex-none min-h-9"
+                  className="gap-1.5 text-xs border-amber-500/40 text-amber-700 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400 flex-1 sm:flex-none min-h-9"
                   disabled={showIntercurrenceForm || showNewForm}
                 >
-                  Evolução complementar
+                  <Zap className="h-3.5 w-3.5" /> Evolução complementar
                   <ChevronDown className="h-3 w-3 opacity-70" />
                 </Button>
               </DropdownMenuTrigger>
@@ -589,32 +602,6 @@ const EvolucaoPage = () => {
             cidPrimary={cidPrimary}
             cidSecondary={Array.isArray(cidSecondary) ? cidSecondary.join(", ") : cidSecondary}
             diagnosticsSlot={diagnosticsSlot}
-            diagnosticsSlotFactory={(evoId, onDiagHypoChange, currentDiagHypo) => (
-              <DiagnosticsPanel
-                cidPrimary={cidPrimary}
-                cidSecondary={cidSecondary}
-                onCidPrimaryChange={updateCidPrimary}
-                onCidSecondaryChange={updateCidSecondary}
-                utiDischargePrediction={utiDischargePrediction}
-                onUtiDischargePredictionChange={updateUtiDischargePrediction}
-                hospitalDischargePrediction={hospitalDischargePrediction}
-                onHospitalDischargePredictionChange={updateHospitalDischargePrediction}
-                isPalliative={isPalliative}
-                onPalliativeChange={updateIsPalliative}
-                isolationPrecautions={isolationPrecautions}
-                onIsolationChange={updateIsolationPrecautions}
-                diagnosticHypotheses={currentDiagHypo}
-                onDiagnosticHypothesesChange={(v) => {
-                  const str = Array.isArray(v) ? v.filter(Boolean).join("\n") : v;
-                  onDiagHypoChange(str);
-                }}
-                antecedentes={antecedentes}
-                onAntecedentesChange={setAntecedentes}
-                showUtiPrediction={isUtiSector}
-                replicated={false}
-                onClearAll={handleClearDiagnostics}
-              />
-            )}
             onUpdate={updateEvolution}
             onValidate={validateEvolution}
             onSuspend={suspendEvolution}
@@ -685,7 +672,7 @@ const EvolucaoPage = () => {
                     <td style={labelSt}>Prontuário</td>
                     <td style={{ ...cellSt, fontWeight: 700 }}>{patient.record || '—'}</td>
                     <td style={labelSt}>Nº Atendimento</td>
-                    <td style={{ ...cellSt, fontWeight: 700 }}>{ids.atendimento ? `#${ids.atendimento}` : '—'}</td>
+                    <td style={{ ...cellSt, fontWeight: 700 }}>{patient.encounterCode ? `#${patient.encounterCode}` : '—'}</td>
                   </tr>
                   {/* Linha 3: Idade / Nascimento / Admissão / Sexo / Peso / Alergias */}
                   <tr>

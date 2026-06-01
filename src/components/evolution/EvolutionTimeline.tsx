@@ -134,7 +134,18 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     setLocalEdits(prev => {
       const evo = evolutions.find(e => e.id === id);
       if (!evo) return prev;
-      const current = prev[id] || { soap: { ...evo.soap_data }, vitals: { ...evo.vital_signs }, exam: { ...evo.physical_exam } };
+      // 🔒 Ao inicializar current, garantir que soap inclui planItems e pendenciasItems
+      // do soap_data salvo — sem isso eles são perdidos ao editar outros campos.
+      const soapBase = { ...(evo.soap_data as any) };
+      const current = prev[id] || {
+        soap: {
+          ...soapBase,
+          planItems: Array.isArray(soapBase.planItems) ? soapBase.planItems : [],
+          pendenciasItems: Array.isArray(soapBase.pendenciasItems) ? soapBase.pendenciasItems : [],
+        },
+        vitals: { ...evo.vital_signs },
+        exam: { ...evo.physical_exam },
+      };
       return { ...prev, [id]: { ...current, [field]: { ...current[field], [key]: value } } };
     });
   };
