@@ -154,8 +154,14 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     const local = localEdits[id];
     if (!local) return;
     setSavingId(id);
+    // 🔒 Se planItems tem itens preenchidos, limpar soap.plan (texto legado)
+    // para evitar que o modo legado seja exibido após o save.
+    const soapToSave = { ...local.soap };
+    if (Array.isArray(soapToSave.planItems) && soapToSave.planItems.some((p: string) => p.trim())) {
+      soapToSave.plan = "";
+    }
     await onUpdate(id, {
-      soap_data: local.soap,
+      soap_data: soapToSave,
       vital_signs: local.vitals,
       physical_exam: local.exam,
     });
