@@ -655,22 +655,22 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                     })() : (() => {
                       const localDiagnosticsSlot = isEditable ? (
                         <DiagnosticsPanel
-                          cidPrimary={cidPrimary || null}
-                          cidSecondary={cidSecondary || null}
-                          onCidPrimaryChange={() => {}}
-                          onCidSecondaryChange={() => {}}
-                          diagnosticHypotheses={
-                            Array.isArray((data.soap as any).diagnosticHypotheses)
-                              ? (data.soap as any).diagnosticHypotheses
-                              : typeof (data.soap as any).diagnosticHypotheses === "string"
-                                ? (data.soap as any).diagnosticHypotheses : []
-                          }
-                          onDiagnosticHypothesesChange={(v) =>
-                            updateLocal(evo.id, "soap", "diagnosticHypotheses",
-                              Array.isArray(v) ? v : v.split("\n").filter(Boolean))
-                          }
-                          antecedentes={Array.isArray((data.soap as any).antecedentes) ? (data.soap as any).antecedentes : []}
-                          onAntecedentesChange={(items) => updateLocal(evo.id, "soap", "antecedentes", items)}
+                          {...({
+                            cidPrimary: cidPrimary || null,
+                            cidSecondary: cidSecondary ? [cidSecondary] : [],
+                            onCidPrimaryChange: () => {},
+                            onCidSecondaryChange: () => {},
+                            diagnosticHypotheses:
+                              Array.isArray((data.soap as any).diagnosticHypotheses)
+                                ? (data.soap as any).diagnosticHypotheses
+                                : typeof (data.soap as any).diagnosticHypotheses === "string"
+                                  ? (data.soap as any).diagnosticHypotheses : [],
+                            onDiagnosticHypothesesChange: (v: any) =>
+                              updateLocal(evo.id, "soap", "diagnosticHypotheses",
+                                Array.isArray(v) ? v : String(v).split("\n").filter(Boolean)),
+                            antecedentes: Array.isArray((data.soap as any).antecedentes) ? (data.soap as any).antecedentes : [],
+                            onAntecedentesChange: (items: string[]) => updateLocal(evo.id, "soap", "antecedentes", items),
+                          } as any)}
                         />
                       ) : diagnosticsSlot;
                       return (
