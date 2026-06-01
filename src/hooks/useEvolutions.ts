@@ -315,9 +315,9 @@ export function useEvolutions(
           patientUpdates.medical_history = antecedentes.filter(Boolean).join("\n");
         }
 
-        // Plano Terapêutico → patients.uti_daily_conducts (mapeia para utiDailyConducts)
+        // Plano Terapêutico → patients.uti_daily_conducts (TEXT join \n)
         if (planItems && planItems.length > 0) {
-          patientUpdates.uti_daily_conducts = planItems.filter(Boolean);
+          patientUpdates.uti_daily_conducts = planItems.filter(Boolean).join("\n");
         }
 
         // Pendências → patients.pendencies
