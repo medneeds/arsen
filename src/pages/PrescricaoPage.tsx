@@ -6404,7 +6404,7 @@ const PrescricaoPage = () => {
         setAutoLoadDone(true);
       }
     })();
-  }, [autoLoadTriggered, currentHospital, currentState, patientRegistryId, activeEncounterId, currentPrescriptionId]);
+  }, [autoLoadTriggered, currentHospital, currentState, patientRegistryId, activeEncounterId, currentPrescriptionId;
 
 
   // Fetch version history for a prescription (by patient_name in same hospital)
@@ -6709,7 +6709,15 @@ const PrescricaoPage = () => {
         patient_data: patient as any,
         items: items as any,
         digital_signature: digitalSignature as any,
-        status: digitalSignature ? 'signed' : 'draft',
+        // 🔒 Status baseado na validação dos itens, não na assinatura digital.
+        // A assinatura digital está sendo removida do fluxo — o indicador
+        // de prescrição concluída deve depender da validação.
+        status: (() => {
+          if (digitalSignature) return 'signed'; // legado — compatibilidade
+          const activeItems = (items as any[]).filter(i => i.status === 'active');
+          const allValidated = activeItems.length > 0 && activeItems.every(i => i.validated);
+          return allValidated ? 'validated' : 'draft';
+        })(),
         department: 'URGÊNCIA E EMERGÊNCIA ADULTO',
         hospital_unit_id: currentHospital.id,
         state_id: currentState.id,
@@ -6974,7 +6982,12 @@ const PrescricaoPage = () => {
               patient_data: patient as any,
               items: items as any,
               digital_signature: digitalSignature as any,
-              status: digitalSignature ? 'signed' : 'draft',
+              status: (() => {
+                if (digitalSignature) return 'signed';
+                const activeItems = (items as any[]).filter(i => i.status === 'active');
+                const allValidated = activeItems.length > 0 && activeItems.every(i => i.validated);
+                return allValidated ? 'validated' : 'draft';
+              })(),
             })
             .eq('id', currentPrescriptionId);
         }
