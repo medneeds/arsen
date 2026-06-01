@@ -712,7 +712,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         )}
                       </div>
                       ); })() : (
-                      {(() => {
+                      (() => {
                         // 🔒 Slot de diagnósticos LOCAL — roteia hipóteses e antecedentes
                         // para localEdits em vez do estado da EvolucaoPage.
                         // Sem isso, ao salvar rascunho existente, hipóteses e antecedentes
