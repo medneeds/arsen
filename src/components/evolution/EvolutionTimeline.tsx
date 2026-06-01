@@ -656,7 +656,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       const localDiagnosticsSlot = isEditable ? (
                         <DiagnosticsPanel
                           cidPrimary={cidPrimary || null}
-                          cidSecondary={cidSecondary ? [cidSecondary] : []}
+                          cidSecondary={(cidSecondary ? [cidSecondary] : []) as any}
                           onCidPrimaryChange={() => {}}
                           onCidSecondaryChange={() => {}}
                           diagnosticHypotheses={
