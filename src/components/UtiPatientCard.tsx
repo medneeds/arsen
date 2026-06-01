@@ -841,15 +841,49 @@ export function UtiPatientCard({
     return calcDIH(eff) ?? 0;
   }, [patient.utiAdmissionDate, patient.admittedAt, patient.admissionDate, patient.sector]);
 
+  // Normaliza um item: se vier como string JSON-array (`["a","b"]`) explode em itens,
+  // remove aspas residuais, colchetes soltos e prefixos numéricos.
+  const expandItem = (raw: string): string[] => {
+    let s = (raw ?? "").trim();
+    if (!s) return [];
+    // Tenta JSON.parse direto quando começa com [ — cobre dados legados salvos como string.
+    if (s.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(s);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((p) => (typeof p === "string" ? p : String(p ?? "")))
+            .map((p) => p.trim())
+            .filter(Boolean);
+        }
+      } catch {
+        // fallback: split por vírgulas entre aspas
+        const inner = s.replace(/^\[|\]$/g, "");
+        return inner
+          .split(/"\s*,\s*"/)
+          .map((p) => p.replace(/^"|"$/g, "").trim())
+          .filter(Boolean);
+      }
+    }
+    // Strings multilinha
+    if (s.includes("\n")) {
+      return s.split("\n").map((p) => p.trim()).filter(Boolean);
+    }
+    // Remove aspas externas residuais
+    s = s.replace(/^"+|"+$/g, "").trim();
+    return s ? [s] : [];
+  };
+
   const getFieldArray = (key: keyof Patient): string[] => {
     const value = patient[key];
-    if (Array.isArray(value)) {
-      return value.filter((v): v is string => typeof v === 'string');
-    }
-    if (typeof value === 'string' && value.includes('\n')) {
-      return value.split('\n').filter(v => v.trim() !== '');
-    }
-    return value ? [value as string] : [];
+    const raw: string[] = Array.isArray(value)
+      ? value.filter((v): v is string => typeof v === "string")
+      : typeof value === "string"
+        ? [value]
+        : [];
+    const out: string[] = [];
+    for (const item of raw) out.push(...expandItem(item));
+    return out;
   };
 
   const handleUpdateField = (key: keyof Patient, value: string | string[] | number[]) => {
