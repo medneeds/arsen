@@ -923,7 +923,7 @@ const ReadOnlyView: React.FC<{
       {/* Antecedentes clínicos */}
       {Array.isArray(antecedentes) && antecedentes.filter(Boolean).length > 0 && (
         <div>
-          <strong className="text-indigo-500 dark:text-indigo-400">Antecedentes Clínicos:</strong>
+          <strong className="text-blue-600 dark:text-blue-400">Antecedentes Clínicos:</strong>
           <ol className="ml-4 mt-0.5 text-foreground/90 list-decimal space-y-0.5">
             {antecedentes.filter(Boolean).map((a, i) => (
               <li key={i}>{a}</li>

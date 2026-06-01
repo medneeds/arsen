@@ -250,10 +250,10 @@ export function DiagnosticsPanel({
         <div className="rounded-md border border-border/60 bg-background/40 p-2.5 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <Label className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-1.5">
-              <Stethoscope className="h-3 w-3 text-amber-500" />
+              <Stethoscope className="h-3 w-3 text-blue-500" />
               Antecedentes Clínicos
             </Label>
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 text-[9px] font-medium">
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 text-[9px] font-medium">
               <Lock className="h-2.5 w-2.5" />
               Sincroniza com o mapa
             </span>
@@ -264,7 +264,7 @@ export function DiagnosticsPanel({
             placeholder="Ex: HAS, DM2, Tabagismo..."
             addLabel="+ Antecedente"
             showReorder={false}
-            numberColor="text-amber-600"
+            numberColor="text-blue-600"
           />
         </div>
       )}

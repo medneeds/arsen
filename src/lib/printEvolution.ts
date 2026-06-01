@@ -127,11 +127,11 @@ export const printEvolution = async (
         </tr>
         <tr>
           <td style="${labelS}">Data de Nasc.</td>
-          <td style="${cellS}">${escape(birthDisplay)}</td>
+          <td style="${cellS}">${escape(birthDisplay)}${patientAge ? ` (${patientAge})` : ''}</td>
           <td style="${labelS}">Médico</td>
           <td style="${cellS}" colspan="3">${escape(doctorName)}</td>
           <td style="${labelS};color:#dc2626;font-size:6pt">⚠ ALERGIAS</td>
-          <td style="${cellS};font-weight:700;color:#991b1b;background:#fef2f2;font-size:7.5pt">—</td>
+          <td style="${cellS};font-weight:700;color:#991b1b;background:#fef2f2;font-size:7.5pt">${escape(patientAllergies)}</td>
         </tr>
       </tbody>
     </table>
@@ -161,30 +161,53 @@ export const printEvolution = async (
     ? (evo.soap_data as any).antecedentes.filter(Boolean)
     : [];
 
-  // Buscar antecedentes do registro do paciente (patients.medical_history)
-  // quando não estão no soap_data — cobre evoluções anteriores ao fix
+  // Buscar dados do paciente: antecedentes, alergias e idade
   let patientAntecedentes: string[] = [];
-  if (soapAntecedentes.length === 0 && (evo as any).patient_id) {
+  let patientAllergies: string = "—";
+  let patientAge: string | null = null;
+
+  if ((evo as any).patient_id) {
     try {
       const { data: pRow } = await supabase
         .from("patients")
-        .select("medical_history")
+        .select("medical_history, uti_allergies, age, birth_date")
         .eq("id", (evo as any).patient_id)
         .maybeSingle();
-      if ((pRow as any)?.medical_history?.trim()) {
-        patientAntecedentes = (pRow as any).medical_history.split("\n").filter(Boolean);
+
+      if (pRow) {
+        // Antecedentes
+        if (soapAntecedentes.length === 0 && (pRow as any).medical_history?.trim()) {
+          patientAntecedentes = (pRow as any).medical_history.split("\n").filter(Boolean);
+        }
+        // Alergias
+        if ((pRow as any).uti_allergies?.trim()) {
+          patientAllergies = (pRow as any).uti_allergies.replace(/\n/g, " • ");
+        } else {
+          patientAllergies = "SEM ALERGIAS CONHECIDAS";
+        }
+        // Idade — usa age direto ou calcula da data de nascimento
+        if ((pRow as any).age) {
+          patientAge = `${(pRow as any).age} anos`;
+        } else if ((pRow as any).birth_date) {
+          const bd = new Date((pRow as any).birth_date);
+          const today = new Date();
+          let age = today.getFullYear() - bd.getFullYear();
+          const m = today.getMonth() - bd.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
+          patientAge = `${age} anos`;
+        }
       }
-    } catch { /* falha silenciosa — antecedentes ficam vazios */ }
+    } catch { /* falha silenciosa */ }
   }
 
   const antecedentesArr = soapAntecedentes.length > 0 ? soapAntecedentes : patientAntecedentes;
 
   const antecedentesHtml = antecedentesArr.length > 0
     ? `<h2 class="nz-section">Antecedentes Clínicos</h2>
-       <table style="width:100%;border-collapse:collapse;background:#fffbeb;border:1px solid #fde68a;border-radius:3pt;margin-bottom:6pt">
+       <table style="width:100%;border-collapse:collapse;background:#eff6ff;border:1px solid #bfdbfe;border-radius:3pt;margin-bottom:6pt">
          <tbody>
            ${antecedentesArr.map((a, i) =>
-             `<tr><td style="width:18pt;padding:2pt 4pt;font-weight:700;color:#b45309;vertical-align:top;font-size:8pt">${i+1}.</td><td style="padding:2pt 4pt;font-size:8.5pt;line-height:1.35">${escape(a)}</td></tr>`
+             `<tr><td style="width:18pt;padding:2pt 4pt;font-weight:700;color:#1d4ed8;vertical-align:top;font-size:8pt">${i+1}.</td><td style="padding:2pt 4pt;font-size:8.5pt;line-height:1.35">${escape(a)}</td></tr>`
            ).join("")}
          </tbody>
        </table>`
@@ -201,9 +224,15 @@ export const printEvolution = async (
   let bodyHtml = patientHeader + diagnosticsHtml + antecedentesHtml;
 
   if (intercurrence) {
+    const evoTypeLabel = {
+      intercurrence: "Intercorrência",
+      vespertina:    "Evolução Vespertina",
+      noturna:       "Evolução Noturna",
+    }[getEvolutionType(evo)] ?? "Intercorrência";
+
     bodyHtml += `
-      <h2 class="nz-section">Intercorrência</h2>
-      <div class="nz-rich" style="padding:6pt 8pt;background:#fffbeb;border:1px solid #fde68a;border-radius:3pt;font-size:8.5pt;line-height:1.35">
+      <h2 class="nz-section">${evoTypeLabel}</h2>
+      <div class="nz-rich" style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8.5pt;line-height:1.35">
         ${renderRich(evo.soap_data.subjective)}
       </div>
     `;
