@@ -30,7 +30,17 @@ import { usePageReady } from "@/hooks/usePageReady";
 const parseTextArray = (input: string | string[] | undefined | null): string[] => {
   if (!input) return [];
   if (Array.isArray(input)) return input.filter(item => item && item.trim());
-  return input.split('\n').filter(item => item && item.trim());
+  // Limpar formato JSON-like: ["item1","item2"] → ["item1", "item2"]
+  const str = input.trim();
+  if (str.startsWith('[') && str.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(str);
+      if (Array.isArray(parsed)) return parsed.map(s => String(s).trim()).filter(Boolean);
+    } catch {}
+    // Fallback manual: remover [" e "] e separar por ","
+    return str.slice(1, -1).split(/",\s*"/).map(s => s.replace(/^"|"$/g, '').trim()).filter(Boolean);
+  }
+  return str.split('\n').filter(item => item && item.trim());
 };
 
 const clinicalStatusLabels: Record<string, { label: string; color: string }> = {
@@ -104,10 +114,20 @@ const getPrescriptionStatus = (status: TodaysPrescriptionStatus): { label: strin
   return { label: "Pendente", variant: "secondary", dotColor: "bg-amber-500", pulsing: true };
 };
 
+const formatDateBR = (dateStr: string): string => {
+  if (!dateStr) return dateStr;
+  // ISO YYYY-MM-DD → DD/MM/YYYY
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr.trim());
+  if (isoMatch) return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
+  return dateStr;
+};
+
 const getDischargeText = (patient: Patient): string => {
   const predictions = parseTextArray(patient.utiDischargePrediction);
   if (predictions.length > 0) {
-    return predictions[0];
+    // Suporta "2026-06-03" → "03/06/2026" e "2026-06-03 (D+7)" → "03/06/2026 (D+7)"
+    const raw = predictions[0];
+    return raw.replace(/\d{4}-\d{2}-\d{2}/, (m) => formatDateBR(m));
   }
   return "Sem previsão";
 };
@@ -352,7 +372,7 @@ export default function PainelClinicoPage() {
                   <TableHead className="w-28 text-center">Prescrição</TableHead>
                   <TableHead className="w-24 text-center">Dias Int.</TableHead>
                   <TableHead className="w-36">Previsão Alta</TableHead>
-                  <TableHead className="w-40">Médico Resp.</TableHead>
+                  <TableHead className="w-44">Especialidades Envolvidas</TableHead>
                   <TableHead className="w-20 text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>

@@ -93,7 +93,14 @@ export const printEvolution = async (
   const F = (label: string, value: string) =>
     `<span style="font-weight:600">${label}</span>&nbsp;${value}`;
 
-  const birthDisplay = ctx?.patientBirthDate ? ctx.patientBirthDate : "—";
+  // Formatar data de nascimento para padrão brasileiro DD/MM/YYYY
+  const formatBirthDateBR = (d: string | undefined | null): string => {
+    if (!d) return "—";
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d.trim());
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+    return d;
+  };
+  const birthDisplay = formatBirthDateBR(ctx?.patientBirthDate);
 
   // Estilos da tabela de paciente — idêntico ao PrintablePrescription
   const cellS = "border:0.5px solid #94a3b8;padding:3px 6px;font-size:7.5pt;line-height:1.3;vertical-align:top";
