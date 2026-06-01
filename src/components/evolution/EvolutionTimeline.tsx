@@ -269,19 +269,53 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
   const isIntercurrence = (evo: EvolutionRecord) => getComplementaryKind(evo) !== null;
 
   const buildSummary = (evo: EvolutionRecord) => {
-    const s = evo.soap_data;
+    const s = evo.soap_data as any;
     const subj = richHtmlToPlainText(s.subjective);
-    const ass = richHtmlToPlainText(s.assessment);
+    const obj  = richHtmlToPlainText(s.objective);
+    const ass  = richHtmlToPlainText(s.assessment);
     const plan = richHtmlToPlainText(s.plan);
+
+    // Campos por item (novo formato)
+    const planItems: string[] = Array.isArray(s.planItems) ? s.planItems.filter(Boolean) : [];
+    const pendItems: string[] = Array.isArray(s.pendenciasItems) ? s.pendenciasItems.filter(Boolean) : [];
+    const hasDevices = Array.isArray(s.devices) && s.devices.length > 0;
+    const hasCultures = typeof s.culturesHtml === "string" && s.culturesHtml.trim().length > 10;
+
+    // Evoluções complementares
     const kind = getComplementaryKind(evo);
     if (kind) {
       const label = COMPLEMENTARY_BADGE[kind].label;
-      return subj ? `${label}: ${subj.slice(0, 120)}` : `${label} sem descrição`;
+      return subj ? `${label}: ${subj.slice(0, 140)}` : `${label} sem descrição`;
     }
-    const evolucao = [subj, ass].filter(Boolean).join(" — ");
+
     const parts: string[] = [];
-    if (evolucao) parts.push(`Evolução: ${evolucao.slice(0, 100)}`);
-    if (plan) parts.push(`Plano: ${plan.slice(0, 60)}`);
+
+    // Corpo da evolução (subjetivo + avaliação)
+    const evolucaoText = [subj, ass].filter(Boolean).join(" — ");
+    if (evolucaoText) parts.push(evolucaoText.slice(0, 160));
+
+    // Objetivo (exames)
+    if (obj) parts.push(`Obj.: ${obj.slice(0, 80)}`);
+
+    // Plano — itens ou texto livre
+    if (planItems.length > 0) {
+      const planSummary = planItems.slice(0, 3).join(" · ");
+      parts.push(`Plano: ${planSummary.slice(0, 100)}${planItems.length > 3 ? ` +${planItems.length - 3}` : ""}`);
+    } else if (plan) {
+      parts.push(`Plano: ${plan.slice(0, 80)}`);
+    }
+
+    // Pendências
+    if (pendItems.length > 0) {
+      parts.push(`Pendências: ${pendItems[0].slice(0, 60)}${pendItems.length > 1 ? ` +${pendItems.length - 1}` : ""}`);
+    }
+
+    // Indicadores adicionais
+    const extras: string[] = [];
+    if (hasDevices) extras.push("Dispositivos");
+    if (hasCultures) extras.push("Culturas");
+    if (extras.length > 0) parts.push(extras.join(" · "));
+
     return parts.length > 0 ? parts.join(" | ") : "Evolução sem conteúdo";
   };
 
