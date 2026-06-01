@@ -223,6 +223,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
         patientSocialName: resolved.socialName || undefined,
         patientCpf: resolved.cpf || undefined,
         patientCns: resolved.cns || undefined,
+        patientBirthDate: resolved.birthDate || undefined,
         cidPrimary,
         cidSecondary,
       });
@@ -579,6 +580,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             patientSocialName: resolved.socialName || undefined,
                             patientCpf: resolved.cpf || undefined,
                             patientCns: resolved.cns || undefined,
+                            patientBirthDate: resolved.birthDate || undefined,
                             cidPrimary,
                             cidSecondary,
                           });
