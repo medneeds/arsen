@@ -712,7 +712,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         )}
                       </div>
                       ); })() : (
-                      {(() => {
+                      (() => {
                         // 🔒 Slot de diagnósticos LOCAL — roteia hipóteses e antecedentes
                         // para localEdits em vez do estado da EvolucaoPage.
                         // Sem isso, ao salvar rascunho existente, hipóteses e antecedentes
@@ -720,7 +720,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         const localDiagnosticsSlot = isEditable ? (
                           <DiagnosticsPanel
                             cidPrimary={cidPrimary || null}
-                            cidSecondary={cidSecondary || null}
+                            cidSecondary={Array.isArray(cidSecondary) ? cidSecondary : cidSecondary ? [cidSecondary] : []}
                             onCidPrimaryChange={() => {}}
                             onCidSecondaryChange={() => {}}
                             diagnosticHypotheses={
@@ -742,6 +742,14 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             onAntecedentesChange={(items) =>
                               updateLocal(evo.id, "soap", "antecedentes", items)
                             }
+                            utiDischargePrediction=""
+                            onUtiDischargePredictionChange={() => {}}
+                            hospitalDischargePrediction=""
+                            onHospitalDischargePredictionChange={() => {}}
+                            isPalliative={false}
+                            onPalliativeChange={() => {}}
+                            isolationPrecautions=""
+                            onIsolationChange={() => {}}
                           />
                         ) : diagnosticsSlot;
 
@@ -779,7 +787,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             onPendenciasItemsChange={(items) => updateLocal(evo.id, "soap", "pendenciasItems", items)}
                           />
                         );
-                      })()}
+                      })()
                     )}
                   </div>
                 </div>

@@ -50,6 +50,7 @@ interface PatientHeader {
   admissionDate: string;
   weight: string;
   allergies: string;
+  encounterCode?: string;
 }
 
 const EvolucaoPage = () => {
@@ -191,7 +192,7 @@ const EvolucaoPage = () => {
     setNewDevices([]);
     setNewCulturesHtml("");
     setDiagnosticsReplicated(false);
-    setDiagnosticHypotheses("");
+    setDiagnosticHypotheses([]);
     // 🔒 Resetar campos por item — sem isso persistem entre evoluções
     setPlanItems([]);
     setPendenciasItems([]);
@@ -221,7 +222,7 @@ const EvolucaoPage = () => {
     if (hospitalDischargePrediction) updateHospitalDischargePrediction("");
     if (isPalliative) updateIsPalliative(false);
     if (isolationPrecautions) updateIsolationPrecautions("");
-    setDiagnosticHypotheses("");
+    setDiagnosticHypotheses([]);
     setDiagnosticsReplicated(false);
   };
 
@@ -303,7 +304,7 @@ const EvolucaoPage = () => {
     setAntecedentes(Array.isArray(srcAntecSoap) ? srcAntecSoap : []);
     const srcHypo = (source as any).diagnostic_hypotheses;
     const srcAntecedentes = (source as any).antecedentes;
-    setDiagnosticHypotheses(typeof srcHypo === "string" ? srcHypo : "");
+    setDiagnosticHypotheses(Array.isArray(srcHypo) ? srcHypo : typeof srcHypo === "string" && srcHypo.trim() ? srcHypo.split("\n").filter(Boolean) : []);
     if (Array.isArray(srcAntecedentes) && srcAntecedentes.length > 0) {
       setAntecedentes(srcAntecedentes);
     }
