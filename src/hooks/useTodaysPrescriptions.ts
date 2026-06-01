@@ -27,11 +27,13 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
     // hoje (updated_at = hoje). Filtrar por created_at exclui esses casos.
     // Janela: últimas 24h para cobrir prescrições validadas em qualquer turno.
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    // Buscar validated/signed E draft (para cobrir prescrições com itens validados
+    // que ainda têm status='draft' no banco por bug anterior)
     const { data, error } = await supabase
       .from("prescriptions")
-      .select("patient_name, status, updated_at")
+      .select("patient_name, status, updated_at, items")
       .eq("hospital_unit_id", hospitalUnitId)
-      .in("status", ["signed", "validated"])
+      .in("status", ["signed", "validated", "draft"])
       .gte("updated_at", since.toISOString());
     if (error || !data) {
       setSignedToday(new Set());
@@ -39,7 +41,19 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
     }
     const next = new Set<string>();
     for (const row of data as any[]) {
-      if (row?.patient_name) next.add(String(row.patient_name).trim().toUpperCase());
+      if (!row?.patient_name) continue;
+      // Status explícito de validação
+      if (row.status === "signed" || row.status === "validated") {
+        next.add(String(row.patient_name).trim().toUpperCase());
+        continue;
+      }
+      // Fallback: draft com todos os itens ativos validados (bug legado no banco)
+      if (row.status === "draft" && Array.isArray(row.items)) {
+        const activeItems = row.items.filter((i: any) => i.status === "active");
+        if (activeItems.length > 0 && activeItems.every((i: any) => i.validated)) {
+          next.add(String(row.patient_name).trim().toUpperCase());
+        }
+      }
     }
     setSignedToday(next);
   }, [hospitalUnitId]);

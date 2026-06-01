@@ -4651,11 +4651,16 @@ const PrescricaoPage = () => {
             .select('status')
             .eq('id', currentPrescriptionId)
             .single();
-          if ((existing as any)?.status === 'signed') {
+          if ((existing as any)?.status === 'signed' || (existing as any)?.status === 'validated') {
             mode = 'newVersion';
           }
         } catch {}
       }
+
+      // Calcular status baseado em validação dos itens (não na assinatura digital)
+      const activeNextItems = (nextItems as any[]).filter((i: any) => i.status === 'active');
+      const allValidated = activeNextItems.length > 0 && activeNextItems.every((i: any) => i.validated);
+      const computedStatus = sig ? 'signed' : allValidated ? 'validated' : 'draft';
 
       const basePayload = {
         patient_name: patient.name.trim(),
@@ -4663,7 +4668,7 @@ const PrescricaoPage = () => {
         patient_data: patient as any,
         items: nextItems as any,
         digital_signature: sig as any,
-        status: sig ? 'signed' : 'draft',
+        status: computedStatus,
         department: resolvedDepartment,
         hospital_unit_id: currentHospital.id,
         state_id: currentState.id,
