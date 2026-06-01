@@ -3,25 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type TodaysPrescriptionStatus = "signed" | "validated" | "pending";
 
-const normalizeName = (raw: string | null | undefined): string => {
-  if (!raw) return "";
-  return raw
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // remove acentos
-    .replace(/\s+/g, " ")
-    .trim()
-    .toUpperCase();
-};
-
 /**
- * Painel Clínico — bolinha verde "Validada" = prescrição ASSINADA pelo médico hoje
- * (validação clínica, não farmacêutica).
+ * Subscribes to prescriptions of a hospital unit and returns a map of
+ * patientName (trimmed, uppercased) → status for the CURRENT day.
  *
- * - "validated": existe ≥1 prescrição com status='signed' (ou legacy 'validated')
- *   criada hoje na unidade, ativa (archived_at IS NULL).
- * - "pending": caso contrário.
+ * - "signed": there is at least one prescription with status='signed' whose
+ *   created_at is within today (local time).
+ * - "pending": otherwise (no signed prescription today; may have draft).
  *
- * Realtime mantém em sincronia ao assinar em outra aba.
+ * Used by the Painel Clínico list dot indicator. Realtime keeps it in sync
+ * when prescriptions are signed/validated in another tab.
  */
 export function useTodaysPrescriptions(hospitalUnitId: string | null) {
   const [signedToday, setSignedToday] = useState<Set<string>>(new Set());
@@ -31,23 +22,24 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
       setSignedToday(new Set());
       return;
     }
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
+    // 🔒 Filtrar por updated_at — não created_at.
+    // A prescrição pode ser criada ontem (created_at = ontem) e validada
+    // hoje (updated_at = hoje). Filtrar por created_at exclui esses casos.
+    // Janela: últimas 24h para cobrir prescrições validadas em qualquer turno.
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const { data, error } = await supabase
       .from("prescriptions")
-      .select("patient_name, status, created_at, archived_at")
+      .select("patient_name, status, updated_at")
       .eq("hospital_unit_id", hospitalUnitId)
       .in("status", ["signed", "validated"])
-      .is("archived_at", null)
-      .gte("created_at", start.toISOString());
+      .gte("updated_at", since.toISOString());
     if (error || !data) {
       setSignedToday(new Set());
       return;
     }
     const next = new Set<string>();
     for (const row of data as any[]) {
-      const key = normalizeName(row?.patient_name);
-      if (key) next.add(key);
+      if (row?.patient_name) next.add(String(row.patient_name).trim().toUpperCase());
     }
     setSignedToday(next);
   }, [hospitalUnitId]);
@@ -78,9 +70,8 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
 
   const getStatus = useCallback(
     (patientName: string | null | undefined): TodaysPrescriptionStatus => {
-      const key = normalizeName(patientName);
-      if (!key) return "pending";
-      return signedToday.has(key) ? "validated" : "pending";
+      if (!patientName) return "pending";
+      return signedToday.has(patientName.trim().toUpperCase()) ? "validated" : "pending";
     },
     [signedToday],
   );
