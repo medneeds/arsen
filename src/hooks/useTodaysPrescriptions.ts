@@ -22,38 +22,64 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
       setSignedToday(new Set());
       return;
     }
-    // 🔒 Filtrar por updated_at — não created_at.
-    // A prescrição pode ser criada ontem (created_at = ontem) e validada
-    // hoje (updated_at = hoje). Filtrar por created_at exclui esses casos.
-    // Janela: últimas 24h para cobrir prescrições validadas em qualquer turno.
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    // Buscar validated/signed E draft (para cobrir prescrições com itens validados
-    // que ainda têm status='draft' no banco por bug anterior)
+
+    // ─── Estratégia de detecção de validação ──────────────────────────────
+    // NÃO filtramos por updated_at porque persistItems não seta updated_at
+    // explicitamente — se a tabela não tem trigger, updated_at fica na data
+    // de criação (que pode ser ontem ou mais). Para prescrições validadas hoje
+    // mas criadas há dias, o filtro falharia para TODOS os pacientes.
+    //
+    // Estratégia correta: usar validatedAt nos ITENS da prescrição.
+    // applyValidation faz: { ...item, validated: true, validatedAt: now }
+    // validatedAt é setado no momento exato da validação e fica no JSONB.
+    // Isso é independente de status ou updated_at.
+    // ─────────────────────────────────────────────────────────────────────
+
+    // Buscar todas as prescrições ativas do hospital (sem filtro de data)
+    // A query é rápida pois filtra por hospital_unit_id
     const { data, error } = await supabase
       .from("prescriptions")
-      .select("patient_name, status, updated_at, items")
+      .select("patient_name, status, items")
       .eq("hospital_unit_id", hospitalUnitId)
-      .in("status", ["signed", "validated", "draft"])
-      .gte("updated_at", since.toISOString());
+      .in("status", ["signed", "validated", "draft"]);
+
     if (error || !data) {
       setSignedToday(new Set());
       return;
     }
-    // Normalizar nome: remove espaços duplos, trim, uppercase
+
+    // Janela de validação: últimas 36h (cobre turno anterior + dia atual)
+    const since = new Date(Date.now() - 36 * 60 * 60 * 1000);
+
+    // Normalizar nome para comparação
     const normName = (n: string) => String(n).replace(/\s+/g, " ").trim().toUpperCase();
-    const isValidated = (row: any): boolean => {
+
+    // Verificar se a prescrição foi validada recentemente
+    const isValidatedRecently = (row: any): boolean => {
+      // Status explícito de validação (prescrições novas após o fix)
       if (row.status === "signed" || row.status === "validated") return true;
-      // Fallback: draft com todos os itens ativos com validated=true
+
+      // Verificar validatedAt nos itens (prescrições existentes com status='draft')
+      // validatedAt é setado pelo applyValidation no momento exato da validação
       if (Array.isArray(row.items)) {
+        const hasRecentValidation = row.items.some((i: any) =>
+          i.validatedAt && new Date(i.validatedAt) >= since
+        );
+        if (hasRecentValidation) return true;
+
+        // Fallback final: todos os itens ativos têm validated=true
+        // (sem validatedAt — prescrições muito antigas)
         const active = row.items.filter((i: any) => i.status === "active");
         if (active.length > 0 && active.every((i: any) => !!i.validated)) return true;
       }
+
       return false;
     };
+
     const next = new Set<string>();
     for (const row of data as any[]) {
       if (!row?.patient_name) continue;
-      if (isValidated(row)) next.add(normName(row.patient_name));
+      if (isValidatedRecently(row)) next.add(normName(row.patient_name));
     }
     setSignedToday(next);
   }, [hospitalUnitId]);
