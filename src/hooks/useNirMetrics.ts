@@ -87,10 +87,17 @@ export function useNirMetrics(hospitalUnitId: string | undefined, filters: NirFi
   const requests = requestsQuery.data ?? [];
   const allRequests = allRequestsQuery.data ?? [];
 
-  // Apply scope filter to beds
+  // Apply scope filter to beds — excluir leitos EXTRA vagos (arquivados pelo gestor)
+  // Leitos EXTRA são temporários; quando removidos no mapa ficam como registros
+  // vazios com bedNumber começando em 'EXTRA'. Não devem contar no total de leitos.
   const filteredBeds = useMemo(() => {
-    if (filters.sectorScope === "all") return beds;
-    return beds.filter((b: any) => classifySector(b.sector) === filters.sectorScope);
+    const noExtra = beds.filter((b: any) => {
+      const bedNum = (b.bed_number || b.bedNumber || "").toString().toUpperCase();
+      const isArchivedExtra = bedNum.startsWith("EXTRA") && !b.name?.trim();
+      return !isArchivedExtra;
+    });
+    if (filters.sectorScope === "all") return noExtra;
+    return noExtra.filter((b: any) => classifySector(b.sector) === filters.sectorScope);
   }, [beds, filters.sectorScope]);
 
   // Apply priority filter to requests
