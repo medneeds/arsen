@@ -197,7 +197,7 @@ export default function GestorPanelPage() {
 
         // Total de leitos = apenas leitos regulares (sem EXTRAs)
         const regularTotal = patients.filter(p => {
-          const bed = (p.bedNumber || '').toString().toUpperCase();
+          const bed = (p.bed_number || '').toString().toUpperCase();
           return !bed.startsWith('EXTRA');
         }).length;
         setBedStats({ total: regularTotal, occupied: occupied.length, vacant: vacant.length, doorPatients: doorPatients.length, bySector });
