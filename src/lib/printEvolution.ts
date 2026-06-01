@@ -36,13 +36,18 @@ const escape = (s: string) =>
     .replace(/>/g, "&gt;")
     .replace(/\n/g, "<br/>");
 
-// 🔒 Considera como complementar qualquer tipo específico:
-// intercurrence (intercorrência), vespertina, noturna.
-// Esses tipos têm apenas campo 'subjective' — sem Plano.
-const isIntercurrence = (evo: EvolutionRecord) => {
-  const t = (evo.soap_data as any)?.type;
-  return t === "intercurrence" || t === "vespertina" || t === "noturna";
+// Classifica o tipo de evolução complementar para o PDF
+const getEvolutionType = (evo: EvolutionRecord): "normal" | "intercurrence" | "vespertina" | "noturna" => {
+  const t = (evo.soap_data as any)?.type ?? (evo as any).evolution_type;
+  if (t === "intercurrence") return "intercurrence";
+  if (t === "vespertina") return "vespertina";
+  if (t === "noturna") return "noturna";
+  return "normal";
 };
+
+// Retorna true apenas para intercorrência real (não vespertina/noturna)
+const isIntercurrence = (evo: EvolutionRecord) =>
+  getEvolutionType(evo) === "intercurrence";
 
 export interface PrintEvolutionContext {
   patientName?: string;
@@ -240,11 +245,31 @@ export const printEvolution = async (
 
 
 
+  const evoType = getEvolutionType(evo);
+  const titleMap: Record<string, string> = {
+    intercurrence: "Intercorrência Clínica",
+    vespertina:    "Evolução Complementar Vespertina",
+    noturna:       "Evolução Complementar Noturna",
+    normal:        "Evolução Clínica",
+  };
+  const subtitleMap: Record<string, string> = {
+    intercurrence: "Registro de intercorrência",
+    vespertina:    "Registro de evolução complementar — turno vespertino",
+    noturna:       "Registro de evolução complementar — turno noturno",
+    normal:        "Registro de evolução",
+  };
+  const prefixMap: Record<string, string> = {
+    intercurrence: "INTC",
+    vespertina:    "EVOL",
+    noturna:       "EVOL",
+    normal:        "EVOL",
+  };
+
   const html = buildNormaZeroDocument({
-    title: intercurrence ? "Intercorrência Clínica" : "Evolução Clínica",
-    subtitle: intercurrence ? "Registro de intercorrência" : "Registro de evolução",
+    title: titleMap[evoType] ?? "Evolução Clínica",
+    subtitle: subtitleMap[evoType] ?? "Registro de evolução",
     sectorLabel: getSectorDisplayLabel(ctx?.patientSector || evo.patient_sector) || "Assistência Médica",
-    docCodePrefix: intercurrence ? "INTC" : "EVOL",
+    docCodePrefix: prefixMap[evoType] ?? "EVOL",
     bodyHtml,
     logoDataUrl: logo,
     signatures: [
