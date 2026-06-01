@@ -192,29 +192,29 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
     exam: Object.values(physicalExam).some(v => (v ?? "").trim()),
     evolucao: richHtmlToPlainText(evolucaoText).length >= 10,
     complementares: richHtmlToPlainText(soap.objective).length > 0,
-    plan: richHtmlToPlainText(soap.plan).length >= 10,
-  }), [cidPrimary, vitals, physicalExam, soap.objective, soap.plan, evolucaoText]);
+    // 🔒 Plano completo quando: RichText com 10+ chars OU planItems[] com ao menos 1 item não vazio
+    plan: richHtmlToPlainText(soap.plan).length >= 10
+      || (Array.isArray(planItems) && planItems.some(p => p.trim().length > 0)),
+  }), [cidPrimary, vitals, physicalExam, soap.objective, soap.plan, evolucaoText, planItems]);
 
   const requiredComplete = completion.diagnostics && completion.evolucao && completion.plan;
 
 
   // Autosave (debounced 2s) for editing existing drafts in Timeline
+  // Inclui planItems e pendenciasItems nas deps para garantir que mudanças
+  // nas condutas e programações também disparem o autosave.
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // 🔒 Ref para onSave — evita resetar o timer a cada re-render do pai
-  // (onSave costuma vir como arrow `() => handleSave(evo.id)`, ref nova a cada render).
-  const onSaveRef = useRef<() => void>(onSave);
-  useEffect(() => { onSaveRef.current = onSave; }, [onSave]);
   useEffect(() => {
-    if (!autoSave || readOnly || !hasUnsaved) return;
+    if (!autoSave || readOnly) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(() => {
-      onSaveRef.current();
+      onSave();
       setAutoSavedAt(new Date());
     }, 2000);
     return () => {
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     };
-  }, [soap, vitals, physicalExam, autoSave, readOnly, hasUnsaved]);
+  }, [soap, vitals, physicalExam, planItems, pendenciasItems, autoSave, readOnly, onSave]);
 
   // Read-only mode shows everything stacked (no accordion)
   if (readOnly) {
