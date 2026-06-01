@@ -114,14 +114,6 @@ const getPrescriptionStatus = (status: TodaysPrescriptionStatus): { label: strin
   return { label: "Pendente", variant: "secondary", dotColor: "bg-amber-500", pulsing: true };
 };
 
-const formatDateBR = (dateStr: string): string => {
-  if (!dateStr) return dateStr;
-  // ISO YYYY-MM-DD → DD/MM/YYYY
-  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr.trim());
-  if (isoMatch) return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
-  return dateStr;
-};
-
 const getDischargeText = (patient: Patient): string => {
   const predictions = parseTextArray(patient.utiDischargePrediction);
   if (predictions.length > 0) {

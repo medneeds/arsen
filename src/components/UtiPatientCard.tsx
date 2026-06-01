@@ -2,6 +2,7 @@ import { Patient } from "@/types/patient";
 import { DischargeStatusRibbon } from "./DischargeStatusRibbon";
 import { calcDIH, getEffectiveAdmissionDate } from "@/lib/dihCalc";
 import { isExtraBed } from "@/utils/bedNaming";
+import { formatDateBR } from "@/utils/dateUtils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -841,49 +842,15 @@ export function UtiPatientCard({
     return calcDIH(eff) ?? 0;
   }, [patient.utiAdmissionDate, patient.admittedAt, patient.admissionDate, patient.sector]);
 
-  // Normaliza um item: se vier como string JSON-array (`["a","b"]`) explode em itens,
-  // remove aspas residuais, colchetes soltos e prefixos numéricos.
-  const expandItem = (raw: string): string[] => {
-    let s = (raw ?? "").trim();
-    if (!s) return [];
-    // Tenta JSON.parse direto quando começa com [ — cobre dados legados salvos como string.
-    if (s.startsWith("[")) {
-      try {
-        const parsed = JSON.parse(s);
-        if (Array.isArray(parsed)) {
-          return parsed
-            .map((p) => (typeof p === "string" ? p : String(p ?? "")))
-            .map((p) => p.trim())
-            .filter(Boolean);
-        }
-      } catch {
-        // fallback: split por vírgulas entre aspas
-        const inner = s.replace(/^\[|\]$/g, "");
-        return inner
-          .split(/"\s*,\s*"/)
-          .map((p) => p.replace(/^"|"$/g, "").trim())
-          .filter(Boolean);
-      }
-    }
-    // Strings multilinha
-    if (s.includes("\n")) {
-      return s.split("\n").map((p) => p.trim()).filter(Boolean);
-    }
-    // Remove aspas externas residuais
-    s = s.replace(/^"+|"+$/g, "").trim();
-    return s ? [s] : [];
-  };
-
   const getFieldArray = (key: keyof Patient): string[] => {
     const value = patient[key];
-    const raw: string[] = Array.isArray(value)
-      ? value.filter((v): v is string => typeof v === "string")
-      : typeof value === "string"
-        ? [value]
-        : [];
-    const out: string[] = [];
-    for (const item of raw) out.push(...expandItem(item));
-    return out;
+    if (Array.isArray(value)) {
+      return value.filter((v): v is string => typeof v === 'string');
+    }
+    if (typeof value === 'string' && value.includes('\n')) {
+      return value.split('\n').filter(v => v.trim() !== '');
+    }
+    return value ? [value as string] : [];
   };
 
   const handleUpdateField = (key: keyof Patient, value: string | string[] | number[]) => {
@@ -924,7 +891,8 @@ export function UtiPatientCard({
   const pendencias = getFieldArray("pendencies");
   const previsaoAlta = getFieldArray("utiDischargePrediction");
   // Exibe somente a data; remove sufixo "(N dias)" quando presente
-  const previsaoAltaDate = (previsaoAlta[0] || "").replace(/\s*\(.*?\)\s*$/, "");
+  // Formata previsão de alta para padrão brasileiro DD/MM/YYYY (preserva sufixo D+N)
+  const previsaoAltaDate = formatDateBR(previsaoAlta[0] || "");
   // Rótulo de admissão dinâmico por setor (ex.: "Admissão UCC", "Admissão UTI 1")
   const admissionLabel = `Admissão ${derivedUtiUnit}`;
   const condutasDia = getFieldArray("utiDailyConducts");
