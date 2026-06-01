@@ -50,6 +50,7 @@ interface PatientHeader {
   admissionDate: string;
   weight: string;
   allergies: string;
+  encounterCode?: string | null;
 }
 
 const EvolucaoPage = () => {
