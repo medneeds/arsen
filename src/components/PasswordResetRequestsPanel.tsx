@@ -365,17 +365,29 @@ export function PasswordResetRequestsPanel() {
             <div className="space-y-4 py-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-xs text-blue-800">
-                  <strong>Política de Senha:</strong> de 6 a 12 caracteres. Permitidas
-                  letras maiúsculas e minúsculas, números e caracteres especiais.
+                  <strong>Política de Senha:</strong> de 8 a 12 caracteres, com letra
+                  maiúscula, minúscula, número e caractere especial.
                 </p>
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  const generated = generateStrongPassword();
+                  setNewPassword(generated);
+                  setConfirmPassword(generated);
+                }}
+              >
+                Gerar senha provisória segura
+              </Button>
               <div className="space-y-2">
                 <Label>Nova Senha *</Label>
                 <Input
                   type="text"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value.slice(0, 12))}
-                  placeholder="6 a 12 caracteres"
+                  placeholder="8 a 12 caracteres"
                   maxLength={12}
                   className=""
                 />
