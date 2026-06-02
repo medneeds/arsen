@@ -115,13 +115,9 @@ export function PasswordResetRequestsPanel() {
   };
 
   const validatePassword = (password: string): string | null => {
-    if (password.length < 8 || password.length > 12) {
-      return "Senha deve ter entre 8 e 12 caracteres";
+    if (password.length < 6 || password.length > 72) {
+      return "Senha deve ter pelo menos 6 caracteres";
     }
-    if (!/[a-z]/.test(password)) return "Senha deve ter letra minúscula";
-    if (!/[A-Z]/.test(password)) return "Senha deve ter letra maiúscula";
-    if (!/[0-9]/.test(password)) return "Senha deve ter número";
-    if (!/[^A-Za-z0-9]/.test(password)) return "Senha deve ter caractere especial";
     return null;
   };
 
@@ -365,8 +361,7 @@ export function PasswordResetRequestsPanel() {
             <div className="space-y-4 py-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-xs text-blue-800">
-                  <strong>Política de Senha:</strong> de 8 a 12 caracteres, com letra
-                  maiúscula, minúscula, número e caractere especial.
+                  <strong>Política de Senha:</strong> mínimo de 6 caracteres.
                 </p>
               </div>
               <Button
@@ -386,9 +381,9 @@ export function PasswordResetRequestsPanel() {
                 <Input
                   type="text"
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value.slice(0, 12))}
-                  placeholder="8 a 12 caracteres"
-                  maxLength={12}
+                  onChange={(e) => setNewPassword(e.target.value.slice(0, 72))}
+                  placeholder="Mínimo 6 caracteres"
+                  maxLength={72}
                   className=""
                 />
               </div>
@@ -397,9 +392,9 @@ export function PasswordResetRequestsPanel() {
                 <Input
                   type="text"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value.slice(0, 12))}
+                  onChange={(e) => setConfirmPassword(e.target.value.slice(0, 72))}
                   placeholder="REPITA A SENHA"
-                  maxLength={12}
+                  maxLength={72}
                   className=""
                 />
               </div>
