@@ -164,7 +164,7 @@ export function PrintPatientLayout({ patient }: PrintPatientLayoutProps) {
                 color: '#6b7280',
                 marginTop: '2px'
               }}>
-                {sectorLabels[patient.sector]} • Leito {patient.bedNumber}
+                {getSectorDisplayLabel(patient.sector)} • Leito {patient.bedNumber}
               </div>
             </div>
             <div style={{ 
