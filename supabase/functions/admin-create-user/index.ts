@@ -110,10 +110,13 @@ Deno.serve(async (req) => {
       .eq("cpf", cpfDigits)
       .maybeSingle();
     if (cpfDup) {
-      return json(409, {
-        error: `CPF já cadastrado para ${cpfDup.full_name ?? cpfDup.username ?? cpfDup.email ?? "outro usuário"}${cpfDup.email ? ` (${cpfDup.email})` : ""}.`,
-        existingUser: cpfDup,
+      return json(200, {
+        success: true,
+        userId: cpfDup.id,
+        mode,
+        alreadyExists: true,
         code: "cpf_already_registered",
+        message: `CPF já cadastrado para ${cpfDup.full_name ?? cpfDup.username ?? cpfDup.email ?? "outro usuário"}${cpfDup.email ? ` (${cpfDup.email})` : ""}. Pré-cadastro vinculado ao usuário existente.`,
       });
     }
 
