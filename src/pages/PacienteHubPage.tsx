@@ -12,6 +12,7 @@ import { printAdmissionNormaZero } from "@/lib/printAdmission";
 import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
+import { getSectorLabel } from "@/lib/sectorUtils";
 
 type AdmissionStatus = "pre_admitido" | "admitido" | "suspenso" | null;
 
