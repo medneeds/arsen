@@ -85,7 +85,7 @@ export async function printAdmissionNormaZero(d: AdmissionPrintInput) {
       ${row("Endereço", id.address || undefined)}
       ${row("Telefone", id.phone || undefined)}
       ${row("Leito", d.patient.bed)}
-      ${row("Setor", d.patient.sector)}
+      ${row("Setor", getSectorDisplayLabel(d.patient.sector))}
       ${row("Tipo", d.isUti ? "Admissão UTI/UCI (D0)" : "Admissão Enfermaria (D0)")}
     </table>
 
