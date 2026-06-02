@@ -50,7 +50,6 @@ interface PatientHeader {
   admissionDate: string;
   weight: string;
   allergies: string;
-  encounterCode?: string;
 }
 
 const EvolucaoPage = () => {
@@ -192,7 +191,7 @@ const EvolucaoPage = () => {
     setNewDevices([]);
     setNewCulturesHtml("");
     setDiagnosticsReplicated(false);
-    setDiagnosticHypotheses([]);
+    setDiagnosticHypotheses("");
     // 🔒 Resetar campos por item — sem isso persistem entre evoluções
     setPlanItems([]);
     setPendenciasItems([]);
@@ -222,7 +221,7 @@ const EvolucaoPage = () => {
     if (hospitalDischargePrediction) updateHospitalDischargePrediction("");
     if (isPalliative) updateIsPalliative(false);
     if (isolationPrecautions) updateIsolationPrecautions("");
-    setDiagnosticHypotheses([]);
+    setDiagnosticHypotheses("");
     setDiagnosticsReplicated(false);
   };
 
@@ -292,22 +291,40 @@ const EvolucaoPage = () => {
     const srcSoap: any = source.soap_data || {};
     const { devices: srcDevices, culturesHtml: srcCulturesHtml,
             planItems: srcPlanItems, pendenciasItems: srcPendencias,
-            antecedentes: srcAntecSoap, ...soapBase } = srcSoap;
+            antecedentes: srcAntecSoap,
+            diagnosticHypotheses: srcSoapHypo,
+            ...soapBase } = srcSoap;
     setNewSoap({ ...soapBase });
     setNewVitals({ ...source.vital_signs });
     setNewExam({ ...source.physical_exam });
     setNewDevices(Array.isArray(srcDevices) ? srcDevices : []);
     setNewCulturesHtml(typeof srcCulturesHtml === "string" ? srcCulturesHtml : "");
-    // 🔒 Popula campos por item a partir do soap_data salvo
     setPlanItems(Array.isArray(srcPlanItems) ? srcPlanItems : []);
     setPendenciasItems(Array.isArray(srcPendencias) ? srcPendencias : []);
-    setAntecedentes(Array.isArray(srcAntecSoap) ? srcAntecSoap : []);
-    const srcHypo = (source as any).diagnostic_hypotheses;
-    const srcAntecedentes = (source as any).antecedentes;
-    setDiagnosticHypotheses(Array.isArray(srcHypo) ? srcHypo : typeof srcHypo === "string" && srcHypo.trim() ? srcHypo.split("\n").filter(Boolean) : []);
-    if (Array.isArray(srcAntecedentes) && srcAntecedentes.length > 0) {
-      setAntecedentes(srcAntecedentes);
-    }
+
+    // 🔒 Hipóteses diagnósticas — buscar em múltiplas fontes:
+    // 1. soap_data.diagnosticHypotheses (array — formato novo)
+    // 2. diagnostic_hypotheses (campo raiz — string legada)
+    const rootHypo = (source as any).diagnostic_hypotheses;
+    const resolvedHypo: string[] = Array.isArray(srcSoapHypo) && srcSoapHypo.length > 0
+      ? srcSoapHypo.filter(Boolean)
+      : typeof rootHypo === "string" && rootHypo.trim()
+        ? rootHypo.split("\n").filter(Boolean)
+        : [];
+    setDiagnosticHypotheses(resolvedHypo as any);
+
+    // 🔒 Antecedentes — buscar em múltiplas fontes:
+    // 1. soap_data.antecedentes (array — formato novo)
+    // 2. campo raiz antecedentes (legado)
+    const rootAntec = (source as any).antecedentes;
+    const resolvedAntec: string[] = Array.isArray(srcAntecSoap) && srcAntecSoap.length > 0
+      ? srcAntecSoap.filter(Boolean)
+      : Array.isArray(rootAntec) && rootAntec.length > 0
+        ? rootAntec.filter(Boolean)
+        : typeof rootAntec === "string" && rootAntec.trim()
+          ? rootAntec.split("\n").filter(Boolean)
+          : [];
+    setAntecedentes(resolvedAntec);
     setShowNewForm(true);
     setDiagnosticsReplicated(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
