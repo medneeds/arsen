@@ -35,15 +35,16 @@ Deno.serve(async (req) => {
     const { data: { user: caller }, error: authErr } = await admin.auth.getUser(token);
     if (authErr || !caller) return json(401, { error: "Token inválido" });
 
-    // Guard: caller deve ser admin OU ter access_profile=gestor
+    // Guard: caller deve ser admin, coordenador OU ter access_profile=gestor
     const [{ data: callerRoles }, { data: callerProfile }] = await Promise.all([
       admin.from("user_roles").select("role").eq("user_id", caller.id),
       admin.from("profiles").select("access_profile").eq("id", caller.id).maybeSingle(),
     ]);
     const isAdmin = (callerRoles ?? []).some((r: { role: string }) => r.role === "admin");
+    const isCoordinator = (callerRoles ?? []).some((r: { role: string }) => r.role === "coordenador");
     const isGestor = (callerProfile as { access_profile?: string } | null)?.access_profile === "gestor";
-    if (!isAdmin && !isGestor) {
-      return json(403, { error: "Acesso negado. Apenas admin/gestor podem cadastrar usuários." });
+    if (!isAdmin && !isCoordinator && !isGestor) {
+      return json(403, { error: "Acesso negado. Apenas admin/gestor/coordenador podem cadastrar usuários." });
     }
 
     const body = await req.json();
