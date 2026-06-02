@@ -71,6 +71,28 @@ export function PasswordResetRequestsPanel() {
   const [rejectReason, setRejectReason] = useState("");
   const [processing, setProcessing] = useState(false);
 
+  const generateStrongPassword = () => {
+    const pools = ["ABCDEFGHJKLMNPQRSTUVWXYZ", "abcdefghijkmnopqrstuvwxyz", "23456789", "!@#$%&*"];
+    const all = pools.join("");
+    const bytes = crypto.getRandomValues(new Uint32Array(12));
+    const chars = pools.map((pool, index) => pool[bytes[index] % pool.length]);
+    for (let i = chars.length; i < 10; i++) chars.push(all[bytes[i] % all.length]);
+    return chars.sort(() => crypto.getRandomValues(new Uint32Array(1))[0] - 2147483648).join("");
+  };
+
+  const getFunctionErrorMessage = async (error: unknown) => {
+    const err = error as { message?: string; context?: Response };
+    if (err.context) {
+      try {
+        const body = await err.context.clone().json();
+        if (body?.error) return body.error as string;
+      } catch {
+        // mantém fallback abaixo
+      }
+    }
+    return err.message || "Erro ao redefinir senha";
+  };
+
   useEffect(() => {
     fetchRequests();
   }, []);
@@ -93,9 +115,13 @@ export function PasswordResetRequestsPanel() {
   };
 
   const validatePassword = (password: string): string | null => {
-    if (password.length < 6 || password.length > 12) {
-      return "Senha deve ter entre 6 e 12 caracteres";
+    if (password.length < 8 || password.length > 12) {
+      return "Senha deve ter entre 8 e 12 caracteres";
     }
+    if (!/[a-z]/.test(password)) return "Senha deve ter letra minúscula";
+    if (!/[A-Z]/.test(password)) return "Senha deve ter letra maiúscula";
+    if (!/[0-9]/.test(password)) return "Senha deve ter número";
+    if (!/[^A-Za-z0-9]/.test(password)) return "Senha deve ter caractere especial";
     return null;
   };
 
@@ -147,7 +173,7 @@ export function PasswordResetRequestsPanel() {
 
       if (resetError) {
         console.error("Erro da edge function:", resetError);
-        throw new Error(resetError.message || "Erro ao redefinir senha");
+        throw new Error(await getFunctionErrorMessage(resetError));
       }
 
       if (data?.error) {
@@ -162,9 +188,9 @@ export function PasswordResetRequestsPanel() {
       setNewPassword("");
       setConfirmPassword("");
       fetchRequests();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao aprovar solicitação:", error);
-      toast.error(error.message || "Erro ao processar aprovação");
+      toast.error(error instanceof Error ? error.message : "Erro ao processar aprovação");
     } finally {
       setProcessing(false);
     }
@@ -339,17 +365,29 @@ export function PasswordResetRequestsPanel() {
             <div className="space-y-4 py-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-xs text-blue-800">
-                  <strong>Política de Senha:</strong> de 6 a 12 caracteres. Permitidas
-                  letras maiúsculas e minúsculas, números e caracteres especiais.
+                  <strong>Política de Senha:</strong> de 8 a 12 caracteres, com letra
+                  maiúscula, minúscula, número e caractere especial.
                 </p>
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  const generated = generateStrongPassword();
+                  setNewPassword(generated);
+                  setConfirmPassword(generated);
+                }}
+              >
+                Gerar senha provisória segura
+              </Button>
               <div className="space-y-2">
                 <Label>Nova Senha *</Label>
                 <Input
                   type="text"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value.slice(0, 12))}
-                  placeholder="6 a 12 caracteres"
+                  placeholder="8 a 12 caracteres"
                   maxLength={12}
                   className=""
                 />
