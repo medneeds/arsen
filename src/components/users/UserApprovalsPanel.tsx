@@ -159,35 +159,43 @@ export function UserApprovalsPanel() {
     setActing(true);
     try {
       const newStatus = decisionType === "approve" ? "approved" : "rejected";
-      const { data: fnData, error: fnError } = await supabase.functions.invoke(
-        "admin-approve-user",
-        {
-          body: {
-            targetUserId: decisionTarget.id,
-            newStatus,
-            approverId: user?.id,
-          },
-        }
-      );
-      if (fnError) throw fnError;
-      if ((fnData as any)?.error) throw new Error((fnData as any).error);
+      const nowIso = new Date().toISOString();
 
-      await logUserAdminAction({
-        action: decisionType === "approve" ? "user.status.approved" : "user.status.rejected",
-        targetUserId: decisionTarget.id,
-        targetEmail: decisionTarget.email,
-        targetName: decisionTarget.full_name,
-        oldData: { status: decisionTarget.status },
-        newData: { status: newStatus },
-        metadata: decisionNote.trim() ? { note: decisionNote.trim() } : undefined,
-      });
+      const { error: updErr } = await supabase
+        .from("profiles")
+        .update({
+          status: newStatus,
+          approved_at: nowIso,
+          approved_by: user?.id ?? null,
+        })
+        .eq("id", decisionTarget.id);
+
+      if (updErr) {
+        console.error("[Aprovação] erro no UPDATE profiles:", updErr);
+        toast.error(`Erro ao processar decisão: ${updErr.message}`);
+        return;
+      }
+
+      try {
+        await logUserAdminAction({
+          action: decisionType === "approve" ? "user.status.approved" : "user.status.rejected",
+          targetUserId: decisionTarget.id,
+          targetEmail: decisionTarget.email,
+          targetName: decisionTarget.full_name,
+          oldData: { status: decisionTarget.status },
+          newData: { status: newStatus },
+          metadata: decisionNote.trim() ? { note: decisionNote.trim() } : undefined,
+        });
+      } catch (auditErr) {
+        console.warn("[Aprovação] auditoria falhou (não bloqueante):", auditErr);
+      }
 
       toast.success(decisionType === "approve" ? "Cadastro aprovado" : "Cadastro recusado");
       closeDecision();
       fetchProfiles();
-    } catch (e) {
-      console.error(e);
-      toast.error("Erro ao processar decisão");
+    } catch (e: any) {
+      console.error("[Aprovação] erro inesperado:", e);
+      toast.error(`Erro: ${e?.message || "falha inesperada"}`);
     } finally {
       setActing(false);
     }
