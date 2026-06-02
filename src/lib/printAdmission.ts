@@ -1,4 +1,5 @@
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
 export interface AdmissionPrintInput {
   patient: { name: string; bed?: string; sector?: string; age?: string | number };
