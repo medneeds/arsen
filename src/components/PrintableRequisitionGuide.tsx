@@ -287,7 +287,7 @@ export function PrintableRequisitionGuide({
 
   const sectorName = sectorLabel
     ? sectorLabel(request.patient_sector || null)
-    : request.patient_sector || "";
+    : getSectorDisplayLabel(request.patient_sector) || request.patient_sector || "";
 
   const createdAt = new Date(request.created_at);
   const createdStr = format(createdAt, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
