@@ -88,16 +88,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (typeof newPassword !== "string" || newPassword.length < 8 || newPassword.length > 12) {
+    if (typeof newPassword !== "string" || newPassword.length < 6 || newPassword.length > 72) {
       return new Response(
-        JSON.stringify({ error: "Senha deve ter de 8 a 12 caracteres" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!/[a-z]/.test(newPassword) || !/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword) || !/[^A-Za-z0-9]/.test(newPassword)) {
-      return new Response(
-        JSON.stringify({ error: "Senha deve conter letra maiúscula, minúscula, número e caractere especial" }),
+        JSON.stringify({ error: "Senha deve ter pelo menos 6 caracteres" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -141,8 +134,7 @@ Deno.serve(async (req) => {
       if (isWeakPassword) {
         return new Response(
           JSON.stringify({
-            error:
-              "Senha recusada pela política de segurança: ela é comum ou já apareceu em vazamentos. Use uma senha provisória mais forte, com 8 a 12 caracteres, incluindo maiúscula, minúscula, número e símbolo.",
+            error: "Senha recusada pelo serviço de autenticação. Use uma senha com pelo menos 6 caracteres.",
             code: "weak_password",
           }),
           { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
