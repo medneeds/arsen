@@ -40,11 +40,16 @@ Deno.serve(async (req) => {
       admin.from("user_roles").select("role").eq("user_id", caller.id),
       admin.from("profiles").select("access_profile").eq("id", caller.id).maybeSingle(),
     ]);
+    const COORDINATOR_PROFILES = new Set(["coord_medico", "coord_enfermagem", "coord_multi"]);
+
     const isAdmin = (callerRoles ?? []).some((r: { role: string }) => r.role === "admin");
     const isCoordinator = (callerRoles ?? []).some((r: { role: string }) => r.role === "coordenador");
     const isGestor = (callerProfile as { access_profile?: string } | null)?.access_profile === "gestor";
-    if (!isAdmin && !isCoordinator && !isGestor) {
-      return json(403, { error: "Acesso negado. Apenas admin/gestor/coordenador podem cadastrar usuários." });
+    const isCoordenador =
+      isCoordinator ||
+      COORDINATOR_PROFILES.has((callerProfile as { access_profile?: string } | null)?.access_profile ?? "");
+    if (!isAdmin && !isGestor && !isCoordenador) {
+      return json(403, { error: "Acesso negado." });
     }
 
     const body = await req.json();
