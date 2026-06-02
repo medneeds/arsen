@@ -23,13 +23,39 @@ import {
 
 const passwordSchema = z.object({
   newPassword: z.string()
-    .min(6, { message: "SENHA DEVE TER ENTRE 6 E 12 CARACTERES" })
-    .max(12, { message: "SENHA DEVE TER ENTRE 6 E 12 CARACTERES" }),
+    .min(8, { message: "SENHA DEVE TER ENTRE 8 E 12 CARACTERES" })
+    .max(12, { message: "SENHA DEVE TER ENTRE 8 E 12 CARACTERES" })
+    .regex(/[a-z]/, { message: "SENHA DEVE TER LETRA MINÚSCULA" })
+    .regex(/[A-Z]/, { message: "SENHA DEVE TER LETRA MAIÚSCULA" })
+    .regex(/[0-9]/, { message: "SENHA DEVE TER NÚMERO" })
+    .regex(/[^A-Za-z0-9]/, { message: "SENHA DEVE TER CARACTERE ESPECIAL" }),
   confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: "SENHAS NÃO CONFEREM",
   path: ["confirmPassword"],
 });
+
+const getFunctionErrorMessage = async (error: unknown) => {
+  const err = error as { message?: string; context?: Response };
+  if (err.context) {
+    try {
+      const body = await err.context.clone().json();
+      if (body?.error) return body.error as string;
+    } catch {
+      // mantém fallback abaixo
+    }
+  }
+  return err.message || "Falha na requisição";
+};
+
+const generateStrongPassword = () => {
+  const pools = ["ABCDEFGHJKLMNPQRSTUVWXYZ", "abcdefghijkmnopqrstuvwxyz", "23456789", "!@#$%&*"];
+  const all = pools.join("");
+  const bytes = crypto.getRandomValues(new Uint32Array(12));
+  const chars = pools.map((pool, index) => pool[bytes[index] % pool.length]);
+  for (let i = chars.length; i < 10; i++) chars.push(all[bytes[i] % all.length]);
+  return chars.sort(() => crypto.getRandomValues(new Uint32Array(1))[0] - 2147483648).join("");
+};
 
 interface ResetUserPasswordDialogProps {
   open: boolean;
@@ -73,7 +99,7 @@ export function ResetUserPasswordDialog({
       });
 
       if (error) {
-        toast.error("ERRO AO REDEFINIR SENHA: " + (error.message || "Falha na requisição"));
+        toast.error("ERRO AO REDEFINIR SENHA: " + await getFunctionErrorMessage(error));
         setLoading(false);
         return;
       }
@@ -110,6 +136,13 @@ export function ResetUserPasswordDialog({
     setFormData({ newPassword: "", confirmPassword: "" });
     setSuccess(false);
     onOpenChange(false);
+  };
+
+  const handleGeneratePassword = () => {
+    const generated = generateStrongPassword();
+    setFormData({ newPassword: generated, confirmPassword: generated });
+    setShowPassword(true);
+    setShowConfirmPassword(true);
   };
 
   return (
@@ -149,11 +182,15 @@ export function ResetUserPasswordDialog({
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-amber-800">
-                  A nova senha deve ter <strong>de 6 a 12 caracteres</strong>. São permitidas
-                  <strong> letras maiúsculas e minúsculas</strong>, <strong>números</strong> e <strong>caracteres especiais</strong>.
+                  A nova senha deve ter <strong>de 8 a 12 caracteres</strong>, com
+                  <strong> maiúscula</strong>, <strong>minúscula</strong>, <strong>número</strong> e <strong>símbolo</strong>.
                 </p>
               </div>
             </div>
+
+            <Button type="button" variant="outline" className="w-full" onClick={handleGeneratePassword} disabled={loading}>
+              Gerar senha provisória segura
+            </Button>
 
             {/* Password Fields */}
             <div className="space-y-3">
@@ -167,7 +204,7 @@ export function ResetUserPasswordDialog({
                       ...formData,
                       newPassword: e.target.value.slice(0, 12)
                     })}
-                    placeholder="6 a 12 caracteres"
+                    placeholder="8 a 12 caracteres"
                     className="h-10 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono tracking-widest"
                     disabled={loading}
                     maxLength={12}
@@ -183,7 +220,7 @@ export function ResetUserPasswordDialog({
                   </Button>
                 </div>
                 <p className="text-[9px] text-gray-400">
-                  {formData.newPassword.length}/12 caracteres (mínimo 6)
+                  {formData.newPassword.length}/12 caracteres (mínimo 8)
                 </p>
               </div>
 
@@ -228,7 +265,7 @@ export function ResetUserPasswordDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={loading || formData.newPassword.length < 6 || formData.newPassword.length > 12}
+                disabled={loading || formData.newPassword.length < 8 || formData.newPassword.length > 12}
                 className="flex-1 bg-amber-600 hover:bg-amber-700"
               >
                 {loading ? (
