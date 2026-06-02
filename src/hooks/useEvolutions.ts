@@ -261,6 +261,19 @@ export function useEvolutions(
     }
     try {
       const doctorName = user.user_metadata?.full_name || "Dr. Carlos Eduardo Mendes";
+
+      // 🔁 Padronização do write (escopo: padronizar gravação de hipóteses).
+      // O caller manda `diagnosticHypotheses` como string concatenada por "\n".
+      // O LOAD (EvolucaoPage / printEvolution / EvolutionForm) prioriza
+      // `soap_data.diagnosticHypotheses` no formato ARRAY. Sincronizamos os dois
+      // formatos no insert: array no soap_data (formato novo / "oficial") e
+      // string preservada na coluna raiz `diagnostic_hypotheses` (compat legada).
+      const hypoArray = Array.isArray(diagnosticHypotheses)
+        ? (diagnosticHypotheses as unknown as string[]).map(s => String(s).trim()).filter(Boolean)
+        : typeof diagnosticHypotheses === "string" && diagnosticHypotheses.trim()
+          ? diagnosticHypotheses.split("\n").map(s => s.trim()).filter(Boolean)
+          : [];
+
       const { data, error } = await supabase
         .from("clinical_evolutions")
         .insert({
@@ -278,6 +291,8 @@ export function useEvolutions(
             pendenciasItems: pendenciasItems?.filter(Boolean) ?? [],
             // Antecedentes também no soap_data para o PDF da evolução
             antecedentes: antecedentes?.filter(Boolean) ?? [],
+            // Hipóteses diagnósticas no formato ARRAY (formato novo / oficial)
+            diagnosticHypotheses: hypoArray,
           },
           vital_signs: vitalSigns || EMPTY_VITALS,
           physical_exam: physicalExam || EMPTY_EXAM,
