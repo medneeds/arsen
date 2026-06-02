@@ -6,6 +6,7 @@ import { useDepartment } from "@/contexts/DepartmentContext";
 import { Patient } from "@/types/patient";
 import { differenceInDays, parseISO, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatDateBR } from "@/utils/dateUtils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -119,7 +120,7 @@ const getDischargeText = (patient: Patient): string => {
   if (predictions.length > 0) {
     // Suporta "2026-06-03" → "03/06/2026" e "2026-06-03 (D+7)" → "03/06/2026 (D+7)"
     const raw = predictions[0];
-    return raw.replace(/(\d{4})-(\d{2})-(\d{2})/, (_, y, mo, d) => `${d}/${mo}/${y}`);
+    return raw.replace(/\d{4}-\d{2}-\d{2}/, (m) => formatDateBR(m));
   }
   return "Sem previsão";
 };
