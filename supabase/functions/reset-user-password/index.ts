@@ -88,9 +88,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (typeof newPassword !== "string" || newPassword.length < 6 || newPassword.length > 12) {
+    if (typeof newPassword !== "string" || newPassword.length < 8 || newPassword.length > 12) {
       return new Response(
-        JSON.stringify({ error: "Senha deve ter de 6 a 12 caracteres" }),
+        JSON.stringify({ error: "Senha deve ter de 8 a 12 caracteres" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!/[a-z]/.test(newPassword) || !/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword) || !/[^A-Za-z0-9]/.test(newPassword)) {
+      return new Response(
+        JSON.stringify({ error: "Senha deve conter letra maiúscula, minúscula, número e caractere especial" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
