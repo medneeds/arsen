@@ -191,52 +191,7 @@ export const printEvolution = async (
     `
     : "";
 
-  // Antecedentes clínicos — buscar em múltiplas fontes:
-  // 1. soap_data.antecedentes (novo formato — array de itens)
-  // 2. evo.antecedentes (campo raiz da tabela, legado)
-  // 3. ctx.antecedentes (passado pelo chamador)
-  const soapAntecedentes: string[] = Array.isArray((evo.soap_data as any)?.antecedentes)
-    ? (evo.soap_data as any).antecedentes.filter(Boolean)
-    : [];
 
-  // Buscar dados do paciente: antecedentes, alergias e idade
-  let patientAntecedentes: string[] = [];
-  let patientAllergies: string = "—";
-  let patientAge: string | null = null;
-
-  if ((evo as any).patient_id) {
-    try {
-      const { data: pRow } = await supabase
-        .from("patients")
-        .select("medical_history, uti_allergies, age, birth_date")
-        .eq("id", (evo as any).patient_id)
-        .maybeSingle();
-
-      if (pRow) {
-        // Antecedentes
-        if (soapAntecedentes.length === 0 && (pRow as any).medical_history?.trim()) {
-          patientAntecedentes = (pRow as any).medical_history.split("\n").filter(Boolean);
-        }
-        // Alergias
-        if ((pRow as any).uti_allergies?.trim()) {
-          patientAllergies = (pRow as any).uti_allergies.replace(/\n/g, " • ");
-        } else {
-          patientAllergies = "SEM ALERGIAS CONHECIDAS";
-        }
-        // Idade — usa age direto ou calcula da data de nascimento
-        if ((pRow as any).age) {
-          patientAge = `${(pRow as any).age} anos`;
-        } else if ((pRow as any).birth_date) {
-          const bd = new Date((pRow as any).birth_date);
-          const today = new Date();
-          let age = today.getFullYear() - bd.getFullYear();
-          const m = today.getMonth() - bd.getMonth();
-          if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
-          patientAge = `${age} anos`;
-        }
-      }
-    } catch { /* falha silenciosa */ }
-  }
 
   const antecedentesArr = soapAntecedentes.length > 0 ? soapAntecedentes : patientAntecedentes;
 
