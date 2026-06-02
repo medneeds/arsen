@@ -1,4 +1,5 @@
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
 export interface AdmissionPrintInput {
   patient: { name: string; bed?: string; sector?: string; age?: string | number };
@@ -84,7 +85,7 @@ export async function printAdmissionNormaZero(d: AdmissionPrintInput) {
       ${row("Endereço", id.address || undefined)}
       ${row("Telefone", id.phone || undefined)}
       ${row("Leito", d.patient.bed)}
-      ${row("Setor", d.patient.sector)}
+      ${row("Setor", getSectorDisplayLabel(d.patient.sector))}
       ${row("Tipo", d.isUti ? "Admissão UTI/UCI (D0)" : "Admissão Enfermaria (D0)")}
     </table>
 
@@ -140,7 +141,7 @@ export async function printAdmissionNormaZero(d: AdmissionPrintInput) {
   const html = buildNormaZeroDocument({
     title: "Admissão Hospitalar — D0",
     subtitle: d.isUti ? "UTI / UCI" : "Enfermaria",
-    sectorLabel: d.patient.sector || "—",
+    sectorLabel: getSectorDisplayLabel(d.patient.sector) || d.patient.sector || "—",
     hospitalName: d.hospitalName,
     docCodePrefix: "ADM",
     bodyHtml,

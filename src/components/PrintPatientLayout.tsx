@@ -2,17 +2,12 @@ import { Patient } from "@/types/patient";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
 import { ClipboardList } from "lucide-react";
 import { whitelabel, getConfidentialityFooter } from "@/config/whitelabel";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
 interface PrintPatientLayoutProps {
   patient: Patient;
 }
 
-const sectorLabels = {
-  red: "UTI 1",
-  yellow: "UTI 2",
-  blue: "UCI 1",
-  outside: "UCI 2"
-};
 
 const sectorColors = {
   red: {
@@ -169,7 +164,7 @@ export function PrintPatientLayout({ patient }: PrintPatientLayoutProps) {
                 color: '#6b7280',
                 marginTop: '2px'
               }}>
-                {sectorLabels[patient.sector]} • Leito {patient.bedNumber}
+                {getSectorDisplayLabel(patient.sector)} • Leito {patient.bedNumber}
               </div>
             </div>
             <div style={{ 
