@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
       .eq("id", requestingUser.id)
       .maybeSingle();
 
-    const roleSet = new Set((roles || []).map((r: any) => r.role));
+    const roleSet = new Set((roles || []).map((r: { role: string }) => r.role));
     const profileSet = new Set<string>([
       ...(profile?.access_profile ? [profile.access_profile] : []),
       ...((profile?.access_profiles as string[] | null) || []),
