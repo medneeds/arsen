@@ -119,7 +119,7 @@ const getDischargeText = (patient: Patient): string => {
   if (predictions.length > 0) {
     // Suporta "2026-06-03" → "03/06/2026" e "2026-06-03 (D+7)" → "03/06/2026 (D+7)"
     const raw = predictions[0];
-    return raw.replace(/\d{4}-\d{2}-\d{2}/, (m) => formatDateBR(m));
+    return raw.replace(/(\d{4})-(\d{2})-(\d{2})/, (_, y, mo, d) => `${d}/${mo}/${y}`);
   }
   return "Sem previsão";
 };
