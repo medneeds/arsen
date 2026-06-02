@@ -188,9 +188,9 @@ export function PasswordResetRequestsPanel() {
       setNewPassword("");
       setConfirmPassword("");
       fetchRequests();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao aprovar solicitação:", error);
-      toast.error(error.message || "Erro ao processar aprovação");
+      toast.error(error instanceof Error ? error.message : "Erro ao processar aprovação");
     } finally {
       setProcessing(false);
     }
