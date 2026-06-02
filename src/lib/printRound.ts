@@ -13,6 +13,9 @@ export interface RoundPrintItem {
   patientSector: string;
   patientBed: string;
   patientAge?: string | null;
+  patientRecord?: string | null;
+  patientDiagnoses?: string[] | null;  // hipóteses diagnósticas
+  patientAllergies?: string[] | null;  // alergias
   roundDate: string;
   responses?: Record<string, { status: RoundStatus | null; observation: string }>;
   goals?: Record<string, string>;
@@ -83,8 +86,17 @@ function renderPage(it: RoundPrintItem, blank: boolean): string {
         </tr>
         <tr>
           <td class="lbl">Setor</td><td>${escape(getSectorDisplayLabel(it.patientSector))}</td>
-          <td class="lbl">Leito</td><td colspan="3">${escape(it.patientBed)}</td>
+          <td class="lbl">Leito</td><td>${escape(it.patientBed)}</td>
+          <td class="lbl">Prontuário</td><td>${escape(it.patientRecord || "—")}</td>
         </tr>
+        ${(it.patientDiagnoses?.filter(Boolean).length ?? 0) > 0 ? `<tr>
+          <td class="lbl">Diagnósticos</td>
+          <td colspan="5" style="font-size:7pt">${escape(it.patientDiagnoses!.filter(Boolean).join(" • "))}</td>
+        </tr>` : ""}
+        ${(it.patientAllergies?.filter(Boolean).length ?? 0) > 0 ? `<tr>
+          <td class="lbl" style="color:#dc2626">⚠ Alergias</td>
+          <td colspan="5" style="color:#dc2626;font-weight:700;font-size:7pt">${escape(it.patientAllergies!.filter(Boolean).join(" • "))}</td>
+        </tr>` : ""}
       </tbody>
     </table>
     <div class="legend">${legend}</div>

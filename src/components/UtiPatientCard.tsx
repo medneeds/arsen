@@ -1461,6 +1461,9 @@ export function UtiPatientCard({
           patientSector={patient.sector || derivedUtiUnit}
           patientBed={patient.bedNumber || ""}
           patientAge={patient.age}
+          patientRecord={(patient as any).medicalRecord ?? null}
+          patientDiagnoses={Array.isArray(diagnosticos) && diagnosticos.length > 0 ? diagnosticos : undefined}
+          patientAllergies={Array.isArray(alergias) && alergias.length > 0 ? alergias : undefined}
         />
       )}
 

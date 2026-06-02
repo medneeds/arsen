@@ -28,6 +28,9 @@ interface Props {
   patientSector: string;
   patientBed: string;
   patientAge?: string | number | null;
+  patientRecord?: string | null;
+  patientDiagnoses?: string[] | null;
+  patientAllergies?: string[] | null;
 }
 
 /**
@@ -38,7 +41,9 @@ interface Props {
 export function PatientRoundPrintDialog({
   open, onOpenChange,
   patientId, patientName, patientSector, patientBed, patientAge,
+  patientRecord, patientDiagnoses, patientAllergies,
 }: Props) {
+  const props = { patientRecord, patientDiagnoses, patientAllergies };
   const [tab, setTab] = useState<"blank" | "filled">("blank");
   const [blankDate, setBlankDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [sessions, setSessions] = useState<SessionRow[]>([]);
@@ -72,6 +77,9 @@ export function PatientRoundPrintDialog({
   const handlePrintBlank = () => {
     const item: RoundPrintItem = {
       patientName, patientSector, patientBed, patientAge: ageStr, roundDate: blankDate,
+      patientRecord: props.patientRecord ?? null,
+      patientDiagnoses: props.patientDiagnoses ?? null,
+      patientAllergies: props.patientAllergies ?? null,
     };
     printRoundDocument([item], true);
   };
@@ -99,6 +107,9 @@ export function PatientRoundPrintDialog({
       roundDate: session.round_date,
       responses, goals,
       observations: session.observations || "",
+      patientRecord: props.patientRecord ?? null,
+      patientDiagnoses: props.patientDiagnoses ?? null,
+      patientAllergies: props.patientAllergies ?? null,
     };
     setLoadingFilled(false);
     printRoundDocument([item], false);

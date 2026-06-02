@@ -215,6 +215,15 @@ export async function printDischargeDocument(
     },
   ];
 
+  // 🔒 Abrir a janela ANTES do await para não perder o contexto de user interaction.
+  // Popup blockers bloqueiam window.open() quando chamado após awaits assíncronos.
+  const printWin = window.open("", "_blank", "width=1024,height=768");
+  if (printWin) {
+    printWin.document.write(
+      `<html><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#475569">Gerando ${title}…</body></html>`
+    );
+  }
+
   const logoDataUrl = await prepareLogo();
 
   const html = buildNormaZeroDocument({
@@ -232,7 +241,14 @@ export async function printDischargeDocument(
     extraStyles: dischargeExtraStyles,
   });
 
-  openPrintWindow(html, `Gerando ${title}…`);
+  if (printWin) {
+    printWin.document.open();
+    printWin.document.write(html);
+    printWin.document.close();
+  } else {
+    // Fallback: tentar novamente (pode falhar por popup blocker)
+    openPrintWindow(html, `Gerando ${title}…`);
+  }
 }
 
 /**

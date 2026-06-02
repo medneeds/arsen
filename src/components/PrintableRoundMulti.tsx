@@ -8,6 +8,9 @@ export interface RoundPrintItem {
   patientSector: string;
   patientBed: string;
   patientAge?: string | null;
+  patientRecord?: string | null;
+  patientDiagnoses?: string[] | null;
+  patientAllergies?: string[] | null;
   roundDate: string;
   responses?: Record<string, { status: RoundStatus | null; observation: string }>;
   goals?: Record<string, string>;
@@ -97,8 +100,26 @@ const PrintableRoundMulti = forwardRef<HTMLDivElement, Props>(({ items, blank = 
                   <td style={{ border: "0.5px solid #000", padding: "1.5mm 2mm", fontWeight: "bold" }}>Setor</td>
                   <td style={{ border: "0.5px solid #000", padding: "1.5mm 2mm" }}>{getSectorDisplayLabel(it.patientSector)}</td>
                   <td style={{ border: "0.5px solid #000", padding: "1.5mm 2mm", fontWeight: "bold" }}>Leito</td>
-                  <td colSpan={3} style={{ border: "0.5px solid #000", padding: "1.5mm 2mm" }}>{it.patientBed}</td>
+                  <td style={{ border: "0.5px solid #000", padding: "1.5mm 2mm" }}>{it.patientBed}</td>
+                  <td style={{ border: "0.5px solid #000", padding: "1.5mm 2mm", fontWeight: "bold" }}>Prontuário</td>
+                  <td style={{ border: "0.5px solid #000", padding: "1.5mm 2mm" }}>{it.patientRecord || "—"}</td>
                 </tr>
+                {it.patientDiagnoses?.filter(Boolean).length ? (
+                  <tr>
+                    <td style={{ border: "0.5px solid #000", padding: "1.5mm 2mm", fontWeight: "bold" }}>Diagnósticos</td>
+                    <td colSpan={5} style={{ border: "0.5px solid #000", padding: "1.5mm 2mm", fontSize: "7pt" }}>
+                      {it.patientDiagnoses!.filter(Boolean).join(" • ")}
+                    </td>
+                  </tr>
+                ) : null}
+                {it.patientAllergies?.filter(Boolean).length ? (
+                  <tr>
+                    <td style={{ border: "0.5px solid #000", padding: "1.5mm 2mm", fontWeight: "bold", color: "#dc2626" }}>⚠ Alergias</td>
+                    <td colSpan={5} style={{ border: "0.5px solid #000", padding: "1.5mm 2mm", color: "#dc2626", fontWeight: "bold", fontSize: "7pt" }}>
+                      {it.patientAllergies!.filter(Boolean).join(" • ")}
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
 
