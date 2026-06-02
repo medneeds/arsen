@@ -46,6 +46,7 @@ import { PatientIdentityHeader } from "./PatientIdentityHeader";
 import { SuspendDischargeDialog } from "./SuspendDischargeDialog";
 import { Ban } from "lucide-react";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { getSectorLabel } from "@/lib/sectorUtils";
 
 interface PatientCockpitProps {
   patient: Patient | null;
