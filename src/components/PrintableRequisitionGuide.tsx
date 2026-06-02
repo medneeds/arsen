@@ -13,6 +13,7 @@ import React from "react";
 import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { whitelabel } from "@/config/whitelabel";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
 const PARECER_ALLOWED_TAGS = ["p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "span", "div"];
 function sanitizeRichHtmlPrint(html: string): string {
