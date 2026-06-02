@@ -159,15 +159,18 @@ export function UserApprovalsPanel() {
     setActing(true);
     try {
       const newStatus = decisionType === "approve" ? "approved" : "rejected";
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          status: newStatus,
-          approved_at: new Date().toISOString(),
-          approved_by: user?.id,
-        })
-        .eq("id", decisionTarget.id);
-      if (error) throw error;
+      const { data: fnData, error: fnError } = await supabase.functions.invoke(
+        "admin-approve-user",
+        {
+          body: {
+            targetUserId: decisionTarget.id,
+            newStatus,
+            approverId: user?.id,
+          },
+        }
+      );
+      if (fnError) throw fnError;
+      if ((fnData as any)?.error) throw new Error((fnData as any).error);
 
       await logUserAdminAction({
         action: decisionType === "approve" ? "user.status.approved" : "user.status.rejected",
