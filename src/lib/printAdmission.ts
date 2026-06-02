@@ -141,7 +141,7 @@ export async function printAdmissionNormaZero(d: AdmissionPrintInput) {
   const html = buildNormaZeroDocument({
     title: "Admissão Hospitalar — D0",
     subtitle: d.isUti ? "UTI / UCI" : "Enfermaria",
-    sectorLabel: d.patient.sector || "—",
+    sectorLabel: getSectorDisplayLabel(d.patient.sector) || d.patient.sector || "—",
     hospitalName: d.hospitalName,
     docCodePrefix: "ADM",
     bodyHtml,
