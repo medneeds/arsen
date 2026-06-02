@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Allow admin OR gestor to reset passwords
+    // Allow admin, gestor or coordinator profiles to reset passwords
     const { data: roles } = await supabaseAdmin
       .from("user_roles")
       .select("role")
@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     if (!isAuthorized) {
       console.error("Not authorized:", requestingUser.id);
       return new Response(
-        JSON.stringify({ error: "Acesso negado. Apenas administradores ou gestores podem redefinir senhas." }),
+        JSON.stringify({ error: "Acesso negado. Apenas administradores, gestores ou coordenadores podem redefinir senhas." }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -123,9 +123,28 @@ Deno.serve(async (req) => {
 
     if (updateError) {
       console.error("Failed to update password:", updateError);
+      const errorCode = (updateError as { code?: string }).code;
+      const errorName = (updateError as { name?: string }).name;
+      const errorReasons = (updateError as { reasons?: string[] }).reasons ?? [];
+      const isWeakPassword =
+        errorCode === "weak_password" ||
+        errorName === "AuthWeakPasswordError" ||
+        errorReasons.includes("pwned");
+
+      if (isWeakPassword) {
+        return new Response(
+          JSON.stringify({
+            error:
+              "Senha recusada pela política de segurança: ela é comum ou já apareceu em vazamentos. Use uma senha provisória mais forte, com 8 a 12 caracteres, incluindo maiúscula, minúscula, número e símbolo.",
+            code: "weak_password",
+          }),
+          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       return new Response(
         JSON.stringify({ error: "Falha ao atualizar senha: " + updateError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: (updateError as { status?: number }).status || 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
