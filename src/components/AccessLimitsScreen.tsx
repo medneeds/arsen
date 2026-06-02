@@ -11,7 +11,7 @@ import { whitelabel } from "@/config/whitelabel";
 
 import { AuthBackgroundFx } from "./auth/AuthBackgroundFx";
 import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
-import arsenLogo from "@/assets/arsen-logo.png";
+
 
 /** Mapeia o "departamento amplo" do permissionamento para os subsetores reais selecionáveis */
 const DEPARTMENT_EXPANSION: Record<string, Department[]> = {
@@ -172,21 +172,7 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
         Voltar
       </motion.button>
 
-      {/* Top status chip — in flow */}
-      <motion.div
-        className="relative flex items-center gap-2.5 z-20 mb-6"
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full rounded-full bg-accent opacity-60 animate-ping" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" />
-        </span>
-        <span className="text-[10px] font-semibold text-foreground/70 tracking-[0.3em]">
-          VERIFICAÇÃO DE ACESSO
-        </span>
-      </motion.div>
+
 
       <motion.div
         className="relative z-10 w-full max-w-md"
@@ -194,65 +180,39 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Header — Dual logos hero */}
-        <div className="flex flex-col items-center mb-6">
+        {/* Header — Logo única + identidade */}
+        <div className="flex flex-col items-center mb-7">
+          {/* Logo única do Socorrão I */}
           <motion.div
-            className="relative mb-4 flex items-center gap-4"
-            initial={{ opacity: 0, scale: 0.94, y: 8 }}
+            className="mb-5"
+            initial={{ opacity: 0, scale: 0.88, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
           >
-            {/* Arsen logo */}
-            <div className="relative">
-              <div className="absolute inset-0 rounded-2xl blur-lg bg-primary/20 -m-1.5" />
-              <div className="relative h-12 w-12 rounded-2xl bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border border-border/60 flex items-center justify-center shadow-md shadow-primary/10 p-1.5">
-                <img src={arsenLogo} alt="Arsen" className="h-full w-full object-contain" />
-              </div>
-            </div>
-
-            {/* Vertical ornament */}
-            <div className="flex flex-col items-center gap-1">
-              <span className="h-2 w-px bg-gradient-to-b from-transparent to-foreground/30" />
-              <span className="h-1 w-1 rounded-full bg-primary/70" />
-              <span className="h-2 w-px bg-gradient-to-t from-transparent to-foreground/30" />
-            </div>
-
-            {/* Socorrão */}
-            <div className="relative">
-              <div className="absolute inset-0 rounded-2xl blur-lg bg-primary/20 -m-1.5" />
-              <div className="relative h-12 w-12 rounded-2xl bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border border-border/60 flex items-center justify-center p-1.5 shadow-md shadow-primary/10">
-                <img src={socorraoCrossLogo} alt={hospitalName} className="h-full w-full object-contain" />
-              </div>
-            </div>
+            <img
+              src={socorraoCrossLogo}
+              alt="ARSen — Hospital Municipal Djalma Marques (Socorrão I)"
+              className="h-20 w-20 object-contain drop-shadow-md"
+            />
           </motion.div>
 
+          {/* Nome da plataforma */}
           <motion.h1
-            className="preserve-case text-2xl font-extralight tracking-[0.3em] text-foreground"
+            className="preserve-case text-2xl font-extralight tracking-[0.35em] text-foreground"
             style={{ fontFamily: SERIF }}
-            initial={{ opacity: 0, y: 6 }}
+            initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25, duration: 0.6 }}
+            transition={{ delay: 0.18, duration: 0.5 }}
           >
             {whitelabel.platform.name.toUpperCase()}
           </motion.h1>
 
-          {/* Ornamental divider */}
-          <motion.div
-            className="flex items-center gap-2 my-2"
-            initial={{ opacity: 0, scaleX: 0 }}
-            animate={{ opacity: 1, scaleX: 1 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-          >
-            <span className="h-px w-6 bg-gradient-to-r from-transparent to-foreground/30" />
-            <span className="h-1 w-1 rounded-full bg-primary/60" />
-            <span className="h-px w-6 bg-gradient-to-l from-transparent to-foreground/30" />
-          </motion.div>
-
+          {/* Hospital — discreto */}
           <motion.p
-            className="preserve-case text-[10px] font-semibold tracking-[0.22em] uppercase text-foreground/70 text-center"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45, duration: 0.5 }}
+            className="preserve-case text-[9px] font-medium tracking-[0.18em] uppercase text-foreground/45 text-center mt-1.5"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.28, duration: 0.5 }}
           >
             {hospitalName}
           </motion.p>
