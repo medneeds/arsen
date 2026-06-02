@@ -46,6 +46,7 @@ import { PatientIdentityHeader } from "./PatientIdentityHeader";
 import { SuspendDischargeDialog } from "./SuspendDischargeDialog";
 import { Ban } from "lucide-react";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { getSectorLabel } from "@/lib/sectorUtils";
 
 interface PatientCockpitProps {
   patient: Patient | null;
@@ -204,7 +205,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   }
 
   const status = clinicalStatusConfig[patient.clinicalStatus || "regular"] || clinicalStatusConfig.regular;
-  const sector = sectorLabelFromCode(patient.sector);
+  const sector = getSectorLabel(patient.sector);
   const allergies = parseList(patient.utiAllergies);
   const diagnoses = parseList(patient.diagnoses);
   const medHistory = parseList(patient.medicalHistory);
