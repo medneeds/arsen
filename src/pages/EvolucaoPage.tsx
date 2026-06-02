@@ -222,7 +222,7 @@ const EvolucaoPage = () => {
     if (hospitalDischargePrediction) updateHospitalDischargePrediction("");
     if (isPalliative) updateIsPalliative(false);
     if (isolationPrecautions) updateIsolationPrecautions("");
-    setDiagnosticHypotheses("");
+    setDiagnosticHypotheses([]);
     setDiagnosticsReplicated(false);
   };
 
