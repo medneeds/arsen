@@ -23,12 +23,8 @@ import {
 
 const passwordSchema = z.object({
   newPassword: z.string()
-    .min(8, { message: "SENHA DEVE TER ENTRE 8 E 12 CARACTERES" })
-    .max(12, { message: "SENHA DEVE TER ENTRE 8 E 12 CARACTERES" })
-    .regex(/[a-z]/, { message: "SENHA DEVE TER LETRA MINÚSCULA" })
-    .regex(/[A-Z]/, { message: "SENHA DEVE TER LETRA MAIÚSCULA" })
-    .regex(/[0-9]/, { message: "SENHA DEVE TER NÚMERO" })
-    .regex(/[^A-Za-z0-9]/, { message: "SENHA DEVE TER CARACTERE ESPECIAL" }),
+    .min(6, { message: "SENHA DEVE TER PELO MENOS 6 CARACTERES" })
+    .max(72, { message: "SENHA DEVE TER NO MÁXIMO 72 CARACTERES" }),
   confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: "SENHAS NÃO CONFEREM",
@@ -182,8 +178,7 @@ export function ResetUserPasswordDialog({
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-amber-800">
-                  A nova senha deve ter <strong>de 8 a 12 caracteres</strong>, com
-                  <strong> maiúscula</strong>, <strong>minúscula</strong>, <strong>número</strong> e <strong>símbolo</strong>.
+                  A nova senha precisa ter <strong>pelo menos 6 caracteres</strong>.
                 </p>
               </div>
             </div>
@@ -202,12 +197,12 @@ export function ResetUserPasswordDialog({
                     value={formData.newPassword}
                     onChange={(e) => setFormData({
                       ...formData,
-                      newPassword: e.target.value.slice(0, 12)
+                      newPassword: e.target.value.slice(0, 72)
                     })}
-                    placeholder="8 a 12 caracteres"
+                    placeholder="Mínimo 6 caracteres"
                     className="h-10 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono tracking-widest"
                     disabled={loading}
-                    maxLength={12}
+                    maxLength={72}
                   />
                   <Button
                     type="button"
@@ -220,7 +215,7 @@ export function ResetUserPasswordDialog({
                   </Button>
                 </div>
                 <p className="text-[9px] text-gray-400">
-                  {formData.newPassword.length}/12 caracteres (mínimo 8)
+                  {formData.newPassword.length}/72 caracteres (mínimo 6)
                 </p>
               </div>
 
@@ -232,12 +227,12 @@ export function ResetUserPasswordDialog({
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({
                       ...formData,
-                      confirmPassword: e.target.value.slice(0, 12)
+                      confirmPassword: e.target.value.slice(0, 72)
                     })}
                     placeholder="REPITA A SENHA"
                     className="h-10 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono tracking-widest"
                     disabled={loading}
-                    maxLength={12}
+                    maxLength={72}
                   />
                   <Button
                     type="button"
@@ -265,7 +260,7 @@ export function ResetUserPasswordDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={loading || formData.newPassword.length < 8 || formData.newPassword.length > 12}
+                disabled={loading || formData.newPassword.length < 6 || formData.newPassword.length > 72}
                 className="flex-1 bg-amber-600 hover:bg-amber-700"
               >
                 {loading ? (
