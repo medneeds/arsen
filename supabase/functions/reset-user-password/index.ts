@@ -57,10 +57,14 @@ Deno.serve(async (req) => {
       ...((profile?.access_profiles as string[] | null) || []),
     ]);
 
+    const COORDINATOR_PROFILES = new Set(["coord_medico", "coord_enfermagem", "coord_multi"]);
+
     const isAuthorized =
       roleSet.has("admin") ||
+      roleSet.has("coordenador") ||
       profileSet.has("gestor") ||
-      profileSet.has("admin");
+      profileSet.has("admin") ||
+      [...profileSet].some(p => COORDINATOR_PROFILES.has(p));
 
     if (!isAuthorized) {
       console.error("Not authorized:", requestingUser.id);
