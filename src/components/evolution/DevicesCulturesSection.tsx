@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Plus, Trash2, Activity, FlaskConical } from "lucide-react";
+import { Plus, Trash2, Activity, FlaskConical, CalendarCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,17 @@ interface DevicesCulturesSectionProps {
   admissionDate?: string | null;
 }
 
+/** Normaliza admissionDate (ISO yyyy-MM-dd ou BR dd/MM/yyyy) para DD/MM/YYYY */
+function parseAdmissionDateBR(date?: string | null): string | null {
+  if (!date) return null;
+  // já está em BR
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(date.trim())) return date.trim();
+  // ISO yyyy-MM-dd
+  const m = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+  return null;
+}
+
 export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
   devices,
   onDevicesChange,
@@ -31,6 +42,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
   onCulturesChange,
   admissionDate,
 }) => {
+  const admissionDateBR = parseAdmissionDateBR(admissionDate);
   const customs = useMemo(() => devices.filter((d) => d.custom), [devices]);
   const catalogIndex = useMemo(() => {
     const m = new Map<string, EvolutionDevice>();
@@ -113,7 +125,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                 </Label>
                 {checked && (
                   <>
-                    <div className="flex-1 min-w-[180px] max-w-[240px]">
+                    <div className="flex items-center gap-1.5 flex-1 min-w-[180px] max-w-[320px]">
                       <DateBRPicker
                         value={active!.insertedAt}
                         onChange={(v) => setInsertedAt(item.id, false, v)}
@@ -125,6 +137,17 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                         allowPast
                         allowClear
                       />
+                      {admissionDateBR && (
+                        <button
+                          type="button"
+                          onClick={() => setInsertedAt(item.id, false, admissionDateBR)}
+                          className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[9px] font-semibold hover:bg-emerald-500/20 transition-colors whitespace-nowrap"
+                          title={`Usar data de admissão: ${admissionDateBR}`}
+                        >
+                          <CalendarCheck className="h-3 w-3" />
+                          Admissão
+                        </button>
+                      )}
                     </div>
                     {days !== null && (
                       <Badge
@@ -166,7 +189,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                   placeholder="Nome do dispositivo"
                   className="h-7 text-xs flex-1 min-w-[160px] max-w-[220px]"
                 />
-                <div className="flex-1 min-w-[180px] max-w-[240px]">
+                <div className="flex items-center gap-1.5 flex-1 min-w-[180px] max-w-[320px]">
                   <DateBRPicker
                     value={d.insertedAt}
                     onChange={(v) => setInsertedAt(d.id, true, v)}
@@ -178,6 +201,17 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                     allowPast
                     allowClear
                   />
+                  {admissionDateBR && (
+                    <button
+                      type="button"
+                      onClick={() => setInsertedAt(d.id, true, admissionDateBR)}
+                      className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[9px] font-semibold hover:bg-emerald-500/20 transition-colors whitespace-nowrap"
+                      title={`Usar data de admissão: ${admissionDateBR}`}
+                    >
+                      <CalendarCheck className="h-3 w-3" />
+                      Admissão
+                    </button>
+                  )}
                 </div>
                 {days !== null && (
                   <Badge
