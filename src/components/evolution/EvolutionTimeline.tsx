@@ -566,6 +566,9 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             patientSocialName: resolved.socialName || undefined,
                             patientCpf: resolved.cpf || undefined,
                             patientCns: resolved.cns || undefined,
+                            patientBirthDate: resolved.birthDate || undefined,
+                            patientAdmissionDate: admissionDate || undefined,
+                            patientAllergies: allergiesOverride || undefined,
                             cidPrimary,
                             cidSecondary,
                           });
