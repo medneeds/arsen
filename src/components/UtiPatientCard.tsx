@@ -1,6 +1,7 @@
 import { Patient } from "@/types/patient";
 import { DischargeStatusRibbon } from "./DischargeStatusRibbon";
 import { calcDIH, getEffectiveAdmissionDate } from "@/lib/dihCalc";
+import { resolvePatientDischargePrediction } from "@/lib/dischargePrediction";
 import { isExtraBed } from "@/utils/bedNaming";
 import { formatDateBR } from "@/utils/dateUtils";
 import {
