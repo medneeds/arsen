@@ -89,6 +89,17 @@ interface MedicalProductionItem {
   count: number;
 }
 
+interface DischargePreviewItem {
+  id: string;
+  name: string;
+  bed: string;
+  sector: string;
+  sectorLabel: string;
+  dischargeDate: Date | null;
+  rawDate: string;
+  status: 'overdue' | 'today' | 'tomorrow' | 'this_week' | 'future' | 'unknown';
+}
+
 interface KpiDelta {
   value: number;          // numeric delta
   display: string;        // "+3" / "-2" / "—"
