@@ -501,28 +501,39 @@ export default function GestorPanelPage() {
       ]);
 
       // ── 8b. Giro de Leito (encontros encerrados / leitos no setor) ──
-      // Reusa `encs` (encontros encerrados no período) e bedStats.bySector já calculado.
       const encsBySector: Record<string, number> = {};
       (encs || []).forEach((e: any) => {
         const dept = e.department || "—";
         const code = (DEPARTMENT_TO_SECTOR as any)[dept] || dept;
         encsBySector[code] = (encsBySector[code] || 0) + 1;
       });
+
+      // Para calcular leitos: tenta bySector direto, depois agrega sub-setores da UE
+      const getBedsForCode = (code: string): number => {
+        if (bedStats.bySector[code]) return bedStats.bySector[code].total;
+        const UE_CODES = ["sala_vermelha", "sala_laranja", "ue_vertical", "ue_horizontal", "internacao_ue", "observacao_clinica"];
+        if (UE_CODES.includes(code)) {
+          return UE_CODES.reduce((acc, c) => acc + (bedStats.bySector[c]?.total || 0), 0);
+        }
+        return 0;
+      };
+
       const turnoverRows: BedTurnoverItem[] = Object.entries(encsBySector)
         .map(([code, count]) => {
-          const beds = bedStats.bySector[code]?.total || 0;
+          const beds = getBedsForCode(code);
+          const label = getSectorDisplayLabel(code) || (DEPARTMENT_TO_SECTOR as any)[code] || code;
           return {
-            sector: getSectorDisplayLabel(code) || code,
+            sector: label,
             encounters: count,
             beds,
             turnover: beds > 0 ? count / beds : 0,
           };
         })
-        .filter(r => r.beds > 0)
-        .sort((a, b) => b.turnover - a.turnover);
+        .filter(r => r.encounters > 0)
+        .sort((a, b) => b.encounters - a.encounters);
       setBedTurnover(turnoverRows);
       const totalEncsTurn = turnoverRows.reduce((acc, r) => acc + r.encounters, 0);
-      const totalBedsTurn = turnoverRows.reduce((acc, r) => acc + r.beds, 0);
+      const totalBedsTurn = turnoverRows.filter(r => r.beds > 0).reduce((acc, r) => acc + r.beds, 0);
       setBedTurnoverAvg(totalBedsTurn > 0 ? totalEncsTurn / totalBedsTurn : 0);
 
       // ── 8c. Mortalidade por setor (período) ──
@@ -1301,21 +1312,26 @@ export default function GestorPanelPage() {
                     const variant: "default" | "secondary" | "outline" =
                       row.turnover >= 2 ? "default" : row.turnover >= 1 ? "secondary" : "outline";
                     const colorClass =
-                      row.turnover >= 2
-                        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
-                        : row.turnover >= 1
-                          ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
-                          : "bg-muted text-muted-foreground border-border";
+                      row.beds === 0
+                        ? "bg-muted text-muted-foreground border-border"
+                        : row.turnover >= 2
+                          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                          : row.turnover >= 1
+                            ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
+                            : "bg-muted text-muted-foreground border-border";
+                    const displayTurnover = row.beds > 0
+                      ? `${row.turnover.toFixed(1).replace(".", ",")}×`
+                      : `${row.encounters} enc.`;
                     return (
                       <div key={row.sector} className="flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-md hover:bg-muted/40 transition-colors">
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-medium text-foreground truncate">{row.sector}</p>
                           <p className="text-[10px] text-muted-foreground">
-                            {row.encounters} altas · {row.beds} leitos
+                            {row.encounters} altas · {row.beds > 0 ? `${row.beds} leitos` : "sem leitos mapeados"}
                           </p>
                         </div>
                         <Badge variant={variant} className={cn("text-[10px] font-bold tabular-nums shrink-0 border", colorClass)}>
-                          {row.turnover.toFixed(1).replace(".", ",")}×
+                          {displayTurnover}
                         </Badge>
                       </div>
                     );
