@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { getSectorDisplayLabel } from "@/utils/bedNaming";
+import { getSectorDisplayLabel, isExtraBed } from "@/utils/bedNaming";
 import { format, subDays, startOfDay, differenceInHours, formatDistanceToNow, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MainLayout } from "@/components/MainLayout";
@@ -280,7 +280,7 @@ export default function GestorPanelPage() {
         const bySector: Record<string, { total: number; occupied: number }> = {};
         patients.forEach(p => {
           if (!bySector[p.sector]) bySector[p.sector] = { total: 0, occupied: 0 };
-          bySector[p.sector].total++;
+          if (!isExtraBed(p.bed_number || '')) bySector[p.sector].total++;
           if (!p.is_vacant && p.name?.trim()) bySector[p.sector].occupied++;
         });
 
