@@ -32,6 +32,10 @@ export function usePatients(department?: Department, sector?: string) {
         // sector=NULL e department preenchido (criados antes da padronização).
         // Buscar por sector OU pelo department correspondente para não perder registros.
         const SECTOR_TO_DEPT: Record<string, string> = {
+          // UCIs — leitos não monitorizados que podem ter sido criados
+          // com department em vez de sector no banco
+          blue: 'UCI 1',
+          outside: 'UCI 2',
           ucc: 'UCC',
           neuro_01: 'NEURO 01',
           neuro_02: 'NEURO 02',

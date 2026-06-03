@@ -216,8 +216,8 @@ const Index = () => {
     // ── Intensivos e Semi-Intensivos (isUti: true) ─────────────────────
     red:     { title: "UTI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
     yellow:  { title: "UTI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    blue:    { title: "UCI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    outside: { title: "UCI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    blue:    { title: "UCI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    outside: { title: "UCI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     ucc:     { title: "UCC",    color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
     // ── Demais setores (sem isUti — usam SectorSection padrão) ─────────
     neuro_01:             { title: "Neuro 01",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
