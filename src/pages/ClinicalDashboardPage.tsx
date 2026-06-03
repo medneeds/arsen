@@ -11,6 +11,7 @@ import { useDepartment } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { sectorCapacity } from "@/utils/bedNaming";
 import {
   AlertTriangle,
   BedDouble,
