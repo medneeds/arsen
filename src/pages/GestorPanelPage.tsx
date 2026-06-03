@@ -1312,21 +1312,26 @@ export default function GestorPanelPage() {
                     const variant: "default" | "secondary" | "outline" =
                       row.turnover >= 2 ? "default" : row.turnover >= 1 ? "secondary" : "outline";
                     const colorClass =
-                      row.turnover >= 2
-                        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
-                        : row.turnover >= 1
-                          ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
-                          : "bg-muted text-muted-foreground border-border";
+                      row.beds === 0
+                        ? "bg-muted text-muted-foreground border-border"
+                        : row.turnover >= 2
+                          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                          : row.turnover >= 1
+                            ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
+                            : "bg-muted text-muted-foreground border-border";
+                    const displayTurnover = row.beds > 0
+                      ? `${row.turnover.toFixed(1).replace(".", ",")}×`
+                      : `${row.encounters} enc.`;
                     return (
                       <div key={row.sector} className="flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-md hover:bg-muted/40 transition-colors">
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-medium text-foreground truncate">{row.sector}</p>
                           <p className="text-[10px] text-muted-foreground">
-                            {row.encounters} altas · {row.beds} leitos
+                            {row.encounters} altas · {row.beds > 0 ? `${row.beds} leitos` : "sem leitos mapeados"}
                           </p>
                         </div>
                         <Badge variant={variant} className={cn("text-[10px] font-bold tabular-nums shrink-0 border", colorClass)}>
-                          {row.turnover.toFixed(1).replace(".", ",")}×
+                          {displayTurnover}
                         </Badge>
                       </div>
                     );
