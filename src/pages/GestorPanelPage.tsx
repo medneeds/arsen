@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
-import { format, subDays, startOfDay, differenceInHours, formatDistanceToNow } from "date-fns";
+import { format, subDays, startOfDay, differenceInHours, formatDistanceToNow, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -87,6 +87,17 @@ interface MortalityItem {
 interface MedicalProductionItem {
   name: string;
   count: number;
+}
+
+interface DischargePreviewItem {
+  id: string;
+  name: string;
+  bed: string;
+  sector: string;
+  sectorLabel: string;
+  dischargeDate: Date | null;
+  rawDate: string;
+  status: 'overdue' | 'today' | 'tomorrow' | 'this_week' | 'future' | 'unknown';
 }
 
 interface KpiDelta {
@@ -185,6 +196,8 @@ export default function GestorPanelPage() {
   const [examPendingTotal, setExamPendingTotal] = useState(0);
   const [examPendingBySector, setExamPendingBySector] = useState<{ sector: string; total: number; breakdown: Record<string, number> }[]>([]);
   const [regulatedPatients, setRegulatedPatients] = useState<{ id: string; name: string; age: string | null; sex: string | null; origin: string; destination: string; priority: string; status: string; waitHours: number; createdAt: string }[]>([]);
+  // ── Discharge predictions ──
+  const [dischargePreviews, setDischargePreviews] = useState<DischargePreviewItem[]>([]);
   // ── KPI deltas ──
   const [kpiDeltas, setKpiDeltas] = useState<Record<string, KpiDelta>>({});
   const [sectorFilter, setSectorFilter] = useState<string>(() => {
@@ -245,7 +258,7 @@ export default function GestorPanelPage() {
       // ── 1. Patients ──
       let patientsQuery = supabase
         .from("patients")
-        .select("id, name, bed_number, sector, is_vacant, is_door_patient, clinical_status, diagnoses, relevant_exams")
+        .select("id, name, bed_number, sector, is_vacant, is_door_patient, clinical_status, diagnoses, relevant_exams, uti_discharge_prediction, hospital_discharge_prediction")
         .eq("hospital_unit_id", selectedUnit.id);
       if (filteredSectorCodes && filteredSectorCodes.length > 0) {
         patientsQuery = patientsQuery.in("sector", filteredSectorCodes);
@@ -285,6 +298,52 @@ export default function GestorPanelPage() {
           }
         });
         setCriticalAlerts(alerts);
+
+        // ── 8g. Previsão de Alta (a partir dos patients já carregados) ──
+        const _today = startOfDay(new Date());
+        const _tomorrow = startOfDay(addDays(new Date(), 1));
+        const _nextWeek = startOfDay(addDays(new Date(), 7));
+
+        const parseDischargeDate = (raw: string | null): Date | null => {
+          if (!raw || /sem previs/i.test(raw)) return null;
+          if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return new Date(raw);
+          const m = raw.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+          if (m) return new Date(`${m[3]}-${m[2]}-${m[1]}`);
+          return null;
+        };
+
+        const previews: DischargePreviewItem[] = (patients || [])
+          .filter(p => !p.is_vacant && p.name?.trim())
+          .map(p => {
+            const raw = (p as any).hospital_discharge_prediction || (p as any).uti_discharge_prediction || null;
+            const date = parseDischargeDate(raw);
+            let status: DischargePreviewItem['status'] = 'unknown';
+            if (date) {
+              const d = startOfDay(date);
+              if (d < _today) status = 'overdue';
+              else if (d.getTime() === _today.getTime()) status = 'today';
+              else if (d.getTime() === _tomorrow.getTime()) status = 'tomorrow';
+              else if (d <= _nextWeek) status = 'this_week';
+              else status = 'future';
+            }
+            return {
+              id: p.id,
+              name: p.name || '—',
+              bed: p.bed_number || '—',
+              sector: p.sector,
+              sectorLabel: getSectorDisplayLabel(p.sector) || p.sector,
+              dischargeDate: date,
+              rawDate: raw || '',
+              status,
+            };
+          })
+          .filter(p => p.status !== 'future' && p.status !== 'unknown')
+          .sort((a, b) => {
+            const order: Record<string, number> = { overdue: 0, today: 1, tomorrow: 2, this_week: 3 };
+            return (order[a.status] ?? 4) - (order[b.status] ?? 4);
+          });
+
+        setDischargePreviews(previews);
       }
 
       // ── 2. Movements ──
@@ -1488,6 +1547,96 @@ export default function GestorPanelPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Previsão de Alta por Setor */}
+        <Card className="border-border/50 w-full">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2">
+                <LogOut className="h-4 w-4 text-primary" /> Previsão de Alta por Setor
+              </span>
+              <div className="flex items-center gap-2">
+                <div className="hidden md:flex items-center gap-3 text-[10px] text-muted-foreground">
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive inline-block" /> Vencida</span>
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500 inline-block" /> Hoje</span>
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-500 inline-block" /> Amanhã</span>
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500 inline-block" /> Esta semana</span>
+                </div>
+                <Badge variant="secondary" className="text-[10px] tabular-nums">{dischargePreviews.length}</Badge>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {dischargePreviews.length === 0 ? (
+              <div className="text-center py-8">
+                <LogOut className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                <p className="text-xs text-muted-foreground">Nenhuma previsão de alta registrada para os próximos dias.</p>
+              </div>
+            ) : (
+              (() => {
+                const bySector = dischargePreviews.reduce((acc, p) => {
+                  if (!acc[p.sectorLabel]) acc[p.sectorLabel] = [];
+                  acc[p.sectorLabel].push(p);
+                  return acc;
+                }, {} as Record<string, DischargePreviewItem[]>);
+
+                const statusConfig: Record<DischargePreviewItem['status'], { label: string; bg: string; border: string; text: string; dot: string }> = {
+                  overdue:   { label: 'VENCIDA',      bg: 'bg-destructive/10',  border: 'border-destructive/30',  text: 'text-destructive',   dot: 'bg-destructive'  },
+                  today:     { label: 'HOJE',          bg: 'bg-amber-500/10',    border: 'border-amber-500/30',    text: 'text-amber-600',     dot: 'bg-amber-500'    },
+                  tomorrow:  { label: 'AMANHÃ',        bg: 'bg-blue-500/10',     border: 'border-blue-500/30',     text: 'text-blue-600',      dot: 'bg-blue-500'     },
+                  this_week: { label: 'ESTA SEMANA',   bg: 'bg-emerald-500/10',  border: 'border-emerald-500/30',  text: 'text-emerald-600',   dot: 'bg-emerald-500'  },
+                  future:    { label: 'FUTURO',        bg: 'bg-muted/30',        border: 'border-border',          text: 'text-muted-foreground', dot: 'bg-muted-foreground' },
+                  unknown:   { label: 'SEM DATA',      bg: 'bg-muted/30',        border: 'border-border',          text: 'text-muted-foreground', dot: 'bg-muted-foreground' },
+                };
+
+                return (
+                  <div className="space-y-4 max-h-[480px] overflow-y-auto pr-1">
+                    {Object.entries(bySector).map(([sector, items]) => (
+                      <div key={sector}>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">{sector}</p>
+                          <span className="text-[10px] text-muted-foreground/60">({items.length} paciente{items.length > 1 ? 's' : ''})</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1.5">
+                          {items.map(p => {
+                            const cfg = statusConfig[p.status];
+                            return (
+                              <div
+                                key={p.id}
+                                className={cn(
+                                  "flex items-start gap-2 p-2.5 rounded-lg border transition-colors hover:opacity-90",
+                                  cfg.bg, cfg.border
+                                )}
+                              >
+                                <span className={cn("h-2 w-2 rounded-full mt-1 shrink-0", cfg.dot)} />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-[11px] font-semibold text-foreground truncate">{p.name}</p>
+                                  <p className="text-[10px] text-muted-foreground">Leito {p.bed}</p>
+                                  <p className={cn("text-[10px] font-bold mt-0.5", cfg.text)}>
+                                    {p.status === 'overdue'
+                                      ? `⚠ ${format(p.dischargeDate!, "dd/MM", { locale: ptBR })} — VENCIDA`
+                                      : p.dischargeDate
+                                        ? format(p.dischargeDate, "dd/MM/yyyy", { locale: ptBR })
+                                        : '—'}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()
+            )}
+            <p className="text-[10px] text-muted-foreground/70 pt-3 border-t mt-3">
+              Previsões de alta registradas pela equipe médica · Vencidas = paciente ainda internado após a data prevista.
+            </p>
+          </CardContent>
+        </Card>
+
+
 
 
 
