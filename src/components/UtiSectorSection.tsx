@@ -8,7 +8,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { regularBedCount, sectorCapacity } from "@/utils/bedNaming";
 
 type ColorVariant = 'blue' | 'yellow' | 'red' | 'green';
 
@@ -38,25 +37,24 @@ interface UtiSectorSectionProps {
   currentUtiUnit?: string; // "UTI 1" or "UTI 2"
 }
 
-const sectorInfo = {
-  red: {
-    title: "Cuidados Intensivos",
-    subtitle: "Leitos UTI",
-    icon: "🏥",
-    gradientClass: "bg-primary/15 dark:bg-primary/25 border-l-4 border-l-primary"
-  },
-  yellow: {
-    title: "Semi-Intensivo",
-    subtitle: "Leitos Semi",
-    icon: "🟡",
-    gradientClass: "bg-primary/15 dark:bg-primary/25 border-l-4 border-l-primary"
-  },
-  blue: {
-    title: "Observação UTI",
-    subtitle: "Aguardando vaga",
-    icon: "🔵",
-    gradientClass: "bg-primary/15 dark:bg-primary/25 border-l-4 border-l-primary"
-  }
+const DEFAULT_SECTOR_INFO = {
+  title: "Leitos",
+  subtitle: "Mapa de leitos",
+  icon: "🏥",
+  gradientClass: "bg-primary/15 dark:bg-primary/25 border-l-4 border-l-primary",
+};
+
+const sectorInfo: Record<string, typeof DEFAULT_SECTOR_INFO> = {
+  red:     { title: "UTI 1",   subtitle: "Cuidados Intensivos", icon: "🏥", gradientClass: "bg-primary/15 dark:bg-primary/25 border-l-4 border-l-primary" },
+  yellow:  { title: "UTI 2",   subtitle: "Cuidados Semi-Intensivos", icon: "🏥", gradientClass: "bg-primary/15 dark:bg-primary/25 border-l-4 border-l-primary" },
+  blue:    { title: "UCI 1",   subtitle: "Cuidados Intermediários", icon: "🔵", gradientClass: "bg-primary/15 dark:bg-primary/25 border-l-4 border-l-primary" },
+  outside: { title: "UCI 2",   subtitle: "Cuidados Intermediários", icon: "🔵", gradientClass: "bg-primary/15 dark:bg-primary/25 border-l-4 border-l-primary" },
+  ucc:     { title: "UCC",     subtitle: "Unidade Coronariana", icon: "❤️", gradientClass: "bg-primary/15 dark:bg-primary/25 border-l-4 border-l-primary" },
+  neuro_01:{ title: "Neuro 01",subtitle: "Neurologia", icon: "🧠", gradientClass: "bg-primary/15 dark:bg-primary/25 border-l-4 border-l-primary" },
+  neuro_02:{ title: "Neuro 02",subtitle: "Neurologia", icon: "🧠", gradientClass: "bg-primary/15 dark:bg-primary/25 border-l-4 border-l-primary" },
+  clinica_cirurgica:    { title: "Clínica Cirúrgica",    subtitle: "Internação", icon: "🏥", gradientClass: "bg-primary/15 dark:bg-primary/25 border-l-4 border-l-primary" },
+  enfermaria_transicao: { title: "Enf. Transição",       subtitle: "Internação", icon: "🏥", gradientClass: "bg-primary/15 dark:bg-primary/25 border-l-4 border-l-primary" },
+  enfermaria_vascular:  { title: "Enf. Vascular",        subtitle: "Internação", icon: "🏥", gradientClass: "bg-primary/15 dark:bg-primary/25 border-l-4 border-l-primary" },
 };
 
 interface UtiRowProps {
@@ -131,7 +129,8 @@ export function UtiSectorSection({
   allPatients = [],
   currentUtiUnit
 }: UtiSectorSectionProps) {
-  const info = sectorInfo[sector];
+  // 🔒 Fallback seguro — evita crash quando setor não está mapeado em sectorInfo
+  const info = sectorInfo[sector] ?? DEFAULT_SECTOR_INFO;
   const displayTitle = customTitle || info.title;
   const displayIcon = customIcon || info.icon;
   const [internalIsOpen, setInternalIsOpen] = useState(patients.length > 0);
