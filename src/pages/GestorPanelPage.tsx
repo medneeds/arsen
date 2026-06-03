@@ -14,8 +14,9 @@ import { useDepartment, DEPARTMENT_TO_SECTOR } from "@/contexts/DepartmentContex
 import {
   Bed, Activity, AlertTriangle, Users, Clock,
   Pill, BarChart3, ArrowUpDown, HeartPulse,
-  RefreshCw, Download, TrendingUp, FileText,
+  RefreshCw, Download, TrendingUp, TrendingDown, FileText,
   ShieldCheck, Loader2, LayoutGrid, Filter, Check, Building2,
+  Hourglass, ArrowRight, Heart, Skull, LogOut, HelpCircle, Minus,
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PlatformHeader } from "@/components/layout/PlatformHeader";
@@ -50,6 +51,30 @@ interface CriticalAlert {
   type: string;
   detail: string;
   severity: "critical" | "warning" | "info";
+}
+
+type Period = "today" | "7d" | "30d";
+
+interface OutcomeBreakdownItem {
+  key: string;
+  label: string;
+  count: number;
+  color: string;
+  icon: typeof Heart;
+}
+
+interface TmpBySectorItem {
+  sector: string;
+  avgDays: number;
+  samples: number;
+}
+
+interface KpiDelta {
+  value: number;          // numeric delta
+  display: string;        // "+3" / "-2" / "—"
+  trend: "up" | "down" | "flat";
+  goodIsDown?: boolean;   // when true, "up" means worse
+  hint?: string;          // tooltip context (e.g. "vs ontem")
 }
 
 const SECTOR_COLORS = [
@@ -118,6 +143,19 @@ export default function GestorPanelPage() {
   const [pendingRequestsList, setPendingRequestsList] = useState<any[]>([]);
   const [prescriptionsList, setPrescriptionsList] = useState<any[]>([]);
   const [drillDown, setDrillDown] = useState<string | null>(null);
+  // ── Period filter (banner + TMP + outcomes + trend chart) ──
+  const [period, setPeriod] = useState<Period>(() => {
+    if (typeof window === "undefined") return "7d";
+    return (localStorage.getItem("gestor_period_filter") as Period) || "7d";
+  });
+  // ── TMP (Tempo Médio de Permanência) ──
+  const [tmpOverall, setTmpOverall] = useState<{ avgDays: number; samples: number }>({ avgDays: 0, samples: 0 });
+  const [tmpBySector, setTmpBySector] = useState<TmpBySectorItem[]>([]);
+  // ── Outcomes breakdown ──
+  const [outcomes, setOutcomes] = useState<OutcomeBreakdownItem[]>([]);
+  const [outcomesTotal, setOutcomesTotal] = useState(0);
+  // ── KPI deltas ──
+  const [kpiDeltas, setKpiDeltas] = useState<Record<string, KpiDelta>>({});
   const [sectorFilter, setSectorFilter] = useState<string>(() => {
     if (typeof window === "undefined") return "ALL";
     return localStorage.getItem("gestor_sector_filter") || "ALL";
@@ -218,13 +256,17 @@ export default function GestorPanelPage() {
         setCriticalAlerts(alerts);
       }
 
-      // ── 2. Movements (last 7 days for trend) ──
-      const sevenDaysAgo = subDays(new Date(), 7).toISOString();
+      // ── 2. Movements ──
+      // Pull a wider window (30 days) so we can build the period trend +
+      // previous-period comparisons without re-querying.
+      const periodDays = period === "today" ? 1 : period === "7d" ? 7 : 30;
+      const trendWindowDays = Math.max(periodDays, 30); // always 30 to cover deltas
+      const windowStart = startOfDay(subDays(new Date(), trendWindowDays - 1)).toISOString();
       let movementsQuery = supabase
         .from("patient_movements")
         .select("*")
         .eq("hospital_unit_id", selectedUnit.id)
-        .gte("created_at", sevenDaysAgo)
+        .gte("created_at", windowStart)
         .order("created_at", { ascending: false });
       if (filteredSectorCodes && filteredSectorCodes.length > 0) {
         movementsQuery = movementsQuery.in("patient_sector", filteredSectorCodes);
@@ -233,14 +275,17 @@ export default function GestorPanelPage() {
 
       setRecentMovements((movements || []).slice(0, 15));
 
-      // Build 7-day trend
+      // Build trend for the selected period
       const trend: Record<string, { altas: number; admissoes: number; transferencias: number; obitos: number }> = {};
-      for (let i = 6; i >= 0; i--) {
+      for (let i = periodDays - 1; i >= 0; i--) {
         const day = format(subDays(new Date(), i), "dd/MM", { locale: ptBR });
         trend[day] = { altas: 0, admissoes: 0, transferencias: 0, obitos: 0 };
       }
+      const periodStart = startOfDay(subDays(new Date(), periodDays - 1));
       (movements || []).forEach(m => {
-        const day = format(new Date(m.created_at), "dd/MM", { locale: ptBR });
+        const d = new Date(m.created_at);
+        if (d < periodStart) return;
+        const day = format(d, "dd/MM", { locale: ptBR });
         if (trend[day]) {
           const type = m.movement_type?.toUpperCase() || "";
           if (type.includes("ALTA")) trend[day].altas++;
@@ -299,6 +344,151 @@ export default function GestorPanelPage() {
       });
       setPrescriptionStats({ total: prescData?.length || 0, ...valCounts });
 
+      // ── 6. TMP (Tempo Médio de Permanência) ──
+      // Encontros com alta no período selecionado, usando outcome_date ou discharge_date.
+      const tmpStartIso = startOfDay(subDays(new Date(), periodDays - 1)).toISOString();
+      let encQuery = supabase
+        .from("patient_encounters")
+        .select("admission_date, discharge_date, outcome_date, outcome, department")
+        .eq("hospital_unit_id", selectedUnit.id)
+        .or(`discharge_date.gte.${tmpStartIso},outcome_date.gte.${tmpStartIso}`);
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        encQuery = encQuery.in("department", filteredDepartments);
+      }
+      const { data: encs } = await encQuery;
+      const losDays: number[] = [];
+      const bySectorLos: Record<string, number[]> = {};
+      (encs || []).forEach((e: any) => {
+        const end = e.discharge_date || e.outcome_date;
+        if (!e.admission_date || !end) return;
+        const ms = new Date(end).getTime() - new Date(e.admission_date).getTime();
+        if (ms <= 0) return;
+        const days = ms / (1000 * 60 * 60 * 24);
+        if (days > 365) return; // descarta outlier
+        losDays.push(days);
+        const sec = e.department || "—";
+        if (!bySectorLos[sec]) bySectorLos[sec] = [];
+        bySectorLos[sec].push(days);
+      });
+      const avg = losDays.length > 0 ? losDays.reduce((a, b) => a + b, 0) / losDays.length : 0;
+      setTmpOverall({ avgDays: avg, samples: losDays.length });
+      setTmpBySector(
+        Object.entries(bySectorLos)
+          .map(([sector, arr]) => ({
+            sector: getSectorDisplayLabel(sector) || sector,
+            avgDays: arr.reduce((a, b) => a + b, 0) / arr.length,
+            samples: arr.length,
+          }))
+          .sort((a, b) => b.avgDays - a.avgDays),
+      );
+
+      // ── 7. Outcomes breakdown (período) — usa patient_movements pois cobre melhor o real ──
+      const outBuckets = { alta: 0, obito: 0, transf: 0, evasao: 0, outros: 0 };
+      (movements || []).forEach((m: any) => {
+        const d = new Date(m.created_at);
+        if (d < periodStart) return;
+        const t = (m.movement_type || "").toUpperCase();
+        if (t.includes("ÓBITO") || t.includes("OBITO")) outBuckets.obito++;
+        else if (t.includes("ALTA")) outBuckets.alta++;
+        else if (t.includes("EVAS")) outBuckets.evasao++;
+        else if (t.includes("TRANSF") && t.includes("EXTERN")) outBuckets.transf++;
+      });
+      const totalOut = outBuckets.alta + outBuckets.obito + outBuckets.transf + outBuckets.evasao + outBuckets.outros;
+      setOutcomesTotal(totalOut);
+      setOutcomes([
+        { key: "alta", label: "Alta", count: outBuckets.alta, color: "hsl(142, 70%, 45%)", icon: Heart },
+        { key: "obito", label: "Óbito", count: outBuckets.obito, color: "hsl(var(--destructive))", icon: Skull },
+        { key: "transf", label: "Transf. Externa", count: outBuckets.transf, color: "hsl(45, 90%, 50%)", icon: ArrowRight },
+        { key: "evasao", label: "Evasão", count: outBuckets.evasao, color: "hsl(280, 70%, 55%)", icon: LogOut },
+        { key: "outros", label: "Outros", count: outBuckets.outros, color: "hsl(var(--muted-foreground))", icon: HelpCircle },
+      ]);
+
+      // ── 8. KPI deltas (tendência) ──
+      // Para ocupação/leitos/porta usamos delta vs ontem via balanço de movimentações
+      // (admissões - altas - óbitos - transf.externas) nas últimas 24h.
+      // Para prescrições / solicitações usamos contagem desta semana vs semana passada.
+      const now = new Date();
+      const yesterday = subDays(now, 1);
+      const last24Start = subDays(now, 1);
+      const prev24Start = subDays(now, 2);
+      let admit24 = 0, discharge24 = 0;
+      let admitPrev24 = 0, dischargePrev24 = 0;
+      (movements || []).forEach((m: any) => {
+        const d = new Date(m.created_at);
+        const t = (m.movement_type || "").toUpperCase();
+        const isAdm = t.includes("ADMISS") || t.includes("INTERN");
+        const isOut = t.includes("ALTA") || t.includes("ÓBITO") || t.includes("OBITO") || t.includes("EVAS") ||
+          (t.includes("TRANSF") && t.includes("EXTERN"));
+        if (d >= last24Start) {
+          if (isAdm) admit24++;
+          if (isOut) discharge24++;
+        } else if (d >= prev24Start) {
+          if (isAdm) admitPrev24++;
+          if (isOut) dischargePrev24++;
+        }
+      });
+      const occupancyDelta24 = admit24 - discharge24;        // net change in occupied beds today
+      const occupancyDeltaPrev = admitPrev24 - dischargePrev24;
+
+      // weekly comparisons for prescriptions & requests
+      const weekStart = subDays(now, 7).toISOString();
+      const prevWeekStart = subDays(now, 14).toISOString();
+      const prevWeekEnd = subDays(now, 7).toISOString();
+
+      let prescCurrPromise = supabase
+        .from("prescriptions")
+        .select("id", { count: "exact", head: true })
+        .eq("hospital_unit_id", selectedUnit.id)
+        .gte("created_at", weekStart);
+      let prescPrevPromise = supabase
+        .from("prescriptions")
+        .select("id", { count: "exact", head: true })
+        .eq("hospital_unit_id", selectedUnit.id)
+        .gte("created_at", prevWeekStart)
+        .lt("created_at", prevWeekEnd);
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        prescCurrPromise = prescCurrPromise.in("department", filteredDepartments);
+        prescPrevPromise = prescPrevPromise.in("department", filteredDepartments);
+      }
+      let reqCurrPromise = supabase
+        .from("bed_allocation_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("hospital_unit_id", selectedUnit.id)
+        .gte("created_at", weekStart);
+      let reqPrevPromise = supabase
+        .from("bed_allocation_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("hospital_unit_id", selectedUnit.id)
+        .gte("created_at", prevWeekStart)
+        .lt("created_at", prevWeekEnd);
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        reqCurrPromise = reqCurrPromise.in("requested_sector", filteredDepartments);
+        reqPrevPromise = reqPrevPromise.in("requested_sector", filteredDepartments);
+      }
+      const [prescCurr, prescPrev, reqCurr, reqPrev] = await Promise.all([
+        prescCurrPromise, prescPrevPromise, reqCurrPromise, reqPrevPromise,
+      ]);
+      const prescDelta = (prescCurr.count || 0) - (prescPrev.count || 0);
+      const reqDelta = (reqCurr.count || 0) - (reqPrev.count || 0);
+
+      const mkDelta = (n: number, hint: string, goodIsDown = false): KpiDelta => ({
+        value: n,
+        display: n === 0 ? "0" : n > 0 ? `+${n}` : `${n}`,
+        trend: n === 0 ? "flat" : n > 0 ? "up" : "down",
+        goodIsDown,
+        hint,
+      });
+
+      setKpiDeltas({
+        occupancy: mkDelta(occupancyDelta24, "vs últimas 24h", true), // mais ocupação geralmente é "pior"
+        vacant: mkDelta(-occupancyDelta24, "vs últimas 24h", false),  // mais vagos é melhor
+        door: mkDelta(occupancyDelta24 - occupancyDeltaPrev, "vs ontem", true),
+        alerts: { value: 0, display: "—", trend: "flat", hint: "tempo real" },
+        prescriptions: mkDelta(prescDelta, "vs semana anterior", false),
+        requests: mkDelta(reqDelta, "vs semana anterior", true),
+        tmp: { value: 0, display: "—", trend: "flat", hint: "período selecionado" },
+      });
+
     } catch (err) {
       console.error("Error fetching gestor data:", err);
     } finally {
@@ -306,7 +496,11 @@ export default function GestorPanelPage() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [selectedUnit, sectorFilter]);
+  useEffect(() => { fetchData(); }, [selectedUnit, sectorFilter, period]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("gestor_period_filter", period);
+  }, [period]);
 
   const occupancyRate = bedStats.total > 0 ? Math.round((bedStats.occupied / bedStats.total) * 100) : 0;
 
@@ -360,6 +554,11 @@ export default function GestorPanelPage() {
     Vagos: s.total - s.occupied,
   }));
 
+  // ── TMP formatado ──
+  const tmpDisplay = tmpOverall.samples > 0
+    ? `${tmpOverall.avgDays.toFixed(1).replace(".", ",")} dias`
+    : "—";
+
   // ── KPIs (key habilita drill-down) ──
   const kpiCards = [
     { key: "occupancy", title: "Taxa de Ocupação", value: `${occupancyRate}%`, sub: `${bedStats.occupied}/${bedStats.total} leitos`, icon: Bed, color: occupancyRate > 85 ? "text-destructive" : occupancyRate > 70 ? "text-amber-600" : "text-emerald-600", bg: occupancyRate > 85 ? "bg-destructive/10" : occupancyRate > 70 ? "bg-amber-500/10" : "bg-emerald-500/10" },
@@ -368,6 +567,7 @@ export default function GestorPanelPage() {
     { key: "alerts", title: "Alertas Críticos", value: criticalAlerts.filter(a => a.severity === "critical").length.toString(), sub: `${criticalAlerts.length} totais`, icon: AlertTriangle, color: criticalAlerts.length > 0 ? "text-destructive" : "text-muted-foreground", bg: criticalAlerts.length > 0 ? "bg-destructive/10" : "bg-muted/30" },
     { key: "prescriptions", title: "Prescrições", value: prescriptionStats.total.toString(), sub: `${prescriptionStats.validated} validadas`, icon: FileText, color: "text-primary", bg: "bg-primary/10" },
     { key: "requests", title: "Solicitações", value: pendingRequests.toString(), sub: "Alocação pendente", icon: Clock, color: pendingRequests > 0 ? "text-amber-600" : "text-muted-foreground", bg: pendingRequests > 0 ? "bg-amber-500/10" : "bg-muted/30" },
+    { key: "tmp", title: "Tempo Médio Perm.", value: tmpDisplay, sub: `${tmpOverall.samples} altas no período`, icon: Hourglass, color: "text-primary", bg: "bg-primary/10" },
   ];
 
   // ── Datasets para drill-down (D-5) ──
@@ -411,6 +611,13 @@ export default function GestorPanelPage() {
       tertiary: `${r.requesting_doctor_name ? r.requesting_doctor_name + " • " : ""}${formatDistanceToNow(new Date(r.created_at), { addSuffix: true, locale: ptBR })}`,
       badge: { label: "PENDENTE", variant: "secondary" },
     })),
+    tmp: tmpBySector.map(row => ({
+      id: row.sector,
+      primary: row.sector,
+      secondary: `${row.avgDays.toFixed(1).replace(".", ",")} dias em média`,
+      tertiary: `Baseado em ${row.samples} altas no período`,
+      badge: { label: `${row.samples} ALTAS`, variant: "outline" as const },
+    })),
   };
   const activeDrill = drillDown ? kpiCards.find(k => k.key === drillDown) : null;
 
@@ -448,10 +655,46 @@ export default function GestorPanelPage() {
       />
 
       <div className="p-4 md:p-6 space-y-5 max-w-7xl mx-auto">
-        {/* Filtro hierárquico de setores */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Filtro:</span>
-            {/* Hierarchical sector filter */}
+        {/* Banner de Resumo Executivo */}
+        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-primary/[0.03] to-transparent">
+          <CardContent className="p-3.5 md:p-4">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
+                {period === "today" ? "Hoje" : period === "7d" ? "Últimos 7 dias" : "Últimos 30 dias"}
+              </span>
+              <span className="hidden md:inline opacity-30">·</span>
+              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                <Bed className="h-3.5 w-3.5 text-primary" />
+                {occupancyRate}% de ocupação
+              </span>
+              <span className="hidden md:inline opacity-30">·</span>
+              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                <Hourglass className="h-3.5 w-3.5 text-primary" />
+                TMP {tmpDisplay}
+              </span>
+              <span className="hidden md:inline opacity-30">·</span>
+              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                <AlertTriangle className={cn("h-3.5 w-3.5", criticalAlerts.length > 0 ? "text-destructive" : "text-muted-foreground")} />
+                {criticalAlerts.filter(a => a.severity === "critical").length} alertas críticos
+              </span>
+              <span className="hidden md:inline opacity-30">·</span>
+              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                <Clock className={cn("h-3.5 w-3.5", pendingRequests > 0 ? "text-amber-600" : "text-muted-foreground")} />
+                {pendingRequests} solicitações pendentes
+              </span>
+              <span className="hidden md:inline opacity-30">·</span>
+              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                <Users className={cn("h-3.5 w-3.5", bedStats.doorPatients > 0 ? "text-amber-600" : "text-muted-foreground")} />
+                {bedStats.doorPatients} pacientes porta
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Filtros: Setor + Período */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Filtro:</span>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
@@ -531,31 +774,156 @@ export default function GestorPanelPage() {
                 </ScrollArea>
               </PopoverContent>
             </Popover>
+          </div>
+          {/* Period selector */}
+          <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/30 p-1">
+            {([
+              { id: "today" as Period, label: "Hoje" },
+              { id: "7d" as Period, label: "7 dias" },
+              { id: "30d" as Period, label: "30 dias" },
+            ]).map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setPeriod(opt.id)}
+                className={cn(
+                  "px-3 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wide transition-all",
+                  period === opt.id ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* KPI Cards (clicáveis para drill-down) */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {kpiCards.map((kpi, i) => (
-            <motion.div key={kpi.title} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-              <button
-                type="button"
-                onClick={() => setDrillDown(kpi.key)}
-                className="w-full text-left"
-              >
-                <Card className="border-border/50 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer">
-                  <CardContent className="p-3.5">
-                    <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center mb-2", kpi.bg)}>
-                      <kpi.icon className={cn("h-4 w-4", kpi.color)} />
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-0.5">{kpi.title}</p>
-                    <p className="text-[9px] text-muted-foreground/70">{kpi.sub}</p>
-                  </CardContent>
-                </Card>
-              </button>
-            </motion.div>
-          ))}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+          {kpiCards.map((kpi, i) => {
+            const delta = kpiDeltas[kpi.key];
+            const isWorse = delta && delta.trend !== "flat" &&
+              ((delta.goodIsDown && delta.trend === "up") || (!delta.goodIsDown && delta.trend === "down"));
+            const trendColor = delta?.trend === "flat" ? "text-muted-foreground" : isWorse ? "text-destructive" : "text-emerald-600";
+            const TrendIcon = delta?.trend === "flat" ? Minus : delta?.trend === "up" ? TrendingUp : TrendingDown;
+            return (
+              <motion.div key={kpi.title} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+                <button
+                  type="button"
+                  onClick={() => setDrillDown(kpi.key)}
+                  className="w-full text-left"
+                >
+                  <Card className="border-border/50 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer h-full">
+                    <CardContent className="p-3.5">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", kpi.bg)}>
+                          <kpi.icon className={cn("h-4 w-4", kpi.color)} />
+                        </div>
+                        {delta && delta.display !== "—" && (
+                          <span
+                            className={cn("flex items-center gap-0.5 text-[10px] font-bold", trendColor)}
+                            title={delta.hint}
+                          >
+                            <TrendIcon className="h-3 w-3" />
+                            {delta.display}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-2xl font-bold text-foreground leading-tight">{kpi.value}</p>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-0.5">{kpi.title}</p>
+                      <p className="text-[9px] text-muted-foreground/70">{kpi.sub}</p>
+                      {delta?.hint && delta.display !== "—" && (
+                        <p className="text-[9px] text-muted-foreground/50 mt-0.5">{delta.hint}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </button>
+              </motion.div>
+            );
+          })}
         </div>
+
+        {/* TMP por Setor + Desfechos do Período */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* TMP por Setor */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Hourglass className="h-4 w-4 text-primary" /> Tempo Médio de Permanência por Setor
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {tmpBySector.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">
+                  Sem altas no período selecionado para calcular TMP.
+                </p>
+              ) : (
+                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                  {tmpBySector.map(row => (
+                    <div key={row.sector} className="flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-md hover:bg-muted/40 transition-colors">
+                      <span className="text-xs font-medium text-foreground truncate">{row.sector}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] text-muted-foreground">{row.samples} altas</span>
+                        <span className="text-xs font-bold text-primary tabular-nums">
+                          {row.avgDays.toFixed(1).replace(".", ",")} d
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+                Calculado a partir de admissão até alta (encontros encerrados no período).
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Desfechos do Período */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" /> Desfechos do Período
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {outcomesTotal === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">
+                  Sem desfechos registrados no período.
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {outcomes.filter(o => o.count > 0).map(o => {
+                    const pct = outcomesTotal > 0 ? (o.count / outcomesTotal) * 100 : 0;
+                    const Icon = o.icon;
+                    return (
+                      <div key={o.key} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="flex items-center gap-1.5 font-medium text-foreground">
+                            <Icon className="h-3.5 w-3.5" style={{ color: o.color }} />
+                            {o.label}
+                          </span>
+                          <span className="tabular-nums">
+                            <span className="font-bold text-foreground">{o.count}</span>
+                            <span className="text-muted-foreground"> · {pct.toFixed(0)}%</span>
+                          </span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%`, backgroundColor: o.color }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+                    Total de {outcomesTotal} desfechos no período.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
 
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -621,7 +989,7 @@ export default function GestorPanelPage() {
         <Card className="border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" /> Tendência de Movimentações (7 dias)
+              <TrendingUp className="h-4 w-4 text-primary" /> Tendência de Movimentações ({period === "today" ? "hoje" : period === "7d" ? "7 dias" : "30 dias"})
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-4">
