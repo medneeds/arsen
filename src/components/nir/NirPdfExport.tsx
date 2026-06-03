@@ -4,6 +4,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 import type { NirMetrics } from "@/hooks/useNirMetrics";
 import type { DischargePrediction } from "@/hooks/useDischargePredictions";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
 interface Props {
   metrics: NirMetrics;
