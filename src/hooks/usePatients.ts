@@ -28,7 +28,34 @@ export function usePatients(department?: Department, sector?: string) {
         .eq('state_id', currentState.id);
       
       if (sector) {
-        query = query.eq('sector', sector);
+        // Para setores não-UTI (ex: ucc, neuro_01), alguns pacientes podem ter
+        // sector=NULL e department preenchido (criados antes da padronização).
+        // Buscar por sector OU pelo department correspondente para não perder registros.
+        const SECTOR_TO_DEPT: Record<string, string> = {
+          ucc: 'UCC',
+          neuro_01: 'NEURO 01',
+          neuro_02: 'NEURO 02',
+          clinica_cirurgica: 'CLÍNICA CIRÚRGICA',
+          enfermaria_transicao: 'ENFERMARIA DE TRANSIÇÃO',
+          enfermaria_vascular: 'ENFERMARIA VASCULAR',
+          sala_vermelha: 'SALA VERMELHA',
+          sala_laranja: 'SALA LARANJA',
+          observacao_clinica: 'OBSERVAÇÃO CLÍNICA',
+          internacao_ue: 'INTERNAÇÃO UE',
+          ue_vertical: 'UE VERTICAL',
+          ue_horizontal: 'UE HORIZONTAL',
+          riv: 'RIV',
+          cc_preparo: 'CC PREPARO',
+          cc_bloco: 'CC BLOCO CIRÚRGICO',
+          cc_rpa: 'CC RPA',
+        };
+        const deptEquivalent = SECTOR_TO_DEPT[sector];
+        if (deptEquivalent) {
+          // OR: sector = 'ucc' OR department = 'UCC'
+          query = query.or(`sector.eq.${sector},department.eq.${deptEquivalent}`);
+        } else {
+          query = query.eq('sector', sector);
+        }
       } else if (department) {
         query = query.eq('department', department);
       }
