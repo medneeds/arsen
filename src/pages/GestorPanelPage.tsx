@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { getSectorDisplayLabel, isExtraBed } from "@/utils/bedNaming";
+import { getSectorDisplayLabel, isExtraBed, sectorCapacity } from "@/utils/bedNaming";
 import { format, subDays, startOfDay, differenceInHours, formatDistanceToNow, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MainLayout } from "@/components/MainLayout";
