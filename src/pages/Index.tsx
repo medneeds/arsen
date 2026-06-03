@@ -223,7 +223,7 @@ const Index = () => {
     neuro_01:             { title: "Neuro 01",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     neuro_02:             { title: "Neuro 02",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     clinica_cirurgica:    { title: "Clínica Cirúrgica",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
-    enfermaria_transicao: { title: "Enf. Transição",     color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    enfermaria_transicao: { title: "Enf. Transição",     color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
     enfermaria_vascular:  { title: "Enf. Vascular",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     sala_vermelha:        { title: "Sala Vermelha",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     sala_laranja:         { title: "Sala Laranja",       color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
