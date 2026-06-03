@@ -256,13 +256,17 @@ export default function GestorPanelPage() {
         setCriticalAlerts(alerts);
       }
 
-      // ── 2. Movements (last 7 days for trend) ──
-      const sevenDaysAgo = subDays(new Date(), 7).toISOString();
+      // ── 2. Movements ──
+      // Pull a wider window (30 days) so we can build the period trend +
+      // previous-period comparisons without re-querying.
+      const periodDays = period === "today" ? 1 : period === "7d" ? 7 : 30;
+      const trendWindowDays = Math.max(periodDays, 30); // always 30 to cover deltas
+      const windowStart = startOfDay(subDays(new Date(), trendWindowDays - 1)).toISOString();
       let movementsQuery = supabase
         .from("patient_movements")
         .select("*")
         .eq("hospital_unit_id", selectedUnit.id)
-        .gte("created_at", sevenDaysAgo)
+        .gte("created_at", windowStart)
         .order("created_at", { ascending: false });
       if (filteredSectorCodes && filteredSectorCodes.length > 0) {
         movementsQuery = movementsQuery.in("patient_sector", filteredSectorCodes);
@@ -271,14 +275,17 @@ export default function GestorPanelPage() {
 
       setRecentMovements((movements || []).slice(0, 15));
 
-      // Build 7-day trend
+      // Build trend for the selected period
       const trend: Record<string, { altas: number; admissoes: number; transferencias: number; obitos: number }> = {};
-      for (let i = 6; i >= 0; i--) {
+      for (let i = periodDays - 1; i >= 0; i--) {
         const day = format(subDays(new Date(), i), "dd/MM", { locale: ptBR });
         trend[day] = { altas: 0, admissoes: 0, transferencias: 0, obitos: 0 };
       }
+      const periodStart = startOfDay(subDays(new Date(), periodDays - 1));
       (movements || []).forEach(m => {
-        const day = format(new Date(m.created_at), "dd/MM", { locale: ptBR });
+        const d = new Date(m.created_at);
+        if (d < periodStart) return;
+        const day = format(d, "dd/MM", { locale: ptBR });
         if (trend[day]) {
           const type = m.movement_type?.toUpperCase() || "";
           if (type.includes("ALTA")) trend[day].altas++;
