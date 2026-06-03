@@ -982,7 +982,7 @@ export default function GestorPanelPage() {
         <Card className="border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" /> Tendência de Movimentações (7 dias)
+              <TrendingUp className="h-4 w-4 text-primary" /> Tendência de Movimentações ({period === "today" ? "hoje" : period === "7d" ? "7 dias" : "30 dias"})
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-4">
