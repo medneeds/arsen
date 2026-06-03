@@ -192,7 +192,7 @@ const EvolucaoPage = () => {
     setNewDevices([]);
     setNewCulturesHtml("");
     setDiagnosticsReplicated(false);
-    setDiagnosticHypotheses("");
+    setDiagnosticHypotheses([]);
     // 🔒 Resetar campos por item — sem isso persistem entre evoluções
     setPlanItems([]);
     setPendenciasItems([]);
@@ -222,7 +222,7 @@ const EvolucaoPage = () => {
     if (hospitalDischargePrediction) updateHospitalDischargePrediction("");
     if (isPalliative) updateIsPalliative(false);
     if (isolationPrecautions) updateIsolationPrecautions("");
-    setDiagnosticHypotheses("");
+    setDiagnosticHypotheses([]);
     setDiagnosticsReplicated(false);
   };
 
@@ -715,7 +715,7 @@ const EvolucaoPage = () => {
                     <td style={labelSt}>Prontuário</td>
                     <td style={{ ...cellSt, fontWeight: 700 }}>{patient.record || '—'}</td>
                     <td style={labelSt}>Nº Atendimento</td>
-                    <td style={{ ...cellSt, fontWeight: 700 }}>{patient.encounterCode ? `#${patient.encounterCode}` : '—'}</td>
+                    <td style={{ ...cellSt, fontWeight: 700 }}>{ids.atendimento ? `#${ids.atendimento}` : '—'}</td>
                   </tr>
                   {/* Linha 3: Idade / Nascimento / Admissão / Sexo / Peso / Alergias */}
                   <tr>
