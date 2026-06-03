@@ -92,8 +92,52 @@ export function usePatientDiagnosticContext(patientId: string | null) {
       if (patch.hospitalDischargePrediction !== undefined) payload.hospital_discharge_prediction = patch.hospitalDischargePrediction || null;
       if (patch.isPalliative !== undefined) payload.is_palliative = patch.isPalliative;
       if (patch.isolationPrecautions !== undefined) payload.isolation_precautions = patch.isolationPrecautions || null;
+
+      // Snapshot anterior — apenas para auditoria de previsão de alta (uti/hospitalar).
+      const auditFields: string[] = [];
+      if (patch.utiDischargePrediction !== undefined) auditFields.push("uti_discharge_prediction");
+      if (patch.hospitalDischargePrediction !== undefined) auditFields.push("hospital_discharge_prediction");
+      let oldSnapshot: Record<string, any> | null = null;
+      if (auditFields.length) {
+        const { data: prevRow } = await supabase
+          .from("patients")
+          .select("uti_discharge_prediction, hospital_discharge_prediction")
+          .eq("id", safeId)
+          .maybeSingle();
+        oldSnapshot = prevRow ?? null;
+      }
+
       const { error } = await supabase.from("patients").update(payload).eq("id", safeId);
       if (error) throw error;
+
+      // Trilha de auditoria — só dispara quando a previsão de alta mudou de fato.
+      if (auditFields.length && oldSnapshot) {
+        const changed = auditFields.filter((f) => (oldSnapshot as any)[f] !== payload[f]);
+        if (changed.length) {
+          const oldSnap: Record<string, any> = {};
+          const newSnap: Record<string, any> = {};
+          changed.forEach((f) => {
+            oldSnap[f] = (oldSnapshot as any)[f];
+            newSnap[f] = payload[f];
+          });
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            await supabase.from("audit_logs").insert({
+              user_id: user?.id ?? null,
+              user_email: user?.email ?? null,
+              action: "UPDATE",
+              table_name: "patients",
+              record_id: safeId,
+              old_data: oldSnap,
+              new_data: newSnap,
+              changed_fields: changed,
+              department: "DISCHARGE_PREDICTION_SYNC",
+            } as any);
+          } catch (auditErr) {
+            console.warn("[usePatientDiagnosticContext] audit log skipped", auditErr);
+          }
+        }
+      }
       return true;
     } catch (err: any) {
       console.error("[usePatientDiagnosticContext] persist error", err);
