@@ -344,6 +344,151 @@ export default function GestorPanelPage() {
       });
       setPrescriptionStats({ total: prescData?.length || 0, ...valCounts });
 
+      // ── 6. TMP (Tempo Médio de Permanência) ──
+      // Encontros com alta no período selecionado, usando outcome_date ou discharge_date.
+      const tmpStartIso = startOfDay(subDays(new Date(), periodDays - 1)).toISOString();
+      let encQuery = supabase
+        .from("patient_encounters")
+        .select("admission_date, discharge_date, outcome_date, outcome, department")
+        .eq("hospital_unit_id", selectedUnit.id)
+        .or(`discharge_date.gte.${tmpStartIso},outcome_date.gte.${tmpStartIso}`);
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        encQuery = encQuery.in("department", filteredDepartments);
+      }
+      const { data: encs } = await encQuery;
+      const losDays: number[] = [];
+      const bySectorLos: Record<string, number[]> = {};
+      (encs || []).forEach((e: any) => {
+        const end = e.discharge_date || e.outcome_date;
+        if (!e.admission_date || !end) return;
+        const ms = new Date(end).getTime() - new Date(e.admission_date).getTime();
+        if (ms <= 0) return;
+        const days = ms / (1000 * 60 * 60 * 24);
+        if (days > 365) return; // descarta outlier
+        losDays.push(days);
+        const sec = e.department || "—";
+        if (!bySectorLos[sec]) bySectorLos[sec] = [];
+        bySectorLos[sec].push(days);
+      });
+      const avg = losDays.length > 0 ? losDays.reduce((a, b) => a + b, 0) / losDays.length : 0;
+      setTmpOverall({ avgDays: avg, samples: losDays.length });
+      setTmpBySector(
+        Object.entries(bySectorLos)
+          .map(([sector, arr]) => ({
+            sector: getSectorDisplayLabel(sector) || sector,
+            avgDays: arr.reduce((a, b) => a + b, 0) / arr.length,
+            samples: arr.length,
+          }))
+          .sort((a, b) => b.avgDays - a.avgDays),
+      );
+
+      // ── 7. Outcomes breakdown (período) — usa patient_movements pois cobre melhor o real ──
+      const outBuckets = { alta: 0, obito: 0, transf: 0, evasao: 0, outros: 0 };
+      (movements || []).forEach((m: any) => {
+        const d = new Date(m.created_at);
+        if (d < periodStart) return;
+        const t = (m.movement_type || "").toUpperCase();
+        if (t.includes("ÓBITO") || t.includes("OBITO")) outBuckets.obito++;
+        else if (t.includes("ALTA")) outBuckets.alta++;
+        else if (t.includes("EVAS")) outBuckets.evasao++;
+        else if (t.includes("TRANSF") && t.includes("EXTERN")) outBuckets.transf++;
+      });
+      const totalOut = outBuckets.alta + outBuckets.obito + outBuckets.transf + outBuckets.evasao + outBuckets.outros;
+      setOutcomesTotal(totalOut);
+      setOutcomes([
+        { key: "alta", label: "Alta", count: outBuckets.alta, color: "hsl(142, 70%, 45%)", icon: Heart },
+        { key: "obito", label: "Óbito", count: outBuckets.obito, color: "hsl(var(--destructive))", icon: Skull },
+        { key: "transf", label: "Transf. Externa", count: outBuckets.transf, color: "hsl(45, 90%, 50%)", icon: ArrowRight },
+        { key: "evasao", label: "Evasão", count: outBuckets.evasao, color: "hsl(280, 70%, 55%)", icon: LogOut },
+        { key: "outros", label: "Outros", count: outBuckets.outros, color: "hsl(var(--muted-foreground))", icon: HelpCircle },
+      ]);
+
+      // ── 8. KPI deltas (tendência) ──
+      // Para ocupação/leitos/porta usamos delta vs ontem via balanço de movimentações
+      // (admissões - altas - óbitos - transf.externas) nas últimas 24h.
+      // Para prescrições / solicitações usamos contagem desta semana vs semana passada.
+      const now = new Date();
+      const yesterday = subDays(now, 1);
+      const last24Start = subDays(now, 1);
+      const prev24Start = subDays(now, 2);
+      let admit24 = 0, discharge24 = 0;
+      let admitPrev24 = 0, dischargePrev24 = 0;
+      (movements || []).forEach((m: any) => {
+        const d = new Date(m.created_at);
+        const t = (m.movement_type || "").toUpperCase();
+        const isAdm = t.includes("ADMISS") || t.includes("INTERN");
+        const isOut = t.includes("ALTA") || t.includes("ÓBITO") || t.includes("OBITO") || t.includes("EVAS") ||
+          (t.includes("TRANSF") && t.includes("EXTERN"));
+        if (d >= last24Start) {
+          if (isAdm) admit24++;
+          if (isOut) discharge24++;
+        } else if (d >= prev24Start) {
+          if (isAdm) admitPrev24++;
+          if (isOut) dischargePrev24++;
+        }
+      });
+      const occupancyDelta24 = admit24 - discharge24;        // net change in occupied beds today
+      const occupancyDeltaPrev = admitPrev24 - dischargePrev24;
+
+      // weekly comparisons for prescriptions & requests
+      const weekStart = subDays(now, 7).toISOString();
+      const prevWeekStart = subDays(now, 14).toISOString();
+      const prevWeekEnd = subDays(now, 7).toISOString();
+
+      let prescCurrPromise = supabase
+        .from("prescriptions")
+        .select("id", { count: "exact", head: true })
+        .eq("hospital_unit_id", selectedUnit.id)
+        .gte("created_at", weekStart);
+      let prescPrevPromise = supabase
+        .from("prescriptions")
+        .select("id", { count: "exact", head: true })
+        .eq("hospital_unit_id", selectedUnit.id)
+        .gte("created_at", prevWeekStart)
+        .lt("created_at", prevWeekEnd);
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        prescCurrPromise = prescCurrPromise.in("department", filteredDepartments);
+        prescPrevPromise = prescPrevPromise.in("department", filteredDepartments);
+      }
+      let reqCurrPromise = supabase
+        .from("bed_allocation_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("hospital_unit_id", selectedUnit.id)
+        .gte("created_at", weekStart);
+      let reqPrevPromise = supabase
+        .from("bed_allocation_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("hospital_unit_id", selectedUnit.id)
+        .gte("created_at", prevWeekStart)
+        .lt("created_at", prevWeekEnd);
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        reqCurrPromise = reqCurrPromise.in("requested_sector", filteredDepartments);
+        reqPrevPromise = reqPrevPromise.in("requested_sector", filteredDepartments);
+      }
+      const [prescCurr, prescPrev, reqCurr, reqPrev] = await Promise.all([
+        prescCurrPromise, prescPrevPromise, reqCurrPromise, reqPrevPromise,
+      ]);
+      const prescDelta = (prescCurr.count || 0) - (prescPrev.count || 0);
+      const reqDelta = (reqCurr.count || 0) - (reqPrev.count || 0);
+
+      const mkDelta = (n: number, hint: string, goodIsDown = false): KpiDelta => ({
+        value: n,
+        display: n === 0 ? "0" : n > 0 ? `+${n}` : `${n}`,
+        trend: n === 0 ? "flat" : n > 0 ? "up" : "down",
+        goodIsDown,
+        hint,
+      });
+
+      setKpiDeltas({
+        occupancy: mkDelta(occupancyDelta24, "vs últimas 24h", true), // mais ocupação geralmente é "pior"
+        vacant: mkDelta(-occupancyDelta24, "vs últimas 24h", false),  // mais vagos é melhor
+        door: mkDelta(occupancyDelta24 - occupancyDeltaPrev, "vs ontem", true),
+        alerts: { value: 0, display: "—", trend: "flat", hint: "tempo real" },
+        prescriptions: mkDelta(prescDelta, "vs semana anterior", false),
+        requests: mkDelta(reqDelta, "vs semana anterior", true),
+        tmp: { value: 0, display: "—", trend: "flat", hint: "período selecionado" },
+      });
+
     } catch (err) {
       console.error("Error fetching gestor data:", err);
     } finally {
@@ -351,7 +496,11 @@ export default function GestorPanelPage() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [selectedUnit, sectorFilter]);
+  useEffect(() => { fetchData(); }, [selectedUnit, sectorFilter, period]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("gestor_period_filter", period);
+  }, [period]);
 
   const occupancyRate = bedStats.total > 0 ? Math.round((bedStats.occupied / bedStats.total) * 100) : 0;
 
