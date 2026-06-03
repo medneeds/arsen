@@ -204,6 +204,7 @@ export default function GestorPanelPage() {
   const [regulatedPatients, setRegulatedPatients] = useState<{ id: string; name: string; age: string | null; sex: string | null; origin: string; destination: string; priority: string; status: string; waitHours: number; createdAt: string }[]>([]);
   // ── Discharge predictions ──
   const [dischargePreviews, setDischargePreviews] = useState<DischargePreviewItem[]>([]);
+  const [dischargeFilter, setDischargeFilter] = useState<DischargePreviewItem['status'] | 'all'>('all');
   // ── KPI deltas ──
   const [kpiDeltas, setKpiDeltas] = useState<Record<string, KpiDelta>>({});
   const [sectorFilter, setSectorFilter] = useState<string>(() => {
