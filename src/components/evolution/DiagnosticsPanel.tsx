@@ -586,9 +586,17 @@ function PrecautionPicker({
           <button
             type="button"
             onClick={() => { onSelect(""); setOpen(false); }}
-            className="w-full text-left text-[11px] px-2 py-1.5 rounded hover:bg-destructive/10 text-destructive flex items-center gap-1"
+            className={cn(
+              "w-full text-left text-[11px] px-2 py-1.5 rounded flex items-center justify-between gap-1",
+              !value
+                ? "bg-red-500/10 text-red-700 dark:text-red-300"
+                : "hover:bg-destructive/10 text-destructive"
+            )}
           >
-            <X className="h-3 w-3" /> Sem precaução
+            <span className="flex items-center gap-1">
+              <X className="h-3 w-3" /> Sem precaução
+            </span>
+            {!value && <Check className="h-3 w-3" />}
           </button>
         </div>
       </PopoverContent>
