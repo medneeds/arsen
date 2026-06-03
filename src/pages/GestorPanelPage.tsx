@@ -648,10 +648,46 @@ export default function GestorPanelPage() {
       />
 
       <div className="p-4 md:p-6 space-y-5 max-w-7xl mx-auto">
-        {/* Filtro hierárquico de setores */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Filtro:</span>
-            {/* Hierarchical sector filter */}
+        {/* Banner de Resumo Executivo */}
+        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-primary/[0.03] to-transparent">
+          <CardContent className="p-3.5 md:p-4">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
+                {period === "today" ? "Hoje" : period === "7d" ? "Últimos 7 dias" : "Últimos 30 dias"}
+              </span>
+              <span className="hidden md:inline opacity-30">·</span>
+              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                <Bed className="h-3.5 w-3.5 text-primary" />
+                {occupancyRate}% de ocupação
+              </span>
+              <span className="hidden md:inline opacity-30">·</span>
+              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                <Hourglass className="h-3.5 w-3.5 text-primary" />
+                TMP {tmpDisplay}
+              </span>
+              <span className="hidden md:inline opacity-30">·</span>
+              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                <AlertTriangle className={cn("h-3.5 w-3.5", criticalAlerts.length > 0 ? "text-destructive" : "text-muted-foreground")} />
+                {criticalAlerts.filter(a => a.severity === "critical").length} alertas críticos
+              </span>
+              <span className="hidden md:inline opacity-30">·</span>
+              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                <Clock className={cn("h-3.5 w-3.5", pendingRequests > 0 ? "text-amber-600" : "text-muted-foreground")} />
+                {pendingRequests} solicitações pendentes
+              </span>
+              <span className="hidden md:inline opacity-30">·</span>
+              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                <Users className={cn("h-3.5 w-3.5", bedStats.doorPatients > 0 ? "text-amber-600" : "text-muted-foreground")} />
+                {bedStats.doorPatients} pacientes porta
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Filtros: Setor + Período */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Filtro:</span>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
@@ -731,31 +767,156 @@ export default function GestorPanelPage() {
                 </ScrollArea>
               </PopoverContent>
             </Popover>
+          </div>
+          {/* Period selector */}
+          <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/30 p-1">
+            {([
+              { id: "today" as Period, label: "Hoje" },
+              { id: "7d" as Period, label: "7 dias" },
+              { id: "30d" as Period, label: "30 dias" },
+            ]).map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setPeriod(opt.id)}
+                className={cn(
+                  "px-3 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wide transition-all",
+                  period === opt.id ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* KPI Cards (clicáveis para drill-down) */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {kpiCards.map((kpi, i) => (
-            <motion.div key={kpi.title} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-              <button
-                type="button"
-                onClick={() => setDrillDown(kpi.key)}
-                className="w-full text-left"
-              >
-                <Card className="border-border/50 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer">
-                  <CardContent className="p-3.5">
-                    <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center mb-2", kpi.bg)}>
-                      <kpi.icon className={cn("h-4 w-4", kpi.color)} />
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-0.5">{kpi.title}</p>
-                    <p className="text-[9px] text-muted-foreground/70">{kpi.sub}</p>
-                  </CardContent>
-                </Card>
-              </button>
-            </motion.div>
-          ))}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+          {kpiCards.map((kpi, i) => {
+            const delta = kpiDeltas[kpi.key];
+            const isWorse = delta && delta.trend !== "flat" &&
+              ((delta.goodIsDown && delta.trend === "up") || (!delta.goodIsDown && delta.trend === "down"));
+            const trendColor = delta?.trend === "flat" ? "text-muted-foreground" : isWorse ? "text-destructive" : "text-emerald-600";
+            const TrendIcon = delta?.trend === "flat" ? Minus : delta?.trend === "up" ? TrendingUp : TrendingDown;
+            return (
+              <motion.div key={kpi.title} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+                <button
+                  type="button"
+                  onClick={() => setDrillDown(kpi.key)}
+                  className="w-full text-left"
+                >
+                  <Card className="border-border/50 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer h-full">
+                    <CardContent className="p-3.5">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", kpi.bg)}>
+                          <kpi.icon className={cn("h-4 w-4", kpi.color)} />
+                        </div>
+                        {delta && delta.display !== "—" && (
+                          <span
+                            className={cn("flex items-center gap-0.5 text-[10px] font-bold", trendColor)}
+                            title={delta.hint}
+                          >
+                            <TrendIcon className="h-3 w-3" />
+                            {delta.display}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-2xl font-bold text-foreground leading-tight">{kpi.value}</p>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-0.5">{kpi.title}</p>
+                      <p className="text-[9px] text-muted-foreground/70">{kpi.sub}</p>
+                      {delta?.hint && delta.display !== "—" && (
+                        <p className="text-[9px] text-muted-foreground/50 mt-0.5">{delta.hint}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </button>
+              </motion.div>
+            );
+          })}
         </div>
+
+        {/* TMP por Setor + Desfechos do Período */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* TMP por Setor */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Hourglass className="h-4 w-4 text-primary" /> Tempo Médio de Permanência por Setor
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {tmpBySector.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">
+                  Sem altas no período selecionado para calcular TMP.
+                </p>
+              ) : (
+                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                  {tmpBySector.map(row => (
+                    <div key={row.sector} className="flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-md hover:bg-muted/40 transition-colors">
+                      <span className="text-xs font-medium text-foreground truncate">{row.sector}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] text-muted-foreground">{row.samples} altas</span>
+                        <span className="text-xs font-bold text-primary tabular-nums">
+                          {row.avgDays.toFixed(1).replace(".", ",")} d
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+                Calculado a partir de admissão até alta (encontros encerrados no período).
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Desfechos do Período */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" /> Desfechos do Período
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {outcomesTotal === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">
+                  Sem desfechos registrados no período.
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {outcomes.filter(o => o.count > 0).map(o => {
+                    const pct = outcomesTotal > 0 ? (o.count / outcomesTotal) * 100 : 0;
+                    const Icon = o.icon;
+                    return (
+                      <div key={o.key} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="flex items-center gap-1.5 font-medium text-foreground">
+                            <Icon className="h-3.5 w-3.5" style={{ color: o.color }} />
+                            {o.label}
+                          </span>
+                          <span className="tabular-nums">
+                            <span className="font-bold text-foreground">{o.count}</span>
+                            <span className="text-muted-foreground"> · {pct.toFixed(0)}%</span>
+                          </span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%`, backgroundColor: o.color }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+                    Total de {outcomesTotal} desfechos no período.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
 
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
