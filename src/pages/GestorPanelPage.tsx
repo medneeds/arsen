@@ -69,6 +69,25 @@ interface TmpBySectorItem {
   samples: number;
 }
 
+interface BedTurnoverItem {
+  sector: string;
+  encounters: number;
+  beds: number;
+  turnover: number;
+}
+
+interface MortalityItem {
+  sector: string;
+  deaths: number;
+  total: number;
+  rate: number;
+}
+
+interface MedicalProductionItem {
+  name: string;
+  count: number;
+}
+
 interface KpiDelta {
   value: number;          // numeric delta
   display: string;        // "+3" / "-2" / "—"
