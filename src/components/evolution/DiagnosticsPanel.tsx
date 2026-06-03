@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CalendarClock, HeartHandshake, ShieldAlert, Plus, X, Check, RotateCcw, CalendarIcon, Hospital, Activity, Stethoscope, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -117,6 +117,19 @@ export function DiagnosticsPanel({
   replicated = false,
   className,
 }: DiagnosticsPanelProps) {
+  // Estado local para resposta imediata ao usuário (evita lag de propagação prop→pai→filho)
+  const [localIsolation, setLocalIsolation] = useState(isolationPrecautions);
+
+  // Sincroniza quando o valor externo muda (ex: outro usuário ou realtime)
+  useEffect(() => {
+    setLocalIsolation(isolationPrecautions);
+  }, [isolationPrecautions]);
+
+  const handleIsolationChange = (value: string) => {
+    setLocalIsolation(value);
+    onIsolationChange(value);
+  };
+
   const hasIsolation = !!isolationPrecautions?.trim();
   const hasAnyPrediction = !!(utiDischargePrediction?.trim() || hospitalDischargePrediction?.trim());
   const [predictionEnabled, setPredictionEnabled] = useState<boolean>(hasAnyPrediction);
@@ -332,11 +345,11 @@ export function DiagnosticsPanel({
             <Label className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-1">
               <ShieldAlert className="h-3 w-3" /> Precaução / Isolamento
             </Label>
-            <PrecautionPicker value={isolationPrecautions} onSelect={onIsolationChange} />
+            <PrecautionPicker value={localIsolation} onSelect={handleIsolationChange} />
           </div>
           <Input
-            value={isolationPrecautions}
-            onChange={(e) => onIsolationChange(e.target.value)}
+            value={localIsolation}
+            onChange={(e) => handleIsolationChange(e.target.value)}
             placeholder="Ex: Contato, Gotículas, Reverso… ou nenhuma"
             className={cn(
               "h-7 text-xs",
