@@ -910,32 +910,34 @@ export default function GestorPanelPage() {
         {/* Banner de Resumo Executivo */}
         <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-primary/[0.03] to-transparent">
           <CardContent className="p-3.5 md:p-4">
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+            <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-5 gap-y-2 text-xs sm:text-sm">
               <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
                 {period === "today" ? "Hoje" : period === "7d" ? "Últimos 7 dias" : "Últimos 30 dias"}
               </span>
               <span className="hidden md:inline opacity-30">·</span>
               <span className="flex items-center gap-1.5 font-semibold text-foreground">
                 <Bed className="h-3.5 w-3.5 text-primary" />
-                {occupancyRate}% de ocupação
+                {occupancyRate}% ocup.
               </span>
+              <span className="opacity-30 sm:hidden">·</span>
+              <span className="hidden md:inline opacity-30">·</span>
+              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                <AlertTriangle className={cn("h-3.5 w-3.5", criticalAlerts.length > 0 ? "text-destructive" : "text-muted-foreground")} />
+                {criticalAlerts.filter(a => a.severity === "critical").length} críticos
+              </span>
+              <span className="opacity-30 sm:hidden">·</span>
               <span className="hidden md:inline opacity-30">·</span>
               <span className="flex items-center gap-1.5 font-semibold text-foreground">
                 <Hourglass className="h-3.5 w-3.5 text-primary" />
                 TMP {tmpDisplay}
               </span>
               <span className="hidden md:inline opacity-30">·</span>
-              <span className="flex items-center gap-1.5 font-semibold text-foreground">
-                <AlertTriangle className={cn("h-3.5 w-3.5", criticalAlerts.length > 0 ? "text-destructive" : "text-muted-foreground")} />
-                {criticalAlerts.filter(a => a.severity === "critical").length} alertas críticos
-              </span>
-              <span className="hidden md:inline opacity-30">·</span>
-              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+              <span className="hidden sm:flex items-center gap-1.5 font-semibold text-foreground">
                 <Clock className={cn("h-3.5 w-3.5", pendingRequests > 0 ? "text-amber-600" : "text-muted-foreground")} />
                 {pendingRequests} solicitações pendentes
               </span>
               <span className="hidden md:inline opacity-30">·</span>
-              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+              <span className="hidden sm:flex items-center gap-1.5 font-semibold text-foreground">
                 <Users className={cn("h-3.5 w-3.5", bedStats.doorPatients > 0 ? "text-amber-600" : "text-muted-foreground")} />
                 {bedStats.doorPatients} pacientes porta
               </span>
