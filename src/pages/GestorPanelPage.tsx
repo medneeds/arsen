@@ -26,7 +26,11 @@ import { KpiDrillDownDialog, type DrillDownRow } from "@/components/gestor/KpiDr
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -157,6 +161,8 @@ const SECTOR_BLOCKS: SectorBlock[] = [
 
 export default function GestorPanelPage() {
   const { currentHospital: selectedUnit } = useHospital();
+  const isMobile = useIsMobile();
+  const [sectorFilterOpen, setSectorFilterOpen] = useState(false);
   const { currentDepartment, setCurrentDepartment } = useDepartment();
   const [bedStats, setBedStats] = useState<BedStats>({ total: 0, occupied: 0, vacant: 0, doorPatients: 0, bySector: {} });
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlert[]>([]);
@@ -900,36 +906,38 @@ export default function GestorPanelPage() {
         }
       />
 
-      <div className="p-4 md:p-6 space-y-5 max-w-7xl mx-auto">
+      <div className="p-3 md:p-6 space-y-4 md:space-y-5 max-w-7xl mx-auto">
         {/* Banner de Resumo Executivo */}
         <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-primary/[0.03] to-transparent">
           <CardContent className="p-3.5 md:p-4">
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+            <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-5 gap-y-2 text-xs sm:text-sm">
               <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
                 {period === "today" ? "Hoje" : period === "7d" ? "Últimos 7 dias" : "Últimos 30 dias"}
               </span>
               <span className="hidden md:inline opacity-30">·</span>
               <span className="flex items-center gap-1.5 font-semibold text-foreground">
                 <Bed className="h-3.5 w-3.5 text-primary" />
-                {occupancyRate}% de ocupação
+                {occupancyRate}% ocup.
               </span>
+              <span className="opacity-30 sm:hidden">·</span>
+              <span className="hidden md:inline opacity-30">·</span>
+              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                <AlertTriangle className={cn("h-3.5 w-3.5", criticalAlerts.length > 0 ? "text-destructive" : "text-muted-foreground")} />
+                {criticalAlerts.filter(a => a.severity === "critical").length} críticos
+              </span>
+              <span className="opacity-30 sm:hidden">·</span>
               <span className="hidden md:inline opacity-30">·</span>
               <span className="flex items-center gap-1.5 font-semibold text-foreground">
                 <Hourglass className="h-3.5 w-3.5 text-primary" />
                 TMP {tmpDisplay}
               </span>
               <span className="hidden md:inline opacity-30">·</span>
-              <span className="flex items-center gap-1.5 font-semibold text-foreground">
-                <AlertTriangle className={cn("h-3.5 w-3.5", criticalAlerts.length > 0 ? "text-destructive" : "text-muted-foreground")} />
-                {criticalAlerts.filter(a => a.severity === "critical").length} alertas críticos
-              </span>
-              <span className="hidden md:inline opacity-30">·</span>
-              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+              <span className="hidden sm:flex items-center gap-1.5 font-semibold text-foreground">
                 <Clock className={cn("h-3.5 w-3.5", pendingRequests > 0 ? "text-amber-600" : "text-muted-foreground")} />
                 {pendingRequests} solicitações pendentes
               </span>
               <span className="hidden md:inline opacity-30">·</span>
-              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+              <span className="hidden sm:flex items-center gap-1.5 font-semibold text-foreground">
                 <Users className={cn("h-3.5 w-3.5", bedStats.doorPatients > 0 ? "text-amber-600" : "text-muted-foreground")} />
                 {bedStats.doorPatients} pacientes porta
               </span>
@@ -938,167 +946,209 @@ export default function GestorPanelPage() {
         </Card>
 
         {/* Filtros: Setor + Período */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Filtro:</span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Filter className="h-4 w-4 text-primary" />
-                  <span className="font-semibold">{sectorDisplayName}</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                align="end"
-                sideOffset={6}
-                className="w-[min(560px,95vw)] p-0 border-border/60 shadow-xl"
-              >
-                <div className="px-4 py-3 border-b border-border/60 bg-muted/40 flex items-center justify-between">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    Filtrar dados do painel
-                  </p>
-                  <span className="text-[10px] font-medium text-muted-foreground/70 tabular-nums">
-                    {bedStats.total} leitos no hospital
-                  </span>
-                </div>
-                <ScrollArea className="max-h-[80vh]">
-                  <div className="p-2.5 space-y-3">
-                    {/* All sectors */}
-                    <button
-                      type="button"
-                      onClick={() => applyFilter("ALL")}
-                      className={cn(
-                        "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-md text-[12px] font-semibold transition-all border",
-                        isAllSectors
-                          ? "bg-primary/10 text-primary border-primary/30"
-                          : "text-foreground hover:bg-muted border-transparent"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <LayoutGrid className={cn("h-4 w-4", isAllSectors ? "text-primary" : "text-muted-foreground")} />
-                        <span className="uppercase tracking-wide">Todos os setores</span>
-                      </div>
-                      {isAllSectors && <Check className="h-4 w-4" />}
-                    </button>
+        {(() => {
+          const filterTrigger = (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 w-full sm:w-auto justify-start"
+              onClick={() => setSectorFilterOpen(true)}
+            >
+              <Filter className="h-4 w-4 text-primary shrink-0" />
+              <span className="font-semibold truncate">{sectorDisplayName}</span>
+            </Button>
+          );
 
-                    {/* Blocks + sectors */}
-                    <div className="space-y-2.5">
-                      <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 px-1">
-                        Blocos e setores
-                      </p>
-                      {SECTOR_BLOCKS.map(block => {
-                        const blockId = `BLOCK:${block.id}`;
-                        const blockActive = sectorFilter === blockId;
-                        const blockHasActiveChild = block.departments.some(d => d === sectorFilter);
-                        const isHighlighted = blockActive || blockHasActiveChild;
-                        const blockTotals = block.departments.reduce(
-                          (acc, dept) => {
-                            const code = DEPARTMENT_TO_SECTOR[dept as keyof typeof DEPARTMENT_TO_SECTOR];
-                            const s = code ? bedStats.bySector[code] : undefined;
-                            if (s) {
-                              acc.total += s.total;
-                              acc.occupied += s.occupied;
-                            }
-                            return acc;
-                          },
-                          { total: 0, occupied: 0 }
-                        );
-                        return (
-                          <div
-                            key={block.id}
-                            className={cn(
-                              "rounded-md border-l-2 pl-2.5 pr-1 py-1 transition-colors",
-                              isHighlighted
-                                ? "border-primary bg-primary/5"
-                                : "border-border/40 hover:border-border"
-                            )}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => applyFilter(blockId)}
-                              className={cn(
-                                "w-full flex items-center justify-between gap-2 px-1.5 py-1.5 rounded-md text-[10.5px] font-bold uppercase tracking-[0.14em] transition-all",
-                                blockActive
-                                  ? "text-primary"
-                                  : "text-muted-foreground/90 hover:text-foreground"
-                              )}
-                            >
-                              <span className="flex items-center gap-1.5">
-                                <span>Bloco {block.label}</span>
-                                {blockTotals.total > 0 && (
-                                  <span className="text-[9px] font-semibold text-muted-foreground/70 tabular-nums normal-case tracking-normal">
-                                    · {blockTotals.occupied}/{blockTotals.total}
-                                  </span>
-                                )}
-                              </span>
-                              {blockActive && <Check className="h-3.5 w-3.5" />}
-                            </button>
-                            <div className="grid grid-cols-2 gap-1 pt-0.5 pb-1">
-                              {block.departments.map(dept => {
-                                const isActive = sectorFilter === dept;
-                                const code = DEPARTMENT_TO_SECTOR[dept as keyof typeof DEPARTMENT_TO_SECTOR];
-                                const stat = code ? bedStats.bySector[code] : undefined;
-                                return (
-                                  <button
-                                    key={dept}
-                                    type="button"
-                                    onClick={() => applyFilter(dept)}
-                                    className={cn(
-                                      "flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all text-left border",
-                                      isActive
-                                        ? "bg-primary/10 text-primary border-primary/30 shadow-sm"
-                                        : "text-foreground hover:bg-muted border-transparent"
-                                    )}
-                                  >
-                                    <span className="truncate">{dept}</span>
-                                    <span className="flex items-center gap-1 flex-shrink-0">
-                                      {stat && (
-                                        <span className={cn(
-                                          "text-[9px] font-semibold tabular-nums",
-                                          isActive ? "text-primary/80" : "text-muted-foreground/70"
-                                        )}>
-                                          {stat.occupied}/{stat.total}
-                                        </span>
-                                      )}
-                                      {isActive && <Check className="h-3.5 w-3.5" />}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </ScrollArea>
-              </PopoverContent>
-            </Popover>
-          </div>
-          {/* Period selector */}
-          <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/30 p-1">
-            {([
-              { id: "today" as Period, label: "Hoje" },
-              { id: "7d" as Period, label: "7 dias" },
-              { id: "30d" as Period, label: "30 dias" },
-            ]).map(opt => (
+          const filterBody = (
+            <div className="p-2.5 space-y-3">
+              {/* All sectors */}
               <button
-                key={opt.id}
                 type="button"
-                onClick={() => setPeriod(opt.id)}
+                onClick={() => { applyFilter("ALL"); setSectorFilterOpen(false); }}
                 className={cn(
-                  "px-3 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wide transition-all",
-                  period === opt.id ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
+                  "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-md text-[12px] font-semibold transition-all border",
+                  isAllSectors
+                    ? "bg-primary/10 text-primary border-primary/30"
+                    : "text-foreground hover:bg-muted border-transparent"
                 )}
               >
-                {opt.label}
+                <div className="flex items-center gap-2">
+                  <LayoutGrid className={cn("h-4 w-4", isAllSectors ? "text-primary" : "text-muted-foreground")} />
+                  <span className="uppercase tracking-wide">Todos os setores</span>
+                </div>
+                {isAllSectors && <Check className="h-4 w-4" />}
               </button>
-            ))}
-          </div>
-        </div>
+
+              {/* Blocks + sectors */}
+              <div className="space-y-2.5">
+                <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 px-1">
+                  Blocos e setores
+                </p>
+                {SECTOR_BLOCKS.map(block => {
+                  const blockId = `BLOCK:${block.id}`;
+                  const blockActive = sectorFilter === blockId;
+                  const blockHasActiveChild = block.departments.some(d => d === sectorFilter);
+                  const isHighlighted = blockActive || blockHasActiveChild;
+                  const blockTotals = block.departments.reduce(
+                    (acc, dept) => {
+                      const code = DEPARTMENT_TO_SECTOR[dept as keyof typeof DEPARTMENT_TO_SECTOR];
+                      const s = code ? bedStats.bySector[code] : undefined;
+                      if (s) {
+                        acc.total += s.total;
+                        acc.occupied += s.occupied;
+                      }
+                      return acc;
+                    },
+                    { total: 0, occupied: 0 }
+                  );
+                  return (
+                    <div
+                      key={block.id}
+                      className={cn(
+                        "rounded-md border-l-2 pl-2.5 pr-1 py-1 transition-colors",
+                        isHighlighted
+                          ? "border-primary bg-primary/5"
+                          : "border-border/40 hover:border-border"
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => { applyFilter(blockId); setSectorFilterOpen(false); }}
+                        className={cn(
+                          "w-full flex items-center justify-between gap-2 px-1.5 py-1.5 rounded-md text-[10.5px] font-bold uppercase tracking-[0.14em] transition-all",
+                          blockActive
+                            ? "text-primary"
+                            : "text-muted-foreground/90 hover:text-foreground"
+                        )}
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <span>Bloco {block.label}</span>
+                          {blockTotals.total > 0 && (
+                            <span className="text-[9px] font-semibold text-muted-foreground/70 tabular-nums normal-case tracking-normal">
+                              · {blockTotals.occupied}/{blockTotals.total}
+                            </span>
+                          )}
+                        </span>
+                        {blockActive && <Check className="h-3.5 w-3.5" />}
+                      </button>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 pt-0.5 pb-1">
+                        {block.departments.map(dept => {
+                          const isActive = sectorFilter === dept;
+                          const code = DEPARTMENT_TO_SECTOR[dept as keyof typeof DEPARTMENT_TO_SECTOR];
+                          const stat = code ? bedStats.bySector[code] : undefined;
+                          return (
+                            <button
+                              key={dept}
+                              type="button"
+                              onClick={() => { applyFilter(dept); setSectorFilterOpen(false); }}
+                              className={cn(
+                                "flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all text-left border",
+                                isActive
+                                  ? "bg-primary/10 text-primary border-primary/30 shadow-sm"
+                                  : "text-foreground hover:bg-muted border-transparent"
+                              )}
+                            >
+                              <span className="truncate">{dept}</span>
+                              <span className="flex items-center gap-1 flex-shrink-0">
+                                {stat && (
+                                  <span className={cn(
+                                    "text-[9px] font-semibold tabular-nums",
+                                    isActive ? "text-primary/80" : "text-muted-foreground/70"
+                                  )}>
+                                    {stat.occupied}/{stat.total}
+                                  </span>
+                                )}
+                                {isActive && <Check className="h-3.5 w-3.5" />}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+
+          return (
+            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground shrink-0">Filtro:</span>
+                <div className="flex-1 sm:flex-initial">
+                  {isMobile ? (
+                    <>
+                      {filterTrigger}
+                      <Sheet open={sectorFilterOpen} onOpenChange={setSectorFilterOpen}>
+                        <SheetContent side="bottom" className="p-0 max-h-[85vh] flex flex-col rounded-t-2xl">
+                          <div className="flex justify-center pt-2 pb-1 shrink-0">
+                            <div className="h-1.5 w-12 rounded-full bg-muted-foreground/30" />
+                          </div>
+                          <SheetHeader className="px-4 pb-3 border-b border-border/60 shrink-0">
+                            <SheetTitle className="text-sm font-semibold uppercase tracking-[0.14em] text-left flex items-center justify-between">
+                              <span>Filtrar painel</span>
+                              <span className="text-[10px] font-medium text-muted-foreground/70 tabular-nums normal-case tracking-normal">
+                                {bedStats.total} leitos
+                              </span>
+                            </SheetTitle>
+                          </SheetHeader>
+                          <div className="flex-1 overflow-y-auto overscroll-contain">
+                            {filterBody}
+                          </div>
+                        </SheetContent>
+                      </Sheet>
+                    </>
+                  ) : (
+                    <Popover open={sectorFilterOpen} onOpenChange={setSectorFilterOpen}>
+                      <PopoverTrigger asChild>{filterTrigger}</PopoverTrigger>
+                      <PopoverContent
+                        align="end"
+                        sideOffset={6}
+                        className="w-[min(560px,95vw)] p-0 border-border/60 shadow-xl"
+                      >
+                        <div className="px-4 py-3 border-b border-border/60 bg-muted/40 flex items-center justify-between">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                            Filtrar dados do painel
+                          </p>
+                          <span className="text-[10px] font-medium text-muted-foreground/70 tabular-nums">
+                            {bedStats.total} leitos no hospital
+                          </span>
+                        </div>
+                        <div className="h-[70vh] overflow-y-auto">
+                          {filterBody}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                </div>
+              </div>
+              {/* Period selector */}
+              <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/30 p-1 w-full sm:w-auto">
+                {([
+                  { id: "today" as Period, label: "Hoje" },
+                  { id: "7d" as Period, label: "7 dias" },
+                  { id: "30d" as Period, label: "30 dias" },
+                ]).map(opt => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setPeriod(opt.id)}
+                    className={cn(
+                      "flex-1 sm:flex-initial px-3 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wide transition-all",
+                      period === opt.id ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
 
         {/* KPI Cards (clicáveis para drill-down) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 md:gap-3">
           {kpiCards.map((kpi, i) => {
             const delta = kpiDeltas[kpi.key];
             const isWorse = delta && delta.trend !== "flat" &&
@@ -1113,10 +1163,10 @@ export default function GestorPanelPage() {
                   className="w-full text-left"
                 >
                   <Card className="border-border/50 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer h-full">
-                    <CardContent className="p-3.5">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", kpi.bg)}>
-                          <kpi.icon className={cn("h-4 w-4", kpi.color)} />
+                    <CardContent className="p-2.5 md:p-3.5">
+                      <div className="flex items-start justify-between mb-1.5 md:mb-2">
+                        <div className={cn("h-7 w-7 md:h-8 md:w-8 rounded-lg flex items-center justify-center", kpi.bg)}>
+                          <kpi.icon className={cn("h-3.5 w-3.5 md:h-4 md:w-4", kpi.color)} />
                         </div>
                         {delta && delta.display !== "—" && (
                           <span
@@ -1128,11 +1178,11 @@ export default function GestorPanelPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-2xl font-bold text-foreground leading-tight">{kpi.value}</p>
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-0.5">{kpi.title}</p>
-                      <p className="text-[9px] text-muted-foreground/70">{kpi.sub}</p>
+                      <p className="text-lg md:text-2xl font-bold text-foreground leading-tight truncate">{kpi.value}</p>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-0.5 line-clamp-2">{kpi.title}</p>
+                      <p className="text-[9px] text-muted-foreground/70 truncate">{kpi.sub}</p>
                       {delta?.hint && delta.display !== "—" && (
-                        <p className="text-[9px] text-muted-foreground/50 mt-0.5">{delta.hint}</p>
+                        <p className="hidden md:block text-[9px] text-muted-foreground/50 mt-0.5">{delta.hint}</p>
                       )}
                     </CardContent>
                   </Card>
@@ -1655,22 +1705,33 @@ export default function GestorPanelPage() {
             </CardHeader>
             <CardContent className="flex items-center justify-center pb-4">
               {bedStats.total > 0 ? (
-                <div className="relative">
-                  <ResponsiveContainer width={180} height={180}>
-                    <PieChart>
-                      <Pie data={occupancyPie} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value" strokeWidth={0}>
-                        {occupancyPie.map((_, idx) => (
-                          <Cell key={idx} fill={PIE_COLORS[idx]} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip formatter={(val: number, name: string) => [`${val} leitos`, name]} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-bold text-foreground">{occupancyRate}%</span>
-                    <span className="text-[10px] text-muted-foreground">ocupação</span>
+                <>
+                  {/* Mobile: numeric fallback */}
+                  <div className="sm:hidden flex flex-col items-center py-4">
+                    <span className="text-4xl font-bold text-primary tabular-nums">{occupancyRate}%</span>
+                    <span className="text-[11px] text-muted-foreground uppercase tracking-wide mt-1">ocupação</span>
+                    <span className="text-[10px] text-muted-foreground/70 mt-2">
+                      {bedStats.occupied} ocupados · {bedStats.vacant} vagos
+                    </span>
                   </div>
-                </div>
+                  {/* Desktop: donut */}
+                  <div className="relative hidden sm:block">
+                    <ResponsiveContainer width={180} height={180}>
+                      <PieChart>
+                        <Pie data={occupancyPie} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                          {occupancyPie.map((_, idx) => (
+                            <Cell key={idx} fill={PIE_COLORS[idx]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip formatter={(val: number, name: string) => [`${val} leitos`, name]} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-2xl font-bold text-foreground">{occupancyRate}%</span>
+                      <span className="text-[10px] text-muted-foreground">ocupação</span>
+                    </div>
+                  </div>
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground py-8">Sem dados</p>
               )}
@@ -1686,11 +1747,11 @@ export default function GestorPanelPage() {
             </CardHeader>
             <CardContent className="pb-4">
               {sectorBarData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={isMobile ? 160 : 200}>
                   <BarChart data={sectorBarData} barGap={4}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="sector" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                    {!isMobile && <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />}
                     <RechartsTooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }} />
                     <Bar dataKey="Ocupados" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="Vagos" fill="hsl(var(--muted))" radius={[4, 4, 0, 0]} />
@@ -1712,7 +1773,7 @@ export default function GestorPanelPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-4">
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={isMobile ? 160 : 220}>
               <AreaChart data={movementTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="day" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
@@ -1720,8 +1781,8 @@ export default function GestorPanelPage() {
                 <RechartsTooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }} />
                 <Area type="monotone" dataKey="admissoes" name="Admissões" stroke="hsl(210, 80%, 55%)" fill="hsl(210, 80%, 55%)" fillOpacity={0.15} strokeWidth={2} />
                 <Area type="monotone" dataKey="altas" name="Altas" stroke="hsl(142, 70%, 45%)" fill="hsl(142, 70%, 45%)" fillOpacity={0.15} strokeWidth={2} />
-                <Area type="monotone" dataKey="transferencias" name="Transferências" stroke="hsl(45, 90%, 50%)" fill="hsl(45, 90%, 50%)" fillOpacity={0.1} strokeWidth={2} />
-                <Area type="monotone" dataKey="obitos" name="Óbitos" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.1} strokeWidth={2} />
+                {!isMobile && <Area type="monotone" dataKey="transferencias" name="Transferências" stroke="hsl(45, 90%, 50%)" fill="hsl(45, 90%, 50%)" fillOpacity={0.1} strokeWidth={2} />}
+                {!isMobile && <Area type="monotone" dataKey="obitos" name="Óbitos" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.1} strokeWidth={2} />}
                 <Legend wrapperStyle={{ fontSize: 11 }} />
               </AreaChart>
             </ResponsiveContainer>
@@ -1822,8 +1883,8 @@ export default function GestorPanelPage() {
                           {mov.movement_type}{mov.destination ? ` → ${mov.destination}` : ""}
                         </p>
                       </div>
-                      <Badge variant="outline" className="text-[9px] shrink-0">{getSectorDisplayLabel(mov.patient_sector)} · {mov.patient_bed}</Badge>
-                      <span className="text-[9px] text-muted-foreground shrink-0">
+                      <Badge variant="outline" className="hidden sm:flex text-[9px] shrink-0">{getSectorDisplayLabel(mov.patient_sector)} · {mov.patient_bed}</Badge>
+                      <span className="hidden sm:inline text-[9px] text-muted-foreground shrink-0">
                         {format(new Date(mov.created_at), "dd/MM HH:mm", { locale: ptBR })}
                       </span>
                     </div>
