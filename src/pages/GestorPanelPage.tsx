@@ -1163,10 +1163,10 @@ export default function GestorPanelPage() {
                   className="w-full text-left"
                 >
                   <Card className="border-border/50 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer h-full">
-                    <CardContent className="p-3.5">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", kpi.bg)}>
-                          <kpi.icon className={cn("h-4 w-4", kpi.color)} />
+                    <CardContent className="p-2.5 md:p-3.5">
+                      <div className="flex items-start justify-between mb-1.5 md:mb-2">
+                        <div className={cn("h-7 w-7 md:h-8 md:w-8 rounded-lg flex items-center justify-center", kpi.bg)}>
+                          <kpi.icon className={cn("h-3.5 w-3.5 md:h-4 md:w-4", kpi.color)} />
                         </div>
                         {delta && delta.display !== "—" && (
                           <span
@@ -1178,11 +1178,11 @@ export default function GestorPanelPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-2xl font-bold text-foreground leading-tight">{kpi.value}</p>
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-0.5">{kpi.title}</p>
-                      <p className="text-[9px] text-muted-foreground/70">{kpi.sub}</p>
+                      <p className="text-lg md:text-2xl font-bold text-foreground leading-tight truncate">{kpi.value}</p>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-0.5 line-clamp-2">{kpi.title}</p>
+                      <p className="text-[9px] text-muted-foreground/70 truncate">{kpi.sub}</p>
                       {delta?.hint && delta.display !== "—" && (
-                        <p className="text-[9px] text-muted-foreground/50 mt-0.5">{delta.hint}</p>
+                        <p className="hidden md:block text-[9px] text-muted-foreground/50 mt-0.5">{delta.hint}</p>
                       )}
                     </CardContent>
                   </Card>
