@@ -165,7 +165,7 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
                         <div className="min-w-0">
                           <p className="patient-id text-xs font-semibold truncate">{r.patient_name}</p>
                           <p className="text-[10px] text-muted-foreground truncate">
-                            {r.origin_sector || "—"} → {r.destination_sector || "—"} · {r.priority || "s/ prioridade"}
+                            {getSectorDisplayLabel(r.origin_sector) || r.origin_sector || "—"} → {getSectorDisplayLabel(r.destination_sector) || r.destination_sector || "—"} · {r.priority || "s/ prioridade"}
                           </p>
                         </div>
                         <Badge
