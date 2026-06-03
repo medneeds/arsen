@@ -4,6 +4,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 import type { NirMetrics } from "@/hooks/useNirMetrics";
 import type { DischargePrediction } from "@/hooks/useDischargePredictions";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
 interface Props {
   metrics: NirMetrics;
@@ -21,7 +22,7 @@ export function NirPdfExport({ metrics, predictions = [] }: Props) {
     const sectorRows = metrics.occupancyBySector
       .map(
         (s) =>
-          `<tr><td style="text-transform:capitalize">${s.sector}</td><td class="nz-c">${s.occupied}/${s.total}</td><td class="nz-r" style="font-weight:700;color:${
+          `<tr><td style="text-transform:capitalize">${getSectorDisplayLabel(s.sector) || s.sector}</td><td class="nz-c">${s.occupied}/${s.total}</td><td class="nz-r" style="font-weight:700;color:${
             s.rate >= 95 ? "#dc2626" : s.rate >= 80 ? "#d97706" : "#059669"
           }">${s.rate}%</td><td class="nz-r"><div class="bar"><div style="width:${s.rate}%;background:${
             s.rate >= 95 ? "#dc2626" : s.rate >= 80 ? "#d97706" : "#059669"
@@ -33,7 +34,7 @@ export function NirPdfExport({ metrics, predictions = [] }: Props) {
     const dischargeRows = next72
       .map(
         (p) =>
-          `<tr><td style="font-weight:600">${p.name}</td><td style="text-transform:capitalize">${p.sector || "—"}</td><td class="nz-c">${
+          `<tr><td style="font-weight:600">${p.name}</td><td style="text-transform:capitalize">${getSectorDisplayLabel(p.sector) || p.sector || "—"}</td><td class="nz-c">${
             p.bed_number || "—"
           }</td><td>${p.uti_discharge_prediction || ""}</td><td class="nz-c"><span class="pill pill-${p.bucket}">${
             { today: "Hoje", tomorrow: "Amanhã", "48_72h": "48–72h", week: "Semana", later: "Futuro", unparsed: "—" }[p.bucket]

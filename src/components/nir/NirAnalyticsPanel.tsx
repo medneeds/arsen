@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import type { NirMetrics } from "@/hooks/useNirMetrics";
 import { TrendingUp, Flame, ArrowRightLeft, PieChart as PieIcon, Lock } from "lucide-react";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
 interface Props {
   metrics: NirMetrics;
@@ -164,7 +165,7 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
                         <div className="min-w-0">
                           <p className="patient-id text-xs font-semibold truncate">{r.patient_name}</p>
                           <p className="text-[10px] text-muted-foreground truncate">
-                            {r.origin_sector || "—"} → {r.destination_sector || "—"} · {r.priority || "s/ prioridade"}
+                            {getSectorDisplayLabel(r.origin_sector) || r.origin_sector || "—"} → {getSectorDisplayLabel(r.destination_sector) || r.destination_sector || "—"} · {r.priority || "s/ prioridade"}
                           </p>
                         </div>
                         <Badge
@@ -198,7 +199,7 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
                   {metrics.longBlocked7d.map((b: any) => (
                     <li key={b.id} className="px-3 py-2 flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="patient-id text-xs font-semibold truncate">Leito {b.bed_number} — {b.sector}</p>
+                        <p className="patient-id text-xs font-semibold truncate">Leito {b.bed_number} — {getSectorDisplayLabel(b.sector) || b.sector}</p>
                         <p className="text-[10px] text-muted-foreground truncate">{b.block_reason || "Sem motivo registrado"}</p>
                       </div>
                       <Badge variant="outline" className="text-[10px] shrink-0 border-red-500/40 text-red-600">
@@ -230,7 +231,7 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
                   return (
                     <li key={i} className="px-3 py-2">
                       <div className="flex items-center justify-between text-[11px] mb-1">
-                        <span className="truncate font-medium capitalize">{f.origin} → {f.destination}</span>
+                        <span className="truncate font-medium">{getSectorDisplayLabel(f.origin) || f.origin} → {getSectorDisplayLabel(f.destination) || f.destination}</span>
                         <span className="text-muted-foreground">{f.count}</span>
                       </div>
                       <div className="h-1.5 rounded-full bg-muted overflow-hidden">
