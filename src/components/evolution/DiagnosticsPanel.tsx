@@ -95,6 +95,17 @@ const formatDisplay = (value: string): string => {
   return value || "";
 };
 
+/** Retorna true se a data estiver dentro das próximas 24 horas (hoje ou amanhã). */
+const isWithin24h = (value: string): boolean => {
+  const d = toDateOrNull(value);
+  if (!d) return false;
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrowEnd = new Date(todayStart);
+  tomorrowEnd.setDate(tomorrowEnd.getDate() + 2); // até o fim de amanhã
+  return d >= todayStart && d < tomorrowEnd;
+};
+
 export function DiagnosticsPanel({
   cidPrimary,
   cidSecondary = [],
@@ -300,24 +311,49 @@ export function DiagnosticsPanel({
         </div>
 
         {predictionEnabled && (
-          <div className={cn("grid gap-2", showUtiPrediction ? "md:grid-cols-2" : "md:grid-cols-1")}>
-            {showUtiPrediction && (
+          <>
+            <div className={cn("grid gap-2", showUtiPrediction ? "md:grid-cols-2" : "md:grid-cols-1")}>
+              {showUtiPrediction && (
+                <DatePredictionField
+                  icon={<Activity className="h-3 w-3" />}
+                  label="Alta da UTI/UCI"
+                  value={utiDischargePrediction}
+                  onChange={onUtiDischargePredictionChange}
+                  accent="emerald"
+                />
+              )}
               <DatePredictionField
-                icon={<Activity className="h-3 w-3" />}
-                label="Alta da UTI/UCI"
-                value={utiDischargePrediction}
-                onChange={onUtiDischargePredictionChange}
-                accent="emerald"
+                icon={<Hospital className="h-3 w-3" />}
+                label="Alta Hospitalar"
+                value={hospitalDischargePrediction}
+                onChange={onHospitalDischargePredictionChange}
+                accent="primary"
               />
-            )}
-            <DatePredictionField
-              icon={<Hospital className="h-3 w-3" />}
-              label="Alta Hospitalar"
-              value={hospitalDischargePrediction}
-              onChange={onHospitalDischargePredictionChange}
-              accent="primary"
-            />
-          </div>
+            </div>
+
+            {/* Alerta 24h — aparece quando alguma alta está prevista para hoje ou amanhã */}
+            {(() => {
+              const utiAlert = showUtiPrediction && isWithin24h(utiDischargePrediction);
+              const hospitalAlert = isWithin24h(hospitalDischargePrediction);
+              if (!utiAlert && !hospitalAlert) return null;
+              const labels: string[] = [];
+              if (utiAlert) labels.push(`Alta UTI/UCI: ${formatDisplay(utiDischargePrediction)}`);
+              if (hospitalAlert) labels.push(`Alta Hospitalar: ${formatDisplay(hospitalDischargePrediction)}`);
+              return (
+                <div className="flex items-start gap-2.5 rounded-md border border-amber-400/50 border-l-[3px] border-l-amber-500 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-500/40 px-3 py-2">
+                  <CalendarClock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="leading-tight">
+                    <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+                      Alta programada nas próximas 24h
+                    </p>
+                    <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">
+                      {labels.join(" • ")} — verifique pendências antes de finalizar a evolução.
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+          </>
         )}
       </div>
 
