@@ -159,3 +159,4 @@
 
 
 - [Contextual Help Tour](mem://features/contextual-help-tour) — Botão "?" bottom-5 left-5 com overlay focused-tour escurecido em /prescricao, /evolucao e /requisicoes; conteúdo didático em src/lib/helpTours.ts, camada puramente de UI sem tocar dados/hooks/RLS
+- [Discharge Prediction Sync](mem://features/discharge-prediction-sync) — Helper único (UTI+hospitalar, UTC-3), badge ≤24h em PatientCard/UtiPatientCard, banner âmbar na Evolução, 1 toast por paciente/sessão no mapa (`Index.tsx`), auditoria em `audit_logs` via `usePatientDiagnosticContext.persist` (department='DISCHARGE_PREDICTION_SYNC'); sem duplicar sync em `useEvolutions`, sem poluir `patient_movements`
