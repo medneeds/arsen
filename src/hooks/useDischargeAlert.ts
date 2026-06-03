@@ -67,7 +67,7 @@ export function useDischargeAlert(patients: Patient[]) {
       patients.filter(
         (p) =>
           p.name?.trim() &&
-          isWithin24h((p.utiDischargePrediction as any)?.[0] ?? p.utiDischargePrediction),
+          isWithin24h(p.utiDischargePrediction as any),
       ),
     [patients],
   );
