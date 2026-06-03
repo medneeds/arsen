@@ -17,6 +17,7 @@ import {
   RefreshCw, Download, TrendingUp, TrendingDown, FileText,
   ShieldCheck, Loader2, LayoutGrid, Filter, Check, Building2,
   Hourglass, ArrowRight, Heart, Skull, LogOut, HelpCircle, Minus,
+  Repeat, Trophy, Stethoscope,
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PlatformHeader } from "@/components/layout/PlatformHeader";
