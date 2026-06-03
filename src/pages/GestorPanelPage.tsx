@@ -204,6 +204,7 @@ export default function GestorPanelPage() {
   const [regulatedPatients, setRegulatedPatients] = useState<{ id: string; name: string; age: string | null; sex: string | null; origin: string; destination: string; priority: string; status: string; waitHours: number; createdAt: string }[]>([]);
   // ── Discharge predictions ──
   const [dischargePreviews, setDischargePreviews] = useState<DischargePreviewItem[]>([]);
+  const [dischargeFilter, setDischargeFilter] = useState<DischargePreviewItem['status'] | 'all'>('all');
   // ── KPI deltas ──
   const [kpiDeltas, setKpiDeltas] = useState<Record<string, KpiDelta>>({});
   const [sectorFilter, setSectorFilter] = useState<string>(() => {
@@ -1605,86 +1606,143 @@ export default function GestorPanelPage() {
               <span className="flex items-center gap-2">
                 <LogOut className="h-4 w-4 text-primary" /> Previsão de Alta por Setor
               </span>
-              <div className="flex items-center gap-2">
-                <div className="hidden md:flex items-center gap-3 text-[10px] text-muted-foreground">
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive inline-block" /> Vencida</span>
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500 inline-block" /> Hoje</span>
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-500 inline-block" /> Amanhã</span>
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500 inline-block" /> Esta semana</span>
-                </div>
-                <Badge variant="secondary" className="text-[10px] tabular-nums">{dischargePreviews.length}</Badge>
-              </div>
+              <Badge variant="secondary" className="text-[10px] tabular-nums">{dischargePreviews.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {dischargePreviews.length === 0 ? (
-              <div className="text-center py-8">
-                <LogOut className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                <p className="text-xs text-muted-foreground">Nenhuma previsão de alta registrada para os próximos dias.</p>
-              </div>
-            ) : (
-              (() => {
-                const bySector = dischargePreviews.reduce((acc, p) => {
-                  if (!acc[p.sectorLabel]) acc[p.sectorLabel] = [];
-                  acc[p.sectorLabel].push(p);
-                  return acc;
-                }, {} as Record<string, DischargePreviewItem[]>);
+            {(() => {
+              const statusConfig: Record<DischargePreviewItem['status'], { label: string; bg: string; border: string; text: string; dot: string; solidBg: string; solidText: string; activeBorder: string }> = {
+                overdue:   { label: 'VENCIDA',    bg: 'bg-destructive/10', border: 'border-destructive/30', text: 'text-destructive',      dot: 'bg-destructive',      solidBg: 'bg-destructive',   solidText: 'text-destructive-foreground', activeBorder: 'border-destructive' },
+                today:     { label: 'HOJE',       bg: 'bg-amber-500/10',   border: 'border-amber-500/30',   text: 'text-amber-600',        dot: 'bg-amber-500',        solidBg: 'bg-amber-500',     solidText: 'text-white',                  activeBorder: 'border-amber-500' },
+                tomorrow:  { label: 'AMANHÃ',     bg: 'bg-blue-500/10',    border: 'border-blue-500/30',    text: 'text-blue-600',         dot: 'bg-blue-500',         solidBg: 'bg-blue-500',      solidText: 'text-white',                  activeBorder: 'border-blue-500' },
+                this_week: { label: 'ESTA SEMANA',bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-600',      dot: 'bg-emerald-500',      solidBg: 'bg-emerald-500',   solidText: 'text-white',                  activeBorder: 'border-emerald-500' },
+                future:    { label: 'FUTURO',     bg: 'bg-muted/30',       border: 'border-border',         text: 'text-muted-foreground', dot: 'bg-muted-foreground', solidBg: 'bg-muted-foreground', solidText: 'text-background',          activeBorder: 'border-muted-foreground' },
+                unknown:   { label: 'SEM DATA',   bg: 'bg-muted/30',       border: 'border-border',         text: 'text-muted-foreground', dot: 'bg-muted-foreground', solidBg: 'bg-muted-foreground', solidText: 'text-background',          activeBorder: 'border-muted-foreground' },
+              };
 
-                const statusConfig: Record<DischargePreviewItem['status'], { label: string; bg: string; border: string; text: string; dot: string }> = {
-                  overdue:   { label: 'VENCIDA',      bg: 'bg-destructive/10',  border: 'border-destructive/30',  text: 'text-destructive',   dot: 'bg-destructive'  },
-                  today:     { label: 'HOJE',          bg: 'bg-amber-500/10',    border: 'border-amber-500/30',    text: 'text-amber-600',     dot: 'bg-amber-500'    },
-                  tomorrow:  { label: 'AMANHÃ',        bg: 'bg-blue-500/10',     border: 'border-blue-500/30',     text: 'text-blue-600',      dot: 'bg-blue-500'     },
-                  this_week: { label: 'ESTA SEMANA',   bg: 'bg-emerald-500/10',  border: 'border-emerald-500/30',  text: 'text-emerald-600',   dot: 'bg-emerald-500'  },
-                  future:    { label: 'FUTURO',        bg: 'bg-muted/30',        border: 'border-border',          text: 'text-muted-foreground', dot: 'bg-muted-foreground' },
-                  unknown:   { label: 'SEM DATA',      bg: 'bg-muted/30',        border: 'border-border',          text: 'text-muted-foreground', dot: 'bg-muted-foreground' },
-                };
+              const counts = dischargePreviews.reduce((acc, p) => {
+                acc[p.status] = (acc[p.status] || 0) + 1;
+                return acc;
+              }, {} as Record<DischargePreviewItem['status'], number>);
 
-                return (
-                  <div className="space-y-4 max-h-[480px] overflow-y-auto pr-1">
-                    {Object.entries(bySector).map(([sector, items]) => (
-                      <div key={sector}>
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">{sector}</p>
-                          <span className="text-[10px] text-muted-foreground/60">({items.length} paciente{items.length > 1 ? 's' : ''})</span>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1.5">
-                          {items.map(p => {
-                            const cfg = statusConfig[p.status];
-                            return (
-                              <div
-                                key={p.id}
-                                className={cn(
-                                  "flex items-start gap-2 p-2.5 rounded-lg border transition-colors hover:opacity-90",
-                                  cfg.bg, cfg.border
-                                )}
-                              >
-                                <span className={cn("h-2 w-2 rounded-full mt-1 shrink-0", cfg.dot)} />
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-[11px] font-semibold text-foreground truncate">{p.name}</p>
-                                  <p className="text-[10px] text-muted-foreground">Leito {p.bed}</p>
-                                  <p className={cn("text-[10px] font-bold mt-0.5", cfg.text)}>
-                                    {p.status === 'overdue'
-                                      ? `⚠ ${format(p.dischargeDate!, "dd/MM", { locale: ptBR })} — VENCIDA`
-                                      : p.dischargeDate
-                                        ? format(p.dischargeDate, "dd/MM/yyyy", { locale: ptBR })
-                                        : '—'}
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
+              const filterButtons: { key: DischargePreviewItem['status'] | 'all'; label: string; count: number; activeBg: string; activeText: string; idleBorder: string; idleText: string; dot?: string }[] = [
+                { key: 'all',       label: 'Todos',       count: dischargePreviews.length, activeBg: 'bg-primary',     activeText: 'text-primary-foreground',      idleBorder: 'border-primary/40',     idleText: 'text-primary' },
+                { key: 'overdue',   label: 'Vencida',     count: counts.overdue   || 0,    activeBg: 'bg-destructive', activeText: 'text-destructive-foreground',  idleBorder: 'border-destructive/40', idleText: 'text-destructive',   dot: 'bg-destructive' },
+                { key: 'today',     label: 'Hoje',        count: counts.today     || 0,    activeBg: 'bg-amber-500',   activeText: 'text-white',                   idleBorder: 'border-amber-500/40',   idleText: 'text-amber-600',     dot: 'bg-amber-500' },
+                { key: 'tomorrow',  label: 'Amanhã',      count: counts.tomorrow  || 0,    activeBg: 'bg-blue-500',    activeText: 'text-white',                   idleBorder: 'border-blue-500/40',    idleText: 'text-blue-600',      dot: 'bg-blue-500' },
+                { key: 'this_week', label: 'Esta semana', count: counts.this_week || 0,    activeBg: 'bg-emerald-500', activeText: 'text-white',                   idleBorder: 'border-emerald-500/40', idleText: 'text-emerald-600',   dot: 'bg-emerald-500' },
+              ];
+
+              const filteredDischarges = dischargeFilter === 'all'
+                ? dischargePreviews
+                : dischargePreviews.filter(p => p.status === dischargeFilter);
+
+              const bySector = filteredDischarges.reduce((acc, p) => {
+                if (!acc[p.sectorLabel]) acc[p.sectorLabel] = [];
+                acc[p.sectorLabel].push(p);
+                return acc;
+              }, {} as Record<string, DischargePreviewItem[]>);
+
+              const emptyLabel =
+                dischargeFilter === 'overdue'   ? 'com alta vencida' :
+                dischargeFilter === 'today'     ? 'com alta prevista para hoje' :
+                dischargeFilter === 'tomorrow'  ? 'com alta para amanhã' :
+                dischargeFilter === 'this_week' ? 'com alta nesta semana' :
+                'nessa categoria';
+
+              return (
+                <>
+                  {/* Filter buttons */}
+                  <div className="flex overflow-x-auto gap-2 pb-2 mb-3 -mx-1 px-1 scrollbar-thin">
+                    {filterButtons.map(btn => {
+                      const isActive = dischargeFilter === btn.key;
+                      return (
+                        <button
+                          key={btn.key}
+                          type="button"
+                          onClick={() => setDischargeFilter(isActive && btn.key !== 'all' ? 'all' : btn.key)}
+                          className={cn(
+                            "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold transition-all whitespace-nowrap",
+                            isActive
+                              ? cn(btn.activeBg, btn.activeText, "border-transparent shadow-sm")
+                              : cn("bg-transparent", btn.idleBorder, btn.idleText, "hover:bg-muted/50")
+                          )}
+                        >
+                          {btn.dot && (
+                            <span className={cn("h-2 w-2 rounded-full", isActive ? "bg-white/90" : btn.dot)} />
+                          )}
+                          <span className="uppercase tracking-wide">{btn.label}</span>
+                          <span className="tabular-nums font-bold">{btn.count}</span>
+                        </button>
+                      );
+                    })}
                   </div>
-                );
-              })()
-            )}
+
+                  {dischargePreviews.length === 0 ? (
+                    <div className="text-center py-8">
+                      <LogOut className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                      <p className="text-xs text-muted-foreground">Nenhuma previsão de alta registrada para os próximos dias.</p>
+                    </div>
+                  ) : filteredDischarges.length === 0 ? (
+                    <div className="flex flex-col items-center py-10 gap-2">
+                      <Check className="h-8 w-8 text-emerald-500 opacity-60" />
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Nenhum paciente {emptyLabel}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-[480px] overflow-y-auto pr-1">
+                      {Object.entries(bySector).map(([sector, items]) => (
+                        <div key={sector}>
+                          <div className="flex items-center justify-between mb-2 px-1">
+                            <div className="flex items-center gap-2">
+                              <div className="h-3 w-1 rounded-full bg-primary" />
+                              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-foreground">{sector}</p>
+                            </div>
+                            <Badge variant="outline" className="text-[10px]">{items.length} paciente{items.length > 1 ? 's' : ''}</Badge>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                            {items.map(p => {
+                              const cfg = statusConfig[p.status];
+                              return (
+                                <div
+                                  key={p.id}
+                                  className={cn(
+                                    "rounded-xl border p-3 flex flex-col gap-1 transition-all hover:shadow-md",
+                                    cfg.bg, cfg.border
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", cfg.dot)} />
+                                    <p className="text-[12px] font-bold text-foreground leading-tight uppercase truncate">{p.name}</p>
+                                  </div>
+                                  <p className="text-[11px] text-muted-foreground pl-4">Leito {p.bed}</p>
+                                  <div className="flex items-center gap-2 pl-4 pt-0.5">
+                                    <span className={cn("text-[11px] font-bold", cfg.text)}>
+                                      {p.status === 'overdue'
+                                        ? `⚠ ${format(p.dischargeDate!, "dd/MM", { locale: ptBR })} — VENCIDA`
+                                        : p.dischargeDate
+                                          ? format(p.dischargeDate, "dd/MM/yyyy", { locale: ptBR })
+                                          : '—'}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
             <p className="text-[10px] text-muted-foreground/70 pt-3 border-t mt-3">
               Previsões de alta registradas pela equipe médica · Vencidas = paciente ainda internado após a data prevista.
             </p>
           </CardContent>
         </Card>
+
 
 
 
