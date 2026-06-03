@@ -26,11 +26,24 @@ function markShown(patientId: string) {
   } catch {}
 }
 
+/** Extrai a primeira linha não-vazia de string | string[] | null */
+function firstNonEmpty(v: string | string[] | null | undefined): string {
+  if (v == null) return "";
+  if (Array.isArray(v)) {
+    for (const item of v) {
+      if (typeof item === "string" && item.trim()) return item;
+    }
+    return "";
+  }
+  return typeof v === "string" ? v : "";
+}
+
 /** Retorna true se a data de alta está dentro das próximas 24h */
-export function isWithin24h(dischargePrediction: string | null | undefined): boolean {
-  if (!dischargePrediction) return false;
+export function isWithin24h(dischargePrediction: string | string[] | null | undefined): boolean {
+  const raw = firstNonEmpty(dischargePrediction);
+  if (!raw) return false;
   // Normalizar: "2026-06-04 (D+5)" → "2026-06-04"
-  const dateStr = dischargePrediction.replace(/\s*\(.*\)\s*$/, "").trim();
+  const dateStr = raw.replace(/\s*\(.*\)\s*$/, "").trim();
   const parsed = new Date(dateStr);
   if (isNaN(parsed.getTime())) return false;
   // Alta dentro das próximas 24h a partir de agora
@@ -38,6 +51,8 @@ export function isWithin24h(dischargePrediction: string | null | undefined): boo
   const ms = parsed.getTime() - now;
   return ms >= 0 && ms <= 24 * 60 * 60 * 1000;
 }
+
+export { firstNonEmpty as _firstNonEmptyDischarge };
 
 /**
  * Hook para o mapa de leitos — dispara popup de notificação
