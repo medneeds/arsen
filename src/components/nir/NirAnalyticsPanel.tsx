@@ -199,7 +199,7 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
                   {metrics.longBlocked7d.map((b: any) => (
                     <li key={b.id} className="px-3 py-2 flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="patient-id text-xs font-semibold truncate">Leito {b.bed_number} — {b.sector}</p>
+                        <p className="patient-id text-xs font-semibold truncate">Leito {b.bed_number} — {getSectorDisplayLabel(b.sector) || b.sector}</p>
                         <p className="text-[10px] text-muted-foreground truncate">{b.block_reason || "Sem motivo registrado"}</p>
                       </div>
                       <Badge variant="outline" className="text-[10px] shrink-0 border-red-500/40 text-red-600">
