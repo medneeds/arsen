@@ -906,7 +906,7 @@ export default function GestorPanelPage() {
         }
       />
 
-      <div className="p-4 md:p-6 space-y-5 max-w-7xl mx-auto">
+      <div className="p-3 md:p-6 space-y-4 md:space-y-5 max-w-7xl mx-auto">
         {/* Banner de Resumo Executivo */}
         <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-primary/[0.03] to-transparent">
           <CardContent className="p-3.5 md:p-4">
