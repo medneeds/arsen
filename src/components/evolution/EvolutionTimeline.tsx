@@ -193,10 +193,30 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
       );
       let currentBed = evo.patient_bed || undefined;
       let currentSector = evo.patient_sector || undefined;
+      let admDateResolved: string | undefined;
+      let allergResolved: string | undefined;
       if (patientId) {
-        const { data: pRow } = await supabase.from("patients").select("bed_number, sector").eq("id", patientId).maybeSingle();
+        const { data: pRow } = await supabase.from("patients")
+          .select("bed_number, sector, uti_allergies, uti_admission_date, admission_date, admitted_at")
+          .eq("id", patientId).maybeSingle();
         if (pRow?.bed_number) currentBed = pRow.bed_number;
         if (pRow?.sector) currentSector = pRow.sector;
+        // Admissão
+        const rawAdm1 = (pRow as any)?.admitted_at || (pRow as any)?.admission_date || (pRow as any)?.uti_admission_date;
+        if (rawAdm1) {
+          const first1 = rawAdm1.split("
+")[0].trim();
+          const mIso1 = first1.match(/^(\d{4})-(\d{2})-(\d{2})/);
+          admDateResolved = mIso1 ? `${mIso1[3]}/${mIso1[2]}/${mIso1[1]}` : first1;
+        }
+        // Alergias
+        const rawAllerg1 = (pRow as any)?.uti_allergies;
+        if (rawAllerg1?.trim()) {
+          allergResolved = rawAllerg1.replace(/
+/g, " • ");
+        } else {
+          allergResolved = "SEM ALERGIAS CONHECIDAS";
+        }
       }
       await printEvolution(evo, {
         patientName: resolved.name || evo.patient_name,
@@ -208,8 +228,8 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
         patientCpf: resolved.cpf || undefined,
         patientCns: resolved.cns || undefined,
         patientBirthDate: resolved.birthDate || undefined,
-        patientAdmissionDate: admissionDate || undefined,
-        patientAllergies: allergiesOverride || undefined,
+        patientAdmissionDate: admDateResolved || admissionDate || undefined,
+        patientAllergies: allergResolved || allergiesOverride || undefined,
         cidPrimary,
         cidSecondary,
       });
@@ -557,6 +577,42 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             if (pRow?.bed_number) currentBed = pRow.bed_number;
                             if (pRow?.sector) currentSector = pRow.sector;
                           }
+                          // Busca admissão e alergias diretamente do banco para garantir dados frescos
+                          let printAdmDate: string | undefined = admissionDate || undefined;
+                          let printAllergies: string | undefined = allergiesOverride || undefined;
+                          if (patientId) {
+                            try {
+                              const { data: pData } = await supabase
+                                .from("patients")
+                                .select("uti_allergies, uti_admission_date, admission_date, admitted_at")
+                                .eq("id", patientId)
+                                .maybeSingle();
+                              if (pData) {
+                                // Admissão: prioridade admitted_at > admission_date > uti_admission_date
+                                const rawAdm =
+                                  (pData as any).admitted_at ||
+                                  (pData as any).admission_date ||
+                                  (pData as any).uti_admission_date;
+                                if (rawAdm) {
+                                  const firstAdm = rawAdm.split("
+")[0].trim();
+                                  // Normalizar para DD/MM/YYYY
+                                  const mIso = firstAdm.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                                  printAdmDate = mIso
+                                    ? `${mIso[3]}/${mIso[2]}/${mIso[1]}`
+                                    : firstAdm;
+                                }
+                                // Alergias
+                                const rawAllerg = (pData as any).uti_allergies;
+                                if (rawAllerg?.trim()) {
+                                  printAllergies = rawAllerg.replace(/
+/g, " • ");
+                                } else if (!allergiesOverride) {
+                                  printAllergies = "SEM ALERGIAS CONHECIDAS";
+                                }
+                              }
+                            } catch { /* fallback silencioso */ }
+                          }
                           await printEvolution(evo, {
                             patientName: resolved.name || evo.patient_name,
                             patientBed: currentBed,
@@ -567,8 +623,8 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             patientCpf: resolved.cpf || undefined,
                             patientCns: resolved.cns || undefined,
                             patientBirthDate: resolved.birthDate || undefined,
-                            patientAdmissionDate: admissionDate || undefined,
-                            patientAllergies: allergiesOverride || undefined,
+                            patientAdmissionDate: printAdmDate,
+                            patientAllergies: printAllergies,
                             cidPrimary,
                             cidSecondary,
                           });
