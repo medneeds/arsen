@@ -22,7 +22,7 @@ export function NirPdfExport({ metrics, predictions = [] }: Props) {
     const sectorRows = metrics.occupancyBySector
       .map(
         (s) =>
-          `<tr><td style="text-transform:capitalize">${s.sector}</td><td class="nz-c">${s.occupied}/${s.total}</td><td class="nz-r" style="font-weight:700;color:${
+          `<tr><td style="text-transform:capitalize">${getSectorDisplayLabel(s.sector) || s.sector}</td><td class="nz-c">${s.occupied}/${s.total}</td><td class="nz-r" style="font-weight:700;color:${
             s.rate >= 95 ? "#dc2626" : s.rate >= 80 ? "#d97706" : "#059669"
           }">${s.rate}%</td><td class="nz-r"><div class="bar"><div style="width:${s.rate}%;background:${
             s.rate >= 95 ? "#dc2626" : s.rate >= 80 ? "#d97706" : "#059669"
