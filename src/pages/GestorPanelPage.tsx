@@ -14,8 +14,9 @@ import { useDepartment, DEPARTMENT_TO_SECTOR } from "@/contexts/DepartmentContex
 import {
   Bed, Activity, AlertTriangle, Users, Clock,
   Pill, BarChart3, ArrowUpDown, HeartPulse,
-  RefreshCw, Download, TrendingUp, FileText,
+  RefreshCw, Download, TrendingUp, TrendingDown, FileText,
   ShieldCheck, Loader2, LayoutGrid, Filter, Check, Building2,
+  Hourglass, ArrowRight, Heart, Skull, LogOut, HelpCircle, Minus,
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PlatformHeader } from "@/components/layout/PlatformHeader";
