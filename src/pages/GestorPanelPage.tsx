@@ -611,6 +611,13 @@ export default function GestorPanelPage() {
       tertiary: `${r.requesting_doctor_name ? r.requesting_doctor_name + " • " : ""}${formatDistanceToNow(new Date(r.created_at), { addSuffix: true, locale: ptBR })}`,
       badge: { label: "PENDENTE", variant: "secondary" },
     })),
+    tmp: tmpBySector.map(row => ({
+      id: row.sector,
+      primary: row.sector,
+      secondary: `${row.avgDays.toFixed(1).replace(".", ",")} dias em média`,
+      tertiary: `Baseado em ${row.samples} altas no período`,
+      badge: { label: `${row.samples} ALTAS`, variant: "outline" as const },
+    })),
   };
   const activeDrill = drillDown ? kpiCards.find(k => k.key === drillDown) : null;
 
