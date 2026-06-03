@@ -501,28 +501,39 @@ export default function GestorPanelPage() {
       ]);
 
       // ── 8b. Giro de Leito (encontros encerrados / leitos no setor) ──
-      // Reusa `encs` (encontros encerrados no período) e bedStats.bySector já calculado.
       const encsBySector: Record<string, number> = {};
       (encs || []).forEach((e: any) => {
         const dept = e.department || "—";
         const code = (DEPARTMENT_TO_SECTOR as any)[dept] || dept;
         encsBySector[code] = (encsBySector[code] || 0) + 1;
       });
+
+      // Para calcular leitos: tenta bySector direto, depois agrega sub-setores da UE
+      const getBedsForCode = (code: string): number => {
+        if (bedStats.bySector[code]) return bedStats.bySector[code].total;
+        const UE_CODES = ["sala_vermelha", "sala_laranja", "ue_vertical", "ue_horizontal", "internacao_ue", "observacao_clinica"];
+        if (UE_CODES.includes(code)) {
+          return UE_CODES.reduce((acc, c) => acc + (bedStats.bySector[c]?.total || 0), 0);
+        }
+        return 0;
+      };
+
       const turnoverRows: BedTurnoverItem[] = Object.entries(encsBySector)
         .map(([code, count]) => {
-          const beds = bedStats.bySector[code]?.total || 0;
+          const beds = getBedsForCode(code);
+          const label = getSectorDisplayLabel(code) || (DEPARTMENT_TO_SECTOR as any)[code] || code;
           return {
-            sector: getSectorDisplayLabel(code) || code,
+            sector: label,
             encounters: count,
             beds,
             turnover: beds > 0 ? count / beds : 0,
           };
         })
-        .filter(r => r.beds > 0)
-        .sort((a, b) => b.turnover - a.turnover);
+        .filter(r => r.encounters > 0)
+        .sort((a, b) => b.encounters - a.encounters);
       setBedTurnover(turnoverRows);
       const totalEncsTurn = turnoverRows.reduce((acc, r) => acc + r.encounters, 0);
-      const totalBedsTurn = turnoverRows.reduce((acc, r) => acc + r.beds, 0);
+      const totalBedsTurn = turnoverRows.filter(r => r.beds > 0).reduce((acc, r) => acc + r.beds, 0);
       setBedTurnoverAvg(totalBedsTurn > 0 ? totalEncsTurn / totalBedsTurn : 0);
 
       // ── 8c. Mortalidade por setor (período) ──
