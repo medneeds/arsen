@@ -510,6 +510,86 @@ export default function GestorPanelPage() {
       );
 
 
+      // ── 8e. Pendências de Exames (categoria + por setor) ──
+      let examQuery = supabase
+        .from("exam_requests")
+        .select("category, department, priority, patient_name, patient_bed, created_at")
+        .eq("hospital_unit_id", selectedUnit.id)
+        .eq("status", "pending");
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        examQuery = examQuery.in("department", filteredDepartments);
+      }
+      const { data: examData } = await examQuery;
+
+      const catMap: Record<string, number> = {};
+      const sectorMap: Record<string, Record<string, number>> = {};
+      (examData || []).forEach((e: any) => {
+        catMap[e.category] = (catMap[e.category] || 0) + 1;
+        const sec = e.department || "—";
+        if (!sectorMap[sec]) sectorMap[sec] = {};
+        sectorMap[sec][e.category] = (sectorMap[sec][e.category] || 0) + 1;
+      });
+
+      const CAT_META: Record<string, { label: string; color: string }> = {
+        laboratorio:    { label: "Laboratório",    color: "hsl(210, 80%, 55%)" },
+        imagem:         { label: "Imagem",         color: "hsl(280, 70%, 55%)" },
+        parecer:        { label: "Parecer",        color: "hsl(45, 90%, 50%)"  },
+        cultura:        { label: "Cultura",        color: "hsl(142, 70%, 45%)" },
+        hemocomponente: { label: "Hemocomponente", color: "hsl(var(--destructive))" },
+        sat:            { label: "SAT",            color: "hsl(var(--muted-foreground))" },
+      };
+
+      const examRows = Object.entries(catMap)
+        .map(([cat, count]) => ({
+          category: cat,
+          label: CAT_META[cat]?.label || cat,
+          count,
+          color: CAT_META[cat]?.color || "hsl(var(--primary))",
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      setExamPending(examRows);
+      setExamPendingTotal(examRows.reduce((acc, r) => acc + r.count, 0));
+      setExamPendingBySector(
+        Object.entries(sectorMap)
+          .map(([sector, breakdown]) => ({
+            sector,
+            total: Object.values(breakdown).reduce((a, b) => a + b, 0),
+            breakdown,
+          }))
+          .sort((a, b) => b.total - a.total)
+      );
+
+      // ── 8f. Pacientes Regulados ──
+      let regulQuery = supabase
+        .from("regulation_requests")
+        .select("id, patient_name, patient_age, patient_sex, origin_sector, destination_sector, destination_unit, priority, status, created_at")
+        .eq("hospital_unit_id", selectedUnit.id)
+        .not("status", "eq", "completed")
+        .not("status", "eq", "canceled")
+        .order("created_at", { ascending: true });
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        regulQuery = regulQuery.in("origin_sector", filteredDepartments);
+      }
+      const { data: regulData } = await regulQuery;
+      setRegulatedPatients(
+        (regulData || []).map((r: any) => ({
+          id: r.id,
+          name: r.patient_name || "—",
+          age: r.patient_age,
+          sex: r.patient_sex,
+          origin: getSectorDisplayLabel(r.origin_sector) || r.origin_sector || "—",
+          destination: r.destination_unit || r.destination_sector || "—",
+          priority: r.priority || "—",
+          status: r.status || "—",
+          waitHours: Math.floor((Date.now() - new Date(r.created_at).getTime()) / 3_600_000),
+          createdAt: r.created_at,
+        }))
+      );
+
+
+
+
       // ── 8. KPI deltas (tendência) ──
       // Para ocupação/leitos/porta usamos delta vs ontem via balanço de movimentações
       // (admissões - altas - óbitos - transf.externas) nas últimas 24h.
