@@ -38,7 +38,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useDepartment, DEPARTMENTS, Department } from "@/contexts/DepartmentContext";
 import { supabase } from "@/integrations/supabase/client";
 import { usePrivacy } from "@/contexts/PrivacyContext";
-import { getNextBedNumber } from "@/utils/bedNaming";
+import { getNextBedNumber, isExtraBed } from "@/utils/bedNaming";
 import { RegisterHandoverDialog } from "@/components/RegisterHandoverDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import NotesTabOptimized from "@/components/resources/NotesTabOptimized";
@@ -406,7 +406,9 @@ const Index = () => {
   };
   
   const filterPatients = (sectorPatients: Patient[]) => {
-    let filtered = sectorPatients;
+    // 🔒 Leitos EXTRA nunca entram na contagem de ocupação — excluir sempre.
+    // isExtraBed verifica se bedNumber começa com "EXTRA" (case-insensitive).
+    let filtered = sectorPatients.filter(p => !isExtraBed(p.bedNumber));
     
     // Filter by occupied status if enabled
     if (showOnlyOccupied) {
