@@ -7,6 +7,27 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { isExtraBed } from "@/utils/bedNaming";
 
+// Fallback: deriva sector a partir do department para pacientes legados sem sector preenchido.
+const DEPT_TO_SECTOR: Record<string, string> = {
+  'UCC': 'ucc', 'UCI 1': 'blue', 'UCI 2': 'outside',
+  'NEURO 01': 'neuro_01', 'NEURO 02': 'neuro_02',
+  'CLÍNICA CIRÚRGICA': 'clinica_cirurgica',
+  'ENFERMARIA DE TRANSIÇÃO': 'enfermaria_transicao',
+  'ENFERMARIA VASCULAR': 'enfermaria_vascular',
+  'SALA VERMELHA': 'sala_vermelha', 'SALA LARANJA': 'sala_laranja',
+  'OBSERVAÇÃO CLÍNICA': 'observacao_clinica',
+  'INTERNAÇÃO UE': 'internacao_ue',
+  'UE VERTICAL': 'ue_vertical', 'UE HORIZONTAL': 'ue_horizontal',
+  'RIV': 'riv', 'CC PREPARO': 'cc_preparo',
+  'CC BLOCO CIRÚRGICO': 'cc_bloco', 'CC RPA': 'cc_rpa',
+  'UTI 1': 'red', 'UTI 2': 'yellow',
+};
+function resolveSector(rec: any): any {
+  if (rec?.sector) return rec.sector;
+  const dept = rec?.department as string | null | undefined;
+  return dept ? (DEPT_TO_SECTOR[dept] ?? null) : null;
+}
+
 export function usePatients(department?: Department, sector?: string) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -73,7 +94,7 @@ export function usePatients(department?: Department, sector?: string) {
         bedNumber: p.bed_number,
         name: p.name || '',
         age: p.age || '',
-        sector: p.sector as 'red' | 'yellow' | 'blue' | 'outside',
+        sector: resolveSector(p) as 'red' | 'yellow' | 'blue' | 'outside',
         diagnoses: p.diagnoses ? p.diagnoses.split('\n').filter(Boolean) : [],
         medicalHistory: p.medical_history ? p.medical_history.split('\n').filter(Boolean) : [],
         relevantExams: p.relevant_exams ? p.relevant_exams.split('\n').filter(Boolean) : [],
@@ -324,7 +345,7 @@ export function usePatients(department?: Department, sector?: string) {
         bedNumber: data.bed_number,
         name: data.name || '',
         age: data.age || '',
-        sector: data.sector as 'red' | 'yellow' | 'blue' | 'outside',
+        sector: resolveSector(data) as 'red' | 'yellow' | 'blue' | 'outside',
         diagnoses: data.diagnoses ? data.diagnoses.split('\n').filter(Boolean) : [],
         medicalHistory: data.medical_history ? data.medical_history.split('\n').filter(Boolean) : [],
         relevantExams: data.relevant_exams ? data.relevant_exams.split('\n').filter(Boolean) : [],
@@ -801,7 +822,7 @@ export function usePatients(department?: Department, sector?: string) {
     bedNumber: record.bed_number,
     name: record.name || '',
     age: record.age || '',
-    sector: record.sector as 'red' | 'yellow' | 'blue' | 'outside',
+    sector: resolveSector(record) as 'red' | 'yellow' | 'blue' | 'outside',
     diagnoses: record.diagnoses ? record.diagnoses.split('\n').filter(Boolean) : [],
     medicalHistory: record.medical_history ? record.medical_history.split('\n').filter(Boolean) : [],
     relevantExams: record.relevant_exams ? record.relevant_exams.split('\n').filter(Boolean) : [],
