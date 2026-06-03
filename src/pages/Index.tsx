@@ -67,6 +67,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { usePatients } from "@/hooks/usePatients";
+import { useDischargeAlert } from "@/hooks/useDischargeAlert";
 import { usePatientVersions } from "@/hooks/usePatientVersions";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -233,6 +234,9 @@ const Index = () => {
   // Use real database patients filtered by active sector on bed map
   const { patients: dbPatients, isLoading: patientsLoading, updatePatient: dbUpdatePatient, createPatient: dbCreatePatient, deletePatient: dbDeletePatient, releaseBedPreAdmission: dbReleaseBedPreAdmission, reorderPatients: dbReorderPatients, refetch } = usePatients(undefined, activeSector);
   const [patients, setPatients] = useState<Patient[]>(dbPatients);
+
+  // 🔒 Alerta de alta iminente — notifica uma vez por sessão quando alta < 24h
+  useDischargeAlert(patients);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const preAdmissionRef = useRef<PreAdmissionSectionHandle>(null);
   const [history, setHistory] = useState<Patient[][]>(() => {

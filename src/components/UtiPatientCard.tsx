@@ -3,6 +3,7 @@ import { DischargeStatusRibbon } from "./DischargeStatusRibbon";
 import { calcDIH, getEffectiveAdmissionDate } from "@/lib/dihCalc";
 import { isExtraBed } from "@/utils/bedNaming";
 import { formatDateBR } from "@/utils/dateUtils";
+import { isWithin24h } from "@/hooks/useDischargeAlert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1392,6 +1393,11 @@ export function UtiPatientCard({
                     <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">Previsão de alta</span>
                     <span className="text-sm font-medium block min-h-[20px]">
                       {previsaoAltaDate || "—"}
+                    {isWithin24h(previsaoAlta[0]) && (
+                      <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/40 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700 dark:text-amber-300">
+                        ⚠ Alta amanhã
+                      </span>
+                    )}
                     </span>
                   </div>
                 </div>

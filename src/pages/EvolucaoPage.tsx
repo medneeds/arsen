@@ -31,6 +31,7 @@ import { usePatientCid } from "@/hooks/usePatientCid";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { usePatientDiagnosticContext } from "@/hooks/usePatientDiagnosticContext";
+import { isWithin24h } from "@/hooks/useDischargeAlert";
 import { EvolutionForm } from "@/components/evolution/EvolutionForm";
 import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
 import { DiagnosticsPanel } from "@/components/evolution/DiagnosticsPanel";
@@ -50,7 +51,6 @@ interface PatientHeader {
   admissionDate: string;
   weight: string;
   allergies: string;
-  encounterCode?: string;
 }
 
 const EvolucaoPage = () => {
@@ -192,7 +192,7 @@ const EvolucaoPage = () => {
     setNewDevices([]);
     setNewCulturesHtml("");
     setDiagnosticsReplicated(false);
-    setDiagnosticHypotheses([]);
+    setDiagnosticHypotheses("");
     // 🔒 Resetar campos por item — sem isso persistem entre evoluções
     setPlanItems([]);
     setPendenciasItems([]);
@@ -222,7 +222,7 @@ const EvolucaoPage = () => {
     if (hospitalDischargePrediction) updateHospitalDischargePrediction("");
     if (isPalliative) updateIsPalliative(false);
     if (isolationPrecautions) updateIsolationPrecautions("");
-    setDiagnosticHypotheses([]);
+    setDiagnosticHypotheses("");
     setDiagnosticsReplicated(false);
   };
 
@@ -326,6 +326,9 @@ const EvolucaoPage = () => {
           ? rootAntec.split("\n").filter(Boolean)
           : [];
     setAntecedentes(resolvedAntec);
+    // 🔒 Pré-carregar previsão de alta da origem — já está no hook via realtime,
+    // mas garantir que o campo reflita o valor salvo no banco ao duplicar
+    // (o hook usePatientDiagnosticContext já faz isso automaticamente via fetch)
     setShowNewForm(true);
     setDiagnosticsReplicated(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -413,8 +416,25 @@ const EvolucaoPage = () => {
     />
   );
 
+  // Banner de alerta quando alta prevista está nas próximas 24h
+  const dischargeAlert = isWithin24h(utiDischargePrediction) && (
+    <div className="mx-4 mt-3 mb-0 flex items-start gap-3 rounded-lg border-2 border-amber-400/50 bg-amber-50 dark:bg-amber-950/20 p-3 print:hidden">
+      <span className="text-lg">⚠</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+          Alta prevista para as próximas 24h
+        </p>
+        <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+          Previsão atual: <strong>{utiDischargePrediction}</strong>.
+          Confirme no campo de Diagnósticos se a alta continua programada ou atualize a data.
+        </p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="print:p-2">
+      {dischargeAlert}
       <ClinicalHeader moduleLabel="Evolução Clínica" />
 
       <div className="flex print:hidden">
