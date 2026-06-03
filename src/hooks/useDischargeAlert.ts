@@ -79,8 +79,7 @@ export function useDischargeAlert(patients: Patient[]) {
 
     // Agrupar num único toast
     const names = toShow.map((p) => {
-      const pred =
-        (p.utiDischargePrediction as any)?.[0] ?? (p.utiDischargePrediction as any) ?? "";
+      const pred = firstNonEmpty(p.utiDischargePrediction as any);
       const date = formatDateBR(pred.replace(/\s*\(.*\)\s*$/, "").trim());
       return `• ${p.name} (Leito ${p.bedNumber}) — Alta: ${date}`;
     });
