@@ -30,7 +30,9 @@ export type Department =
 
 /** Canonical mapping: Department → internal sector code (used by localStorage "selected_sector") */
 export const DEPARTMENT_TO_SECTOR: Record<string, string> = {
-  "UTI 1": "red",
+  "URGÊNCIA E EMERGÊNCIA ADULTO": "sala_vermelha",
+  "URGÊNCIA E EMERGÊNCIA PEDIÁTRICA": "sala_laranja",
+  "UTI": "red",
   "UTI 2": "yellow",
   "UCI 1": "blue",
   "UCI 2": "outside",
