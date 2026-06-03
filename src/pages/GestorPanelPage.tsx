@@ -946,164 +946,206 @@ export default function GestorPanelPage() {
         </Card>
 
         {/* Filtros: Setor + Período */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Filtro:</span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Filter className="h-4 w-4 text-primary" />
-                  <span className="font-semibold">{sectorDisplayName}</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                align="end"
-                sideOffset={6}
-                className="w-[min(560px,95vw)] p-0 border-border/60 shadow-xl"
-              >
-                <div className="px-4 py-3 border-b border-border/60 bg-muted/40 flex items-center justify-between">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    Filtrar dados do painel
-                  </p>
-                  <span className="text-[10px] font-medium text-muted-foreground/70 tabular-nums">
-                    {bedStats.total} leitos no hospital
-                  </span>
-                </div>
-                <ScrollArea className="max-h-[80vh]">
-                  <div className="p-2.5 space-y-3">
-                    {/* All sectors */}
-                    <button
-                      type="button"
-                      onClick={() => applyFilter("ALL")}
-                      className={cn(
-                        "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-md text-[12px] font-semibold transition-all border",
-                        isAllSectors
-                          ? "bg-primary/10 text-primary border-primary/30"
-                          : "text-foreground hover:bg-muted border-transparent"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <LayoutGrid className={cn("h-4 w-4", isAllSectors ? "text-primary" : "text-muted-foreground")} />
-                        <span className="uppercase tracking-wide">Todos os setores</span>
-                      </div>
-                      {isAllSectors && <Check className="h-4 w-4" />}
-                    </button>
+        {(() => {
+          const filterTrigger = (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 w-full sm:w-auto justify-start"
+              onClick={() => setSectorFilterOpen(true)}
+            >
+              <Filter className="h-4 w-4 text-primary shrink-0" />
+              <span className="font-semibold truncate">{sectorDisplayName}</span>
+            </Button>
+          );
 
-                    {/* Blocks + sectors */}
-                    <div className="space-y-2.5">
-                      <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 px-1">
-                        Blocos e setores
-                      </p>
-                      {SECTOR_BLOCKS.map(block => {
-                        const blockId = `BLOCK:${block.id}`;
-                        const blockActive = sectorFilter === blockId;
-                        const blockHasActiveChild = block.departments.some(d => d === sectorFilter);
-                        const isHighlighted = blockActive || blockHasActiveChild;
-                        const blockTotals = block.departments.reduce(
-                          (acc, dept) => {
-                            const code = DEPARTMENT_TO_SECTOR[dept as keyof typeof DEPARTMENT_TO_SECTOR];
-                            const s = code ? bedStats.bySector[code] : undefined;
-                            if (s) {
-                              acc.total += s.total;
-                              acc.occupied += s.occupied;
-                            }
-                            return acc;
-                          },
-                          { total: 0, occupied: 0 }
-                        );
-                        return (
-                          <div
-                            key={block.id}
-                            className={cn(
-                              "rounded-md border-l-2 pl-2.5 pr-1 py-1 transition-colors",
-                              isHighlighted
-                                ? "border-primary bg-primary/5"
-                                : "border-border/40 hover:border-border"
-                            )}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => applyFilter(blockId)}
-                              className={cn(
-                                "w-full flex items-center justify-between gap-2 px-1.5 py-1.5 rounded-md text-[10.5px] font-bold uppercase tracking-[0.14em] transition-all",
-                                blockActive
-                                  ? "text-primary"
-                                  : "text-muted-foreground/90 hover:text-foreground"
-                              )}
-                            >
-                              <span className="flex items-center gap-1.5">
-                                <span>Bloco {block.label}</span>
-                                {blockTotals.total > 0 && (
-                                  <span className="text-[9px] font-semibold text-muted-foreground/70 tabular-nums normal-case tracking-normal">
-                                    · {blockTotals.occupied}/{blockTotals.total}
-                                  </span>
-                                )}
-                              </span>
-                              {blockActive && <Check className="h-3.5 w-3.5" />}
-                            </button>
-                            <div className="grid grid-cols-2 gap-1 pt-0.5 pb-1">
-                              {block.departments.map(dept => {
-                                const isActive = sectorFilter === dept;
-                                const code = DEPARTMENT_TO_SECTOR[dept as keyof typeof DEPARTMENT_TO_SECTOR];
-                                const stat = code ? bedStats.bySector[code] : undefined;
-                                return (
-                                  <button
-                                    key={dept}
-                                    type="button"
-                                    onClick={() => applyFilter(dept)}
-                                    className={cn(
-                                      "flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all text-left border",
-                                      isActive
-                                        ? "bg-primary/10 text-primary border-primary/30 shadow-sm"
-                                        : "text-foreground hover:bg-muted border-transparent"
-                                    )}
-                                  >
-                                    <span className="truncate">{dept}</span>
-                                    <span className="flex items-center gap-1 flex-shrink-0">
-                                      {stat && (
-                                        <span className={cn(
-                                          "text-[9px] font-semibold tabular-nums",
-                                          isActive ? "text-primary/80" : "text-muted-foreground/70"
-                                        )}>
-                                          {stat.occupied}/{stat.total}
-                                        </span>
-                                      )}
-                                      {isActive && <Check className="h-3.5 w-3.5" />}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </ScrollArea>
-              </PopoverContent>
-            </Popover>
-          </div>
-          {/* Period selector */}
-          <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/30 p-1">
-            {([
-              { id: "today" as Period, label: "Hoje" },
-              { id: "7d" as Period, label: "7 dias" },
-              { id: "30d" as Period, label: "30 dias" },
-            ]).map(opt => (
+          const filterBody = (
+            <div className="p-2.5 space-y-3">
+              {/* All sectors */}
               <button
-                key={opt.id}
                 type="button"
-                onClick={() => setPeriod(opt.id)}
+                onClick={() => { applyFilter("ALL"); setSectorFilterOpen(false); }}
                 className={cn(
-                  "px-3 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wide transition-all",
-                  period === opt.id ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
+                  "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-md text-[12px] font-semibold transition-all border",
+                  isAllSectors
+                    ? "bg-primary/10 text-primary border-primary/30"
+                    : "text-foreground hover:bg-muted border-transparent"
                 )}
               >
-                {opt.label}
+                <div className="flex items-center gap-2">
+                  <LayoutGrid className={cn("h-4 w-4", isAllSectors ? "text-primary" : "text-muted-foreground")} />
+                  <span className="uppercase tracking-wide">Todos os setores</span>
+                </div>
+                {isAllSectors && <Check className="h-4 w-4" />}
               </button>
-            ))}
-          </div>
-        </div>
+
+              {/* Blocks + sectors */}
+              <div className="space-y-2.5">
+                <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 px-1">
+                  Blocos e setores
+                </p>
+                {SECTOR_BLOCKS.map(block => {
+                  const blockId = `BLOCK:${block.id}`;
+                  const blockActive = sectorFilter === blockId;
+                  const blockHasActiveChild = block.departments.some(d => d === sectorFilter);
+                  const isHighlighted = blockActive || blockHasActiveChild;
+                  const blockTotals = block.departments.reduce(
+                    (acc, dept) => {
+                      const code = DEPARTMENT_TO_SECTOR[dept as keyof typeof DEPARTMENT_TO_SECTOR];
+                      const s = code ? bedStats.bySector[code] : undefined;
+                      if (s) {
+                        acc.total += s.total;
+                        acc.occupied += s.occupied;
+                      }
+                      return acc;
+                    },
+                    { total: 0, occupied: 0 }
+                  );
+                  return (
+                    <div
+                      key={block.id}
+                      className={cn(
+                        "rounded-md border-l-2 pl-2.5 pr-1 py-1 transition-colors",
+                        isHighlighted
+                          ? "border-primary bg-primary/5"
+                          : "border-border/40 hover:border-border"
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => { applyFilter(blockId); setSectorFilterOpen(false); }}
+                        className={cn(
+                          "w-full flex items-center justify-between gap-2 px-1.5 py-1.5 rounded-md text-[10.5px] font-bold uppercase tracking-[0.14em] transition-all",
+                          blockActive
+                            ? "text-primary"
+                            : "text-muted-foreground/90 hover:text-foreground"
+                        )}
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <span>Bloco {block.label}</span>
+                          {blockTotals.total > 0 && (
+                            <span className="text-[9px] font-semibold text-muted-foreground/70 tabular-nums normal-case tracking-normal">
+                              · {blockTotals.occupied}/{blockTotals.total}
+                            </span>
+                          )}
+                        </span>
+                        {blockActive && <Check className="h-3.5 w-3.5" />}
+                      </button>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 pt-0.5 pb-1">
+                        {block.departments.map(dept => {
+                          const isActive = sectorFilter === dept;
+                          const code = DEPARTMENT_TO_SECTOR[dept as keyof typeof DEPARTMENT_TO_SECTOR];
+                          const stat = code ? bedStats.bySector[code] : undefined;
+                          return (
+                            <button
+                              key={dept}
+                              type="button"
+                              onClick={() => { applyFilter(dept); setSectorFilterOpen(false); }}
+                              className={cn(
+                                "flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all text-left border",
+                                isActive
+                                  ? "bg-primary/10 text-primary border-primary/30 shadow-sm"
+                                  : "text-foreground hover:bg-muted border-transparent"
+                              )}
+                            >
+                              <span className="truncate">{dept}</span>
+                              <span className="flex items-center gap-1 flex-shrink-0">
+                                {stat && (
+                                  <span className={cn(
+                                    "text-[9px] font-semibold tabular-nums",
+                                    isActive ? "text-primary/80" : "text-muted-foreground/70"
+                                  )}>
+                                    {stat.occupied}/{stat.total}
+                                  </span>
+                                )}
+                                {isActive && <Check className="h-3.5 w-3.5" />}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+
+          return (
+            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground shrink-0">Filtro:</span>
+                <div className="flex-1 sm:flex-initial">
+                  {isMobile ? (
+                    <>
+                      {filterTrigger}
+                      <Sheet open={sectorFilterOpen} onOpenChange={setSectorFilterOpen}>
+                        <SheetContent side="bottom" className="p-0 max-h-[85vh] flex flex-col rounded-t-2xl">
+                          <div className="flex justify-center pt-2 pb-1 shrink-0">
+                            <div className="h-1.5 w-12 rounded-full bg-muted-foreground/30" />
+                          </div>
+                          <SheetHeader className="px-4 pb-3 border-b border-border/60 shrink-0">
+                            <SheetTitle className="text-sm font-semibold uppercase tracking-[0.14em] text-left flex items-center justify-between">
+                              <span>Filtrar painel</span>
+                              <span className="text-[10px] font-medium text-muted-foreground/70 tabular-nums normal-case tracking-normal">
+                                {bedStats.total} leitos
+                              </span>
+                            </SheetTitle>
+                          </SheetHeader>
+                          <div className="flex-1 overflow-y-auto overscroll-contain">
+                            {filterBody}
+                          </div>
+                        </SheetContent>
+                      </Sheet>
+                    </>
+                  ) : (
+                    <Popover open={sectorFilterOpen} onOpenChange={setSectorFilterOpen}>
+                      <PopoverTrigger asChild>{filterTrigger}</PopoverTrigger>
+                      <PopoverContent
+                        align="end"
+                        sideOffset={6}
+                        className="w-[min(560px,95vw)] p-0 border-border/60 shadow-xl"
+                      >
+                        <div className="px-4 py-3 border-b border-border/60 bg-muted/40 flex items-center justify-between">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                            Filtrar dados do painel
+                          </p>
+                          <span className="text-[10px] font-medium text-muted-foreground/70 tabular-nums">
+                            {bedStats.total} leitos no hospital
+                          </span>
+                        </div>
+                        <div className="h-[70vh] overflow-y-auto">
+                          {filterBody}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                </div>
+              </div>
+              {/* Period selector */}
+              <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/30 p-1 w-full sm:w-auto">
+                {([
+                  { id: "today" as Period, label: "Hoje" },
+                  { id: "7d" as Period, label: "7 dias" },
+                  { id: "30d" as Period, label: "30 dias" },
+                ]).map(opt => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setPeriod(opt.id)}
+                    className={cn(
+                      "flex-1 sm:flex-initial px-3 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wide transition-all",
+                      period === opt.id ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
 
         {/* KPI Cards (clicáveis para drill-down) */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
