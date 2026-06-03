@@ -298,6 +298,52 @@ export default function GestorPanelPage() {
           }
         });
         setCriticalAlerts(alerts);
+
+        // ── 8g. Previsão de Alta (a partir dos patients já carregados) ──
+        const _today = startOfDay(new Date());
+        const _tomorrow = startOfDay(addDays(new Date(), 1));
+        const _nextWeek = startOfDay(addDays(new Date(), 7));
+
+        const parseDischargeDate = (raw: string | null): Date | null => {
+          if (!raw || /sem previs/i.test(raw)) return null;
+          if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return new Date(raw);
+          const m = raw.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+          if (m) return new Date(`${m[3]}-${m[2]}-${m[1]}`);
+          return null;
+        };
+
+        const previews: DischargePreviewItem[] = (patients || [])
+          .filter(p => !p.is_vacant && p.name?.trim())
+          .map(p => {
+            const raw = (p as any).hospital_discharge_prediction || (p as any).uti_discharge_prediction || null;
+            const date = parseDischargeDate(raw);
+            let status: DischargePreviewItem['status'] = 'unknown';
+            if (date) {
+              const d = startOfDay(date);
+              if (d < _today) status = 'overdue';
+              else if (d.getTime() === _today.getTime()) status = 'today';
+              else if (d.getTime() === _tomorrow.getTime()) status = 'tomorrow';
+              else if (d <= _nextWeek) status = 'this_week';
+              else status = 'future';
+            }
+            return {
+              id: p.id,
+              name: p.name || '—',
+              bed: p.bed_number || '—',
+              sector: p.sector,
+              sectorLabel: getSectorDisplayLabel(p.sector) || p.sector,
+              dischargeDate: date,
+              rawDate: raw || '',
+              status,
+            };
+          })
+          .filter(p => p.status !== 'future' && p.status !== 'unknown')
+          .sort((a, b) => {
+            const order: Record<string, number> = { overdue: 0, today: 1, tomorrow: 2, this_week: 3 };
+            return (order[a.status] ?? 4) - (order[b.status] ?? 4);
+          });
+
+        setDischargePreviews(previews);
       }
 
       // ── 2. Movements ──
