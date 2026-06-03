@@ -7,6 +7,27 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { isExtraBed } from "@/utils/bedNaming";
 
+// Fallback: deriva sector a partir do department para pacientes legados sem sector preenchido.
+const DEPT_TO_SECTOR: Record<string, string> = {
+  'UCC': 'ucc', 'UCI 1': 'blue', 'UCI 2': 'outside',
+  'NEURO 01': 'neuro_01', 'NEURO 02': 'neuro_02',
+  'CLÍNICA CIRÚRGICA': 'clinica_cirurgica',
+  'ENFERMARIA DE TRANSIÇÃO': 'enfermaria_transicao',
+  'ENFERMARIA VASCULAR': 'enfermaria_vascular',
+  'SALA VERMELHA': 'sala_vermelha', 'SALA LARANJA': 'sala_laranja',
+  'OBSERVAÇÃO CLÍNICA': 'observacao_clinica',
+  'INTERNAÇÃO UE': 'internacao_ue',
+  'UE VERTICAL': 'ue_vertical', 'UE HORIZONTAL': 'ue_horizontal',
+  'RIV': 'riv', 'CC PREPARO': 'cc_preparo',
+  'CC BLOCO CIRÚRGICO': 'cc_bloco', 'CC RPA': 'cc_rpa',
+  'UTI 1': 'red', 'UTI 2': 'yellow',
+};
+function resolveSector(rec: any): any {
+  if (rec?.sector) return rec.sector;
+  const dept = rec?.department as string | null | undefined;
+  return dept ? (DEPT_TO_SECTOR[dept] ?? null) : null;
+}
+
 export function usePatients(department?: Department, sector?: string) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
