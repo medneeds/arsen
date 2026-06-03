@@ -208,27 +208,33 @@ const Index = () => {
   // Sector visual config — padronizado em azul institucional para integridade visual
   const BLUE_DOT = "bg-primary/80 border-primary/40";
   const BLUE_GRAD = "from-primary/20 to-primary/10";
+  // 🔒 isUti: true → UtiSectorSection + UtiPatientCard (card intensivista)
+  // Apenas setores de cuidados intensivos/semi-intensivos.
+  // red=UTI1, yellow=UTI2, blue=UCI1, outside=UCI2, ucc=UCC
+  // Todos os outros setores usam SectorSection + PatientCard (card padrão).
   const SECTOR_VISUAL: Record<string, { title: string; color: string; dotClass: string; colorVariant: string; isUti?: boolean }> = {
-    red: { title: "UTI 1", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    yellow: { title: "UTI 2", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    blue: { title: "UCI 1", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    outside: { title: "UCI 2", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    ucc: { title: "UCC", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    neuro_01: { title: "Neuro 01", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    neuro_02: { title: "Neuro 02", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    clinica_cirurgica: { title: "Clínica Cirúrgica", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    enfermaria_transicao: { title: "Enf. Transição", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    enfermaria_vascular: { title: "Enf. Vascular", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    sala_vermelha: { title: "Sala Vermelha", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    sala_laranja: { title: "Sala Laranja", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    observacao_clinica: { title: "Obs. Clínica", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    internacao_ue: { title: "Internação UE", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    ue_vertical: { title: "UE Vertical", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    ue_horizontal: { title: "UE Horizontal", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    riv: { title: "RIV", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    cc_preparo: { title: "CC Preparo", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    cc_bloco: { title: "CC Bloco Cirúrgico", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    cc_rpa: { title: "CC RPA", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    // ── Intensivos e Semi-Intensivos (isUti: true) ─────────────────────
+    red:     { title: "UTI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    yellow:  { title: "UTI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    blue:    { title: "UCI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    outside: { title: "UCI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    ucc:     { title: "UCC",    color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    // ── Demais setores (sem isUti — usam SectorSection padrão) ─────────
+    neuro_01:             { title: "Neuro 01",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    neuro_02:             { title: "Neuro 02",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    clinica_cirurgica:    { title: "Clínica Cirúrgica",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    enfermaria_transicao: { title: "Enf. Transição",     color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    enfermaria_vascular:  { title: "Enf. Vascular",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    sala_vermelha:        { title: "Sala Vermelha",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    sala_laranja:         { title: "Sala Laranja",       color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    observacao_clinica:   { title: "Obs. Clínica",       color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    internacao_ue:        { title: "Internação UE",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    ue_vertical:          { title: "UE Vertical",        color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    ue_horizontal:        { title: "UE Horizontal",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    riv:                  { title: "RIV",                color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    cc_preparo:           { title: "CC Preparo",         color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    cc_bloco:             { title: "CC Bloco Cirúrgico", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    cc_rpa:               { title: "CC RPA",             color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
   };
   
   // Use real database patients filtered by active sector on bed map
