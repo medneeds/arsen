@@ -1148,7 +1148,7 @@ export default function GestorPanelPage() {
 
 
         {/* KPI Cards (clicáveis para drill-down) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 md:gap-3">
           {kpiCards.map((kpi, i) => {
             const delta = kpiDeltas[kpi.key];
             const isWorse = delta && delta.trend !== "flat" &&
