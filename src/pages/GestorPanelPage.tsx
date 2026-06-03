@@ -17,7 +17,7 @@ import {
   RefreshCw, Download, TrendingUp, TrendingDown, FileText,
   ShieldCheck, Loader2, LayoutGrid, Filter, Check, Building2,
   Hourglass, ArrowRight, Heart, Skull, LogOut, HelpCircle, Minus,
-  Repeat, Trophy, Stethoscope,
+  Repeat, Trophy, Stethoscope, FlaskConical, Navigation,
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PlatformHeader } from "@/components/layout/PlatformHeader";
@@ -180,6 +180,11 @@ export default function GestorPanelPage() {
   const [mortalityBySector, setMortalityBySector] = useState<MortalityItem[]>([]);
   const [mortalityTotal, setMortalityTotal] = useState(0);
   const [medicalProduction, setMedicalProduction] = useState<MedicalProductionItem[]>([]);
+  // ── Exam pendings + Regulated patients ──
+  const [examPending, setExamPending] = useState<{ category: string; label: string; count: number; color: string }[]>([]);
+  const [examPendingTotal, setExamPendingTotal] = useState(0);
+  const [examPendingBySector, setExamPendingBySector] = useState<{ sector: string; total: number; breakdown: Record<string, number> }[]>([]);
+  const [regulatedPatients, setRegulatedPatients] = useState<{ id: string; name: string; age: string | null; sex: string | null; origin: string; destination: string; priority: string; status: string; waitHours: number; createdAt: string }[]>([]);
   // ── KPI deltas ──
   const [kpiDeltas, setKpiDeltas] = useState<Record<string, KpiDelta>>({});
   const [sectorFilter, setSectorFilter] = useState<string>(() => {
@@ -503,6 +508,86 @@ export default function GestorPanelPage() {
           .sort((a, b) => b.count - a.count)
           .slice(0, 10),
       );
+
+
+      // ── 8e. Pendências de Exames (categoria + por setor) ──
+      let examQuery = supabase
+        .from("exam_requests")
+        .select("category, department, priority, patient_name, patient_bed, created_at")
+        .eq("hospital_unit_id", selectedUnit.id)
+        .eq("status", "pending");
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        examQuery = examQuery.in("department", filteredDepartments);
+      }
+      const { data: examData } = await examQuery;
+
+      const catMap: Record<string, number> = {};
+      const sectorMap: Record<string, Record<string, number>> = {};
+      (examData || []).forEach((e: any) => {
+        catMap[e.category] = (catMap[e.category] || 0) + 1;
+        const sec = e.department || "—";
+        if (!sectorMap[sec]) sectorMap[sec] = {};
+        sectorMap[sec][e.category] = (sectorMap[sec][e.category] || 0) + 1;
+      });
+
+      const CAT_META: Record<string, { label: string; color: string }> = {
+        laboratorio:    { label: "Laboratório",    color: "hsl(210, 80%, 55%)" },
+        imagem:         { label: "Imagem",         color: "hsl(280, 70%, 55%)" },
+        parecer:        { label: "Parecer",        color: "hsl(45, 90%, 50%)"  },
+        cultura:        { label: "Cultura",        color: "hsl(142, 70%, 45%)" },
+        hemocomponente: { label: "Hemocomponente", color: "hsl(var(--destructive))" },
+        sat:            { label: "SAT",            color: "hsl(var(--muted-foreground))" },
+      };
+
+      const examRows = Object.entries(catMap)
+        .map(([cat, count]) => ({
+          category: cat,
+          label: CAT_META[cat]?.label || cat,
+          count,
+          color: CAT_META[cat]?.color || "hsl(var(--primary))",
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      setExamPending(examRows);
+      setExamPendingTotal(examRows.reduce((acc, r) => acc + r.count, 0));
+      setExamPendingBySector(
+        Object.entries(sectorMap)
+          .map(([sector, breakdown]) => ({
+            sector,
+            total: Object.values(breakdown).reduce((a, b) => a + b, 0),
+            breakdown,
+          }))
+          .sort((a, b) => b.total - a.total)
+      );
+
+      // ── 8f. Pacientes Regulados ──
+      let regulQuery = supabase
+        .from("regulation_requests")
+        .select("id, patient_name, patient_age, patient_sex, origin_sector, destination_sector, destination_unit, priority, status, created_at")
+        .eq("hospital_unit_id", selectedUnit.id)
+        .not("status", "eq", "completed")
+        .not("status", "eq", "canceled")
+        .order("created_at", { ascending: true });
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        regulQuery = regulQuery.in("origin_sector", filteredDepartments);
+      }
+      const { data: regulData } = await regulQuery;
+      setRegulatedPatients(
+        (regulData || []).map((r: any) => ({
+          id: r.id,
+          name: r.patient_name || "—",
+          age: r.patient_age,
+          sex: r.patient_sex,
+          origin: getSectorDisplayLabel(r.origin_sector) || r.origin_sector || "—",
+          destination: r.destination_unit || r.destination_sector || "—",
+          priority: r.priority || "—",
+          status: r.status || "—",
+          waitHours: Math.floor((Date.now() - new Date(r.created_at).getTime()) / 3_600_000),
+          createdAt: r.created_at,
+        }))
+      );
+
+
 
 
       // ── 8. KPI deltas (tendência) ──
@@ -1240,6 +1325,171 @@ export default function GestorPanelPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Pendências de Exames + Por Setor + Pacientes Regulados */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Card 1 — Pendências de Exames */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2">
+                  <FlaskConical className="h-4 w-4 text-primary" /> Pendências de Exames
+                </span>
+                <Badge variant="secondary" className="text-[10px] tabular-nums">{examPendingTotal}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline gap-2 pb-3 border-b mb-3">
+                <span className="text-2xl font-bold text-primary tabular-nums">{examPendingTotal}</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                  pendência{examPendingTotal === 1 ? "" : "s"}
+                </span>
+              </div>
+              {examPending.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">
+                  Nenhuma pendência de exames no momento.
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-56 overflow-y-auto">
+                  {examPending.map(row => {
+                    const max = examPending[0]?.count || 1;
+                    const pct = (row.count / max) * 100;
+                    return (
+                      <div key={row.category} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium text-foreground truncate">{row.label}</span>
+                          <span className="font-bold tabular-nums shrink-0" style={{ color: row.color }}>{row.count}</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%`, backgroundColor: row.color }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+                Exames aguardando resultado · atualizado agora.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Card 2 — Pendências por Setor */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-primary" /> Pendências por Setor
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {examPendingBySector.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-8">
+                  Nenhuma pendência no setor selecionado.
+                </p>
+              ) : (
+                <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                  {examPendingBySector.slice(0, 8).map(row => {
+                    const CAT_META: Record<string, { label: string; color: string }> = {
+                      laboratorio:    { label: "Lab",   color: "hsl(210, 80%, 55%)" },
+                      imagem:         { label: "Img",   color: "hsl(280, 70%, 55%)" },
+                      parecer:        { label: "Par",   color: "hsl(45, 90%, 50%)"  },
+                      cultura:        { label: "Cult",  color: "hsl(142, 70%, 45%)" },
+                      hemocomponente: { label: "Hemo",  color: "hsl(var(--destructive))" },
+                      sat:            { label: "SAT",   color: "hsl(var(--muted-foreground))" },
+                    };
+                    return (
+                      <div key={row.sector} className="px-2.5 py-1.5 rounded-md hover:bg-muted/40 transition-colors space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-medium text-foreground truncate">{row.sector}</p>
+                          <Badge variant="secondary" className="text-[10px] tabular-nums shrink-0">{row.total}</Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {Object.entries(row.breakdown).map(([cat, n]) => {
+                            const meta = CAT_META[cat] || { label: cat, color: "hsl(var(--primary))" };
+                            return (
+                              <span
+                                key={cat}
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border"
+                                style={{ borderColor: meta.color, color: meta.color }}
+                              >
+                                {meta.label} <span className="tabular-nums font-bold">{n}</span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+                Top setores com pendências · breakdown por categoria.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Card 3 — Pacientes Regulados */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2">
+                  <Navigation className="h-4 w-4 text-primary" /> Pacientes Regulados
+                </span>
+                <Badge variant="secondary" className="text-[10px] tabular-nums">{regulatedPatients.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {regulatedPatients.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 gap-2">
+                  <ShieldCheck className="h-8 w-8 text-muted-foreground/40" />
+                  <p className="text-xs text-muted-foreground text-center">Nenhum paciente regulado no momento.</p>
+                  <p className="text-[10px] text-muted-foreground/60 text-center">O módulo de regulação entrará em operação em breve.</p>
+                </div>
+              ) : (
+                <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                  {regulatedPatients.map(p => {
+                    const isUrgent = /urg/i.test(p.priority);
+                    return (
+                      <div key={p.id} className="px-2.5 py-2 rounded-md border border-border/40 hover:bg-muted/40 transition-colors space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-semibold text-foreground truncate">{p.name}</p>
+                          <Badge
+                            variant={isUrgent ? "destructive" : "secondary"}
+                            className="text-[9px] uppercase shrink-0"
+                          >
+                            {p.priority}
+                          </Badge>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          {[p.age, p.sex].filter(Boolean).join(" · ") || "—"}
+                        </p>
+                        <div className="flex items-center gap-1.5 text-[10px] text-foreground">
+                          <span className="truncate">{p.origin}</span>
+                          <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <span className="truncate font-medium">{p.destination}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 pt-0.5">
+                          <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
+                            <Hourglass className="h-3 w-3" /> {p.waitHours}h em espera
+                          </span>
+                          <Badge variant="outline" className="text-[9px] uppercase">{p.status}</Badge>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+                Solicitações de regulação ativas · ordenadas por antiguidade.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+
 
 
 
