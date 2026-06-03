@@ -53,6 +53,30 @@ interface CriticalAlert {
   severity: "critical" | "warning" | "info";
 }
 
+type Period = "today" | "7d" | "30d";
+
+interface OutcomeBreakdownItem {
+  key: string;
+  label: string;
+  count: number;
+  color: string;
+  icon: typeof Heart;
+}
+
+interface TmpBySectorItem {
+  sector: string;
+  avgDays: number;
+  samples: number;
+}
+
+interface KpiDelta {
+  value: number;          // numeric delta
+  display: string;        // "+3" / "-2" / "—"
+  trend: "up" | "down" | "flat";
+  goodIsDown?: boolean;   // when true, "up" means worse
+  hint?: string;          // tooltip context (e.g. "vs ontem")
+}
+
 const SECTOR_COLORS = [
   "hsl(var(--primary))",
   "hsl(var(--destructive))",
