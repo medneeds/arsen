@@ -174,6 +174,12 @@ export default function GestorPanelPage() {
   // ── Outcomes breakdown ──
   const [outcomes, setOutcomes] = useState<OutcomeBreakdownItem[]>([]);
   const [outcomesTotal, setOutcomesTotal] = useState(0);
+  // ── Bed Turnover / Mortality / Medical Production ──
+  const [bedTurnover, setBedTurnover] = useState<BedTurnoverItem[]>([]);
+  const [bedTurnoverAvg, setBedTurnoverAvg] = useState(0);
+  const [mortalityBySector, setMortalityBySector] = useState<MortalityItem[]>([]);
+  const [mortalityTotal, setMortalityTotal] = useState(0);
+  const [medicalProduction, setMedicalProduction] = useState<MedicalProductionItem[]>([]);
   // ── KPI deltas ──
   const [kpiDeltas, setKpiDeltas] = useState<Record<string, KpiDelta>>({});
   const [sectorFilter, setSectorFilter] = useState<string>(() => {
