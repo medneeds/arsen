@@ -30,9 +30,6 @@ export type Department =
 
 /** Canonical mapping: Department → internal sector code (used by localStorage "selected_sector") */
 export const DEPARTMENT_TO_SECTOR: Record<string, string> = {
-  "URGÊNCIA E EMERGÊNCIA ADULTO": "sala_vermelha",
-  "URGÊNCIA E EMERGÊNCIA PEDIÁTRICA": "sala_laranja",
-  "UTI": "red",
   "UTI 1": "red",
   "UTI 2": "yellow",
   "UCI 1": "blue",
@@ -94,9 +91,19 @@ const STORAGE_KEY = "selected_department";
 
 export function DepartmentProvider({ children }: { children: ReactNode }) {
   const [currentDepartment, setCurrentDepartmentState] = useState<Department>(() => {
-    if (typeof window === "undefined") return "UTI";
+    if (typeof window === "undefined") return "UTI 1";
     const stored = localStorage.getItem(STORAGE_KEY) as Department | null;
-    return stored && DEPARTMENT_TO_SECTOR[stored] ? stored : "UTI";
+    // Validar que o valor salvo tem um sectorCode válido.
+    // "UTI" (sem número) era o fallback antigo e não tem mapeamento — gera
+    // currentSectorCode = "" que trava o carregamento para todos os setores.
+    if (stored && DEPARTMENT_TO_SECTOR[stored]) return stored;
+    // Tentar recuperar pelo sector code salvo separadamente
+    const storedSector = localStorage.getItem("selected_sector");
+    if (storedSector) {
+      const dept = Object.entries(DEPARTMENT_TO_SECTOR).find(([, v]) => v === storedSector)?.[0] as Department | undefined;
+      if (dept) return dept;
+    }
+    return "UTI 1";
   });
 
   const currentSectorCode = DEPARTMENT_TO_SECTOR[currentDepartment] || "";
