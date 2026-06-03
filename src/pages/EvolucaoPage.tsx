@@ -31,6 +31,8 @@ import { usePatientCid } from "@/hooks/usePatientCid";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { usePatientDiagnosticContext } from "@/hooks/usePatientDiagnosticContext";
+import { resolvePatientDischargePrediction } from "@/lib/dischargePrediction";
+import { toast } from "sonner";
 import { EvolutionForm } from "@/components/evolution/EvolutionForm";
 import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
 import { DiagnosticsPanel } from "@/components/evolution/DiagnosticsPanel";
@@ -114,6 +116,7 @@ const EvolucaoPage = () => {
 
   // New evolution form state
   const [showNewForm, setShowNewForm] = useState(false);
+  const [dischargeBannerDismissed, setDischargeBannerDismissed] = useState(false);
   // Evoluções complementares (campo único): intercorrência | vespertina | noturna
   type ComplementaryKind = 'intercurrence' | 'vespertina' | 'noturna';
   const [complementaryKind, setComplementaryKind] = useState<ComplementaryKind | null>(null);
