@@ -358,6 +358,7 @@ export const MEDICATIONS_DATABASE: MedicationEntry[] = [
   { id: 'm25m', name: 'Isossorbida (Dinitrato) Sublingual', presentation: '5mg comprimido', defaultDose: '1 comp', defaultRoute: 'Sublingual', defaultPosology: 'SOS', defaultSchedule: '-', category: 'medication', aliases: ['Isordil'] },
 
   // ===== Anticoagulantes =====
+  { id: 'm25b', name: 'Enoxaparina (Clexane)', presentation: '20mg/0,2mL - Seringa', defaultDose: '20mg', defaultRoute: 'Subcutânea', defaultPosology: '24/24h', defaultSchedule: '-', instructions: 'Profilaxia TEV pacientes de baixo peso.', category: 'medication', aliases: ['Clexane', 'Enoxa'] },
   { id: 'm26', name: 'Enoxaparina (Clexane)', presentation: '40mg/0,4mL - Seringa', defaultDose: '40mg', defaultRoute: 'Subcutânea', defaultPosology: '24/24h', defaultSchedule: '-', instructions: 'Profilaxia TEV.', category: 'medication', aliases: ['Clexane', 'Enoxa'] },
   { id: 'm27', name: 'Enoxaparina (Clexane)', presentation: '60mg/0,6mL - Seringa', defaultDose: '60mg', defaultRoute: 'Subcutânea', defaultPosology: '12/12h', defaultSchedule: '-', category: 'medication', aliases: ['Clexane'] },
   { id: 'm27b', name: 'Enoxaparina (Clexane)', presentation: '80mg/0,8mL - Seringa', defaultDose: '80mg', defaultRoute: 'Subcutânea', defaultPosology: '12/12h', defaultSchedule: '-', category: 'medication', aliases: ['Clexane'] },
