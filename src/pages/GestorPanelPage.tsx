@@ -143,6 +143,19 @@ export default function GestorPanelPage() {
   const [pendingRequestsList, setPendingRequestsList] = useState<any[]>([]);
   const [prescriptionsList, setPrescriptionsList] = useState<any[]>([]);
   const [drillDown, setDrillDown] = useState<string | null>(null);
+  // ── Period filter (banner + TMP + outcomes + trend chart) ──
+  const [period, setPeriod] = useState<Period>(() => {
+    if (typeof window === "undefined") return "7d";
+    return (localStorage.getItem("gestor_period_filter") as Period) || "7d";
+  });
+  // ── TMP (Tempo Médio de Permanência) ──
+  const [tmpOverall, setTmpOverall] = useState<{ avgDays: number; samples: number }>({ avgDays: 0, samples: 0 });
+  const [tmpBySector, setTmpBySector] = useState<TmpBySectorItem[]>([]);
+  // ── Outcomes breakdown ──
+  const [outcomes, setOutcomes] = useState<OutcomeBreakdownItem[]>([]);
+  const [outcomesTotal, setOutcomesTotal] = useState(0);
+  // ── KPI deltas ──
+  const [kpiDeltas, setKpiDeltas] = useState<Record<string, KpiDelta>>({});
   const [sectorFilter, setSectorFilter] = useState<string>(() => {
     if (typeof window === "undefined") return "ALL";
     return localStorage.getItem("gestor_sector_filter") || "ALL";
