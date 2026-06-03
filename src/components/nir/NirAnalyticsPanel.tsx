@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import type { NirMetrics } from "@/hooks/useNirMetrics";
 import { TrendingUp, Flame, ArrowRightLeft, PieChart as PieIcon, Lock } from "lucide-react";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
 interface Props {
   metrics: NirMetrics;
