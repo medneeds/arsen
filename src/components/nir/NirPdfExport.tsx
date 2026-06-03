@@ -34,7 +34,7 @@ export function NirPdfExport({ metrics, predictions = [] }: Props) {
     const dischargeRows = next72
       .map(
         (p) =>
-          `<tr><td style="font-weight:600">${p.name}</td><td style="text-transform:capitalize">${p.sector || "—"}</td><td class="nz-c">${
+          `<tr><td style="font-weight:600">${p.name}</td><td style="text-transform:capitalize">${getSectorDisplayLabel(p.sector) || p.sector || "—"}</td><td class="nz-c">${
             p.bed_number || "—"
           }</td><td>${p.uti_discharge_prediction || ""}</td><td class="nz-c"><span class="pill pill-${p.bucket}">${
             { today: "Hoje", tomorrow: "Amanhã", "48_72h": "48–72h", week: "Semana", later: "Futuro", unparsed: "—" }[p.bucket]
