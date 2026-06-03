@@ -822,7 +822,7 @@ export function usePatients(department?: Department, sector?: string) {
     bedNumber: record.bed_number,
     name: record.name || '',
     age: record.age || '',
-    sector: record.sector as 'red' | 'yellow' | 'blue' | 'outside',
+    sector: resolveSector(record) as 'red' | 'yellow' | 'blue' | 'outside',
     diagnoses: record.diagnoses ? record.diagnoses.split('\n').filter(Boolean) : [],
     medicalHistory: record.medical_history ? record.medical_history.split('\n').filter(Boolean) : [],
     relevantExams: record.relevant_exams ? record.relevant_exams.split('\n').filter(Boolean) : [],
