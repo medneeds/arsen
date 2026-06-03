@@ -617,6 +617,11 @@ const EvolucaoPage = () => {
                   sector: livePatient?.sector || initialPatientSector,
                 }) || patient.admissionDate
               }
+              allergiesOverride={
+                livePatient?.utiAllergies?.filter(Boolean).join(" • ") ||
+                (patient as any).allergies ||
+                undefined
+              }
             />
 
           </div>
@@ -650,6 +655,11 @@ const EvolucaoPage = () => {
             onSuspend={suspendEvolution}
             onDelete={deleteEvolution}
             onDuplicate={handleDuplicate}
+            allergiesOverride={
+              livePatient?.utiAllergies?.filter(Boolean).join(" • ") ||
+              (patient as any).allergies ||
+              undefined
+            }
           />
         )}
 

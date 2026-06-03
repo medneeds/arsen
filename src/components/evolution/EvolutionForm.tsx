@@ -81,6 +81,8 @@ interface EvolutionFormProps {
   onCulturesChange?: (html: string) => void;
   /** Data de admissão no setor — base p/ presets do date picker dos dispositivos. */
   admissionDate?: string | null;
+  /** Alergias do paciente — passadas do contexto para garantir impressão correta */
+  allergiesOverride?: string;
   /** Registro da evolução (usado para impressão unificada via printEvolution). */
   evo?: EvolutionRecord;
   /** UUID do paciente — chave do resolver de identidade na impressão. */
@@ -135,6 +137,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   devices, onDevicesChange,
   culturesHtml, onCulturesChange,
   admissionDate,
+  allergiesOverride,
   evo,
   patientId,
   patientRecord,
@@ -271,25 +274,9 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                     if (pRow?.bed_number) currentBed = pRow.bed_number;
                     if (pRow?.sector) currentSector = pRow.sector;
                   }
-                  // Busca admissionDate e alergias do paciente para o impresso
-                  let printAdmissionDate: string | undefined;
-                  let printAllergies: string | undefined;
-                  if (patientId) {
-                    const { data: pExtra } = await supabase
-                      .from("patients")
-                      .select("uti_admission_date, admission_date, uti_allergies")
-                      .eq("id", patientId)
-                      .maybeSingle();
-                    if (pExtra) {
-                      const rawAdm = (pExtra as any).uti_admission_date || (pExtra as any).admission_date;
-                      if (rawAdm) printAdmissionDate = rawAdm.split("\n")[0].trim();
-                      if ((pExtra as any).uti_allergies?.trim()) {
-                        printAllergies = (pExtra as any).uti_allergies.replace(/\n/g, " • ");
-                      } else {
-                        printAllergies = "SEM ALERGIAS CONHECIDAS";
-                      }
-                    }
-                  }
+                  // Usa admissionDate já disponível como prop + alergias do prop
+                  const printAdmissionDate: string | undefined = admissionDate || undefined;
+                  const printAllergies: string | undefined = allergiesOverride || undefined;
                   await printEvolution(evo, {
                     patientName: resolved.name || evo.patient_name,
                     patientBed: currentBed,
