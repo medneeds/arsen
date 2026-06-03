@@ -1080,6 +1080,170 @@ export default function GestorPanelPage() {
           </Card>
         </div>
 
+        {/* Giro de Leito + Mortalidade + Produção Médica */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Giro de Leito */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Repeat className="h-4 w-4 text-primary" /> Giro de Leito
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline gap-2 pb-3 border-b mb-3">
+                <span className="text-2xl font-bold text-primary tabular-nums">
+                  {bedTurnoverAvg > 0 ? `${bedTurnoverAvg.toFixed(1).replace(".", ",")}×` : "—"}
+                </span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">média geral</span>
+              </div>
+              {bedTurnover.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">
+                  Sem encontros encerrados no período.
+                </p>
+              ) : (
+                <div className="space-y-1 max-h-56 overflow-y-auto">
+                  {bedTurnover.map(row => {
+                    const variant: "default" | "secondary" | "outline" =
+                      row.turnover >= 2 ? "default" : row.turnover >= 1 ? "secondary" : "outline";
+                    const colorClass =
+                      row.turnover >= 2
+                        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                        : row.turnover >= 1
+                          ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
+                          : "bg-muted text-muted-foreground border-border";
+                    return (
+                      <div key={row.sector} className="flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-md hover:bg-muted/40 transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium text-foreground truncate">{row.sector}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {row.encounters} altas · {row.beds} leitos
+                          </p>
+                        </div>
+                        <Badge variant={variant} className={cn("text-[10px] font-bold tabular-nums shrink-0 border", colorClass)}>
+                          {row.turnover.toFixed(1).replace(".", ",")}×
+                        </Badge>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+                Encontros encerrados ÷ leitos do setor no período.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Mortalidade */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Skull className="h-4 w-4 text-destructive" /> Mortalidade
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline gap-2 pb-3 border-b mb-3">
+                <span className="text-2xl font-bold text-destructive tabular-nums">{mortalityTotal}</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                  óbito{mortalityTotal === 1 ? "" : "s"} no período
+                </span>
+              </div>
+              {mortalityTotal === 0 ? (
+                <div className="flex flex-col items-center justify-center py-6 gap-2">
+                  <Heart className="h-8 w-8 text-emerald-500" />
+                  <p className="text-xs text-muted-foreground text-center">
+                    Nenhum óbito registrado no período.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-56 overflow-y-auto">
+                  {mortalityBySector.map(row => {
+                    const maxDeaths = Math.max(...mortalityBySector.map(r => r.deaths), 1);
+                    const pct = (row.deaths / maxDeaths) * 100;
+                    return (
+                      <div key={row.sector} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium text-foreground truncate">{row.sector}</span>
+                          <span className="tabular-nums shrink-0">
+                            <span className="font-bold text-destructive">{row.deaths}</span>
+                            <span className="text-muted-foreground"> · {row.rate.toFixed(0)}%</span>
+                          </span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-destructive transition-all duration-500"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+                Óbitos por setor · % sobre movimentações do setor no período.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Produção Médica */}
+          <Card className="border-border/50 md:col-span-2 lg:col-span-1">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Stethoscope className="h-4 w-4 text-primary" /> Ranking de Evoluções Clínicas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {medicalProduction.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">
+                  Sem evoluções registradas no período.
+                </p>
+              ) : (
+                <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                  {medicalProduction.map((row, idx) => {
+                    const leader = medicalProduction[0]?.count || 1;
+                    const pct = (row.count / leader) * 100;
+                    const isFirst = idx === 0;
+                    return (
+                      <div key={row.name} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/40 transition-colors">
+                        <span className={cn(
+                          "text-[10px] font-bold tabular-nums w-6 text-center shrink-0",
+                          isFirst ? "text-amber-500" : "text-muted-foreground",
+                        )}>
+                          {idx + 1}º
+                        </span>
+                        {isFirst && (
+                          <Trophy className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium text-foreground truncate">{row.name}</p>
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-1">
+                            <div
+                              className={cn(
+                                "h-full rounded-full transition-all duration-500",
+                                isFirst ? "bg-amber-500" : "bg-primary",
+                              )}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                        <span className="text-xs font-bold text-foreground tabular-nums shrink-0">
+                          {row.count}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+                Top 10 médicos por evoluções no período · {sectorDisplayName}.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+
+
+
 
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
