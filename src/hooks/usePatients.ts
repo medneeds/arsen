@@ -345,7 +345,7 @@ export function usePatients(department?: Department, sector?: string) {
         bedNumber: data.bed_number,
         name: data.name || '',
         age: data.age || '',
-        sector: data.sector as 'red' | 'yellow' | 'blue' | 'outside',
+        sector: resolveSector(data) as 'red' | 'yellow' | 'blue' | 'outside',
         diagnoses: data.diagnoses ? data.diagnoses.split('\n').filter(Boolean) : [],
         medicalHistory: data.medical_history ? data.medical_history.split('\n').filter(Boolean) : [],
         relevantExams: data.relevant_exams ? data.relevant_exams.split('\n').filter(Boolean) : [],
