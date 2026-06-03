@@ -331,23 +331,24 @@ export function DiagnosticsPanel({
               />
             </div>
 
-            {/* Alerta 24h — aparece quando alguma alta está prevista para hoje ou amanhã */}
+            {/* Alerta 24h — mostra apenas o setor onde o paciente está */}
             {(() => {
-              const utiAlert = showUtiPrediction && isWithin24h(utiDischargePrediction);
-              const hospitalAlert = isWithin24h(hospitalDischargePrediction);
-              if (!utiAlert && !hospitalAlert) return null;
-              const labels: string[] = [];
-              if (utiAlert) labels.push(`Alta UTI/UCI: ${formatDisplay(utiDischargePrediction)}`);
-              if (hospitalAlert) labels.push(`Alta Hospitalar: ${formatDisplay(hospitalDischargePrediction)}`);
+              // Se showUtiPrediction=true → paciente está na UTI/UCI → alerta só para UTI/UCI
+              // Se showUtiPrediction=false → paciente está em enfermaria → alerta só para Alta Hospitalar
+              const alertDate = showUtiPrediction
+                ? (isWithin24h(utiDischargePrediction) ? utiDischargePrediction : null)
+                : (isWithin24h(hospitalDischargePrediction) ? hospitalDischargePrediction : null);
+              if (!alertDate) return null;
+              const sectorLabel = showUtiPrediction ? "UTI/UCI" : "hospitalar";
               return (
                 <div className="flex items-start gap-2.5 rounded-md border border-amber-400/50 border-l-[3px] border-l-amber-500 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-500/40 px-3 py-2">
                   <CalendarClock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <div className="leading-tight">
                     <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">
-                      Alta programada nas próximas 24h
+                      Alta {sectorLabel} programada nas próximas 24h
                     </p>
                     <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">
-                      {labels.join(" • ")} — verifique pendências antes de finalizar a evolução.
+                      Prevista para <strong>{formatDisplay(alertDate)}</strong> — verifique pendências antes de finalizar a evolução.
                     </p>
                   </div>
                 </div>
