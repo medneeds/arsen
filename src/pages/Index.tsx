@@ -218,7 +218,7 @@ const Index = () => {
     yellow:  { title: "UTI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
     blue:    { title: "UCI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     outside: { title: "UCI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    ucc:     { title: "UCC",    color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    ucc:     { title: "UCC",    color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     // ── Demais setores (sem isUti — usam SectorSection padrão) ─────────
     neuro_01:             { title: "Neuro 01",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     neuro_02:             { title: "Neuro 02",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
