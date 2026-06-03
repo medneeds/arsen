@@ -245,7 +245,7 @@ export default function GestorPanelPage() {
       // ── 1. Patients ──
       let patientsQuery = supabase
         .from("patients")
-        .select("id, name, bed_number, sector, is_vacant, is_door_patient, clinical_status, diagnoses, relevant_exams")
+        .select("id, name, bed_number, sector, is_vacant, is_door_patient, clinical_status, diagnoses, relevant_exams, uti_discharge_prediction, hospital_discharge_prediction")
         .eq("hospital_unit_id", selectedUnit.id);
       if (filteredSectorCodes && filteredSectorCodes.length > 0) {
         patientsQuery = patientsQuery.in("sector", filteredSectorCodes);
