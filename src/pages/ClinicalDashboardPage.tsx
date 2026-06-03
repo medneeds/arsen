@@ -11,6 +11,7 @@ import { useDepartment } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { sectorCapacity } from "@/utils/bedNaming";
 import {
   AlertTriangle,
   BedDouble,
@@ -122,13 +123,14 @@ const ClinicalDashboardPage = () => {
       // 🔒 Excluir leitos EXTRA vagos (arquivados pelo gestor) do total.
       // Leitos EXTRA são temporários — quando removidos ficam como registros
       // vazios com bedNumber 'EXTRA*'. Não devem contar na capacidade do setor.
-      const sectorPatients = patients.filter((p) => {
+      // 🔒 Total = capacidade FIXA do setor (SECTOR_BED_CONFIG).
+      // Evita que leitos fora do range configurado (L19, L20...) ou leitos EXTRA
+      // inflacionem o denominador da ocupação.
+      const occupied = patients.filter((p) => p.name && p.name.trim() !== "").length;
+      const total = sectorCapacity(activeSector) || patients.filter((p) => {
         const bed = (p.bed_number || "").toString().toUpperCase();
-        const isArchivedExtra = bed.startsWith("EXTRA") && (!p.name || !p.name.trim());
-        return !isArchivedExtra;
-      });
-      const occupied = sectorPatients.filter((p) => p.name && p.name.trim() !== "").length;
-      const total = sectorPatients.length;
+        return !bed.startsWith("EXTRA");
+      }).length;
       const occData: OccupancyData[] = [{
         sector: activeSector,
         label: SECTOR_LABELS[activeSector] || activeSector,
