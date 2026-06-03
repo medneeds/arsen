@@ -702,66 +702,120 @@ export default function GestorPanelPage() {
                   <span className="font-semibold">{sectorDisplayName}</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" sideOffset={6} className="w-80 p-0 border-border/60 shadow-lg">
-                <div className="px-3 py-2.5 border-b border-border/60 bg-muted/40">
+              <PopoverContent
+                align="end"
+                sideOffset={6}
+                className="w-[min(560px,95vw)] p-0 border-border/60 shadow-xl"
+              >
+                <div className="px-4 py-3 border-b border-border/60 bg-muted/40 flex items-center justify-between">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     Filtrar dados do painel
                   </p>
+                  <span className="text-[10px] font-medium text-muted-foreground/70 tabular-nums">
+                    {bedStats.total} leitos no hospital
+                  </span>
                 </div>
-                <ScrollArea className="max-h-[60vh]">
-                  <div className="p-1.5 space-y-3">
+                <ScrollArea className="max-h-[80vh]">
+                  <div className="p-2.5 space-y-3">
                     {/* All sectors */}
                     <button
                       type="button"
                       onClick={() => applyFilter("ALL")}
                       className={cn(
-                        "w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-md text-[11px] font-semibold transition-all",
-                        isAllSectors ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                        "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-md text-[12px] font-semibold transition-all border",
+                        isAllSectors
+                          ? "bg-primary/10 text-primary border-primary/30"
+                          : "text-foreground hover:bg-muted border-transparent"
                       )}
                     >
                       <div className="flex items-center gap-2">
-                        <LayoutGrid className={cn("h-3.5 w-3.5", isAllSectors ? "text-primary" : "text-muted-foreground")} />
+                        <LayoutGrid className={cn("h-4 w-4", isAllSectors ? "text-primary" : "text-muted-foreground")} />
                         <span className="uppercase tracking-wide">Todos os setores</span>
                       </div>
-                      {isAllSectors && <Check className="h-3.5 w-3.5" />}
+                      {isAllSectors && <Check className="h-4 w-4" />}
                     </button>
 
                     {/* Blocks + sectors */}
-                    <div className="space-y-2">
-                      <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 px-2">
+                    <div className="space-y-2.5">
+                      <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 px-1">
                         Blocos e setores
                       </p>
                       {SECTOR_BLOCKS.map(block => {
                         const blockId = `BLOCK:${block.id}`;
                         const blockActive = sectorFilter === blockId;
+                        const blockHasActiveChild = block.departments.some(d => d === sectorFilter);
+                        const isHighlighted = blockActive || blockHasActiveChild;
+                        const blockTotals = block.departments.reduce(
+                          (acc, dept) => {
+                            const code = DEPARTMENT_TO_SECTOR[dept as keyof typeof DEPARTMENT_TO_SECTOR];
+                            const s = code ? bedStats.bySector[code] : undefined;
+                            if (s) {
+                              acc.total += s.total;
+                              acc.occupied += s.occupied;
+                            }
+                            return acc;
+                          },
+                          { total: 0, occupied: 0 }
+                        );
                         return (
-                          <div key={block.id} className="space-y-0.5">
+                          <div
+                            key={block.id}
+                            className={cn(
+                              "rounded-md border-l-2 pl-2.5 pr-1 py-1 transition-colors",
+                              isHighlighted
+                                ? "border-primary bg-primary/5"
+                                : "border-border/40 hover:border-border"
+                            )}
+                          >
                             <button
                               type="button"
                               onClick={() => applyFilter(blockId)}
                               className={cn(
-                                "w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-[0.14em] transition-all",
-                                blockActive ? "bg-primary/10 text-primary" : "text-muted-foreground/80 hover:bg-muted/60 hover:text-foreground"
+                                "w-full flex items-center justify-between gap-2 px-1.5 py-1.5 rounded-md text-[10.5px] font-bold uppercase tracking-[0.14em] transition-all",
+                                blockActive
+                                  ? "text-primary"
+                                  : "text-muted-foreground/90 hover:text-foreground"
                               )}
                             >
-                              <span>📊 Bloco {block.label}</span>
-                              {blockActive && <Check className="h-3 w-3" />}
+                              <span className="flex items-center gap-1.5">
+                                <span>Bloco {block.label}</span>
+                                {blockTotals.total > 0 && (
+                                  <span className="text-[9px] font-semibold text-muted-foreground/70 tabular-nums normal-case tracking-normal">
+                                    · {blockTotals.occupied}/{blockTotals.total}
+                                  </span>
+                                )}
+                              </span>
+                              {blockActive && <Check className="h-3.5 w-3.5" />}
                             </button>
-                            <div className="grid grid-cols-1 gap-0.5 pl-3">
+                            <div className="grid grid-cols-2 gap-1 pt-0.5 pb-1">
                               {block.departments.map(dept => {
                                 const isActive = sectorFilter === dept;
+                                const code = DEPARTMENT_TO_SECTOR[dept as keyof typeof DEPARTMENT_TO_SECTOR];
+                                const stat = code ? bedStats.bySector[code] : undefined;
                                 return (
                                   <button
                                     key={dept}
                                     type="button"
                                     onClick={() => applyFilter(dept)}
                                     className={cn(
-                                      "flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all text-left",
-                                      isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                                      "flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all text-left border",
+                                      isActive
+                                        ? "bg-primary/10 text-primary border-primary/30 shadow-sm"
+                                        : "text-foreground hover:bg-muted border-transparent"
                                     )}
                                   >
                                     <span className="truncate">{dept}</span>
-                                    {isActive && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
+                                    <span className="flex items-center gap-1 flex-shrink-0">
+                                      {stat && (
+                                        <span className={cn(
+                                          "text-[9px] font-semibold tabular-nums",
+                                          isActive ? "text-primary/80" : "text-muted-foreground/70"
+                                        )}>
+                                          {stat.occupied}/{stat.total}
+                                        </span>
+                                      )}
+                                      {isActive && <Check className="h-3.5 w-3.5" />}
+                                    </span>
                                   </button>
                                 );
                               })}
