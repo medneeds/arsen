@@ -1705,22 +1705,33 @@ export default function GestorPanelPage() {
             </CardHeader>
             <CardContent className="flex items-center justify-center pb-4">
               {bedStats.total > 0 ? (
-                <div className="relative">
-                  <ResponsiveContainer width={180} height={180}>
-                    <PieChart>
-                      <Pie data={occupancyPie} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value" strokeWidth={0}>
-                        {occupancyPie.map((_, idx) => (
-                          <Cell key={idx} fill={PIE_COLORS[idx]} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip formatter={(val: number, name: string) => [`${val} leitos`, name]} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-bold text-foreground">{occupancyRate}%</span>
-                    <span className="text-[10px] text-muted-foreground">ocupação</span>
+                <>
+                  {/* Mobile: numeric fallback */}
+                  <div className="sm:hidden flex flex-col items-center py-4">
+                    <span className="text-4xl font-bold text-primary tabular-nums">{occupancyRate}%</span>
+                    <span className="text-[11px] text-muted-foreground uppercase tracking-wide mt-1">ocupação</span>
+                    <span className="text-[10px] text-muted-foreground/70 mt-2">
+                      {bedStats.occupied} ocupados · {bedStats.vacant} vagos
+                    </span>
                   </div>
-                </div>
+                  {/* Desktop: donut */}
+                  <div className="relative hidden sm:block">
+                    <ResponsiveContainer width={180} height={180}>
+                      <PieChart>
+                        <Pie data={occupancyPie} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                          {occupancyPie.map((_, idx) => (
+                            <Cell key={idx} fill={PIE_COLORS[idx]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip formatter={(val: number, name: string) => [`${val} leitos`, name]} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-2xl font-bold text-foreground">{occupancyRate}%</span>
+                      <span className="text-[10px] text-muted-foreground">ocupação</span>
+                    </div>
+                  </div>
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground py-8">Sem dados</p>
               )}
