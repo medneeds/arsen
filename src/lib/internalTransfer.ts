@@ -239,12 +239,12 @@ export async function executeInternalTransfer(params: {
       patient_id: targetBedRow.id,
       patient_name: source.name,
       patient_bed: source.bedNumber,
-      patient_sector: source.sector,
+      patient_sector: sectorLabelFromCode(source.sector),
       movement_type: "TRANSFERÊNCIA INTERNA",
-      destination: `${targetBedRow.sector} - Leito ${targetBedRow.bedNumber}`,
+      destination: `${sectorLabelFromCode(targetBedRow.sector)} - Leito ${targetBedRow.bedNumber}`,
       notes:
-        `Transferência interna (${classification}) de ${source.bedNumber} (${source.sector}) ` +
-        `para ${targetBedRow.bedNumber} (${targetBedRow.sector})` +
+        `Transferência interna (${classification}) de ${source.bedNumber} (${sectorLabelFromCode(source.sector)}) ` +
+        `para ${targetBedRow.bedNumber} (${sectorLabelFromCode(targetBedRow.sector)})` +
         (needsSaps ? " — escalada crítica: SAPS 3 pendente no destino." : ""),
       created_by: currentUserId ?? null,
       patient_snapshot: source as any,

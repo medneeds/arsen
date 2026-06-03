@@ -939,7 +939,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 ) : (
                   <ul className="space-y-1.5">
                     {movements.slice(0, 5).map((m) => {
-                      const origin = [m.patientSector, m.patientBed].filter(Boolean).join(" · ");
+                      const origin = [sectorLabelFromCode(m.patientSector) || m.patientSector, m.patientBed].filter(Boolean).join(" · ");
                       const released = m.releaseStatus === "released";
                       return (
                         <li key={m.id} className="text-[11px] border-b border-border/40 last:border-0 pb-1.5 last:pb-0">
