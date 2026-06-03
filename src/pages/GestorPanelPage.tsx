@@ -161,6 +161,8 @@ const SECTOR_BLOCKS: SectorBlock[] = [
 
 export default function GestorPanelPage() {
   const { currentHospital: selectedUnit } = useHospital();
+  const isMobile = useIsMobile();
+  const [sectorFilterOpen, setSectorFilterOpen] = useState(false);
   const { currentDepartment, setCurrentDepartment } = useDepartment();
   const [bedStats, setBedStats] = useState<BedStats>({ total: 0, occupied: 0, vacant: 0, doorPatients: 0, bySector: {} });
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlert[]>([]);
