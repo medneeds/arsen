@@ -1326,6 +1326,171 @@ export default function GestorPanelPage() {
           </Card>
         </div>
 
+        {/* Pendências de Exames + Por Setor + Pacientes Regulados */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Card 1 — Pendências de Exames */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2">
+                  <FlaskConical className="h-4 w-4 text-primary" /> Pendências de Exames
+                </span>
+                <Badge variant="secondary" className="text-[10px] tabular-nums">{examPendingTotal}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline gap-2 pb-3 border-b mb-3">
+                <span className="text-2xl font-bold text-primary tabular-nums">{examPendingTotal}</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                  pendência{examPendingTotal === 1 ? "" : "s"}
+                </span>
+              </div>
+              {examPending.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">
+                  Nenhuma pendência de exames no momento.
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-56 overflow-y-auto">
+                  {examPending.map(row => {
+                    const max = examPending[0]?.count || 1;
+                    const pct = (row.count / max) * 100;
+                    return (
+                      <div key={row.category} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium text-foreground truncate">{row.label}</span>
+                          <span className="font-bold tabular-nums shrink-0" style={{ color: row.color }}>{row.count}</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%`, backgroundColor: row.color }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+                Exames aguardando resultado · atualizado agora.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Card 2 — Pendências por Setor */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-primary" /> Pendências por Setor
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {examPendingBySector.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-8">
+                  Nenhuma pendência no setor selecionado.
+                </p>
+              ) : (
+                <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                  {examPendingBySector.slice(0, 8).map(row => {
+                    const CAT_META: Record<string, { label: string; color: string }> = {
+                      laboratorio:    { label: "Lab",   color: "hsl(210, 80%, 55%)" },
+                      imagem:         { label: "Img",   color: "hsl(280, 70%, 55%)" },
+                      parecer:        { label: "Par",   color: "hsl(45, 90%, 50%)"  },
+                      cultura:        { label: "Cult",  color: "hsl(142, 70%, 45%)" },
+                      hemocomponente: { label: "Hemo",  color: "hsl(var(--destructive))" },
+                      sat:            { label: "SAT",   color: "hsl(var(--muted-foreground))" },
+                    };
+                    return (
+                      <div key={row.sector} className="px-2.5 py-1.5 rounded-md hover:bg-muted/40 transition-colors space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-medium text-foreground truncate">{row.sector}</p>
+                          <Badge variant="secondary" className="text-[10px] tabular-nums shrink-0">{row.total}</Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {Object.entries(row.breakdown).map(([cat, n]) => {
+                            const meta = CAT_META[cat] || { label: cat, color: "hsl(var(--primary))" };
+                            return (
+                              <span
+                                key={cat}
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border"
+                                style={{ borderColor: meta.color, color: meta.color }}
+                              >
+                                {meta.label} <span className="tabular-nums font-bold">{n}</span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+                Top setores com pendências · breakdown por categoria.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Card 3 — Pacientes Regulados */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2">
+                  <Navigation className="h-4 w-4 text-primary" /> Pacientes Regulados
+                </span>
+                <Badge variant="secondary" className="text-[10px] tabular-nums">{regulatedPatients.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {regulatedPatients.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 gap-2">
+                  <ShieldCheck className="h-8 w-8 text-muted-foreground/40" />
+                  <p className="text-xs text-muted-foreground text-center">Nenhum paciente regulado no momento.</p>
+                  <p className="text-[10px] text-muted-foreground/60 text-center">O módulo de regulação entrará em operação em breve.</p>
+                </div>
+              ) : (
+                <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                  {regulatedPatients.map(p => {
+                    const isUrgent = /urg/i.test(p.priority);
+                    return (
+                      <div key={p.id} className="px-2.5 py-2 rounded-md border border-border/40 hover:bg-muted/40 transition-colors space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-semibold text-foreground truncate">{p.name}</p>
+                          <Badge
+                            variant={isUrgent ? "destructive" : "secondary"}
+                            className="text-[9px] uppercase shrink-0"
+                          >
+                            {p.priority}
+                          </Badge>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          {[p.age, p.sex].filter(Boolean).join(" · ") || "—"}
+                        </p>
+                        <div className="flex items-center gap-1.5 text-[10px] text-foreground">
+                          <span className="truncate">{p.origin}</span>
+                          <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <span className="truncate font-medium">{p.destination}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 pt-0.5">
+                          <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
+                            <Hourglass className="h-3 w-3" /> {p.waitHours}h em espera
+                          </span>
+                          <Badge variant="outline" className="text-[9px] uppercase">{p.status}</Badge>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+                Solicitações de regulação ativas · ordenadas por antiguidade.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+
+
 
 
 
