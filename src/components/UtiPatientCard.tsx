@@ -1,6 +1,7 @@
 import { Patient } from "@/types/patient";
 import { DischargeStatusRibbon } from "./DischargeStatusRibbon";
 import { calcDIH, getEffectiveAdmissionDate } from "@/lib/dihCalc";
+import { resolvePatientDischargePrediction } from "@/lib/dischargePrediction";
 import { isExtraBed } from "@/utils/bedNaming";
 import { formatDateBR } from "@/utils/dateUtils";
 import {
@@ -1062,15 +1063,35 @@ export function UtiPatientCard({
                   </div>
 
                   {/* Discharge Prediction — somente leitura (edite via Edição Avançada / Evolução) */}
-                  <div
-                    className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded cursor-not-allowed"
-                    title="Edite em Edição Avançada ou via Evolução Médica"
-                  >
-                    <span className="text-[9px]">Previsão de Alta:</span>
-                    <span className="text-[10px] font-medium w-20 truncate">
-                      {previsaoAltaDate || "—"}
-                    </span>
-                  </div>
+                  {(() => {
+                    const { imminent } = resolvePatientDischargePrediction({
+                      utiDischargePrediction: patient.utiDischargePrediction,
+                      hospitalDischargePrediction: (patient as any).hospitalDischargePrediction
+                        ?? (patient as any).hospital_discharge_prediction
+                        ?? null,
+                    });
+                    return (
+                      <div
+                        className={cn(
+                          "hidden md:flex shrink-0 items-center gap-1 px-1.5 py-0.5 rounded cursor-not-allowed",
+                          imminent
+                            ? "border border-warning bg-warning/15 text-warning-foreground"
+                            : "text-muted-foreground bg-muted/50"
+                        )}
+                        title={
+                          imminent
+                            ? "Alta prevista nas próximas 24h"
+                            : "Edite em Edição Avançada ou via Evolução Médica"
+                        }
+                      >
+                        {imminent && <AlertTriangle className="h-2.5 w-2.5" />}
+                        <span className="text-[9px]">Previsão de Alta:</span>
+                        <span className="text-[10px] font-medium w-20 truncate">
+                          {previsaoAltaDate || "—"}
+                        </span>
+                      </div>
+                    );
+                  })()}
 
                   {/* Critical badge removido — alertas críticos tratados em outro local */}
                 </div>

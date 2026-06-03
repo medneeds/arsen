@@ -31,6 +31,8 @@ import { usePatientCid } from "@/hooks/usePatientCid";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { usePatientDiagnosticContext } from "@/hooks/usePatientDiagnosticContext";
+import { resolvePatientDischargePrediction } from "@/lib/dischargePrediction";
+import { toast } from "sonner";
 import { EvolutionForm } from "@/components/evolution/EvolutionForm";
 import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
 import { DiagnosticsPanel } from "@/components/evolution/DiagnosticsPanel";
@@ -114,6 +116,7 @@ const EvolucaoPage = () => {
 
   // New evolution form state
   const [showNewForm, setShowNewForm] = useState(false);
+  const [dischargeBannerDismissed, setDischargeBannerDismissed] = useState(false);
   // Evoluções complementares (campo único): intercorrência | vespertina | noturna
   type ComplementaryKind = 'intercurrence' | 'vespertina' | 'noturna';
   const [complementaryKind, setComplementaryKind] = useState<ComplementaryKind | null>(null);
@@ -388,29 +391,74 @@ const EvolucaoPage = () => {
     );
   }
 
+  // Banner âmbar — alta iminente (≤24h). Lê os campos do hook existente
+  // (usePatientDiagnosticContext); o "Atualizar" reabre o input do painel.
+  const dischargePrediction = resolvePatientDischargePrediction({
+    utiDischargePrediction,
+    hospitalDischargePrediction,
+  });
+  const dischargeImminent = dischargePrediction.imminent;
+  const dischargeBanner = dischargeImminent && !dischargeBannerDismissed ? (
+    <div className="rounded-md border border-warning bg-warning/10 p-3 text-sm flex items-start gap-2">
+      <span className="text-base leading-none">🔔</span>
+      <div className="flex-1">
+        <p className="font-semibold text-foreground">
+          Alta prevista para {dischargePrediction.label}
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Reavalie em até 24h. Confirme se mantém ou atualize a previsão abaixo.
+        </p>
+      </div>
+      <div className="flex gap-2 shrink-0">
+        <button
+          type="button"
+          className="text-xs rounded border border-border bg-background px-3 py-1 hover:bg-muted"
+          onClick={() => setDischargeBannerDismissed(true)}
+        >
+          Manter
+        </button>
+        <button
+          type="button"
+          className="text-xs rounded border border-warning bg-warning text-warning-foreground px-3 py-1 hover:opacity-90"
+          onClick={() => {
+            setDischargeBannerDismissed(true);
+            if (dischargePrediction.source === "hospital") updateHospitalDischargePrediction("");
+            else updateUtiDischargePrediction("");
+            toast.info("Edite a nova previsão no painel Diagnósticos abaixo.");
+          }}
+        >
+          Atualizar previsão
+        </button>
+      </div>
+    </div>
+  ) : null;
+
   // Slot do painel Diagnósticos — injetado como 1ª seção colapsável dentro do form
   const diagnosticsSlot = (
-    <DiagnosticsPanel
-      cidPrimary={cidPrimary}
-      cidSecondary={cidSecondary}
-      onCidPrimaryChange={updateCidPrimary}
-      onCidSecondaryChange={updateCidSecondary}
-      utiDischargePrediction={utiDischargePrediction}
-      onUtiDischargePredictionChange={updateUtiDischargePrediction}
-      hospitalDischargePrediction={hospitalDischargePrediction}
-      onHospitalDischargePredictionChange={updateHospitalDischargePrediction}
-      isPalliative={isPalliative}
-      onPalliativeChange={updateIsPalliative}
-      isolationPrecautions={isolationPrecautions}
-      onIsolationChange={updateIsolationPrecautions}
-      diagnosticHypotheses={diagnosticHypotheses}
-      onDiagnosticHypothesesChange={(v) => setDiagnosticHypotheses(Array.isArray(v) ? v : v.split("\n").filter(Boolean))}
-      antecedentes={antecedentes}
-      onAntecedentesChange={setAntecedentes}
-      showUtiPrediction={isUtiSector}
-      replicated={diagnosticsReplicated}
-      onClearAll={handleClearDiagnostics}
-    />
+    <div className="space-y-3">
+      {dischargeBanner}
+      <DiagnosticsPanel
+        cidPrimary={cidPrimary}
+        cidSecondary={cidSecondary}
+        onCidPrimaryChange={updateCidPrimary}
+        onCidSecondaryChange={updateCidSecondary}
+        utiDischargePrediction={utiDischargePrediction}
+        onUtiDischargePredictionChange={updateUtiDischargePrediction}
+        hospitalDischargePrediction={hospitalDischargePrediction}
+        onHospitalDischargePredictionChange={updateHospitalDischargePrediction}
+        isPalliative={isPalliative}
+        onPalliativeChange={updateIsPalliative}
+        isolationPrecautions={isolationPrecautions}
+        onIsolationChange={updateIsolationPrecautions}
+        diagnosticHypotheses={diagnosticHypotheses}
+        onDiagnosticHypothesesChange={(v) => setDiagnosticHypotheses(Array.isArray(v) ? v : v.split("\n").filter(Boolean))}
+        antecedentes={antecedentes}
+        onAntecedentesChange={setAntecedentes}
+        showUtiPrediction={isUtiSector}
+        replicated={diagnosticsReplicated}
+        onClearAll={handleClearDiagnostics}
+      />
+    </div>
   );
 
   return (

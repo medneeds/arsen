@@ -19,6 +19,8 @@ import { usePageReady } from "@/hooks/usePageReady";
 import { MainLayout } from "@/components/MainLayout";
 import { ShiftReminderDialog } from "@/components/ShiftReminderDialog";
 import { Patient, SectorType } from "@/types/patient";
+import { toast as sonnerToast } from "sonner";
+import { resolvePatientDischargePrediction, dischargeAlertSessionKey } from "@/lib/dischargePrediction";
 import { Activity, Users, Clock, Printer, Eye, EyeOff, ClipboardList, LogOut, CheckSquare, Trash2, Plus, StickyNote, Edit, List, X, FileText, ChevronDown, ChevronRight, GripVertical, ClipboardCheck, MoreVertical, Building2, RefreshCw, Maximize2, Minimize2, ArrowLeftRight, LayoutDashboard } from "lucide-react";
 import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
 import { SectorSelector } from "@/components/SectorSelector";
@@ -312,6 +314,29 @@ const Index = () => {
   useEffect(() => {
     setPatients(dbPatients);
   }, [dbPatients]);
+
+  // Alerta única-por-sessão de alta iminente (≤24h) ao montar/trocar setor.
+  // Usa sessionStorage por patient.id — não reseta mesmo se a previsão mudar.
+  useEffect(() => {
+    if (!patients.length) return;
+    patients.forEach((p) => {
+      if (!p.name?.trim()) return;
+      const { imminent, label } = resolvePatientDischargePrediction({
+        utiDischargePrediction: p.utiDischargePrediction,
+        hospitalDischargePrediction: (p as any).hospitalDischargePrediction
+          ?? (p as any).hospital_discharge_prediction
+          ?? null,
+      });
+      if (!imminent) return;
+      const key = dischargeAlertSessionKey(p.id);
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+      sonnerToast.warning(`Alta iminente — ${p.name}`, {
+        description: `Previsão: ${label} · Leito ${p.bedNumber || "—"}`,
+        duration: 8000,
+      });
+    });
+  }, [patients]);
 
   // Persist history to localStorage
   useEffect(() => {

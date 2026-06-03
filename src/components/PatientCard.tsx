@@ -31,6 +31,7 @@ import { formatAgeDisplay } from "@/utils/ageDisplay";
 import { differenceInDays, differenceInHours, differenceInMinutes, parseISO, isValid, parse } from "date-fns";
 import { useSectorStayTimer } from "@/hooks/useSectorStayTimer";
 import { calcDIH, formatDIHLabel, formatAdmissionDateBR, getEffectiveAdmissionDate } from "@/lib/dihCalc";
+import { resolvePatientDischargePrediction } from "@/lib/dischargePrediction";
 import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { useConductHistory } from "@/hooks/useConductHistory";
 import { ConductHistoryDialog } from "./ConductHistoryDialog";
@@ -1753,7 +1754,12 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     </span>
                     {(() => {
                       const pred = (patient.utiDischargePrediction || [])[0] || "";
-                      if (!pred) {
+                      const hospPred = (patient as any).hospitalDischargePrediction || (patient as any).hospital_discharge_prediction || "";
+                      const { imminent } = resolvePatientDischargePrediction({
+                        utiDischargePrediction: patient.utiDischargePrediction,
+                        hospitalDischargePrediction: hospPred,
+                      });
+                      if (!pred && !hospPred) {
                         return (
                           <span
                             className="text-[10px] text-muted-foreground italic py-0.5"
@@ -1763,15 +1769,24 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           </span>
                         );
                       }
-                      const daysCalculation = calculateDaysUntilDischarge(pred);
+                      const shown = pred || hospPred;
+                      const daysCalculation = pred ? calculateDaysUntilDischarge(pred) : null;
                       return (
                         <div
                           className="text-[10px] text-foreground leading-snug py-0.5 break-words"
                           title="Atualize esta previsão dentro da Evolução Médica."
                         >
-                          <span className="font-medium">{pred}</span>
+                          <span className="font-medium">{shown}</span>
                           {daysCalculation && (
                             <span className="ml-1 text-muted-foreground">{daysCalculation}</span>
+                          )}
+                          {imminent && (
+                            <span
+                              className="ml-1 inline-flex items-center gap-0.5 rounded-full border border-warning bg-warning/15 px-1.5 py-[1px] text-[9px] font-semibold uppercase tracking-wide text-warning-foreground"
+                              title="Previsão de alta nas próximas 24h"
+                            >
+                              <AlertTriangle className="h-2.5 w-2.5" /> Alta &lt;24h
+                            </span>
                           )}
                         </div>
                       );
