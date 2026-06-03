@@ -429,6 +429,82 @@ export default function GestorPanelPage() {
         { key: "outros", label: "Outros", count: outBuckets.outros, color: "hsl(var(--muted-foreground))", icon: HelpCircle },
       ]);
 
+      // ── 8b. Giro de Leito (encontros encerrados / leitos no setor) ──
+      // Reusa `encs` (encontros encerrados no período) e bedStats.bySector já calculado.
+      const encsBySector: Record<string, number> = {};
+      (encs || []).forEach((e: any) => {
+        const dept = e.department || "—";
+        const code = (DEPARTMENT_TO_SECTOR as any)[dept] || dept;
+        encsBySector[code] = (encsBySector[code] || 0) + 1;
+      });
+      const turnoverRows: BedTurnoverItem[] = Object.entries(encsBySector)
+        .map(([code, count]) => {
+          const beds = bedStats.bySector[code]?.total || 0;
+          return {
+            sector: getSectorDisplayLabel(code) || code,
+            encounters: count,
+            beds,
+            turnover: beds > 0 ? count / beds : 0,
+          };
+        })
+        .filter(r => r.beds > 0)
+        .sort((a, b) => b.turnover - a.turnover);
+      setBedTurnover(turnoverRows);
+      const totalEncsTurn = turnoverRows.reduce((acc, r) => acc + r.encounters, 0);
+      const totalBedsTurn = turnoverRows.reduce((acc, r) => acc + r.beds, 0);
+      setBedTurnoverAvg(totalBedsTurn > 0 ? totalEncsTurn / totalBedsTurn : 0);
+
+      // ── 8c. Mortalidade por setor (período) ──
+      const deathsBySector: Record<string, number> = {};
+      const totalBySector: Record<string, number> = {};
+      (movements || []).forEach((m: any) => {
+        const d = new Date(m.created_at);
+        if (d < periodStart) return;
+        const sec = m.patient_sector || "—";
+        totalBySector[sec] = (totalBySector[sec] || 0) + 1;
+        const t = (m.movement_type || "").toUpperCase();
+        if (t.includes("ÓBITO") || t.includes("OBITO")) {
+          deathsBySector[sec] = (deathsBySector[sec] || 0) + 1;
+        }
+      });
+      const mortalityRows: MortalityItem[] = Object.entries(deathsBySector)
+        .map(([sec, deaths]) => {
+          const total = totalBySector[sec] || deaths;
+          return {
+            sector: getSectorDisplayLabel(sec) || sec,
+            deaths,
+            total,
+            rate: total > 0 ? (deaths / total) * 100 : 0,
+          };
+        })
+        .sort((a, b) => b.deaths - a.deaths);
+      setMortalityBySector(mortalityRows);
+      setMortalityTotal(mortalityRows.reduce((acc, r) => acc + r.deaths, 0));
+
+      // ── 8d. Ranking de Produção Médica (clinical_evolutions) ──
+      let evolQuery = supabase
+        .from("clinical_evolutions")
+        .select("created_by_name, department")
+        .eq("hospital_unit_id", selectedUnit.id)
+        .gte("created_at", periodStart.toISOString());
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        evolQuery = evolQuery.in("department", filteredDepartments);
+      }
+      const { data: evolData } = await evolQuery;
+      const byDoctor: Record<string, number> = {};
+      (evolData || []).forEach((row: any) => {
+        const name = (row.created_by_name || "").trim();
+        if (!name) return;
+        byDoctor[name] = (byDoctor[name] || 0) + 1;
+      });
+      setMedicalProduction(
+        Object.entries(byDoctor)
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 10),
+      );
+
+
       // ── 8. KPI deltas (tendência) ──
       // Para ocupação/leitos/porta usamos delta vs ontem via balanço de movimentações
       // (admissões - altas - óbitos - transf.externas) nas últimas 24h.
