@@ -8,6 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { regularBedCount, sectorCapacity } from "@/utils/bedNaming";
 
 type ColorVariant = 'blue' | 'yellow' | 'red' | 'green';
 
