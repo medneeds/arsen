@@ -715,7 +715,7 @@ const EvolucaoPage = () => {
                     <td style={labelSt}>Prontuário</td>
                     <td style={{ ...cellSt, fontWeight: 700 }}>{patient.record || '—'}</td>
                     <td style={labelSt}>Nº Atendimento</td>
-                    <td style={{ ...cellSt, fontWeight: 700 }}>{ids.encounterCode ? `#${ids.encounterCode}` : '—'}</td>
+                    <td style={{ ...cellSt, fontWeight: 700 }}>{ids.atendimento ? `#${ids.atendimento}` : '—'}</td>
                   </tr>
                   {/* Linha 3: Idade / Nascimento / Admissão / Sexo / Peso / Alergias */}
                   <tr>
