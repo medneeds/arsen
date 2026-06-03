@@ -231,7 +231,7 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
                   return (
                     <li key={i} className="px-3 py-2">
                       <div className="flex items-center justify-between text-[11px] mb-1">
-                        <span className="truncate font-medium capitalize">{f.origin} → {f.destination}</span>
+                        <span className="truncate font-medium">{getSectorDisplayLabel(f.origin) || f.origin} → {getSectorDisplayLabel(f.destination) || f.destination}</span>
                         <span className="text-muted-foreground">{f.count}</span>
                       </div>
                       <div className="h-1.5 rounded-full bg-muted overflow-hidden">
