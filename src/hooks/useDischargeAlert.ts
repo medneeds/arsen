@@ -41,14 +41,30 @@ function firstNonEmpty(v: string | string[] | null | undefined): string {
 /** Retorna true se a data de alta está dentro das próximas 24h */
 export function isWithin24h(dischargePrediction: string | null | undefined): boolean {
   if (!dischargePrediction || typeof dischargePrediction !== 'string') return false;
-  // Normalizar: "2026-06-04 (D+5)" → "2026-06-04"
   const dateStr = dischargePrediction.replace(/\s*\(.*\)\s*$/, "").trim();
-  const parsed = new Date(dateStr);
+  const parsed = new Date(dateStr + "T12:00:00");
   if (isNaN(parsed.getTime())) return false;
-  // Alta dentro das próximas 24h a partir de agora
   const now = Date.now();
   const ms = parsed.getTime() - now;
   return ms >= 0 && ms <= 24 * 60 * 60 * 1000;
+}
+
+/**
+ * Retorna true se a data de alta está programada para AMANHÃ
+ * (independente do horário — compara apenas a data do calendário).
+ */
+export function isTomorrow(dischargePrediction: string | null | undefined): boolean {
+  if (!dischargePrediction || typeof dischargePrediction !== 'string') return false;
+  const dateStr = dischargePrediction.replace(/\s*\(.*\)\s*$/, "").trim();
+  const parsed = new Date(dateStr + "T12:00:00");
+  if (isNaN(parsed.getTime())) return false;
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return (
+    parsed.getFullYear() === tomorrow.getFullYear() &&
+    parsed.getMonth() === tomorrow.getMonth() &&
+    parsed.getDate() === tomorrow.getDate()
+  );
 }
 
 export { firstNonEmpty as _firstNonEmptyDischarge };
