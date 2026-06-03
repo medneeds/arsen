@@ -39,11 +39,10 @@ function firstNonEmpty(v: string | string[] | null | undefined): string {
 }
 
 /** Retorna true se a data de alta está dentro das próximas 24h */
-export function isWithin24h(dischargePrediction: string | string[] | null | undefined): boolean {
-  const raw = firstNonEmpty(dischargePrediction);
-  if (!raw) return false;
+export function isWithin24h(dischargePrediction: string | null | undefined): boolean {
+  if (!dischargePrediction || typeof dischargePrediction !== 'string') return false;
   // Normalizar: "2026-06-04 (D+5)" → "2026-06-04"
-  const dateStr = raw.replace(/\s*\(.*\)\s*$/, "").trim();
+  const dateStr = dischargePrediction.replace(/\s*\(.*\)\s*$/, "").trim();
   const parsed = new Date(dateStr);
   if (isNaN(parsed.getTime())) return false;
   // Alta dentro das próximas 24h a partir de agora
@@ -67,7 +66,7 @@ export function useDischargeAlert(patients: Patient[]) {
       patients.filter(
         (p) =>
           p.name?.trim() &&
-          isWithin24h(p.utiDischargePrediction as any),
+          isWithin24h((p.utiDischargePrediction as any)?.[0] ?? null),
       ),
     [patients],
   );
@@ -79,8 +78,9 @@ export function useDischargeAlert(patients: Patient[]) {
 
     // Agrupar num único toast
     const names = toShow.map((p) => {
-      const pred = firstNonEmpty(p.utiDischargePrediction as any);
-      const date = formatDateBR(pred.replace(/\s*\(.*\)\s*$/, "").trim());
+      const pred =
+        (p.utiDischargePrediction as any)?.[0] ?? "";
+      const date = formatDateBR(typeof pred === 'string' ? pred.replace(/\s*\(.*\)\s*$/, "").trim() : "");
       return `• ${p.name} (Leito ${p.bedNumber}) — Alta: ${date}`;
     });
 
