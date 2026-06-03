@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { getSectorDisplayLabel, isExtraBed } from "@/utils/bedNaming";
+import { getSectorDisplayLabel, isExtraBed, sectorCapacity } from "@/utils/bedNaming";
 import { format, subDays, startOfDay, differenceInHours, formatDistanceToNow, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MainLayout } from "@/components/MainLayout";
@@ -279,16 +279,19 @@ export default function GestorPanelPage() {
 
         const bySector: Record<string, { total: number; occupied: number }> = {};
         patients.forEach(p => {
-          if (!bySector[p.sector]) bySector[p.sector] = { total: 0, occupied: 0 };
-          if (!isExtraBed(p.bed_number || '')) bySector[p.sector].total++;
+          if (!bySector[p.sector]) {
+            // Usa a capacidade FIXA configurada (SECTOR_BED_CONFIG) como denominador.
+            // Evita que leitos fora do range (L19, L20...) sejam contados como regulares.
+            bySector[p.sector] = { total: sectorCapacity(p.sector) || 0, occupied: 0 };
+          }
           if (!p.is_vacant && p.name?.trim()) bySector[p.sector].occupied++;
         });
 
-        // Total de leitos = apenas leitos regulares (sem EXTRAs)
-        const regularTotal = patients.filter(p => {
-          const bed = (p.bed_number || '').toString().toUpperCase();
-          return !bed.startsWith('EXTRA');
-        }).length;
+        // Total de leitos = soma das capacidades fixas dos setores presentes (SECTOR_BED_CONFIG).
+        // Garante que leitos fora do range configurado não sejam contados.
+        const regularTotal = Object.keys(bySector).reduce(
+          (sum, code) => sum + (sectorCapacity(code) || 0), 0
+        );
         setBedStats({ total: regularTotal, occupied: occupied.length, vacant: vacant.length, doorPatients: doorPatients.length, bySector });
         setOccupiedPatientsList(occupied);
         setVacantBedsList(vacant);
