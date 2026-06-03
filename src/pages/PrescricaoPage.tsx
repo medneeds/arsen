@@ -2021,43 +2021,57 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           <Checkbox checked={selected} onCheckedChange={() => onToggleSelect(item.id)} className="shrink-0 mt-0.5" />
           <span className="text-[10px] font-mono text-muted-foreground w-5 text-right shrink-0 mt-0.5">{index + 1}.</span>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
+            {/* Cabeçalho do item de insulinoterapia */}
+            <div className="flex items-center gap-1.5 flex-wrap mb-2">
               <AlertTriangle className="h-3 w-3 text-red-600 shrink-0" />
               <span className={cn("text-xs font-bold text-foreground", item.status === 'suspended' && "line-through")}>
-                INSULINOTERAPIA — {desc.headline}
+                INSULINOTERAPIA
+              </span>
+              <span className="text-xs text-muted-foreground font-normal">—</span>
+              <span className={cn("text-xs font-semibold text-red-700 dark:text-red-400", item.status === 'suspended' && "line-through")}>
+                {desc.headline}
               </span>
               <Badge variant="outline" className="text-[8px] px-1 bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-300">MAV</Badge>
               {plan.scheme === 'iv_continuous' && (
                 <Badge variant="outline" className="text-[8px] px-1 bg-amber-100 text-amber-700 border-amber-300">BIC</Badge>
               )}
-              <div className="ml-auto flex items-center gap-2">
+              <div className="ml-auto flex items-center gap-1.5">
                 {canInlineEdit && (
                   <button
                     type="button"
                     onClick={() => setIndividualExpanded(v => !v)}
-                    className="text-[10px] text-primary hover:underline inline-flex items-center gap-1"
-                    title="Ajustar faixas e observações sem reabrir o assistente"
+                    className="text-[10px] px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+                    title="Ajustar faixas sem reabrir o assistente"
                   >
-                    {showInline ? 'FECHAR AJUSTE INLINE' : 'AJUSTAR FAIXAS INLINE'}
+                    {showInline ? '↑ Fechar ajuste' : '↓ Ajustar faixas'}
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => onEditInsulin?.(item.id)}
-                  className="text-[10px] text-primary hover:underline"
+                  className="text-[10px] px-2 py-0.5 rounded border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors font-medium"
                 >
-                  EDITAR ESQUEMA
+                  ✏ Editar esquema
                 </button>
               </div>
             </div>
-            <ul className="mt-1.5 space-y-0.5">
+
+            {/* Doses em grid compacto */}
+            <div className="grid gap-x-3 gap-y-0.5 text-[11px] leading-relaxed"
+              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}
+            >
               {desc.lines.map((l, i) => (
-                <li key={i} className={cn(
-                  "text-[11px] leading-snug",
-                  l.startsWith('  •') ? "pl-4 text-muted-foreground" : "pl-2 border-l-2 border-red-400/40 text-foreground"
-                )}>{l.replace(/^ {2}• /, '• ')}</li>
+                <div key={i} className={cn(
+                  "flex items-baseline gap-1.5",
+                  l.startsWith('  •') ? "pl-3 text-muted-foreground text-[10px]" : ""
+                )}>
+                  {!l.startsWith('  •') && (
+                    <span className="shrink-0 h-1.5 w-1.5 rounded-full bg-red-400/70 mt-1.5" />
+                  )}
+                  <span>{l.replace(/^ {2}• /, '').replace(/^• /, '')}</span>
+                </div>
               ))}
-            </ul>
+            </div>
             {showInline && (
               <div className="mt-2 rounded-lg border border-red-200 dark:border-red-900/40 bg-white/70 dark:bg-slate-900/40 p-2">
                 <SlidingEditor

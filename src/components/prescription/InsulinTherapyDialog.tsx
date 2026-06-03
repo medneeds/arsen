@@ -68,11 +68,17 @@ export function InsulinTherapyDialog({
     }
   );
 
-  // Reset quando reabrir
+  // Reset quando reabrir — preserva doses do plano existente
   useEffect(() => {
     if (open) {
       setStep(1);
-      if (!existingPlan) {
+      if (existingPlan) {
+        // 🔒 Ao editar: restaurar SEMPRE o plano já salvo.
+        // Sem isso, o useState inicial é reutilizado com os defaults
+        // e as doses editadas anteriormente se perdem.
+        setPlan(existingPlan);
+      } else {
+        // Novo plano: sugerir scheme baseado no tipo de insulina
         setPlan(prev => ({
           ...prev,
           scheme: detected.isBasal && !detected.isBolus ? 'nph_fixed'
