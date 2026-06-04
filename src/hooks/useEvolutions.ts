@@ -185,13 +185,23 @@ export function useEvolutions(
 
       const hasAdmissionEvo = mapped.some(e => (e as any).evolution_type === "admission");
       if (!hasAdmissionEvo && safePatientId) {
-        const { data: ah } = await supabase
+        let ahQuery = supabase
           .from("admission_histories")
           .select("*")
-          .eq("patient_id", safePatientId)
-          .order("created_at", { ascending: true })
-          .limit(1)
-          .maybeSingle();
+          .is("archived_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        // Prioriza encounter ativo → registry → patient_id (defensivo contra reuso de leito)
+        if (activeEncounterId) {
+          ahQuery = ahQuery.eq("encounter_id", activeEncounterId);
+        } else if (resolvedRegistryId) {
+          ahQuery = ahQuery.eq("patient_registry_id", resolvedRegistryId);
+        } else {
+          ahQuery = ahQuery.eq("patient_id", safePatientId);
+        }
+
+        const { data: ah } = await ahQuery.maybeSingle();
         if (ah) {
           const cidLine = [ah.cid_primary, ah.cid_secondary].filter(Boolean).join(" • ");
           const virtual: EvolutionRecord = {
@@ -223,6 +233,7 @@ export function useEvolutions(
           mapped.push(virtual);
         }
       }
+
 
       mapped.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
