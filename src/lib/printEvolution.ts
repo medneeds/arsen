@@ -221,9 +221,8 @@ export const printEvolution = async (
   // 1. soap_data.antecedentes (novo formato — array de itens)
   // 2. evo.antecedentes (campo raiz da tabela, legado)
   // 3. ctx.antecedentes (passado pelo chamador)
-  const soapAntecedentes: string[] = Array.isArray((evo.soap_data as any)?.antecedentes)
-    ? (evo.soap_data as any).antecedentes.filter(Boolean)
-    : [];
+  // soapAntecedentes já declarado acima (antes do fetch de patients)
+
 
 
 
