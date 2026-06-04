@@ -65,10 +65,6 @@ export interface PrintEvolutionContext {
   patientCns?: string;
   /** Data de nascimento — formato DD/MM/AAAA */
   patientBirthDate?: string;
-  /** Data de admissão no setor — ISO ou DD/MM/YYYY */
-  patientAdmissionDate?: string;
-  /** Alergias do paciente — passado diretamente para evitar falha na busca */
-  patientAllergies?: string;
   cidPrimary?: string;
   cidSecondary?: string;
 }
@@ -77,8 +73,20 @@ export const printEvolution = async (
   evo: EvolutionRecord,
   ctx?: PrintEvolutionContext
 ) => {
-  const logo = await prepareLogo();
   const intercurrence = isIntercurrence(evo);
+
+  // 🔒 Abrir a janela ANTES de qualquer await para não perder o contexto
+  // de user interaction — popup blockers bloqueiam window.open() após awaits.
+  const printWin = window.open("", "_blank", "width=1024,height=768");
+  if (printWin) {
+    printWin.document.write(
+      `<html><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#475569">${
+        intercurrence ? "Preparando intercorrência…" : "Preparando evolução…"
+      }</body></html>`
+    );
+  }
+
+  const logo = await prepareLogo();
 
   const createdAt = format(new Date(evo.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
   const validatedAt = evo.validated_at
@@ -97,64 +105,20 @@ export const printEvolution = async (
   const F = (label: string, value: string) =>
     `<span style="font-weight:600">${label}</span>&nbsp;${value}`;
 
-  // Formatar data para padrão brasileiro DD/MM/YYYY
-  const formatDateBRLocal = (d: string | undefined | null): string => {
+  // Formatar data de nascimento para padrão brasileiro DD/MM/YYYY
+  const formatBirthDateBR = (d: string | undefined | null): string => {
     if (!d) return "—";
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(d.trim())) return d.trim();
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d.trim());
     if (m) return `${m[3]}/${m[2]}/${m[1]}`;
     return d;
   };
-  const birthDisplay = formatDateBRLocal(ctx?.patientBirthDate);
-  const admissionDisplay = formatDateBRLocal(ctx?.patientAdmissionDate);
+  const birthDisplay = formatBirthDateBR(ctx?.patientBirthDate);
 
   // Estilos da tabela de paciente — idêntico ao PrintablePrescription
   const cellS = "border:0.5px solid #94a3b8;padding:3px 6px;font-size:7.5pt;line-height:1.3;vertical-align:top";
   const labelS = `${cellS};font-weight:700;font-size:6.5pt;background:#f1f5f9;color:#334155;text-transform:uppercase;letter-spacing:0.3px`;
 
-  // Pré-busca dados do paciente (antecedentes, alergias e idade) — usados no header
-  const soapAntecedentes: string[] = Array.isArray((evo.soap_data as any)?.antecedentes)
-    ? (evo.soap_data as any).antecedentes.filter(Boolean)
-    : [];
-  let patientAntecedentes: string[] = [];
-  let patientAllergies: string = ctx?.patientAllergies || "—";
-  let patientAge: string | null = null;
-  const patientIdForQuery = (evo as any).patient_id;
-  if (patientIdForQuery) {
-    try {
-      const { data: pRow } = await supabase
-        .from("patients")
-        .select("medical_history, uti_allergies, age, birth_date")
-        .eq("id", patientIdForQuery)
-        .maybeSingle();
-      if (pRow) {
-        if (soapAntecedentes.length === 0 && (pRow as any).medical_history?.trim()) {
-          patientAntecedentes = (pRow as any).medical_history.split("\n").filter(Boolean);
-        }
-        // Só sobrescreve alergias se não veio no ctx
-        if (!ctx?.patientAllergies) {
-          if ((pRow as any).uti_allergies?.trim()) {
-            patientAllergies = (pRow as any).uti_allergies.replace(/\n/g, " • ");
-          } else {
-            patientAllergies = "SEM ALERGIAS CONHECIDAS";
-          }
-        }
-        if ((pRow as any).age) {
-          patientAge = `${(pRow as any).age} anos`;
-        } else if ((pRow as any).birth_date) {
-          const bd = new Date((pRow as any).birth_date);
-          const today = new Date();
-          let age = today.getFullYear() - bd.getFullYear();
-          const m = today.getMonth() - bd.getMonth();
-          if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
-          patientAge = `${age} anos`;
-        }
-      }
-    } catch { /* falha silenciosa */ }
-  }
-
   const patientHeader = `
-
     <table style="width:100%;border-collapse:collapse;margin-bottom:6pt;page-break-inside:avoid">
       <tbody>
         <tr>
@@ -168,18 +132,16 @@ export const printEvolution = async (
           <td style="${cellS};font-weight:700">${escape(ctx?.patientBed || evo.patient_bed || "—")}</td>
           <td style="${labelS}">Setor / Unidade</td>
           <td style="${cellS};font-weight:600">${escape(getSectorDisplayLabel(ctx?.patientSector || evo.patient_sector) || "—")}</td>
-          <td style="${labelS}">Admissão</td>
-          <td style="${cellS};font-weight:700">${escape(admissionDisplay)}</td>
           <td style="${labelS}">Prontuário</td>
           <td style="${cellS};font-weight:700">${escape(ctx?.patientRecord || "—")}</td>
+          <td style="${labelS}">Nº Atendimento</td>
+          <td style="${cellS};font-weight:700">${ctx?.patientAtendimento ? "#" + escape(ctx.patientAtendimento) : "—"}</td>
         </tr>
         <tr>
           <td style="${labelS}">Data de Nasc.</td>
           <td style="${cellS}">${escape(birthDisplay)}${patientAge ? ` (${patientAge})` : ''}</td>
-          <td style="${labelS}">Nº Atendimento</td>
-          <td style="${cellS};font-weight:700">${ctx?.patientAtendimento ? "#" + escape(ctx.patientAtendimento) : "—"}</td>
           <td style="${labelS}">Médico</td>
-          <td style="${cellS}" colspan="1">${escape(doctorName)}</td>
+          <td style="${cellS}" colspan="3">${escape(doctorName)}</td>
           <td style="${labelS};color:#dc2626;font-size:6pt">⚠ ALERGIAS</td>
           <td style="${cellS};font-weight:700;color:#991b1b;background:#fef2f2;font-size:7.5pt">${escape(patientAllergies)}</td>
         </tr>
@@ -203,7 +165,52 @@ export const printEvolution = async (
     `
     : "";
 
+  // Antecedentes clínicos — buscar em múltiplas fontes:
+  // 1. soap_data.antecedentes (novo formato — array de itens)
+  // 2. evo.antecedentes (campo raiz da tabela, legado)
+  // 3. ctx.antecedentes (passado pelo chamador)
+  const soapAntecedentes: string[] = Array.isArray((evo.soap_data as any)?.antecedentes)
+    ? (evo.soap_data as any).antecedentes.filter(Boolean)
+    : [];
 
+  // Buscar dados do paciente: antecedentes, alergias e idade
+  let patientAntecedentes: string[] = [];
+  let patientAllergies: string = "—";
+  let patientAge: string | null = null;
+
+  if ((evo as any).patient_id) {
+    try {
+      const { data: pRow } = await supabase
+        .from("patients")
+        .select("medical_history, uti_allergies, age, birth_date")
+        .eq("id", (evo as any).patient_id)
+        .maybeSingle();
+
+      if (pRow) {
+        // Antecedentes
+        if (soapAntecedentes.length === 0 && (pRow as any).medical_history?.trim()) {
+          patientAntecedentes = (pRow as any).medical_history.split("\n").filter(Boolean);
+        }
+        // Alergias
+        if ((pRow as any).uti_allergies?.trim()) {
+          patientAllergies = (pRow as any).uti_allergies.replace(/\n/g, " • ");
+        } else {
+          patientAllergies = "SEM ALERGIAS CONHECIDAS";
+        }
+        // Idade — usa age direto ou calcula da data de nascimento
+        if ((pRow as any).age) {
+          patientAge = `${(pRow as any).age} anos`;
+        } else if ((pRow as any).birth_date) {
+          const bd = new Date((pRow as any).birth_date);
+          const today = new Date();
+          let age = today.getFullYear() - bd.getFullYear();
+          const m = today.getMonth() - bd.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
+          patientAge = `${age} anos`;
+        }
+      }
+    } catch { /* falha silenciosa */ }
+  }
 
   const antecedentesArr = soapAntecedentes.length > 0 ? soapAntecedentes : patientAntecedentes;
 
@@ -359,8 +366,16 @@ export const printEvolution = async (
     `,
   });
 
-  openPrintWindow(
-    html,
-    intercurrence ? "Preparando intercorrência…" : "Preparando evolução…"
-  );
+  // Escrever o HTML na janela já aberta (ou fallback se bloqueada)
+  if (printWin) {
+    printWin.document.open();
+    printWin.document.write(html);
+    printWin.document.close();
+  } else {
+    // Fallback: tentar abrir novamente (pode falhar por popup blocker)
+    openPrintWindow(
+      html,
+      intercurrence ? "Preparando intercorrência…" : "Preparando evolução…"
+    );
+  }
 };
