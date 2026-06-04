@@ -592,8 +592,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                                   (pData as any).admission_date ||
                                   (pData as any).uti_admission_date;
                                 if (rawAdm) {
-                                  const firstAdm = rawAdm.split("
-")[0].trim();
+                                  const firstAdm = rawAdm.split("\n")[0].trim();
                                   // Normalizar para DD/MM/YYYY
                                   const mIso = firstAdm.match(/^(\d{4})-(\d{2})-(\d{2})/);
                                   printAdmDate = mIso
