@@ -44,66 +44,51 @@ export function usePatientCid(patientId: string | null) {
     }
     setLoading(true);
     try {
-      // ── Stage 1: most recent admission for the current bed (patient_id) ──
-      const { data: byPatient, error: e1 } = await supabase
+      // Tentativa 1: buscar por patient_id (mais preciso)
+      const { data, error } = await supabase
         .from("admission_histories")
-        .select("id, cid_primary, cid_secondary, patient_registry_id, archived_at")
+        .select("id, cid_primary, cid_secondary, patient_registry_id")
         .eq("patient_id", safePatientId)
         .eq("hospital_unit_id", currentHospital.id)
-        .eq("state_id", currentState.id)
+        .is("archived_at", null)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (e1 && e1.code !== "PGRST116") throw e1;
+      if (error && error.code !== "PGRST116") throw error;
 
-      const activeAdmission = byPatient && !byPatient.archived_at ? byPatient : null;
-      recordIdRef.current = activeAdmission ? activeAdmission.id : null;
+      let row = data as any;
 
-      // Current admission already has CID → use directly.
-      if (activeAdmission?.cid_primary) {
-        setCidPrimary(activeAdmission.cid_primary || "");
-        setCidSecondary(decodeSecondary(activeAdmission.cid_secondary));
-        return;
+      // Tentativa 2: fallback por patient_registry_id (quando ficha
+      // foi criada sem patient_id direto — ex: fluxo de pré-admissão)
+      if (!row && safePatientId) {
+        const { data: patRow } = await supabase
+          .from("patients")
+          .select("patient_registry_id")
+          .eq("id", safePatientId)
+          .maybeSingle();
+        const regId = (patRow as any)?.patient_registry_id;
+        if (regId) {
+          const { data: regRow } = await supabase
+            .from("admission_histories")
+            .select("id, cid_primary, cid_secondary")
+            .eq("patient_registry_id", regId)
+            .is("archived_at", null)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          row = regRow as any;
+        }
       }
 
-      // ── Stage 2: resolve patient_registry_id for cross-bed lookup ──────
-      const { data: patRow } = await supabase
-        .from("patients")
-        .select("patient_registry_id")
-        .eq("id", safePatientId)
-        .maybeSingle();
-      const registryId = (patRow as any)?.patient_registry_id ?? null;
-
-      if (!registryId) {
+      if (row) {
+        recordIdRef.current = row.id;
+        setCidPrimary(row.cid_primary || "");
+        setCidSecondary(decodeSecondary(row.cid_secondary));
+      } else {
+        recordIdRef.current = null;
         setCidPrimary("");
         setCidSecondary([]);
-        return;
       }
-
-      // ── Stage 3: search CID across any admission for the same registry
-      //    (including archived — historical CID survives internal transfers)
-      const { data: byRegistry, error: e3 } = await supabase
-        .from("admission_histories")
-        .select("id, cid_primary, cid_secondary, archived_at, created_at")
-        .eq("patient_registry_id", registryId)
-        .eq("hospital_unit_id", currentHospital.id)
-        .eq("state_id", currentState.id)
-        .order("created_at", { ascending: false })
-        .limit(5);
-      if (e3 && e3.code !== "PGRST116") throw e3;
-
-      const withCid = (byRegistry || []).find((r: any) => r.cid_primary);
-      if (withCid) {
-        // CID found via registry — populate UI; writes still target the
-        // current bed's admission (recordIdRef may be null → insert path).
-        setCidPrimary(withCid.cid_primary || "");
-        setCidSecondary(decodeSecondary(withCid.cid_secondary));
-        return;
-      }
-
-      // ── Stage 4: nothing found ─────────────────────────────────────────
-      setCidPrimary("");
-      setCidSecondary([]);
     } catch (err) {
       console.error("[usePatientCid] fetch error", err);
     } finally {
@@ -139,26 +124,9 @@ export function usePatientCid(patientId: string | null) {
           .eq("id", recordIdRef.current);
         if (error) throw error;
       } else {
-        // Stamp patient_registry_id on the new admission so future
-        // cross-bed lookups (Stage 3) find this record.
-        let registryIdForInsert: string | null = null;
-        try {
-          const { data: pRow } = await supabase
-            .from("patients")
-            .select("patient_registry_id")
-            .eq("id", safePatientId)
-            .maybeSingle();
-          registryIdForInsert = (pRow as any)?.patient_registry_id ?? null;
-        } catch { /* silent */ }
-
-        const insertPayload = {
-          ...payload,
-          created_by: user.id,
-          ...(registryIdForInsert ? { patient_registry_id: registryIdForInsert } : {}),
-        };
         const { data, error } = await supabase
           .from("admission_histories")
-          .insert([insertPayload as any])
+          .insert([{ ...payload, created_by: user.id } as any])
           .select("id")
           .single();
         if (error) throw error;
