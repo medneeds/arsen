@@ -26,18 +26,38 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
   const { rows, refresh } = useInternalTransferQueue(sectorCode);
-  const { patients } = usePatients();
+  // 🔒 Buscar TODOS os pacientes do hospital (sem filtro de setor)
+  // para encontrar leitos vagos em qualquer setor destino da transferência.
+  // usePatients() sem parâmetros retorna apenas o setor ativo do usuário.
+  const { patients } = usePatients(undefined, undefined);
   const [target, setTarget] = useState<InternalTransferRequestRow | null>(null);
   const [bedId, setBedId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [open, setOpen] = useState(true);
 
-  const availableBeds = useMemo(
-    () => (patients ?? [])
-      .filter((p) => p.sector === target?.target_sector_code && (!p.name || p.name.trim() === ""))
-      .sort((a, b) => (parseInt(a.bedNumber) || 0) - (parseInt(b.bedNumber) || 0)),
-    [patients, target?.target_sector_code],
-  );
+  const availableBeds = useMemo(() => {
+    if (!target?.target_sector_code) return [];
+    const targetSector = target.target_sector_code;
+    // Mapear sector_code → department para cobrir pacientes com department preenchido
+    const SECTOR_TO_DEPT: Record<string, string> = {
+      enfermaria_transicao: "ENFERMARIA DE TRANSIÇÃO",
+      enfermaria_vascular:  "ENFERMARIA VASCULAR",
+      neuro_01: "NEURO 01", neuro_02: "NEURO 02",
+      clinica_cirurgica: "CLÍNICA CIRÚRGICA",
+      ucc: "UCC", blue: "UCI 1", outside: "UCI 2",
+      sala_vermelha: "SALA VERMELHA", sala_laranja: "SALA LARANJA",
+      observacao_clinica: "OBSERVAÇÃO CLÍNICA",
+    };
+    const deptEquivalent = SECTOR_TO_DEPT[targetSector];
+    return (patients ?? [])
+      .filter((p) => {
+        const matchSector = p.sector === targetSector;
+        const matchDept   = deptEquivalent && (p as any).department === deptEquivalent;
+        const isVacant    = !p.name || p.name.trim() === "";
+        return (matchSector || matchDept) && isVacant;
+      })
+      .sort((a, b) => (parseInt(a.bedNumber) || 0) - (parseInt(b.bedNumber) || 0));
+  }, [patients, target?.target_sector_code]);
 
   const handleAllocate = async () => {
     if (!target || !bedId) return;
