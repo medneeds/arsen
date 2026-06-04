@@ -675,10 +675,18 @@ function buildSolutoToken(item: PrescriptionItem): string {
   }
 
   // ── Caso 2: Dose é volume puro em mL ───────────────────────────────
-  // Preservar o volume prescrito para segurança da administração.
+  // Quando quantityUnit também é mL, o médico prescreveu em volume:
+  //   - qtyStr = "20 mL" (prescrito), doseRaw = "10mL" (por ampola)
+  //   - mostrar o volume PRESCRITO, não o volume da apresentação.
+  // Quando quantityUnit é amp/FA/comp, mostrar qty + dose entre parênteses.
   if (isPureMlVolume) {
     const unitLower = (item.quantityUnit || '').toLowerCase();
-    if (qtyStr && !unitLower.includes('ml') && unitLower !== '') {
+    // Prescrito em mL → usar o volume prescrito (qtyStr tem prioridade)
+    if (unitLower.includes('ml') || unitLower === 'ml') {
+      return qtyStr || doseRaw;
+    }
+    // Prescrito em unidades (amp, FA, comp) → mostrar qty (vol por unidade)
+    if (qtyStr) {
       return `${qtyStr} (${doseRaw})`;
     }
     return doseRaw;
