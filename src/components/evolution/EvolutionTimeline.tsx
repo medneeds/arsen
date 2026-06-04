@@ -216,8 +216,18 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
         cidSecondary,
       }, printWin1);
     } catch (err) {
-      console.error("Falha ao imprimir evolução:", err);
-      toast.error("Não foi possível resolver os dados do paciente para impressão");
+      console.error("Falha ao resolver identidade — imprimindo com dados do evo:", err);
+      // Fallback: imprimir com os dados disponíveis no objeto da evolução
+      try {
+        await printEvolution(evo, {
+          patientName: evo.patient_name || "Paciente",
+          patientBed: evo.patient_bed || undefined,
+          patientSector: evo.patient_sector || undefined,
+        }, printWin1);
+      } catch (e2) {
+        console.error("Falha no fallback de impressão:", e2);
+        toast.error("Não foi possível gerar o PDF da evolução");
+      }
     }
   };
 
@@ -572,8 +582,17 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             cidSecondary,
                           }, printWinBtn);
                         } catch (err) {
-                          console.error("Falha ao resolver identidade para impressão:", err);
-                          toast.error("Não foi possível resolver os dados do paciente para impressão");
+                          console.error("Falha ao resolver identidade — fallback:", err);
+                          // Fallback: imprimir com dados básicos do evo
+                          try {
+                            await printEvolution(evo, {
+                              patientName: evo.patient_name || "Paciente",
+                              patientBed: evo.patient_bed || undefined,
+                              patientSector: evo.patient_sector || undefined,
+                            }, printWinBtn);
+                          } catch (e2) {
+                            toast.error("Não foi possível gerar o PDF da evolução");
+                          }
                         }
                       }}
                       title="Imprimir (timbrado Norma Zero)"

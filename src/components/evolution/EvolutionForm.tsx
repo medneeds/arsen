@@ -287,8 +287,16 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                     cidSecondary: (Array.isArray(cidSecondary) ? cidSecondary.filter(Boolean).join("; ") : cidSecondary) || undefined,
                   }, printWinForm);
                 } catch (err) {
-                  console.error("[EvolutionForm] Falha ao imprimir evolução:", err);
-                  toast.error("Não foi possível resolver os dados do paciente para impressão");
+                  console.error("[EvolutionForm] Falha ao imprimir — fallback:", err);
+                  try {
+                    await printEvolution(evo, {
+                      patientName: evo.patient_name || "Paciente",
+                      patientBed: evo.patient_bed || undefined,
+                      patientSector: evo.patient_sector || undefined,
+                    }, printWinForm);
+                  } catch (e2) {
+                    toast.error("Não foi possível gerar o PDF da evolução");
+                  }
                 }
               }}
             >
