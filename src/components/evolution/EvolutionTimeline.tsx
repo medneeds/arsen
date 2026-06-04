@@ -50,6 +50,8 @@ interface EvolutionTimelineProps {
   onSuspend: (id: string, reason: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   onDuplicate: (evolution: EvolutionRecord) => void;
+  /** Override de alergias vindo do pai (Edição Avançada do paciente). */
+  allergiesOverride?: string;
 }
 
 const STATUS_CONFIG = {
