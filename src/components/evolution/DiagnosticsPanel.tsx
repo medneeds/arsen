@@ -21,17 +21,18 @@ interface DiagnosticsPanelProps {
   onCidSecondaryChange?: (values: string[]) => void;
 
   /** ISO yyyy-MM-dd (preferido). Strings legadas livres ainda são tratadas. */
-  utiDischargePrediction: string;
-  onUtiDischargePredictionChange: (value: string) => void;
+  utiDischargePrediction?: string;
+  onUtiDischargePredictionChange?: (value: string) => void;
 
-  hospitalDischargePrediction: string;
-  onHospitalDischargePredictionChange: (value: string) => void;
+  hospitalDischargePrediction?: string;
+  onHospitalDischargePredictionChange?: (value: string) => void;
 
-  isPalliative: boolean;
-  onPalliativeChange: (value: boolean) => void;
+  isPalliative?: boolean;
+  onPalliativeChange?: (value: boolean) => void;
 
-  isolationPrecautions: string;
-  onIsolationChange: (value: string) => void;
+  isolationPrecautions?: string;
+  onIsolationChange?: (value: string) => void;
+
 
   /** Texto livre de hipóteses diagnósticas (uma por linha). Sincroniza com mapa de leitos. */
   diagnosticHypotheses?: string | string[];
