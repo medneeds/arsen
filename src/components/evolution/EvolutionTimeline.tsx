@@ -45,12 +45,15 @@ interface EvolutionTimelineProps {
    *  como 1ª seção colapsável do EvolutionForm ao editar rascunho na Timeline.
    *  Sem isso, a Revisão lista "Definir CID-10 primário" mas o campo não aparece. */
   diagnosticsSlot?: React.ReactNode;
+  /** Alergias vivas do paciente (string já formatada) — repassada ao EvolutionForm. */
+  allergiesOverride?: string;
   onUpdate: (id: string, updates: any) => Promise<boolean>;
   onValidate: (id: string) => Promise<boolean>;
   onSuspend: (id: string, reason: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   onDuplicate: (evolution: EvolutionRecord) => void;
 }
+
 
 const STATUS_CONFIG = {
   draft: { label: "Rascunho", color: "bg-amber-500/10 text-amber-600 border-amber-500/30", icon: Clock },
