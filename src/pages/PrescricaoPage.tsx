@@ -647,66 +647,98 @@ function buildLine2Tokens(item: PrescriptionItem): Array<{ text: string; isBadge
 }
 
 function buildSolutoToken(item: PrescriptionItem): string {
-  const qtyRaw = (item.quantity || '').trim();
-  const qty = qtyRaw && qtyRaw !== '0' ? qtyRaw : '';
+  const qtyRaw  = (item.quantity || '').trim();
+  const qty     = qtyRaw && qtyRaw !== '0' ? qtyRaw : '';
   const unitShort = item.quantityUnit ? quantityUnitShort(item.quantityUnit) : '';
-  const qtyStr = qty && unitShort ? `${qty} ${unitShort}` : '';
+  const qtyStr  = qty && unitShort ? `${qty} ${unitShort}` : qty || '';
 
   const doseRaw = (item.dose && item.dose !== '-') ? item.dose.trim().replace(/\.$/, '') : '';
 
-  // Volume puro em mL (ex: "4 mL", "30 mL") — é volume de ampola, não dose terapêutica
-  const isPureMlVolume = /^\d+(?:[.,]\d+)?\s*ml$/i.test(doseRaw);
+  // ── Classificadores do campo dose ──────────────────────────────────
+  // 1. Concentração: contém "/" seguido de mL (ex: "100mcg/mL", "5mg/mL")
+  const isConcentration = !!doseRaw && /\/\s*m[lL]\b/i.test(doseRaw);
 
-  // Dose terapêutica = tem unidade de massa/atividade (mg, g, mcg, UI, mEq, %)
-  const isMassDose = !!doseRaw && !isPureMlVolume &&
-    /(mg|mcg|µg|ug|\bg\b|\bui\b|u\/|unidades?|meq|%)/i.test(doseRaw);
+  // 2. Volume puro em mL (ex: "10mL", "30 mL") — sem barras, sem massa
+  const isPureMlVolume  = !isConcentration && /^\d+(?:[.,]\d+)?\s*m[lL]\b$/i.test(doseRaw);
 
-  // Concentração sem dose total (ex: "100mcg/mL", "5mg/mL") — não é dose terapêutica
-  const isConcentration = !!doseRaw && /\/\s*m[lL]/.test(doseRaw);
+  // 3. Dose terapêutica com unidade de massa/atividade
+  const isMassDose = !!doseRaw && !isConcentration && !isPureMlVolume &&
+    /(\bmg\b|\bmcg\b|µg|ug|\bg\b|\bui\b|u\/|unidades?|\bmeq\b|\bmmol\b|%)/i.test(doseRaw);
 
-  // ── Caso 1: Dose terapêutica com unidade de massa ──────────────────
-  if (isMassDose && !isConcentration) {
-    if (qtyStr && qtyStr.toLowerCase() !== doseRaw.toLowerCase()) {
-      const qtyIsAlreadyInDose = doseRaw.toLowerCase().includes(qtyStr.toLowerCase().replace(/\s+/g, ' ').trim());
-      // Preferir qty na frente: "1 amp (50mg)" em vez de "50mg (1 amp)"
-      if (!qtyIsAlreadyInDose) return `${qtyStr} (${doseRaw})`;
-    }
-    return doseRaw;
+  // ── Classificadores do campo quantityUnit ──────────────────────────
+  const unitLower    = (item.quantityUnit || '').toLowerCase();
+  const isVolumeUnit = unitLower === 'ml';           // prescrito em mL
+  const isMassUnit   = /^(mg|mcg|µg|g|ui)$/i.test(unitLower); // prescrito em massa
+  const isUnitUnit   = !isVolumeUnit && !isMassUnit; // amp, FA, comp, gota, etc.
+
+  // ══════════════════════════════════════════════════════════════════
+  // CASO A — Quantidade prescrita em MASSA (mg, mcg, g, UI)
+  //   Médico digitou 500 mg ou 40 mg — mostrar só o qty.
+  // ══════════════════════════════════════════════════════════════════
+  if (isMassUnit) {
+    return qtyStr || doseRaw;
   }
 
-  // ── Caso 2: Dose é volume puro em mL ───────────────────────────────
-  // Quando quantityUnit também é mL, o médico prescreveu em volume:
-  //   - qtyStr = "20 mL" (prescrito), doseRaw = "10mL" (por ampola)
-  //   - mostrar o volume PRESCRITO, não o volume da apresentação.
-  // Quando quantityUnit é amp/FA/comp, mostrar qty + dose entre parênteses.
+  // ══════════════════════════════════════════════════════════════════
+  // CASO B — Dose é CONCENTRAÇÃO (100mcg/mL, 5mg/mL…)
+  //   Concentração não informa dose total — omitir, mostrar só qty.
+  // ══════════════════════════════════════════════════════════════════
+  if (isConcentration) {
+    return qtyStr || doseRaw;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // CASO C — Dose é VOLUME PURO em mL
+  //   C1. Prescrito em mL → usar volume prescrito (ex: 20 mL)
+  //   C2. Prescrito em unidades → qty + volume por unidade (ex: 1 AMP (10mL))
+  // ══════════════════════════════════════════════════════════════════
   if (isPureMlVolume) {
-    const unitLower = (item.quantityUnit || '').toLowerCase();
-    // Prescrito em mL → usar o volume prescrito (qtyStr tem prioridade)
-    if (unitLower.includes('ml') || unitLower === 'ml') {
+    if (isVolumeUnit) {
+      // Prescrito em mL: usar qtyStr ("20 mL") em vez do dose da ampola
       return qtyStr || doseRaw;
     }
-    // Prescrito em unidades (amp, FA, comp) → mostrar qty (vol por unidade)
-    if (qtyStr) {
+    if (isUnitUnit && qtyStr) {
+      // Prescrito em amp/FA → "1 AMP (10mL)"
       return `${qtyStr} (${doseRaw})`;
     }
     return doseRaw;
   }
 
-  // ── Caso 3: Dose é concentração (ex: "100mcg/mL") ─────────────────
-  // Mostrar qtyStr (1 FA, 2 amp) sem a concentração pura — ela não
-  // informa a dose total e confunde a equipe de enfermagem.
-  if (isConcentration) {
-    return qtyStr || doseRaw;
-  }
-
-  // ── Caso 4: Dose contém mL embutido (ex: "Bolus 150 mL") ──────────
-  if (doseRaw && /\d+(?:[.,]\d+)?\s*ml/i.test(doseRaw)) {
+  // ══════════════════════════════════════════════════════════════════
+  // CASO D — Dose TERAPÊUTICA com massa (mg, mcg, UI…)
+  //   D1. Prescrito em mL → "20 mL (200mg)" (volume prescrito + dose)
+  //   D2. Prescrito em unidade → "1 AMP (500mcg)" (qty na frente)
+  //   D3. Prescrito em massa igual à dose → dose sozinha
+  // ══════════════════════════════════════════════════════════════════
+  if (isMassDose) {
+    if (isVolumeUnit && qtyStr) {
+      // Ex: 20 mL de Propofol 10mg/mL → "20 mL (200mg)"
+      return `${qtyStr} (${doseRaw})`;
+    }
+    if (isUnitUnit && qtyStr) {
+      const norm = (s: string) => s.toLowerCase().replace(/\s+/g, '');
+      const qtyInDose  = norm(doseRaw).includes(norm(qtyStr));
+      const doseIsQty  = norm(qtyStr) === norm(doseRaw);
+      if (!qtyInDose && !doseIsQty) {
+        return `${qtyStr} (${doseRaw})`; // "1 AMP (500mcg)"
+      }
+    }
+    // qty já está na dose, ou dose = qty → mostrar dose
     return doseRaw;
   }
 
-  // ── Fallback: qtyStr ou doseRaw ────────────────────────────────────
-  if (qtyStr) return qtyStr;
-  return doseRaw;
+  // ══════════════════════════════════════════════════════════════════
+  // CASO E — Dose com mL embutido (ex: "Bolus 150 mL", "SF 0,9% 100 mL")
+  // ══════════════════════════════════════════════════════════════════
+  if (doseRaw && /\d+(?:[.,]\d+)?\s*m[lL]\b/i.test(doseRaw)) {
+    if (qtyStr && !isVolumeUnit) return `${qtyStr} (${doseRaw})`;
+    return doseRaw;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // FALLBACK — qty ou dose bruto
+  // ══════════════════════════════════════════════════════════════════
+  return qtyStr || doseRaw;
 }
 
 function buildPrepDescription(item: PrescriptionItem): string {
