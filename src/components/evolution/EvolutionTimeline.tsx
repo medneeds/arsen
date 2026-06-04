@@ -211,8 +211,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
         // Alergias
         const rawAllerg1 = (pRow as any)?.uti_allergies;
         if (rawAllerg1?.trim()) {
-          allergResolved = rawAllerg1.replace(/
-/g, " • ");
+          allergResolved = rawAllerg1.replace(/\n/g, " • ");
         } else {
           allergResolved = "SEM ALERGIAS CONHECIDAS";
         }
