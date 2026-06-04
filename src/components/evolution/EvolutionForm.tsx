@@ -99,7 +99,10 @@ interface EvolutionFormProps {
   /** Programações e pendências — campo opcional retraído */
   pendenciasItems?: string[];
   onPendenciasItemsChange?: (items: string[]) => void;
+  /** Alergias do paciente (string já formatada) — sobrepõe o valor do banco na impressão. */
+  allergiesOverride?: string;
 }
+
 
 type SectionKey = 'vitals' | 'evolucao' | 'objective' | 'plan' | 'review';
 

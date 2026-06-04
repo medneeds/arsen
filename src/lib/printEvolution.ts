@@ -116,6 +116,12 @@ export const printEvolution = async (
   };
   const birthDisplay = formatBirthDateBR(ctx?.patientBirthDate);
 
+  // Antecedentes vindos do SOAP da própria evolução (precisa ser calculado ANTES
+  // do bloco que consulta `patients`, porque é usado lá como condicional).
+  const soapAntecedentes: string[] = Array.isArray((evo.soap_data as any)?.antecedentes)
+    ? (evo.soap_data as any).antecedentes.filter(Boolean)
+    : [];
+
   // ─── Buscar dados do paciente ANTES de montar o patientHeader ──────
   let patientAntecedentes: string[] = [];
   let patientAllergies: string = "—";
@@ -149,6 +155,7 @@ export const printEvolution = async (
       }
     } catch { /* falha silenciosa */ }
   }
+
 
   // Estilos da tabela de paciente — idêntico ao PrintablePrescription
   const cellS = "border:0.5px solid #94a3b8;padding:3px 6px;font-size:7.5pt;line-height:1.3;vertical-align:top";
@@ -203,17 +210,10 @@ export const printEvolution = async (
     `
     : "";
 
-  // Antecedentes clínicos — buscar em múltiplas fontes:
-  // 1. soap_data.antecedentes (novo formato — array de itens)
-  // 2. evo.antecedentes (campo raiz da tabela, legado)
-  // 3. ctx.antecedentes (passado pelo chamador)
-  const soapAntecedentes: string[] = Array.isArray((evo.soap_data as any)?.antecedentes)
-    ? (evo.soap_data as any).antecedentes.filter(Boolean)
-    : [];
-
-
-
+  // Antecedentes clínicos — `soapAntecedentes` já calculado acima (antes do bloco
+  // que consulta `patients`). Usa SOAP primeiro, fallback no medical_history.
   const antecedentesArr = soapAntecedentes.length > 0 ? soapAntecedentes : patientAntecedentes;
+
 
   const antecedentesHtml = antecedentesArr.length > 0
     ? `<h2 class="nz-section">Antecedentes Clínicos</h2>

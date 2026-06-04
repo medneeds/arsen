@@ -45,12 +45,15 @@ interface EvolutionTimelineProps {
    *  como 1ª seção colapsável do EvolutionForm ao editar rascunho na Timeline.
    *  Sem isso, a Revisão lista "Definir CID-10 primário" mas o campo não aparece. */
   diagnosticsSlot?: React.ReactNode;
+  /** Alergias vivas do paciente (string já formatada) — repassada ao EvolutionForm. */
+  allergiesOverride?: string;
   onUpdate: (id: string, updates: any) => Promise<boolean>;
   onValidate: (id: string) => Promise<boolean>;
   onSuspend: (id: string, reason: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   onDuplicate: (evolution: EvolutionRecord) => void;
 }
+
 
 const STATUS_CONFIG = {
   draft: { label: "Rascunho", color: "bg-amber-500/10 text-amber-600 border-amber-500/30", icon: Clock },
@@ -178,6 +181,10 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
   };
 
   const handlePrintEvolution = async (evo: EvolutionRecord) => {
+    // 🔒 Abrir janela ANTES de qualquer await — popup blocker bloqueia
+    // window.open chamado após awaits fora do tick do clique do usuário.
+    const printWin1 = window.open("", "_blank", "width=1024,height=768");
+    if (printWin1) printWin1.document.write("<html><body style='font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#475569'>Preparando evolução…</body></html>");
     try {
       const { supabase } = await import("@/integrations/supabase/client");
       let fallbackName: string | null = evo.patient_name || null;
@@ -193,10 +200,6 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
       );
       let currentBed = evo.patient_bed || undefined;
       let currentSector = evo.patient_sector || undefined;
-      // 🔒 Abrir janela ANTES dos awaits — popup blocker bloqueia após async
-      const printWin1 = window.open("", "_blank", "width=1024,height=768");
-      if (printWin1) printWin1.document.write("<html><body style='font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#475569'>Preparando evolução…</body></html>");
-
       if (patientId) {
         const { data: pRow } = await supabase.from("patients").select("bed_number, sector").eq("id", patientId).maybeSingle();
         if (pRow?.bed_number) currentBed = pRow.bed_number;
@@ -230,6 +233,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
       }
     }
   };
+
 
   const handleSuspend = async () => {
     if (!suspendDialogId) return;
@@ -679,7 +683,8 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       const localDiagnosticsSlot = isEditable ? (
                         <DiagnosticsPanel
                           cidPrimary={cidPrimary || null}
-                          cidSecondary={cidSecondary || null}
+                          cidSecondary={cidSecondary ? cidSecondary.split(/[;,]\s*/).filter(Boolean) : []}
+
                           onCidPrimaryChange={() => {}}
                           onCidSecondaryChange={() => {}}
                           diagnosticHypotheses={
