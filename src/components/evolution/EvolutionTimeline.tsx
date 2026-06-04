@@ -50,6 +50,8 @@ interface EvolutionTimelineProps {
   onSuspend: (id: string, reason: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   onDuplicate: (evolution: EvolutionRecord) => void;
+  /** Override de alergias vindo do pai (Edição Avançada do paciente). */
+  allergiesOverride?: string;
 }
 
 const STATUS_CONFIG = {
@@ -204,16 +206,14 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
         // Admissão
         const rawAdm1 = (pRow as any)?.admitted_at || (pRow as any)?.admission_date || (pRow as any)?.uti_admission_date;
         if (rawAdm1) {
-          const first1 = rawAdm1.split("
-")[0].trim();
+          const first1 = rawAdm1.split("\n")[0].trim();
           const mIso1 = first1.match(/^(\d{4})-(\d{2})-(\d{2})/);
           admDateResolved = mIso1 ? `${mIso1[3]}/${mIso1[2]}/${mIso1[1]}` : first1;
         }
         // Alergias
         const rawAllerg1 = (pRow as any)?.uti_allergies;
         if (rawAllerg1?.trim()) {
-          allergResolved = rawAllerg1.replace(/
-/g, " • ");
+          allergResolved = rawAllerg1.replace(/\n/g, " • ");
         } else {
           allergResolved = "SEM ALERGIAS CONHECIDAS";
         }
@@ -594,8 +594,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                                   (pData as any).admission_date ||
                                   (pData as any).uti_admission_date;
                                 if (rawAdm) {
-                                  const firstAdm = rawAdm.split("
-")[0].trim();
+                                  const firstAdm = rawAdm.split("\n")[0].trim();
                                   // Normalizar para DD/MM/YYYY
                                   const mIso = firstAdm.match(/^(\d{4})-(\d{2})-(\d{2})/);
                                   printAdmDate = mIso
@@ -605,8 +604,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                                 // Alergias
                                 const rawAllerg = (pData as any).uti_allergies;
                                 if (rawAllerg?.trim()) {
-                                  printAllergies = rawAllerg.replace(/
-/g, " • ");
+                                  printAllergies = rawAllerg.replace(/\n/g, " • ");
                                 } else if (!allergiesOverride) {
                                   printAllergies = "SEM ALERGIAS CONHECIDAS";
                                 }
