@@ -116,6 +116,12 @@ export const printEvolution = async (
   };
   const birthDisplay = formatBirthDateBR(ctx?.patientBirthDate);
 
+  // Antecedentes vindos do SOAP da própria evolução (precisa ser calculado ANTES
+  // do bloco que consulta `patients`, porque é usado lá como condicional).
+  const soapAntecedentes: string[] = Array.isArray((evo.soap_data as any)?.antecedentes)
+    ? (evo.soap_data as any).antecedentes.filter(Boolean)
+    : [];
+
   // ─── Buscar dados do paciente ANTES de montar o patientHeader ──────
   let patientAntecedentes: string[] = [];
   let patientAllergies: string = "—";
@@ -149,6 +155,7 @@ export const printEvolution = async (
       }
     } catch { /* falha silenciosa */ }
   }
+
 
   // Estilos da tabela de paciente — idêntico ao PrintablePrescription
   const cellS = "border:0.5px solid #94a3b8;padding:3px 6px;font-size:7.5pt;line-height:1.3;vertical-align:top";
