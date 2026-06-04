@@ -81,8 +81,6 @@ interface EvolutionFormProps {
   onCulturesChange?: (html: string) => void;
   /** Data de admissão no setor — base p/ presets do date picker dos dispositivos. */
   admissionDate?: string | null;
-  /** Alergias do paciente — passadas do contexto para garantir impressão correta */
-  allergiesOverride?: string;
   /** Registro da evolução (usado para impressão unificada via printEvolution). */
   evo?: EvolutionRecord;
   /** UUID do paciente — chave do resolver de identidade na impressão. */
@@ -137,7 +135,6 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   devices, onDevicesChange,
   culturesHtml, onCulturesChange,
   admissionDate,
-  allergiesOverride,
   evo,
   patientId,
   patientRecord,
@@ -241,7 +238,9 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               size="sm"
               className="gap-1.5 text-xs"
               onClick={async () => {
-                // Unificado com o botão de impressão da Timeline (printEvolution):
+                  // 🔒 Abrir janela antes de qualquer await
+                  const printWinForm = window.open("", "_blank", "width=1024,height=768");
+                  if (printWinForm) printWinForm.document.write("<html><body style='font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#475569'>Preparando evolução…</body></html>");                // Unificado com o botão de impressão da Timeline (printEvolution):
                 // mesma resolução de identidade (resolvePatientHeader) + leitura
                 // ao vivo de leito/setor em `patients`. Garante cabeçalho
                 // sincronizado com o paciente real, sem usar snapshots vazios.
@@ -274,9 +273,6 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                     if (pRow?.bed_number) currentBed = pRow.bed_number;
                     if (pRow?.sector) currentSector = pRow.sector;
                   }
-                  // Usa admissionDate já disponível como prop + alergias do prop
-                  const printAdmissionDate: string | undefined = admissionDate || undefined;
-                  const printAllergies: string | undefined = allergiesOverride || undefined;
                   await printEvolution(evo, {
                     patientName: resolved.name || evo.patient_name,
                     patientBed: currentBed,
@@ -287,11 +283,9 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                     patientCpf: resolved.cpf || undefined,
                     patientCns: resolved.cns || undefined,
                     patientBirthDate: resolved.birthDate || undefined,
-                    patientAdmissionDate: printAdmissionDate,
-                    patientAllergies: printAllergies,
                     cidPrimary: cidPrimary || undefined,
                     cidSecondary: (Array.isArray(cidSecondary) ? cidSecondary.filter(Boolean).join("; ") : cidSecondary) || undefined,
-                  });
+                  }, printWinForm);
                 } catch (err) {
                   console.error("[EvolutionForm] Falha ao imprimir evolução:", err);
                   toast.error("Não foi possível resolver os dados do paciente para impressão");

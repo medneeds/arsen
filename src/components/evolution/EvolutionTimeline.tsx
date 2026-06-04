@@ -50,8 +50,6 @@ interface EvolutionTimelineProps {
   onSuspend: (id: string, reason: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   onDuplicate: (evolution: EvolutionRecord) => void;
-  /** Override de alergias vindo do pai (Edição Avançada do paciente). */
-  allergiesOverride?: string;
 }
 
 const STATUS_CONFIG = {
@@ -61,7 +59,7 @@ const STATUS_CONFIG = {
 };
 
 export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
-  evolutions, admissionDate, patientRecord, cidPrimary, cidSecondary, patientId, diagnosticsSlot, onUpdate, onValidate, onSuspend, onDelete, onDuplicate, allergiesOverride,
+  evolutions, admissionDate, patientRecord, cidPrimary, cidSecondary, patientId, diagnosticsSlot, onUpdate, onValidate, onSuspend, onDelete, onDuplicate,
 }) => {
   const { user } = useAuth();
   const { currentHospital } = useHospital();
@@ -195,28 +193,14 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
       );
       let currentBed = evo.patient_bed || undefined;
       let currentSector = evo.patient_sector || undefined;
-      let admDateResolved: string | undefined;
-      let allergResolved: string | undefined;
+      // 🔒 Abrir janela ANTES dos awaits — popup blocker bloqueia após async
+      const printWin1 = window.open("", "_blank", "width=1024,height=768");
+      if (printWin1) printWin1.document.write("<html><body style='font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#475569'>Preparando evolução…</body></html>");
+
       if (patientId) {
-        const { data: pRow } = await supabase.from("patients")
-          .select("bed_number, sector, uti_allergies, uti_admission_date, admission_date, admitted_at")
-          .eq("id", patientId).maybeSingle();
+        const { data: pRow } = await supabase.from("patients").select("bed_number, sector").eq("id", patientId).maybeSingle();
         if (pRow?.bed_number) currentBed = pRow.bed_number;
         if (pRow?.sector) currentSector = pRow.sector;
-        // Admissão
-        const rawAdm1 = (pRow as any)?.admitted_at || (pRow as any)?.admission_date || (pRow as any)?.uti_admission_date;
-        if (rawAdm1) {
-          const first1 = rawAdm1.split("\n")[0].trim();
-          const mIso1 = first1.match(/^(\d{4})-(\d{2})-(\d{2})/);
-          admDateResolved = mIso1 ? `${mIso1[3]}/${mIso1[2]}/${mIso1[1]}` : first1;
-        }
-        // Alergias
-        const rawAllerg1 = (pRow as any)?.uti_allergies;
-        if (rawAllerg1?.trim()) {
-          allergResolved = rawAllerg1.replace(/\n/g, " • ");
-        } else {
-          allergResolved = "SEM ALERGIAS CONHECIDAS";
-        }
       }
       await printEvolution(evo, {
         patientName: resolved.name || evo.patient_name,
@@ -228,11 +212,9 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
         patientCpf: resolved.cpf || undefined,
         patientCns: resolved.cns || undefined,
         patientBirthDate: resolved.birthDate || undefined,
-        patientAdmissionDate: admDateResolved || admissionDate || undefined,
-        patientAllergies: allergResolved || allergiesOverride || undefined,
         cidPrimary,
         cidSecondary,
-      });
+      }, printWin1);
     } catch (err) {
       console.error("Falha ao imprimir evolução:", err);
       toast.error("Não foi possível resolver os dados do paciente para impressão");
@@ -545,10 +527,10 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       variant="ghost" size="icon" className="h-6 w-6"
                       onClick={async e => {
                         e.stopPropagation();
+                        // 🔒 Abrir janela ANTES de qualquer await — popup blocker
+                        const printWinBtn = window.open("", "_blank", "width=1024,height=768");
+                        if (printWinBtn) printWinBtn.document.write("<html><body style='font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#475569'>Preparando evolução…</body></html>");
                         // Resolve identidade canônica (registry + guarda anti-NI)
-                        // antes de imprimir, em vez de confiar no snapshot gravado
-                        // em evo.patient_name (que pode ser de outro paciente
-                        // após realocações ou reuso de leito de NI).
                         try {
                           const { supabase } = await import("@/integrations/supabase/client");
                           // Fallback: garantir nome antes de resolver header
@@ -577,40 +559,6 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             if (pRow?.bed_number) currentBed = pRow.bed_number;
                             if (pRow?.sector) currentSector = pRow.sector;
                           }
-                          // Busca admissão e alergias diretamente do banco para garantir dados frescos
-                          let printAdmDate: string | undefined = admissionDate || undefined;
-                          let printAllergies: string | undefined = allergiesOverride || undefined;
-                          if (patientId) {
-                            try {
-                              const { data: pData } = await supabase
-                                .from("patients")
-                                .select("uti_allergies, uti_admission_date, admission_date, admitted_at")
-                                .eq("id", patientId)
-                                .maybeSingle();
-                              if (pData) {
-                                // Admissão: prioridade admitted_at > admission_date > uti_admission_date
-                                const rawAdm =
-                                  (pData as any).admitted_at ||
-                                  (pData as any).admission_date ||
-                                  (pData as any).uti_admission_date;
-                                if (rawAdm) {
-                                  const firstAdm = rawAdm.split("\n")[0].trim();
-                                  // Normalizar para DD/MM/YYYY
-                                  const mIso = firstAdm.match(/^(\d{4})-(\d{2})-(\d{2})/);
-                                  printAdmDate = mIso
-                                    ? `${mIso[3]}/${mIso[2]}/${mIso[1]}`
-                                    : firstAdm;
-                                }
-                                // Alergias
-                                const rawAllerg = (pData as any).uti_allergies;
-                                if (rawAllerg?.trim()) {
-                                  printAllergies = rawAllerg.replace(/\n/g, " • ");
-                                } else if (!allergiesOverride) {
-                                  printAllergies = "SEM ALERGIAS CONHECIDAS";
-                                }
-                              }
-                            } catch { /* fallback silencioso */ }
-                          }
                           await printEvolution(evo, {
                             patientName: resolved.name || evo.patient_name,
                             patientBed: currentBed,
@@ -620,12 +568,9 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             patientSocialName: resolved.socialName || undefined,
                             patientCpf: resolved.cpf || undefined,
                             patientCns: resolved.cns || undefined,
-                            patientBirthDate: resolved.birthDate || undefined,
-                            patientAdmissionDate: printAdmDate,
-                            patientAllergies: printAllergies,
                             cidPrimary,
                             cidSecondary,
-                          });
+                          }, printWinBtn);
                         } catch (err) {
                           console.error("Falha ao resolver identidade para impressão:", err);
                           toast.error("Não foi possível resolver os dados do paciente para impressão");
@@ -714,22 +659,22 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                     })() : (() => {
                       const localDiagnosticsSlot = isEditable ? (
                         <DiagnosticsPanel
-                          {...({
-                            cidPrimary: cidPrimary || null,
-                            cidSecondary: cidSecondary ? [cidSecondary] : [],
-                            onCidPrimaryChange: () => {},
-                            onCidSecondaryChange: () => {},
-                            diagnosticHypotheses:
-                              Array.isArray((data.soap as any).diagnosticHypotheses)
-                                ? (data.soap as any).diagnosticHypotheses
-                                : typeof (data.soap as any).diagnosticHypotheses === "string"
-                                  ? (data.soap as any).diagnosticHypotheses : [],
-                            onDiagnosticHypothesesChange: (v: any) =>
-                              updateLocal(evo.id, "soap", "diagnosticHypotheses",
-                                Array.isArray(v) ? v : String(v).split("\n").filter(Boolean)),
-                            antecedentes: Array.isArray((data.soap as any).antecedentes) ? (data.soap as any).antecedentes : [],
-                            onAntecedentesChange: (items: string[]) => updateLocal(evo.id, "soap", "antecedentes", items),
-                          } as any)}
+                          cidPrimary={cidPrimary || null}
+                          cidSecondary={cidSecondary || null}
+                          onCidPrimaryChange={() => {}}
+                          onCidSecondaryChange={() => {}}
+                          diagnosticHypotheses={
+                            Array.isArray((data.soap as any).diagnosticHypotheses)
+                              ? (data.soap as any).diagnosticHypotheses
+                              : typeof (data.soap as any).diagnosticHypotheses === "string"
+                                ? (data.soap as any).diagnosticHypotheses : []
+                          }
+                          onDiagnosticHypothesesChange={(v) =>
+                            updateLocal(evo.id, "soap", "diagnosticHypotheses",
+                              Array.isArray(v) ? v : v.split("\n").filter(Boolean))
+                          }
+                          antecedentes={Array.isArray((data.soap as any).antecedentes) ? (data.soap as any).antecedentes : []}
+                          onAntecedentesChange={(items) => updateLocal(evo.id, "soap", "antecedentes", items)}
                         />
                       ) : diagnosticsSlot;
                       return (

@@ -71,14 +71,16 @@ export interface PrintEvolutionContext {
 
 export const printEvolution = async (
   evo: EvolutionRecord,
-  ctx?: PrintEvolutionContext
+  ctx?: PrintEvolutionContext,
+  preOpenedWindow?: Window | null
 ) => {
   const intercurrence = isIntercurrence(evo);
 
-  // 🔒 Abrir a janela ANTES de qualquer await para não perder o contexto
-  // de user interaction — popup blockers bloqueiam window.open() após awaits.
-  const printWin = window.open("", "_blank", "width=1024,height=768");
-  if (printWin) {
+  // 🔒 Usar janela pré-aberta pelo caller (antes de qualquer await).
+  // Se não fornecida, tentar abrir aqui (pode ser bloqueado por popup blocker
+  // se chamado após awaits no caller).
+  const printWin = preOpenedWindow ?? window.open("", "_blank", "width=1024,height=768");
+  if (printWin && !preOpenedWindow) {
     printWin.document.write(
       `<html><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#475569">${
         intercurrence ? "Preparando intercorrência…" : "Preparando evolução…"
