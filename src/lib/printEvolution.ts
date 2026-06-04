@@ -114,13 +114,9 @@ export const printEvolution = async (
     if (m) return `${m[3]}/${m[2]}/${m[1]}`;
     return d;
   };
-  const birthDisplay = formatBirthDateBR(ctx?.patientBirthDate);
-
-  // Antecedentes vindos do SOAP da própria evolução (precisa ser calculado ANTES
-  // do bloco que consulta `patients`, porque é usado lá como condicional).
-  const soapAntecedentes: string[] = Array.isArray((evo.soap_data as any)?.antecedentes)
-    ? (evo.soap_data as any).antecedentes.filter(Boolean)
-    : [];
+  // birthDisplay: prefer ctx.patientBirthDate (do registry); fallback preenchido
+  // após a busca do patients (que inclui birth_date) — ver abaixo.
+  let birthDisplay = formatBirthDateBR(ctx?.patientBirthDate);
 
   // ─── Buscar dados do paciente ANTES de montar o patientHeader ──────
   let patientAntecedentes: string[] = [];
@@ -142,20 +138,24 @@ export const printEvolution = async (
         patientAllergies = (pRow as any).uti_allergies?.trim()
           ? (pRow as any).uti_allergies.replace(/\n/g, " • ")
           : "SEM ALERGIAS CONHECIDAS";
-        if ((pRow as any).age) {
-          patientAge = `${(pRow as any).age} anos`;
-        } else if ((pRow as any).birth_date) {
+        if ((pRow as any).birth_date) {
+          // Usar birth_date do patients como fallback para birthDisplay
+          if (!birthDisplay || birthDisplay === "—") {
+            birthDisplay = formatBirthDateBR((pRow as any).birth_date);
+          }
+          // Calcular idade
           const bd = new Date((pRow as any).birth_date);
           const today = new Date();
           let age = today.getFullYear() - bd.getFullYear();
           const m = today.getMonth() - bd.getMonth();
           if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
           patientAge = `${age} anos`;
+        } else if ((pRow as any).age) {
+          patientAge = `${(pRow as any).age} anos`;
         }
       }
     } catch { /* falha silenciosa */ }
   }
-
 
   // Estilos da tabela de paciente — idêntico ao PrintablePrescription
   const cellS = "border:0.5px solid #94a3b8;padding:3px 6px;font-size:7.5pt;line-height:1.3;vertical-align:top";
@@ -210,10 +210,17 @@ export const printEvolution = async (
     `
     : "";
 
-  // Antecedentes clínicos — `soapAntecedentes` já calculado acima (antes do bloco
-  // que consulta `patients`). Usa SOAP primeiro, fallback no medical_history.
-  const antecedentesArr = soapAntecedentes.length > 0 ? soapAntecedentes : patientAntecedentes;
+  // Antecedentes clínicos — buscar em múltiplas fontes:
+  // 1. soap_data.antecedentes (novo formato — array de itens)
+  // 2. evo.antecedentes (campo raiz da tabela, legado)
+  // 3. ctx.antecedentes (passado pelo chamador)
+  const soapAntecedentes: string[] = Array.isArray((evo.soap_data as any)?.antecedentes)
+    ? (evo.soap_data as any).antecedentes.filter(Boolean)
+    : [];
 
+
+
+  const antecedentesArr = soapAntecedentes.length > 0 ? soapAntecedentes : patientAntecedentes;
 
   const antecedentesHtml = antecedentesArr.length > 0
     ? `<h2 class="nz-section">Antecedentes Clínicos</h2>
