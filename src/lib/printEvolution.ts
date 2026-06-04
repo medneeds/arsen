@@ -123,6 +123,13 @@ export const printEvolution = async (
   let patientAllergies: string = "—";
   let patientAge: string | null = null;
 
+  // Declarado aqui (antes do uso) para evitar TDZ no bloco de fetch acima.
+  const soapAntecedentes: string[] = Array.isArray((evo.soap_data as any)?.antecedentes)
+    ? (evo.soap_data as any).antecedentes.filter(Boolean)
+    : [];
+
+
+
   if ((evo as any).patient_id) {
     try {
       const { data: pRow } = await supabase
