@@ -210,17 +210,10 @@ export const printEvolution = async (
     `
     : "";
 
-  // Antecedentes clínicos — buscar em múltiplas fontes:
-  // 1. soap_data.antecedentes (novo formato — array de itens)
-  // 2. evo.antecedentes (campo raiz da tabela, legado)
-  // 3. ctx.antecedentes (passado pelo chamador)
-  const soapAntecedentes: string[] = Array.isArray((evo.soap_data as any)?.antecedentes)
-    ? (evo.soap_data as any).antecedentes.filter(Boolean)
-    : [];
-
-
-
+  // Antecedentes clínicos — `soapAntecedentes` já calculado acima (antes do bloco
+  // que consulta `patients`). Usa SOAP primeiro, fallback no medical_history.
   const antecedentesArr = soapAntecedentes.length > 0 ? soapAntecedentes : patientAntecedentes;
+
 
   const antecedentesHtml = antecedentesArr.length > 0
     ? `<h2 class="nz-section">Antecedentes Clínicos</h2>
