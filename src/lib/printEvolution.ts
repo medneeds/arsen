@@ -123,6 +123,13 @@ export const printEvolution = async (
   let patientAllergies: string = "—";
   let patientAge: string | null = null;
 
+  // Declarado aqui (antes do uso) para evitar TDZ no bloco de fetch acima.
+  const soapAntecedentes: string[] = Array.isArray((evo.soap_data as any)?.antecedentes)
+    ? (evo.soap_data as any).antecedentes.filter(Boolean)
+    : [];
+
+
+
   if ((evo as any).patient_id) {
     try {
       const { data: pRow } = await supabase
@@ -214,9 +221,8 @@ export const printEvolution = async (
   // 1. soap_data.antecedentes (novo formato — array de itens)
   // 2. evo.antecedentes (campo raiz da tabela, legado)
   // 3. ctx.antecedentes (passado pelo chamador)
-  const soapAntecedentes: string[] = Array.isArray((evo.soap_data as any)?.antecedentes)
-    ? (evo.soap_data as any).antecedentes.filter(Boolean)
-    : [];
+  // soapAntecedentes já declarado acima (antes do fetch de patients)
+
 
 
 
