@@ -204,8 +204,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
         // Admissão
         const rawAdm1 = (pRow as any)?.admitted_at || (pRow as any)?.admission_date || (pRow as any)?.uti_admission_date;
         if (rawAdm1) {
-          const first1 = rawAdm1.split("
-")[0].trim();
+          const first1 = rawAdm1.split("\n")[0].trim();
           const mIso1 = first1.match(/^(\d{4})-(\d{2})-(\d{2})/);
           admDateResolved = mIso1 ? `${mIso1[3]}/${mIso1[2]}/${mIso1[1]}` : first1;
         }
