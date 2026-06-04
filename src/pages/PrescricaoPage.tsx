@@ -653,25 +653,29 @@ function buildSolutoToken(item: PrescriptionItem): string {
   const qtyStr = qty && unitShort ? `${qty} ${unitShort}` : '';
 
   const doseRaw = (item.dose && item.dose !== '-') ? item.dose.trim().replace(/\.$/, '') : '';
-  // Dose terapêutica real = tem unidade de massa/atividade (mg, g, mcg, UI, mEq, %).
-  // Volume puro em mL não conta como "dose terapêutica" — é só o volume da ampola.
+
+  // Volume puro em mL (ex: "4 mL", "30 mL") — é volume de ampola, não dose terapêutica
   const isPureMlVolume = /^\d+(?:[.,]\d+)?\s*ml$/i.test(doseRaw);
+
+  // Dose terapêutica = tem unidade de massa/atividade (mg, g, mcg, UI, mEq, %)
   const isMassDose = !!doseRaw && !isPureMlVolume &&
     /(mg|mcg|µg|ug|\bg\b|\bui\b|u\/|unidades?|meq|%)/i.test(doseRaw);
 
-  // Dose terapêutica com unidade de massa → mostra dose + volume aspirado se diferente
-  if (isMassDose) {
+  // Concentração sem dose total (ex: "100mcg/mL", "5mg/mL") — não é dose terapêutica
+  const isConcentration = !!doseRaw && /\/\s*m[lL]/.test(doseRaw);
+
+  // ── Caso 1: Dose terapêutica com unidade de massa ──────────────────
+  if (isMassDose && !isConcentration) {
     if (qtyStr && qtyStr.toLowerCase() !== doseRaw.toLowerCase()) {
-      // Evita redundância: "1 amp (1.000 mg sal) (1 amp)" → "1 amp (1.000 mg sal)"
       const qtyIsAlreadyInDose = doseRaw.toLowerCase().includes(qtyStr.toLowerCase().replace(/\s+/g, ' ').trim());
-      if (!qtyIsAlreadyInDose) return `${doseRaw} (${qtyStr})`;
+      // Preferir qty na frente: "1 amp (50mg)" em vez de "50mg (1 amp)"
+      if (!qtyIsAlreadyInDose) return `${qtyStr} (${doseRaw})`;
     }
     return doseRaw;
   }
 
-  // Dose é volume puro em mL (ex.: "30 mL", "150 mL") — preservar o volume prescrito.
-  // Retornar qtyStr aqui descartaria o volume e mostraria apenas "1 amp", causando
-  // erro de administração (enfermagem usa 1 ampola = 10 mL ao invés dos 30 mL prescritos).
+  // ── Caso 2: Dose é volume puro em mL ───────────────────────────────
+  // Preservar o volume prescrito para segurança da administração.
   if (isPureMlVolume) {
     const unitLower = (item.quantityUnit || '').toLowerCase();
     if (qtyStr && !unitLower.includes('ml') && unitLower !== '') {
@@ -680,13 +684,21 @@ function buildSolutoToken(item: PrescriptionItem): string {
     return doseRaw;
   }
 
-  // Dose contém volume em mL embutido (ex.: "Bolus 150 mL") — preservar
+  // ── Caso 3: Dose é concentração (ex: "100mcg/mL") ─────────────────
+  // Mostrar qtyStr (1 FA, 2 amp) sem a concentração pura — ela não
+  // informa a dose total e confunde a equipe de enfermagem.
+  if (isConcentration) {
+    return qtyStr || doseRaw;
+  }
+
+  // ── Caso 4: Dose contém mL embutido (ex: "Bolus 150 mL") ──────────
   if (doseRaw && /\d+(?:[.,]\d+)?\s*ml/i.test(doseRaw)) {
     return doseRaw;
   }
 
+  // ── Fallback: qtyStr ou doseRaw ────────────────────────────────────
   if (qtyStr) return qtyStr;
-  return doseRaw; // fallback bruto (raro)
+  return doseRaw;
 }
 
 function buildPrepDescription(item: PrescriptionItem): string {
