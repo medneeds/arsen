@@ -3,7 +3,7 @@ import { DischargeStatusRibbon } from "./DischargeStatusRibbon";
 import { calcDIH, getEffectiveAdmissionDate } from "@/lib/dihCalc";
 import { isExtraBed } from "@/utils/bedNaming";
 import { formatDateBR } from "@/utils/dateUtils";
-import { isWithin24h, isTomorrow } from "@/hooks/useDischargeAlert";
+import { isWithin24h } from "@/hooks/useDischargeAlert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -893,9 +893,7 @@ export function UtiPatientCard({
   const previsaoAlta = getFieldArray("utiDischargePrediction");
   // Exibe somente a data; remove sufixo "(N dias)" quando presente
   // Formata previsão de alta para padrão brasileiro DD/MM/YYYY (preserva sufixo D+N)
-  const previsaoAltaDate = formatDateBR(previsaoAlta?.[0] || "");
-  // true quando a alta está programada para AMANHÃ
-  const altaAmanha = isTomorrow(previsaoAlta?.[0]);
+  const previsaoAltaDate = formatDateBR(previsaoAlta[0] || "");
   // Rótulo de admissão dinâmico por setor (ex.: "Admissão UCC", "Admissão UTI 1")
   const admissionLabel = `Admissão ${derivedUtiUnit}`;
   const condutasDia = getFieldArray("utiDailyConducts");
@@ -927,7 +925,7 @@ export function UtiPatientCard({
         
         {/* VACANT BED VIEW */}
         {patient.isVacant ? (
-          <div className="flex items-center justify-between p-2 md:p-3">
+          <div className="flex items-center justify-between p-2 gap-1">
             <div className="flex items-center gap-2">
               {/* Bed Number */}
               <div className={cn("shrink-0 px-1.5 py-0.5 rounded border", colors.bedBg)}>
@@ -958,7 +956,7 @@ export function UtiPatientCard({
           {/* Header - Collapsed View - FULLY EDITABLE */}
           <div className="flex items-stretch">
             {/* Main Content - Collapsed View */}
-            <div className="flex-1 p-1.5 md:p-1.5 space-y-1.5 md:space-y-1 min-w-0">
+            <div className="flex-1 p-1.5 space-y-1.5 min-w-0">
               {/* Row 1: Identification Header - Mobile optimized */}
               <div className="flex flex-wrap items-center gap-1 md:gap-1.5">
                 {/* Collapse/Expand Toggle Button */}
@@ -1066,26 +1064,13 @@ export function UtiPatientCard({
 
                   {/* Discharge Prediction — somente leitura (edite via Edição Avançada / Evolução) */}
                   <div
-                    className={cn(
-                      "hidden md:flex shrink-0 items-center gap-1 px-1.5 py-0.5 rounded cursor-not-allowed",
-                      altaAmanha
-                        ? "bg-amber-500/15 border border-amber-500/40 text-amber-700 dark:text-amber-300"
-                        : "text-muted-foreground bg-muted/50"
-                    )}
-                    title={altaAmanha ? "⚠ Alta programada para AMANHÃ" : "Edite em Edição Avançada ou via Evolução Médica"}
+                    className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded cursor-not-allowed"
+                    title="Edite em Edição Avançada ou via Evolução Médica"
                   >
-                    {altaAmanha && (
-                      <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 animate-pulse">⚠</span>
-                    )}
                     <span className="text-[9px]">Previsão de Alta:</span>
-                    <span className={cn("text-[10px] font-medium w-20 truncate", altaAmanha && "font-bold")}>
+                    <span className="text-[10px] font-medium w-20 truncate">
                       {previsaoAltaDate || "—"}
                     </span>
-                    {altaAmanha && (
-                      <span className="text-[8px] font-semibold bg-amber-500 text-white px-1 py-0.5 rounded ml-0.5">
-                        AMANHÃ
-                      </span>
-                    )}
                   </div>
 
                   {/* Critical badge removido — alertas críticos tratados em outro local */}
@@ -1408,7 +1393,7 @@ export function UtiPatientCard({
                     <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">Previsão de alta</span>
                     <span className="text-sm font-medium block min-h-[20px]">
                       {previsaoAltaDate || "—"}
-                    {altaAmanha && (
+                    {isWithin24h(previsaoAlta[0]) && (
                       <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/40 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700 dark:text-amber-300">
                         ⚠ Alta amanhã
                       </span>

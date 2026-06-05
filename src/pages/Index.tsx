@@ -38,7 +38,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useDepartment, DEPARTMENTS, Department } from "@/contexts/DepartmentContext";
 import { supabase } from "@/integrations/supabase/client";
 import { usePrivacy } from "@/contexts/PrivacyContext";
-import { getNextBedNumber, isExtraBed } from "@/utils/bedNaming";
+import { getNextBedNumber } from "@/utils/bedNaming";
 import { RegisterHandoverDialog } from "@/components/RegisterHandoverDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import NotesTabOptimized from "@/components/resources/NotesTabOptimized";
@@ -216,14 +216,14 @@ const Index = () => {
     // ── Intensivos e Semi-Intensivos (isUti: true) ─────────────────────
     red:     { title: "UTI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
     yellow:  { title: "UTI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    blue:    { title: "UCI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    blue:    { title: "UCI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     outside: { title: "UCI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    ucc:     { title: "UCC",    color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    ucc:     { title: "UCC",    color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     // ── Demais setores (sem isUti — usam SectorSection padrão) ─────────
     neuro_01:             { title: "Neuro 01",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     neuro_02:             { title: "Neuro 02",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     clinica_cirurgica:    { title: "Clínica Cirúrgica",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
-    enfermaria_transicao: { title: "Enf. Transição",     color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    enfermaria_transicao: { title: "Enf. Transição",     color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     enfermaria_vascular:  { title: "Enf. Vascular",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     sala_vermelha:        { title: "Sala Vermelha",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     sala_laranja:         { title: "Sala Laranja",       color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
@@ -406,9 +406,7 @@ const Index = () => {
   };
   
   const filterPatients = (sectorPatients: Patient[]) => {
-    // 🔒 Leitos EXTRA nunca entram na contagem de ocupação — excluir sempre.
-    // isExtraBed verifica se bedNumber começa com "EXTRA" (case-insensitive).
-    let filtered = sectorPatients.filter(p => !isExtraBed(p.bedNumber));
+    let filtered = sectorPatients;
     
     // Filter by occupied status if enabled
     if (showOnlyOccupied) {
@@ -974,14 +972,14 @@ const Index = () => {
         
         <div className={printMode ? 'print-hide' : ''}>
           {/* Main Content — sem cabeçalho duplicado; ações ficam no BreadcrumbBar */}
-          <main className="container mx-auto px-2 sm:px-4 py-3 sm:py-6 print:py-0 print:px-1 print:pt-3">
-            <div className="space-y-3 sm:space-y-4 print:space-y-1">
+          <main className="w-full max-w-full px-1.5 sm:px-4 py-2 sm:py-6 print:py-0 print:px-1 print:pt-3 overflow-x-hidden">
+            <div className="space-y-2 sm:space-y-4 print:space-y-1">
               {/* Unified breadcrumb bar com ações integradas */}
               <BreadcrumbBar
                 variant="institutional"
                 actions={
                   <TooltipProvider delayDuration={300}>
-                    <div className="flex items-center gap-1 print:hidden">
+                    <div className="flex items-center gap-1 print:hidden overflow-x-auto max-w-[60vw] sm:max-w-none no-scrollbar">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button variant="outline" size="icon" onClick={handleRefreshMap} disabled={isRefreshing}

@@ -291,7 +291,7 @@ export default function PainelClinicoPage() {
 
       {/* Table */}
       <ScrollArea className="flex-1">
-        <div className="p-2 sm:p-4">
+        <div className="p-2 sm:p-4 overflow-x-auto">
           {isLoading ? (
             <div className="flex items-center justify-center py-20 text-muted-foreground">
               Carregando pacientes...
@@ -360,12 +360,12 @@ export default function PainelClinicoPage() {
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-24">Leito</TableHead>
                    <TableHead>Paciente</TableHead>
-                  <TableHead className="w-24 text-center">SAPS 3</TableHead>
+                  <TableHead className="w-24 text-center hidden sm:table-cell">SAPS 3</TableHead>
                   <TableHead className="w-48">Pendências</TableHead>
                   <TableHead className="w-28 text-center">Prescrição</TableHead>
-                  <TableHead className="w-24 text-center">Dias Int.</TableHead>
-                  <TableHead className="w-36">Previsão Alta</TableHead>
-                  <TableHead className="w-44">Especialidades Envolvidas</TableHead>
+                  <TableHead className="w-24 text-center hidden md:table-cell">Dias Int.</TableHead>
+                  <TableHead className="w-36 hidden md:table-cell">Previsão Alta</TableHead>
+                  <TableHead className="w-44 hidden lg:table-cell">Especialidades Envolvidas</TableHead>
                   <TableHead className="w-20 text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -513,7 +513,9 @@ export default function PainelClinicoPage() {
       <div
         className={cn(
           "fixed top-0 right-0 h-full z-40 flex flex-row transition-all duration-300 ease-in-out",
-          selectedPatient ? "translate-x-0" : "translate-x-[calc(100%-2.5rem)]"
+          selectedPatient ? "translate-x-0" : "translate-x-[calc(100%-2.5rem)]",
+          // Mobile: painel ocupa tela inteira quando aberto
+          selectedPatient && "w-full sm:w-auto"
         )}
       >
         {/* Aba lateral — sempre visível, indica a existência do painel */}
@@ -544,7 +546,7 @@ export default function PainelClinicoPage() {
         </button>
 
         {/* Conteúdo do painel */}
-        <div className="w-[min(420px,90vw)] h-full bg-background border-l border-border shadow-2xl overflow-hidden flex flex-col">
+        <div className="w-screen sm:w-[min(420px,90vw)] h-full bg-background border-l border-border shadow-2xl overflow-hidden flex flex-col">
           {selectedPatient ? (
             <>
               {/* Header do painel */}

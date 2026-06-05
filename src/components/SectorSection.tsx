@@ -108,7 +108,7 @@ function SortablePatientCard(props: SortablePatientCardProps) {
     <div 
       ref={setNodeRef} 
       style={style} 
-      className="flex items-center gap-2 print:block print:w-full"
+      className="flex items-center gap-2 print:block print:w-full w-full"
       data-patient-id={props.patient.id}
     >
       <button
