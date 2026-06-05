@@ -874,8 +874,19 @@ export function usePatients(department?: Department, sector?: string) {
           
           if (eventType === 'INSERT') {
             const newRecord = payload.new as any;
-            if (sector && newRecord.sector !== sector) return;
-            if (!sector && department && newRecord.department !== department) return;
+            const SECTOR_TO_DEPT_INS: Record<string, string> = {
+              blue: 'UCI 1', outside: 'UCI 2', ucc: 'UCC',
+              red: 'UTI 1', yellow: 'UTI 2',
+              enfermaria_transicao: 'ENFERMARIA DE TRANSIÇÃO',
+              enfermaria_vascular: 'ENFERMARIA VASCULAR',
+              neuro_01: 'NEURO 01', neuro_02: 'NEURO 02',
+              clinica_cirurgica: 'CLÍNICA CIRÚRGICA',
+            };
+            const deptEqIns = sector ? SECTOR_TO_DEPT_INS[sector] : null;
+            const matchesIns = sector
+              ? (newRecord.sector === sector || (deptEqIns && newRecord.department === deptEqIns))
+              : (!department || newRecord.department === department);
+            if (!matchesIns) return;
             
             const newPatient = mapRecordToPatient(newRecord);
             setPatients(prev => {
@@ -889,11 +900,30 @@ export function usePatients(department?: Department, sector?: string) {
             });
           } else if (eventType === 'UPDATE') {
             const updatedRecord = payload.new as any;
-            if (sector && updatedRecord.sector !== sector) {
-              setPatients(prev => prev.filter(p => p.id !== updatedRecord.id));
-              return;
-            }
-            if (!sector && department && updatedRecord.department !== department) {
+
+            // Replicar a lógica OR do fetch: sector OU department equivalente
+            const SECTOR_TO_DEPT: Record<string, string> = {
+              blue: 'UCI 1', outside: 'UCI 2', ucc: 'UCC',
+              red: 'UTI 1', yellow: 'UTI 2',
+              enfermaria_transicao: 'ENFERMARIA DE TRANSIÇÃO',
+              enfermaria_vascular: 'ENFERMARIA VASCULAR',
+              neuro_01: 'NEURO 01', neuro_02: 'NEURO 02',
+              clinica_cirurgica: 'CLÍNICA CIRÚRGICA',
+              sala_vermelha: 'SALA VERMELHA', sala_laranja: 'SALA LARANJA',
+              observacao_clinica: 'OBSERVAÇÃO CLÍNICA',
+              ue_vertical: 'UE VERTICAL', ue_horizontal: 'UE HORIZONTAL',
+              riv: 'RIV', cc_preparo: 'CC PREPARO',
+              cc_bloco: 'CC BLOCO CIRÚRGICO', cc_rpa: 'CC RPA',
+            };
+            const deptEquivalent = sector ? SECTOR_TO_DEPT[sector] : null;
+
+            // Paciente pertence ao setor atual?
+            const matchesSector = sector
+              ? (updatedRecord.sector === sector || (deptEquivalent && updatedRecord.department === deptEquivalent))
+              : (!department || updatedRecord.department === department);
+
+            if (!matchesSector) {
+              // Paciente saiu do setor — remover da lista
               setPatients(prev => prev.filter(p => p.id !== updatedRecord.id));
               return;
             }
@@ -923,7 +953,12 @@ export function usePatients(department?: Department, sector?: string) {
         }
       )
       .subscribe((status) => {
-        console.log('Patients realtime subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('[usePatients] Realtime SUBSCRIBED — mapa atualiza em tempo real');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('[usePatients] Realtime problema:', status, '— fazendo refetch manual');
+          fetchPatients();
+        }
       });
 
     return () => {
