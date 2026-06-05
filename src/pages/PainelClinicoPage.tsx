@@ -509,50 +509,59 @@ export default function PainelClinicoPage() {
         </div>
       </ScrollArea>
 
-      {/* Painel lateral direito — fixo com aba de identificação sempre visível */}
-      {/* Painel lateral só existe quando há paciente selecionado */}
-      {selectedPatient && (
+      {/* Painel lateral direito — aba SEMPRE visível na borda direita */}
       <div
         className={cn(
           "fixed top-0 right-0 h-full z-40 flex flex-row transition-all duration-300 ease-in-out",
-          "translate-x-0 w-full sm:w-auto"
+          selectedPatient
+            ? "translate-x-0"                          // aberto
+            : "translate-x-[calc(100%-2.5rem)]",       // fechado, só a aba aparece
+          selectedPatient && "w-full sm:w-auto"         // mobile: tela cheia
         )}
       >
-        {/* Aba de fechamento — visível apenas com painel aberto */}
+        {/* ── Aba lateral — sempre visível, 40px ── */}
         <button
-          onClick={() => setSelectedPatient(null)}
+          onClick={() => selectedPatient ? setSelectedPatient(null) : undefined}
           className={cn(
-            "flex flex-col items-center justify-center gap-2 w-10 h-full",
-            "bg-primary/90 hover:bg-primary text-primary-foreground",
-            "border-l border-primary/30 shadow-[-4px_0_12px_rgba(0,0,0,0.15)]",
-            "transition-colors cursor-pointer rounded-l-lg shrink-0"
+            "flex flex-col items-center justify-center gap-2.5 w-10 h-full shrink-0",
+            "bg-primary text-primary-foreground",
+            "border-l border-primary/40 shadow-[-6px_0_18px_rgba(0,0,0,0.18)]",
+            "transition-all duration-200 rounded-l-xl",
+            !selectedPatient && "cursor-default opacity-80 hover:opacity-100"
           )}
-          title="Fechar painel do paciente"
-          aria-label="Fechar painel"
+          title={selectedPatient ? "Fechar painel" : "Selecione um paciente para abrir"}
+          aria-label="Painel do paciente"
         >
-          <ChevronRight className="h-4 w-4 rotate-0" />
+          <ChevronRight
+            className={cn(
+              "h-4 w-4 transition-transform duration-300 shrink-0",
+              selectedPatient && "rotate-180"
+            )}
+          />
           <span
-            className="text-[10px] font-semibold tracking-widest uppercase whitespace-nowrap"
+            className="text-[9px] font-bold tracking-[0.18em] uppercase select-none shrink-0"
             style={{ writingMode: "vertical-rl", textOrientation: "mixed", transform: "rotate(180deg)" }}
           >
-            {selectedPatient.name.split(" ")[0]}
+            {selectedPatient
+              ? (selectedPatient.name.split(" ")[0] + (selectedPatient.bedNumber ? " · " + selectedPatient.bedNumber : ""))
+              : "Paciente"}
           </span>
-          <X className="h-3.5 w-3.5 opacity-70" />
+          <User className="h-3.5 w-3.5 opacity-60 shrink-0" />
         </button>
 
-        {/* Conteúdo do painel */}
-        <div className="w-screen sm:w-[min(420px,90vw)] h-full bg-background border-l border-border shadow-2xl overflow-hidden flex flex-col">
+        {/* ── Conteúdo do painel ── */}
+        <div className="w-screen sm:w-[min(440px,88vw)] h-full bg-background border-l border-border shadow-2xl overflow-hidden flex flex-col">
           {selectedPatient ? (
             <>
-              {/* Header do painel */}
-              <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40 shrink-0">
+              {/* Header */}
+              <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30 shrink-0 gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <User className="h-3.5 w-3.5 text-primary shrink-0" />
                   <span className="text-xs font-semibold text-foreground truncate">
                     {selectedPatient.name}
                   </span>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    · {selectedPatient.bedNumber}
+                  <span className="text-[10px] text-muted-foreground shrink-0 bg-muted px-1.5 py-0.5 rounded font-mono">
+                    {selectedPatient.bedNumber}
                   </span>
                 </div>
                 <button
@@ -563,21 +572,22 @@ export default function PainelClinicoPage() {
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
+              {/* Conteúdo */}
               <div className="flex-1 min-h-0 overflow-hidden">
                 <PatientCockpit patient={selectedPatient} variant="inline" className="h-full border-0 rounded-none" />
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm p-6 text-center">
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-muted-foreground p-8 text-center">
+              <User className="h-10 w-10 opacity-20" />
               <div>
-                <User className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                <p className="text-xs">Selecione um paciente na tabela para ver o resumo clínico</p>
+                <p className="text-sm font-medium">Nenhum paciente selecionado</p>
+                <p className="text-xs mt-1 opacity-70">Clique em um paciente na tabela para ver o resumo clínico completo</p>
               </div>
             </div>
           )}
         </div>
       </div>
-      )}
 
     </div>
   );
