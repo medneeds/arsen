@@ -45,12 +45,17 @@ export default function PacienteHubPage() {
     patientBed: params.get("patientBed") || "",
     patientSector: params.get("patientSector") || "",
     patientAge: params.get("patientAge") || "",
+    // Pré-preenchidos pelo caller para evitar delay de fetchStatus
+    initialAdmissionStatus: (params.get("admissionStatus") || null) as AdmissionStatus,
   }), [params]);
 
   const identifiers = usePatientIdentifiers(ctx.patientId, ctx.patientName, currentHospital?.id || null);
 
-  const [admissionStatus, setAdmissionStatus] = useState<AdmissionStatus>(null);
-  const [statusLoading, setStatusLoading] = useState(true);
+  // Usar status passado pela URL como valor inicial — evita flash de bloqueio
+  const [admissionStatus, setAdmissionStatus] = useState<AdmissionStatus>(
+    ctx.initialAdmissionStatus ?? null
+  );
+  const [statusLoading, setStatusLoading] = useState(!ctx.initialAdmissionStatus);
   const [admissionOpen, setAdmissionOpen] = useState(false);
   const [consultOpen, setConsultOpen] = useState(false);
   const [department, setDepartment] = useState<string | null>(null);

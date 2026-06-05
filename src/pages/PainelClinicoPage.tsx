@@ -235,9 +235,11 @@ export default function PainelClinicoPage() {
       patientId: patient.id,
       patientName: patient.name,
       patientBed: patient.bedNumber,
-      patientSector: patient.sector,
+      patientSector: patient.sector || "",
     });
     if (patient.age) params.set("patientAge", patient.age.toString());
+    if ((patient as any).medicalRecord) params.set("patientRecord", (patient as any).medicalRecord);
+    if ((patient as any).admissionStatus) params.set("admissionStatus", (patient as any).admissionStatus);
     navigate(`/paciente?${params.toString()}`);
   };
 
