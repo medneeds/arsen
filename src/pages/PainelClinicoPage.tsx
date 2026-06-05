@@ -291,7 +291,8 @@ export default function PainelClinicoPage() {
 
       {/* Table */}
       <ScrollArea className="flex-1">
-        <div className="p-2 sm:p-4 overflow-x-auto">
+        {/* pr-10: reserva espaço para a aba lateral no mobile (40px) */}
+        <div className="p-2 sm:p-4 pr-10 sm:pr-4 overflow-x-auto">
           {isLoading ? (
             <div className="flex items-center justify-center py-20 text-muted-foreground">
               Carregando pacientes...
@@ -511,18 +512,19 @@ export default function PainelClinicoPage() {
 
       {/* Painel lateral direito — aba SEMPRE visível na borda direita */}
       {/* Painel lateral — só aparece quando um paciente está selecionado */}
-      {selectedPatient && (
       <div
         className={cn(
           "fixed top-0 right-0 h-full z-40 flex flex-row transition-all duration-300 ease-in-out",
-          "translate-x-0 w-full sm:w-auto"
+          selectedPatient
+            ? "translate-x-0 w-full sm:w-auto"
+            : "translate-x-[calc(100%-2rem)] sm:translate-x-[calc(100%-2.5rem)]"
         )}
       >
         {/* ── Aba lateral — sempre visível, 40px ── */}
         <button
           onClick={() => selectedPatient ? setSelectedPatient(null) : undefined}
           className={cn(
-            "flex flex-col items-center justify-center gap-2.5 w-10 h-full shrink-0",
+            "flex flex-col items-center justify-center gap-1.5 w-8 sm:w-10 h-full shrink-0",
             "bg-primary text-primary-foreground",
             "border-l border-primary/40 shadow-[-6px_0_18px_rgba(0,0,0,0.18)]",
             "transition-all duration-200 rounded-l-xl",

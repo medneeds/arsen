@@ -240,8 +240,9 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         onMouseLeave={() => variant === "fixed" && !pinned && setHovering(false)}
         className={cn(
           variant === "fixed" && [
-            // Visível em QUALQUER tamanho de tela (removido hidden lg:flex)
-            "flex shrink-0 border-l border-[hsl(217,30%,82%)]/70 dark:border-[hsl(217,30%,24%)]/70 bg-card self-start",
+            // Oculto no mobile — ocupa espaço e corta o conteúdo em telas estreitas
+            // Aparece a partir de lg (1024px)
+            "hidden lg:flex shrink-0 border-l border-[hsl(217,30%,82%)]/70 dark:border-[hsl(217,30%,24%)]/70 bg-card self-start",
             "shadow-[inset_1px_0_0_hsl(217,40%,98%)] dark:shadow-[inset_1px_0_0_hsl(217,30%,16%)]",
             "rounded-b-xl ring-1 ring-[hsl(217,40%,92%)]/60 dark:ring-[hsl(217,40%,20%)]/40",
             "transition-[width] duration-300 ease-out",
