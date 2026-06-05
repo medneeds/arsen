@@ -346,9 +346,13 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </div>
           </button>
           </div>
-        )}
-        {/* Expanded content */}
-        <div className={cn("flex flex-col flex-1 min-h-0", variant === "fixed" && !isExpanded && "hidden")}>
+        )}   )}
+        {/* Expanded content — scrollável para ver todas as informações */}
+        <div className={cn(
+          "flex flex-col flex-1",
+          "overflow-y-auto overscroll-contain",
+          variant === "fixed" && !isExpanded && "hidden"
+        )}>
         {variant === "fixed" && isExpanded && (
           <div className="flex justify-end px-2 pt-2 bg-gradient-to-b from-[hsl(217,55%,40%)]/[0.06] via-[hsl(217,55%,40%)]/[0.03] to-transparent border-b border-[hsl(217,30%,86%)]/40 dark:border-[hsl(217,30%,26%)]/40">
             <button
