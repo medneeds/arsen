@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { sanitizeRichHtml } from "@/components/ui/rich-text-editor";
 import {
-  Activity, AlertTriangle, ArrowRight, BedDouble, ChevronDown, ChevronRight,
+  Activity, AlertTriangle, ArrowRight, BedDouble, ChevronDown, ChevronLeft, ChevronRight,
   ClipboardList, Copy, Droplet, FileText, FlaskConical, Heart, IdCard, LogOut, NotebookPen, Pill, Plus, Route,
   ShieldAlert, Stethoscope, Syringe, TestTubes, TrendingUp, User2, Users
 } from "lucide-react";
