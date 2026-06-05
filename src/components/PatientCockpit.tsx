@@ -240,13 +240,18 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         onMouseLeave={() => variant === "fixed" && !pinned && setHovering(false)}
         className={cn(
           variant === "fixed" && [
-            // Flutuante — descolado do cabeçalho e do rodapé
-            "hidden lg:flex fixed right-0 z-30",
-            // Posição: abaixo do header (top-[4.5rem]) com margem no rodapé
-            "top-[4.5rem] bottom-4",
-            // Sombra de profundidade multicamadas — flutua sobre o conteúdo
-            "shadow-[-2px_0_8px_rgba(10,22,56,0.08),_-8px_0_32px_rgba(10,22,56,0.18),_-16px_0_48px_rgba(10,22,56,0.10)]",
-            // Backdrop-blur — conteúdo passa por baixo suavemente
+            // Sticky: entra no fluxo do documento — sem sobreposição de conteúdo.
+            // Gruda no viewport abaixo do header ao rolar, rola junto com a página.
+            "hidden lg:flex sticky self-start",
+            "top-[4.5rem]",
+            // Altura máxima = viewport menos o header — scroll interno quando expandido
+            isExpanded
+              ? "max-h-[calc(100vh-5rem)] overflow-y-auto"
+              : "max-h-[calc(100vh-5rem)] overflow-hidden",
+            // Cantos arredondados + overflow-hidden para clipar o conteúdo interno
+            "rounded-xl overflow-hidden",
+            // Sombra de profundidade multicamadas
+            "shadow-[-2px_0_8px_rgba(10,22,56,0.08),_-8px_0_32px_rgba(10,22,56,0.18),_-16px_0_48px_rgba(10,22,56,0.08)]",
             "backdrop-blur-sm",
             "transition-[width] duration-300 ease-out",
             isExpanded ? "w-[min(24rem,85vw)]" : "w-11",
@@ -268,8 +273,8 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               "group flex flex-col items-center w-full",
               // Ocupa toda a altura do container flutuante
               "h-full",
-              // Totalmente arredondado — elemento independente, não colado na borda
-              "rounded-xl",
+              // Radius herdado do aside com overflow-hidden — não sobrepor
+              "rounded-none",
               // Fundo: degradê sutil cabeçalho institucional
               "bg-gradient-to-b from-[#0a1628]/5 via-[#0f2847]/8 to-[#1a3a5c]/5",
               "dark:from-[#0a1628]/30 dark:via-[#0f2847]/40 dark:to-[#1a3a5c]/30",
@@ -341,7 +346,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </div>
           </button>
           </div>
-        )}
+        )}   )}
         {/* Expanded content */}
         <div className={cn("flex flex-col flex-1 min-h-0", variant === "fixed" && !isExpanded && "hidden")}>
         {variant === "fixed" && isExpanded && (
