@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Filter, FileText, Pill, Activity, ClipboardList, FolderOpen, User, Calendar, Clock, Stethoscope, Heart, TrendingUp, AlertTriangle, TestTubes, Syringe, Shield, Thermometer, Pencil, Check, X, ClipboardCheck, Plus, LogOut, History } from "lucide-react";
+import { Search, Eye, Filter, FileText, Pill, Activity, ClipboardList, FolderOpen, User, Calendar, Clock, Stethoscope, Heart, TrendingUp, AlertTriangle, TestTubes, Syringe, Shield, Thermometer, Pencil, Check, X, ClipboardCheck, Plus, LogOut, History, ChevronRight} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
@@ -509,16 +509,77 @@ export default function PainelClinicoPage() {
         </div>
       </ScrollArea>
 
-      {/* Patient Sidebar Sheet — usa o PatientCockpit padronizado dos demais módulos clínicos */}
-      <Sheet open={!!selectedPatient} onOpenChange={(open) => !open && setSelectedPatient(null)}>
-        <SheetContent className="w-full sm:max-w-md p-0 flex flex-col gap-0 h-[100dvh]" side="right">
-          {selectedPatient && (
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <PatientCockpit patient={selectedPatient} variant="inline" className="h-full border-0 rounded-none" />
+      {/* Painel lateral direito — fixo com aba de identificação sempre visível */}
+      <div
+        className={cn(
+          "fixed top-0 right-0 h-full z-40 flex flex-row transition-all duration-300 ease-in-out",
+          selectedPatient ? "translate-x-0" : "translate-x-[calc(100%-2.5rem)]"
+        )}
+      >
+        {/* Aba lateral — sempre visível, indica a existência do painel */}
+        <button
+          onClick={() => selectedPatient ? setSelectedPatient(null) : undefined}
+          className={cn(
+            "flex flex-col items-center justify-center gap-2 w-10 h-full",
+            "bg-primary/90 hover:bg-primary text-primary-foreground",
+            "border-l border-primary/30 shadow-[-4px_0_12px_rgba(0,0,0,0.15)]",
+            "transition-colors cursor-pointer rounded-l-lg",
+            !selectedPatient && "rounded-l-lg cursor-default"
+          )}
+          title={selectedPatient ? "Fechar painel do paciente" : "Clique em um paciente para abrir"}
+          aria-label="Painel do paciente"
+        >
+          {/* Ícone e rótulo vertical */}
+          <ChevronRight className={cn(
+            "h-4 w-4 transition-transform duration-300",
+            selectedPatient && "rotate-180"
+          )} />
+          <span
+            className="text-[10px] font-semibold tracking-widest uppercase whitespace-nowrap"
+            style={{ writingMode: "vertical-rl", textOrientation: "mixed", transform: "rotate(180deg)" }}
+          >
+            {selectedPatient ? selectedPatient.name.split(" ")[0] : "Paciente"}
+          </span>
+          <User className="h-4 w-4 opacity-70" />
+        </button>
+
+        {/* Conteúdo do painel */}
+        <div className="w-[min(420px,90vw)] h-full bg-background border-l border-border shadow-2xl overflow-hidden flex flex-col">
+          {selectedPatient ? (
+            <>
+              {/* Header do painel */}
+              <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40 shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <User className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span className="text-xs font-semibold text-foreground truncate">
+                    {selectedPatient.name}
+                  </span>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    · {selectedPatient.bedNumber}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setSelectedPatient(null)}
+                  className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-accent transition-colors shrink-0"
+                  aria-label="Fechar"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <PatientCockpit patient={selectedPatient} variant="inline" className="h-full border-0 rounded-none" />
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm p-6 text-center">
+              <div>
+                <User className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                <p className="text-xs">Selecione um paciente na tabela para ver o resumo clínico</p>
+              </div>
             </div>
           )}
-        </SheetContent>
-      </Sheet>
+        </div>
+      </div>
     </div>
   );
 }
