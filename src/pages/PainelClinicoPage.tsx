@@ -510,13 +510,12 @@ export default function PainelClinicoPage() {
       </ScrollArea>
 
       {/* Painel lateral direito — aba SEMPRE visível na borda direita */}
+      {/* Painel lateral — só aparece quando um paciente está selecionado */}
+      {selectedPatient && (
       <div
         className={cn(
           "fixed top-0 right-0 h-full z-40 flex flex-row transition-all duration-300 ease-in-out",
-          selectedPatient
-            ? "translate-x-0"                          // aberto
-            : "translate-x-[calc(100%-2.5rem)]",       // fechado, só a aba aparece
-          selectedPatient && "w-full sm:w-auto"         // mobile: tela cheia
+          "translate-x-0 w-full sm:w-auto"
         )}
       >
         {/* ── Aba lateral — sempre visível, 40px ── */}
@@ -588,6 +587,7 @@ export default function PainelClinicoPage() {
           )}
         </div>
       </div>
+      )}
 
     </div>
   );

@@ -256,29 +256,68 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         {variant === "fixed" && !isExpanded && (
           <button
             type="button"
-            title="Abrir painel do paciente"
+            title="Expandir painel do paciente"
             onClick={() => setPinned(true)}
-            className="flex flex-col items-center justify-center gap-3 w-full h-full py-4 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
+            onMouseEnter={() => setHovering(true)}
+            className={cn(
+              "group flex flex-col items-center w-full h-full",
+              "bg-[hsl(217,72%,38%)]/12 hover:bg-[hsl(217,72%,38%)]/22",
+              "border-l-2 border-[hsl(217,72%,52%)]/40 hover:border-[hsl(217,72%,52%)]/80",
+              "transition-all duration-200 cursor-pointer"
+            )}
           >
-            <ChevronRight className="h-4 w-4 rotate-180 shrink-0" />
-            <div className={cn("h-2.5 w-2.5 rounded-full shrink-0", status.dot)} title={status.label} />
+            {/* Seta de expansão — topo */}
+            <div className="flex justify-center pt-3 pb-2 w-full">
+              <div className={cn(
+                "flex items-center justify-center w-7 h-7 rounded-full",
+                "bg-[hsl(217,72%,38%)]/20 group-hover:bg-[hsl(217,72%,38%)]/40",
+                "transition-colors duration-200"
+              )}>
+                <ChevronLeft className="h-4 w-4 text-[hsl(217,72%,40%)] group-hover:text-[hsl(217,72%,32%)]" />
+              </div>
+            </div>
+
+            {/* Status dot */}
+            <div className={cn("h-2 w-2 rounded-full mb-2 shrink-0", status.dot)} title={status.label} />
+
+            {/* Dados do paciente — vertical */}
             <div
-              className="text-[10px] font-bold tracking-widest text-foreground/70 select-none"
+              className="flex-1 flex items-center justify-center px-1"
               style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
             >
-              {patient.bedNumber && `${patient.bedNumber} · `}{sector}
+              <div className="flex flex-col items-center gap-1.5">
+                {/* Leito + setor */}
+                {patient.bedNumber && (
+                  <span className="text-[10px] font-black tracking-[0.15em] text-[hsl(217,72%,38%)] group-hover:text-[hsl(217,72%,30%)]">
+                    {patient.bedNumber}
+                  </span>
+                )}
+                <span className="text-[9px] font-semibold tracking-widest text-muted-foreground/70 uppercase">
+                  {sector}
+                </span>
+                {/* Divisor */}
+                <span className="w-3 h-px bg-border/60" />
+                {/* Nome do paciente */}
+                {patient.name && patient.name.trim() !== '' && (
+                  <span className="text-[10px] font-semibold text-foreground/80 group-hover:text-foreground tracking-wide">
+                    {patient.name.split(' ').slice(0, 3).join(' ')}
+                  </span>
+                )}
+              </div>
             </div>
-            <div
-              className="text-[9px] font-semibold text-foreground/50 select-none line-clamp-3 max-h-20"
-              style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)", maxHeight: "8rem" }}
-            >
-              {patient.name.split(" ").slice(0, 2).join(" ")}
+
+            {/* Alergias + seta de expansão — base */}
+            <div className="flex flex-col items-center pb-3 pt-1 gap-1.5">
+              {allergies.length > 0 && (
+                <span title={`Alergia: ${allergies.join(", ")}`}>
+                  <ShieldAlert className="h-3.5 w-3.5 text-destructive" />
+                </span>
+              )}
+              <div className="text-[8px] font-bold tracking-[0.1em] text-[hsl(217,72%,48%)]/60 group-hover:text-[hsl(217,72%,38%)] uppercase transition-colors"
+                style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}>
+                Expandir
+              </div>
             </div>
-            {allergies.length > 0 && (
-              <span title={`Alergia: ${allergies.join(", ")}`} className="mt-auto pb-2">
-                <ShieldAlert className="h-3.5 w-3.5 text-destructive" />
-              </span>
-            )}
           </button>
         )}
         {/* Expanded content */}
