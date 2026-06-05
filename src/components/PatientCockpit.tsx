@@ -246,7 +246,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             "shadow-[inset_1px_0_0_hsl(217,40%,98%)] dark:shadow-[inset_1px_0_0_hsl(217,30%,16%)]",
             "rounded-b-xl ring-1 ring-[hsl(217,40%,92%)]/60 dark:ring-[hsl(217,40%,20%)]/40",
             "transition-[width] duration-300 ease-out",
-            isExpanded ? "w-[min(24rem,85vw)]" : "w-11",
+            isExpanded ? "w-[min(24rem,85vw)]" : "w-32",
           ],
           variant === "inline" && "w-full h-full bg-card border border-[hsl(217,30%,82%)]/70 dark:border-[hsl(217,30%,24%)]/70 rounded-lg overflow-hidden",
           "flex-col print:hidden",
@@ -262,80 +262,61 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             onMouseEnter={() => setHovering(true)}
             className={cn(
               "group flex flex-col items-center w-full h-full",
-              // Fundo: quase invisível em repouso, sólido no hover
-              "bg-[hsl(217,72%,38%)]/8 hover:bg-[hsl(217,72%,38%)]/90",
-              // Borda esquerda que indica a existência do painel
-              "border-l-[3px] border-[hsl(217,72%,52%)]/30",
-              "hover:border-[hsl(217,72%,52%)]",
-              // Sombra que destaca do conteúdo principal
-              "shadow-[-6px_0_20px_rgba(10,22,56,0.12)] hover:shadow-[-8px_0_28px_rgba(10,22,56,0.28)]",
-              "transition-all duration-250 ease-out cursor-pointer backdrop-blur-[2px]"
+              // Fundo sólido — sem transparências
+              "bg-[hsl(217,72%,36%)] hover:bg-[hsl(217,72%,28%)]",
+              // Borda esquerda
+              "border-l-[3px] border-[hsl(217,72%,52%)]",
+              // Sombra que destaca do conteúdo
+              "shadow-[-6px_0_24px_rgba(10,22,56,0.25)]",
+              "transition-all duration-200 ease-out cursor-pointer"
             )}
           >
-            {/* Chevron no topo */}
-            <div className="flex justify-center pt-4 pb-1 w-full">
-              <ChevronLeft className={cn(
-                "h-3.5 w-3.5 transition-all duration-200",
-                "text-[hsl(217,72%,52%)]/40 group-hover:text-white",
-                "group-hover:scale-110"
-              )} />
-            </div>
+            {/* Conteúdo totalmente centralizado na barra */}
+            <div className="flex flex-col items-center justify-center h-full w-full gap-3 py-6">
 
-            {/* Status dot — alergia destaca em vermelho */}
-            <div className={cn(
-              "h-2 w-2 rounded-full shrink-0 mt-1 mb-1",
-              "opacity-50 group-hover:opacity-100 transition-opacity",
-              status.dot
-            )} title={status.label} />
+              {/* Chevron */}
+              <ChevronLeft className="h-5 w-5 text-white/80 group-hover:text-white transition-colors shrink-0" />
 
-            {/* Conteúdo vertical — leito · setor · nome */}
-            <div
-              className="flex-1 flex items-center justify-center"
-              style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
-            >
-              <div className="flex flex-col items-center gap-2 px-0.5">
-                {patient.bedNumber && (
-                  <span className={cn(
-                    "text-[11px] font-black tracking-[0.18em] transition-colors",
-                    "text-[hsl(217,72%,45%)]/60 group-hover:text-white"
-                  )}>
-                    {patient.bedNumber}
-                  </span>
-                )}
-                <span className={cn(
-                  "text-[8px] font-bold tracking-[0.2em] uppercase transition-colors",
-                  "text-foreground/30 group-hover:text-white/70"
-                )}>
-                  {sector}
-                </span>
-                {patient.name && patient.name.trim() !== '' && (
-                  <>
-                    <span className="w-2.5 h-px bg-white/20 group-hover:bg-white/40 transition-colors" />
-                    <span className={cn(
-                      "text-[10px] font-semibold tracking-wide leading-none transition-colors",
-                      "text-foreground/50 group-hover:text-white"
-                    )}>
-                      {patient.name.split(' ').slice(0, 2).join(' ')}
+              {/* Status dot */}
+              <div className={cn("h-2.5 w-2.5 rounded-full shrink-0", status.dot)} title={status.label} />
+
+              {/* Conteúdo vertical — leito · setor · nome */}
+              <div
+                className="flex-1 flex items-center justify-center"
+                style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
+              >
+                <div className="flex flex-col items-center gap-3">
+                  {patient.bedNumber && (
+                    <span className="text-sm font-black tracking-[0.2em] text-white">
+                      {patient.bedNumber}
                     </span>
-                  </>
-                )}
+                  )}
+                  <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-white/70">
+                    {sector}
+                  </span>
+                  {patient.name && patient.name.trim() !== '' && (
+                    <>
+                      <span className="w-4 h-px bg-white/40" />
+                      <span className="text-[11px] font-semibold tracking-wide text-white/90">
+                        {patient.name.split(' ').slice(0, 2).join(' ')}
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Base — alergia + label */}
-            <div className="flex flex-col items-center pb-4 pt-1 gap-2">
+              {/* Alergia */}
               {allergies.length > 0 && (
-                <span title={`Alergia: ${allergies.join(", ")}`} className="inline-flex">
-                  <ShieldAlert
-                    className="h-3.5 w-3.5 text-destructive/60 group-hover:text-red-300 transition-colors"
-                  />
+                <span title={`Alergia: ${allergies.join(", ")}`} className="inline-flex shrink-0">
+                  <ShieldAlert className="h-4 w-4 text-red-300" />
                 </span>
               )}
-              <span className={cn(
-                "text-[7px] font-bold tracking-[0.15em] uppercase transition-colors",
-                "text-foreground/25 group-hover:text-white/60"
-              )}
-                style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}>
+
+              {/* Label VER */}
+              <span
+                className="text-[9px] font-bold tracking-[0.2em] uppercase text-white/60 shrink-0"
+                style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
+              >
                 ver
               </span>
             </div>
