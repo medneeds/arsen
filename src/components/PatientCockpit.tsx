@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { sanitizeRichHtml } from "@/components/ui/rich-text-editor";
 import {
-  Activity, AlertTriangle, ArrowRight, BedDouble, ChevronDown, ChevronRight,
+  Activity, AlertTriangle, ArrowRight, BedDouble, ChevronDown, ChevronLeft, ChevronRight,
   ClipboardList, Copy, Droplet, FileText, FlaskConical, Heart, IdCard, LogOut, NotebookPen, Pill, Plus, Route,
   ShieldAlert, Stethoscope, Syringe, TestTubes, TrendingUp, User2, Users
 } from "lucide-react";
@@ -325,10 +325,11 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             {/* Base — alergia + label */}
             <div className="flex flex-col items-center pb-4 pt-1 gap-2">
               {allergies.length > 0 && (
-                <ShieldAlert
-                  className="h-3.5 w-3.5 text-destructive/60 group-hover:text-red-300 transition-colors"
-                  title={`Alergia: ${allergies.join(", ")}`}
-                />
+                <span title={`Alergia: ${allergies.join(", ")}`} className="inline-flex">
+                  <ShieldAlert
+                    className="h-3.5 w-3.5 text-destructive/60 group-hover:text-red-300 transition-colors"
+                  />
+                </span>
               )}
               <span className={cn(
                 "text-[7px] font-bold tracking-[0.15em] uppercase transition-colors",
