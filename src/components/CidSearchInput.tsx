@@ -145,6 +145,31 @@ export function CidSearchInput({
             onChange={e => { setSearch(e.target.value); setIsOpen(true); }}
             onFocus={() => setIsOpen(true)}
             onClick={() => setIsOpen(true)}
+            onKeyDown={e => {
+              // Enter com texto digitado: aceitar entrada livre mesmo sem estar no catálogo
+              if (e.key === "Enter" && search.trim()) {
+                const exact = catalog.find(c => normalize(c.code) === normalize(search.trim()));
+                if (exact) {
+                  handleSelect(exact);
+                } else {
+                  // Aceitar como entrada livre: "CÓDIGO - descrição" ou só o código
+                  onChange(search.trim());
+                  setSearch("");
+                  setIsOpen(false);
+                }
+                e.preventDefault();
+              }
+              if (e.key === "Escape") setIsOpen(false);
+            }}
+            onBlur={() => {
+              // Ao sair do campo sem selecionar: se há texto digitado, aceitar
+              setTimeout(() => {
+                if (search.trim() && !value) {
+                  onChange(search.trim());
+                  setSearch("");
+                }
+              }, 200);
+            }}
             placeholder={placeholder || "Buscar CID-10 (código, descrição ou capítulo)..."}
             className="pl-8 pr-8 text-sm h-9"
           />
