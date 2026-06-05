@@ -510,39 +510,34 @@ export default function PainelClinicoPage() {
       </ScrollArea>
 
       {/* Painel lateral direito — fixo com aba de identificação sempre visível */}
+      {/* Painel lateral só existe quando há paciente selecionado */}
+      {selectedPatient && (
       <div
         className={cn(
           "fixed top-0 right-0 h-full z-40 flex flex-row transition-all duration-300 ease-in-out",
-          selectedPatient ? "translate-x-0" : "translate-x-[calc(100%-2.5rem)]",
-          // Mobile: painel ocupa tela inteira quando aberto
-          selectedPatient && "w-full sm:w-auto"
+          "translate-x-0 w-full sm:w-auto"
         )}
       >
-        {/* Aba lateral — sempre visível, indica a existência do painel */}
+        {/* Aba de fechamento — visível apenas com painel aberto */}
         <button
-          onClick={() => selectedPatient ? setSelectedPatient(null) : undefined}
+          onClick={() => setSelectedPatient(null)}
           className={cn(
             "flex flex-col items-center justify-center gap-2 w-10 h-full",
             "bg-primary/90 hover:bg-primary text-primary-foreground",
             "border-l border-primary/30 shadow-[-4px_0_12px_rgba(0,0,0,0.15)]",
-            "transition-colors cursor-pointer rounded-l-lg",
-            !selectedPatient && "rounded-l-lg cursor-default"
+            "transition-colors cursor-pointer rounded-l-lg shrink-0"
           )}
-          title={selectedPatient ? "Fechar painel do paciente" : "Clique em um paciente para abrir"}
-          aria-label="Painel do paciente"
+          title="Fechar painel do paciente"
+          aria-label="Fechar painel"
         >
-          {/* Ícone e rótulo vertical */}
-          <ChevronRight className={cn(
-            "h-4 w-4 transition-transform duration-300",
-            selectedPatient && "rotate-180"
-          )} />
+          <ChevronRight className="h-4 w-4 rotate-0" />
           <span
             className="text-[10px] font-semibold tracking-widest uppercase whitespace-nowrap"
             style={{ writingMode: "vertical-rl", textOrientation: "mixed", transform: "rotate(180deg)" }}
           >
-            {selectedPatient ? selectedPatient.name.split(" ")[0] : "Paciente"}
+            {selectedPatient.name.split(" ")[0]}
           </span>
-          <User className="h-4 w-4 opacity-70" />
+          <X className="h-3.5 w-3.5 opacity-70" />
         </button>
 
         {/* Conteúdo do painel */}
@@ -582,6 +577,8 @@ export default function PainelClinicoPage() {
           )}
         </div>
       </div>
+      )}
+
     </div>
   );
 }
