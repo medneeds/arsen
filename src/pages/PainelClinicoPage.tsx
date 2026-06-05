@@ -291,8 +291,7 @@ export default function PainelClinicoPage() {
 
       {/* Table */}
       <ScrollArea className="flex-1">
-        {/* pr-10: reserva espaço para a aba lateral no mobile (40px) */}
-        <div className="p-2 sm:p-4 pr-10 sm:pr-4 overflow-x-auto">
+        <div className="p-2 sm:p-4 overflow-x-auto">
           {isLoading ? (
             <div className="flex items-center justify-center py-20 text-muted-foreground">
               Carregando pacientes...
@@ -510,86 +509,16 @@ export default function PainelClinicoPage() {
         </div>
       </ScrollArea>
 
-      {/* Painel lateral direito — aba SEMPRE visível na borda direita */}
-      {/* Painel lateral — só aparece quando um paciente está selecionado */}
-      <div
-        className={cn(
-          "fixed top-0 right-0 h-full z-40 flex flex-row transition-all duration-300 ease-in-out",
-          selectedPatient
-            ? "translate-x-0 w-full sm:w-auto"
-            : "translate-x-[calc(100%-2rem)] sm:translate-x-[calc(100%-2.5rem)]"
-        )}
-      >
-        {/* ── Aba lateral — sempre visível, 40px ── */}
-        <button
-          onClick={() => selectedPatient ? setSelectedPatient(null) : undefined}
-          className={cn(
-            "flex flex-col items-center justify-center gap-1.5 w-8 sm:w-10 h-full shrink-0",
-            "bg-primary text-primary-foreground",
-            "border-l border-primary/40 shadow-[-6px_0_18px_rgba(0,0,0,0.18)]",
-            "transition-all duration-200 rounded-l-xl",
-            !selectedPatient && "cursor-default opacity-80 hover:opacity-100"
-          )}
-          title={selectedPatient ? "Fechar painel" : "Selecione um paciente para abrir"}
-          aria-label="Painel do paciente"
-        >
-          <ChevronRight
-            className={cn(
-              "h-4 w-4 transition-transform duration-300 shrink-0",
-              selectedPatient && "rotate-180"
-            )}
-          />
-          <span
-            className="text-[9px] font-bold tracking-[0.18em] uppercase select-none shrink-0"
-            style={{ writingMode: "vertical-rl", textOrientation: "mixed", transform: "rotate(180deg)" }}
-          >
-            {selectedPatient
-              ? (selectedPatient.name.split(" ")[0] + (selectedPatient.bedNumber ? " · " + selectedPatient.bedNumber : ""))
-              : "Paciente"}
-          </span>
-          <User className="h-3.5 w-3.5 opacity-60 shrink-0" />
-        </button>
-
-        {/* ── Conteúdo do painel ── */}
-        <div className="w-screen sm:w-[min(440px,88vw)] h-full bg-background border-l border-border shadow-2xl overflow-hidden flex flex-col">
-          {selectedPatient ? (
-            <>
-              {/* Header */}
-              <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30 shrink-0 gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <User className="h-3.5 w-3.5 text-primary shrink-0" />
-                  <span className="text-xs font-semibold text-foreground truncate">
-                    {selectedPatient.name}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground shrink-0 bg-muted px-1.5 py-0.5 rounded font-mono">
-                    {selectedPatient.bedNumber}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setSelectedPatient(null)}
-                  className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-accent transition-colors shrink-0"
-                  aria-label="Fechar"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              {/* Conteúdo */}
-              <div className="flex-1 min-h-0 overflow-hidden">
-                <PatientCockpit patient={selectedPatient} variant="inline" className="h-full border-0 rounded-none" />
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-muted-foreground p-8 text-center">
-              <User className="h-10 w-10 opacity-20" />
-              <div>
-                <p className="text-sm font-medium">Nenhum paciente selecionado</p>
-                <p className="text-xs mt-1 opacity-70">Clique em um paciente na tabela para ver o resumo clínico completo</p>
-              </div>
+      {/* Patient Sidebar Sheet — PatientCockpit padrão */}
+      <Sheet open={!!selectedPatient} onOpenChange={(open) => !open && setSelectedPatient(null)}>
+        <SheetContent className="w-full sm:max-w-md p-0 flex flex-col gap-0 h-[100dvh]" side="right">
+          {selectedPatient && (
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <PatientCockpit patient={selectedPatient} variant="inline" className="h-full border-0 rounded-none" />
             </div>
           )}
-        </div>
-      </div>
-      )}
+        </SheetContent>
+      </Sheet>
 
     </div>
   );
