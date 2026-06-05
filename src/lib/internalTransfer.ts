@@ -5,6 +5,12 @@ import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 import { invalidateResolvedRegistry } from "@/hooks/useResolvedRegistryId";
 import type { Patient } from "@/types/patient";
 
+// Detecta erros de RPC não encontrada (função ainda não deployada no banco).
+// Código 42883 = undefined_function no PostgreSQL.
+// Fallback automático para fluxo sequencial quando a migration não foi aplicada.
+const isRpcMissing = (err: any): boolean =>
+  (err as any)?.code === "42883" || (err?.message ?? "").includes("does not exist");
+
 /**
  * Converte uma string solta (BR `DD/MM/AAAA[ HH:MM]`, ISO, ou já timestamp)
  * em ISO `YYYY-MM-DDTHH:mm:ss±HH:MM` aceito pelo Postgres em colunas
@@ -167,9 +173,6 @@ export async function signalInternalTransfer(
   // ── Prepara dados para o RPC atômico ──────────────────────────────
   // Etapa 1: INSERT transfer_request + UPDATE patients (zera origem) — atômicos.
   // Fallback automático para o fluxo sequencial se o RPC não existir (42883).
-  const isRpcMissing = (err: any) =>
-    (err as any)?.code === "42883" || (err?.message ?? "").includes("does not exist");
-
   try {
     let encounterCode: string | null = null;
     try {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import type { TransferClassification } from "@/lib/sectorComplexity";
 import { useNavigate } from "react-router-dom";
 import { Patient } from "@/types/patient";
 import {
@@ -417,7 +418,7 @@ export function PatientMovementDialog({
             try {
               const { classifyTransfer, requiresSaps } = await import("@/lib/sectorComplexity");
               classification = classifyTransfer((patient as any).sector, sectorCode);
-              needsSaps = requiresSaps(classification);
+              needsSaps = requiresSaps(classification as TransferClassification);
             } catch (importErr) {
               console.error("[PatientMovementDialog] falha ao importar sectorComplexity:", importErr);
               throw new Error("Erro ao classificar a transferência. Tente novamente.");
