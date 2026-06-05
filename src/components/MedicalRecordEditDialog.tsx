@@ -708,8 +708,17 @@ export function MedicalRecordEditDialog({
       });
       if (resp.error) throw new Error(resp.error.message);
       const data = (resp.data as any)?.data;
+      const requiresManualCpfCns = (resp.data as any)?.requiresManualCpfCns === true;
       if (!data) throw new Error("Sem dados extraídos");
       openPisReview(data, "file");
+      if (requiresManualCpfCns) {
+        // Modo imagem: CPF e CNS não são extraídos por proteção LGPD.
+        // Avisa o usuário na tela de revisão que deve preencher esses campos.
+        toast({
+          title: "Preencha CPF e CNS na revisão",
+          description: "Para documentos em imagem, CPF e CNS não são extraídos automaticamente (LGPD). Preencha esses campos manualmente na tela de revisão.",
+        });
+      }
     } catch (err: any) {
       console.error(err);
       toast({ title: "Falha na importação PIS", description: err.message, variant: "destructive" });

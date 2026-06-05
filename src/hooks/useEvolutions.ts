@@ -131,6 +131,33 @@ export function useEvolutions(
       // A barreira de setor só protege contra vazamento quando usamos patient_id
       // como filtro principal (patient_id muda por leito, registry_id não).
 
+      // Recupera todos os leitos históricos do paciente para cobrir evoluções legadas
+      // (patient_registry_id = NULL) que ficaram presas no leito de origem quando
+      // a RPC repoint_patient_history falhou silenciosamente em clinical_evolutions.
+      // Sem isso, essas evoluções somem da timeline após qualquer transferência interna.
+      // Fonte: admission_histories registra patient_id de cada passagem do paciente.
+      let legacyPatientIds: string[] = safePatientId ? [safePatientId] : [];
+      if (resolvedRegistryId && safePatientId) {
+        const { data: ahBeds, error: ahError } = await supabase
+          .from("admission_histories")
+          .select("patient_id")
+          .eq("patient_registry_id", resolvedRegistryId)
+          .eq("hospital_unit_id", currentHospital.id)
+          .not("patient_id", "is", null);
+        if (ahError) {
+          console.warn("[useEvolutions] lookup de leitos históricos indisponível:", ahError.message);
+          // Fallback: usa só o leito atual — histórico parcial mas funcional
+        }
+        if (ahBeds && ahBeds.length > 0) {
+          const extraIds = (ahBeds as { patient_id: string }[])
+            .map(r => r.patient_id)
+            .filter(id => id && id !== safePatientId);
+          if (extraIds.length > 0) {
+            legacyPatientIds = [safePatientId, ...extraIds];
+          }
+        }
+      }
+
       if (resolvedRegistryId) {
         // Com registry: sem barreira de setor — registry já garante isolamento.
         // 🔒 Quando temos registry_id como âncora, ele é suficiente para identificar
@@ -139,9 +166,13 @@ export function useEvolutions(
         // - Evoluções gravadas antes do encounter ainda têm encounter_id = null
         // - O registry_id já garante isolamento — evoluções de outro paciente
         //   nunca compartilharão o mesmo registry_id.
-        // OR adicional cobre legados sem patient_registry_id (vinculados só por patient_id).
+        // OR adicional cobre legados sem patient_registry_id (vinculados só por patient_id),
+        // incluindo leitos históricos para recuperar evoluções órfãs pós-repoint falho.
+        const legacyClauses = legacyPatientIds
+          .map(id => `and(patient_registry_id.is.null,patient_id.eq.${id})`)
+          .join(',');
         query = query.or(
-          `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${safePatientId})`
+          `patient_registry_id.eq.${resolvedRegistryId},${legacyClauses}`
         );
       } else if (safePatientId && activeEncounterId) {
         // Sem registry: aplicar barreira de setor + filtro por patient_id

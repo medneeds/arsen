@@ -81,10 +81,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         : null;
 
       if (roleError) {
-        if (import.meta.env.DEV) {
-          console.error("Error fetching user role:", roleError);
-        }
-        setRole("medico");
+        // Sempre loga — falha de role não deve ser silenciosa em produção.
+        console.error("[AuthContext] falha ao buscar role do usuário — acesso bloqueado:", roleError);
+        // Negar acesso completamente: role null + status pending exibe PendingApprovalScreen.
+        // ProtectedRoute só verifica status, não role — por isso ambos precisam ser restritivos.
+        // Antes era setRole("medico"), o que promovia qualquer usuário com falha de rede.
+        setRole(null);
+        setStatus("pending");
+        setAllowedDepartments([]);
+        return;
       } else {
         setRole(roleData?.role as UserRole);
       }
@@ -97,9 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (profileError) {
-        if (import.meta.env.DEV) {
-          console.error("Error fetching user status:", profileError);
-        }
+        console.error("[AuthContext] falha ao buscar status do usuário:", profileError);
+        // Status "pending" é restritivo — bloqueia acesso sem conceder permissão indevida.
         setStatus("pending");
       } else {
         setStatus(profileData?.status as UserStatus);
@@ -120,10 +124,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAllowedDepartments(deptData?.map(d => d.department) || []);
       }
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error fetching user data:", error);
-      }
-      setRole("medico");
+      // Sempre loga — erro crítico de autenticação deve ser visível em produção.
+      console.error("[AuthContext] falha crítica ao carregar dados do usuário — acesso negado:", error);
+      // Negar acesso: role null bloqueia o ProtectedRoute.
+      // Status "pending" é conservador — não concede acesso mesmo se role for revertido.
+      setRole(null);
       setStatus("pending");
       setAllowedDepartments([]);
     } finally {
@@ -160,6 +165,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase.functions.invoke("resolve-login", {
           body: { identifier: digits },
         });
+
+        // Rate limit atingido: a Edge Function retorna 429 com retryAfterSeconds.
+        // supabase-js envelopa a resposta não-2xx em response.error.context.
+        const ctx = (error as any)?.context;
+        const httpStatus = ctx?.status ?? ctx?.statusCode;
+        if (httpStatus === 429 || (data as any)?.retryAfterSeconds) {
+          const segundos = (data as any)?.retryAfterSeconds ?? 60;
+          return {
+            error: new Error(
+              `Muitas tentativas de login. Aguarde ${segundos} segundo(s) antes de tentar novamente.`,
+            ),
+          };
+        }
+
         if (error || !data?.email) {
           return { error: error ?? new Error("CPF não encontrado") };
         }

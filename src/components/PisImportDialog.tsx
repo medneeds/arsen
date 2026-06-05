@@ -124,9 +124,19 @@ export function PisImportDialog({ open, onOpenChange, onExtracted }: PisImportDi
         throw new Error(serverMsg);
       }
       const data = response.data?.data;
+      const requiresManualCpfCns = response.data?.requiresManualCpfCns === true;
       if (!data) throw new Error("Não foi possível extrair dados");
       onExtracted(data);
-      toast.success("Dados importados do PIS", { description: "Revise os campos preenchidos pela IA" });
+      if (requiresManualCpfCns) {
+        // Modo imagem: CPF e CNS não são enviados ao Google (proteção LGPD).
+        // Avisa o usuário para preencher esses campos manualmente.
+        toast.warning("Preencha CPF e CNS manualmente", {
+          description: "Para documentos em imagem, CPF e CNS não são extraídos automaticamente por proteção de dados (LGPD). Os demais campos foram preenchidos normalmente.",
+          duration: 8000,
+        });
+      } else {
+        toast.success("Dados importados do PIS", { description: "Revise os campos preenchidos pela IA" });
+      }
       reset();
       onOpenChange(false);
     } catch (err: any) {

@@ -6,31 +6,108 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ── Proteção LGPD ────────────────────────────────────────────────────────────
+// CPF e CNS são dados sensíveis (LGPD Art. 11) e não devem ser enviados
+// a APIs externas sem DPA específico para dados de saúde.
+//
+// Para rawText: extrai localmente com regex, mascara no texto antes de enviar
+// ao Google e mescla de volta na resposta final — o Google nunca vê os números.
+//
+// Para imageBase64: não é possível mascarar uma imagem sem processamento
+// complexo. Nesses casos, CPF e CNS são removidos da resposta do Google e
+// retornados como null — o usuário preenche manualmente no formulário.
+// ────────────────────────────────────────────────────────────────────────────
+
+function extractCpfLocal(text: string): string | null {
+  // Aceita CPF com ou sem formatação: 000.000.000-00 ou 00000000000
+  const formatted = text.match(/\b\d{3}\.\d{3}\.\d{3}-\d{2}\b/);
+  if (formatted) return formatted[0].replace(/\D/g, "");
+
+  // CPF sem pontuação — apenas se precedido/seguido por contexto não numérico
+  // para evitar falsos positivos com outros números de 11 dígitos
+  const cpfContext = text.match(/(?:CPF|cpf|Cpf)[^\d]*(\d{11})\b/);
+  if (cpfContext) return cpfContext[1];
+
+  return null;
+}
+
+function extractCnsLocal(text: string): string | null {
+  // CNS é sempre exatamente 15 dígitos — razoavelmente específico
+  const cnsContext = text.match(/(?:CNS|cns|Cns|Cartão SUS|CARTÃO SUS)[^\d]*(\d{15})\b/);
+  if (cnsContext) return cnsContext[1];
+
+  // Fallback: 15 dígitos isolados (sem dígitos adjacentes)
+  const standalone = text.match(/(?<!\d)(\d{15})(?!\d)/);
+  if (standalone) return standalone[1];
+
+  return null;
+}
+
+function maskSensitiveFields(text: string): string {
+  return text
+    // CPF formatado: 000.000.000-00
+    .replace(/\b\d{3}\.\d{3}\.\d{3}-\d{2}\b/g, "XXX.XXX.XXX-XX")
+    // CPF após label "CPF"
+    .replace(/(CPF[^\d]*)(\d{11})\b/gi, "$1XXXXXXXXXXX")
+    // CNS após label
+    .replace(/(CNS[^\d]*|Cartão SUS[^\d]*)(\d{15})\b/gi, "$1XXXXXXXXXXXXXXX")
+    // CNS standalone (15 dígitos isolados)
+    .replace(/(?<!\d)(\d{15})(?!\d)/g, "XXXXXXXXXXXXXXX");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
-  const supabaseAuth = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!);
-  const { data: userData, error: userErr } = await supabaseAuth.auth.getUser(authHeader.replace('Bearer ', ''));
+
+  const supabaseAuth = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+  );
+  const { data: userData, error: userErr } = await supabaseAuth.auth.getUser(
+    authHeader.replace("Bearer ", ""),
+  );
   if (userErr || !userData?.user) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
     const { imageBase64, mimeType, rawText } = await req.json();
 
     if (!imageBase64 && !rawText) {
-      return new Response(JSON.stringify({ error: "Forneça imageBase64 ou rawText" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Forneça imageBase64 ou rawText" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    // ── Proteção LGPD: mascaramento local para rawText ───────────────────────
+    let localCpf: string | null = null;
+    let localCns: string | null = null;
+    let textToSend: string | null = null;
+    const isTextMode = !!rawText;
+
+    if (isTextMode) {
+      localCpf = extractCpfLocal(rawText);
+      localCns = extractCnsLocal(rawText);
+      // Envia texto mascarado — Google nunca vê CPF ou CNS
+      textToSend = maskSensitiveFields(rawText);
+    }
+    // Para imageBase64: não é possível mascarar o conteúdo da imagem.
+    // CPF e CNS serão removidos da resposta do Google antes de retornar ao cliente.
+    // ────────────────────────────────────────────────────────────────────────
 
     const systemPrompt = `Você é um extrator de dados de documentos médicos e de identificação brasileiros (sistema PIS, RG, CNH, Cartão SUS, ficha hospitalar, etc).
 Extraia os seguintes dados do paciente:
@@ -49,11 +126,11 @@ Extraia os seguintes dados do paciente:
 
 Se um campo não for encontrado, retorne null. Responda APENAS via tool call.`;
 
-    const userContent = rawText
-      ? [{ type: "text", text: `Extraia os dados do paciente deste texto colado (pode estar bruto, com quebras estranhas):\n\n${rawText}` }]
+    const userContent = isTextMode
+      ? [{ type: "text", text: `Extraia os dados do paciente deste texto colado (pode estar bruto, com quebras estranhas):\n\n${textToSend}` }]
       : [
-          { type: "image_url", image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}` } },
-          { type: "text", text: "Extraia os dados do paciente deste documento." }
+          { type: "image_url", image_url: { url: `data:${mimeType || "image/jpeg"};base64,${imageBase64}` } },
+          { type: "text", text: "Extraia os dados do paciente deste documento." },
         ];
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -92,9 +169,9 @@ Se um campo não for encontrado, retorne null. Responda APENAS via tool call.`;
                 },
                 required: ["patient_name"],
                 additionalProperties: false,
-              }
-            }
-          }
+              },
+            },
+          },
         ],
         tool_choice: { type: "function", function: { name: "extract_patient_data" } },
       }),
@@ -103,63 +180,92 @@ Se um campo não for encontrado, retorne null. Responda APENAS via tool call.`;
     if (!response.ok) {
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
-      
+
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns instantes." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns instantes." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos insuficientes para IA." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "Créditos insuficientes para IA." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
       }
-      
-      return new Response(JSON.stringify({ error: "Erro ao processar imagem com IA" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+      return new Response(
+        JSON.stringify({ error: "Erro ao processar imagem com IA" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const data = await response.json();
-    
-    // Extract from tool call response
+
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
       const extracted = JSON.parse(toolCall.function.arguments);
-      return new Response(JSON.stringify({ success: true, data: extracted }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+      // ── Proteção LGPD: mescla dados sensíveis ──────────────────────────────
+      if (isTextMode) {
+        // rawText: substitui o que o Google retornou pelo valor extraído localmente.
+        // Google só viu "XXX.XXX.XXX-XX" — o número real nunca saiu do servidor.
+        extracted.cpf = localCpf ?? null;
+        extracted.cns = localCns ?? null;
+      } else {
+        // imageBase64: Google processou a imagem com o CPF/CNS visível.
+        // Remove da resposta — o usuário deve preencher manualmente.
+        // Limitação documentada: imagens não podem ser mascaradas antes do envio.
+        extracted.cpf = null;
+        extracted.cns = null;
+      }
+      // ────────────────────────────────────────────────────────────────────────
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: extracted,
+          // Indica ao frontend que CPF/CNS precisam de preenchimento manual em modo imagem
+          requiresManualCpfCns: !isTextMode,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    // Fallback: try to parse from content
+    // Fallback: tenta parsear do content
     const content = data.choices?.[0]?.message?.content;
     if (content) {
       try {
         const parsed = JSON.parse(content);
-        return new Response(JSON.stringify({ success: true, data: parsed }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        if (isTextMode) {
+          parsed.cpf = localCpf ?? null;
+          parsed.cns = localCns ?? null;
+        } else {
+          parsed.cpf = null;
+          parsed.cns = null;
+        }
+        return new Response(
+          JSON.stringify({ success: true, data: parsed, requiresManualCpfCns: !isTextMode }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
       } catch {
-        return new Response(JSON.stringify({ error: "Não foi possível extrair dados do documento" }), {
-          status: 422,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "Não foi possível extrair dados do documento" }),
+          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
       }
     }
 
-    return new Response(JSON.stringify({ error: "Resposta inesperada da IA" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Resposta inesperada da IA" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
 
   } catch (e) {
     console.error("extract-patient-data error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 });

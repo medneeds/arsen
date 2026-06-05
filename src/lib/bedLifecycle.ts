@@ -113,6 +113,26 @@ export async function signalClinicalDecision(
       .eq("id", payload.patientId);
     if (statusErr) throw statusErr;
 
+    // Encerra o encounter apenas nos desfechos finais da internação.
+    // Regra de negócio: 1 internação = 1 atendimento até alta, óbito ou transferência externa.
+    // Transferência interna e evasão NÃO encerram o atendimento.
+    if (kind === "alta_medica" || kind === "obito" || kind === "transf_externa") {
+      const { error: encErr } = await supabase
+        .from("patient_encounters")
+        .update({
+          status: "closed",
+          discharge_date: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("patient_id", payload.patientId)
+        .neq("status", "closed");
+      if (encErr) {
+        // Não bloqueia a sinalização clínica — o desfecho já foi registrado.
+        // O encounter poderá ser encerrado manualmente se necessário.
+        console.error("[signalClinicalDecision] falha ao encerrar encounter:", encErr);
+      }
+    }
+
     return { ok: true, movementId: movement.data?.id };
   } catch (err: any) {
     console.error("[signalClinicalDecision] erro", err);
@@ -196,6 +216,46 @@ export interface OperationalRelocationPayload {
 export async function executeOperationalRelocation(
   payload: OperationalRelocationPayload,
 ): Promise<LifecycleResult> {
+  if (payload.sourcePatientId === payload.targetPatientId) {
+    return { ok: false, error: "Leito de origem e destino são iguais." };
+  }
+
+  // Tenta primeiro a RPC atômica (execute_operational_relocation_atomic).
+  // Se a migration ainda não foi aplicada no banco, a RPC não existe e o erro
+  // PostgreSQL retorna code="42883" (function does not exist). Nesse caso,
+  // cai automaticamente para o fluxo sequencial original — sem impacto em produção.
+  const { data: atomicData, error: atomicErr } = await (supabase as any).rpc(
+    "execute_operational_relocation_atomic",
+    {
+      p_source_patient_id: payload.sourcePatientId,
+      p_target_patient_id: payload.targetPatientId,
+      p_reason:            payload.reason,
+      p_hospital_unit_id:  payload.hospitalUnitId,
+      p_state_id:          payload.stateId,
+      p_department:        payload.department ?? null,
+      p_created_by:        (await supabase.auth.getUser()).data?.user?.id ?? null,
+    },
+  );
+
+  if (!atomicErr) {
+    // RPC atômica executou com sucesso
+    return { ok: true, movementId: atomicData?.movement_id ?? undefined };
+  }
+
+  // 42883 = function does not exist — migration ainda não aplicada
+  const isRpcMissing =
+    (atomicErr as any)?.code === "42883" ||
+    (atomicErr?.message ?? "").includes("does not exist");
+
+  if (!isRpcMissing) {
+    // Erro real da RPC (não é "função não encontrada") — propaga
+    console.error("[executeOperationalRelocation] erro na RPC atômica:", atomicErr);
+    return { ok: false, error: atomicErr?.message ?? "Erro desconhecido" };
+  }
+
+  // Fallback: fluxo sequencial original (migration ainda não foi aplicada)
+  console.warn("[executeOperationalRelocation] RPC atômica não encontrada — usando fluxo sequencial");
+
   try {
     if (payload.sourcePatientId === payload.targetPatientId) {
       return { ok: false, error: "Leito de origem e destino são iguais." };
@@ -262,7 +322,7 @@ export async function executeOperationalRelocation(
       `Remanejamento operacional: ${payload.reason}`,
     );
     if (!repoint.ok) {
-      throw new Error(`Falha ao migrar histórico: ${repoint.error}`);
+      throw new Error(repoint.error ?? "Falha ao migrar histórico clínico. Operação abortada.");
     }
 
     // 4) Zerar slot origem
@@ -361,7 +421,7 @@ export async function executeOperationalRelocation(
 
     return { ok: true, movementId: movement.data?.id };
   } catch (err: any) {
-    console.error("[executeOperationalRelocation] erro", err);
+    console.error("[executeOperationalRelocation] erro no fluxo sequencial:", err);
     return { ok: false, error: err?.message ?? "Erro desconhecido" };
   }
 }

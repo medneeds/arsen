@@ -14,10 +14,95 @@ const corsHeaders = {
 
 const onlyDigits = (v: string) => v.replace(/\D+/g, "");
 
+// ── Rate Limiting ─────────────────────────────────────────────────────────────
+// Protege contra enumeração de usuários: um atacante não pode enviar milhares
+// de CPFs para descobrir quais profissionais estão cadastrados no sistema.
+//
+// Implementação: Map em memória por IP com janela deslizante de 60 segundos.
+// Limite: 5 tentativas por minuto por IP.
+//
+// Limitação conhecida: o estado não é compartilhado entre instâncias paralelas
+// da Edge Function (Deno isolates independentes). Em picos de escala, cada
+// instância mantém seu próprio contador. Para um sistema hospitalar de volume
+// baixo como o Socorrão I, isso é suficiente para bloquear ataques automatizados.
+// Para proteção distribuída total, seria necessário Redis ou banco de dados.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const RATE_LIMIT_MAX = 5;          // máximo de tentativas por janela
+const RATE_LIMIT_WINDOW_MS = 60_000; // janela de 60 segundos
+const STORE_MAX_SIZE = 2_000;      // limite do Map para evitar vazamento de memória
+
+type RateLimitEntry = { count: number; resetAt: number };
+const rateLimitStore = new Map<string, RateLimitEntry>();
+
+function getClientIp(req: Request): string {
+  // Supabase Edge Functions são executadas atrás de um proxy.
+  // x-forwarded-for contém o IP real do cliente (pode ser lista separada por vírgulas).
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return req.headers.get("x-real-ip") ?? "unknown";
+}
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfterSeconds: number } {
+  const now = Date.now();
+
+  // Limpeza periódica: quando o Map atinge o limite, remove entradas expiradas.
+  // Evita crescimento ilimitado de memória em caso de muitos IPs únicos.
+  if (rateLimitStore.size >= STORE_MAX_SIZE) {
+    for (const [key, entry] of rateLimitStore.entries()) {
+      if (now > entry.resetAt) rateLimitStore.delete(key);
+    }
+  }
+
+  const entry = rateLimitStore.get(ip);
+
+  // Janela expirada ou primeiro acesso: inicia nova janela com count = 1
+  if (!entry || now > entry.resetAt) {
+    rateLimitStore.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
+
+  // Dentro da janela e acima do limite
+  if (entry.count >= RATE_LIMIT_MAX) {
+    const retryAfterSeconds = Math.ceil((entry.resetAt - now) / 1000);
+    return { allowed: false, retryAfterSeconds };
+  }
+
+  // Dentro da janela e abaixo do limite: incrementa
+  entry.count++;
+  rateLimitStore.set(ip, entry);
+  return { allowed: true, retryAfterSeconds: 0 };
+}
+
+// ── Handler ───────────────────────────────────────────────────────────────────
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // ── Verificação de rate limit ────────────────────────────────────────────
+  const clientIp = getClientIp(req);
+  const rateCheck = checkRateLimit(clientIp);
+
+  if (!rateCheck.allowed) {
+    console.warn(`[resolve-login] rate limit atingido — IP: ${clientIp}`);
+    return new Response(
+      JSON.stringify({
+        error: "Muitas tentativas. Aguarde antes de tentar novamente.",
+        retryAfterSeconds: rateCheck.retryAfterSeconds,
+      }),
+      {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "Retry-After": rateCheck.retryAfterSeconds.toString(),
+        },
+      },
+    );
+  }
+  // ────────────────────────────────────────────────────────────────────────
 
   try {
     const body = await req.json().catch(() => ({}));

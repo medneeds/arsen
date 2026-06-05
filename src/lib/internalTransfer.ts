@@ -42,14 +42,16 @@ function coerceToIsoTimestamp(value: unknown): string | null {
  *  - Origem fica 100% vazia após a transferência (sem resíduo).
  *
  *  REGRAS DE ADMISSÃO POR NÍVEL DE COMPLEXIDADE:
- *  ┌─────────────────────────────────────────────────────────────┐
- *  │ Mesma complexidade  → SEM nova admissão, encounter mantido  │
- *  │ Desescalada         → SEM nova admissão, encounter mantido  │
- *  │ Escalada → Nível 3  → COM nova admissão (UCI 1), sem SAPS   │
- *  │ Escalada → Nível 1-2→ COM nova admissão + SAPS obrigatório  │
- *  └─────────────────────────────────────────────────────────────┘
- *  Em ESCALADA: o encounter anterior é FECHADO (ended_at = now()),
- *  a admission_history é preservada no snapshot e no patient_movements,
+ *  ┌──────────────────────────────────────────────────────────────────┐
+ *  │ Mesma complexidade  → SEM nova admissão, encounter mantido       │
+ *  │ Desescalada         → SEM nova admissão, encounter mantido       │
+ *  │ Escalada → Nível 3  → COM nova admissão (UCI 1), sem SAPS        │
+ *  │ Escalada → Nível 1-2→ COM nova admissão + SAPS obrigatório       │
+ *  └──────────────────────────────────────────────────────────────────┘
+ *  Em QUALQUER transferência interna: o encounter permanece ABERTO.
+ *  Regra de negócio: 1 internação = 1 número de atendimento até o
+ *  desfecho final (alta, óbito ou transferência externa).
+ *  A admission_history é preservada no snapshot e no patient_movements,
  *  e o destino recebe admission_status adequado ao nível de complexidade.
  *
  * NÃO usar para:
@@ -87,178 +89,36 @@ export async function executeInternalTransfer(params: {
   const needsNewAdmission = requiresNewAdmission(classification);
 
   try {
-    // 0. Busca identidade permanente (registry/prontuário/admissão) do leito origem
-    //    para garantir que documentação clínica acompanhe o paciente no destino.
-    const { data: sourceDbRow } = await supabase
-      .from("patients")
-      .select("patient_registry_id, medical_record, admitted_at, admission_history")
-      .eq("id", source.id)
-      .maybeSingle();
-
-    const sourceRegistryId = (sourceDbRow as any)?.patient_registry_id ?? null;
-    const sourceMedicalRecord = (sourceDbRow as any)?.medical_record ?? null;
-    const sourceAdmittedAt = (sourceDbRow as any)?.admitted_at ?? null;
-    const sourceAdmissionHistory = (sourceDbRow as any)?.admission_history ?? null;
-
-    // 🔒 Em ESCALADA: fechar o encounter ativo do setor de origem antes de abrir
-    // o novo no destino. Isso preserva a timeline correta (início e fim por setor)
-    // e garante que evoluções antigas continuem vinculadas ao encounter correto.
-    if (needsNewAdmission && sourceRegistryId) {
-      await supabase
-        .from("patient_encounters")
-        .update({ status: "closed", ended_at: new Date().toISOString() })
-        .eq("registry_id", sourceRegistryId)
-        .neq("status", "closed");
-    } else if (needsNewAdmission && source.id) {
-      await supabase
-        .from("patient_encounters")
-        .update({ status: "closed", ended_at: new Date().toISOString() })
-        .eq("patient_id", source.id)
-        .neq("status", "closed");
-    }
-
-    // 1. Preenche o leito destino com os dados do paciente.
-    // Em escalada: nova admissão → admission_history é resetada para o novo setor.
-    // Em lateral/desescalada: mantém admission_history original (continuidade).
-    const destinationAdmissionStatus = needsSaps
-      ? "saps_pendente"
-      : needsNewAdmission
-      ? "pre_admitido"
-      : (source.admissionStatus ?? "admitido");
-
-    // Em escalada, a admission_history do setor anterior vai para o snapshot/histórico
-    // mas o destino começa limpo para a nova admissão clínica.
-    const destinationAdmissionHistory = needsNewAdmission
-      ? null  // nova admissão: médico preenche no destino
-      : sourceAdmissionHistory; // continuidade: preserva história
-
-    const { error: targetError } = await supabase
-      .from("patients")
-      .update({
-        name: source.name,
-        age: source.age?.toString() || null,
-        diagnoses: source.diagnoses?.join("\n") || null,
-        medical_history: source.medicalHistory?.join("\n") || null,
-        relevant_exams: source.relevantExams?.join("\n") || null,
-        pendencies: source.pendencies?.join("\n") || null,
-        schedule: source.schedule?.join("\n") || null,
-        admission_date: coerceToIsoTimestamp(source.admissionDate),
-        highlighted_diagnoses: source.highlightedDiagnoses || null,
-        highlighted_medical_history: source.highlightedMedicalHistory || null,
-        highlighted_pendencies: source.highlightedPendencies || null,
-        highlighted_conducts: source.highlightedConducts || null,
-        uti_admission_date: coerceToIsoTimestamp(source.utiAdmissionDate),
-        uti_discharge_prediction: source.utiDischargePrediction?.join("\n") || null,
-        uti_allergies: source.utiAllergies?.join("\n") || null,
-        uti_admission_reason: source.utiAdmissionReason?.join("\n") || null,
-        uti_current_status: source.utiCurrentStatus?.join("\n") || null,
-        uti_devices: source.utiDevices?.join("\n") || null,
-        uti_cultures_antibiotics: source.utiCulturesAntibiotics?.join("\n") || null,
-        uti_specialties: source.utiSpecialties?.join("\n") || null,
-        uti_origin_sector: source.utiOriginSector?.join("\n") || null,
-        uti_daily_conducts: source.utiDailyConducts?.join("\n") || null,
-        clinical_status: source.clinicalStatus || null,
-        psm_status: source.psmStatus || null,
-        admission_history: destinationAdmissionHistory,
-        admission_status: destinationAdmissionStatus,
-        // Em escalada: admitted_at é null até concluir a admissão clínica no destino
-        admitted_at: needsNewAdmission ? null : sourceAdmittedAt,
-        patient_registry_id: sourceRegistryId,
-        medical_record: sourceMedicalRecord,
-        is_vacant: false,
-        updated_at: new Date().toISOString(),
-      } as any)
-      .eq("id", targetBedRow.id);
-    if (targetError) throw targetError;
-
-    // 2. Repointa o histórico clínico (RPC atômica auditada).
-    // Em ESCALADA: o repoint preserva todas as evoluções/prescrições anteriores
-    // vinculadas ao encounter fechado — ficam visíveis no histórico do paciente.
-    const repoint = await repointPatientHistory(
-      source.id,
-      targetBedRow.id,
-      reason ?? `Transferência interna: ${source.bedNumber} → ${targetBedRow.bedNumber}`,
-    );
-    if (!repoint.ok) {
-      throw new Error(`Falha ao migrar histórico clínico (${repoint.error}). Operação abortada.`);
-    }
-
-    // Sincroniza admission_histories: garante que a admissão ativa segue o paciente
-    // após transferência interna. Não arquiva — apenas aponta para o novo patient_id.
-    try {
-      await supabase
-        .from("admission_histories")
-        .update({ patient_id: targetBedRow.id, updated_at: new Date().toISOString() })
-        .eq("patient_id", source.id)
-        .is("archived_at", null);
-    } catch (e) {
-      console.warn("[internalTransfer] sync admission_histories:", e);
-    }
-
-    // 3. Esvazia o leito de origem (100% limpo, sem resíduo).
-    const { error: sourceError } = await supabase
-      .from("patients")
-      .update({
-        name: "",
-        age: null,
-        diagnoses: null,
-        medical_history: null,
-        relevant_exams: null,
-        pendencies: null,
-        schedule: null,
-        admission_history: null,
-        admission_date: null,
-        highlighted_diagnoses: null,
-        highlighted_medical_history: null,
-        highlighted_pendencies: null,
-        highlighted_conducts: null,
-        uti_admission_date: null,
-        uti_discharge_prediction: null,
-        uti_allergies: null,
-        uti_admission_reason: null,
-        uti_current_status: null,
-        uti_devices: null,
-        uti_cultures_antibiotics: null,
-        uti_specialties: null,
-        uti_origin_sector: null,
-        uti_daily_conducts: null,
-        clinical_status: null,
-        psm_status: null,
-        admission_status: null,
-        patient_registry_id: null,
-        medical_record: null,
-        admitted_at: null,
-        is_vacant: true,
-        updated_at: new Date().toISOString(),
-      } as any)
-      .eq("id", source.id);
-    if (sourceError) throw sourceError;
-
-    // 4. Registra a movimentação na timeline.
-    await supabase.from("patient_movements").insert({
-      patient_id: targetBedRow.id,
-      patient_name: source.name,
-      patient_bed: source.bedNumber,
-      patient_sector: sectorLabelFromCode(source.sector),
-      movement_type: "TRANSFERÊNCIA INTERNA",
-      destination: `${sectorLabelFromCode(targetBedRow.sector)} - Leito ${targetBedRow.bedNumber}`,
-      notes:
-        `Transferência interna (${classification}) de ${source.bedNumber} (${sectorLabelFromCode(source.sector)}) ` +
-        `para ${targetBedRow.bedNumber} (${sectorLabelFromCode(targetBedRow.sector)})` +
-        (needsSaps ? " — escalada crítica: SAPS 3 pendente no destino." : ""),
-      created_by: currentUserId ?? null,
-      patient_snapshot: source as any,
-      department: department ?? null,
-      state_id: stateId,
-      hospital_unit_id: hospitalUnitId,
+    // Executa os 4 passos da transferência dentro de uma única transação PostgreSQL:
+    //   1. Popula leito destino com dados do paciente
+    //   2. Repointa histórico clínico (repoint_patient_history v4)
+    //   3. Esvazia leito de origem
+    //   4. Registra auditoria em patient_movements
+    //
+    // Qualquer falha em qualquer passo causa ROLLBACK automático de tudo —
+    // o banco nunca fica em estado inconsistente.
+    const { data, error } = await (supabase as any).rpc("execute_internal_transfer_atomic", {
+      p_source_patient_id:   source.id,
+      p_target_patient_id:   targetBedRow.id,
+      p_needs_saps:          needsSaps,
+      p_needs_new_admission: needsNewAdmission,
+      p_reason:              reason ?? `Transferência interna: ${source.bedNumber} → ${targetBedRow.bedNumber}`,
+      p_created_by:          currentUserId ?? null,
+      p_hospital_unit_id:    hospitalUnitId,
+      p_state_id:            stateId,
+      p_department:          department ?? null,
+      p_classification:      classification,
     });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error("Transferência não confirmada pelo banco de dados");
 
     invalidateResolvedRegistry(source.id);
     invalidateResolvedRegistry(targetBedRow.id);
 
     return { ok: true, classification, needsSaps };
   } catch (err: any) {
-    console.error("[executeInternalTransfer] erro", err);
+    console.error("[executeInternalTransfer] erro:", err);
     return { ok: false, classification, needsSaps, error: err?.message ?? "Erro desconhecido" };
   }
 }
@@ -304,6 +164,12 @@ export async function signalInternalTransfer(
   const classification = classifyTransfer(source.sector, targetSectorCode);
   const needsSaps = requiresSaps(classification);
 
+  // ── Prepara dados para o RPC atômico ──────────────────────────────
+  // Etapa 1: INSERT transfer_request + UPDATE patients (zera origem) — atômicos.
+  // Fallback automático para o fluxo sequencial se o RPC não existir (42883).
+  const isRpcMissing = (err: any) =>
+    (err as any)?.code === "42883" || (err?.message ?? "").includes("does not exist");
+
   try {
     let encounterCode: string | null = null;
     try {
@@ -316,7 +182,9 @@ export async function signalInternalTransfer(
         .limit(1)
         .maybeSingle();
       encounterCode = enc?.encounter_code ?? null;
-    } catch { /* não-bloqueante */ }
+    } catch (e) {
+      console.warn("[signalInternalTransfer] falha ao buscar encounter_code (não-bloqueante):", e);
+    }
 
     // Busca identidade permanente ANTES de zerar o leito origem,
     // para que a Etapa 2 (completeInternalTransfer) possa restaurá-la
@@ -340,6 +208,81 @@ export async function signalInternalTransfer(
       // (visível em HistoricoPacientePage e no painel do paciente)
       _admissionHistory: (source as any).admissionHistory ?? null,
     };
+    // Idempotência: verifica se já existe um request pendente para este paciente.
+    // Cenário: sinalização anterior criou o request mas falhou ao zerar o leito.
+    // O usuário tenta de novo — sem esta guarda, seria criado um segundo request.
+    const { data: existingRequest } = await (supabase as any)
+      .from("internal_transfer_requests")
+      .select("id")
+      .eq("source_patient_id", source.id)
+      .eq("status", "pending")
+      .maybeSingle();
+
+    if (existingRequest?.id) {
+      // Reutiliza o request existente — não cria duplicata.
+      // O leito de origem pode já estar zerado (retry após falha parcial)
+      // ou ainda ocupado (retry antes da zeragem). Em ambos os casos,
+      // continua com o mesmo request para manter consistência.
+      console.warn("[signalInternalTransfer] request pendente já existe para este paciente — reutilizando:", existingRequest.id);
+      // Pula o INSERT e continua direto para zerar o leito (se ainda ocupado)
+      // O código de zeragem abaixo é idempotente (zerar leito vazio não causa erro)
+      const insertedId = existingRequest.id;
+
+      // Regra de negócio: encounter não encerra em transferência interna.
+      const { error: clearError } = await supabase
+        .from("patients")
+        .update({
+          name: "", age: null, diagnoses: null, medical_history: null,
+          relevant_exams: null, pendencies: null, schedule: null,
+          admission_history: null, admission_date: null,
+          highlighted_diagnoses: null, highlighted_medical_history: null,
+          highlighted_pendencies: null, highlighted_conducts: null,
+          uti_admission_date: null, uti_discharge_prediction: null,
+          uti_allergies: null, uti_admission_reason: null,
+          uti_current_status: null, uti_devices: null,
+          uti_cultures_antibiotics: null, uti_specialties: null,
+          uti_origin_sector: null, uti_daily_conducts: null,
+          clinical_status: null, psm_status: null,
+          admission_status: null, patient_registry_id: null,
+          medical_record: null, is_vacant: true,
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq("id", source.id);
+      if (clearError) throw clearError;
+
+      invalidateResolvedRegistry(source.id);
+      return { ok: true, requestId: insertedId, classification, needsSaps };
+    }
+
+    // Tenta RPC atômica: INSERT request + UPDATE patients (zero source) em uma transação.
+    // Fallback automático se migration ainda não foi aplicada (erro 42883).
+    const { data: atomicData, error: atomicErr } = await (supabase as any).rpc(
+      "signal_internal_transfer_atomic",
+      {
+        p_source_patient_id:   source.id,
+        p_snapshot:            snapshot,
+        p_encounter_code:      encounterCode,
+        p_target_sector_code:  targetSectorCode,
+        p_target_sector_label: sectorLabelFromCode(targetSectorCode),
+        p_classification:      classification,
+        p_requires_saps:       needsSaps,
+        p_reason:              reason ?? null,
+        p_signaled_by:         currentUserId ?? null,
+        p_hospital_unit_id:    hospitalUnitId,
+        p_state_id:            stateId,
+        p_department:          department ?? null,
+      },
+    );
+
+    if (!atomicErr) {
+      invalidateResolvedRegistry(source.id);
+      return { ok: true, requestId: atomicData?.request_id, classification, needsSaps };
+    }
+
+    if (!isRpcMissing(atomicErr)) throw atomicErr;
+    console.warn("[signalInternalTransfer] RPC atômica não encontrada — usando fluxo sequencial");
+
+    // Fallback: INSERT + UPDATE sequenciais (migration ainda não aplicada)
     const { data: inserted, error: insertError } = await (supabase as any)
       .from("internal_transfer_requests")
       .insert({
@@ -364,85 +307,45 @@ export async function signalInternalTransfer(
       .single();
     if (insertError) throw insertError;
 
-    // 🔒 Em ESCALADA: fechar encounter ativo na Etapa 1 (sinalização).
-    // O encounter do setor de origem é fechado aqui para que a timeline
-    // registre o início e fim corretos por setor. O encounter do destino
-    // será criado quando o médico concluir a admissão clínica no novo leito.
-    const needsNewAdmissionSignal = requiresNewAdmission(classification);
-    if (needsNewAdmissionSignal) {
-      if (sourceRegistryIdSignal) {
-        await supabase
-          .from("patient_encounters")
-          .update({ status: "closed", ended_at: new Date().toISOString() })
-          .eq("registry_id", sourceRegistryIdSignal)
-          .neq("status", "closed");
-      }
-      await supabase
-        .from("patient_encounters")
-        .update({ status: "closed", ended_at: new Date().toISOString() })
-        .eq("patient_id", source.id)
-        .neq("status", "closed");
-    }
-
     const { error: clearError } = await supabase
       .from("patients")
       .update({
-        name: "",
-        age: null,
-        diagnoses: null,
-        medical_history: null,
-        relevant_exams: null,
-        pendencies: null,
-        schedule: null,
-        admission_history: null,
-        admission_date: null,
-        highlighted_diagnoses: null,
-        highlighted_medical_history: null,
-        highlighted_pendencies: null,
-        highlighted_conducts: null,
-        uti_admission_date: null,
-        uti_discharge_prediction: null,
-        uti_allergies: null,
-        uti_admission_reason: null,
-        uti_current_status: null,
-        uti_devices: null,
-        uti_cultures_antibiotics: null,
-        uti_specialties: null,
-        uti_origin_sector: null,
-        uti_daily_conducts: null,
-        clinical_status: null,
-        psm_status: null,
-        admission_status: null,
-        patient_registry_id: null,
-        medical_record: null,
-        is_vacant: true,
+        name: "", age: null, diagnoses: null, medical_history: null,
+        relevant_exams: null, pendencies: null, schedule: null,
+        admission_history: null, admission_date: null,
+        highlighted_diagnoses: null, highlighted_medical_history: null,
+        highlighted_pendencies: null, highlighted_conducts: null,
+        uti_admission_date: null, uti_discharge_prediction: null,
+        uti_allergies: null, uti_admission_reason: null,
+        uti_current_status: null, uti_devices: null,
+        uti_cultures_antibiotics: null, uti_specialties: null,
+        uti_origin_sector: null, uti_daily_conducts: null,
+        clinical_status: null, psm_status: null,
+        admission_status: null, patient_registry_id: null,
+        medical_record: null, is_vacant: true,
         updated_at: new Date().toISOString(),
       } as any)
       .eq("id", source.id);
     if (clearError) throw clearError;
 
-    // 🔒 Invalida o cache de registry do leito origem imediatamente após o clear,
-    // evitando que o TTL de 30s propague dados do paciente anterior para um
-    // próximo ocupante do mesmo leito enquanto o cache estiver quente.
     invalidateResolvedRegistry(source.id);
 
-    await supabase.from("patient_movements").insert({
-      patient_id: source.id,
-      patient_name: source.name,
-      patient_bed: source.bedNumber,
-      patient_sector: source.sector,
-      movement_type: "TRANSFERÊNCIA INTERNA — SINALIZADA",
-      destination: sectorLabelFromCode(targetSectorCode),
-      notes:
-        `Etapa 1/2 — Sinalização para ${sectorLabelFromCode(targetSectorCode)} (${classification})` +
-        (needsSaps ? " — escalada crítica: exigirá SAPS 3 após alocação" : "") +
-        (reason ? ` | Motivo: ${reason}` : ""),
-      created_by: currentUserId ?? null,
-      patient_snapshot: snapshot as any,
-      department: department ?? null,
-      state_id: stateId,
-      hospital_unit_id: hospitalUnitId,
-    });
+    try {
+      const { error: movErr } = await supabase.from("patient_movements").insert({
+        patient_id: source.id, patient_name: source.name,
+        patient_bed: source.bedNumber, patient_sector: source.sector,
+        movement_type: "TRANSFERÊNCIA INTERNA — SINALIZADA",
+        destination: sectorLabelFromCode(targetSectorCode),
+        notes: `Etapa 1/2 — Sinalização para ${sectorLabelFromCode(targetSectorCode)} (${classification})` +
+          (needsSaps ? " — escalada crítica: exigirá SAPS 3 após alocação" : "") +
+          (reason ? ` | Motivo: ${reason}` : ""),
+        created_by: currentUserId ?? null, patient_snapshot: snapshot as any,
+        department: department ?? null, state_id: stateId, hospital_unit_id: hospitalUnitId,
+      });
+      if (movErr) console.error("[signalInternalTransfer] falha ao registrar patient_movements:", movErr);
+    } catch (e) {
+      console.error("[signalInternalTransfer] falha ao registrar patient_movements:", e);
+    }
 
     return { ok: true, requestId: inserted?.id, classification, needsSaps };
   } catch (err: any) {
@@ -506,23 +409,8 @@ export async function completeInternalTransfer(
       (snapshot as any)._admissionHistory ??
       null;
 
-    // 🔒 Em ESCALADA: o encounter do setor de origem já foi fechado na Etapa 1
-    // (signalInternalTransfer). Aqui garantimos que não haja encounter aberto
-    // residual vinculado ao sourcePatientId antes de criar o do destino.
-    if (needsNewAdmission && sourcePatientId) {
-      await supabase
-        .from("patient_encounters")
-        .update({ status: "closed", ended_at: new Date().toISOString() })
-        .eq("patient_id", sourcePatientId)
-        .neq("status", "closed");
-      if (sourceRegistryId) {
-        await supabase
-          .from("patient_encounters")
-          .update({ status: "closed", ended_at: new Date().toISOString() })
-          .eq("registry_id", sourceRegistryId)
-          .neq("status", "closed");
-      }
-    }
+    // Regra de negócio: encounter não encerra em transferência interna.
+    // O número de atendimento é preservado até alta, óbito ou transferência externa.
 
     const destinationAdmissionStatus = needsSaps
       ? "saps_pendente"
@@ -530,9 +418,68 @@ export async function completeInternalTransfer(
       ? "pre_admitido"
       : (snapshot.admissionStatus ?? "admitido");
 
-    // Em escalada: destino começa sem admission_history (nova admissão clínica)
     const destinationAdmissionHistory = needsNewAdmission ? null : sourceAdmissionHistory;
 
+    // Monta o JSONB com os campos pré-processados pelo TypeScript (arrays → texto, datas → ISO).
+    // O SQL recebe tudo pronto e apenas executa as operações de banco atomicamente.
+    const destinationFields = {
+      name:                     snapshot.name,
+      age:                      snapshot.age?.toString() || null,
+      diagnoses:                snapshot.diagnoses?.join("\n") || null,
+      medical_history:          snapshot.medicalHistory?.join("\n") || null,
+      relevant_exams:           snapshot.relevantExams?.join("\n") || null,
+      pendencies:               snapshot.pendencies?.join("\n") || null,
+      schedule:                 snapshot.schedule?.join("\n") || null,
+      admission_date:           coerceToIsoTimestamp(snapshot.admissionDate),
+      highlighted_diagnoses:    snapshot.highlightedDiagnoses || null,
+      highlighted_medical_history: snapshot.highlightedMedicalHistory || null,
+      highlighted_pendencies:   snapshot.highlightedPendencies || null,
+      highlighted_conducts:     snapshot.highlightedConducts || null,
+      uti_admission_date:       coerceToIsoTimestamp(snapshot.utiAdmissionDate),
+      uti_discharge_prediction: snapshot.utiDischargePrediction?.join("\n") || null,
+      uti_allergies:            snapshot.utiAllergies?.join("\n") || null,
+      uti_admission_reason:     snapshot.utiAdmissionReason?.join("\n") || null,
+      uti_current_status:       snapshot.utiCurrentStatus?.join("\n") || null,
+      uti_devices:              snapshot.utiDevices?.join("\n") || null,
+      uti_cultures_antibiotics: snapshot.utiCulturesAntibiotics?.join("\n") || null,
+      uti_specialties:          snapshot.utiSpecialties?.join("\n") || null,
+      uti_origin_sector:        snapshot.utiOriginSector?.join("\n") || null,
+      uti_daily_conducts:       snapshot.utiDailyConducts?.join("\n") || null,
+      clinical_status:          snapshot.clinicalStatus || null,
+      psm_status:               snapshot.psmStatus || null,
+      admission_history:        destinationAdmissionHistory,
+      admission_status:         destinationAdmissionStatus,
+      admitted_at:              needsNewAdmission ? null : sourceAdmittedAt,
+      patient_registry_id:      sourceRegistryId,
+      medical_record:           sourceMedicalRecord,
+    };
+
+    // Tenta RPC atômica: UPDATE dest + repoint + UPDATE request status — em uma transação.
+    // Fallback automático se migration ainda não foi aplicada (erro 42883).
+    const { data: atomicData, error: atomicErr } = await (supabase as any).rpc(
+      "complete_internal_transfer_atomic",
+      {
+        p_request_id:        requestId,
+        p_target_patient_id: targetBedRow.id,
+        p_destination:       destinationFields,
+        p_repoint_reason:    `Transferência interna (etapa 2) → ${targetBedRow.bedNumber} (${sectorLabelFromCode(targetBedRow.sector)})`,
+        p_current_user_id:   currentUserId ?? null,
+        p_hospital_unit_id:  hospitalUnitId,
+        p_state_id:          stateId,
+        p_department:        department ?? null,
+      },
+    );
+
+    if (!atomicErr) {
+      invalidateResolvedRegistry(targetBedRow.id);
+      invalidateResolvedRegistry(sourcePatientId);
+      return { ok: true, classification, needsSaps };
+    }
+
+    if (!isRpcMissing(atomicErr)) throw atomicErr;
+    console.warn("[completeInternalTransfer] RPC atômica não encontrada — usando fluxo sequencial");
+
+    // Fallback: operações sequenciais (migration ainda não aplicada)
     const { error: targetError } = await supabase
       .from("patients")
       .update({
@@ -578,7 +525,7 @@ export async function completeInternalTransfer(
       `Transferência interna (etapa 2) → ${targetBedRow.bedNumber} (${sectorLabelFromCode(targetBedRow.sector)})`,
     );
     if (!repoint.ok) {
-      throw new Error(`Falha ao migrar histórico (${repoint.error}).`);
+      throw new Error(repoint.error ?? "Falha ao migrar histórico clínico. Operação abortada.");
     }
 
     // Sincroniza admission_histories após repoint (Etapa 2)

@@ -234,7 +234,10 @@ export function AntimicrobialGuideDialog({
   const [entries, setEntries] = useState<AntimicrobialEntry[]>([]);
   const [loadingImport, setLoadingImport] = useState<Record<string, 'history' | 'evolution' | 'cultures' | null>>({});
   const [availableCultures, setAvailableCultures] = useState<Array<{ id: string; culture_type: string; collection_date: string | null; status: string; microorganism: string | null; antibiogram: string | null; sensitivity_profile: string | null; result_text: string | null; created_at: string }>>([]);
-  const draftKey = patientId ? `atb-draft-${patientId}` : null;
+  // Versão do schema do rascunho — incrementar quando AntimicrobialEntry mudar.
+  // Rascunhos com versão diferente são descartados automaticamente com aviso ao usuário.
+  const DRAFT_V = 1;
+  const draftKey = patientId ? `atb-draft-v${DRAFT_V}-${patientId}` : null;
   const entryRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [showErrors, setShowErrors] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
@@ -252,23 +255,55 @@ export function AntimicrobialGuideDialog({
   // Chave separada para prescribe vs review — evita anexar medicamento errado
   // em prescribe, mas preserva tudo que o médico está digitando entre trocas de aba.
   const autosaveKey = draftKey ? `${draftKey}-${mode === 'prescribe' ? 'prescribe' : 'review'}` : null;
+  // Chave legada (sem versão) — usada apenas para detectar e limpar rascunhos antigos
+  const legacyDraftKey = patientId ? `atb-draft-${patientId}` : null;
+
+  // Lê e valida versão de um rascunho no localStorage.
+  // Retorna as entries se compatível, null se inválido ou versão diferente.
+  const readVersionedDraft = (key: string): AntimicrobialEntry[] | null => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      // Formato novo: { v: N, entries: [...] }
+      if (parsed && typeof parsed === "object" && "v" in parsed) {
+        if (parsed.v !== DRAFT_V) {
+          // Versão incompatível — descarta e avisa
+          localStorage.removeItem(key);
+          toast.warning("Rascunho descartado", {
+            description: "Um rascunho salvo em uma versão anterior do sistema foi removido. Os campos estão limpos para preenchimento.",
+            duration: 6000,
+          });
+          return null;
+        }
+        const entries = parsed.entries as AntimicrobialEntry[];
+        return Array.isArray(entries) && entries.length > 0 ? entries : null;
+      }
+      // Formato antigo (array direto sem versão) — descarta silenciosamente
+      localStorage.removeItem(key);
+      return null;
+    } catch {
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
+
+    // Limpa chaves legadas (sem versão) que possam existir de versões anteriores
+    if (legacyDraftKey) {
+      try { localStorage.removeItem(legacyDraftKey); } catch {/* ignore */}
+      try { localStorage.removeItem(`${legacyDraftKey}-prescribe`); } catch {/* ignore */}
+      try { localStorage.removeItem(`${legacyDraftKey}-review`); } catch {/* ignore */}
+    }
+
     // 1) Tenta restaurar autosave da MESMA sessão (mesmo modo, mesmo paciente).
     if (autosaveKey) {
-      try {
-        const raw = localStorage.getItem(autosaveKey);
-        if (raw) {
-          const parsed = JSON.parse(raw) as AntimicrobialEntry[];
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setEntries(parsed);
-            return;
-          }
-        }
-      } catch {/* ignore */}
+      const saved = readVersionedDraft(autosaveKey);
+      if (saved) { setEntries(saved); return; }
     }
-    // 2) Sem autosave → seed limpo do parent (ou rascunho legado em review).
+
+    // 2) Sem autosave → seed limpo do parent (ou rascunho em review).
     if (mode === 'prescribe') {
       if (antimicrobialItems.length > 0) {
         setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item)));
@@ -277,25 +312,19 @@ export function AntimicrobialGuideDialog({
       }
       return;
     }
-    // Modo "review": tenta rascunho legado (chave antiga) antes do seed
+
+    // Modo "review": tenta rascunho antes do seed
     if (draftKey) {
-      try {
-        const raw = localStorage.getItem(draftKey);
-        if (raw) {
-          const parsed = JSON.parse(raw) as AntimicrobialEntry[];
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setEntries(parsed);
-            return;
-          }
-        }
-      } catch {/* ignore */}
+      const saved = readVersionedDraft(draftKey);
+      if (saved) { setEntries(saved); return; }
     }
+
     if (antimicrobialItems.length > 0) {
       setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item)));
     } else {
       setEntries([createEmptyEntry()]);
     }
-  }, [open, antimicrobialItems, draftKey, autosaveKey, mode]);
+  }, [open, antimicrobialItems, draftKey, autosaveKey, mode, legacyDraftKey]);
 
   // === Autosave com debounce — preserva tudo ao trocar de aba/voltar ===
   useEffect(() => {
@@ -306,7 +335,8 @@ export function AntimicrobialGuideDialog({
     );
     if (!hasContent) return;
     const handle = window.setTimeout(() => {
-      try { localStorage.setItem(autosaveKey, JSON.stringify(entries)); } catch {/* quota */}
+      // Salva com wrapper de versão — garante compatibilidade futura
+      try { localStorage.setItem(autosaveKey, JSON.stringify({ v: DRAFT_V, entries })); } catch {/* quota */}
     }, 600);
     return () => window.clearTimeout(handle);
   }, [entries, autosaveKey, open]);
@@ -507,8 +537,9 @@ export function AntimicrobialGuideDialog({
   const handleSaveDraft = () => {
     if (!draftKey) { toast.error("Sem paciente vinculado para salvar rascunho"); return; }
     try {
-      localStorage.setItem(draftKey, JSON.stringify(entries));
-      if (autosaveKey) localStorage.setItem(autosaveKey, JSON.stringify(entries));
+      const versioned = JSON.stringify({ v: DRAFT_V, entries });
+      localStorage.setItem(draftKey, versioned);
+      if (autosaveKey) localStorage.setItem(autosaveKey, versioned);
       const now = format(new Date(), "HH:mm:ss");
       toast.success(`Rascunho da Guia ATM salvo às ${now}`);
       onOpenChange(false);

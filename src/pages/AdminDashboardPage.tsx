@@ -204,6 +204,9 @@ const AdminDashboardPage = () => {
   });
   const [isRegistering, setIsRegistering] = useState(false);
   const [pisDialogOpen, setPisDialogOpen] = useState(false);
+  // Alta confiança de duplicata: nome + data de nascimento coincidem com registro existente.
+  // Bloqueia o cadastro até o usuário decidir explicitamente (usar existente ou confirmar diferente).
+  const [isHighConfidenceDuplicate, setIsHighConfidenceDuplicate] = useState(false);
 
   const applyPisData = (data: any) => {
     setRegisterForm(prev => ({
@@ -328,6 +331,16 @@ const AdminDashboardPage = () => {
 
     if (!registerForm.is_unidentified && !registerForm.full_name.trim()) {
       toast.error("Nome completo é obrigatório");
+      return;
+    }
+
+    // Bloqueia quando nome + data de nascimento coincidem com registro existente.
+    // O usuário deve decidir: usar o paciente existente ou confirmar que são pessoas diferentes.
+    if (isHighConfidenceDuplicate && !registerForm.is_unidentified) {
+      toast.error("Cadastro bloqueado — paciente já existe", {
+        description: "Use o paciente existente para novo atendimento, ou confirme que são pessoas diferentes.",
+        duration: 6000,
+      });
       return;
     }
 
@@ -1068,7 +1081,7 @@ const AdminDashboardPage = () => {
       </div>
 
       {/* Registration Dialog */}
-      <Dialog open={showRegisterDialog} onOpenChange={setShowRegisterDialog}>
+      <Dialog open={showRegisterDialog} onOpenChange={(v) => { setShowRegisterDialog(v); if (!v) setIsHighConfidenceDuplicate(false); }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1105,7 +1118,9 @@ const AdminDashboardPage = () => {
               fullName={registerForm.full_name}
               birthDate={registerForm.birth_date}
               cpf={registerForm.cpf}
+              onHighConfidenceFound={setIsHighConfidenceDuplicate}
               onUseExisting={(p) => {
+                setIsHighConfidenceDuplicate(false);
                 setShowRegisterDialog(false);
                 setSelectedPatient(p as any);
                 setShowPatientDetail(true);
@@ -1354,7 +1369,7 @@ const AdminDashboardPage = () => {
             </Button>
             <Button
               onClick={handleRegister}
-              disabled={isRegistering || (!registerForm.is_unidentified && !registerForm.full_name.trim())}
+              disabled={isRegistering || (!registerForm.is_unidentified && !registerForm.full_name.trim()) || isHighConfidenceDuplicate}
               className={cn(registerForm.is_unidentified && "bg-amber-600 hover:bg-amber-700 text-white")}
             >
               {isRegistering

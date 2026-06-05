@@ -181,6 +181,16 @@ export function OperationalRelocationDialog({
 
   if (!patient) return null;
 
+  // Bloqueia remanejamento operacional quando há transferência clínica pendente.
+  // O paciente foi sinalizado via Painel Clínico e aguarda conclusão pelo fluxo correto.
+  // Permitir o remanejamento neste estado bypassa a sinalização e pode corromper o histórico.
+  const isTransferPending =
+    patient.admissionStatus === "transferencia_interna_pendente" ||
+    patient.admissionStatus === "transferencia_externa_pendente";
+
+  const transferPendingType =
+    patient.admissionStatus === "transferencia_interna_pendente" ? "interna" : "externa";
+
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => !submitting && onOpenChange(o)}>
@@ -199,6 +209,29 @@ export function OperationalRelocationDialog({
               </div>
             </div>
           </DialogHeader>
+
+          {isTransferPending ? (
+            <div className="py-2">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                <div className="space-y-1.5">
+                  <p className="text-sm font-semibold text-destructive">
+                    Transferência {transferPendingType} sinalizada — remanejamento bloqueado
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    <strong className="text-foreground">{patient.name}</strong> aguarda conclusão
+                    de transferência {transferPendingType}. O remanejamento operacional não está
+                    disponível neste estado para garantir a integridade do histórico clínico.
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Para mover o paciente, conclua a transferência pelo{" "}
+                    <strong className="text-foreground">Painel Clínico</strong> ou pelas{" "}
+                    <strong className="text-foreground">Transferências Pendentes</strong> no Mapa de Leitos.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
 
           <div className="space-y-4 py-2">
             {/* Paciente */}
@@ -299,15 +332,22 @@ export function OperationalRelocationDialog({
               </p>
             </div>
           </div>
+          )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
-              Cancelar
-            </Button>
-            <Button onClick={handleOpenConfirm} disabled={submitting || loading} className="gap-2">
-              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              Revisar e confirmar
-            </Button>
+            {isTransferPending ? (
+              <Button onClick={() => onOpenChange(false)}>Fechar</Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleOpenConfirm} disabled={submitting || loading} className="gap-2">
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Revisar e confirmar
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

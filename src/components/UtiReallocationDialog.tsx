@@ -159,9 +159,7 @@ export function UtiReallocationDialog({
         `Realocação UTI: ${originalBedNumber} → ${targetBedPatient.bedNumber}`,
       );
       if (!repointFirst.ok) {
-        throw new Error(
-          `Falha ao migrar histórico clínico (${repointFirst.error}). Nenhuma alteração foi feita — tente novamente.`,
-        );
+        throw new Error(repointFirst.error ?? "Falha ao migrar histórico clínico. Nenhuma alteração foi feita — tente novamente.");
       }
 
       // Step 1: Move patient data to the target bed (update target bed with patient data)
@@ -204,27 +202,8 @@ export function UtiReallocationDialog({
 
       if (targetError) throw targetError;
 
-      // 🔒 Em ESCALADA: fechar encounter ativo do setor de origem.
-      // Preserva a timeline (início/fim por setor) e evita que evoluções
-      // do setor anterior apareçam como pertencentes ao novo atendimento.
-      if (needsNewAdmission) {
-        const { data: srcRow } = await supabase
-          .from('patients')
-          .select('patient_registry_id')
-          .eq('id', patient.id)
-          .maybeSingle();
-        const srcRegistryId = (srcRow as any)?.patient_registry_id ?? null;
-        if (srcRegistryId) {
-          await supabase.from('patient_encounters')
-            .update({ status: 'closed', ended_at: new Date().toISOString() })
-            .eq('registry_id', srcRegistryId)
-            .neq('status', 'closed');
-        }
-        await supabase.from('patient_encounters')
-          .update({ status: 'closed', ended_at: new Date().toISOString() })
-          .eq('patient_id', patient.id)
-          .neq('status', 'closed');
-      }
+      // Regra de negócio: encounter não encerra em transferência interna.
+      // O número de atendimento é preservado até alta, óbito ou transferência externa.
 
       // Repoint já foi executado antes do update (ver acima)
 
@@ -267,22 +246,27 @@ export function UtiReallocationDialog({
 
       // Register movement
       const { data: { user } } = await supabase.auth.getUser();
-      
-      await supabase
-        .from('patient_movements')
-        .insert({
-          patient_name: patient.name,
-          patient_bed: originalBedNumber,
-          patient_sector: patient.sector,
-          movement_type: isSameUnit ? 'REALOCAÇÃO' : 'TRANSFERÊNCIA',
-          destination: `${targetUnit} - Leito ${targetBedPatient.bedNumber}`,
-          notes: `Realocação de ${currentUtiUnit} Leito ${originalBedNumber} para ${targetUnit} Leito ${targetBedPatient.bedNumber}`,
-          created_by: user?.id,
-          patient_snapshot: patient as any,
-          department: currentDepartment,
-          state_id: currentState.id,
-          hospital_unit_id: currentHospital.id,
-        });
+
+      try {
+        const { error: movErr } = await supabase
+          .from('patient_movements')
+          .insert({
+            patient_name: patient.name,
+            patient_bed: originalBedNumber,
+            patient_sector: patient.sector,
+            movement_type: isSameUnit ? 'REALOCAÇÃO' : 'TRANSFERÊNCIA',
+            destination: `${targetUnit} - Leito ${targetBedPatient.bedNumber}`,
+            notes: `Realocação de ${currentUtiUnit} Leito ${originalBedNumber} para ${targetUnit} Leito ${targetBedPatient.bedNumber}`,
+            created_by: user?.id,
+            patient_snapshot: patient as any,
+            department: currentDepartment,
+            state_id: currentState.id,
+            hospital_unit_id: currentHospital.id,
+          });
+        if (movErr) console.error("[UtiReallocationDialog] falha ao registrar patient_movements:", movErr);
+      } catch (e) {
+        console.error("[UtiReallocationDialog] falha ao registrar patient_movements:", e);
+      }
 
       toast({
         title: isSameUnit ? "Paciente realocado" : "Paciente transferido",
@@ -295,10 +279,10 @@ export function UtiReallocationDialog({
       setConfirmOpen(false);
       handleClose();
     } catch (error) {
-      console.error('Error reallocating patient:', error);
+      console.error('[UtiReallocationDialog] erro ao realocar paciente:', error);
       toast({
         title: "Erro ao realocar paciente",
-        description: "Não foi possível realocar o paciente. Tente novamente.",
+        description: (error as any)?.message ?? "Não foi possível realocar o paciente. Tente novamente.",
         variant: "destructive",
       });
     } finally {

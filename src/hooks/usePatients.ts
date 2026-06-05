@@ -1,3 +1,4 @@
+// @ts-ignore - React module/types are resolved by the app build environment
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Patient } from "@/types/patient";
@@ -6,6 +7,8 @@ import { Department } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { isExtraBed } from "@/utils/bedNaming";
+
+const GHOST_PREFIXES = ['ARQ-', 'ARCHIVED-', '_GHOST_'];
 
 export function usePatients(department?: Department, sector?: string) {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -131,12 +134,15 @@ export function usePatients(department?: Department, sector?: string) {
         registryId: (p as any).patient_registry_id ?? null,
       }));
 
-      // Filtrar shells de leitos arquivados (ARQ-* / ARCHIVED-*) — linhas residuais
-      // de histórico que NÃO devem aparecer no mapa de leitos. Permanecem no banco
-      // para preservar a auditoria de patient_movements.
+      // Filtrar leitos residuais/fantasma que NÃO devem aparecer no mapa nem na contagem.
+      // Padrões conhecidos:
+      //   ARQ-*       → leito arquivado (histórico)
+      //   ARCHIVED-*  → leito extra arquivado por fallback do deletePatient
+      //   _GHOST_*    → leito fantasma — delete falhou, registro órfão no banco
+      // Todos permanecem no banco para preservar auditoria de patient_movements.
       const visiblePatients = mappedPatients.filter(p => {
         const bn = (p.bedNumber || '').toUpperCase();
-        return !bn.startsWith('ARQ-') && !bn.startsWith('ARCHIVED-');
+        return !GHOST_PREFIXES.some(prefix => bn.startsWith(prefix));
       });
 
       // Sort by display_order first, then by bed_number as tiebreaker
@@ -393,7 +399,15 @@ export function usePatients(department?: Department, sector?: string) {
       // (leitos extras não são fixos do setor; podem ser removidos do mapa).
       // Para leitos fixos, apenas esvazia (vacate) mantendo o leito disponível.
       const target = patients.find(p => p.id === patientId);
-      const isExtra = target ? isExtraBed(target.bedNumber) : false;
+      // Leito é "extra/deletável" se começa com EXTRA, _GHOST_ ou ARCHIVED-
+      // _GHOST_ e ARCHIVED- são prefixos de versões anteriores do fallback de deleção
+      // que ficaram no banco sem ser removidos. Devem ser deletados normalmente.
+      const bedNumberUpper = (target?.bedNumber || '').toUpperCase();
+      const isExtra = target
+        ? (isExtraBed(target.bedNumber)
+            || bedNumberUpper.startsWith('_GHOST_')
+            || bedNumberUpper.startsWith('ARCHIVED-'))
+        : false;
 
       if (isExtra) {
         console.log('Hard-deleting extra bed row:', patientId, target?.bedNumber);
@@ -435,19 +449,23 @@ export function usePatients(department?: Department, sector?: string) {
         }
 
         const archivedBedNumber = `ARCHIVED-EXTRA-${target.sector}-${Date.now()}`;
-        const baseDelete = supabase
+
+        // DELETE por ID — sem filtro de prefixo no bed_number para cobrir EXTRA*,
+        // _GHOST_* e ARCHIVED-* (prefixos de versões anteriores do fallback).
+        // Validação de segurança: só deleta se is_vacant=true (ou órfão).
+        const deleteQuery = supabase
           .from('patients')
           .delete()
-          .eq('id', patientId)
-          .ilike('bed_number', 'EXTRA%');
-        // Se for órfão, não exigimos is_vacant=true no banco
+          .eq('id', patientId);
+
         const { data: deletedRows, error } = await (looksOrphan
-          ? baseDelete.select('id')
-          : baseDelete.eq('is_vacant', true).select('id'));
+          ? deleteQuery.select('id')
+          : deleteQuery.eq('is_vacant', true).select('id'));
 
         if (error || !deletedRows?.length) {
-          console.error('Supabase delete extra bed error:', error);
-          const archiveBase = supabase
+          console.error('[deletePatient] delete extra/ghost bed failed — trying archive fallback:', error);
+          // Fallback: renomeia para ARCHIVED- para que o filtro do frontend o esconda
+          let archiveQuery = supabase
             .from('patients')
             .update({
               bed_number: archivedBedNumber,
@@ -455,12 +473,13 @@ export function usePatients(department?: Department, sector?: string) {
               name: '',
               updated_at: new Date().toISOString(),
             })
-            .eq('id', patientId)
-            .ilike('bed_number', 'EXTRA%');
-          const { error: archiveError } = await (looksOrphan ? archiveBase : archiveBase.eq('is_vacant', true));
+            .eq('id', patientId);
+          // Órfão: não exige is_vacant (pode estar marcado como ocupado sem paciente real)
+          if (!looksOrphan) archiveQuery = (archiveQuery as any).eq('is_vacant', true);
+          const { error: archiveError } = await archiveQuery;
 
           if (archiveError) {
-            console.error('Supabase archive extra bed fallback error:', archiveError);
+            console.error('[deletePatient] archive fallback also failed:', archiveError);
             throw archiveError;
           }
         }
@@ -887,7 +906,10 @@ export function usePatients(department?: Department, sector?: string) {
               ? (newRecord.sector === sector || (deptEqIns && newRecord.department === deptEqIns))
               : (!department || newRecord.department === department);
             if (!matchesIns) return;
-            
+            // Ignora leitos fantasma/arquivados via realtime também
+            const newBn = ((newRecord.bed_number || '') as string).toUpperCase();
+            if (GHOST_PREFIXES.some(prefix => newBn.startsWith(prefix))) return;
+
             const newPatient = mapRecordToPatient(newRecord);
             setPatients(prev => {
               if (prev.some(p => p.id === newPatient.id)) return prev;
@@ -900,6 +922,12 @@ export function usePatients(department?: Department, sector?: string) {
             });
           } else if (eventType === 'UPDATE') {
             const updatedRecord = payload.new as any;
+            // Se o leito foi renomeado para um prefixo fantasma, remove da lista
+            const updatedBn = ((updatedRecord.bed_number || '') as string).toUpperCase();
+            if (GHOST_PREFIXES.some(prefix => updatedBn.startsWith(prefix))) {
+              setPatients(prev => prev.filter(p => p.id !== updatedRecord.id));
+              return;
+            }
 
             // Replicar a lógica OR do fetch: sector OU department equivalente
             const SECTOR_TO_DEPT: Record<string, string> = {

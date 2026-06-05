@@ -330,6 +330,22 @@ export function PatientMovementDialog({
             .update({ admission_status: newAdmissionStatus, updated_at: new Date().toISOString() })
             .eq("id", (patient as any).id);
           if (statusErr) throw statusErr;
+
+          // Encerra o encounter — alta médica e óbito são desfechos finais da internação.
+          // Regra de negócio: 1 internação = 1 atendimento até o desfecho final.
+          const { error: encAltaErr } = await supabase
+            .from("patient_encounters")
+            .update({
+              status: "closed",
+              discharge_date: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("patient_id", (patient as any).id)
+            .neq("status", "closed");
+          if (encAltaErr) {
+            // Não bloqueia — documento e status já foram registrados com sucesso.
+            console.error("[PatientMovementDialog] falha ao encerrar encounter (alta/óbito):", encAltaErr);
+          }
         }
 
         // Auto preview the printable Norma Zero document
@@ -355,6 +371,24 @@ export function PatientMovementDialog({
           .eq("id", (patient as any).id);
         if (trErr) throw trErr;
 
+        // Encerra encounter apenas para transferência EXTERNA — é desfecho final da internação.
+        // Transferência INTERNA: encounter segue aberto (1 internação = 1 atendimento).
+        if (subtypeDef.id === "TRANSFERENCIA_EXTERNA") {
+          const { error: encExtErr } = await supabase
+            .from("patient_encounters")
+            .update({
+              status: "closed",
+              discharge_date: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("patient_id", (patient as any).id)
+            .neq("status", "closed");
+          if (encExtErr) {
+            // Não bloqueia — sinalização de transferência já registrada.
+            console.error("[PatientMovementDialog] falha ao encerrar encounter (transf. externa):", encExtErr);
+          }
+        }
+
         // 🔒 Para transferência INTERNA: criar registro na fila virtual do setor destino.
         // IMPORTANTE: NÃO chamamos signalInternalTransfer aqui porque ele zera o leito
         // de origem automaticamente (Etapa 1 do fluxo de 2 etapas). O médico deve
@@ -378,12 +412,19 @@ export function PatientMovementDialog({
               .maybeSingle();
 
             // Classificar a transferência para informar o setor destino
-            const { classifyTransfer, requiresSaps } = await import("@/lib/sectorComplexity");
-            const classification = classifyTransfer((patient as any).sector, sectorCode);
-            const needsSaps = requiresSaps(classification);
+            let classification: string;
+            let needsSaps: boolean;
+            try {
+              const { classifyTransfer, requiresSaps } = await import("@/lib/sectorComplexity");
+              classification = classifyTransfer((patient as any).sector, sectorCode);
+              needsSaps = requiresSaps(classification);
+            } catch (importErr) {
+              console.error("[PatientMovementDialog] falha ao importar sectorComplexity:", importErr);
+              throw new Error("Erro ao classificar a transferência. Tente novamente.");
+            }
 
             // Criar apenas o registro de fila — SEM zerar o leito de origem
-            await supabase.from("internal_transfer_requests").insert({
+            const { error: reqErr } = await supabase.from("internal_transfer_requests").insert({
               source_patient_id: (patient as any).id,
               target_sector_code: sectorCode,
               classification,
@@ -398,6 +439,21 @@ export function PatientMovementDialog({
               reason: notes?.trim() || finalDest || null,
               patient_snapshot: patient as any,
             } as any);
+            if (reqErr) {
+              console.error("[PatientMovementDialog] falha ao criar internal_transfer_requests:", reqErr);
+              // Reverte o admission_status para 'admitido' — sem request na fila,
+              // o estado "transferencia_interna_pendente" seria inconsistente.
+              // O médico pode tentar novamente com o paciente em estado limpo.
+              try {
+                await supabase
+                  .from("patients")
+                  .update({ admission_status: "admitido", updated_at: new Date().toISOString() })
+                  .eq("id", (patient as any).id);
+              } catch (revertErr) {
+                console.error("[PatientMovementDialog] falha ao reverter status do paciente:", revertErr);
+              }
+              throw new Error("Não foi possível criar a fila de transferência. A sinalização foi cancelada — tente novamente.");
+            }
           }
         }
       }

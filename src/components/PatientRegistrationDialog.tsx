@@ -382,7 +382,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
         body: { imageBase64: base64, mimeType: file.type },
       });
       if (response.error) throw new Error(response.error.message);
-      const { data } = response.data;
+      const { data, requiresManualCpfCns } = response.data;
       if (data) {
         setForm(prev => ({
           ...prev,
@@ -390,6 +390,8 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
           mother_name: (data.mother_name || prev.mother_name).toUpperCase(),
           birth_date: data.birth_date || prev.birth_date,
           sex: data.sex || prev.sex,
+          // CPF e CNS são null em modo imagem (proteção LGPD).
+          // Preserva o valor anterior para não apagar o que o usuário já tinha.
           cpf: data.cpf ? formatCPF(data.cpf) : prev.cpf,
           cns: data.cns || prev.cns,
           phone: data.phone || prev.phone,
@@ -399,7 +401,14 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
           medical_record: (data.medical_record || prev.medical_record || "").toString().trim(),
         }));
         setActiveTab("dados");
-        toast({ title: "✅ Dados extraídos com sucesso!", description: "Revise os campos preenchidos pela IA" });
+        if (requiresManualCpfCns) {
+          toast({
+            title: "Dados extraídos — preencha CPF e CNS",
+            description: "Para documentos em imagem, CPF e CNS não são extraídos automaticamente (LGPD). Preencha esses campos manualmente.",
+          });
+        } else {
+          toast({ title: "✅ Dados extraídos com sucesso!", description: "Revise os campos preenchidos pela IA" });
+        }
       }
     } catch (err) {
       console.error("AI extraction error:", err);

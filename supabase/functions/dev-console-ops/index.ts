@@ -43,6 +43,19 @@ Deno.serve(async (req) => {
     );
     if (!allowed) return json({ error: "Forbidden — dev role required" }, 403);
 
+    // Filtro de hospital: dev só vê dados do hospital ao qual está vinculado.
+    // Se hospital_unit_id for null (admin global sem hospital), sem filtro — backward compat.
+    const { data: devProfile } = await supa
+      .from("profiles")
+      .select("hospital_unit_id")
+      .eq("id", userId)
+      .maybeSingle();
+    const hospitalFilter: string | null = (devProfile as any)?.hospital_unit_id ?? null;
+
+    // Helper: adiciona filtro de hospital a qualquer query quando aplicável
+    const withHospital = <T extends { eq: (...args: any[]) => T }>(q: T): T =>
+      hospitalFilter ? q.eq("hospital_unit_id", hospitalFilter) : q;
+
     // 3. Route by action
     const { action, params = {}, confirm = false } = await req.json();
 
@@ -57,11 +70,11 @@ Deno.serve(async (req) => {
           { count: errors24h },
           { count: usersTotal },
         ] = await Promise.all([
-          supa.from("patients").select("id", { count: "exact", head: true }).eq("is_vacant", false),
-          supa.from("prescriptions").select("id", { count: "exact", head: true }).gte("created_at", since24h),
-          supa.from("patient_encounters").select("id", { count: "exact", head: true }).gte("created_at", since24h),
-          supa.from("audit_logs").select("id", { count: "exact", head: true }).gte("created_at", since24h).eq("action", "DELETE"),
-          supa.from("profiles").select("id", { count: "exact", head: true }),
+          withHospital(supa.from("patients").select("id", { count: "exact", head: true }).eq("is_vacant", false)),
+          withHospital(supa.from("prescriptions").select("id", { count: "exact", head: true }).gte("created_at", since24h)),
+          withHospital(supa.from("patient_encounters").select("id", { count: "exact", head: true }).gte("created_at", since24h)),
+          withHospital(supa.from("audit_logs").select("id", { count: "exact", head: true }).gte("created_at", since24h).eq("action", "DELETE")),
+          supa.from("profiles").select("id", { count: "exact", head: true }), // gestão de usuários — sem filtro de hospital
         ]);
         return json({
           activePatients: activePatients ?? 0,
@@ -75,9 +88,9 @@ Deno.serve(async (req) => {
 
       case "audit_recent": {
         const limit = Math.min(Number(params.limit ?? 50), 200);
-        const { data, error } = await supa
+        const { data, error } = await withHospital(supa
           .from("audit_logs")
-          .select("id, action, table_name, user_email, user_role, created_at, record_id, changed_fields")
+          .select("id, action, table_name, user_email, user_role, created_at, record_id, changed_fields"))
           .order("created_at", { ascending: false })
           .limit(limit);
         if (error) return json({ error: error.message }, 500);
@@ -86,9 +99,9 @@ Deno.serve(async (req) => {
 
       case "user_activity": {
         const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        const { data, error } = await supa
+        const { data, error } = await withHospital(supa
           .from("audit_logs")
-          .select("user_email, action, created_at")
+          .select("user_email, action, created_at"))
           .gte("created_at", since)
           .order("created_at", { ascending: false })
           .limit(500);
@@ -110,9 +123,9 @@ Deno.serve(async (req) => {
         const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
         const [{ data: encounters }, { data: prescriptions }, { data: evolutions }] =
           await Promise.all([
-            supa.from("patient_encounters").select("created_at").gte("created_at", since),
-            supa.from("prescriptions").select("created_at").gte("created_at", since),
-            supa.from("clinical_evolutions").select("created_at").gte("created_at", since),
+            withHospital(supa.from("patient_encounters").select("created_at")).gte("created_at", since),
+            withHospital(supa.from("prescriptions").select("created_at")).gte("created_at", since),
+            withHospital(supa.from("clinical_evolutions").select("created_at")).gte("created_at", since),
           ]);
         const buckets: Record<string, { encounters: number; prescriptions: number; evolutions: number }> = {};
         const day = (d: string) => d.substring(0, 10);
@@ -165,12 +178,10 @@ Deno.serve(async (req) => {
       }
 
       case "slow_queries": {
-        // Recent Postgres errors / warnings via audit_logs as a proxy.
-        // (pg_stat_statements isn't exposed; we surface the most-edited tables instead.)
         const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        const { data } = await supa
+        const { data } = await withHospital(supa
           .from("audit_logs")
-          .select("table_name, action")
+          .select("table_name, action"))
           .gte("created_at", since)
           .limit(2000);
         const byTable: Record<string, { inserts: number; updates: number; deletes: number; total: number }> = {};
@@ -195,8 +206,8 @@ Deno.serve(async (req) => {
         // and exam requests as a proxy operational signal.
         const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const [{ data: failedExams }, { count: orphanEvolutions }] = await Promise.all([
-          supa.from("exam_requests").select("id, patient_name, status, created_at").eq("status", "ERRO").gte("created_at", since).limit(20),
-          supa.from("clinical_evolutions").select("id", { count: "exact", head: true }).is("patient_id", null),
+          withHospital(supa.from("exam_requests").select("id, patient_name, status, created_at").eq("status", "ERRO")).gte("created_at", since).limit(20),
+          withHospital(supa.from("clinical_evolutions").select("id", { count: "exact", head: true }).is("patient_id", null)),
         ]);
         return json({
           failedExams: failedExams ?? [],
@@ -253,18 +264,18 @@ Deno.serve(async (req) => {
         ];
 
         const [{ data: movs }, { data: docs }, { data: byStatus }] = await Promise.all([
-          supa.from("patient_movements")
+          withHospital(supa.from("patient_movements")
             .select("patient_id, movement_type, created_at")
             .eq("release_status", "pending_release")
-            .in("movement_type", SIGNAL_MOVS)
+            .in("movement_type", SIGNAL_MOVS))
             .order("created_at", { ascending: false }),
-          supa.from("discharge_documents")
+          withHospital(supa.from("discharge_documents")
             .select("patient_id, document_type, created_at")
-            .in("document_type", ["alta_hospitalar", "obito"])
+            .in("document_type", ["alta_hospitalar", "obito"]))
             .order("created_at", { ascending: false }),
-          supa.from("patients")
+          withHospital(supa.from("patients")
             .select("id, name, bed_number, sector, admission_status")
-            .in("admission_status", DISCHARGE_STATUSES),
+            .in("admission_status", DISCHARGE_STATUSES)),
         ]);
 
         const agg: Record<string, {
@@ -446,21 +457,21 @@ Deno.serve(async (req) => {
       // Não toca prescrições/admissões/movs — escopo cirúrgico em evoluções.
       case "list_bed_residual_history": {
         // 1) leitos atualmente ocupados
-        const { data: occupied, error: occErr } = await supa
+        const { data: occupied, error: occErr } = await withHospital(supa
           .from("patients")
           .select("id, name, bed_number, sector, hospital_unit_id")
           .eq("is_vacant", false)
           .not("bed_number", "is", null)
-          .not("sector", "is", null);
+          .not("sector", "is", null));
         if (occErr) return json({ error: occErr.message }, 500);
 
         // 2) evoluções não arquivadas com bed/sector preenchidos
-        const { data: evos, error: evoErr } = await supa
+        const { data: evos, error: evoErr } = await withHospital(supa
           .from("clinical_evolutions")
           .select("id, patient_id, patient_name, patient_bed, patient_sector, created_at, evolution_type, status")
           .is("archived_at", null)
           .not("patient_bed", "is", null)
-          .not("patient_sector", "is", null)
+          .not("patient_sector", "is", null))
           .order("created_at", { ascending: false })
           .limit(5000);
         if (evoErr) return json({ error: evoErr.message }, 500);
