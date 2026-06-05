@@ -376,7 +376,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </div>
           </button>
           </div>
-        )}   )}
+        )}
         {/* Expanded content — scrollável para ver todas as informações */}
         <div className={cn(
           "flex flex-col flex-1",
