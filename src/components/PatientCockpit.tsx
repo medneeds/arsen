@@ -46,7 +46,6 @@ import { PatientIdentityHeader } from "./PatientIdentityHeader";
 import { SuspendDischargeDialog } from "./SuspendDischargeDialog";
 import { Ban } from "lucide-react";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
-import { getSectorLabel } from "@/lib/sectorUtils";
 
 interface PatientCockpitProps {
   patient: Patient | null;
@@ -205,7 +204,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   }
 
   const status = clinicalStatusConfig[patient.clinicalStatus || "regular"] || clinicalStatusConfig.regular;
-  const sector = getSectorLabel(patient.sector);
+  const sector = sectorLabelFromCode(patient.sector);
   const allergies = parseList(patient.utiAllergies);
   const diagnoses = parseList(patient.diagnoses);
   const medHistory = parseList(patient.medicalHistory);
@@ -238,17 +237,16 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
     <TooltipProvider delayDuration={300}>
       <aside
         onMouseEnter={() => variant === "fixed" && setHovering(true)}
-        onMouseLeave={() => variant === "fixed" && setHovering(false)}
+        onMouseLeave={() => variant === "fixed" && !pinned && setHovering(false)}
         className={cn(
           variant === "fixed" && [
-            "hidden lg:flex shrink-0 border-l border-[hsl(217,30%,82%)]/70 dark:border-[hsl(217,30%,24%)]/70 bg-card self-start relative z-30",
-            "shadow-[-24px_0_44px_-14px_hsl(217,45%,15%/0.32),-10px_0_20px_-8px_hsl(217,45%,15%/0.22),-2px_0_6px_-1px_hsl(217,45%,15%/0.16),inset_1px_0_0_hsl(217,40%,98%)]",
-            "dark:shadow-[-24px_0_48px_-14px_hsl(0,0%,0%/0.75),-10px_0_22px_-8px_hsl(0,0%,0%/0.6),-2px_0_6px_-1px_hsl(0,0%,0%/0.5),inset_1px_0_0_hsl(217,30%,16%)]",
+            // Visível em QUALQUER tamanho de tela (removido hidden lg:flex)
+            "flex shrink-0 border-l border-[hsl(217,30%,82%)]/70 dark:border-[hsl(217,30%,24%)]/70 bg-card self-start",
+            "shadow-[inset_1px_0_0_hsl(217,40%,98%)] dark:shadow-[inset_1px_0_0_hsl(217,30%,16%)]",
             "rounded-b-xl ring-1 ring-[hsl(217,40%,92%)]/60 dark:ring-[hsl(217,40%,20%)]/40",
-            "transition-[width] duration-200 ease-out",
-            isExpanded ? "w-96" : "w-12",
+            "transition-[width] duration-300 ease-out",
+            isExpanded ? "w-[min(24rem,85vw)]" : "w-11",
           ],
-
           variant === "inline" && "w-full h-full bg-card border border-[hsl(217,30%,82%)]/70 dark:border-[hsl(217,30%,24%)]/70 rounded-lg overflow-hidden",
           "flex-col print:hidden",
           className
@@ -256,49 +254,55 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
       >
         {/* Collapsed rail (desktop, only when retracted) */}
         {variant === "fixed" && !isExpanded && (
-          <div className="flex flex-col items-center gap-3 pt-3 text-muted-foreground">
-            <button
-              type="button"
-              title="Fixar painel do paciente"
-              onClick={() => setPinned(true)}
-              className="p-1.5 rounded hover:bg-muted/40 hover:text-foreground"
+          <button
+            type="button"
+            title="Abrir painel do paciente"
+            onClick={() => setPinned(true)}
+            className="flex flex-col items-center justify-center gap-3 w-full h-full py-4 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
+          >
+            <ChevronRight className="h-4 w-4 rotate-180 shrink-0" />
+            <div className={cn("h-2.5 w-2.5 rounded-full shrink-0", status.dot)} title={status.label} />
+            <div
+              className="text-[10px] font-bold tracking-widest text-foreground/70 select-none"
+              style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
             >
-              <ChevronRight className="h-4 w-4 rotate-180" />
-            </button>
-            <div className={cn("h-2 w-2 rounded-full", status.dot)} title={status.label} />
-            <div className="text-[10px] font-bold tracking-wide writing-mode-vertical text-foreground" style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}>
-              {patient.bedNumber} · {sector}
+              {patient.bedNumber && `${patient.bedNumber} · `}{sector}
+            </div>
+            <div
+              className="text-[9px] font-semibold text-foreground/50 select-none line-clamp-3 max-h-20"
+              style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)", maxHeight: "8rem" }}
+            >
+              {patient.name.split(" ").slice(0, 2).join(" ")}
             </div>
             {allergies.length > 0 && (
-              <span title={`Alergia: ${allergies.join(", ")}`}>
+              <span title={`Alergia: ${allergies.join(", ")}`} className="mt-auto pb-2">
                 <ShieldAlert className="h-3.5 w-3.5 text-destructive" />
               </span>
             )}
-          </div>
+          </button>
         )}
         {/* Expanded content */}
         <div className={cn("flex flex-col flex-1 min-h-0", variant === "fixed" && !isExpanded && "hidden")}>
-        {/* ===== ZONA 1: IDENTIDADE (sticky) — integra a barra de fixar no mesmo gradiente ===== */}
-        <div className="px-3 sm:px-4 pt-2 pb-2.5 sm:pb-3 border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
-          {variant === "fixed" && isExpanded && (
-            <div className="flex justify-end -mx-1 mb-1.5">
-              <button
-                type="button"
-                title={pinned ? "Desafixar (recolher ao tirar o mouse)" : "Fixar painel aberto"}
-                onClick={() => setPinned((v) => !v)}
-                className={cn(
-                  "inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full transition-all duration-200",
-                  pinned
-                    ? "bg-gradient-to-r from-[hsl(217,70%,40%)] to-[hsl(217,72%,36%)] text-white shadow-sm hover:shadow-md"
-                    : "bg-muted/60 text-muted-foreground hover:bg-[hsl(217,55%,40%)]/10 hover:text-[hsl(217,72%,32%)]"
-                )}
-              >
-                <ChevronRight className={cn("h-3 w-3 transition-transform", pinned ? "rotate-90" : "rotate-180")} />
-                {pinned ? "Fixado" : "Fixar"}
-              </button>
-            </div>
-          )}
-
+        {variant === "fixed" && isExpanded && (
+          <div className="flex justify-end px-2 pt-2 bg-gradient-to-b from-[hsl(217,55%,40%)]/[0.06] via-[hsl(217,55%,40%)]/[0.03] to-transparent border-b border-[hsl(217,30%,86%)]/40 dark:border-[hsl(217,30%,26%)]/40">
+            <button
+              type="button"
+              title={pinned ? "Desafixar (recolher ao tirar o mouse)" : "Fixar painel aberto"}
+              onClick={() => setPinned((v) => !v)}
+              className={cn(
+                "inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full transition-all duration-200",
+                pinned
+                  ? "bg-gradient-to-r from-[hsl(217,70%,40%)] to-[hsl(217,72%,36%)] text-white shadow-sm hover:shadow-md"
+                  : "bg-muted/60 text-muted-foreground hover:bg-[hsl(217,55%,40%)]/10 hover:text-[hsl(217,72%,32%)]"
+              )}
+            >
+              <ChevronRight className={cn("h-3 w-3 transition-transform", pinned ? "rotate-90" : "rotate-180")} />
+              {pinned ? "Fixado" : "Fixar"}
+            </button>
+          </div>
+        )}
+        {/* ===== ZONA 1: IDENTIDADE (sticky) ===== */}
+        <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2.5 sm:pb-3 border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
           <PatientIdentityHeader
             patientId={patient.id}
             fallbackName={patient.name}
@@ -939,7 +943,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 ) : (
                   <ul className="space-y-1.5">
                     {movements.slice(0, 5).map((m) => {
-                      const origin = [sectorLabelFromCode(m.patientSector) || m.patientSector, m.patientBed].filter(Boolean).join(" · ");
+                      const origin = [m.patientSector, m.patientBed].filter(Boolean).join(" · ");
                       const released = m.releaseStatus === "released";
                       return (
                         <li key={m.id} className="text-[11px] border-b border-border/40 last:border-0 pb-1.5 last:pb-0">
