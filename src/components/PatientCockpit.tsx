@@ -240,11 +240,14 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         onMouseLeave={() => variant === "fixed" && !pinned && setHovering(false)}
         className={cn(
           variant === "fixed" && [
-            // Oculto no mobile — ocupa espaço e corta o conteúdo em telas estreitas
-            // Aparece a partir de lg (1024px)
-            "hidden lg:flex shrink-0 border-l border-[hsl(217,30%,82%)]/70 dark:border-[hsl(217,30%,24%)]/70 bg-card self-start",
-            "shadow-[inset_1px_0_0_hsl(217,40%,98%)] dark:shadow-[inset_1px_0_0_hsl(217,30%,16%)]",
-            "rounded-b-xl ring-1 ring-[hsl(217,40%,92%)]/60 dark:ring-[hsl(217,40%,20%)]/40",
+            // Flutuante — descolado do cabeçalho e do rodapé
+            "hidden lg:flex fixed right-0 z-30",
+            // Posição: abaixo do header (top-[4.5rem]) com margem no rodapé
+            "top-[4.5rem] bottom-4",
+            // Sombra de profundidade multicamadas — flutua sobre o conteúdo
+            "shadow-[-2px_0_8px_rgba(10,22,56,0.08),_-8px_0_32px_rgba(10,22,56,0.18),_-16px_0_48px_rgba(10,22,56,0.10)]",
+            // Backdrop-blur — conteúdo passa por baixo suavemente
+            "backdrop-blur-sm",
             "transition-[width] duration-300 ease-out",
             isExpanded ? "w-[min(24rem,85vw)]" : "w-11",
           ],
@@ -263,21 +266,19 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             onMouseEnter={() => setHovering(true)}
             className={cn(
               "group flex flex-col items-center w-full",
-              // Altura: 90% da viewport, centralizada
-              "h-[75vh] max-h-[75vh]",
-              // Cantos arredondados para elegância
-              "rounded-l-2xl",
-              // Fundo: degradê sutil replicando o cabeçalho institucional
+              // Ocupa toda a altura do container flutuante
+              "h-full",
+              // Totalmente arredondado — elemento independente, não colado na borda
+              "rounded-xl",
+              // Fundo: degradê sutil cabeçalho institucional
               "bg-gradient-to-b from-[#0a1628]/5 via-[#0f2847]/8 to-[#1a3a5c]/5",
-              "dark:bg-gradient-to-b dark:from-[#0a1628]/30 dark:via-[#0f2847]/40 dark:to-[#1a3a5c]/30",
-              // Borda esquerda com degradê via sombra interna + borda
-              "border-t border-b border-t-gray-300/60 border-b-[#1a3a5c]/60",
-              // Borda esquerda como gradiente usando box-shadow
-              "relative overflow-visible",
-              // Sombra externa elegante
-              "drop-shadow-[−4px_0_16px_rgba(10,22,56,0.20)]",
-              "hover:drop-shadow-[-6px_0_24px_rgba(10,22,56,0.35)]",
-              "transition-all duration-250 ease-out cursor-pointer"
+              "dark:from-[#0a1628]/30 dark:via-[#0f2847]/40 dark:to-[#1a3a5c]/30",
+              // Borda sutil em todos os lados
+              "border border-[hsl(217,30%,75%)]/40 dark:border-[hsl(217,30%,24%)]/50",
+              // Hover: ligeiramente mais opaco
+              "hover:bg-gradient-to-b hover:from-[#0a1628]/10 hover:via-[#0f2847]/15 hover:to-[#1a3a5c]/10",
+              "relative overflow-hidden",
+              "transition-all duration-300 ease-out cursor-pointer"
             )}
           >
             {/* Borda esquerda com degradê — replica cabeçalho institucional */}
@@ -340,7 +341,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </div>
           </button>
           </div>
-        )}
+        )}   )}
         {/* Expanded content */}
         <div className={cn("flex flex-col flex-1 min-h-0", variant === "fixed" && !isExpanded && "hidden")}>
         {variant === "fixed" && isExpanded && (
