@@ -264,19 +264,31 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             className={cn(
               "group flex flex-col items-center w-full",
               // Altura: 90% da viewport, centralizada
-              "h-[90vh] max-h-[90vh]",
+              "h-[75vh] max-h-[75vh]",
               // Cantos arredondados para elegância
               "rounded-l-2xl",
-              // Fundo branco/claro — borda azul sólida
-              "bg-card dark:bg-card",
-              "border-l-[3px] border-t border-b border-[hsl(217,72%,42%)]",
-              // Sombra elegante
-              "shadow-[-4px_0_20px_rgba(10,22,56,0.18)]",
-              "hover:shadow-[-6px_0_28px_rgba(10,22,56,0.28)]",
-              "hover:border-[hsl(217,72%,32%)]",
+              // Fundo: degradê sutil replicando o cabeçalho institucional
+              "bg-gradient-to-b from-[#0a1628]/5 via-[#0f2847]/8 to-[#1a3a5c]/5",
+              "dark:bg-gradient-to-b dark:from-[#0a1628]/30 dark:via-[#0f2847]/40 dark:to-[#1a3a5c]/30",
+              // Borda esquerda com degradê via sombra interna + borda
+              "border-t border-b border-t-gray-300/60 border-b-[#1a3a5c]/60",
+              // Borda esquerda como gradiente usando box-shadow
+              "relative overflow-visible",
+              // Sombra externa elegante
+              "drop-shadow-[−4px_0_16px_rgba(10,22,56,0.20)]",
+              "hover:drop-shadow-[-6px_0_24px_rgba(10,22,56,0.35)]",
               "transition-all duration-250 ease-out cursor-pointer"
             )}
           >
+            {/* Borda esquerda com degradê — replica cabeçalho institucional */}
+            <span
+              aria-hidden
+              className="absolute left-0 top-0 bottom-0 w-[3px] pointer-events-none"
+              style={{
+                background: "linear-gradient(to bottom, #94a3b8 0%, #0f2847 40%, #1a3a5c 70%, #0a1628 100%)"
+              }}
+            />
+
             {/* Conteúdo totalmente centralizado na barra */}
             <div className="flex flex-col items-center justify-center h-full w-full gap-3 py-6">
 
@@ -328,7 +340,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </div>
           </button>
           </div>
-        )}
+        )}   )}
         {/* Expanded content */}
         <div className={cn("flex flex-col flex-1 min-h-0", variant === "fixed" && !isExpanded && "hidden")}>
         {variant === "fixed" && isExpanded && (
