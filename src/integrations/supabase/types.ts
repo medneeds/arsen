@@ -5135,9 +5135,49 @@ export type Database = {
         }[]
       }
       cleanup_locked_sector_pending_allocations: { Args: never; Returns: Json }
+      complete_internal_transfer_atomic: {
+        Args: {
+          p_current_user_id?: string
+          p_department?: string
+          p_destination: Json
+          p_hospital_unit_id: string
+          p_repoint_reason?: string
+          p_request_id: string
+          p_state_id: string
+          p_target_patient_id: string
+        }
+        Returns: Json
+      }
       create_patient_snapshot: {
         Args: { p_description: string; p_patient_id: string }
         Returns: string
+      }
+      execute_internal_transfer_atomic: {
+        Args: {
+          p_classification?: string
+          p_created_by?: string
+          p_department?: string
+          p_hospital_unit_id?: string
+          p_needs_new_admission?: boolean
+          p_needs_saps?: boolean
+          p_reason?: string
+          p_source_patient_id: string
+          p_state_id?: string
+          p_target_patient_id: string
+        }
+        Returns: Json
+      }
+      execute_operational_relocation_atomic: {
+        Args: {
+          p_created_by?: string
+          p_department?: string
+          p_hospital_unit_id: string
+          p_reason: string
+          p_source_patient_id: string
+          p_state_id: string
+          p_target_patient_id: string
+        }
+        Returns: Json
       }
       generate_encounter_code_v2: {
         Args: { p_data_hora_admissao?: string; p_medical_record_id: string }
@@ -5295,6 +5335,23 @@ export type Database = {
       setup_visitante_user: { Args: never; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      signal_internal_transfer_atomic: {
+        Args: {
+          p_classification?: string
+          p_department?: string
+          p_encounter_code?: string
+          p_hospital_unit_id: string
+          p_reason?: string
+          p_requires_saps?: boolean
+          p_signaled_by?: string
+          p_snapshot: Json
+          p_source_patient_id: string
+          p_state_id: string
+          p_target_sector_code: string
+          p_target_sector_label?: string
+        }
+        Returns: Json
+      }
       suspend_discharge_document: {
         Args: { p_doc_id: string; p_reason: string }
         Returns: Json
