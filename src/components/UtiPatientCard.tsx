@@ -1228,7 +1228,7 @@ export function UtiPatientCard({
                             ? 'Conclui a sinalização feita no Painel Clínico'
                             : patient.admissionStatus === 'admitido'
                               ? 'Sem sinalização — abre orientação para sinalizar no Painel'
-                              : 'Pré-admissão — desocupa o leito sem apagar o prontuário';
+                              : 'Desalocar leito — mantém o prontuário intacto';
                         const tone = isSignaled ? 'emerald' : 'amber';
                         return (
                           <DropdownMenuItem

@@ -397,7 +397,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
             ? "Desalocar leito — transferência interna sinalizada"
             : patient?.admissionStatus === "transferencia_externa_pendente"
               ? "Desalocar leito — transferência externa sinalizada"
-              : isPostDischarge ? "Desalocar leito após alta/óbito" : "Desalocar leito (pré-admissão)"
+              : isPostDischarge ? "Desalocar leito após alta/óbito" : "Desalocar leito (aguardando alocação)"
       }
       description={
         isExceptional

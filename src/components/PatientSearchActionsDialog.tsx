@@ -509,7 +509,7 @@ export function PatientSearchActionsDialog({
                   </Badge>
                 )}
                 {!activeEncounterInfo.sectorLabel && !activeEncounterInfo.isObito && (
-                  <p className="text-xs text-muted-foreground">Atendimento ativo sem leito físico alocado (aguardando pré-admissão)</p>
+                  <p className="text-xs text-muted-foreground">Atendimento ativo sem leito físico alocado (aguardando alocação em leito)</p>
                 )}
               </div>
 
@@ -587,7 +587,7 @@ export function PatientSearchActionsDialog({
           {step === "preadmit_question" && (
             <div className="space-y-4 py-2">
               <p className="text-xs text-muted-foreground">
-                Antes de confirmar, deseja <b>sinalizar pré-admissão</b> deste paciente para algum setor
+                Antes de confirmar, deseja <b>sinalizar alocação em leito</b> deste paciente para algum setor
                 (entra em "Aguardando Pré-admissão (Alocação) em Leito")?
               </p>
 
@@ -664,14 +664,14 @@ export function PatientSearchActionsDialog({
         onConfirm={handleConfirmCreateEncounter}
         isSubmitting={isSubmitting}
         title="Abrir novo atendimento"
-        description="Confirme a abertura do atendimento e, se aplicável, a sinalização de pré-admissão no setor."
+        description="Confirme a abertura do atendimento e, se aplicável, a sinalização de alocação em leito no setor."
         summary={summary}
         consequences={consequences}
-        confirmLabel={signalPreAdmission && selectedSector ? "Confirmar pré-admissão" : "Confirmar abertura de atendimento"}
+        confirmLabel={signalPreAdmission && selectedSector ? "Confirmar alocação em leito" : "Confirmar abertura de atendimento"}
         cancelLabel="Voltar"
         finalNote={
           signalPreAdmission && selectedSector
-            ? <>A pré-admissão aloca o paciente no setor e gera o <b>número de atendimento imutável</b>. A admissão médica é feita pelo médico ao avaliar o paciente no leito.</>
+            ? <>A alocação coloca o paciente no leito e gera o <b>número de atendimento imutável</b>. A admissão médica é feita pelo médico ao avaliar o paciente no leito.</>
             : <>O código de atendimento é <b>imutável</b> após a emissão e ficará vinculado ao prontuário do paciente.</>
         }
       />

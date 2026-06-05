@@ -292,7 +292,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
             {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             <h2 className="text-sm font-bold flex items-center gap-2">
               <Clock className="h-4 w-4 text-primary" />
-              Aguardando Pré-admissão (Alocação) em Leito
+              Aguardando Alocação em Leito
               <Badge variant="secondary" className="text-xs">
                 {searchTerm ? `${filteredPreAdmissions.length}/${preAdmissions.length}` : preAdmissions.length}
               </Badge>
@@ -352,7 +352,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                   ? (isSearchingRegistry
                       ? `Buscando "${searchTerm}"...`
                       : `Nenhum paciente encontrado para "${searchTerm}".`)
-                  : "Nenhum paciente aguardando pré-admissão."}
+                  : "Nenhum paciente aguardando alocação em leito."}
               </CardContent>
             </Card>
           ) : (
@@ -609,7 +609,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                 <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-[12px] space-y-1">
                   <p className="font-semibold text-amber-700 dark:text-amber-400">O que acontece:</p>
                   <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
-                    <li>O card some do painel "Aguardando Pré-admissão".</li>
+                    <li>O card some do painel "Aguardando Alocação".</li>
                     <li>Nenhum leito será marcado como ocupado por este paciente.</li>
                     <li>O prontuário e o cadastro do paciente <strong>permanecem intactos</strong>.</li>
                     <li>Para readmitir, você poderá <strong>reabrir</strong> esta pré-admissão na aba <em>Canceladas</em> (sem precisar recadastrar).</li>
@@ -641,7 +641,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
                 <p className="text-foreground">
-                  O paciente voltará para a fila <strong>"Aguardando Pré-admissão (Alocação) em Leito"</strong> com status <code className="text-[11px] px-1 py-0.5 rounded bg-muted">aguardando_leito</code>.
+                  O paciente voltará para a fila <strong>"Aguardando Alocação em Leito"</strong> com status <code className="text-[11px] px-1 py-0.5 rounded bg-muted">aguardando_leito</code>.
                 </p>
                 <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-2 text-[12px] space-y-1">
                   <p className="font-semibold text-emerald-700 dark:text-emerald-400">O que acontece:</p>
