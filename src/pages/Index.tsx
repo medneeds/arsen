@@ -218,7 +218,7 @@ const Index = () => {
     yellow:  { title: "UTI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
     blue:    { title: "UCI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
     outside: { title: "UCI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    ucc:     { title: "UCC",    color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    ucc:     { title: "UCC",    color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
     // ── Demais setores (sem isUti — usam SectorSection padrão) ─────────
     neuro_01:             { title: "Neuro 01",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     neuro_02:             { title: "Neuro 02",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
@@ -1093,7 +1093,13 @@ const Index = () => {
                 <div className="space-y-4">
                   <SectorSection 
                     sector={activeSector as any}
-                    patients={filterPatients(patients.filter(p => p.sector === activeSector))}
+                    patients={filterPatients(patients.filter(p =>
+                      p.sector === activeSector ||
+                      (p as any).department === ({
+                        ucc: 'UCC', blue: 'UCI 1', enfermaria_transicao: 'ENFERMARIA DE TRANSIÇÃO',
+                        neuro_01: 'NEURO 01', neuro_02: 'NEURO 02', clinica_cirurgica: 'CLÍNICA CIRÚRGICA',
+                      } as Record<string,string>)[activeSector]
+                    ))}
                     onUpdatePatient={handleUpdatePatient}
                     onDeletePatient={handleDeletePatient}
                     onReleasePreAdmissionBed={handleReleasePreAdmissionBed}
