@@ -246,36 +246,42 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             "shadow-[inset_1px_0_0_hsl(217,40%,98%)] dark:shadow-[inset_1px_0_0_hsl(217,30%,16%)]",
             "rounded-b-xl ring-1 ring-[hsl(217,40%,92%)]/60 dark:ring-[hsl(217,40%,20%)]/40",
             "transition-[width] duration-300 ease-out",
-            isExpanded ? "w-[min(24rem,85vw)]" : "w-32",
+            isExpanded ? "w-[min(24rem,85vw)]" : "w-11",
           ],
           variant === "inline" && "w-full h-full bg-card border border-[hsl(217,30%,82%)]/70 dark:border-[hsl(217,30%,24%)]/70 rounded-lg overflow-hidden",
           "flex-col print:hidden",
           className
         )}
       >
-        {/* ══ Barra colapsada — traversa toda a altura, semitransparente ══ */}
+        {/* ══ Barra colapsada — centralizada, 90% da altura, elegante ══ */}
         {variant === "fixed" && !isExpanded && (
+          <div className="flex items-center justify-center h-full w-full">
           <button
             type="button"
             title="Expandir painel do paciente"
             onClick={() => setPinned(true)}
             onMouseEnter={() => setHovering(true)}
             className={cn(
-              "group flex flex-col items-center w-full h-full",
-              // Fundo sólido — sem transparências
-              "bg-[hsl(217,72%,36%)] hover:bg-[hsl(217,72%,28%)]",
-              // Borda esquerda
-              "border-l-[3px] border-[hsl(217,72%,52%)]",
-              // Sombra que destaca do conteúdo
-              "shadow-[-6px_0_24px_rgba(10,22,56,0.25)]",
-              "transition-all duration-200 ease-out cursor-pointer"
+              "group flex flex-col items-center w-full",
+              // Altura: 90% da viewport, centralizada
+              "h-[90vh] max-h-[90vh]",
+              // Cantos arredondados para elegância
+              "rounded-l-2xl",
+              // Fundo branco/claro — borda azul sólida
+              "bg-card dark:bg-card",
+              "border-l-[3px] border-t border-b border-[hsl(217,72%,42%)]",
+              // Sombra elegante
+              "shadow-[-4px_0_20px_rgba(10,22,56,0.18)]",
+              "hover:shadow-[-6px_0_28px_rgba(10,22,56,0.28)]",
+              "hover:border-[hsl(217,72%,32%)]",
+              "transition-all duration-250 ease-out cursor-pointer"
             )}
           >
             {/* Conteúdo totalmente centralizado na barra */}
             <div className="flex flex-col items-center justify-center h-full w-full gap-3 py-6">
 
               {/* Chevron */}
-              <ChevronLeft className="h-5 w-5 text-white/80 group-hover:text-white transition-colors shrink-0" />
+              <ChevronLeft className="h-4 w-4 text-[hsl(217,72%,42%)] group-hover:text-[hsl(217,72%,28%)] transition-colors shrink-0" />
 
               {/* Status dot */}
               <div className={cn("h-2.5 w-2.5 rounded-full shrink-0", status.dot)} title={status.label} />
@@ -287,18 +293,18 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               >
                 <div className="flex flex-col items-center gap-3">
                   {patient.bedNumber && (
-                    <span className="text-sm font-black tracking-[0.2em] text-white">
+                    <span className="text-[11px] font-black tracking-[0.18em] text-[hsl(217,72%,30%)] group-hover:text-[hsl(217,72%,20%)]">
                       {patient.bedNumber}
                     </span>
                   )}
-                  <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-white/70">
+                  <span className="text-[8px] font-bold tracking-[0.25em] uppercase text-foreground/50 group-hover:text-foreground/80">
                     {sector}
                   </span>
                   {patient.name && patient.name.trim() !== '' && (
                     <>
-                      <span className="w-4 h-px bg-white/40" />
-                      <span className="text-[11px] font-semibold tracking-wide text-white/90">
-                        {patient.name.split(' ').slice(0, 2).join(' ')}
+                      <span className="w-3 h-px bg-border" />
+                      <span className="text-[9px] font-semibold tracking-wide text-foreground/70 group-hover:text-foreground">
+                        {patient.name.split(' ').slice(0, 3).join(' ')}
                       </span>
                     </>
                   )}
@@ -308,20 +314,21 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               {/* Alergia */}
               {allergies.length > 0 && (
                 <span title={`Alergia: ${allergies.join(", ")}`} className="inline-flex shrink-0">
-                  <ShieldAlert className="h-4 w-4 text-red-300" />
+                  <ShieldAlert className="h-3.5 w-3.5 text-destructive" />
                 </span>
               )}
 
               {/* Label VER */}
               <span
-                className="text-[9px] font-bold tracking-[0.2em] uppercase text-white/60 shrink-0"
+                className="text-[7px] font-bold tracking-[0.2em] uppercase text-[hsl(217,72%,52%)]/70 group-hover:text-[hsl(217,72%,32%)] transition-colors shrink-0"
                 style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
               >
                 ver
               </span>
             </div>
           </button>
-        )}
+          </div>
+        )}   )}
         {/* Expanded content */}
         <div className={cn("flex flex-col flex-1 min-h-0", variant === "fixed" && !isExpanded && "hidden")}>
         {variant === "fixed" && isExpanded && (
