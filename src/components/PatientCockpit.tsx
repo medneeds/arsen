@@ -340,7 +340,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </div>
           </button>
           </div>
-        )}   )}
+        )}
         {/* Expanded content */}
         <div className={cn("flex flex-col flex-1 min-h-0", variant === "fixed" && !isExpanded && "hidden")}>
         {variant === "fixed" && isExpanded && (
