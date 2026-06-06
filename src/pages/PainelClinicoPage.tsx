@@ -92,19 +92,17 @@ const getSectorColor = (sector: string) => {
   return map[sector] || "";
 };
 
-const getResponsibleDoctor = (patient: Patient): string => {
+const RESPONSIBILITY_TYPE_LABEL: Record<string, string> = {
+  rotineiro: "Rotineiro", plantonista: "Plantonista", intercorrencista: "Intercorrencista",
+  lider: "Líder", porta: "Porta", conjunto: "Conjunto",
+  obstetra: "Obstetra", cirurgiao_geral: "Cirurgião Geral", traumatologista: "Traumatologista",
+};
+
+const getEspecialidadesInfo = (patient: Patient): { specialties: string[]; typeLabel: string | null } => {
   const mr = patient.medicalResponsibility;
-  if (!mr) return "—";
-  if (mr.leaderNames) return mr.leaderNames;
-  if (mr.portaNames) return mr.portaNames;
-  if (mr.type) {
-    const types: Record<string, string> = {
-      lider: "Líder", porta: "Porta", conjunto: "Conjunto",
-      obstetra: "Obstetra", cirurgiao_geral: "Cirurgião Geral", traumatologista: "Traumatologista",
-    };
-    return types[mr.type] || mr.type;
-  }
-  return "—";
+  const specialties = mr?.specialties ?? [];
+  const typeLabel = mr?.type ? (RESPONSIBILITY_TYPE_LABEL[mr.type] ?? mr.type) : null;
+  return { specialties, typeLabel };
 };
 
 const getPrescriptionStatus = (status: TodaysPrescriptionStatus): { label: string; variant: "default" | "secondary" | "outline" | "destructive"; dotColor: string; pulsing: boolean } => {
@@ -486,8 +484,32 @@ export default function PainelClinicoPage() {
                       <TableCell>
                         <span className="text-xs text-muted-foreground">{getDischargeText(patient)}</span>
                       </TableCell>
-                      <TableCell>
-                        <span className="text-xs text-foreground">{getResponsibleDoctor(patient)}</span>
+                      <TableCell className="hidden lg:table-cell">
+                        {(() => {
+                          const { specialties, typeLabel } = getEspecialidadesInfo(patient);
+                          if (specialties.length === 0 && !typeLabel) {
+                            return <span className="text-xs text-muted-foreground">—</span>;
+                          }
+                          return (
+                            <div className="flex flex-col gap-0.5">
+                              {specialties.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {specialties.slice(0, 2).map(sp => (
+                                    <Badge key={sp} variant="outline" className="text-[10px] px-1.5 py-0 whitespace-nowrap font-normal">
+                                      {sp}
+                                    </Badge>
+                                  ))}
+                                  {specialties.length > 2 && (
+                                    <span className="text-[10px] text-primary">+{specialties.length - 2} mais</span>
+                                  )}
+                                </div>
+                              )}
+                              {typeLabel && (
+                                <span className="text-[10px] text-muted-foreground">{typeLabel}</span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell className="text-center">
                         <Button
