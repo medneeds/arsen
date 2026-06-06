@@ -4553,6 +4553,11 @@ const PrescricaoPage = () => {
       if (!item.ivBolus && empty(item.infusionTime) && empty(item.infusionRate)) {
         missing.push('tempo ou vazão');
       }
+      // Posologia SEMPRE obrigatória para IV intermitente — define frequência e dose diária total.
+      // Instrução livre não substitui (risco de omissão de dose na enfermagem).
+      if (empty(item.posology) && !missing.includes('posologia')) {
+        missing.push('posologia');
+      }
     }
 
     // ----- IV contínua (BIC) -----

@@ -15,11 +15,12 @@ export const MedicalResponsibilityIndicator = ({
   onClick,
   compact = false,
 }: MedicalResponsibilityIndicatorProps) => {
-  if (!responsibility?.type) return null;
+  const hasSpecialties = (responsibility?.specialties?.length ?? 0) > 0;
+  if (!responsibility?.type && !hasSpecialties) return null;
 
   const getIcon = () => {
     const iconStyle = { color: sectorColor };
-    switch (responsibility.type) {
+    switch (responsibility?.type) {
       case 'rotineiro':
         return <CalendarClock className={cn(compact ? "h-3.5 w-3.5" : "h-4 w-4")} style={iconStyle} />;
       case 'plantonista':
@@ -39,7 +40,7 @@ export const MedicalResponsibilityIndicator = ({
       case 'traumatologista':
         return <Bone className={cn(compact ? "h-3.5 w-3.5" : "h-4 w-4")} style={iconStyle} />;
       default:
-        return null;
+        return hasSpecialties ? <Stethoscope className={cn(compact ? "h-3.5 w-3.5" : "h-4 w-4")} style={iconStyle} /> : null;
     }
   };
 
@@ -79,7 +80,7 @@ export const MedicalResponsibilityIndicator = ({
   };
 
   const getAbbreviation = () => {
-    switch (responsibility.type) {
+    switch (responsibility?.type) {
       case 'rotineiro': return 'ROTIN.';
       case 'plantonista': return 'PLANT.';
       case 'intercorrencista': return 'INTERC.';
@@ -89,12 +90,12 @@ export const MedicalResponsibilityIndicator = ({
       case 'obstetra': return 'OBS';
       case 'cirurgiao_geral': return 'CIRURG.';
       case 'traumatologista': return 'ORTOP';
-      default: return '';
+      default: return hasSpecialties ? 'ESPEC.' : '';
     }
   };
 
   const getLabel = () => {
-    switch (responsibility.type) {
+    switch (responsibility?.type) {
       case 'rotineiro': return 'Médico Rotineiro';
       case 'plantonista': return 'Médico Plantonista';
       case 'intercorrencista': return 'Médico Intercorrencista';
@@ -104,7 +105,7 @@ export const MedicalResponsibilityIndicator = ({
       case 'obstetra': return 'Obstetra';
       case 'cirurgiao_geral': return 'Cirurgião Geral';
       case 'traumatologista': return 'Traumatologista';
-      default: return '';
+      default: return hasSpecialties ? `Especialidades: ${responsibility!.specialties!.join(', ')}` : '';
     }
   };
 

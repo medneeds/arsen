@@ -3,10 +3,36 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { MedicalResponsibility, MedicalResponsibilityType } from "@/types/patient";
-import { X, UsersRound, Check, Search, UserCheck, CalendarClock, Moon, Siren } from "lucide-react";
+import { X, UsersRound, Check, Search, UserCheck, CalendarClock, Moon, Siren, Stethoscope } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+
+const HOSPITAL_SPECIALTIES = [
+  "Cardiologia",
+  "Cirurgia Geral",
+  "Cirurgia Torácica",
+  "Cirurgia Vascular",
+  "Clínica Médica",
+  "Endocrinologia",
+  "Gastroenterologia",
+  "Geriatria",
+  "Ginecologia e Obstetrícia",
+  "Hematologia",
+  "Infectologia",
+  "Medicina Intensiva / UTI",
+  "Nefrologia",
+  "Neurocirugia",
+  "Neurologia",
+  "Oncologia",
+  "Ortopedia e Traumatologia",
+  "Pediatria",
+  "Pneumologia",
+  "Psiquiatria",
+  "Reumatologia",
+  "Urologia",
+];
 
 interface MedicalResponsibilityDialogProps {
   open: boolean;
@@ -36,10 +62,23 @@ export const MedicalResponsibilityDialog = ({
   const [responsibleDoctorCrm, setResponsibleDoctorCrm] = useState<string | undefined>(
     currentResponsibility?.responsibleDoctorCrm
   );
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>(
+    currentResponsibility?.specialties || []
+  );
   const [doctorQuery, setDoctorQuery] = useState("");
   const [doctorResults, setDoctorResults] = useState<Array<{ id: string; full_name: string; crm?: string | null }>>([]);
   const [searching, setSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setType(currentResponsibility?.type || null);
+      setResponsibleDoctorId(currentResponsibility?.responsibleDoctorId);
+      setResponsibleDoctorName(currentResponsibility?.responsibleDoctorName || "");
+      setResponsibleDoctorCrm(currentResponsibility?.responsibleDoctorCrm);
+      setSelectedSpecialties(currentResponsibility?.specialties || []);
+    }
+  }, [open, currentResponsibility]);
 
   useEffect(() => {
     if (!doctorQuery || doctorQuery.length < 2) {
@@ -81,12 +120,19 @@ export const MedicalResponsibilityDialog = ({
     setResponsibleDoctorCrm(undefined);
   };
 
+  const toggleSpecialty = (sp: string) => {
+    setSelectedSpecialties(prev =>
+      prev.includes(sp) ? prev.filter(s => s !== sp) : [...prev, sp]
+    );
+  };
+
   const handleSave = () => {
     onSave({
       type,
       responsibleDoctorId,
       responsibleDoctorName: responsibleDoctorName || undefined,
       responsibleDoctorCrm,
+      specialties: selectedSpecialties.length > 0 ? selectedSpecialties : undefined,
     });
     onOpenChange(false);
   };
@@ -94,28 +140,29 @@ export const MedicalResponsibilityDialog = ({
   const handleClear = () => {
     setType(null);
     clearDoctor();
+    setSelectedSpecialties([]);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto bg-background dark:bg-gray-900 border-2 dark:border-gray-700 backdrop-blur-xl">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-background dark:bg-gray-900 border-2 dark:border-gray-700 backdrop-blur-xl">
         <DialogHeader>
           <DialogTitle className="text-xl flex items-center gap-2 dark:text-white" style={{ color: sectorColor }}>
-            <div 
+            <div
               className="w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-sm"
               style={{ backgroundColor: `${sectorColor}20` }}
             >
               <UsersRound className="h-5 w-5" style={{ color: sectorColor }} />
             </div>
-            Responsabilidade Médica
+            Especialidades Envolvidas
           </DialogTitle>
           <DialogDescription className="dark:text-gray-300">
-            Configure o tipo de acompanhamento e responsáveis pelo paciente
+            Configure o médico responsável, tipo de acompanhamento e especialidades envolvidas
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 py-4">
-          {/* Médico responsável (rotineiro do setor) */}
+          {/* Médico responsável */}
           <div className="space-y-2 p-3 rounded-xl border-2 border-dashed bg-muted/30 dark:bg-gray-800/40 dark:border-gray-700">
             <Label className="text-sm font-semibold flex items-center gap-2 dark:text-white">
               <UserCheck className="h-4 w-4" style={{ color: sectorColor }} />
@@ -173,8 +220,9 @@ export const MedicalResponsibilityDialog = ({
             </p>
           </div>
 
+          {/* Tipo de acompanhamento */}
           <div className="space-y-3">
-            <Label className="text-sm font-semibold text-foreground dark:text-white">Selecione o Tipo de Acompanhamento</Label>
+            <Label className="text-sm font-semibold text-foreground dark:text-white">Tipo de Acompanhamento</Label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {([
                 { key: null,              label: 'Nenhum',          sub: '',                  Icon: X },
@@ -215,6 +263,52 @@ export const MedicalResponsibilityDialog = ({
               })}
             </div>
           </div>
+
+          {/* Especialidades envolvidas */}
+          <div className="space-y-3 p-3 rounded-xl border-2 border-dashed bg-muted/30 dark:bg-gray-800/40 dark:border-gray-700">
+            <Label className="text-sm font-semibold flex items-center gap-2 dark:text-white">
+              <Stethoscope className="h-4 w-4" style={{ color: sectorColor }} />
+              Especialidades Envolvidas
+              {selectedSpecialties.length > 0 && (
+                <Badge variant="secondary" className="ml-1 text-[10px]">
+                  {selectedSpecialties.length}
+                </Badge>
+              )}
+            </Label>
+
+            {selectedSpecialties.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {selectedSpecialties.map(sp => (
+                  <Badge
+                    key={sp}
+                    variant="outline"
+                    className="text-[11px] cursor-pointer hover:bg-destructive/10 hover:border-destructive/40 hover:text-destructive transition-colors"
+                    style={{ borderColor: `${sectorColor}60`, color: sectorColor }}
+                    onClick={() => toggleSpecialty(sp)}
+                  >
+                    {sp}
+                    <X className="h-2.5 w-2.5 ml-1" />
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-1.5">
+              {HOSPITAL_SPECIALTIES.filter(sp => !selectedSpecialties.includes(sp)).map(sp => (
+                <button
+                  key={sp}
+                  type="button"
+                  onClick={() => toggleSpecialty(sp)}
+                  className="text-[11px] px-2 py-1 rounded-md border border-gray-200 dark:border-gray-600 bg-background dark:bg-gray-800 hover:border-current hover:bg-accent dark:hover:bg-gray-700 transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  + {sp}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground italic">
+              Selecione todas as especialidades acompanhando este paciente.
+            </p>
+          </div>
         </div>
 
         <div className="flex justify-between gap-3 pt-2">
@@ -227,14 +321,14 @@ export const MedicalResponsibilityDialog = ({
             Limpar
           </Button>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => onOpenChange(false)}
               className="hover:bg-accent dark:border-gray-600 dark:hover:bg-gray-700 dark:text-white transition-all"
             >
               Cancelar
             </Button>
-            <Button 
+            <Button
               onClick={handleSave}
               className="gap-2 shadow-sm hover:shadow-md transition-all text-white dark:shadow-lg"
               style={{ backgroundColor: sectorColor }}

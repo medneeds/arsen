@@ -21,6 +21,7 @@ export interface MedicalResponsibility {
   responsibleDoctorId?: string; // ID do médico responsável (rotineiro do setor)
   responsibleDoctorName?: string; // Nome do médico responsável
   responsibleDoctorCrm?: string;
+  specialties?: string[]; // Especialidades médicas envolvidas no atendimento
 }
 
 export interface Patient {

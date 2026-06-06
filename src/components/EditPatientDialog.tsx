@@ -228,18 +228,18 @@ export function EditPatientDialog({
                 </p>
               </section>
 
-              {/* Bloco 2: Dados Administrativos */}
+              {/* Bloco 2: Dados Hospitalares */}
               <section className="space-y-3 p-3 rounded-lg border bg-card">
                 <div className="flex items-center gap-2 text-sm font-semibold">
                   <ClipboardList className="h-4 w-4 text-primary" />
-                  Dados Administrativos
+                  Dados Hospitalares
                 </div>
 
-                {/* Responsável médico */}
+                {/* Especialidades envolvidas */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold flex items-center gap-1.5">
                     <UserCog className="h-3.5 w-3.5 text-muted-foreground" />
-                    Responsável Médico
+                    Especialidades Envolvidas
                   </Label>
                   <Button
                     type="button"
@@ -248,9 +248,14 @@ export function EditPatientDialog({
                     onClick={() => setResponsibilityOpen(true)}
                     className="w-full h-9 justify-start text-xs"
                   >
-                    {formData.medicalResponsibility?.type
-                      ? `Definido: ${formData.medicalResponsibility.type.toUpperCase()}`
-                      : "Definir responsabilidade médica"}
+                    {formData.medicalResponsibility?.type || (formData.medicalResponsibility?.specialties?.length ?? 0) > 0
+                      ? [
+                          formData.medicalResponsibility?.type?.toUpperCase(),
+                          (formData.medicalResponsibility?.specialties?.length ?? 0) > 0
+                            ? `${formData.medicalResponsibility!.specialties!.length} especialidade(s)`
+                            : null,
+                        ].filter(Boolean).join(" · ")
+                      : "Definir especialidades envolvidas"}
                   </Button>
                 </div>
 
