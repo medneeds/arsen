@@ -13,7 +13,7 @@ export async function repointPatientHistory(
   sourcePatientId: string,
   targetPatientId: string,
   reason?: string,
-): Promise<{ ok: boolean; counts?: Record<string, number>; error?: string }> {
+): Promise<{ ok: boolean; counts?: Record<string, number>; error?: string; verificationWarning?: string }> {
   if (!sourcePatientId || !targetPatientId) {
     return { ok: false, error: "source/target ausente" };
   }
@@ -28,6 +28,8 @@ export async function repointPatientHistory(
     });
     if (error) throw error;
 
+    let verificationWarning: string | undefined;
+
     // VERIFICAÇÃO 1 — evoluções com patient_id explícito ainda no leito origem.
     // A RPC usa try/catch por tabela internamente e pode retornar sucesso mesmo
     // tendo falhado silenciosamente em clinical_evolutions.
@@ -38,8 +40,11 @@ export async function repointPatientHistory(
       .is("archived_at", null);
 
     if (countError) {
-      console.warn("[repointPatientHistory] verificação 1 indisponível:", countError.message);
-      // Não bloqueia — a query de verificação falhou, mas a RPC pode ter funcionado.
+      // Query de verificação falhou: estado incerto — propagamos o aviso ao chamador
+      // para que ele possa logar ou alertar, em vez de silenciar completamente.
+      const msg = `verificação 1 indisponível: ${countError.message}`;
+      console.warn("[repointPatientHistory]", msg);
+      verificationWarning = msg;
     } else if (count && count > 0) {
       console.error(
         `[repointPatientHistory] integridade: ${count} evolução(ões) ainda no leito origem após RPC`,
@@ -71,8 +76,11 @@ export async function repointPatientHistory(
         .is("archived_at", null);
 
       if (nullCountError) {
-        console.warn("[repointPatientHistory] verificação 2 indisponível:", nullCountError.message);
-        // Não bloqueia — a query de verificação falhou, mas a RPC pode ter funcionado.
+        const msg2 = `verificação 2 indisponível: ${nullCountError.message}`;
+        console.warn("[repointPatientHistory]", msg2);
+        verificationWarning = verificationWarning
+          ? `${verificationWarning}; ${msg2}`
+          : msg2;
       } else if (nullCount && nullCount > 0) {
         console.error(
           `[repointPatientHistory] integridade: ${nullCount} evolução(ões) com patient_id nulo após RPC`,
@@ -84,7 +92,11 @@ export async function repointPatientHistory(
       }
     }
 
-    return { ok: true, counts: (data?.counts as Record<string, number>) ?? {} };
+    return {
+      ok: true,
+      counts: (data?.counts as Record<string, number>) ?? {},
+      ...(verificationWarning ? { verificationWarning } : {}),
+    };
   } catch (err: any) {
     console.error("[repointPatientHistory] erro", err);
     return { ok: false, error: err?.message ?? "Erro desconhecido" };

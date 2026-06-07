@@ -1225,7 +1225,7 @@ export default function GestorPanelPage() {
                 <div className="space-y-1.5 max-h-64 overflow-y-auto">
                   {tmpBySector.map(row => (
                     <div key={row.sector} className="flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-md hover:bg-muted/40 transition-colors">
-                      <span className="text-xs font-medium text-foreground truncate">{row.sector}</span>
+                      <span className="text-xs font-medium text-foreground truncate">{getSectorDisplayLabel(row.sector) || row.sector}</span>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-[10px] text-muted-foreground">{row.samples} altas</span>
                         <span className="text-xs font-bold text-primary tabular-nums">
@@ -1328,7 +1328,7 @@ export default function GestorPanelPage() {
                     return (
                       <div key={row.sector} className="flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-md hover:bg-muted/40 transition-colors">
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium text-foreground truncate">{row.sector}</p>
+                          <p className="text-xs font-medium text-foreground truncate">{getSectorDisplayLabel(row.sector) || row.sector}</p>
                           <p className="text-[10px] text-muted-foreground">
                             {row.encounters} altas · {row.beds > 0 ? `${row.beds} leitos` : "sem leitos mapeados"}
                           </p>
@@ -1376,7 +1376,7 @@ export default function GestorPanelPage() {
                     return (
                       <div key={row.sector} className="space-y-1">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-medium text-foreground truncate">{row.sector}</span>
+                          <span className="font-medium text-foreground truncate">{getSectorDisplayLabel(row.sector) || row.sector}</span>
                           <span className="tabular-nums shrink-0">
                             <span className="font-bold text-destructive">{row.deaths}</span>
                             <span className="text-muted-foreground"> · {row.rate.toFixed(0)}%</span>
@@ -1532,7 +1532,7 @@ export default function GestorPanelPage() {
                     return (
                       <div key={row.sector} className="px-2.5 py-1.5 rounded-md hover:bg-muted/40 transition-colors space-y-1">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs font-medium text-foreground truncate">{row.sector}</p>
+                          <p className="text-xs font-medium text-foreground truncate">{getSectorDisplayLabel(row.sector) || row.sector}</p>
                           <Badge variant="secondary" className="text-[10px] tabular-nums shrink-0">{row.total}</Badge>
                         </div>
                         <div className="flex flex-wrap gap-1">
@@ -1914,7 +1914,7 @@ export default function GestorPanelPage() {
                       <AlertTriangle className={cn("h-3.5 w-3.5 shrink-0", alert.severity === "critical" ? "text-destructive" : "text-amber-600")} />
                       <div className="flex-1 min-w-0">
                         <p className="patient-id text-xs font-semibold text-foreground truncate">{alert.patientName}</p>
-                        <p className="text-[10px] text-muted-foreground">{alert.sector} · L{alert.bed} — {alert.detail}</p>
+                        <p className="text-[10px] text-muted-foreground">{getSectorDisplayLabel(alert.sector) || alert.sector} · L{alert.bed} — {alert.detail}</p>
                       </div>
                     </div>
                   ))}

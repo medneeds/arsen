@@ -13,6 +13,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 
@@ -35,12 +36,6 @@ interface SearchMovement {
   created_at: string;
 }
 
-const sectorLabel: Record<string, string> = {
-  red: "UTI 1",
-  yellow: "UTI 2",
-  blue: "UCI 1",
-  outside: "UCI 2",
-};
 
 const movementTypeLabel: Record<string, string> = {
   admission: "Admissão",
@@ -300,7 +295,7 @@ export const GlobalSearchDialog = forwardRef<GlobalSearchHandle, GlobalSearchDia
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground truncate">
-                      {sectorLabel[p.sector] || p.sector} • {p.department}
+                      {getSectorDisplayLabel(p.sector) || p.sector} • {p.department}
                     </p>
                   </div>
                   <button

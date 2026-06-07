@@ -5,12 +5,24 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+// Restringe CORS à origem configurada em ALLOWED_ORIGIN (variável de ambiente).
+// Se não configurada, cai em "*" para compatibilidade retroativa em dev local.
+// Em produção, definir ALLOWED_ORIGIN=https://app.exemplo.com.br nos secrets do projeto.
+function buildCorsHeaders(req: Request): Record<string, string> {
+  const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN") ?? "*";
+  const requestOrigin = req.headers.get("origin") ?? "";
+  const effectiveOrigin =
+    allowedOrigin === "*"
+      ? "*"
+      : requestOrigin === allowedOrigin
+      ? allowedOrigin
+      : "null"; // origem não autorizada → bloqueia o browser
+  return {
+    "Access-Control-Allow-Origin": effectiveOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+}
 
 const onlyDigits = (v: string) => v.replace(/\D+/g, "");
 
@@ -76,7 +88,14 @@ function checkRateLimit(ip: string): { allowed: boolean; retryAfterSeconds: numb
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
+// Mensagem genérica para "não encontrado": igual à mensagem de erro de rate-limit,
+// impedindo que um atacante distinga entre "conta não existe" (antes: 404 distinto)
+// e "conta existe, mas tentativas esgotadas" (antes: 429 distinto).
+const MSG_NOT_FOUND = "Identificador não encontrado ou acesso bloqueado.";
+
 Deno.serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -89,7 +108,8 @@ Deno.serve(async (req) => {
     console.warn(`[resolve-login] rate limit atingido — IP: ${clientIp}`);
     return new Response(
       JSON.stringify({
-        error: "Muitas tentativas. Aguarde antes de tentar novamente.",
+        // Mesma mensagem do caso "não encontrado" — evita enumeração por mensagem.
+        error: MSG_NOT_FOUND,
         retryAfterSeconds: rateCheck.retryAfterSeconds,
       }),
       {
@@ -179,7 +199,7 @@ Deno.serve(async (req) => {
 
     if (!profileId) {
       return new Response(
-        JSON.stringify({ error: "Usuário não encontrado" }),
+        JSON.stringify({ error: MSG_NOT_FOUND }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }

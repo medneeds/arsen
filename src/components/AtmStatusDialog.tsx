@@ -28,6 +28,9 @@ export interface AtmStatusItem {
   atbStartDate?: string;
   atbPlannedDays?: string;
   atbInfectionSite?: string;
+  atbJustification?: string;
+  atbCultureCollected?: string;
+  atbCultureResult?: string;
 }
 
 interface Props {

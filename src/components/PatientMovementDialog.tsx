@@ -48,6 +48,7 @@ import {
   type DischargeDocPayload,
   printDischargeDocument,
 } from "@/lib/dischargeDocuments";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 
 // Mapeamento: texto do destino de transferência interna → código de setor do banco
 const DESTINATION_TO_SECTOR_CODE: Record<string, string> = {
@@ -427,16 +428,19 @@ export function PatientMovementDialog({
             // Criar apenas o registro de fila — SEM zerar o leito de origem
             const { error: reqErr } = await supabase.from("internal_transfer_requests").insert({
               source_patient_id: (patient as any).id,
+              patient_name: patient?.name || '',
+              source_bed: patient?.bedNumber || null,
+              source_sector: patient?.sector || null,
               target_sector_code: sectorCode,
+              target_sector_label: sectorLabelFromCode(sectorCode) || finalDest || null,
               classification,
               requires_saps: needsSaps,
               status: "pending",
-              created_by: authUser?.id ?? null,
+              signaled_by: authUser?.id ?? null,
               hospital_unit_id: currentHospital.id,
               state_id: currentState.id,
               department: currentDepartment ?? null,
               encounter_code: (encData as any)?.encounter_code ?? null,
-              encounter_id: (encData as any)?.id ?? null,
               reason: notes?.trim() || finalDest || null,
               patient_snapshot: patient as any,
             } as any);
@@ -652,7 +656,7 @@ export function PatientMovementDialog({
           <div className="p-3 bg-muted/60 rounded-lg">
             <p className="font-medium text-sm">{patient.name}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Leito: {patient.bedNumber} • Setor: {patient.sector}
+              Leito: {patient.bedNumber} • Setor: {sectorLabelFromCode(patient.sector) || patient.sector}
             </p>
           </div>
         </div>
@@ -882,7 +886,7 @@ export function PatientMovementDialog({
           }
           summary={[
             { icon: User, label: "Paciente", value: patient.name },
-            { icon: Bed, label: "Leito atual / Setor", value: `${patient.bedNumber} • ${patient.sector}` },
+            { icon: Bed, label: "Leito atual / Setor", value: `${patient.bedNumber} • ${sectorLabelFromCode(patient.sector) || patient.sector}` },
             ...(subtypeDef.needsDestination
               ? [{ icon: MapPin, label: "Destino", value: (destination === "OUTRO" ? customDestination : destination) || "—" } as MovementSummaryItem]
               : []),

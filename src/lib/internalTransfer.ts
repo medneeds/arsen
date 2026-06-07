@@ -542,7 +542,10 @@ export async function completeInternalTransfer(
       console.warn("[internalTransfer] sync admission_histories (complete):", e);
     }
 
-    await (supabase as any)
+    // Falha aqui → throw: o repoint já aconteceu mas o status ficaria "pending",
+    // permitindo dupla-conclusão em uma nova tentativa. Melhor expor o erro ao
+    // chamador para que ele saiba que a operação não foi confirmada no banco.
+    const { error: statusError } = await (supabase as any)
       .from("internal_transfer_requests")
       .update({
         status: "completed",
@@ -551,6 +554,7 @@ export async function completeInternalTransfer(
         completed_target_patient_id: targetBedRow.id,
       })
       .eq("id", requestId);
+    if (statusError) throw statusError;
 
     await supabase.from("patient_movements").insert({
       patient_id: targetBedRow.id,
@@ -586,9 +590,108 @@ export async function cancelInternalTransferRequest(
   requestId: string,
   reason: string,
   currentUserId?: string | null,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; restoredSourceBed?: boolean; error?: string }> {
   try {
-    const { error } = await (supabase as any)
+    // 1. Busca a solicitação pendente para obter snapshot e leito de origem.
+    const { data: req, error: reqErr } = await (supabase as any)
+      .from("internal_transfer_requests")
+      .select("id, source_patient_id, patient_snapshot, status")
+      .eq("id", requestId)
+      .eq("status", "pending")
+      .maybeSingle();
+    if (reqErr) throw reqErr;
+    if (!req) return { ok: false, error: "Solicitação não encontrada ou já processada" };
+
+    const sourcePatientId: string = req.source_patient_id;
+    const snapshot = (req.patient_snapshot ?? {}) as any;
+
+    // 2. Verifica se o leito de origem ainda está vago antes de restaurar.
+    // Se outro paciente já foi admitido no leito (is_vacant = false), não sobrescrevemos.
+    let restoredSourceBed = false;
+    const { data: sourceBed } = await supabase
+      .from("patients")
+      .select("is_vacant")
+      .eq("id", sourcePatientId)
+      .maybeSingle();
+
+    if (sourceBed?.is_vacant === true) {
+      const { error: restoreErr } = await supabase
+        .from("patients")
+        .update({
+          name:                     snapshot.name ?? "",
+          age:                      snapshot.age?.toString() || null,
+          diagnoses:                Array.isArray(snapshot.diagnoses)
+                                      ? snapshot.diagnoses.join("\n")
+                                      : snapshot.diagnoses || null,
+          medical_history:          Array.isArray(snapshot.medicalHistory)
+                                      ? snapshot.medicalHistory.join("\n")
+                                      : snapshot.medicalHistory || null,
+          relevant_exams:           Array.isArray(snapshot.relevantExams)
+                                      ? snapshot.relevantExams.join("\n")
+                                      : snapshot.relevantExams || null,
+          pendencies:               Array.isArray(snapshot.pendencies)
+                                      ? snapshot.pendencies.join("\n")
+                                      : snapshot.pendencies || null,
+          schedule:                 Array.isArray(snapshot.schedule)
+                                      ? snapshot.schedule.join("\n")
+                                      : snapshot.schedule || null,
+          admission_date:           coerceToIsoTimestamp(snapshot.admissionDate),
+          highlighted_diagnoses:    snapshot.highlightedDiagnoses || null,
+          highlighted_medical_history: snapshot.highlightedMedicalHistory || null,
+          highlighted_pendencies:   snapshot.highlightedPendencies || null,
+          highlighted_conducts:     snapshot.highlightedConducts || null,
+          uti_admission_date:       coerceToIsoTimestamp(snapshot.utiAdmissionDate),
+          uti_discharge_prediction: Array.isArray(snapshot.utiDischargePrediction)
+                                      ? snapshot.utiDischargePrediction.join("\n")
+                                      : snapshot.utiDischargePrediction || null,
+          uti_allergies:            Array.isArray(snapshot.utiAllergies)
+                                      ? snapshot.utiAllergies.join("\n")
+                                      : snapshot.utiAllergies || null,
+          uti_admission_reason:     Array.isArray(snapshot.utiAdmissionReason)
+                                      ? snapshot.utiAdmissionReason.join("\n")
+                                      : snapshot.utiAdmissionReason || null,
+          uti_current_status:       Array.isArray(snapshot.utiCurrentStatus)
+                                      ? snapshot.utiCurrentStatus.join("\n")
+                                      : snapshot.utiCurrentStatus || null,
+          uti_devices:              Array.isArray(snapshot.utiDevices)
+                                      ? snapshot.utiDevices.join("\n")
+                                      : snapshot.utiDevices || null,
+          uti_cultures_antibiotics: Array.isArray(snapshot.utiCulturesAntibiotics)
+                                      ? snapshot.utiCulturesAntibiotics.join("\n")
+                                      : snapshot.utiCulturesAntibiotics || null,
+          uti_specialties:          Array.isArray(snapshot.utiSpecialties)
+                                      ? snapshot.utiSpecialties.join("\n")
+                                      : snapshot.utiSpecialties || null,
+          uti_origin_sector:        Array.isArray(snapshot.utiOriginSector)
+                                      ? snapshot.utiOriginSector.join("\n")
+                                      : snapshot.utiOriginSector || null,
+          uti_daily_conducts:       Array.isArray(snapshot.utiDailyConducts)
+                                      ? snapshot.utiDailyConducts.join("\n")
+                                      : snapshot.utiDailyConducts || null,
+          clinical_status:          snapshot.clinicalStatus || null,
+          psm_status:               snapshot.psmStatus || null,
+          admission_history:        snapshot._admissionHistory ?? null,
+          admission_status:         snapshot.admissionStatus ?? "admitido",
+          admitted_at:              coerceToIsoTimestamp(snapshot._admittedAt),
+          patient_registry_id:      snapshot._registryId ?? null,
+          medical_record:           snapshot._medicalRecord ?? null,
+          is_vacant:                false,
+          updated_at:               new Date().toISOString(),
+        } as any)
+        .eq("id", sourcePatientId);
+      if (restoreErr) throw restoreErr;
+      restoredSourceBed = true;
+      invalidateResolvedRegistry(sourcePatientId);
+    } else if (sourceBed && sourceBed.is_vacant === false) {
+      // Leito de origem já tem outro paciente — não sobrescreve; apenas cancela a solicitação.
+      console.warn(
+        `[cancelInternalTransferRequest] leito de origem ${sourcePatientId} já está ocupado ` +
+        `— restauração ignorada para evitar sobreposição de paciente.`
+      );
+    }
+
+    // 3. Marca a solicitação como cancelada.
+    const { error: cancelErr } = await (supabase as any)
       .from("internal_transfer_requests")
       .update({
         status: "cancelled",
@@ -598,8 +701,9 @@ export async function cancelInternalTransferRequest(
       })
       .eq("id", requestId)
       .eq("status", "pending");
-    if (error) throw error;
-    return { ok: true };
+    if (cancelErr) throw cancelErr;
+
+    return { ok: true, restoredSourceBed };
   } catch (err: any) {
     return { ok: false, error: err?.message ?? "Erro" };
   }

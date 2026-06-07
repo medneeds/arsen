@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +29,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [allowedDepartments, setAllowedDepartments] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  // Evita dupla execução concorrente do fetchUserRoleAndDepartments (race condition
+  // no init: onAuthStateChange + getSession podem disparar quase simultaneamente).
+  const fetchingUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -69,6 +72,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const fetchUserRoleAndDepartments = async (userId: string) => {
+    if (fetchingUserIdRef.current === userId) return;
+    fetchingUserIdRef.current = userId;
     try {
       // Fetch role - get highest privilege role (admin > medico > others)
       const { data: rolesData, error: roleError } = await supabase
@@ -116,9 +121,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq("user_id", userId);
 
       if (deptError) {
-        if (import.meta.env.DEV) {
-          console.error("Error fetching user departments:", deptError);
-        }
+        // Sempre loga em qualquer ambiente — falha de departamento pode bloquear
+        // acesso legítimo e deve ser visível em produção.
+        console.error("[AuthContext] falha ao buscar departamentos do usuário:", deptError);
         setAllowedDepartments([]);
       } else {
         setAllowedDepartments(deptData?.map(d => d.department) || []);
@@ -132,21 +137,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus("pending");
       setAllowedDepartments([]);
     } finally {
+      fetchingUserIdRef.current = null;
       setLoading(false);
     }
   };
 
   const refreshUserStatus = async () => {
     if (user) {
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("status")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (!profileError && profileData) {
-        setStatus(profileData.status as UserStatus);
-      }
+      // Rebusca role + status + departamentos completos para garantir que mudanças
+      // feitas por um admin (ex: promoção de visitante → médico) reflitam
+      // imediatamente sem que o usuário precise fazer logout.
+      await fetchUserRoleAndDepartments(user.id);
     }
   };
 

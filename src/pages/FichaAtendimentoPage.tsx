@@ -454,7 +454,7 @@ const FichaAtendimentoPage = () => {
                 <Badge variant={enc.type === "classificacao_risco" ? "destructive" : enc.type === "prescricao" ? "default" : "secondary"} className="text-xs">
                   {idx + 1}/{encounters.length}
                 </Badge>
-                <span className="text-xs font-semibold">{enc.sector}</span>
+                <span className="text-xs font-semibold">{sectorLabelFromCode(enc.sector) || enc.sector}</span>
                 {enc.professionalName && (
                   <span className="text-xs text-muted-foreground">
                     {enc.professionalName}{enc.professionalCRM ? ` — CRM ${enc.professionalCRM}` : ""}
@@ -971,7 +971,7 @@ function PrintableFicha({
                         marginTop: "1px",
                       }}
                     >
-                      {enc.sector}
+                      {sectorLabelFromCode(enc.sector) || enc.sector}
                       {enc.professionalName && (
                         <span
                           style={{

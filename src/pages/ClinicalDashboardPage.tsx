@@ -11,7 +11,7 @@ import { useDepartment } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { sectorCapacity } from "@/utils/bedNaming";
+import { sectorCapacity, getSectorDisplayLabel } from "@/utils/bedNaming";
 import {
   AlertTriangle,
   BedDouble,
@@ -496,7 +496,7 @@ const ClinicalDashboardPage = () => {
                                     )}
                                     {alert.sector && (
                                       <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">
-                                        {alert.sector}
+                                        {getSectorDisplayLabel(alert.sector) || alert.sector}
                                       </Badge>
                                     )}
                                   </div>

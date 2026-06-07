@@ -242,14 +242,33 @@ Deno.serve(async (req) => {
       case "force_password_reset": {
         if (!confirm) return json({ error: "Confirmation required", needsConfirm: true }, 400);
         const targetEmail = String(params.email ?? "").trim();
-        const newPassword = String(params.newPassword ?? "").trim();
-        if (!targetEmail || newPassword.length < 8) return json({ error: "email and newPassword (min 8) required" }, 400);
-        const { data, error } = await supa.rpc("admin_update_user_password", {
-          p_email: targetEmail,
-          p_new_password: newPassword,
+        if (!targetEmail) return json({ error: "email required" }, 400);
+        // Gera um link de reset em vez de receber a senha em texto claro no body.
+        // O link é de uso único e expira automaticamente — a nova senha é definida
+        // pelo próprio usuário ao clicar, nunca trafega pela API.
+        const { data: linkData, error: linkErr } = await supa.auth.admin.generateLink({
+          type: "recovery",
+          email: targetEmail,
         });
-        if (error) return json({ error: error.message }, 500);
-        return json({ ok: true, result: data });
+        if (linkErr) return json({ error: linkErr.message }, 500);
+        try {
+          await supa.from("audit_logs").insert({
+            action: "DEV_FORCE_PASSWORD_RESET",
+            table_name: "auth.users",
+            user_email: userData.user.email ?? null,
+            user_role: "dev",
+            record_id: targetEmail,
+            changed_fields: ["recovery_link_generated"],
+            new_values: { targetEmail },
+          });
+        } catch (e) {
+          console.warn("[force_password_reset] audit insert falhou", e);
+        }
+        return json({
+          ok: true,
+          recoveryLink: linkData?.properties?.action_link ?? null,
+          message: `Link de recuperação gerado para ${targetEmail}. Validade: único uso.`,
+        });
       }
 
       // ---- READ: lista pacientes com sinalização de saída ativa ----
@@ -559,16 +578,22 @@ Deno.serve(async (req) => {
         if (!dryRun && eligible.length > 0) {
           const reason = String(params.reason ?? "dev_console_residual_cleanup");
           const nowIso = new Date().toISOString();
-          for (const t of eligible) {
-            await supa
-              .from("clinical_evolutions")
-              .update({
-                archived_at: nowIso,
-                archived_from_patient_id: t.patient_id ?? null,
-                archive_reason: reason,
-              })
-              .eq("id", t.id as string);
-          }
+          // Executa todas as atualizações em paralelo em vez de sequencialmente,
+          // reduzindo de N round-trips seriais para 1 batch de latência.
+          // archived_from_patient_id varia por linha, por isso não é possível um único
+          // UPDATE ... IN (...) — Promise.all paraleliza sem perder o valor por linha.
+          await Promise.all(
+            eligible.map((t) =>
+              supa
+                .from("clinical_evolutions")
+                .update({
+                  archived_at: nowIso,
+                  archived_from_patient_id: t.patient_id ?? null,
+                  archive_reason: reason,
+                })
+                .eq("id", t.id as string),
+            ),
+          );
           try {
             await supa.from("audit_logs").insert({
               action: "DEV_ARCHIVE_RESIDUAL_HISTORY",

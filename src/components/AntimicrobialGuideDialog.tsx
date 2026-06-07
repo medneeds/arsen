@@ -56,6 +56,7 @@ interface PatientData {
   weight: string;
   allergies: string;
   unit: string;
+  birthDate?: string;
 }
 
 interface PrescriptionItem {
@@ -79,6 +80,7 @@ interface Props {
   onConfirm?: (entries: Array<{
     medication: string; dose: string; route: string; posology: string;
     startDate?: string; plannedDuration?: string; infectionSite?: string;
+    justification?: string; cultureCollected?: string; cultureResult?: string;
   }>) => void;
   mode?: 'review' | 'prescribe';
   patientId?: string;
@@ -505,6 +507,7 @@ export function AntimicrobialGuideDialog({
     onConfirm(valid.map(e => ({
       medication: e.medication, dose: e.dose, route: e.route, posology: e.posology,
       startDate: e.startDate, plannedDuration: e.plannedDuration, infectionSite: e.infectionSite,
+      justification: e.justification, cultureCollected: e.cultureCollected, cultureResult: e.cultureResult,
     })));
     if (draftKey) localStorage.removeItem(draftKey);
     if (autosaveKey) localStorage.removeItem(autosaveKey);

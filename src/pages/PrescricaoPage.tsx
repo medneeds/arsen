@@ -222,6 +222,9 @@ interface PrescriptionItem {
   atbStartDate?: string;      // YYYY-MM-DD
   atbPlannedDays?: string;    // ex: "7"
   atbInfectionSite?: string;
+  atbJustification?: string;
+  atbCultureCollected?: string;
+  atbCultureResult?: string;
   nutConsistency?: string;    // IDDSI / textura (oral)
   nutAccess?: string;         // NPT: CVC / PICC / Periférico
   nutComposition?: string;    // NPT: composição resumida
@@ -5629,6 +5632,7 @@ const PrescricaoPage = () => {
   const handleAntimicrobialConfirm = useCallback((confirmedEntries: Array<{
     medication: string; dose: string; route: string; posology: string;
     startDate?: string; plannedDuration?: string; infectionSite?: string;
+    justification?: string; cultureCollected?: string; cultureResult?: string;
   }>) => {
     const antimicrobialOptions = UNIFIED_CATALOG['antimicrobial'] || [];
     const newItems: PrescriptionItem[] = confirmedEntries.map(entry => {
@@ -5652,6 +5656,9 @@ const PrescricaoPage = () => {
       base.atbStartDate = entry.startDate || format(new Date(), 'yyyy-MM-dd');
       base.atbPlannedDays = entry.plannedDuration || '';
       base.atbInfectionSite = entry.infectionSite || '';
+      base.atbJustification = entry.justification || '';
+      base.atbCultureCollected = entry.cultureCollected || 'nao';
+      base.atbCultureResult = entry.cultureResult || '';
       return base;
     });
     setItems(prev => [...prev, ...newItems]);
@@ -9574,7 +9581,8 @@ const PrescricaoPage = () => {
           .map(i => ({
             id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology,
             status: i.status, atbStartDate: i.atbStartDate, atbPlannedDays: i.atbPlannedDays,
-            atbInfectionSite: i.atbInfectionSite,
+            atbInfectionSite: i.atbInfectionSite, atbJustification: i.atbJustification,
+            atbCultureCollected: i.atbCultureCollected, atbCultureResult: i.atbCultureResult,
           }))
         }
         onSuspendItem={(id) => {
@@ -9594,6 +9602,9 @@ const PrescricaoPage = () => {
                 startDate: it.atbStartDate,
                 plannedDuration: it.atbPlannedDays,
                 infectionSite: it.atbInfectionSite,
+                justification: it.atbJustification,
+                cultureCollected: (it.atbCultureCollected as any) || 'nao',
+                cultureResult: it.atbCultureResult,
               }],
               doctorName: digitalSignature?.doctorName || '',
               doctorCrm: digitalSignature?.crm || '',
@@ -9619,6 +9630,9 @@ const PrescricaoPage = () => {
                 startDate: it.atbStartDate,
                 plannedDuration: it.atbPlannedDays,
                 infectionSite: it.atbInfectionSite,
+                justification: it.atbJustification,
+                cultureCollected: (it.atbCultureCollected as any) || 'nao',
+                cultureResult: it.atbCultureResult,
               })),
               doctorName: digitalSignature?.doctorName || '',
               doctorCrm: digitalSignature?.crm || '',
@@ -10414,7 +10428,16 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
             <td style={headerCellStyle}>Sexo</td>
             <td style={cellStyle}>{patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'M' : 'F') : '—'}</td>
             <td style={headerCellStyle}>Admissão</td>
-            <td style={cellStyle}>{patient.admissionDate ? format(new Date(patient.admissionDate + 'T12:00:00'), 'dd/MM/yyyy') : '—'}</td>
+            <td style={cellStyle}>
+              <span style={{ fontSize: '5.5pt', color: '#64748b', display: 'block', lineHeight: 1.1 }}>HMDM</span>
+              {patient.admissionDate ? format(new Date(patient.admissionDate + 'T12:00:00'), 'dd/MM/yyyy') : '—'}
+              {patient.utiAdmissionDate && patient.utiAdmissionDate !== patient.admissionDate && (
+                <>
+                  <span style={{ fontSize: '5.5pt', color: '#64748b', display: 'block', lineHeight: 1.1, marginTop: '2px' }}>UTI</span>
+                  {format(new Date(patient.utiAdmissionDate + 'T12:00:00'), 'dd/MM/yyyy')}
+                </>
+              )}
+            </td>
           </tr>
           <tr>
             <td style={headerCellStyle}>Nascimento</td>

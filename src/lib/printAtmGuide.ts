@@ -30,6 +30,7 @@ export interface AtmPrintPatient {
   weight: string;
   allergies: string;
   unit: string;
+  birthDate?: string;
 }
 
 const RESTRICTION_LABEL: Record<string, string> = {
@@ -73,7 +74,7 @@ export function buildAtmBodyHtml({
           <td><strong style="color:${patient.allergies && patient.allergies !== 'NDAM' ? '#dc2626' : 'inherit'}">${esc(patient.allergies || 'NDAM')}</strong></td>
         </tr>
         <tr>
-          <th>Data emissão</th><td>${esc(today)}</td>
+          <th>Data nascimento</th><td>${patient.birthDate ? esc(patient.birthDate.split('-').reverse().join('/')) : '—'}</td>
           <th>Médico</th><td colspan="3">${esc(doctorName)}${doctorCrm ? ` — CRM ${esc(doctorCrm)}` : ''}</td>
         </tr>
       </tbody>
