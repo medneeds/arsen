@@ -425,39 +425,54 @@ export function PatientMovementDialog({
               throw new Error("Erro ao classificar a transferência. Tente novamente.");
             }
 
-            // Criar apenas o registro de fila — SEM zerar o leito de origem
-            const { error: reqErr } = await supabase.from("internal_transfer_requests").insert({
-              source_patient_id: (patient as any).id,
-              patient_name: patient?.name || '',
-              source_bed: patient?.bedNumber || null,
-              source_sector: patient?.sector || null,
-              target_sector_code: sectorCode,
-              target_sector_label: sectorLabelFromCode(sectorCode) || finalDest || null,
-              classification,
-              requires_saps: needsSaps,
-              status: "pending",
-              signaled_by: authUser?.id ?? null,
-              hospital_unit_id: currentHospital.id,
-              state_id: currentState.id,
-              department: currentDepartment ?? null,
-              encounter_code: (encData as any)?.encounter_code ?? null,
-              reason: notes?.trim() || finalDest || null,
-              patient_snapshot: patient as any,
-            } as any);
-            if (reqErr) {
-              console.error("[PatientMovementDialog] falha ao criar internal_transfer_requests:", reqErr);
-              // Reverte o admission_status para 'admitido' — sem request na fila,
-              // o estado "transferencia_interna_pendente" seria inconsistente.
-              // O médico pode tentar novamente com o paciente em estado limpo.
-              try {
-                await supabase
-                  .from("patients")
-                  .update({ admission_status: "admitido", updated_at: new Date().toISOString() })
-                  .eq("id", (patient as any).id);
-              } catch (revertErr) {
-                console.error("[PatientMovementDialog] falha ao reverter status do paciente:", revertErr);
+            // Idempotência: verifica se já existe request pendente para este paciente
+            // COM O MESMO destino. Evita duplicata quando tentativa anterior falhou
+            // parcialmente. Se o destino for diferente, prossegue normalmente.
+            const { data: existingReq } = await (supabase as any)
+              .from("internal_transfer_requests")
+              .select("id, target_sector_code")
+              .eq("source_patient_id", (patient as any).id)
+              .eq("status", "pending")
+              .eq("target_sector_code", sectorCode)
+              .maybeSingle();
+
+            if (!existingReq?.id) {
+              // Criar apenas o registro de fila — SEM zerar o leito de origem
+              const sourcePatientId = (patient as any).id;
+              console.log("[PatientMovementDialog] INSERT internal_transfer_requests — source_patient_id:", sourcePatientId, "target:", sectorCode);
+              const { error: reqErr } = await supabase.from("internal_transfer_requests").insert({
+                source_patient_id: sourcePatientId,
+                patient_name: patient?.name || '',
+                source_bed: patient?.bedNumber || null,
+                source_sector: patient?.sector || null,
+                target_sector_code: sectorCode,
+                target_sector_label: sectorLabelFromCode(sectorCode) || finalDest || null,
+                classification,
+                requires_saps: needsSaps,
+                status: "pending",
+                signaled_by: authUser?.id ?? null,
+                hospital_unit_id: currentHospital.id,
+                state_id: currentState.id,
+                department: currentDepartment ?? null,
+                encounter_code: (encData as any)?.encounter_code ?? null,
+                reason: notes?.trim() || finalDest || null,
+                patient_snapshot: patient as any,
+              } as any);
+              if (reqErr) {
+                const detail = `[${reqErr.code}] ${reqErr.message}${reqErr.details ? ` — ${reqErr.details}` : ''}`;
+                console.error("[PatientMovementDialog] falha ao criar internal_transfer_requests:", detail, reqErr);
+                // Reverte o admission_status para 'admitido' — sem request na fila,
+                // o estado "transferencia_interna_pendente" seria inconsistente.
+                try {
+                  await supabase
+                    .from("patients")
+                    .update({ admission_status: "admitido", updated_at: new Date().toISOString() })
+                    .eq("id", sourcePatientId);
+                } catch (revertErr) {
+                  console.error("[PatientMovementDialog] falha ao reverter status do paciente:", revertErr);
+                }
+                throw new Error(`Não foi possível criar a fila de transferência (${reqErr.code ?? 'erro'}): ${reqErr.message}. A sinalização foi cancelada — tente novamente.`);
               }
-              throw new Error("Não foi possível criar a fila de transferência. A sinalização foi cancelada — tente novamente.");
             }
           }
         }
