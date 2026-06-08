@@ -111,6 +111,7 @@ export default function AuthPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return; // guard síncrono contra duplo submit (clique duplo rápido)
 
     if (!loginData.username.trim()) {
       toast.error("Digite seu usuário");

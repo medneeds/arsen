@@ -16,7 +16,8 @@ import { HelpTourButton } from "@/components/help/HelpTourButton";
 import { HelpTourOverlay } from "@/components/help/HelpTourOverlay";
 
 // Telas críticas (eager): impactam first paint do app
-import Index from "./pages/Index";
+// Index (mapa de leitos) é pesado e requer auth — lazy para não competir com o login
+const Index = lazy(() => import("./pages/Index"));
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
