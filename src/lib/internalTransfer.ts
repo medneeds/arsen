@@ -36,6 +36,28 @@ function coerceToIsoTimestamp(value: unknown): string | null {
 }
 
 /**
+ * Normaliza valores para integer[] (colunas highlighted_*).
+ * Snapshot JSONB pode trazer string ("1,2,3" / "[1,2]") quando vem de versões antigas;
+ * a coluna destino é integer[] e PostgREST rejeita string.
+ */
+function toIntArray(value: unknown): number[] | null {
+  if (value == null) return null;
+  let arr: unknown = value;
+  if (typeof arr === "string") {
+    const s = arr.trim();
+    if (!s) return null;
+    try {
+      arr = JSON.parse(s);
+    } catch {
+      arr = s.split(",");
+    }
+  }
+  if (!Array.isArray(arr)) return null;
+  const nums = arr.map((v) => Number(v)).filter((n) => Number.isFinite(n));
+  return nums.length ? nums : null;
+}
+
+/**
  * Executa uma TRANSFERÊNCIA INTERNA entre dois leitos do mesmo hospital,
  * preservando histórico clínico, prontuário e número de atendimento.
  *
