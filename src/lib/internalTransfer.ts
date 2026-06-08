@@ -117,6 +117,40 @@ export async function executeInternalTransfer(params: {
   const needsNewAdmission = requiresNewAdmission(classification);
 
   try {
+    // Defesa: garante que o leito de origem tem patient_registry_id vinculado
+    // antes de chamar a RPC (que lê direto do banco).
+    // Se o leito tiver patient_registry_id nulo, tenta resolver pelo nome.
+    if (!source.registryId && source.name?.trim()) {
+      try {
+        const { data: regRows } = await supabase
+          .from("patient_registry")
+          .select("id")
+          .ilike("full_name", source.name.trim())
+          .eq("is_unidentified", false)
+          .is("merged_into_registry_id", null)
+          .limit(2);
+        if (regRows?.length === 1) {
+          const resolvedId = (regRows[0] as any).id;
+          console.info(
+            "[executeInternalTransfer] patient_registry_id resolvido por nome:",
+            resolvedId,
+            "para:", source.name,
+          );
+          await supabase
+            .from("patients")
+            .update({ patient_registry_id: resolvedId } as any)
+            .eq("id", source.id);
+        } else if (regRows && regRows.length > 1) {
+          console.warn(
+            "[executeInternalTransfer] múltiplos registros com mesmo nome — não resolvido:",
+            source.name,
+          );
+        }
+      } catch (e) {
+        console.warn("[executeInternalTransfer] falha ao resolver patient_registry por nome (não-bloqueante):", e);
+      }
+    }
+
     // Executa os 4 passos da transferência dentro de uma única transação PostgreSQL:
     //   1. Popula leito destino com dados do paciente
     //   2. Repointa histórico clínico (repoint_patient_history v4)
@@ -224,9 +258,40 @@ export async function signalInternalTransfer(
     const sourceMedicalRecordSignal = (sourceDbRowSignal as any)?.medical_record ?? null;
     const sourceAdmittedAtSignal = (sourceDbRowSignal as any)?.admitted_at ?? null;
 
+    // Fallback: se o leito de origem não tem patient_registry_id vinculado,
+    // tenta resolver pelo nome no cadastro permanente antes de zerar o leito.
+    // Só usa o resultado se exatamente 1 registro corresponder (evita ambiguidade).
+    let resolvedRegistryIdSignal: string | null = sourceRegistryIdSignal;
+    if (!resolvedRegistryIdSignal && source.name?.trim()) {
+      try {
+        const { data: registryRows } = await supabase
+          .from("patient_registry")
+          .select("id")
+          .ilike("full_name", source.name.trim())
+          .eq("is_unidentified", false)
+          .is("merged_into_registry_id", null)
+          .limit(2);
+        if (registryRows?.length === 1) {
+          resolvedRegistryIdSignal = (registryRows[0] as any).id;
+          console.info(
+            "[signalInternalTransfer] patient_registry_id resolvido por nome:",
+            resolvedRegistryIdSignal,
+            "para paciente:", source.name,
+          );
+        } else if (registryRows && registryRows.length > 1) {
+          console.warn(
+            "[signalInternalTransfer] múltiplos registros com o mesmo nome — não é possível resolver automaticamente:",
+            source.name,
+          );
+        }
+      } catch (e) {
+        console.warn("[signalInternalTransfer] falha ao buscar patient_registry por nome (não-bloqueante):", e);
+      }
+    }
+
     const snapshot = {
       ...source,
-      _registryId: sourceRegistryIdSignal,
+      _registryId: resolvedRegistryIdSignal,
       _medicalRecord: sourceMedicalRecordSignal,
       _admittedAt: sourceAdmittedAtSignal,
       // Preserva admission_history do setor de origem para o histórico
@@ -415,10 +480,40 @@ export async function completeInternalTransfer(
     // Identidade permanente (registry/prontuário/admissão) lida do snapshot
     // salvo na Etapa 1, pois o leito origem já foi zerado em signalInternalTransfer.
     // Fallback: tenta colunas dedicadas em internal_transfer_requests se existirem.
-    const sourceRegistryId =
+    const sourceRegistryIdRaw =
       (req as any).source_registry_id ??
       (snapshot as any)._registryId ??
       null;
+
+    // Defesa para requests antigos cujo snapshot não salvou _registryId:
+    // tenta resolver pelo nome preservado no snapshot antes de propagar null.
+    let sourceRegistryId: string | null = sourceRegistryIdRaw;
+    if (!sourceRegistryId && (snapshot as any).name?.trim()) {
+      try {
+        const { data: regRows } = await supabase
+          .from("patient_registry")
+          .select("id")
+          .ilike("full_name", (snapshot as any).name.trim())
+          .eq("is_unidentified", false)
+          .is("merged_into_registry_id", null)
+          .limit(2);
+        if (regRows?.length === 1) {
+          sourceRegistryId = (regRows[0] as any).id;
+          console.info(
+            "[completeInternalTransfer] patient_registry_id resolvido por nome:",
+            sourceRegistryId,
+            "para:", (snapshot as any).name,
+          );
+        } else if (regRows && regRows.length > 1) {
+          console.warn(
+            "[completeInternalTransfer] múltiplos registros com mesmo nome — não resolvido:",
+            (snapshot as any).name,
+          );
+        }
+      } catch (e) {
+        console.warn("[completeInternalTransfer] falha ao buscar patient_registry por nome (não-bloqueante):", e);
+      }
+    }
 
     const sourceMedicalRecord =
       (req as any).source_medical_record ??
@@ -496,16 +591,28 @@ export async function completeInternalTransfer(
     );
 
     if (!atomicErr) {
-      invalidateResolvedRegistry(targetBedRow.id);
-      invalidateResolvedRegistry(sourcePatientId);
-      return { ok: true, classification, needsSaps };
+      // Fix C: verifica confirmação explícita do banco (igual a executeInternalTransfer).
+      // Se o RPC retornar success=false sem lançar erro, nada foi gravado e
+      // devemos tentar o fallback sequencial em vez de reportar sucesso falso.
+      if (atomicData != null && (atomicData as any).success === false) {
+        console.warn("[completeInternalTransfer] RPC retornou success=false — usando fluxo sequencial");
+        // fall through to sequential below
+      } else {
+        invalidateResolvedRegistry(targetBedRow.id);
+        invalidateResolvedRegistry(sourcePatientId);
+        return { ok: true, classification, needsSaps };
+      }
     }
 
-    if (!isRpcMissing(atomicErr)) throw atomicErr;
-    console.warn("[completeInternalTransfer] RPC atômica não encontrada — usando fluxo sequencial");
+    if (atomicErr && !isRpcMissing(atomicErr)) throw atomicErr;
+    if (atomicErr) {
+      console.warn("[completeInternalTransfer] RPC atômica não encontrada — usando fluxo sequencial");
+    }
 
     // Fallback: operações sequenciais (migration ainda não aplicada)
-    const { error: targetError } = await supabase
+    // Fix B: .select("id") torna o UPDATE verificável — Supabase retorna { data: null }
+    // para UPDATE que afeta 0 linhas sem .select, mascarando RLS silencioso ou UUID errado.
+    const { error: targetError, data: targetUpdated } = await supabase
       .from("patients")
       .update({
         name: snapshot.name,
@@ -515,7 +622,7 @@ export async function completeInternalTransfer(
         relevant_exams: snapshot.relevantExams?.join("\n") || null,
         pendencies: snapshot.pendencies?.join("\n") || null,
         schedule: snapshot.schedule?.join("\n") || null,
-        
+
         admission_date: coerceToIsoTimestamp(snapshot.admissionDate),
         highlighted_diagnoses: snapshot.highlightedDiagnoses || null,
         highlighted_medical_history: snapshot.highlightedMedicalHistory || null,
@@ -541,16 +648,31 @@ export async function completeInternalTransfer(
         is_vacant: false,
         updated_at: new Date().toISOString(),
       } as any)
-      .eq("id", targetBedRow.id);
+      .eq("id", targetBedRow.id)
+      .select("id");
     if (targetError) throw targetError;
+    if (!targetUpdated || (targetUpdated as any[]).length === 0) {
+      throw new Error(
+        `Leito destino não encontrado ou sem permissão de escrita (id=${targetBedRow.id}). ` +
+        `Verifique se o leito ${targetBedRow.bedNumber} ainda está disponível e tente novamente.`,
+      );
+    }
 
     const repoint = await repointPatientHistory(
       sourcePatientId,
       targetBedRow.id,
       `Transferência interna (etapa 2) → ${targetBedRow.bedNumber} (${sectorLabelFromCode(targetBedRow.sector)})`,
     );
+    // Fix A: repoint failure não aborta a transferência.
+    // O UPDATE acima já commitou — lançar exceção aqui deixaria o leito destino
+    // ocupado com request 'pending' (estado inconsistente). O histórico clínico
+    // pode ser corrigido manualmente; a admissão não pode ser desfeita silenciosamente.
     if (!repoint.ok) {
-      throw new Error(repoint.error ?? "Falha ao migrar histórico clínico. Operação abortada.");
+      console.error(
+        "[completeInternalTransfer] repoint falhou — histórico clínico não migrado automaticamente.",
+        "Paciente admitido no destino, mas histórico precisa de correção manual.",
+        repoint.error,
+      );
     }
 
     // Sincroniza admission_histories após repoint (Etapa 2)
@@ -564,9 +686,6 @@ export async function completeInternalTransfer(
       console.warn("[internalTransfer] sync admission_histories (complete):", e);
     }
 
-    // Falha aqui → throw: o repoint já aconteceu mas o status ficaria "pending",
-    // permitindo dupla-conclusão em uma nova tentativa. Melhor expor o erro ao
-    // chamador para que ele saiba que a operação não foi confirmada no banco.
     const { error: statusError } = await (supabase as any)
       .from("internal_transfer_requests")
       .update({

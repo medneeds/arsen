@@ -246,6 +246,7 @@ interface PendingRequest {
   notes: string | null;
   created_at: string;
   medical_record: string | null;
+  patient_registry_id?: string | null;
   patient_id?: string | null;
   allocation_request_id?: string | null;
 }
@@ -539,7 +540,7 @@ export default function Saps3Page() {
     if (!hospitalId || !stateId) return;
     const { data } = await supabase
       .from("pre_admissions")
-      .select("id, patient_name, birth_date, sex, destination_sector, notes, created_at, medical_record")
+      .select("id, patient_name, birth_date, sex, destination_sector, notes, created_at, medical_record, patient_registry_id")
       .eq("hospital_unit_id", hospitalId)
       .eq("state_id", stateId)
       .eq("status", "aguardando_leito_uti")
@@ -1217,6 +1218,7 @@ export default function Saps3Page() {
         // (HDA, exame físico, plano) ainda é feita pelo Painel Clínico.
         admission_status: 'pre_admitido',
         admitted_at: null,
+        patient_registry_id: selectedRequest?.patient_registry_id ?? null,
       };
 
       let admittedPatientId: string | null = null;
