@@ -142,25 +142,27 @@ export default function AuthPage() {
       } else {
         // Login generalista: descobre o perfil/role definidos pelo gestor/admin
         // a partir do usuário autenticado (suporta login por email, CPF ou usuário).
-        const { data: authData } = await supabase.auth.getUser();
-        const userId = authData?.user?.id ?? null;
-        const { data: profileRow } = userId
-          ? await supabase
-              .from("profiles")
-              .select("id, full_name, access_profile, access_profiles, must_change_password")
-              .eq("id", userId)
-              .maybeSingle()
-          : { data: null as { id?: string; full_name?: string; access_profile?: string; access_profiles?: string[]; must_change_password?: boolean } | null };
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id ?? null;
+        const [{ data: profileRow }, { data: roleRow }] = userId
+          ? await Promise.all([
+              supabase
+                .from("profiles")
+                .select("id, full_name, access_profile, access_profiles, must_change_password")
+                .eq("id", userId)
+                .maybeSingle(),
+              supabase
+                .from("user_roles")
+                .select("role")
+                .eq("user_id", userId)
+                .maybeSingle(),
+            ])
+          : [
+              { data: null as { id?: string; full_name?: string; access_profile?: string; access_profiles?: string[]; must_change_password?: boolean } | null },
+              { data: null as { role?: string } | null },
+            ];
 
-        let appRole: string | null = null;
-        if (profileRow?.id) {
-          const { data: roleRow } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", profileRow.id)
-            .maybeSingle();
-          appRole = (roleRow as { role?: string } | null)?.role ?? null;
-        }
+        const appRole: string | null = (roleRow as { role?: string } | null)?.role ?? null;
 
         const accessProfile = (profileRow as { access_profile?: string } | null)?.access_profile ?? null;
         const accessProfilesList = (profileRow as { access_profiles?: string[] } | null)?.access_profiles ?? [];
