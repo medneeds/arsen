@@ -165,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Resolve identificador (CPF, e-mail ou usuário) → email real via RPC (sem cold start)
     try {
-      const { data, error } = await supabase.rpc("resolve_login", {
+      const { data, error } = await (supabase.rpc as any)("resolve_login", {
         p_identifier: isCpf ? digits : raw,
       });
 
