@@ -5286,6 +5286,7 @@ export type Database = {
         Args: { p_patient_id: string }
         Returns: string
       }
+      resolve_login: { Args: { p_identifier: string }; Returns: Json }
       scan_duplicate_registries: {
         Args: {
           p_include_similarity?: boolean
