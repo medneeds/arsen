@@ -29,8 +29,8 @@ export function startIdlePrefetch() {
     const ric = (window as any).requestIdleCallback as
       | ((cb: IdleRequestCallback, opts?: { timeout: number }) => number)
       | undefined;
-    if (ric) ric(() => cb(), { timeout: 4000 });
-    else setTimeout(cb, 1500);
+    if (ric) ric(() => cb(), { timeout: 10000 });
+    else setTimeout(cb, 3000);
   };
 
   schedule(() => {
