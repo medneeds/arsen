@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getClinicalDayWindowSP } from "@/lib/clinicalDay";
 
@@ -114,6 +114,9 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
     setValidatedNames(nextNames);
   }, [hospitalUnitId]);
 
+  const fetchAllRef = useRef(fetchAll);
+  useEffect(() => { fetchAllRef.current = fetchAll; }, [fetchAll]);
+
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   // Revalidar automaticamente quando virar 05h (início do novo dia clínico)
@@ -121,10 +124,10 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
     const { end } = getClinicalDayWindowSP();
     const msUntilReset = end.getTime() - Date.now() + 100; // +100ms buffer
     if (msUntilReset > 0 && msUntilReset < 25 * 60 * 60 * 1000) {
-      const timer = setTimeout(() => fetchAll(), msUntilReset);
+      const timer = setTimeout(() => fetchAllRef.current(), msUntilReset);
       return () => clearTimeout(timer);
     }
-  }, [fetchAll]);
+  }, []);
 
   // Realtime — qualquer mudança na tabela atualiza o mapa
   useEffect(() => {
@@ -136,10 +139,10 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
         schema: "public",
         table: "prescriptions",
         filter: `hospital_unit_id=eq.${hospitalUnitId}`,
-      }, () => fetchAll())
+      }, () => fetchAllRef.current())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [hospitalUnitId, fetchAll]);
+  }, [hospitalUnitId]);
 
   const getStatus = useCallback(
     (patientName: string | null | undefined, registryId?: string | null): TodaysPrescriptionStatus => {

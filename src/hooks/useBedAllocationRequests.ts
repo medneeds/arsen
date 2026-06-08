@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
@@ -72,6 +72,9 @@ export function useBedAllocationRequests() {
     }
   }, [currentHospital?.id, currentState?.id, currentDepartment]);
 
+  const fetchRequestsRef = useRef(fetchRequests);
+  useEffect(() => { fetchRequestsRef.current = fetchRequests; }, [fetchRequests]);
+
   // Realtime subscription
   useEffect(() => {
     if (!currentHospital?.id) return;
@@ -88,7 +91,7 @@ export function useBedAllocationRequests() {
         },
         (payload) => {
           console.log("Realtime update:", payload);
-          fetchRequests();
+          fetchRequestsRef.current();
         }
       )
       .subscribe();
@@ -96,7 +99,7 @@ export function useBedAllocationRequests() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentHospital?.id, fetchRequests]);
+  }, [currentHospital?.id]);
 
   useEffect(() => {
     fetchRequests();

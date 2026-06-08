@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 
@@ -99,6 +99,9 @@ export function usePatientPendingItems(
     setLoading(false);
   }, [patientId, patientName, hospitalUnitId, activeEncounterId]);
 
+  const fetchRef = useRef(fetch);
+  useEffect(() => { fetchRef.current = fetch; }, [fetch]);
+
   useEffect(() => {
     fetch();
   }, [fetch]);
@@ -116,7 +119,7 @@ export function usePatientPendingItems(
             (patientId && row?.patient_id === patientId) ||
             (patientName && row?.patient_name?.trim() === patientName.trim())
           ) {
-            fetch();
+            fetchRef.current();
           }
         },
       )
@@ -129,7 +132,7 @@ export function usePatientPendingItems(
             (patientId && row?.patient_id === patientId) ||
             (patientName && row?.patient_name?.trim() === patientName.trim())
           ) {
-            fetch();
+            fetchRef.current();
           }
         },
       )
@@ -137,7 +140,7 @@ export function usePatientPendingItems(
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [patientId, patientName, hospitalUnitId, fetch]);
+  }, [patientId, patientName, hospitalUnitId]);
 
   const summary = {
     pendingExams: items.filter((i) => i.kind === "exam" && i.status === "pending").length,

@@ -93,6 +93,9 @@ export function useLatestVitalSigns(patientId: string | null, patientName?: stri
     setLoading(false);
   }, [patientId, patientName, activeEncounterId]);
 
+  const fetchLatestRef = useRef(fetchLatest);
+  useEffect(() => { fetchLatestRef.current = fetchLatest; }, [fetchLatest]);
+
   useEffect(() => {
     fetchLatest();
   }, [fetchLatest]);
@@ -124,14 +127,14 @@ export function useLatestVitalSigns(patientId: string | null, patientName?: stri
               duration: 7000,
             });
           }
-          fetchLatest();
+          fetchLatestRef.current();
         },
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [patientId, fetchLatest]);
+  }, [patientId]);
 
   return { vitals, loading, refresh: fetchLatest };
 }

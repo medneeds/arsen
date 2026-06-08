@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
@@ -88,6 +88,9 @@ export function useActivePrescription(
     setLoading(false);
   }, [patientName, hospitalUnitId, patientId, activeEncounterId, resolvedRegistryId]);
 
+  const fetchRef = useRef(fetch);
+  useEffect(() => { fetchRef.current = fetch; }, [fetch]);
+
   useEffect(() => {
     fetch();
   }, [fetch]);
@@ -111,7 +114,7 @@ export function useActivePrescription(
             (patientId && row?.patient_id === patientId) ||
             (!resolvedRegistryId && !patientId && row?.patient_name?.trim() === patientName.trim())
           ) {
-            fetch();
+            fetchRef.current();
           }
         },
       )
@@ -119,7 +122,7 @@ export function useActivePrescription(
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [patientName, hospitalUnitId, fetch, resolvedRegistryId]);
+  }, [patientName, hospitalUnitId, resolvedRegistryId]);
 
   return { prescription: data, loading, refresh: fetch };
 }

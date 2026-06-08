@@ -72,6 +72,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const fetchUserRoleAndDepartments = async (userId: string) => {
+    // Guard contra race entre onAuthStateChange e getSession disparando
+    // fetchUserRoleAndDepartments para o mesmo userId quase simultaneamente.
+    // fetchingUserIdRef é setado ANTES do primeiro await — garante exclusão mútua.
     if (fetchingUserIdRef.current === userId) return;
     fetchingUserIdRef.current = userId;
     try {

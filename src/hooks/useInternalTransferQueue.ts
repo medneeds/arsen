@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 
@@ -41,16 +41,19 @@ export function useInternalTransferQueue(sectorCode?: string | null) {
     setLoading(false);
   }, [currentHospital?.id, sectorCode]);
 
+  const refreshRef = useRef(refresh);
+  useEffect(() => { refreshRef.current = refresh; }, [refresh]);
+
   useEffect(() => { refresh(); }, [refresh]);
 
   useEffect(() => {
     if (!currentHospital?.id) return;
     const ch = supabase
       .channel(`itr-${currentHospital.id}-${sectorCode ?? "all"}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "internal_transfer_requests" }, () => refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "internal_transfer_requests" }, () => refreshRef.current())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [currentHospital?.id, sectorCode, refresh]);
+  }, [currentHospital?.id, sectorCode]);
 
   return { rows, loading, refresh };
 }

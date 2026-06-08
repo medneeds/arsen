@@ -73,6 +73,9 @@ export function usePatientNirRequest(patientId: string | null) {
     setLoading(false);
   }, [patientId]);
 
+  const fetchLatestRef = useRef(fetchLatest);
+  useEffect(() => { fetchLatestRef.current = fetchLatest; }, [fetchLatest]);
+
   useEffect(() => {
     fetchLatest();
   }, [fetchLatest]);
@@ -84,13 +87,13 @@ export function usePatientNirRequest(patientId: string | null) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "bed_allocation_requests", filter: `patient_id=eq.${patientId}` },
-        () => fetchLatest(),
+        () => fetchLatestRef.current(),
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [patientId, fetchLatest]);
+  }, [patientId]);
 
   return { request, loading, refresh: fetchLatest };
 }

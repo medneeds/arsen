@@ -68,7 +68,7 @@ function PageFooter() {
 export default function AuthPage() {
   const { user, signIn } = useAuth();
   const { setCurrentDepartment } = useDepartment();
-  const { setCurrentHospital } = useHospital();
+  const { setCurrentHospital, currentHospital } = useHospital();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -104,14 +104,16 @@ export default function AuthPage() {
     }
   }, [user, navigate, chooserProfiles, showLoadingScreen]);
 
-  const handleHospitalSelect = (hospital: any) => {
+  const handleHospitalSelect = (hospital: { id: string; name: string; state_id: string; address: string | null }) => {
     setSelectedHospitalId(hospital.id);
     setCurrentHospital(hospital);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return; // guard síncrono contra duplo submit (clique duplo rápido)
+    // Guard síncrono: postLoginInFlight já é true após o primeiro clique,
+    // impedindo duplo submit antes do re-render desabilitar o botão.
+    if (postLoginInFlight.current) return;
 
     if (!loginData.username.trim()) {
       toast.error("Digite seu usuário");
@@ -313,7 +315,7 @@ export default function AuthPage() {
                   {/* Hospital Selector */}
                   <div className="mb-4 sm:mb-5">
                     <HospitalSelector
-                      selectedHospitalId={selectedHospitalId}
+                      selectedHospitalId={selectedHospitalId ?? currentHospital?.id ?? null}
                       onSelect={handleHospitalSelect}
                     />
                   </div>

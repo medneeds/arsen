@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
@@ -67,6 +67,9 @@ export function usePatientMovements(
     setLoading(false);
   }, [patientId, patientName, hospitalUnitId, activeEncounterId, resolvedRegistryId]);
 
+  const fetchMovementsRef = useRef(fetchMovements);
+  useEffect(() => { fetchMovementsRef.current = fetchMovements; }, [fetchMovements]);
+
   useEffect(() => { fetchMovements(); }, [fetchMovements]);
 
   useEffect(() => {
@@ -82,11 +85,11 @@ export function usePatientMovements(
           const matches = patientId
             ? row.patient_id === patientId
             : row.patient_name === patientName && row.hospital_unit_id === hospitalUnitId;
-          if (matches) fetchMovements();
+          if (matches) fetchMovementsRef.current();
         })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [patientId, patientName, hospitalUnitId, fetchMovements]);
+  }, [patientId, patientName, hospitalUnitId]);
 
   return { movements, loading, refresh: fetchMovements };
 }

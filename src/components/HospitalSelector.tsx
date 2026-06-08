@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Search, Hospital as HospitalIcon, MapPin, ChevronDown, Check } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useHospital } from "@/contexts/HospitalContext";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -20,45 +20,18 @@ interface HospitalSelectorProps {
 }
 
 export function HospitalSelector({ selectedHospitalId, onSelect, className }: HospitalSelectorProps) {
-  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const { hospitals: contextHospitals, states, isLoading: loading } = useHospital();
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchHospitals = async () => {
-      try {
-        const { data: hospitalsData } = await supabase
-          .from("hospital_units")
-          .select("*")
-          .order("name");
-
-        const { data: statesData } = await supabase
-          .from("states")
-          .select("*");
-
-        const enriched = (hospitalsData || []).map((h) => {
-          const state = statesData?.find((s) => s.id === h.state_id);
-          return {
-            ...h,
-            state_name: state?.name || "",
-            state_abbreviation: state?.abbreviation || "",
-          };
-        });
-
-        setHospitals(enriched);
-
-        if (!selectedHospitalId && enriched.length > 0) {
-          onSelect(enriched[0]);
-        }
-      } catch (err) {
-        console.error("Error fetching hospitals:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchHospitals();
-  }, []);
+  // Enriquece com state_name/abbreviation sem fazer fetch extra
+  const hospitals = useMemo<Hospital[]>(() =>
+    contextHospitals.map((h) => {
+      const state = states.find((s) => s.id === h.state_id);
+      return { ...h, state_name: state?.name || "", state_abbreviation: state?.abbreviation || "" };
+    }),
+    [contextHospitals, states],
+  );
 
   const filtered = useMemo(() => {
     if (!search.trim()) return hospitals;
