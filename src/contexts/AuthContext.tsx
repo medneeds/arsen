@@ -163,36 +163,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let emailToUse = raw.toLowerCase();
 
-    if (isCpf) {
-      // Resolve CPF -> email real via edge function (service role).
-      try {
-        const { data, error } = await supabase.functions.invoke("resolve-login", {
-          body: { identifier: digits },
-        });
-
-        // Rate limit atingido: a Edge Function retorna 429 com retryAfterSeconds.
-        // supabase-js envelopa a resposta não-2xx em response.error.context.
-        const ctx = (error as any)?.context;
-        const httpStatus = ctx?.status ?? ctx?.statusCode;
-        if (httpStatus === 429 || (data as any)?.retryAfterSeconds) {
-          const segundos = (data as any)?.retryAfterSeconds ?? 60;
-          return {
-            error: new Error(
-              `Muitas tentativas de login. Aguarde ${segundos} segundo(s) antes de tentar novamente.`,
-            ),
-          };
-        }
-
-        if (error || !data?.email) {
-          return { error: error ?? new Error("CPF não encontrado") };
-        }
-        emailToUse = data.email;
-      } catch (e) {
-        return { error: e };
+    // Resolve identificador (CPF, e-mail ou usuário) → email real via RPC (sem cold start)
+    try {
+      const { data: resolveData, error: resolveError } = await (supabase.rpc as any)(
+        "resolve_login",
+        { p_identifier: isCpf ? digits : raw },
+      );
+      if (resolveError || !(resolveData as any)?.email) {
+        return { error: resolveError ?? new Error("Usuário não encontrado") };
       }
-    } else if (!isEmail) {
-      // Compat retroativa: usuário interno -> email @sistema.local
-      emailToUse = `${raw.toLowerCase()}@sistema.local`;
+      emailToUse = (resolveData as any).email;
+    } catch (e) {
+      return { error: e };
     }
 
     const { error } = await supabase.auth.signInWithPassword({
