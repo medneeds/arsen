@@ -272,7 +272,7 @@ export default function AuthPage() {
       {showLoadingScreen && (
         <LoadingScreen
           onComplete={() => navigate(redirectRoute)}
-          duration={2000}
+          duration={800}
         />
       )}
 
