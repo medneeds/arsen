@@ -165,25 +165,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Resolve identificador (CPF, e-mail ou usuário) → email real via RPC (sem cold start)
     try {
-      const { data, error } = await (supabase.rpc as any)("resolve_login", {
-        p_identifier: isCpf ? digits : raw,
-      });
-
-      const ctx = (error as any)?.context;
-      const httpStatus = ctx?.status ?? ctx?.statusCode;
-      if (httpStatus === 429 || (data as any)?.retryAfterSeconds) {
-        const segundos = (data as any)?.retryAfterSeconds ?? 60;
-        return {
-          error: new Error(
-            `Muitas tentativas de login. Aguarde ${segundos} segundo(s) antes de tentar novamente.`,
-          ),
-        };
+      const { data: resolveData, error: resolveError } = await (supabase.rpc as any)(
+        "resolve_login",
+        { p_identifier: isCpf ? digits : raw },
+      );
+      if (resolveError || !(resolveData as any)?.email) {
+        return { error: resolveError ?? new Error("Usuário não encontrado") };
       }
-
-      if (error || !(data as any)?.email) {
-        return { error: error ?? new Error("Identificador não encontrado") };
-      }
-      emailToUse = (data as any).email;
+      emailToUse = (resolveData as any).email;
     } catch (e) {
       return { error: e };
     }
