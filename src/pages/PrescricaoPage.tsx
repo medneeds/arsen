@@ -222,9 +222,6 @@ interface PrescriptionItem {
   atbStartDate?: string;      // YYYY-MM-DD
   atbPlannedDays?: string;    // ex: "7"
   atbInfectionSite?: string;
-  atbJustification?: string;
-  atbCultureCollected?: string;
-  atbCultureResult?: string;
   nutConsistency?: string;    // IDDSI / textura (oral)
   nutAccess?: string;         // NPT: CVC / PICC / Periférico
   nutComposition?: string;    // NPT: composição resumida
@@ -745,49 +742,30 @@ function buildSolutoToken(item: PrescriptionItem): string {
 }
 
 function buildPrepDescription(item: PrescriptionItem): string {
-  // Inhalation items use a dedicated builder (nebulização / pMDI / DPI)
+  // Mantido para compatibilidade com outros módulos (tela, não-PDF)
   if (item.category === 'inhalation') {
     return assembleInhalationInstruction(item as any);
   }
   const parts: string[] = [];
-
-  // 0) Reconstituição (pó liofilizado) — antes da diluição final
   if (item.reconstitutionSolvent && item.reconstitutionVolume) {
     const qtyFA = (item.quantity && item.quantity.trim() && item.quantity.trim() !== '0') ? item.quantity.trim() : '1';
     parts.push(`Reconstituir ${qtyFA} frasco-ampola com ${item.reconstitutionVolume} mL de ${item.reconstitutionSolvent}.`);
   }
-
-  // 1) SOLUTO + SOLUÇÃO — uma frase só, sem ambiguidade
   const soluto = buildSolutoToken(item);
   const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
-
   if (hasDiluent) {
-    const dilStr = item.diluentVolume
-      ? `${item.diluentVolume} mL de ${item.diluent}`
-      : item.diluent!;
+    const dilStr = item.diluentVolume ? `${item.diluentVolume} mL de ${item.diluent}` : item.diluent!;
     if (soluto) parts.push(`Diluir ${soluto} em ${dilStr}.`);
     else parts.push(`Diluir em ${dilStr}.`);
-
-    // Volume final apenas quando distinto do diluente (ex.: soluto 50 mL + diluente 50 mL = 100 mL)
     const volTotalNum = parseFloat((item.volumeTotal || '').replace(',', '.'));
     const volDilNum = parseFloat((item.diluentVolume || '').replace(',', '.'));
-    // Imprime volume final quando:
-    // (a) volumeTotal existe e é diferente do diluentVolume (há volume de medicamento somado)
-    // (b) volumeTotal existe e não há diluentVolume (volume total da bolsa)
-    const hasDistinctTotal = item.volumeTotal &&
-      (volTotalNum > 0) &&
+    const hasDistinctTotal = item.volumeTotal && (volTotalNum > 0) &&
       (!item.diluentVolume || !volDilNum || volTotalNum !== volDilNum);
     if (hasDistinctTotal) parts.push(`Volume final: ${item.volumeTotal} mL.`);
   } else if (soluto) {
     parts.push(`${soluto}.`);
   }
-
-  // 2) VIA
-  if (item.route && item.route !== '-') {
-    parts.push(`${routeShort(item.route)}.`);
-  }
-
-  // 3) TEMPO / VAZÃO  (ou Bolus EV)
+  if (item.route && item.route !== '-') parts.push(`${routeShort(item.route)}.`);
   if (item.ivBolus) {
     parts.push('EV em bolus.');
   } else if (item.infusionTime || item.infusionRate) {
@@ -801,19 +779,75 @@ function buildPrepDescription(item: PrescriptionItem): string {
       parts.push(`Velocidade ${item.infusionRate} ${modeLabel}.`);
     }
   }
-
-  // 4) INTERVALO
   if (item.posology && item.posology !== '-') {
     parts.push(`${item.posology}.`);
   } else {
-    // Sólido oral (comprimido / cápsula / drágea) sem posologia → farmácia dispensa
-    // só 1 unidade. Sinaliza explicitamente p/ a equipe perceber a lacuna.
     const pres = (item.presentation || '').toLowerCase();
     const isOralSolid = /(comprimido|c[aá]psula|cap\.?\b|dr[aá]gea|sublingual|orodisper)/.test(pres);
     if (isOralSolid) parts.push('⚠ POSOLOGIA NÃO INFORMADA.');
   }
-
   return parts.join(' ');
+}
+
+/**
+ * buildInlinePrepLine — formato novo para PDF da prescrição.
+ * Dose em destaque + diluição + infusão em linha única com separador |
+ * Remove mcg/kg/min (dado médico, não operacional para enfermagem).
+ * "Diluente" abreviado para "Dil."
+ */
+function buildInlinePrepLine(item: PrescriptionItem): string {
+  if (item.category === 'inhalation') return assembleInhalationInstruction(item as any);
+  if (item.category === 'nutrition') return '';
+
+  const segs: string[] = [];
+
+  // Reconstituição (pó liofilizado)
+  if (item.reconstitutionSolvent && item.reconstitutionVolume) {
+    const qtyFA = item.quantity?.trim() && item.quantity.trim() !== '0' ? item.quantity.trim() : '1';
+    segs.push(`Reconstituir ${qtyFA} FA em ${item.reconstitutionVolume}mL ${item.reconstitutionSolvent}`);
+  }
+
+  // Dil.: SF0,9% 96mL
+  const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
+  if (hasDiluent) {
+    const dilPart = item.diluentVolume
+      ? `Dil.: ${item.diluent} ${item.diluentVolume}mL`
+      : `Dil.: ${item.diluent}`;
+    segs.push(dilPart);
+  }
+
+  // Vol.: 100mL (só quando diferente do diluente)
+  if (item.volumeTotal) {
+    const volTotalNum = parseFloat(item.volumeTotal.replace(',', '.'));
+    const volDilNum = parseFloat((item.diluentVolume || '').replace(',', '.'));
+    if (volTotalNum > 0 && (!volDilNum || volTotalNum !== volDilNum)) {
+      segs.push(`Vol.: ${item.volumeTotal}mL`);
+    }
+  }
+
+  // Tipo de infusão
+  if (item.ivBolus) {
+    segs.push('Bolus EV');
+  } else if (item.ivContinuous) {
+    segs.push('BIC');
+  }
+
+  // Correr em / Vazão — em mL/h ou gts/min (SEM mcg/kg/min)
+  if (!item.ivBolus && (item.infusionTime || item.infusionRate)) {
+    const unit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
+    const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
+    if (item.infusionTime && item.infusionRate) {
+      segs.push(`Correr em: ${item.infusionTime}${unit}  |  Vazão: ${item.infusionRate} ${modeLabel}`);
+    } else if (item.infusionTime) {
+      segs.push(`Correr em: ${item.infusionTime}${unit}`);
+    } else if (item.infusionRate) {
+      segs.push(`Vazão: ${item.infusionRate} ${modeLabel}`);
+    }
+  } else if ((item.ivContinuous || item.category === 'mav') && !item.infusionRate && !item.infusionTime) {
+    segs.push('Vazão: conforme protocolo');
+  }
+
+  return segs.join('  |  ');
 }
 
 interface PatientHeader {
@@ -3581,34 +3615,61 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
             <span style={{ fontWeight: 400, color: '#64748b', fontSize: '7.5pt', textTransform: 'none' }}> ({formatPresentation(item.presentation)})</span>
           )}
         </div>
-        {!isNutrition && (
-          <div style={{ fontSize: '7.5pt', color: '#334155', lineHeight: '1.3', marginTop: '1px' }}>
-            {[
-              item.dose && item.dose !== '-' ? composeDoseLabel(item) : null,
-              item.route && item.route !== '-' ? item.route : null,
-              item.posology && item.posology !== '-' ? item.posology : null,
-            ].filter(Boolean).join(' · ')}
-            {item.flags.length > 0 && (
-              <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '4px', color: '#fff', backgroundColor: '#0f172a', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }} className="print-flag-chip">{item.flags.join(', ').toUpperCase()}</span>
-            )}
-            {item.isExtra && (
-              <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '3px', color: '#ea580c', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fed7aa', letterSpacing: '0.3px' }}>EXTRA</span>
-            )}
-            {item.status === 'suspended' && (
-              <span style={{ fontSize: '6.5pt', fontWeight: 700, color: '#fff', backgroundColor: '#dc2626', padding: '0.5px 4px', borderRadius: '2px', marginLeft: '3px' }} className="print-suspended-chip">SUSPENSO</span>
-            )}
-          </div>
-        )}
-        {hasPreparo && (
-          <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: '1.2', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #cbd5e1' }}>
-            {buildPrepDescription(item)}
-            {item.instructions && (
-              <span style={{ marginLeft: '4px', fontStyle: 'italic', color: '#64748b' }}>
-                — {item.instructions}
-              </span>
-            )}
-          </div>
-        )}
+        {!isNutrition && (() => {
+          // ── Linha 2: DOSE em destaque + via + frequência ──────────────
+          const dose = buildSolutoToken(item);
+          const via   = item.route && item.route !== '-' ? item.route : null;
+          const freq  = item.posology && item.posology !== '-' ? item.posology : null;
+          // ── Linha 3 (inline): Dil. + Vol. + BIC/Bolus + Vazão ────────
+          const prepLine = buildInlinePrepLine(item);
+          return (
+            <div style={{ marginTop: '1px' }}>
+              {/* Linha dose + via + freq */}
+              <div style={{ fontSize: '7.5pt', color: '#0f172a', lineHeight: '1.35', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0 4px' }}>
+                {/* DOSE — destaque visual */}
+                {dose && (
+                  <span style={{ fontWeight: 800, fontSize: '8pt', color: '#0f172a', letterSpacing: '-0.1px', backgroundColor: '#f1f5f9', padding: '0 4px', borderRadius: '3px', border: '0.5px solid #cbd5e1' }}>
+                    {dose}
+                  </span>
+                )}
+                {via && <span style={{ color: '#334155' }}>·</span>}
+                {via && <span style={{ color: '#334155', fontWeight: 500 }}>{via}</span>}
+                {freq && <span style={{ color: '#334155' }}>·</span>}
+                {freq && <span style={{ color: '#334155', fontWeight: 600 }}>{freq}</span>}
+                {/* Chips */}
+                {item.flags.length > 0 && (
+                  <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '2px', color: '#fff', backgroundColor: '#0f172a', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
+                )}
+                {item.isExtra && (
+                  <span style={{ fontSize: '6pt', fontWeight: 700, color: '#ea580c', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fed7aa', letterSpacing: '0.3px' }}>EXTRA</span>
+                )}
+                {item.status === 'suspended' && (
+                  <span style={{ fontSize: '6.5pt', fontWeight: 700, color: '#fff', backgroundColor: '#dc2626', padding: '0.5px 4px', borderRadius: '2px' }}>SUSPENSO</span>
+                )}
+              </div>
+              {/* Linha inline: Dil. + Vol. + infusão — continuação visual */}
+              {prepLine && (
+                <div style={{ fontSize: '7pt', color: '#334155', lineHeight: '1.3', marginTop: '2px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0 2px' }}>
+                  {prepLine.split('  |  ').map((seg, i) => (
+                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                      {i > 0 && <span style={{ color: '#94a3b8', margin: '0 3px', fontWeight: 300 }}>|</span>}
+                      <span style={{ fontWeight: seg.startsWith('Dil.') ? 600 : 400, color: seg.startsWith('Dil.') ? '#0f172a' : '#475569' }}>{seg}</span>
+                    </span>
+                  ))}
+                  {item.instructions && (
+                    <span style={{ fontStyle: 'italic', color: '#64748b', marginLeft: '4px' }}>— {item.instructions}</span>
+                  )}
+                </div>
+              )}
+              {/* Observações quando não há preparo */}
+              {!prepLine && item.instructions && (
+                <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: '1.2', marginTop: '2px', fontStyle: 'italic' }}>
+                  {item.instructions}
+                </div>
+              )}
+            </div>
+          );
+        })()}
         {isNutrition && nutritionLine && (
           <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: '1.3', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #16a34a', fontWeight: 500 }}>
             {nutritionLine}
@@ -4555,11 +4616,6 @@ const PrescricaoPage = () => {
       // Bolus EV: remove a obrigatoriedade de tempo/vazão (administração direta)
       if (!item.ivBolus && empty(item.infusionTime) && empty(item.infusionRate)) {
         missing.push('tempo ou vazão');
-      }
-      // Posologia SEMPRE obrigatória para IV intermitente — define frequência e dose diária total.
-      // Instrução livre não substitui (risco de omissão de dose na enfermagem).
-      if (empty(item.posology) && !missing.includes('posologia')) {
-        missing.push('posologia');
       }
     }
 
@@ -5632,7 +5688,6 @@ const PrescricaoPage = () => {
   const handleAntimicrobialConfirm = useCallback((confirmedEntries: Array<{
     medication: string; dose: string; route: string; posology: string;
     startDate?: string; plannedDuration?: string; infectionSite?: string;
-    justification?: string; cultureCollected?: string; cultureResult?: string;
   }>) => {
     const antimicrobialOptions = UNIFIED_CATALOG['antimicrobial'] || [];
     const newItems: PrescriptionItem[] = confirmedEntries.map(entry => {
@@ -5656,9 +5711,6 @@ const PrescricaoPage = () => {
       base.atbStartDate = entry.startDate || format(new Date(), 'yyyy-MM-dd');
       base.atbPlannedDays = entry.plannedDuration || '';
       base.atbInfectionSite = entry.infectionSite || '';
-      base.atbJustification = entry.justification || '';
-      base.atbCultureCollected = entry.cultureCollected || 'nao';
-      base.atbCultureResult = entry.cultureResult || '';
       return base;
     });
     setItems(prev => [...prev, ...newItems]);
@@ -9581,8 +9633,7 @@ const PrescricaoPage = () => {
           .map(i => ({
             id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology,
             status: i.status, atbStartDate: i.atbStartDate, atbPlannedDays: i.atbPlannedDays,
-            atbInfectionSite: i.atbInfectionSite, atbJustification: i.atbJustification,
-            atbCultureCollected: i.atbCultureCollected, atbCultureResult: i.atbCultureResult,
+            atbInfectionSite: i.atbInfectionSite,
           }))
         }
         onSuspendItem={(id) => {
@@ -9602,9 +9653,6 @@ const PrescricaoPage = () => {
                 startDate: it.atbStartDate,
                 plannedDuration: it.atbPlannedDays,
                 infectionSite: it.atbInfectionSite,
-                justification: it.atbJustification,
-                cultureCollected: (it.atbCultureCollected as any) || 'nao',
-                cultureResult: it.atbCultureResult,
               }],
               doctorName: digitalSignature?.doctorName || '',
               doctorCrm: digitalSignature?.crm || '',
@@ -9630,9 +9678,6 @@ const PrescricaoPage = () => {
                 startDate: it.atbStartDate,
                 plannedDuration: it.atbPlannedDays,
                 infectionSite: it.atbInfectionSite,
-                justification: it.atbJustification,
-                cultureCollected: (it.atbCultureCollected as any) || 'nao',
-                cultureResult: it.atbCultureResult,
               })),
               doctorName: digitalSignature?.doctorName || '',
               doctorCrm: digitalSignature?.crm || '',
@@ -10428,16 +10473,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
             <td style={headerCellStyle}>Sexo</td>
             <td style={cellStyle}>{patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'M' : 'F') : '—'}</td>
             <td style={headerCellStyle}>Admissão</td>
-            <td style={cellStyle}>
-              <span style={{ fontSize: '5.5pt', color: '#64748b', display: 'block', lineHeight: 1.1 }}>HMDM</span>
-              {patient.admissionDate ? format(new Date(patient.admissionDate + 'T12:00:00'), 'dd/MM/yyyy') : '—'}
-              {patient.utiAdmissionDate && patient.utiAdmissionDate !== patient.admissionDate && (
-                <>
-                  <span style={{ fontSize: '5.5pt', color: '#64748b', display: 'block', lineHeight: 1.1, marginTop: '2px' }}>UTI</span>
-                  {format(new Date(patient.utiAdmissionDate + 'T12:00:00'), 'dd/MM/yyyy')}
-                </>
-              )}
-            </td>
+            <td style={cellStyle}>{patient.admissionDate ? format(new Date(patient.admissionDate + 'T12:00:00'), 'dd/MM/yyyy') : '—'}</td>
           </tr>
           <tr>
             <td style={headerCellStyle}>Nascimento</td>
@@ -10501,27 +10537,56 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     <span style={{ fontWeight: 500, color: '#334155', fontSize: '7.5pt' }}> ({abbrevPresentation(item.presentation)})</span>
                   )}
                 </div>
-                {item.category !== 'nutrition' && (
-                  <div style={{ fontSize: '7.5pt', color: '#1e293b', lineHeight: 1.35, marginTop: '2px', fontWeight: 600 }}>
-                    {[
-                      item.dose && item.dose !== '-' ? composeDoseLabel(item) : null,
-                      item.route && item.route !== '-' ? abbrevRoute(item.route) : null,
-                      item.posology && item.posology !== '-' ? item.posology : null,
-                    ].filter(Boolean).join(' · ')}
-                    {(() => {
-                      const slots = parseScheduleSlots(item.schedule || '');
-                      return slots.length > 0 ? (
-                        <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '6px', color: '#0c4a6e', backgroundColor: '#e0f2fe', padding: '0.5px 5px', borderRadius: '8px', letterSpacing: '0.2px' }}>⏱ {slots.join(' · ')}</span>
-                      ) : null;
-                    })()}
-                    {item.flags.length > 0 && (
-                      <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '4px', color: '#fff', backgroundColor: '#334155', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
-                    )}
-                    {item.isExtra && (
-                      <span style={{ fontSize: '5.5pt', fontWeight: 700, marginLeft: '3px', color: '#9a3412', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fdba74' }}>EXTRA</span>
-                    )}
-                  </div>
-                )}
+                {item.category !== 'nutrition' && (() => {
+                  const dose = buildSolutoToken(item);
+                  const via  = item.route && item.route !== '-' ? abbrevRoute(item.route) : null;
+                  const freq = item.posology && item.posology !== '-' ? item.posology : null;
+                  const prepLine = buildInlinePrepLine(item);
+                  const slots = parseScheduleSlots(item.schedule || '');
+                  return (
+                    <div style={{ marginTop: '2px' }}>
+                      {/* Linha 2: DOSE + via + freq */}
+                      <div style={{ fontSize: '7.5pt', color: '#0f172a', lineHeight: 1.35, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0 4px' }}>
+                        {dose && (
+                          <span style={{ fontWeight: 800, fontSize: '8pt', backgroundColor: '#f1f5f9', padding: '0 4px', borderRadius: '3px', border: '0.5px solid #cbd5e1', letterSpacing: '-0.1px' }}>{dose}</span>
+                        )}
+                        {via && <span style={{ color: '#64748b' }}>·</span>}
+                        {via && <span style={{ fontWeight: 600, color: '#1e293b' }}>{via}</span>}
+                        {freq && <span style={{ color: '#64748b' }}>·</span>}
+                        {freq && <span style={{ fontWeight: 700, color: '#1e293b' }}>{freq}</span>}
+                        {slots.length > 0 && (
+                          <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '4px', color: '#0c4a6e', backgroundColor: '#e0f2fe', padding: '0.5px 5px', borderRadius: '8px', letterSpacing: '0.2px' }}>⏱ {slots.join(' · ')}</span>
+                        )}
+                        {item.flags.length > 0 && (
+                          <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '2px', color: '#fff', backgroundColor: '#334155', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
+                        )}
+                        {item.isExtra && (
+                          <span style={{ fontSize: '5.5pt', fontWeight: 700, marginLeft: '2px', color: '#9a3412', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fdba74' }}>EXTRA</span>
+                        )}
+                      </div>
+                      {/* Linha inline: Dil. + Vol. + infusão */}
+                      {prepLine && !insulinDesc && !isInhalation && (
+                        <div style={{ fontSize: '7pt', color: '#334155', lineHeight: 1.3, marginTop: '2px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0 2px' }}>
+                          {prepLine.split('  |  ').map((seg, i) => (
+                            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                              {i > 0 && <span style={{ color: '#94a3b8', margin: '0 3px', fontWeight: 300 }}>|</span>}
+                              <span style={{ fontWeight: seg.startsWith('Dil.') ? 700 : 500, color: seg.startsWith('Dil.') ? '#0f172a' : '#475569' }}>{seg}</span>
+                            </span>
+                          ))}
+                          {item.instructions && !insulinDesc && (
+                            <span style={{ fontStyle: 'italic', color: '#64748b', marginLeft: '4px' }}>— {item.instructions}</span>
+                          )}
+                        </div>
+                      )}
+                      {/* Obs quando não há preparo */}
+                      {!prepLine && item.instructions && !insulinDesc && !isInhalation && (
+                        <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: 1.2, marginTop: '1px', fontStyle: 'italic' }}>
+                          {item.instructions}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Insulinoterapia: bloco estruturado para enfermagem */}
                 {insulinDesc && (
@@ -10555,7 +10620,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                 )}
 
                 {/* Preparo IV (medicação / hidratação) */}
-                {hasIvPreparo && !insulinDesc && (
+                {false && hasIvPreparo && !insulinDesc && ( /* DEPRECATED: substituído por buildInlinePrepLine */
                   <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0c4a6e', fontWeight: 500 }}>
                     {[
                       item.reconstitutionVolume && item.reconstitutionSolvent ? `Reconstituir em ${item.reconstitutionVolume}mL de ${item.reconstitutionSolvent}` : null,
