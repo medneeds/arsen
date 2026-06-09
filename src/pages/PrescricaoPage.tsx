@@ -826,9 +826,10 @@ function buildInlinePrepLine(item: PrescriptionItem): string {
   }
 
   // Tipo de infusão
+  const isContinuous = /cont[ií]nu/i.test(item.posology || '') || item.infusionMode === 'BIC';
   if (item.ivBolus) {
     segs.push('Bolus EV');
-  } else if (item.ivContinuous) {
+  } else if (isContinuous) {
     segs.push('BIC');
   }
 
@@ -843,7 +844,7 @@ function buildInlinePrepLine(item: PrescriptionItem): string {
     } else if (item.infusionRate) {
       segs.push(`Vazão: ${item.infusionRate} ${modeLabel}`);
     }
-  } else if ((item.ivContinuous || item.category === 'mav') && !item.infusionRate && !item.infusionTime) {
+  } else if (isContinuous && !item.infusionRate && !item.infusionTime) {
     segs.push('Vazão: conforme protocolo');
   }
 
