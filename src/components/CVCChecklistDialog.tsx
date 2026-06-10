@@ -137,8 +137,10 @@ export function CVCChecklistDialog({
     if (!validPid || !currentHospital?.id) return;
     resolvePatientHeader(validPid, patientName, currentHospital.id).then((h) => {
       if (h.name) setResolvedName(h.name);
-      if (h.bed) setResolvedBed(h.bed);
-      if (h.sector) setResolvedSector(h.sector);
+    });
+    resolveCurrentBedSector(validPid).then(({ bed, sector }) => {
+      if (bed) setResolvedBed(bed);
+      if (sector) setResolvedSector(sector);
     });
   }, [open, patientId, patientName, patientBed, patientSector, insertedAt, currentHospital?.id]);
 
