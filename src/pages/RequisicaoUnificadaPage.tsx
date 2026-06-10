@@ -28,7 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor, richHtmlToPlainText, sanitizeRichHtml } from "@/components/ui/rich-text-editor";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -1605,6 +1605,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const [customProcName, setCustomProcName] = useState("");
   const [searchProcedure, setSearchProcedure] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [instrumentoFilter, setInstrumentoFilter] = useState<string>("all");
   const [aihRoutingOpen, setAihRoutingOpen] = useState(false); // roteamento AIH por instrumento SIGTAP
 
   const [diagnosis, setDiagnosis] = useState("");
@@ -1696,6 +1697,13 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     if (selectedProcedures.find((p) => p.code === proc.code)) { toast.info("Procedimento já adicionado"); return; }
     if (selectedProcedures.length >= 6) { toast.error("Máximo de 6 procedimentos por laudo"); return; }
     const instrumento = getInstrumento(proc.code);
+    // Warn when mixing APAC and AIH instruments in the same form
+    if (selectedProcedures.length > 0 && instrumento) {
+      const existingInstrumento = selectedProcedures[0].instrumento;
+      if (existingInstrumento && existingInstrumento !== instrumento) {
+        toast.warning(`Misturando ${existingInstrumento} com ${instrumento} — cada instrumento exige formulário separado`, { duration: 5000 });
+      }
+    }
     setSelectedProcedures((prev) => [...prev, { code: proc.code, name: proc.name, qty: 1, instrumento }]);
     if (instrumento === "AIH") toast.info("Procedimento AIH — será gerado Laudo AIH");
     else if (instrumento === null) toast.warning("Procedimento sem código SIGTAP — será sinalizado internamente");
@@ -1773,7 +1781,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const filteredProcedures = SIGTAP_PROCEDURES.filter((p) => {
     const matchSearch = searchProcedure === "" || p.name.toLowerCase().includes(searchProcedure.toLowerCase()) || p.code.includes(searchProcedure);
     const matchCategory = categoryFilter === "all" || p.category === categoryFilter;
-    return matchSearch && matchCategory;
+    const matchInstrumento = instrumentoFilter === "all" || p.instrumento === instrumentoFilter;
+    return matchSearch && matchCategory && matchInstrumento;
   });
 
   const todayFormatted = format(new Date(), "dd/MM/yyyy");
@@ -1822,6 +1831,14 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input value={searchProcedure} onChange={(e) => setSearchProcedure(e.target.value)} placeholder="Buscar por nome ou código SIGTAP..." className="pl-9" />
                 </div>
+                <Select value={instrumentoFilter} onValueChange={setInstrumentoFilter}>
+                  <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="APAC">APAC</SelectItem>
+                    <SelectItem value="AIH">AIH</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                   <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -1830,9 +1847,18 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                     <SelectItem value="RM">RM</SelectItem>
                     <SelectItem value="DOPPLER">Doppler</SelectItem>
                     <SelectItem value="USG">USG</SelectItem>
+                    <SelectSeparator />
+                    <SelectItem value="CLÍNICA">Clínica</SelectItem>
+                    <SelectItem value="CIRÚRGICA">Cirúrgica</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              {filteredProcedures.length === 0 && (
+                <div className="text-center py-6 text-sm text-muted-foreground border rounded-lg">
+                  <Search className="h-6 w-6 mx-auto mb-2 opacity-30" />
+                  Nenhum procedimento encontrado
+                </div>
+              )}
               <div className="max-h-48 overflow-y-auto border rounded-lg divide-y">
                 {filteredProcedures.map((proc) => {
                   const isSelected = selectedProcedures.some((p) => p.code === proc.code);
