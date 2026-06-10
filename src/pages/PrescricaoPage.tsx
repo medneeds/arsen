@@ -3686,11 +3686,16 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
             Obs.: {item.instructions}
           </div>
         )}
-        {item.instructions && !hasPreparo && !isNutrition && (
-          <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: '1.2', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #cbd5e1' }}>
-            {item.instructions}
-          </div>
-        )}
+        {item.instructions && !hasPreparo && !isNutrition && (() => {
+          // Guard: if already rendered inline (no prepLine path), skip to avoid duplication.
+          const prepLineCheck = buildInlinePrepLine(item);
+          if (!prepLineCheck) return null; // already shown above in the !prepLine branch
+          return (
+            <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: '1.2', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #cbd5e1' }}>
+              {item.instructions}
+            </div>
+          );
+        })()}
       </td>
       {/* Aprazamento manual — preenchido pela enfermagem */}
       <td style={{
@@ -10694,8 +10699,9 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                 )}
 
                 {/* Instruções livres / recomendações à enfermagem
-                    (quando NÃO há preparo/inalação/insulina/nutrição que já as embutiu) */}
-                {item.instructions && !hasIvPreparo && !insulinDesc && !isInhalation && item.category !== 'nutrition' && (
+                    (quando NÃO há preparo/inalação/insulina/nutrição que já as embutiu)
+                    Guard: só renderiza se há prepLine; caso contrário já foi exibido no bloco !prepLine acima */}
+                {item.instructions && !hasIvPreparo && !insulinDesc && !isInhalation && item.category !== 'nutrition' && !!prepLine && (
                   <div style={{ fontSize: '7pt', color: '#475569', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #cbd5e1', fontStyle: 'italic', fontWeight: 500 }}>
                     {item.instructions}
                   </div>
