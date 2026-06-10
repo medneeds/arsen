@@ -26,7 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { asUuidOrNull } from "@/lib/utils";
-import { resolvePatientHeader } from "@/lib/resolvePatientHeader";
+import { resolvePatientHeader, resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
