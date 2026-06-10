@@ -5118,6 +5118,11 @@ export type Database = {
         Returns: undefined
       }
       calc_dv_mod11: { Args: { p_base: string }; Returns: number }
+      can_access_hospital: { Args: { _unit: string }; Returns: boolean }
+      can_access_hospital_strict_null: {
+        Args: { _unit: string }
+        Returns: boolean
+      }
       can_assign_department: {
         Args: { _caller: string; _target: string }
         Returns: boolean
