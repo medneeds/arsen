@@ -18,6 +18,7 @@ import { HemocomponentRequestDialog } from "@/components/HemocomponentRequestDia
 import { SatRequestDialog } from "@/components/SatRequestDialog";
 import { CultureRequestDialog } from "@/components/CultureRequestDialog";
 import { AihFormDialog } from "@/components/AihFormDialog";
+import { OPMEDialog } from "@/components/OPMEDialog";
 
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
@@ -277,6 +278,7 @@ const RequisicaoUnificadaPage = () => {
   const [satDialogOpen, setSatDialogOpen] = useState(false);
   const [cultureDialogOpen, setCultureDialogOpen] = useState(false);
   const [aihRegulacaoOpen, setAihRegulacaoOpen] = useState(false);
+  const [opmeOpen, setOpmeOpen] = useState(false);
   const [regulacaoType, setRegulacaoType] = useState<"transferencia" | "vaga" | "externo" | null>(null);
 
   // ── Result dialog ──
@@ -672,20 +674,37 @@ const RequisicaoUnificadaPage = () => {
         })}
       </div>
 
-      {/* ── Procedimento: formulário APAC embutido ── */}
+      {/* ── Procedimento: formulário APAC embutido + OPME ── */}
       {activeCategory === "procedimento" ? (
-        <ApacEmbeddedForm
-          patientName={formPatientName}
-          patientBed={formPatientBed}
-          patientSector={formPatientSector}
-          patientId={formPatientId}
-          onSelectPatient={(p) => {
-            setFormPatientId(p.id);
-            setFormPatientName(p.name || "");
-            setFormPatientBed(p.bed_number || "");
-            setFormPatientSector(p.sector || "");
-          }}
-        />
+        <div className="space-y-4">
+          <ApacEmbeddedForm
+            patientName={formPatientName}
+            patientBed={formPatientBed}
+            patientSector={formPatientSector}
+            patientId={formPatientId}
+            onSelectPatient={(p) => {
+              setFormPatientId(p.id);
+              setFormPatientName(p.name || "");
+              setFormPatientBed(p.bed_number || "");
+              setFormPatientSector(p.sector || "");
+            }}
+          />
+          {/* OPME — complementar ao laudo */}
+          <div className="border rounded-lg p-3 bg-muted/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-orange-500" />
+                <div>
+                  <p className="text-sm font-medium">Registro de OPME</p>
+                  <p className="text-[11px] text-muted-foreground">Órtese, Prótese e Material Especial — complementar ao laudo</p>
+                </div>
+              </div>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setOpmeOpen(true)}>
+                <Package className="h-3.5 w-3.5" /> Registrar OPME
+              </Button>
+            </div>
+          </div>
+        </div>
       ) : activeCategory === "terapeutico" ? (
         /* ── Terapêutico: Hemocomponentes + SAT ── */
         <div className="space-y-3">
@@ -1449,6 +1468,16 @@ const RequisicaoUnificadaPage = () => {
         patientName={formPatientName}
         origin="regulacao"
         regulacaoType={regulacaoType ?? undefined}
+      />
+
+      {/* OPME — Registro de Órtese, Prótese e Material Especial */}
+      <OPMEDialog
+        open={opmeOpen}
+        onOpenChange={setOpmeOpen}
+        patientId={formPatientId}
+        patientName={formPatientName}
+        patientBed={formPatientBed}
+        patientSector={formPatientSector}
       />
         </div>
         {/* Patient Cockpit — fixed right sidebar */}
