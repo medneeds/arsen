@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { Plus, Trash2, Activity, FlaskConical, CalendarCheck } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Plus, Trash2, Activity, FlaskConical, CalendarCheck, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { DateBRPicker } from "@/components/ui/DateBRPicker";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Badge } from "@/components/ui/badge";
+import { CVCChecklistDialog } from "@/components/CVCChecklistDialog";
 import { cn } from "@/lib/utils";
 import {
   DEVICES_CATALOG,
@@ -43,6 +44,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
   admissionDate,
 }) => {
   const admissionDateBR = parseAdmissionDateBR(admissionDate);
+  const [cvcChecklistOpen, setCvcChecklistOpen] = useState(false);
   const customs = useMemo(() => devices.filter((d) => d.custom), [devices]);
   const catalogIndex = useMemo(() => {
     const m = new Map<string, EvolutionDevice>();
@@ -80,6 +82,8 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
     onDevicesChange([...devices, { id, label: "", insertedAt: "", custom: true }]);
   };
 
+  const cvcActive = catalogIndex.get("cvc");
+
   return (
     <div className="space-y-4">
       {/* === Dispositivos === */}
@@ -102,7 +106,9 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
             const checked = !!active;
             const days = active?.insertedAt ? calcDIH(active.insertedAt) : null;
             const tone = deviceAlertTone(days);
-            return (
+            const cvcActive = catalogIndex.get("cvc");
+
+  return (
               <div
                 key={item.id}
                 className="flex flex-wrap items-center gap-2 px-2 py-1.5"
@@ -167,6 +173,18 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                         D{days}
                       </Badge>
                     )}
+                    {/* Checklist de inserção — aparece quando CVC está ativo */}
+                    {item.id === "cvc" && (
+                      <button
+                        type="button"
+                        onClick={() => setCvcChecklistOpen(true)}
+                        className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded border border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-400 text-[9px] font-semibold hover:bg-blue-500/20 transition-colors whitespace-nowrap"
+                        title="Preencher checklist de inserção CVC (bundle CCIH)"
+                      >
+                        <ShieldCheck className="h-3 w-3" />
+                        Checklist
+                      </button>
+                    )}
                   </>
                 )}
               </div>
@@ -177,7 +195,9 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
           {customs.map((d) => {
             const days = d.insertedAt ? calcDIH(d.insertedAt) : null;
             const tone = deviceAlertTone(days);
-            return (
+            const cvcActive = catalogIndex.get("cvc");
+
+  return (
               <div
                 key={d.id}
                 className="flex flex-wrap items-center gap-2 px-2 py-1.5 bg-muted/20"
@@ -268,6 +288,11 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
           minHeight={110}
         />
       </section>
+      <CVCChecklistDialog
+        open={cvcChecklistOpen}
+        onOpenChange={setCvcChecklistOpen}
+        insertedAt={cvcActive?.insertedAt || ""}
+      />
     </div>
   );
 };
