@@ -177,8 +177,7 @@ const CATEGORIES = {
     color: "text-emerald-600",
     bg: "bg-emerald-500/10",
     presets: [
-      { group: "Clínicas", items: ["Cardiologia", "Pneumologia", "Neurologia", "Nefrologia", "Gastroenterologia", "Endocrinologia", "Hematologia", "Infectologia", "Reumatologia", "Oncologia"] },
-      { group: "Cirúrgicas", items: ["Cirurgia Geral", "Cirurgia Vascular", "Neurocirurgia", "Ortopedia", "Urologia", "Buco-maxilo-facial", "Cirurgia Torácica", "Cirurgia Plástica"] },
+      { group: "Especialidades Médicas", items: ["Anestesiologia", "Cabeça e Pescoço", "Cardiologia", "Cirurgia Bucomaxilofacial", "Cirurgia Geral", "Cirurgia Plástica", "Cirurgia Torácica", "Cirurgia Vascular", "Clínica Médica", "Coloproctologia", "Endocrinologia", "Hematologia", "Infectologia", "Medicina Intensiva", "Nefrologia", "Neurocirurgia", "Neurologia", "Ortopedia", "Otorrinolaringologia", "Urologia"] },
       { group: "Apoio", items: ["Fisioterapia", "Fonoaudiologia", "Nutrição", "Psicologia", "Assistência Social", "Farmácia Clínica", "Cuidados Paliativos"] },
     ],
   },
