@@ -1413,48 +1413,48 @@ const RequisicaoUnificadaPage = () => {
 };
 
 // ── APAC Embedded Form ──
-const APAC_PROCEDURES = [
-  { code: "02.06.01.007-9", name: "TOMOGRAFIA COMPUTADORIZADA DO CRÂNIO", category: "TC" },
-  { code: "02.06.01.008-7", name: "TOMOGRAFIA COMPUTADORIZADA DE FACE / SEIOS DA FACE", category: "TC" },
-  { code: "02.06.01.009-5", name: "TOMOGRAFIA COMPUTADORIZADA DE SELA TÚRCICA", category: "TC" },
-  { code: "02.06.02.003-5", name: "TOMOGRAFIA COMPUTADORIZADA DO PESCOÇO", category: "TC" },
-  { code: "02.06.03.001-0", name: "TOMOGRAFIA COMPUTADORIZADA DO TÓRAX", category: "TC" },
-  { code: "02.06.03.002-9", name: "TOMOGRAFIA COMPUTADORIZADA DE ABDOMEN SUPERIOR", category: "TC" },
-  { code: "02.06.03.003-7", name: "TOMOGRAFIA COMPUTADORIZADA DE ABDOMEN INFERIOR", category: "TC" },
-  { code: "02.06.03.004-5", name: "TOMOGRAFIA COMPUTADORIZADA DE ABDOMEN TOTAL", category: "TC" },
-  { code: "02.06.03.005-3", name: "TOMOGRAFIA COMPUTADORIZADA DE PELVE / BACIA", category: "TC" },
-  { code: "02.06.04.001-6", name: "TOMOGRAFIA COMPUTADORIZADA DE COLUNA CERVICAL", category: "TC" },
-  { code: "02.06.04.002-4", name: "TOMOGRAFIA COMPUTADORIZADA DE COLUNA TORÁCICA", category: "TC" },
-  { code: "02.06.04.003-2", name: "TOMOGRAFIA COMPUTADORIZADA DE COLUNA LOMBO-SACRA", category: "TC" },
-  { code: "02.06.05.001-1", name: "TOMOGRAFIA COMPUTADORIZADA DE ARTICULAÇÕES", category: "TC" },
-  { code: "02.06.05.002-0", name: "TOMOGRAFIA COMPUTADORIZADA DE SEGMENTOS APENDICULARES", category: "TC" },
-  { code: "02.06.01.001-0", name: "ANGIOTOMOGRAFIA DE ARTÉRIAS CERVICO CEREBRAIS", category: "TC" },
-  { code: "02.06.01.002-8", name: "ANGIOTOMOGRAFIA DE AORTA TORÁCICA", category: "TC" },
-  { code: "02.06.01.003-6", name: "ANGIOTOMOGRAFIA DE AORTA ABDOMINAL", category: "TC" },
-  { code: "02.06.01.004-4", name: "ANGIOTOMOGRAFIA CORONARIANA", category: "TC" },
-  { code: "02.06.01.005-2", name: "ANGIOTOMOGRAFIA DE ARTÉRIAS PULMONARES (TEP)", category: "TC" },
-  { code: "02.07.01.001-3", name: "RESSONÂNCIA MAGNÉTICA DE CRÂNIO", category: "RM" },
-  { code: "02.07.01.002-1", name: "RESSONÂNCIA MAGNÉTICA DE SELA TÚRCICA", category: "RM" },
-  { code: "02.07.02.001-9", name: "RESSONÂNCIA MAGNÉTICA DE COLUNA CERVICAL", category: "RM" },
-  { code: "02.07.02.002-7", name: "RESSONÂNCIA MAGNÉTICA DE COLUNA TORÁCICA", category: "RM" },
-  { code: "02.07.02.003-5", name: "RESSONÂNCIA MAGNÉTICA DE COLUNA LOMBO-SACRA", category: "RM" },
-  { code: "02.07.03.001-4", name: "RESSONÂNCIA MAGNÉTICA DE TÓRAX", category: "RM" },
-  { code: "02.07.03.002-2", name: "RESSONÂNCIA MAGNÉTICA DE ABDOMEN SUPERIOR", category: "RM" },
-  { code: "02.07.03.003-0", name: "RESSONÂNCIA MAGNÉTICA DE PELVE", category: "RM" },
-  { code: "02.07.04.001-0", name: "RESSONÂNCIA MAGNÉTICA DE ARTICULAÇÃO", category: "RM" },
-  { code: "02.05.02.001-7", name: "DOPPLER COLORIDO DE VASOS CERVICAIS (CARÓTIDAS E VERTEBRAIS)", category: "DOPPLER" },
-  { code: "02.05.02.002-5", name: "DOPPLER COLORIDO VENOSO DE MEMBROS INFERIORES", category: "DOPPLER" },
-  { code: "02.05.02.003-3", name: "DOPPLER COLORIDO ARTERIAL DE MEMBROS INFERIORES", category: "DOPPLER" },
-  { code: "02.05.02.004-1", name: "DOPPLER COLORIDO VENOSO DE MEMBROS SUPERIORES", category: "DOPPLER" },
-  { code: "02.05.02.005-0", name: "DOPPLER COLORIDO DE AORTA E ARTÉRIAS RENAIS", category: "DOPPLER" },
-  { code: "02.05.01.003-0", name: "ULTRASSONOGRAFIA DE ABDOMEN TOTAL", category: "USG" },
-  { code: "02.05.01.004-8", name: "ULTRASSONOGRAFIA DE TÓRAX", category: "USG" },
-  { code: "02.05.01.005-6", name: "ECOCARDIOGRAMA TRANSTORÁCICO", category: "USG" },
-  { code: "02.07.03.004-9", name: "COLANGIORRESSONÂNCIA (CPRM)", category: "RM" },
-  { code: "02.07.01.003-0", name: "ANGIORRESSONÂNCIA DE CRÂNIO", category: "RM" },
-  { code: "02.07.03.005-7", name: "RESSONÂNCIA MAGNÉTICA DE FÍGADO E VIAS BILIARES", category: "RM" },
-  { code: "02.07.03.006-5", name: "RESSONÂNCIA MAGNÉTICA DE PÂNCREAS", category: "RM" },
-  { code: "02.06.01.006-0", name: "ANGIOTOMOGRAFIA DE ARTÉRIAS RENAIS", category: "TC" },
+const APAC_PROCEDURES: Array<{ code: string; name: string; category: string; instrumento: "APAC" | "AIH" }> = [
+  { code: "02.06.01.007-9", name: "TOMOGRAFIA COMPUTADORIZADA DO CRÂNIO", category: "TC", instrumento: "APAC" },
+  { code: "02.06.01.008-7", name: "TOMOGRAFIA COMPUTADORIZADA DE FACE / SEIOS DA FACE", category: "TC", instrumento: "APAC" },
+  { code: "02.06.01.009-5", name: "TOMOGRAFIA COMPUTADORIZADA DE SELA TÚRCICA", category: "TC", instrumento: "APAC" },
+  { code: "02.06.02.003-5", name: "TOMOGRAFIA COMPUTADORIZADA DO PESCOÇO", category: "TC", instrumento: "APAC" },
+  { code: "02.06.03.001-0", name: "TOMOGRAFIA COMPUTADORIZADA DO TÓRAX", category: "TC", instrumento: "APAC" },
+  { code: "02.06.03.002-9", name: "TOMOGRAFIA COMPUTADORIZADA DE ABDOMEN SUPERIOR", category: "TC", instrumento: "APAC" },
+  { code: "02.06.03.003-7", name: "TOMOGRAFIA COMPUTADORIZADA DE ABDOMEN INFERIOR", category: "TC", instrumento: "APAC" },
+  { code: "02.06.03.004-5", name: "TOMOGRAFIA COMPUTADORIZADA DE ABDOMEN TOTAL", category: "TC", instrumento: "APAC" },
+  { code: "02.06.03.005-3", name: "TOMOGRAFIA COMPUTADORIZADA DE PELVE / BACIA", category: "TC", instrumento: "APAC" },
+  { code: "02.06.04.001-6", name: "TOMOGRAFIA COMPUTADORIZADA DE COLUNA CERVICAL", category: "TC", instrumento: "APAC" },
+  { code: "02.06.04.002-4", name: "TOMOGRAFIA COMPUTADORIZADA DE COLUNA TORÁCICA", category: "TC", instrumento: "APAC" },
+  { code: "02.06.04.003-2", name: "TOMOGRAFIA COMPUTADORIZADA DE COLUNA LOMBO-SACRA", category: "TC", instrumento: "APAC" },
+  { code: "02.06.05.001-1", name: "TOMOGRAFIA COMPUTADORIZADA DE ARTICULAÇÕES", category: "TC", instrumento: "APAC" },
+  { code: "02.06.05.002-0", name: "TOMOGRAFIA COMPUTADORIZADA DE SEGMENTOS APENDICULARES", category: "TC", instrumento: "APAC" },
+  { code: "02.06.01.001-0", name: "ANGIOTOMOGRAFIA DE ARTÉRIAS CERVICO CEREBRAIS", category: "TC", instrumento: "APAC" },
+  { code: "02.06.01.002-8", name: "ANGIOTOMOGRAFIA DE AORTA TORÁCICA", category: "TC", instrumento: "APAC" },
+  { code: "02.06.01.003-6", name: "ANGIOTOMOGRAFIA DE AORTA ABDOMINAL", category: "TC", instrumento: "APAC" },
+  { code: "02.06.01.004-4", name: "ANGIOTOMOGRAFIA CORONARIANA", category: "TC", instrumento: "APAC" },
+  { code: "02.06.01.005-2", name: "ANGIOTOMOGRAFIA DE ARTÉRIAS PULMONARES (TEP)", category: "TC", instrumento: "APAC" },
+  { code: "02.07.01.001-3", name: "RESSONÂNCIA MAGNÉTICA DE CRÂNIO", category: "RM", instrumento: "APAC" },
+  { code: "02.07.01.002-1", name: "RESSONÂNCIA MAGNÉTICA DE SELA TÚRCICA", category: "RM", instrumento: "APAC" },
+  { code: "02.07.02.001-9", name: "RESSONÂNCIA MAGNÉTICA DE COLUNA CERVICAL", category: "RM", instrumento: "APAC" },
+  { code: "02.07.02.002-7", name: "RESSONÂNCIA MAGNÉTICA DE COLUNA TORÁCICA", category: "RM", instrumento: "APAC" },
+  { code: "02.07.02.003-5", name: "RESSONÂNCIA MAGNÉTICA DE COLUNA LOMBO-SACRA", category: "RM", instrumento: "APAC" },
+  { code: "02.07.03.001-4", name: "RESSONÂNCIA MAGNÉTICA DE TÓRAX", category: "RM", instrumento: "APAC" },
+  { code: "02.07.03.002-2", name: "RESSONÂNCIA MAGNÉTICA DE ABDOMEN SUPERIOR", category: "RM", instrumento: "APAC" },
+  { code: "02.07.03.003-0", name: "RESSONÂNCIA MAGNÉTICA DE PELVE", category: "RM", instrumento: "APAC" },
+  { code: "02.07.04.001-0", name: "RESSONÂNCIA MAGNÉTICA DE ARTICULAÇÃO", category: "RM", instrumento: "APAC" },
+  { code: "02.05.02.001-7", name: "DOPPLER COLORIDO DE VASOS CERVICAIS (CARÓTIDAS E VERTEBRAIS)", category: "DOPPLER", instrumento: "APAC" },
+  { code: "02.05.02.002-5", name: "DOPPLER COLORIDO VENOSO DE MEMBROS INFERIORES", category: "DOPPLER", instrumento: "APAC" },
+  { code: "02.05.02.003-3", name: "DOPPLER COLORIDO ARTERIAL DE MEMBROS INFERIORES", category: "DOPPLER", instrumento: "APAC" },
+  { code: "02.05.02.004-1", name: "DOPPLER COLORIDO VENOSO DE MEMBROS SUPERIORES", category: "DOPPLER", instrumento: "APAC" },
+  { code: "02.05.02.005-0", name: "DOPPLER COLORIDO DE AORTA E ARTÉRIAS RENAIS", category: "DOPPLER", instrumento: "APAC" },
+  { code: "02.05.01.003-0", name: "ULTRASSONOGRAFIA DE ABDOMEN TOTAL", category: "USG", instrumento: "APAC" },
+  { code: "02.05.01.004-8", name: "ULTRASSONOGRAFIA DE TÓRAX", category: "USG", instrumento: "APAC" },
+  { code: "02.05.01.005-6", name: "ECOCARDIOGRAMA TRANSTORÁCICO", category: "USG", instrumento: "APAC" },
+  { code: "02.07.03.004-9", name: "COLANGIORRESSONÂNCIA (CPRM)", category: "RM", instrumento: "APAC" },
+  { code: "02.07.01.003-0", name: "ANGIORRESSONÂNCIA DE CRÂNIO", category: "RM", instrumento: "APAC" },
+  { code: "02.07.03.005-7", name: "RESSONÂNCIA MAGNÉTICA DE FÍGADO E VIAS BILIARES", category: "RM", instrumento: "APAC" },
+  { code: "02.07.03.006-5", name: "RESSONÂNCIA MAGNÉTICA DE PÂNCREAS", category: "RM", instrumento: "APAC" },
+  { code: "02.06.01.006-0", name: "ANGIOTOMOGRAFIA DE ARTÉRIAS RENAIS", category: "TC", instrumento: "APAC" },
 ];
 
 const APAC_QUICK_ACCESS = [
@@ -1468,6 +1468,49 @@ const APAC_QUICK_ACCESS = [
   { code: "02.06.03.005-3", label: "TC Pelve" },
 ];
 
+
+// Procedimentos AIH (SIGTAP 03.xx / 04.xx) — instrumento AIH
+const AIH_PROCEDURES_SIGTAP: Array<{ code: string; name: string; category: string; instrumento: "APAC" | "AIH" }> = [
+  { code: "03.03.06.019-0", name: "TRATAMENTO DE PNEUMONIA OU INFLUENZA", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.04.014-9", name: "TRATAMENTO DE AVC ISQUÊMICO OU HEMORRÁGICO AGUDO", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.06.002-6", name: "TRATAMENTO DE INFECÇÃO DO TRATO URINÁRIO", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.02.001-4", name: "TRATAMENTO DE INSUFICIÊNCIA CARDÍACA", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.06.018-2", name: "TRATAMENTO DE SEPTICEMIA", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.04.001-7", name: "TRATAMENTO DE CRISE HIPERTENSIVA", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.03.003-0", name: "TRATAMENTO DE DIABETES MELLITUS", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.10.011-0", name: "TRATAMENTO DE INSUFICIÊNCIA RENAL AGUDA", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.06.007-7", name: "TRATAMENTO DE CELULITE", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.02.003-0", name: "TRATAMENTO DE INFARTO AGUDO DO MIOCÁRDIO", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.07.002-0", name: "TRATAMENTO DE ABDOME AGUDO", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.06.003-4", name: "TRATAMENTO DE ERISIPELA", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.04.003-3", name: "TRATAMENTO DE EPILEPSIA", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.02.004-9", name: "TRATAMENTO DE ANGINA INSTÁVEL", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.08.004-9", name: "TRATAMENTO DE DPOC", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "04.08.04.001-4", name: "TRATAMENTO CIRÚRGICO DE FRATURA DO FÊMUR", category: "CIRÚRGICA", instrumento: "AIH" },
+  { code: "04.07.02.003-3", name: "COLECISTECTOMIA VIDEOLAPAROSCÓPICA", category: "CIRÚRGICA", instrumento: "AIH" },
+  { code: "04.07.02.010-6", name: "APENDICECTOMIA", category: "CIRÚRGICA", instrumento: "AIH" },
+  { code: "04.07.02.004-1", name: "HERNIORRAFIA", category: "CIRÚRGICA", instrumento: "AIH" },
+  { code: "04.12.02.002-1", name: "TRATAMENTO CIRÚRGICO DE FRATURA DO TORNOZELO", category: "CIRÚRGICA", instrumento: "AIH" },
+  { code: "04.14.01.009-2", name: "TRATAMENTO CIRÚRGICO DE HÉRNIA INGUINAL", category: "CIRÚRGICA", instrumento: "AIH" },
+  { code: "04.11.06.027-0", name: "TRAQUEOSTOMIA", category: "CIRÚRGICA", instrumento: "AIH" },
+  { code: "04.11.06.019-9", name: "DRENAGEM DE TÓRAX", category: "CIRÚRGICA", instrumento: "AIH" },
+  { code: "04.11.06.025-4", name: "LAPAROTOMIA EXPLORADORA", category: "CIRÚRGICA", instrumento: "AIH" },
+];
+
+// Lista unificada SIGTAP (APAC + AIH)
+const SIGTAP_PROCEDURES = [...APAC_PROCEDURES, ...AIH_PROCEDURES_SIGTAP];
+
+// Deriva instrumento pelo código SIGTAP ou por campo explícito
+function getInstrumento(code: string): "APAC" | "AIH" | null {
+  if (!code || !code.trim()) return null;
+  const proc = SIGTAP_PROCEDURES.find(p => p.code === code);
+  if (proc) return proc.instrumento;
+  // Heurística: código começa com 02. → APAC; 03./04. → AIH
+  if (code.startsWith("02.")) return "APAC";
+  if (code.startsWith("03.") || code.startsWith("04.")) return "AIH";
+  return null; // custom sem padrão conhecido → SEM CÓDIGO
+}
+
 const APAC_INSTITUTION = {
   name: "HOSPITAL MUNICIPAL DJALMA MARQUES",
   cnes: "2308762",
@@ -1477,6 +1520,7 @@ interface ApacSelectedProcedure {
   code: string;
   name: string;
   qty: number;
+  instrumento: "APAC" | "AIH" | null; // derivado do SIGTAP; null = sem código
 }
 
 function CollapsibleInfoCard({ title, summary, badge, children }: { title: string; summary: string; badge?: string; children: React.ReactNode }) {
@@ -1561,6 +1605,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const [customProcName, setCustomProcName] = useState("");
   const [searchProcedure, setSearchProcedure] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [aihRoutingOpen, setAihRoutingOpen] = useState(false); // roteamento AIH por instrumento SIGTAP
 
   const [diagnosis, setDiagnosis] = useState("");
   const [cidPrimary, setCidPrimary] = useState("");
@@ -1650,8 +1695,11 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const addProcedure = (proc: { code: string; name: string }) => {
     if (selectedProcedures.find((p) => p.code === proc.code)) { toast.info("Procedimento já adicionado"); return; }
     if (selectedProcedures.length >= 6) { toast.error("Máximo de 6 procedimentos por laudo"); return; }
-    setSelectedProcedures((prev) => [...prev, { code: proc.code, name: proc.name, qty: 1 }]);
-    toast.success("Procedimento adicionado");
+    const instrumento = getInstrumento(proc.code);
+    setSelectedProcedures((prev) => [...prev, { code: proc.code, name: proc.name, qty: 1, instrumento }]);
+    if (instrumento === "AIH") toast.info("Procedimento AIH — será gerado Laudo AIH");
+    else if (instrumento === null) toast.warning("Procedimento sem código SIGTAP — será sinalizado internamente");
+    else toast.success("Procedimento adicionado");
   };
 
   const removeProcedure = (code: string) => setSelectedProcedures((prev) => prev.filter((p) => p.code !== code));
@@ -1667,6 +1715,13 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const handlePrint = () => {
     if (selectedProcedures.length === 0) { toast.error("Adicione ao menos um procedimento"); return; }
     if (!apacPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
+    const hasAih = selectedProcedures.some(p => p.instrumento === "AIH");
+    if (hasAih) {
+      // Roteamento: procedimento AIH → abre Laudo AIH
+      setAihRoutingOpen(true);
+      return;
+    }
+    // APAC ou sem código → imprime APAC normal (sem tarja para sem código)
     window.print();
   };
 
@@ -1715,7 +1770,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     finally { setImportingEvolution(false); }
   };
 
-  const filteredProcedures = APAC_PROCEDURES.filter((p) => {
+  const filteredProcedures = SIGTAP_PROCEDURES.filter((p) => {
     const matchSearch = searchProcedure === "" || p.name.toLowerCase().includes(searchProcedure.toLowerCase()) || p.code.includes(searchProcedure);
     const matchCategory = categoryFilter === "all" || p.category === categoryFilter;
     return matchSearch && matchCategory;
@@ -1783,8 +1838,11 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                   const isSelected = selectedProcedures.some((p) => p.code === proc.code);
                   return (
                     <button key={proc.code} className={`w-full text-left px-3 py-2 text-sm hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 ${isSelected ? "bg-primary/5 opacity-60" : ""}`} onClick={() => addProcedure(proc)} disabled={isSelected}>
-                      <div className="min-w-0"><span className="font-mono text-xs text-muted-foreground mr-2">{proc.code}</span><span className="text-foreground">{proc.name}</span></div>
-                      <Badge variant="outline" className="shrink-0 text-xs">{proc.category}</Badge>
+                      <div className="min-w-0 flex-1"><span className="font-mono text-xs text-muted-foreground mr-2">{proc.code}</span><span className="text-foreground">{proc.name}</span></div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Badge variant="outline" className={`text-[10px] font-bold ${proc.instrumento === "AIH" ? "border-purple-400 text-purple-700 bg-purple-50 dark:bg-purple-500/10" : "border-orange-400 text-orange-700 bg-orange-50 dark:bg-orange-500/10"}`}>{proc.instrumento}</Badge>
+                        <Badge variant="outline" className="text-[10px]">{proc.category}</Badge>
+                      </div>
                     </button>
                   );
                 })}
@@ -1819,10 +1877,12 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                       if (selectedProcedures.length >= 6) {
                         toast.error("Máximo de 6 procedimentos por laudo"); return;
                       }
+                      const instrumento = getInstrumento(customProcCode.trim());
                       setSelectedProcedures((prev) => [
                         ...prev,
-                        { code, name: name.toUpperCase(), qty: 1 },
+                        { code, name: name.toUpperCase(), qty: 1, instrumento },
                       ]);
+                      if (!instrumento) toast.warning("Procedimento sem código SIGTAP — sinalizará internamente como 'sem código'");
                       setCustomProcCode("");
                       setCustomProcName("");
                       toast.success("Procedimento avulso adicionado");
@@ -1844,6 +1904,11 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                       <div key={proc.code} className="flex items-center gap-2 p-1.5 rounded border bg-card">
                         <Badge variant="secondary" className="shrink-0 font-mono text-[10px]">{idx === 0 ? "Princ." : `Sec.${idx}`}</Badge>
                         <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1 mb-0.5">
+                            {proc.instrumento === "AIH" && <Badge className="text-[9px] h-4 px-1.5 bg-purple-600 hover:bg-purple-600">AIH</Badge>}
+                            {proc.instrumento === "APAC" && <Badge className="text-[9px] h-4 px-1.5 bg-orange-500 hover:bg-orange-500">APAC</Badge>}
+                            {proc.instrumento === null && <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-amber-400 text-amber-700">SEM CÓDIGO</Badge>}
+                          </div>
                           <p className="text-xs font-medium text-foreground truncate">{proc.name}</p>
                           <p className="text-[10px] font-mono text-muted-foreground">{proc.code}</p>
                         </div>
@@ -1997,7 +2062,10 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
 
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1" onClick={resetApacForm}><RotateCcw className="h-4 w-4 mr-1" /> Limpar</Button>
-          <Button className="flex-1" onClick={handlePrint}><Printer className="h-4 w-4 mr-1" /> Imprimir APAC</Button>
+          <Button className="flex-1" onClick={handlePrint}>
+            <Printer className="h-4 w-4 mr-1" />
+            {selectedProcedures.some(p => p.instrumento === "AIH") ? "Encaminhar via AIH" : "Imprimir APAC"}
+          </Button>
         </div>
       </div>
 
@@ -2194,6 +2262,15 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           </table>
         </div>
       </div>
+
+      {/* ── AIH routing dialog ── */}
+      <AihFormDialog
+        open={aihRoutingOpen}
+        onOpenChange={setAihRoutingOpen}
+        patientName={apacPatientName}
+        origin="regulacao"
+        regulacaoType={undefined}
+      />
     </>
   );
 }
