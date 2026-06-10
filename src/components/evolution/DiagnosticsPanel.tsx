@@ -146,6 +146,14 @@ export function DiagnosticsPanel({
   const hasAnyPrediction = !!(utiDischargePrediction?.trim() || hospitalDischargePrediction?.trim());
   const [predictionEnabled, setPredictionEnabled] = useState<boolean>(hasAnyPrediction);
 
+  // Sync switch state when async data loads — useState only runs once at mount,
+  // so if data arrives after mount (empty → non-empty), we need to re-enable.
+  useEffect(() => {
+    if (utiDischargePrediction?.trim() || hospitalDischargePrediction?.trim()) {
+      setPredictionEnabled(true);
+    }
+  }, [utiDischargePrediction, hospitalDischargePrediction]);
+
   const handleTogglePrediction = (on: boolean) => {
     setPredictionEnabled(on);
     if (!on) {
