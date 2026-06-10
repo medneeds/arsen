@@ -55,9 +55,12 @@ interface AihFormDialogProps {
   onOpenChange: (open: boolean) => void;
   patientId: string;
   patientName: string;
+  /** 'internacao' (padrão) | 'regulacao' — distingue o contexto do laudo */
+  origin?: "internacao" | "regulacao";
+  regulacaoType?: "transferencia" | "vaga" | "externo";
 }
 
-export function AihFormDialog({ open, onOpenChange, patientId, patientName }: AihFormDialogProps) {
+export function AihFormDialog({ open, onOpenChange, patientId, patientName, origin = "internacao", regulacaoType }: AihFormDialogProps) {
   const { user } = useAuth();
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -262,7 +265,12 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName }: Ai
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="flex items-center gap-2 text-lg">
             <FileText className="h-5 w-5 text-primary" />
-            Laudo para Solicitação de AIH
+{origin === "regulacao"
+                ? (regulacaoType === "transferencia" ? "AIH — Solicitação de Transferência"
+                  : regulacaoType === "vaga" ? "AIH — Vaga de Maior Complexidade"
+                  : regulacaoType === "externo" ? "AIH — Procedimento/Exame Externo"
+                  : "AIH — Regulação")
+                : "Laudo para Solicitação de AIH"}
           </DialogTitle>
           <DialogDescription>
             Autorização de Internação Hospitalar — {aihPatientName}

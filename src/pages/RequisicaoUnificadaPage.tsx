@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   TestTubes, ScanLine, UserCheck, Plus, Search, Clock, CheckCircle2,
-  Heart, Activity,
+  Heart, Activity, Navigation2,
   XCircle, FileText, AlertTriangle, Loader2, Send, Trash2,
   ChevronDown, ChevronUp, Filter, Eye, ClipboardList, Package, Zap, TrendingUp,
   CalendarIcon, Printer, RotateCcw, FileCheck, Microscope, Droplet, Syringe,
@@ -17,6 +17,7 @@ import {
 import { HemocomponentRequestDialog } from "@/components/HemocomponentRequestDialog";
 import { SatRequestDialog } from "@/components/SatRequestDialog";
 import { CultureRequestDialog } from "@/components/CultureRequestDialog";
+import { AihFormDialog } from "@/components/AihFormDialog";
 
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
@@ -156,7 +157,18 @@ const CATEGORIES = {
     bg: "bg-rose-500/10",
     presets: [],
   },
+  regulacao: {
+    label: "Regulação",
+    shortLabel: "Regulação",
+    icon: Navigation2,
+    color: "text-amber-600",
+    bg: "bg-amber-500/10",
+    presets: [],
+  },
 } as const;
+
+// Categorias clínicas (internas) vs Regulação (externa)
+const CLINICAL_CATEGORIES: CategoryKey[] = ["laboratorio", "imagem", "parecer", "procedimento", "terapeutico"];
 
 // Retrocompatibilidade: category='apac' legado mapeia para 'procedimento'
 const LEGACY_CATEGORY_MAP: Record<string, string> = { apac: "procedimento" };
@@ -224,6 +236,8 @@ const RequisicaoUnificadaPage = () => {
   const [hemoDialogOpen, setHemoDialogOpen] = useState(false);
   const [satDialogOpen, setSatDialogOpen] = useState(false);
   const [cultureDialogOpen, setCultureDialogOpen] = useState(false);
+  const [aihRegulacaoOpen, setAihRegulacaoOpen] = useState(false);
+  const [regulacaoType, setRegulacaoType] = useState<"transferencia" | "vaga" | "externo" | null>(null);
 
   // ── Result dialog ──
   const [viewingRequest, setViewingRequest] = useState<any | null>(null);
@@ -570,34 +584,44 @@ const RequisicaoUnificadaPage = () => {
       {/* Identificação do paciente fica integralmente no cockpit à direita
           (com Prontuário, Atendimento e botão "Ver dados do prontuário"). */}
 
-      {/* ── Category Selector — barra única por sentido clínico (Fase 1) ── */}
-      <div className="flex gap-2 overflow-x-auto pb-1 print:hidden">
+      {/* ── Category Selector — clínicas + divisória + Regulação (Fase 1+2) ── */}
+      <div className="flex gap-2 overflow-x-auto pb-1 print:hidden items-center">
         {(Object.keys(CATEGORIES) as CategoryKey[]).map(key => {
           const cat = CATEGORIES[key];
           const Icon = cat.icon;
           const isActive = activeCategory === key;
-          const isTerapeutico = key === "terapeutico";
+          const isRegulacao = key === "regulacao";
           return (
-            <button
-              key={key}
-              onClick={() => { setActiveCategory(key); setActiveSubTab("solicitar"); setSearch(""); }}
-              className={cn(
-                "flex items-center gap-2.5 px-4 py-3 rounded-xl border transition-all duration-200 min-w-fit",
-                isTerapeutico && "ml-3 border-l-2",
-                isActive
-                  ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
-                  : "border-border hover:bg-muted/50 hover:border-border"
+            <React.Fragment key={key}>
+              {/* Divisória visual antes de Regulação */}
+              {isRegulacao && (
+                <div className="flex items-center gap-1.5 shrink-0 mx-1">
+                  <div className="w-px h-8 bg-border" />
+                  <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider rotate-0 whitespace-nowrap">externo</span>
+                  <div className="w-px h-8 bg-border" />
+                </div>
               )}
-            >
-              <div className={cn("p-1.5 rounded-lg", isActive ? cat.bg : "bg-muted")}>
-                <Icon className={cn("h-4 w-4", isActive ? cat.color : "text-muted-foreground")} />
-              </div>
-              <div className="text-left">
-                <p className={cn("text-xs font-semibold", isActive ? "text-foreground" : "text-muted-foreground")}>
-                  {cat.shortLabel}
-                </p>
-              </div>
-            </button>
+              <button
+                onClick={() => { setActiveCategory(key); setActiveSubTab("solicitar"); setSearch(""); setRegulacaoType(null); }}
+                className={cn(
+                  "flex items-center gap-2.5 px-4 py-3 rounded-xl border transition-all duration-200 min-w-fit",
+                  isActive
+                    ? isRegulacao
+                      ? "border-amber-500 bg-amber-50/60 dark:bg-amber-500/10 shadow-sm ring-1 ring-amber-500/30"
+                      : "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
+                    : "border-border hover:bg-muted/50 hover:border-border"
+                )}
+              >
+                <div className={cn("p-1.5 rounded-lg", isActive ? cat.bg : "bg-muted")}>
+                  <Icon className={cn("h-4 w-4", isActive ? cat.color : "text-muted-foreground")} />
+                </div>
+                <div className="text-left">
+                  <p className={cn("text-xs font-semibold", isActive ? "text-foreground" : "text-muted-foreground")}>
+                    {cat.shortLabel}
+                  </p>
+                </div>
+              </button>
+            </React.Fragment>
           );
         })}
       </div>
@@ -650,6 +674,95 @@ const RequisicaoUnificadaPage = () => {
               </div>
             </button>
           </div>
+        </div>
+      ) : activeCategory === "regulacao" ? (
+        /* ── Regulação: Transferência | Vaga | Externo ── */
+        <div className="space-y-4">
+          {/* Seletor de tipo */}
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">
+              Tipo de solicitação
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {([
+                { key: "transferencia", label: "Transferência", desc: "Encaminhamento para outro serviço de saúde", color: "amber", icon: Navigation2 },
+                { key: "vaga", label: "Vaga de Maior Complexidade", desc: "Solicitação de vaga em UTI ou serviço especializado", color: "orange", icon: Activity },
+                { key: "externo", label: "Procedimento / Exame Externo", desc: "Procedimento ou exame a ser realizado em outra unidade", color: "yellow", icon: FileCheck },
+              ] as const).map(({ key, label, desc, color, icon: Icon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    setRegulacaoType(key);
+                    setAihRegulacaoOpen(true);
+                  }}
+                  className={cn(
+                    "flex flex-col gap-3 p-4 rounded-xl border-2 text-left transition-all",
+                    regulacaoType === key
+                      ? `border-${color}-400 bg-${color}-50/60 dark:bg-${color}-500/10 ring-1 ring-${color}-400/40`
+                      : "border-border hover:border-amber-300 hover:bg-amber-50/30 dark:hover:bg-amber-500/5"
+                  )}
+                >
+                  <div className={`p-2.5 rounded-lg bg-${color}-500/15 w-fit`}>
+                    <Icon className={`h-5 w-5 text-${color}-600 dark:text-${color}-400`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{label}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{desc}</p>
+                  </div>
+                  <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 mt-auto">
+                    Abre formulário AIH →
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* Solicitações anteriores de regulação */}
+          <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
+            <TabsList className="bg-muted/50">
+              <TabsTrigger value="solicitar" className="gap-1.5 text-xs">
+                <Plus className="h-3.5 w-3.5" /> Solicitar
+              </TabsTrigger>
+              <TabsTrigger value="solicitados" className="gap-1.5 text-xs">
+                <Clock className="h-3.5 w-3.5" /> Solicitados
+                {pendingRequests.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{pendingRequests.length}</Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="resultados" className="gap-1.5 text-xs">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Laudos
+                {completedRequests.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{completedRequests.length}</Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="solicitados" className="mt-4 space-y-3">
+              {loading ? (
+                <SectionLoader message="Carregando regulações" subMessage="" size="sm" />
+              ) : pendingRequests.length === 0 ? (
+                <EmptyState icon={Navigation2} message="Nenhuma solicitação de regulação pendente" />
+              ) : (
+                pendingRequests.map(req => (
+                  <RequestCard key={req.id} request={req} category={activeCategory}
+                    onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
+                    onCancel={() => handleCancelRequest(req.id)} />
+                ))
+              )}
+            </TabsContent>
+            <TabsContent value="resultados" className="mt-4 space-y-3">
+              {loading ? (
+                <SectionLoader message="Carregando laudos" subMessage="" size="sm" />
+              ) : completedRequests.length === 0 ? (
+                <EmptyState icon={CheckCircle2} message="Nenhum laudo de regulação disponível" />
+              ) : (
+                completedRequests.map(req => (
+                  <RequestCard key={req.id} request={req} category={activeCategory}
+                    onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
+                    showResult />
+                ))
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       ) : (
       <>
@@ -1280,6 +1393,16 @@ const RequisicaoUnificadaPage = () => {
         patientName={formPatientName}
         patientBed={formPatientBed}
         patientSector={formPatientSector}
+      />
+
+      {/* AIH de Regulação — distinto da AIH de internação */}
+      <AihFormDialog
+        open={aihRegulacaoOpen}
+        onOpenChange={(o) => { setAihRegulacaoOpen(o); if (!o) setRegulacaoType(null); }}
+        patientId={formPatientId || ""}
+        patientName={formPatientName}
+        origin="regulacao"
+        regulacaoType={regulacaoType ?? undefined}
       />
         </div>
         {/* Patient Cockpit — fixed right sidebar */}
