@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   TestTubes, ScanLine, UserCheck, Plus, Search, Clock, CheckCircle2,
+  Heart, Activity,
   XCircle, FileText, AlertTriangle, Loader2, Send, Trash2,
   ChevronDown, ChevronUp, Filter, Eye, ClipboardList, Package, Zap, TrendingUp,
   CalendarIcon, Printer, RotateCcw, FileCheck, Microscope, Droplet, Syringe,
@@ -139,15 +140,26 @@ const CATEGORIES = {
       { group: "Apoio", items: ["Fisioterapia", "Fonoaudiologia", "Nutrição", "Psicologia", "Assistência Social", "Farmácia Clínica", "Cuidados Paliativos"] },
     ],
   },
-  apac: {
-    label: "APAC — Alta Complexidade",
-    shortLabel: "APAC",
+  procedimento: {
+    label: "Procedimentos",
+    shortLabel: "Procedimento",
     icon: FileCheck,
     color: "text-orange-600",
     bg: "bg-orange-500/10",
     presets: [],
   },
+  terapeutico: {
+    label: "Terapêutico",
+    shortLabel: "Terapêutico",
+    icon: Heart,
+    color: "text-rose-600",
+    bg: "bg-rose-500/10",
+    presets: [],
+  },
 } as const;
+
+// Retrocompatibilidade: category='apac' legado mapeia para 'procedimento'
+const LEGACY_CATEGORY_MAP: Record<string, string> = { apac: "procedimento" };
 
 type CategoryKey = keyof typeof CATEGORIES;
 
@@ -174,22 +186,16 @@ const RequisicaoUnificadaPage = () => {
   const unitId = currentHospital?.id;
   const stateId = currentState?.id;
 
-  // Initial category from URL: ?categoria=laboratorio|imagem|parecer  OR  ?especial=apac|cultura
+  // Initial category from URL: ?categoria=laboratorio|imagem|parecer|procedimento|terapeutico
   const initialCategory: CategoryKey = (() => {
     const cat = searchParams.get("categoria");
     const esp = searchParams.get("especial");
-    if (esp === "apac") return "apac";
-    if (esp === "cultura") return "laboratorio"; // cultura é um grupo dentro de laboratório
-    if (cat === "laboratorio" || cat === "imagem" || cat === "parecer" || cat === "apac") return cat;
+    // Retrocompatibilidade: ?especial=apac → procedimento
+    if (esp === "apac" || cat === "apac") return "procedimento";
+    if (esp === "cultura") return "laboratorio";
+    if (cat === "laboratorio" || cat === "imagem" || cat === "parecer" || cat === "procedimento" || cat === "terapeutico") return cat as CategoryKey;
     return "laboratorio";
   })();
-  const initialScope: "comum" | "especial" = (() => {
-    const esp = searchParams.get("especial");
-    if (esp) return "especial";
-    if (initialCategory === "apac") return "especial";
-    return "comum";
-  })();
-  const [activeScope, setActiveScope] = useState<"comum" | "especial">(initialScope);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>(initialCategory);
   const [activeSubTab, setActiveSubTab] = useState("solicitar");
   const [requests, setRequests] = useState<any[]>([]);
@@ -239,23 +245,18 @@ const RequisicaoUnificadaPage = () => {
     if (patientId || patientName) setActiveSubTab("solicitar");
   }, [searchParams.get("patientId"), searchParams.get("patientName")]);
 
-  // ── Sync category/scope from URL (?categoria=, ?especial=) ──
+  // ── Sync category from URL (?categoria=, ?especial=) — sem escopo ──
   useEffect(() => {
     const cat = searchParams.get("categoria");
     const esp = searchParams.get("especial");
-    if (esp === "apac") {
-      setActiveScope("especial");
-      setActiveCategory("apac");
+    // Retrocompatibilidade: ?especial=apac ou ?categoria=apac → procedimento
+    if (esp === "apac" || cat === "apac") {
+      setActiveCategory("procedimento");
     } else if (esp === "cultura") {
-      setActiveScope("especial");
       setActiveCategory("laboratorio");
       setCultureDialogOpen(true);
-    } else if (cat === "laboratorio" || cat === "imagem" || cat === "parecer") {
-      setActiveScope("comum");
+    } else if (cat === "laboratorio" || cat === "imagem" || cat === "parecer" || cat === "procedimento" || cat === "terapeutico") {
       setActiveCategory(cat as CategoryKey);
-    } else if (cat === "apac") {
-      setActiveScope("especial");
-      setActiveCategory("apac");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.get("categoria"), searchParams.get("especial")]);
@@ -569,85 +570,26 @@ const RequisicaoUnificadaPage = () => {
       {/* Identificação do paciente fica integralmente no cockpit à direita
           (com Prontuário, Atendimento e botão "Ver dados do prontuário"). */}
 
-      {/* ── Scope Selector: Comuns vs Especiais (cards distintos, não pílula) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 print:hidden">
-        <button
-          type="button"
-          onClick={() => {
-            setActiveScope("comum");
-            if (activeCategory === "apac") setActiveCategory("laboratorio");
-            setActiveSubTab("solicitar");
-          }}
-          className={cn(
-            "flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
-            activeScope === "comum"
-              ? "border-blue-500 bg-blue-50 dark:bg-blue-500/10 shadow-sm ring-1 ring-blue-500/30"
-              : "border-border bg-background hover:bg-muted/40"
-          )}
-        >
-          <div className={cn("p-2 rounded-lg shrink-0", activeScope === "comum" ? "bg-blue-500/20" : "bg-muted")}>
-            <ClipboardList className={cn("h-4 w-4", activeScope === "comum" ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground")} />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className={cn("text-sm font-semibold", activeScope === "comum" ? "text-blue-700 dark:text-blue-300" : "text-foreground")}>
-                Requisição Comum
-              </p>
-            </div>
-            <p className="text-[10px] text-muted-foreground">Laboratório · Imagem · Pareceres — fluxo do dia-a-dia</p>
-          </div>
-
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setActiveScope("especial");
-            setActiveCategory("apac");
-            setActiveSubTab("solicitar");
-          }}
-          className={cn(
-            "flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
-            activeScope === "especial"
-              ? "border-blue-700 bg-blue-100/60 dark:bg-blue-700/15 shadow-sm ring-1 ring-blue-700/30"
-              : "border-border bg-background hover:bg-muted/40"
-          )}
-        >
-          <div className={cn("p-2 rounded-lg shrink-0", activeScope === "especial" ? "bg-blue-700/20" : "bg-muted")}>
-            <AlertTriangle className={cn("h-4 w-4", activeScope === "especial" ? "text-blue-800 dark:text-blue-200" : "text-muted-foreground")} />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className={cn("text-sm font-semibold", activeScope === "especial" ? "text-blue-900 dark:text-blue-100" : "text-foreground")}>
-                Requisições Especiais
-              </p>
-              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-blue-400 text-blue-700 dark:text-blue-300">Formulários próprios</Badge>
-            </div>
-            <p className="text-[10px] text-muted-foreground">APAC · Cultura · Hemocomponentes · SAT · AIH</p>
-          </div>
-        </button>
-
-      </div>
-
-      {/* ── Category Selector ── */}
+      {/* ── Category Selector — barra única por sentido clínico (Fase 1) ── */}
       <div className="flex gap-2 overflow-x-auto pb-1 print:hidden">
-        {(Object.keys(CATEGORIES) as CategoryKey[])
-          .filter(key => activeScope === "comum" ? key !== "apac" : key === "apac")
-          .map(key => {
+        {(Object.keys(CATEGORIES) as CategoryKey[]).map(key => {
           const cat = CATEGORIES[key];
           const Icon = cat.icon;
           const isActive = activeCategory === key;
+          const isTerapeutico = key === "terapeutico";
           return (
             <button
               key={key}
               onClick={() => { setActiveCategory(key); setActiveSubTab("solicitar"); setSearch(""); }}
               className={cn(
                 "flex items-center gap-2.5 px-4 py-3 rounded-xl border transition-all duration-200 min-w-fit",
+                isTerapeutico && "ml-3 border-l-2",
                 isActive
                   ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
                   : "border-border hover:bg-muted/50 hover:border-border"
               )}
             >
-              <div className={cn("p-1.5 rounded-lg", isActive ? catConfig.bg : "bg-muted")}>
+              <div className={cn("p-1.5 rounded-lg", isActive ? cat.bg : "bg-muted")}>
                 <Icon className={cn("h-4 w-4", isActive ? cat.color : "text-muted-foreground")} />
               </div>
               <div className="text-left">
@@ -658,67 +600,10 @@ const RequisicaoUnificadaPage = () => {
             </button>
           );
         })}
-        {/* Especiais: atalhos diretos para Cultura, Hemocomponentes, SAT */}
-        {activeScope === "especial" && (
-          <>
-            <button
-              type="button"
-              onClick={() => setCultureDialogOpen(true)}
-              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
-            >
-              <div className="p-1.5 rounded-lg bg-blue-500/10">
-                <Microscope className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-semibold text-foreground">Cultura</p>
-                <p className="text-[9px] text-muted-foreground">Formulário microbiológico</p>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setHemoDialogOpen(true)}
-              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
-            >
-              <div className="p-1.5 rounded-lg bg-sky-500/10">
-                <Droplet className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-semibold text-foreground">Hemocomponentes</p>
-                <p className="text-[9px] text-muted-foreground">Solicitação Socorrão I</p>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSatDialogOpen(true)}
-              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
-            >
-              <div className="p-1.5 rounded-lg bg-blue-700/10">
-                <Syringe className="h-4 w-4 text-blue-700 dark:text-blue-300" />
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-semibold text-foreground">SAT</p>
-                <p className="text-[9px] text-muted-foreground">Soro antitetânico / IGHAT</p>
-              </div>
-            </button>
-            <div
-              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-dashed border-border min-w-fit opacity-80"
-              title="O Laudo de AIH é gerado no fluxo de internação (Reavaliar admissão / Status de internação)"
-            >
-              <div className="p-1.5 rounded-lg bg-blue-900/10">
-                <FileText className="h-4 w-4 text-blue-900 dark:text-blue-200" />
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-semibold text-muted-foreground">AIH</p>
-                <p className="text-[9px] text-muted-foreground">no fluxo de internação</p>
-              </div>
-            </div>
-
-          </>
-        )}
       </div>
 
-      {/* ── APAC mode: show embedded APAC form ── */}
-      {activeCategory === "apac" ? (
+      {/* ── Procedimento: formulário APAC embutido ── */}
+      {activeCategory === "procedimento" ? (
         <ApacEmbeddedForm
           patientName={formPatientName}
           patientBed={formPatientBed}
@@ -731,6 +616,41 @@ const RequisicaoUnificadaPage = () => {
             setFormPatientSector(p.sector || "");
           }}
         />
+      ) : activeCategory === "terapeutico" ? (
+        /* ── Terapêutico: Hemocomponentes + SAT ── */
+        <div className="space-y-3">
+          <p className="text-[11px] text-muted-foreground font-medium px-1">
+            Selecione o formulário terapêutico para o paciente:
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setHemoDialogOpen(true)}
+              className="flex items-center gap-4 p-4 rounded-xl border-2 border-sky-200 bg-sky-50/60 dark:bg-sky-500/5 dark:border-sky-500/20 hover:border-sky-400 hover:bg-sky-100/60 transition-all text-left"
+            >
+              <div className="p-3 rounded-xl bg-sky-500/15 shrink-0">
+                <Droplet className="h-6 w-6 text-sky-600 dark:text-sky-400" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Hemocomponentes</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Solicitação de sangue e derivados — Socorrão I</p>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSatDialogOpen(true)}
+              className="flex items-center gap-4 p-4 rounded-xl border-2 border-indigo-200 bg-indigo-50/60 dark:bg-indigo-500/5 dark:border-indigo-500/20 hover:border-indigo-400 hover:bg-indigo-100/60 transition-all text-left"
+            >
+              <div className="p-3 rounded-xl bg-indigo-500/15 shrink-0">
+                <Syringe className="h-6 w-6 text-indigo-700 dark:text-indigo-300" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">SAT / IGHAT</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Soro antitetânico e imunoglobulina</p>
+              </div>
+            </button>
+          </div>
+        </div>
       ) : (
       <>
       {/* ── Sub Tabs: Solicitar | Solicitados | Resultados ── */}
@@ -923,6 +843,24 @@ const RequisicaoUnificadaPage = () => {
                 className="resize-none text-sm"
               />
             </div>
+          )}
+
+          {/* ── Cultura: atalho rápido dentro de Laboratório ── */}
+          {activeCategory === "laboratorio" && (
+            <button
+              type="button"
+              onClick={() => setCultureDialogOpen(true)}
+              className="w-full flex items-center gap-4 p-3 rounded-xl border-2 border-blue-200 bg-blue-50/50 dark:bg-blue-500/5 dark:border-blue-500/20 hover:border-blue-400 hover:bg-blue-100/50 transition-all text-left"
+            >
+              <div className="p-2.5 rounded-xl bg-blue-500/15 shrink-0">
+                <Microscope className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">Cultura Microbiológica</p>
+                <p className="text-[11px] text-muted-foreground">Hemocultura · Urinocultura · Secreção · LCR — formulário próprio</p>
+              </div>
+              <Badge variant="outline" className="text-[10px] shrink-0 border-blue-300 text-blue-700 dark:text-blue-300">Formulário específico</Badge>
+            </button>
           )}
 
           {/* ── Pacotes rápidos de rotina (UTI / Enfermaria) ── */}
