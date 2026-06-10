@@ -55,46 +55,86 @@ interface UtiCombo {
   color: string;
   bg: string;
   border: string;
+  scope: "uti" | "enfermaria" | "all";
   categories: Partial<Record<ComboCategory, string[]>>;
 }
 
 const UTI_COMBOS: UtiCombo[] = [
   {
-    id: "rotina-uti",
-    label: "Rotina UTI",
-    description: "Exames laboratoriais diários de paciente crítico",
+    id: "admissao-uti",
+    label: "Admissão UTI",
+    description: "Painel completo de admissão — inclui sorologias e coagulograma",
     icon: Clock,
+    scope: "uti",
+    color: "text-red-600",
+    bg: "bg-red-500/10",
+    border: "border-red-300",
+    categories: {
+      laboratorio: [
+        "Hemograma Completo",
+        "TAP/INR", "TTPA", "Fibrinogênio",
+        "Ureia", "Creatinina", "Sódio", "Potássio", "Cálcio", "Magnésio", "PCR",
+        "Fósforo", "Bilirrubina Total e Frações",
+        "Gasometria Arterial",
+        "Sífilis (VDRL)", "HBsAg", "Anti-HBc", "Anti-HBs", "Anti-HCV", "Anti-HIV",
+      ],
+    },
+  },
+  {
+    id: "rotina-uti-sem-vm",
+    label: "Rotina UTI s/ VM",
+    description: "Rotina diária — paciente crítico sem ventilação mecânica",
+    icon: Clock,
+    scope: "uti",
     color: "text-blue-600",
     bg: "bg-blue-500/10",
     border: "border-blue-300",
     categories: {
       laboratorio: [
-        "Hemograma Completo", "Ureia", "Creatinina", "Sódio", "Potássio", "Cálcio", "Magnésio", "Fósforo",
-        "Glicemia", "TGO", "TGP", "Bilirrubina Total e Frações", "PCR",
-        "TAP/INR", "TTPA", "Gasometria Arterial", "Lactato",
+        "Hemograma Completo",
+        "TAP/INR", "TTPA", "Fibrinogênio",
+        "Ureia", "Creatinina", "Sódio", "Potássio", "Cálcio", "Magnésio", "PCR",
+      ],
+    },
+  },
+  {
+    id: "rotina-uti-vm",
+    label: "Rotina UTI VM",
+    description: "Rotina diária — paciente em ventilação mecânica (+gasometria)",
+    icon: Clock,
+    scope: "uti",
+    color: "text-indigo-600",
+    bg: "bg-indigo-500/10",
+    border: "border-indigo-300",
+    categories: {
+      laboratorio: [
+        "Hemograma Completo",
+        "TAP/INR", "TTPA", "Fibrinogênio",
+        "Ureia", "Creatinina", "Sódio", "Potássio", "Cálcio", "Magnésio", "PCR",
+        "Gasometria Arterial",
       ],
     },
   },
   {
     id: "rotina-enfermaria",
     label: "Rotina Enfermaria",
-    description: "Controle laboratorial diário de paciente em enfermaria",
+    description: "Controle laboratorial diário — hemograma, função renal, eletrólitos, PCR",
     icon: Clock,
+    scope: "enfermaria",
     color: "text-emerald-600",
     bg: "bg-emerald-500/10",
     border: "border-emerald-300",
     categories: {
       laboratorio: [
-        "Hemograma Completo", "Ureia", "Creatinina", "Sódio", "Potássio",
-        "Glicemia", "TGO", "TGP", "PCR",
+        "Hemograma Completo", "Ureia", "Creatinina", "Sódio", "Potássio", "PCR",
       ],
     },
   },
 ];
 
-// Pacotes de admissão (UTI / Enfermaria) e sepse não são combos aplicáveis aqui:
-// admissão envolve RX, ECG e culturas; sepse mistura culturas com laboratório comum.
-// Esses fluxos vivem em outros módulos (Imagem, Especiais → Cultura, Admissão).
+// Setores classificados como UTI para filtro de combos
+const UTI_SECTOR_KEYS = new Set(["red", "yellow", "blue", "outside", "ucc"]);
+const isUtiSector = (sector: string) => UTI_SECTOR_KEYS.has(sector);
 
 // ── Category config ──
 const CATEGORIES = {
@@ -113,6 +153,7 @@ const CATEGORIES = {
       { group: "Urina", items: ["EAS/Urina Tipo I", "Creatinina Urinária"] },
       // Culturas saem das requisições comuns — usar a aba "Especiais → Cultura".
       { group: "Hormônios", items: ["TSH", "T4 Livre", "Cortisol"] },
+      { group: "Sorologias", items: ["Sífilis (VDRL)", "HBsAg", "Anti-HBc", "Anti-HBs", "Anti-HCV", "Anti-HIV"] },
     ],
   },
   imagem: {
@@ -391,6 +432,12 @@ const RequisicaoUnificadaPage = () => {
     UTI_COMBOS.forEach(c => (c.categories.laboratorio || []).forEach(i => s.add(i)));
     return s;
   }, []);
+
+  // Filter combos by sector: UTI sectors see UTI combos, others see enfermaria combo
+  const visibleCombos = useMemo(() => {
+    const sectorIsUti = isUtiSector(formPatientSector || "");
+    return UTI_COMBOS.filter(c => c.scope === "all" || (sectorIsUti ? c.scope === "uti" : c.scope === "enfermaria"));
+  }, [formPatientSector]);
 
   const offQuickLabItems = useMemo(() => {
     if (activeCategory !== "laboratorio") return [] as string[];
@@ -986,11 +1033,11 @@ const RequisicaoUnificadaPage = () => {
                   <Badge variant="outline" className="text-[10px] font-normal">Clique para aplicar</Badge>
                 </CardTitle>
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  Os pacotes de <strong>admissão (UTI e enfermaria)</strong> e <strong>sepse</strong> não são aplicáveis aqui — incluem RX tórax, ECG e culturas, que devem ser solicitados pelo fluxo próprio (aba <em>Imagem</em>, <em>Especiais → Cultura</em> e <em>Admissão</em>).
+                  Combos filtrados pelo setor do paciente. Culturas e exames de imagem devem ser solicitados pelo fluxo próprio (aba <em>Imagem</em> e <em>Cultura</em>).
                 </p>
               </CardHeader>
               <CardContent className="space-y-2">
-                {UTI_COMBOS.map(combo => {
+                {visibleCombos.map(combo => {
                   const ComboIcon = combo.icon;
                   const fullySelected = isComboFullySelected(combo);
                   const partiallySelected = isComboPartiallySelected(combo);
