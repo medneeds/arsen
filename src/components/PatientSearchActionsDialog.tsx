@@ -58,6 +58,7 @@ interface ActiveEncounterInfo {
   encounterCode: string | null;
   status: string;
   bedNumber: string | null;
+  sectorCode: string | null;
   sectorLabel: string | null;
   admissionStatus: string | null;
   isObito: boolean;
@@ -106,6 +107,14 @@ export function PatientSearchActionsDialog({
     setForceJustification("");
     setIsForcing(false);
   };
+
+  // Auto-verifica atendimento ativo ao abrir o dialog — evita mostrar
+  // "Abrir novo atendimento" para pacientes já internados.
+  useEffect(() => {
+    if (open && patient) {
+      checkActiveEncounter();
+    }
+  }, [open, patient, checkActiveEncounter]);
 
   /**
    * Verifica se o paciente já tem atendimento ativo antes de prosseguir.
@@ -159,6 +168,7 @@ export function PatientSearchActionsDialog({
         encounterCode: (encData as any).encounter_code ?? null,
         status: (encData as any).status,
         bedNumber: (bedData as any)?.bed_number ?? null,
+        sectorCode: (bedData as any)?.sector ?? null,
         sectorLabel: bedData ? (sectorNames[(bedData as any).sector] ?? (bedData as any).sector) : null,
         admissionStatus: admStatus,
         isObito,
@@ -513,18 +523,31 @@ export function PatientSearchActionsDialog({
                 )}
               </div>
 
-              {/* Ação principal: ver localização */}
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={() => {
-                  handleClose(false);
-                  navigate("/painel-clinico");
-                }}
-              >
-                <MapPin className="h-4 w-4" />
-                Ver localização no Painel Clínico
-              </Button>
+              {/* Ações principais */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={goToHistory}
+                >
+                  <History className="h-4 w-4" />
+                  Consultar histórico
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={() => {
+                    if (activeEncounterInfo?.sectorCode) {
+                      localStorage.setItem("selected_sector", activeEncounterInfo.sectorCode);
+                    }
+                    handleClose(false);
+                    navigate("/painel-clinico");
+                  }}
+                >
+                  <MapPin className="h-4 w-4" />
+                  Ver no Painel
+                </Button>
+              </div>
 
               {/* Forçar abertura — apenas gestor/admin/dev */}
               {canForce && (
