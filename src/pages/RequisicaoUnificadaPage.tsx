@@ -123,7 +123,8 @@ const CATEGORIES = {
     presets: [
       { group: "Radiografia", items: ["RX Tórax PA", "RX Tórax AP (leito)", "RX Abdome", "RX Coluna Cervical", "RX Seios da Face"] },
       { group: "Tomografia", items: ["TC Crânio s/ contraste", "TC Crânio c/ contraste", "TC Tórax", "TC Abdome Total", "TC Coluna", "Angio-TC Tórax (TEP)", "Angio-TC Crânio (AVC)"] },
-      { group: "Ultrassonografia", items: ["USG Abdome Total", "USG Vias Urinárias", "USG Doppler Venoso MMII", "USG Doppler Arterial", "USG Point-of-Care (POCUS)", "USG Partes Moles"] },
+      { group: "Ultrassonografia", items: ["USG Abdome Total", "USG Vias Urinárias", "USG Point-of-Care (POCUS)", "USG Partes Moles"] },
+      { group: "Doppler / Duplex (alta complexidade)", items: ["USG Doppler Venoso MMII", "USG Doppler Arterial MMII", "Doppler Duplex de Carótidas e Vertebrais", "Doppler Transcraniano", "USG Doppler Renal"] },
       { group: "Ressonância", items: ["RM Crânio", "RM Coluna", "RM Abdome"] },
       { group: "Outros", items: ["Ecocardiograma TT", "Ecocardiograma TE", "ECG 12 derivações"] },
     ],
@@ -171,10 +172,21 @@ type ExamInstrument = "apac" | "comum";
 
 // Camada 1 — regra por tipo: padrões no nome que SEMPRE são APAC.
 // Mantida em minúsculas e sem acento para casar de forma robusta.
+//
+// IMPORTANTE — distinção clínica do ultrassom:
+//   • Ultrassom COMUM (abdome, vias urinárias, partes moles) → requisição comum
+//   • Ultrassom com DOPPLER / DUPLEX (carótidas, MMII, arterial/venoso) → APAC
+// Por isso o padrão captura "doppler"/"duplex", não "ultrassom" genérico.
 const HIGH_COMPLEXITY_NAME_PATTERNS: { pattern: RegExp; label: string }[] = [
   { pattern: /\b(tc|tomografia|angio-?tc)\b/i, label: "Tomografia" },
-  { pattern: /\b(rm|ressonancia|ressonância)\b/i, label: "Ressonância" },
+  { pattern: /\b(rm|rnm|ressonancia)\b/i, label: "Ressonância" },
   { pattern: /\becocardiograma\b/i, label: "Ecocardiograma" },
+  { pattern: /\b(doppler|duplex|duplo-?scan)\b/i, label: "Doppler / Duplex" },
+  { pattern: /\bcintilografia\b/i, label: "Medicina Nuclear" },
+  { pattern: /\b(angiografia|arteriografia|cateterismo)\b/i, label: "Angiografia / Hemodinâmica" },
+  { pattern: /\bmamografia\b/i, label: "Mamografia" },
+  { pattern: /\bdensitometria\b/i, label: "Densitometria óssea" },
+  { pattern: /\b(endoscopia|colonoscopia|broncoscopia|endoscópica)\b/i, label: "Endoscopia" },
 ];
 
 // Camada 2 — códigos SIGTAP conhecidos de alta complexidade (enriquecível).
