@@ -350,6 +350,7 @@ const RequisicaoImagensPage = () => {
             evQuery = evQuery.eq("patient_id", patientId);
           }
           const { data: latestEvol } = await evQuery.maybeSingle();
+          console.log("[APAC] latestEvol:", latestEvol?.soap_data ? "encontrado" : "não encontrado");
           if (latestEvol?.soap_data) {
             const soap = latestEvol.soap_data as any;
             const evolDate = latestEvol.validated_at || latestEvol.created_at;
