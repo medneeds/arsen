@@ -28,6 +28,8 @@ interface PresentationRow {
   standard_dilution: string | null;
   max_daily_dose: string | null;
   infusion_time: string | null;
+  iv_bolus: boolean;
+  pharmacy_suggestion_enabled: boolean;
 }
 
 interface PharmacySuggestionData {
