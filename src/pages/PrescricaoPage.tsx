@@ -141,6 +141,8 @@ import { runClinicalAlertChecks, type ClinicalAlert } from "@/lib/clinicalAlertC
 import { Star, Calculator, Sparkles, Pencil } from "lucide-react";
 import { getProtocolsFor, type PosologyProtocol } from "@/lib/posologyProtocols";
 import { PosologySuggestionsBar } from "@/components/PosologySuggestionsBar";
+import { PharmacySuggestionDialog, PharmacyFilledBadge } from "@/components/PharmacySuggestionDialog";
+import type { PharmacySuggestion } from "@/components/PharmacySuggestionDialog";
 import { useMedicationProtocols } from "@/hooks/useMedicationProtocols";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { AllergiesChipInput } from "@/components/AllergiesChipInput";
@@ -200,7 +202,8 @@ interface PrescriptionItem {
   infusionRate?: string;      // Vazão editável (mL/h ou gts/min)
   volumeTotal?: string;       // Volume total (mL)
   concentration?: string;     // Concentração calculada ou manual
-  ivBolus?: boolean;          // Marca administração EV em bolus (sem tempo de infusão / gotejamento). Só p/ IV intermitente não-antimicrobiano e posologia ≠ Contínuo.
+  ivBolus?: boolean;          // Marca administração EV em bolus (sem tempo de infusão / gotejamento).
+  pharmacyFilled?: boolean;  // Indica que campos de preparo foram preenchidos pela sugestão farmacêutica. Só p/ IV intermitente não-antimicrobiano e posologia ≠ Contínuo.
   // Nutrition-specific optional fields
   nutritionType?: 'diet_enteral' | 'diet_oral' | 'diet_parenteral' | 'water' | 'npt' | 'zero' | 'supplement';
   dietType?: string;          // Tipo de dieta (líquida, pastosa, branda, polimérica, etc.)
@@ -3675,9 +3678,18 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
                   )}
                 </div>
               )}
-              {/* Observações quando não há preparo */}
-              {!prepLine && item.instructions && (
-                <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: '1.2', marginTop: '2px', fontStyle: 'italic' }}>
+              {/* Observações / instruções de preparo quando campos estruturados estão vazios */}
+              {!prepLine && item.instructions && !isNutrition && (
+                <div style={{
+                  fontSize: '7pt',
+                  color: item.ivBolus ? '#334155' : '#1e293b',
+                  lineHeight: '1.3',
+                  marginTop: '2px',
+                  fontWeight: item.ivBolus ? 400 : 500,
+                  fontStyle: 'normal',
+                  borderLeft: item.ivBolus ? 'none' : '2px solid #e2e8f0',
+                  paddingLeft: item.ivBolus ? 0 : '5px',
+                }}>
                   {item.instructions}
                 </div>
               )}
@@ -4149,7 +4161,7 @@ const PrescricaoPage = () => {
   const { currentHospital, currentState } = useHospital();
   const [searchParams] = useSearchParams();
   const { getCount: getFavoriteCount, trackUse: trackMedicationUse } = useMedicationFavorites();
-  const { getDbProtocols } = useMedicationProtocols();
+  const { getDbProtocols, getPharmacySuggestion } = useMedicationProtocols();
   const { byCategory: UNIFIED_CATALOG, findControlledByName: findControlledCatalog } = useUnifiedMedicationCatalog();
   const { state: sidebarState, isMobile: sidebarIsMobile } = useSidebar();
   const sidebarCollapsed = sidebarState === "collapsed";
@@ -4208,6 +4220,10 @@ const PrescricaoPage = () => {
     name: string;
     protocols: PosologyProtocol[];
   } | null>(null);
+  // Popup de sugestão farmacêutica (pharmacy_suggestion_enabled = true no catálogo)
+  const [pharmacySuggestion, setPharmacySuggestion] = useState<PharmacySuggestion | null>(null);
+  // Flag que controla badge "Sugestão Farmácia · Editável" por item
+  const [pharmacyFilledItems, setPharmacyFilledItems] = useState<Set<string>>(new Set());
   const [nonStdName, setNonStdName] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [freeRecommendation, setFreeRecommendation] = useState("");
@@ -5669,7 +5685,16 @@ const PrescricaoPage = () => {
       });
     }
 
-    // Sugestões: combina protocolos clínicos manuais (sepse, TEV, etc.) com
+    // Sugestão farmacêutica explícita (pharmacy_suggestion_enabled = true no catálogo).
+    // Só dispara o popup se a apresentação estiver explicitamente habilitada pela farmácia.
+    const pharmaSugg = getPharmacySuggestion(med.name);
+    if (pharmaSugg) {
+      setPharmacySuggestion({ ...pharmaSugg, itemId: newItem.id, medicationName: med.name, presentation: med.presentation });
+      setPosologySuggestion(null);
+      return;
+    }
+
+    // Sugestões de posologia: combina protocolos clínicos manuais (sepse, TEV, etc.) com
     // protocolos de evidência farmacêutica do catálogo HMDM 2026 (diluição,
     // dose máx, tempo de infusão). Manuais aparecem primeiro pois costumam
     // ser mais acionáveis no contexto clínico.
@@ -5701,6 +5726,40 @@ const PrescricaoPage = () => {
     }));
     toast.success(`Protocolo "${p.label}" aplicado`);
     setPosologySuggestion(null);
+  };
+
+  // Aplica a sugestão farmacêutica ao item, marcando pharmacyFilled
+  const applyPharmacySuggestion = (s: PharmacySuggestion) => {
+    setItems((prev) => prev.map((it) => {
+      if (it.id !== s.itemId) return it;
+      const updates: Partial<typeof it> = { pharmacyFilled: true };
+      if (s.ivBolus) {
+        updates.ivBolus = true;
+        updates.diluent = 'sem_diluente';
+        updates.diluentVolume = '';
+        updates.infusionTime = '';
+      } else {
+        // Extrair diluente e volume de standard_dilution ("SF 0,9% 100 mL" → diluent + volume)
+        if (s.standardDilution) {
+          const volMatch = s.standardDilution.match(/(\d+[\d.,]*)\s*m[Ll]/);
+          const vol = volMatch ? volMatch[1] : '';
+          const diluent = s.standardDilution.replace(/\s*\d+[\d.,]*\s*m[Ll]\s*/i, '').trim();
+          updates.diluent = diluent || s.standardDilution;
+          if (vol) updates.diluentVolume = vol;
+        }
+        // Extrair minutos de infusion_time ("30 min" → "30")
+        if (s.infusionTime) {
+          const minMatch = s.infusionTime.match(/(\d+)/);
+          const hMatch = s.infusionTime.match(/(\d+)\s*h/i);
+          if (hMatch) { updates.infusionTime = hMatch[1]; updates.infusionTimeUnit = 'h'; }
+          else if (minMatch) { updates.infusionTime = minMatch[1]; updates.infusionTimeUnit = 'min'; }
+        }
+      }
+      return { ...it, ...updates };
+    }));
+    setPharmacyFilledItems((prev) => new Set([...prev, s.itemId]));
+    setPharmacySuggestion(null);
+    toast.success(`Sugestão da Farmácia aplicada — ${s.medicationName}`);
   };
 
   // Callback when antimicrobial guide is confirmed — add both guide entry data and the prescription item
@@ -8539,6 +8598,14 @@ const PrescricaoPage = () => {
           </SortableContext>
         </DndContext>
 
+        {/* Popup de sugestão farmacêutica (pharmacy_suggestion_enabled = true) */}
+        <PharmacySuggestionDialog
+          open={!!pharmacySuggestion}
+          suggestion={pharmacySuggestion}
+          onApply={applyPharmacySuggestion}
+          onDismiss={() => setPharmacySuggestion(null)}
+        />
+
         {posologySuggestion && items.some(i => i.id === posologySuggestion.itemId) && (
           <PosologySuggestionsBar
             medicationName={posologySuggestion.name}
@@ -10598,9 +10665,18 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                           )}
                         </div>
                       )}
-                      {/* Obs quando não há preparo */}
+                      {/* Instrução de preparo quando campos estruturados estão vazios */}
                       {!prepLine && item.instructions && !insulinDesc && !isInhalation && (
-                        <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: 1.2, marginTop: '1px', fontStyle: 'italic' }}>
+                        <div style={{
+                          fontSize: '7pt',
+                          color: item.ivBolus ? '#475569' : '#1e293b',
+                          lineHeight: 1.3,
+                          marginTop: '1px',
+                          fontWeight: item.ivBolus ? 400 : 500,
+                          fontStyle: 'normal',
+                          borderLeft: item.ivBolus ? 'none' : '2px solid #e2e8f0',
+                          paddingLeft: item.ivBolus ? 0 : '5px',
+                        }}>
                           {item.instructions}
                         </div>
                       )}

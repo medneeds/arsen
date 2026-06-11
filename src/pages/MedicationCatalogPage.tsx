@@ -12,6 +12,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useCanEditCatalog } from "@/hooks/useCanEditCatalog";
+import { invalidateMedicationProtocolCache } from "@/hooks/useMedicationProtocols";
 
 interface MedicationAlias {
   id: string;
@@ -53,6 +55,7 @@ const routeColors: Record<string, string> = {
 
 export default function MedicationCatalogPage() {
   const { isAdmin } = useIsAdmin();
+  const canEdit = useCanEditCatalog();
   const [medications, setMedications] = useState<MedicationCatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
@@ -73,6 +76,8 @@ export default function MedicationCatalogPage() {
       standard_dilution: p.standard_dilution ?? "",
       max_daily_dose: p.max_daily_dose ?? "",
       infusion_time: p.infusion_time ?? "",
+      iv_bolus: p.iv_bolus ?? false,
+      pharmacy_suggestion_enabled: p.pharmacy_suggestion_enabled ?? false,
     });
   };
 
@@ -87,7 +92,10 @@ export default function MedicationCatalogPage() {
         standard_dilution: editDraft.standard_dilution.trim() || null,
         max_daily_dose: editDraft.max_daily_dose.trim() || null,
         infusion_time: editDraft.infusion_time.trim() || null,
+        iv_bolus: editDraft.iv_bolus,
+        pharmacy_suggestion_enabled: editDraft.pharmacy_suggestion_enabled,
       };
+      if (editDraft.pharmacy_suggestion_enabled) invalidateMedicationProtocolCache();
       const { error } = await supabase
         .from("medication_presentations")
         .update(payload)
@@ -359,7 +367,7 @@ export default function MedicationCatalogPage() {
                       <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
                         <Syringe className="h-4 w-4" />
                         Apresentações ({med.presentations.length})
-                        {isAdmin ? (
+                        {canEdit ? (
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-2 gap-1">
                             <Pencil className="h-3 w-3" /> Edição liberada
                           </Badge>
@@ -380,7 +388,9 @@ export default function MedicationCatalogPage() {
                                 <th className="px-3 py-2 text-left font-medium">Diluição</th>
                                 <th className="px-3 py-2 text-left font-medium">Dose Máx.</th>
                                 <th className="px-3 py-2 text-left font-medium">Tempo Infusão</th>
-                                {isAdmin && <th className="px-3 py-2 text-left font-medium w-[80px]">Ações</th>}
+                                <th className="px-3 py-2 text-center font-medium w-[60px]" title="Bolus EV">Bolus</th>
+                                <th className="px-3 py-2 text-center font-medium w-[70px]" title="Sugestão automática">Sugest.</th>
+                                {canEdit && <th className="px-3 py-2 text-left font-medium w-[80px]">Ações</th>}
                               </tr>
                             </thead>
                             <tbody>
@@ -422,15 +432,31 @@ export default function MedicationCatalogPage() {
                                             className="text-xs h-8"
                                           />
                                         </td>
+                                        {/* Bolus EV */}
+                                        <td className="px-2 py-2 text-center">
+                                          <input type="checkbox" checked={editDraft.iv_bolus}
+                                            onChange={(e) => setEditDraft((d) => ({ ...d, iv_bolus: e.target.checked, infusion_time: e.target.checked ? "" : d.infusion_time }))}
+                                            title="Bolus EV — sem diluição nem tempo"
+                                            className="h-4 w-4 cursor-pointer accent-violet-600" />
+                                        </td>
+                                        {/* Habilitar sugestão automática */}
+                                        <td className="px-2 py-2 text-center">
+                                          <input type="checkbox" checked={editDraft.pharmacy_suggestion_enabled}
+                                            onChange={(e) => setEditDraft((d) => ({ ...d, pharmacy_suggestion_enabled: e.target.checked }))}
+                                            title="Habilitar popup de sugestão automática para o médico"
+                                            className="h-4 w-4 cursor-pointer accent-emerald-600" />
+                                        </td>
                                       </>
                                     ) : (
                                       <>
                                         <td className="px-3 py-2 text-foreground text-xs max-w-[200px]">{p.standard_dilution || "—"}</td>
                                         <td className="px-3 py-2 text-foreground text-xs">{p.max_daily_dose || "—"}</td>
                                         <td className="px-3 py-2 text-foreground text-xs">{p.infusion_time || "—"}</td>
+                                        <td className="px-3 py-2 text-center">{p.iv_bolus ? <span className="text-violet-600 font-bold text-xs">✓ Bolus</span> : <span className="text-muted-foreground text-xs">—</span>}</td>
+                                        <td className="px-3 py-2 text-center">{p.pharmacy_suggestion_enabled ? <span className="text-emerald-600 font-bold text-xs">✓ Ativo</span> : <span className="text-muted-foreground text-xs">—</span>}</td>
                                       </>
                                     )}
-                                    {isAdmin && (
+                                    {canEdit && (
                                       <td className="px-2 py-2">
                                         {isEditing ? (
                                           <div className="flex gap-1">
@@ -473,7 +499,7 @@ export default function MedicationCatalogPage() {
                           </table>
                         </div>
                       </div>
-                      {isAdmin && (
+                      {canEdit && (
                         <p className="text-[11px] text-muted-foreground mt-2">
                           Diluição padrão, dose máxima e tempo de infusão alimentam as sugestões "Padrão" da prescrição.
                         </p>

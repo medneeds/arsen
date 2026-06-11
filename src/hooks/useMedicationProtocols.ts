@@ -30,8 +30,17 @@ interface PresentationRow {
   infusion_time: string | null;
 }
 
+interface PharmacySuggestionData {
+  standardDilution: string | null;
+  infusionTime: string | null;
+  maxDailyDose: string | null;
+  ivBolus: boolean;
+  key: string;
+}
+
 interface ProtocolIndex {
   byKey: Map<string, PosologyProtocol[]>;
+  pharmacySuggestions: Map<string, PharmacySuggestionData>;
 }
 
 /** Normaliza nome para chave de busca (sem acentos/pontuação, lowercase). */
@@ -109,6 +118,11 @@ function presentationToProtocol(
 let cachedIndex: ProtocolIndex | null = null;
 let cachePromise: Promise<ProtocolIndex> | null = null;
 
+export function invalidateMedicationProtocolCache(): void {
+  cachedIndex = null;
+  cachePromise = null;
+}
+
 async function loadIndex(): Promise<ProtocolIndex> {
   if (cachedIndex) return cachedIndex;
   if (cachePromise) return cachePromise;
@@ -121,7 +135,7 @@ async function loadIndex(): Promise<ProtocolIndex> {
       supabase
         .from("medication_presentations")
         .select(
-          "medication_id, form, concentration, unit, route, standard_dilution, max_daily_dose, infusion_time",
+          "medication_id, form, concentration, unit, route, standard_dilution, max_daily_dose, infusion_time, iv_bolus, pharmacy_suggestion_enabled",
         ),
     ]);
 
@@ -144,7 +158,28 @@ async function loadIndex(): Promise<ProtocolIndex> {
       byKey.set(key, list);
     });
 
-    cachedIndex = { byKey };
+    const pharmacySuggestions = new Map<string, PharmacySuggestionData>();
+    presentations.forEach((p) => {
+      if (!p.pharmacy_suggestion_enabled) return;
+      const cat = catalogById.get(p.medication_id);
+      if (!cat) return;
+      const key = normalize(cat.generic_name);
+      const score = (s: PharmacySuggestionData) =>
+        (s.standardDilution ? 1 : 0) + (s.infusionTime ? 1 : 0) + (s.maxDailyDose ? 1 : 0);
+      const candidate: PharmacySuggestionData = {
+        standardDilution: p.standard_dilution,
+        infusionTime: p.infusion_time,
+        maxDailyDose: p.max_daily_dose,
+        ivBolus: p.iv_bolus,
+        key,
+      };
+      const existing = pharmacySuggestions.get(key);
+      if (!existing || score(candidate) > score(existing)) {
+        pharmacySuggestions.set(key, candidate);
+      }
+    });
+
+    cachedIndex = { byKey, pharmacySuggestions };
     return cachedIndex;
   })();
 
@@ -189,8 +224,22 @@ export function useMedicationProtocols() {
     [index],
   );
 
+  const getPharmacySuggestion = useCallback(
+    (medicationName: string): Omit<PharmacySuggestionData, "key"> | null => {
+      if (!index || !medicationName) return null;
+      const key = normalize(medicationName);
+      const exact = index.pharmacySuggestions.get(key);
+      if (exact) return exact;
+      const candidates = Array.from(index.pharmacySuggestions.keys())
+        .filter((k) => key.includes(k) || k.includes(key))
+        .sort((a, b) => b.length - a.length);
+      return candidates.length > 0 ? (index.pharmacySuggestions.get(candidates[0]) ?? null) : null;
+    },
+    [index],
+  );
+
   return useMemo(
-    () => ({ getDbProtocols, ready: index !== null }),
-    [getDbProtocols, index],
+    () => ({ getDbProtocols, getPharmacySuggestion, ready: index !== null }),
+    [getDbProtocols, getPharmacySuggestion, index],
   );
 }
