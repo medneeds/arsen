@@ -238,7 +238,10 @@ export function buildNormaZeroDocument(opts: NormaZeroDocOptions): string {
 <h1 class="nz-title">${title}</h1>
 ${subtitle ? `<div class="nz-subtitle">${hospital} • ${subtitle}</div>` : `<div class="nz-subtitle">${hospital}</div>`}
 
+<div class="nz-body-content">
 ${bodyHtml}
+</div>
+
 
 ${signaturesHtml}
 
