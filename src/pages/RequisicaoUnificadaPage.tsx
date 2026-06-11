@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   TestTubes, ScanLine, UserCheck, Plus, Search, Clock, CheckCircle2,
+  Heart, Activity, Navigation2,
   XCircle, FileText, AlertTriangle, Loader2, Send, Trash2,
   ChevronDown, ChevronUp, Filter, Eye, ClipboardList, Package, Zap, TrendingUp,
   CalendarIcon, Printer, RotateCcw, FileCheck, Microscope, Droplet, Syringe,
@@ -17,6 +18,8 @@ import {
 import { HemocomponentRequestDialog } from "@/components/HemocomponentRequestDialog";
 import { SatRequestDialog } from "@/components/SatRequestDialog";
 import { CultureRequestDialog } from "@/components/CultureRequestDialog";
+import { AihFormDialog } from "@/components/AihFormDialog";
+import { OPMEDialog } from "@/components/OPMEDialog";
 
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
@@ -27,7 +30,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor, richHtmlToPlainText, sanitizeRichHtml } from "@/components/ui/rich-text-editor";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -54,46 +57,86 @@ interface UtiCombo {
   color: string;
   bg: string;
   border: string;
+  scope: "uti" | "enfermaria" | "all";
   categories: Partial<Record<ComboCategory, string[]>>;
 }
 
 const UTI_COMBOS: UtiCombo[] = [
   {
-    id: "rotina-uti",
-    label: "Rotina UTI",
-    description: "Exames laboratoriais diários de paciente crítico",
+    id: "admissao-uti",
+    label: "Admissão UTI",
+    description: "Painel completo de admissão — inclui sorologias e coagulograma",
     icon: Clock,
+    scope: "uti",
+    color: "text-red-600",
+    bg: "bg-red-500/10",
+    border: "border-red-300",
+    categories: {
+      laboratorio: [
+        "Hemograma Completo",
+        "TAP/INR", "TTPA", "Fibrinogênio",
+        "Ureia", "Creatinina", "Sódio", "Potássio", "Cálcio", "Magnésio", "PCR",
+        "Fósforo", "Bilirrubina Total e Frações",
+        "Gasometria Arterial",
+        "Sífilis (VDRL)", "HBsAg", "Anti-HBc", "Anti-HBs", "Anti-HCV", "Anti-HIV",
+      ],
+    },
+  },
+  {
+    id: "rotina-uti-sem-vm",
+    label: "Rotina UTI s/ VM",
+    description: "Rotina diária — paciente crítico sem ventilação mecânica",
+    icon: Clock,
+    scope: "uti",
     color: "text-blue-600",
     bg: "bg-blue-500/10",
     border: "border-blue-300",
     categories: {
       laboratorio: [
-        "Hemograma Completo", "Ureia", "Creatinina", "Sódio", "Potássio", "Cálcio", "Magnésio", "Fósforo",
-        "Glicemia", "TGO", "TGP", "Bilirrubina Total e Frações", "PCR",
-        "TAP/INR", "TTPA", "Gasometria Arterial", "Lactato",
+        "Hemograma Completo",
+        "TAP/INR", "TTPA", "Fibrinogênio",
+        "Ureia", "Creatinina", "Sódio", "Potássio", "Cálcio", "Magnésio", "PCR",
+      ],
+    },
+  },
+  {
+    id: "rotina-uti-vm",
+    label: "Rotina UTI VM",
+    description: "Rotina diária — paciente em ventilação mecânica (+gasometria)",
+    icon: Clock,
+    scope: "uti",
+    color: "text-indigo-600",
+    bg: "bg-indigo-500/10",
+    border: "border-indigo-300",
+    categories: {
+      laboratorio: [
+        "Hemograma Completo",
+        "TAP/INR", "TTPA", "Fibrinogênio",
+        "Ureia", "Creatinina", "Sódio", "Potássio", "Cálcio", "Magnésio", "PCR",
+        "Gasometria Arterial",
       ],
     },
   },
   {
     id: "rotina-enfermaria",
     label: "Rotina Enfermaria",
-    description: "Controle laboratorial diário de paciente em enfermaria",
+    description: "Controle laboratorial diário — hemograma, função renal, eletrólitos, PCR",
     icon: Clock,
+    scope: "enfermaria",
     color: "text-emerald-600",
     bg: "bg-emerald-500/10",
     border: "border-emerald-300",
     categories: {
       laboratorio: [
-        "Hemograma Completo", "Ureia", "Creatinina", "Sódio", "Potássio",
-        "Glicemia", "TGO", "TGP", "PCR",
+        "Hemograma Completo", "Ureia", "Creatinina", "Sódio", "Potássio", "PCR",
       ],
     },
   },
 ];
 
-// Pacotes de admissão (UTI / Enfermaria) e sepse não são combos aplicáveis aqui:
-// admissão envolve RX, ECG e culturas; sepse mistura culturas com laboratório comum.
-// Esses fluxos vivem em outros módulos (Imagem, Especiais → Cultura, Admissão).
+// Setores classificados como UTI para filtro de combos
+const UTI_SECTOR_KEYS = new Set(["red", "yellow", "blue", "outside", "ucc"]);
+const isUtiSector = (sector: string) => UTI_SECTOR_KEYS.has(sector);
 
 // ── Category config ──
 const CATEGORIES = {
@@ -114,6 +157,7 @@ const CATEGORIES = {
       { group: "Urina", items: ["EAS/Urina Tipo I", "Creatinina Urinária", "Ureia Urinária", "Sódio Urinário", "Potássio Urinário", "Proteinúria 24h", "Microalbuminúria", "Clearance de Creatinina", "Urocultura", "Relação Proteína/Creatinina Urinária", "Osmolaridade Urinária"] },
       { group: "Sorologias", items: ["Sífilis (VDRL)", "HBsAg", "Anti-HBc", "Anti-HBs", "Anti-HCV", "Anti-HIV", "Anti-HAV IgM", "Anti-HAV IgG"] },
       { group: "Imunologia / Reumatologia", items: ["FAN", "Fator Reumatoide", "Anti-DNA", "Complemento C3", "Complemento C4", "Anti-CCP", "ANCA", "Imunoglobulinas (IgG/IgA/IgM)"] },
+      { group: "Sorologias", items: ["Sífilis (VDRL)", "HBsAg", "Anti-HBc", "Anti-HBs", "Anti-HCV", "Anti-HIV"] },
     ],
   },
   imagem: {
@@ -138,20 +182,41 @@ const CATEGORIES = {
     color: "text-emerald-600",
     bg: "bg-emerald-500/10",
     presets: [
-      { group: "Clínicas", items: ["Cardiologia", "Pneumologia", "Neurologia", "Nefrologia", "Gastroenterologia", "Endocrinologia", "Hematologia", "Infectologia", "Reumatologia", "Oncologia"] },
-      { group: "Cirúrgicas", items: ["Cirurgia Geral", "Cirurgia Vascular", "Neurocirurgia", "Ortopedia", "Urologia", "Buco-maxilo-facial", "Cirurgia Torácica", "Cirurgia Plástica"] },
+      { group: "Especialidades Médicas", items: ["Anestesiologia", "Cabeça e Pescoço", "Cardiologia", "Cirurgia Bucomaxilofacial", "Cirurgia Geral", "Cirurgia Plástica", "Cirurgia Torácica", "Cirurgia Vascular", "Clínica Médica", "Coloproctologia", "Endocrinologia", "Hematologia", "Infectologia", "Medicina Intensiva", "Nefrologia", "Neurocirurgia", "Neurologia", "Ortopedia", "Otorrinolaringologia", "Urologia"] },
       { group: "Apoio", items: ["Fisioterapia", "Fonoaudiologia", "Nutrição", "Psicologia", "Assistência Social", "Farmácia Clínica", "Cuidados Paliativos"] },
     ],
   },
-  apac: {
-    label: "APAC — Alta Complexidade",
-    shortLabel: "APAC",
+  procedimento: {
+    label: "Procedimentos",
+    shortLabel: "Procedimento",
     icon: FileCheck,
     color: "text-orange-600",
     bg: "bg-orange-500/10",
     presets: [],
   },
+  terapeutico: {
+    label: "Terapêutico",
+    shortLabel: "Terapêutico",
+    icon: Heart,
+    color: "text-rose-600",
+    bg: "bg-rose-500/10",
+    presets: [],
+  },
+  regulacao: {
+    label: "Regulação",
+    shortLabel: "Regulação",
+    icon: Navigation2,
+    color: "text-amber-600",
+    bg: "bg-amber-500/10",
+    presets: [],
+  },
 } as const;
+
+// Categorias clínicas (internas) vs Regulação (externa)
+const CLINICAL_CATEGORIES: CategoryKey[] = ["laboratorio", "imagem", "parecer", "procedimento", "terapeutico"];
+
+// Retrocompatibilidade: category='apac' legado mapeia para 'procedimento'
+const LEGACY_CATEGORY_MAP: Record<string, string> = { apac: "procedimento" };
 
 type CategoryKey = keyof typeof CATEGORIES;
 
@@ -264,22 +329,16 @@ const RequisicaoUnificadaPage = () => {
   const unitId = currentHospital?.id;
   const stateId = currentState?.id;
 
-  // Initial category from URL: ?categoria=laboratorio|imagem|parecer  OR  ?especial=apac|cultura
+  // Initial category from URL: ?categoria=laboratorio|imagem|parecer|procedimento|terapeutico
   const initialCategory: CategoryKey = (() => {
     const cat = searchParams.get("categoria");
     const esp = searchParams.get("especial");
-    if (esp === "apac") return "apac";
-    if (esp === "cultura") return "laboratorio"; // cultura é um grupo dentro de laboratório
-    if (cat === "laboratorio" || cat === "imagem" || cat === "parecer" || cat === "apac") return cat;
+    // Retrocompatibilidade: ?especial=apac → procedimento
+    if (esp === "apac" || cat === "apac") return "procedimento";
+    if (esp === "cultura") return "laboratorio";
+    if (cat === "laboratorio" || cat === "imagem" || cat === "parecer" || cat === "procedimento" || cat === "terapeutico") return cat as CategoryKey;
     return "laboratorio";
   })();
-  const initialScope: "comum" | "especial" = (() => {
-    const esp = searchParams.get("especial");
-    if (esp) return "especial";
-    if (initialCategory === "apac") return "especial";
-    return "comum";
-  })();
-  const [activeScope, setActiveScope] = useState<"comum" | "especial">(initialScope);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>(initialCategory);
   const [activeSubTab, setActiveSubTab] = useState("solicitar");
   const [requests, setRequests] = useState<any[]>([]);
@@ -323,6 +382,9 @@ const RequisicaoUnificadaPage = () => {
   const [hemoDialogOpen, setHemoDialogOpen] = useState(false);
   const [satDialogOpen, setSatDialogOpen] = useState(false);
   const [cultureDialogOpen, setCultureDialogOpen] = useState(false);
+  const [aihRegulacaoOpen, setAihRegulacaoOpen] = useState(false);
+  const [opmeOpen, setOpmeOpen] = useState(false);
+  const [regulacaoType, setRegulacaoType] = useState<"transferencia" | "vaga" | "externo" | null>(null);
 
   // ── Result dialog ──
   const [viewingRequest, setViewingRequest] = useState<any | null>(null);
@@ -344,23 +406,18 @@ const RequisicaoUnificadaPage = () => {
     if (patientId || patientName) setActiveSubTab("solicitar");
   }, [searchParams.get("patientId"), searchParams.get("patientName")]);
 
-  // ── Sync category/scope from URL (?categoria=, ?especial=) ──
+  // ── Sync category from URL (?categoria=, ?especial=) — sem escopo ──
   useEffect(() => {
     const cat = searchParams.get("categoria");
     const esp = searchParams.get("especial");
-    if (esp === "apac") {
-      setActiveScope("especial");
-      setActiveCategory("apac");
+    // Retrocompatibilidade: ?especial=apac ou ?categoria=apac → procedimento
+    if (esp === "apac" || cat === "apac") {
+      setActiveCategory("procedimento");
     } else if (esp === "cultura") {
-      setActiveScope("especial");
       setActiveCategory("laboratorio");
       setCultureDialogOpen(true);
-    } else if (cat === "laboratorio" || cat === "imagem" || cat === "parecer") {
-      setActiveScope("comum");
+    } else if (cat === "laboratorio" || cat === "imagem" || cat === "parecer" || cat === "procedimento" || cat === "terapeutico") {
       setActiveCategory(cat as CategoryKey);
-    } else if (cat === "apac") {
-      setActiveScope("especial");
-      setActiveCategory("apac");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.get("categoria"), searchParams.get("especial")]);
@@ -453,8 +510,7 @@ const RequisicaoUnificadaPage = () => {
     const exam = apacBlock.examName;
     setApacBlock({ open: false, examName: "", label: "" });
     // Leva para o fluxo APAC carregando o exame pré-selecionado via querystring.
-    setActiveScope("especial");
-    setActiveCategory("apac");
+    setActiveCategory("procedimento");
     setActiveSubTab("solicitar");
     setApacPreselect(exam);
   };
@@ -526,6 +582,12 @@ const RequisicaoUnificadaPage = () => {
     UTI_COMBOS.forEach(c => (c.categories.laboratorio || []).forEach(i => s.add(i)));
     return s;
   }, []);
+
+  // Filter combos by sector: UTI sectors see UTI combos, others see enfermaria combo
+  const visibleCombos = useMemo(() => {
+    const sectorIsUti = isUtiSector(formPatientSector || "");
+    return UTI_COMBOS.filter(c => c.scope === "all" || (sectorIsUti ? c.scope === "uti" : c.scope === "enfermaria"));
+  }, [formPatientSector]);
 
   const offQuickLabItems = useMemo(() => {
     if (activeCategory !== "laboratorio") return [] as string[];
@@ -719,170 +781,205 @@ const RequisicaoUnificadaPage = () => {
       {/* Identificação do paciente fica integralmente no cockpit à direita
           (com Prontuário, Atendimento e botão "Ver dados do prontuário"). */}
 
-      {/* ── Scope Selector: Comuns vs Especiais (cards distintos, não pílula) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 print:hidden">
-        <button
-          type="button"
-          onClick={() => {
-            setActiveScope("comum");
-            if (activeCategory === "apac") setActiveCategory("laboratorio");
-            setActiveSubTab("solicitar");
-          }}
-          className={cn(
-            "flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
-            activeScope === "comum"
-              ? "border-blue-500 bg-blue-50 dark:bg-blue-500/10 shadow-sm ring-1 ring-blue-500/30"
-              : "border-border bg-background hover:bg-muted/40"
-          )}
-        >
-          <div className={cn("p-2 rounded-lg shrink-0", activeScope === "comum" ? "bg-blue-500/20" : "bg-muted")}>
-            <ClipboardList className={cn("h-4 w-4", activeScope === "comum" ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground")} />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className={cn("text-sm font-semibold", activeScope === "comum" ? "text-blue-700 dark:text-blue-300" : "text-foreground")}>
-                Requisição Comum
-              </p>
-            </div>
-            <p className="text-[10px] text-muted-foreground">Laboratório · Imagem · Pareceres — fluxo do dia-a-dia</p>
-          </div>
-
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setActiveScope("especial");
-            setActiveCategory("apac");
-            setActiveSubTab("solicitar");
-          }}
-          className={cn(
-            "flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
-            activeScope === "especial"
-              ? "border-blue-700 bg-blue-100/60 dark:bg-blue-700/15 shadow-sm ring-1 ring-blue-700/30"
-              : "border-border bg-background hover:bg-muted/40"
-          )}
-        >
-          <div className={cn("p-2 rounded-lg shrink-0", activeScope === "especial" ? "bg-blue-700/20" : "bg-muted")}>
-            <AlertTriangle className={cn("h-4 w-4", activeScope === "especial" ? "text-blue-800 dark:text-blue-200" : "text-muted-foreground")} />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className={cn("text-sm font-semibold", activeScope === "especial" ? "text-blue-900 dark:text-blue-100" : "text-foreground")}>
-                Requisições Especiais
-              </p>
-              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-blue-400 text-blue-700 dark:text-blue-300">Formulários próprios</Badge>
-            </div>
-            <p className="text-[10px] text-muted-foreground">APAC · Cultura · Hemocomponentes · SAT · AIH</p>
-          </div>
-        </button>
-
-      </div>
-
-      {/* ── Category Selector ── */}
-      <div className="flex gap-2 overflow-x-auto pb-1 print:hidden">
-        {(Object.keys(CATEGORIES) as CategoryKey[])
-          .filter(key => activeScope === "comum" ? key !== "apac" : key === "apac")
-          .map(key => {
+      {/* ── Category Selector — clínicas + divisória + Regulação (Fase 1+2) ── */}
+      <div className="flex gap-2 overflow-x-auto pb-1 print:hidden items-center">
+        {(Object.keys(CATEGORIES) as CategoryKey[]).map(key => {
           const cat = CATEGORIES[key];
           const Icon = cat.icon;
           const isActive = activeCategory === key;
+          const isRegulacao = key === "regulacao";
           return (
-            <button
-              key={key}
-              onClick={() => { setActiveCategory(key); setActiveSubTab("solicitar"); setSearch(""); }}
-              className={cn(
-                "flex items-center gap-2.5 px-4 py-3 rounded-xl border transition-all duration-200 min-w-fit",
-                isActive
-                  ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
-                  : "border-border hover:bg-muted/50 hover:border-border"
+            <React.Fragment key={key}>
+              {/* Divisória visual antes de Regulação */}
+              {isRegulacao && (
+                <div className="flex items-center gap-1.5 shrink-0 mx-1">
+                  <div className="w-px h-8 bg-border" />
+                  <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider rotate-0 whitespace-nowrap">externo</span>
+                  <div className="w-px h-8 bg-border" />
+                </div>
               )}
-            >
-              <div className={cn("p-1.5 rounded-lg", isActive ? catConfig.bg : "bg-muted")}>
-                <Icon className={cn("h-4 w-4", isActive ? cat.color : "text-muted-foreground")} />
-              </div>
-              <div className="text-left">
-                <p className={cn("text-xs font-semibold", isActive ? "text-foreground" : "text-muted-foreground")}>
-                  {cat.shortLabel}
-                </p>
-              </div>
-            </button>
+              <button
+                onClick={() => { setActiveCategory(key); setActiveSubTab("solicitar"); setSearch(""); setRegulacaoType(null); }}
+                className={cn(
+                  "flex items-center gap-2.5 px-4 py-3 rounded-xl border transition-all duration-200 min-w-fit",
+                  isActive
+                    ? isRegulacao
+                      ? "border-amber-500 bg-amber-50/60 dark:bg-amber-500/10 shadow-sm ring-1 ring-amber-500/30"
+                      : "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
+                    : "border-border hover:bg-muted/50 hover:border-border"
+                )}
+              >
+                <div className={cn("p-1.5 rounded-lg", isActive ? cat.bg : "bg-muted")}>
+                  <Icon className={cn("h-4 w-4", isActive ? cat.color : "text-muted-foreground")} />
+                </div>
+                <div className="text-left">
+                  <p className={cn("text-xs font-semibold", isActive ? "text-foreground" : "text-muted-foreground")}>
+                    {cat.shortLabel}
+                  </p>
+                </div>
+              </button>
+            </React.Fragment>
           );
         })}
-        {/* Especiais: atalhos diretos para Cultura, Hemocomponentes, SAT */}
-        {activeScope === "especial" && (
-          <>
-            <button
-              type="button"
-              onClick={() => setCultureDialogOpen(true)}
-              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
-            >
-              <div className="p-1.5 rounded-lg bg-blue-500/10">
-                <Microscope className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+      </div>
+
+      {/* ── Procedimento: formulário APAC embutido + OPME ── */}
+      {activeCategory === "procedimento" ? (
+        <div className="space-y-4">
+          <ApacEmbeddedForm
+            patientName={formPatientName}
+            patientBed={formPatientBed}
+            patientSector={formPatientSector}
+            patientId={formPatientId}
+            preselectProcedure={apacPreselect}
+            onPreselectConsumed={() => setApacPreselect("")}
+            onSelectPatient={(p) => {
+              setFormPatientId(p.id);
+              setFormPatientName(p.name || "");
+              setFormPatientBed(p.bed_number || "");
+              setFormPatientSector(p.sector || "");
+            }}
+          />
+          {/* OPME — complementar ao laudo */}
+          <div className="border rounded-lg p-3 bg-muted/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-orange-500" />
+                <div>
+                  <p className="text-sm font-medium">Registro de OPME</p>
+                  <p className="text-[11px] text-muted-foreground">Órtese, Prótese e Material Especial — complementar ao laudo</p>
+                </div>
               </div>
-              <div className="text-left">
-                <p className="text-xs font-semibold text-foreground">Cultura</p>
-                <p className="text-[9px] text-muted-foreground">Formulário microbiológico</p>
-              </div>
-            </button>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setOpmeOpen(true)}>
+                <Package className="h-3.5 w-3.5" /> Registrar OPME
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : activeCategory === "terapeutico" ? (
+        /* ── Terapêutico: Hemocomponentes + SAT ── */
+        <div className="space-y-3">
+          <p className="text-[11px] text-muted-foreground font-medium px-1">
+            Selecione o formulário terapêutico para o paciente:
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => setHemoDialogOpen(true)}
-              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
+              className="flex items-center gap-4 p-4 rounded-xl border-2 border-sky-200 bg-sky-50/60 dark:bg-sky-500/5 dark:border-sky-500/20 hover:border-sky-400 hover:bg-sky-100/60 transition-all text-left"
             >
-              <div className="p-1.5 rounded-lg bg-sky-500/10">
-                <Droplet className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+              <div className="p-3 rounded-xl bg-sky-500/15 shrink-0">
+                <Droplet className="h-6 w-6 text-sky-600 dark:text-sky-400" />
               </div>
-              <div className="text-left">
-                <p className="text-xs font-semibold text-foreground">Hemocomponentes</p>
-                <p className="text-[9px] text-muted-foreground">Solicitação Socorrão I</p>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Hemocomponentes</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Solicitação de sangue e derivados — Socorrão I</p>
               </div>
             </button>
             <button
               type="button"
               onClick={() => setSatDialogOpen(true)}
-              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
+              className="flex items-center gap-4 p-4 rounded-xl border-2 border-indigo-200 bg-indigo-50/60 dark:bg-indigo-500/5 dark:border-indigo-500/20 hover:border-indigo-400 hover:bg-indigo-100/60 transition-all text-left"
             >
-              <div className="p-1.5 rounded-lg bg-blue-700/10">
-                <Syringe className="h-4 w-4 text-blue-700 dark:text-blue-300" />
+              <div className="p-3 rounded-xl bg-indigo-500/15 shrink-0">
+                <Syringe className="h-6 w-6 text-indigo-700 dark:text-indigo-300" />
               </div>
-              <div className="text-left">
-                <p className="text-xs font-semibold text-foreground">SAT</p>
-                <p className="text-[9px] text-muted-foreground">Soro antitetânico / IGHAT</p>
+              <div>
+                <p className="text-sm font-semibold text-foreground">SAT / IGHAT</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Soro antitetânico e imunoglobulina</p>
               </div>
             </button>
-            <div
-              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-dashed border-border min-w-fit opacity-80"
-              title="O Laudo de AIH é gerado no fluxo de internação (Reavaliar admissão / Status de internação)"
-            >
-              <div className="p-1.5 rounded-lg bg-blue-900/10">
-                <FileText className="h-4 w-4 text-blue-900 dark:text-blue-200" />
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-semibold text-muted-foreground">AIH</p>
-                <p className="text-[9px] text-muted-foreground">no fluxo de internação</p>
-              </div>
+          </div>
+        </div>
+      ) : activeCategory === "regulacao" ? (
+        /* ── Regulação: Transferência | Vaga | Externo ── */
+        <div className="space-y-4">
+          {/* Seletor de tipo */}
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">
+              Tipo de solicitação
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {([
+                { key: "transferencia", label: "Transferência", desc: "Encaminhamento para outro serviço de saúde", color: "amber", icon: Navigation2 },
+                { key: "vaga", label: "Vaga de Maior Complexidade", desc: "Solicitação de vaga em UTI ou serviço especializado", color: "orange", icon: Activity },
+                { key: "externo", label: "Procedimento / Exame Externo", desc: "Procedimento ou exame a ser realizado em outra unidade", color: "yellow", icon: FileCheck },
+              ] as const).map(({ key, label, desc, color, icon: Icon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    setRegulacaoType(key);
+                    setAihRegulacaoOpen(true);
+                  }}
+                  className={cn(
+                    "flex flex-col gap-3 p-4 rounded-xl border-2 text-left transition-all",
+                    regulacaoType === key
+                      ? `border-${color}-400 bg-${color}-50/60 dark:bg-${color}-500/10 ring-1 ring-${color}-400/40`
+                      : "border-border hover:border-amber-300 hover:bg-amber-50/30 dark:hover:bg-amber-500/5"
+                  )}
+                >
+                  <div className={`p-2.5 rounded-lg bg-${color}-500/15 w-fit`}>
+                    <Icon className={`h-5 w-5 text-${color}-600 dark:text-${color}-400`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{label}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{desc}</p>
+                  </div>
+                  <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 mt-auto">
+                    Abre formulário AIH →
+                  </span>
+                </button>
+              ))}
             </div>
-
-          </>
-        )}
-      </div>
-
-      {/* ── APAC mode: show embedded APAC form ── */}
-      {activeCategory === "apac" ? (
-        <ApacEmbeddedForm
-          patientName={formPatientName}
-          patientBed={formPatientBed}
-          patientSector={formPatientSector}
-          patientId={formPatientId}
-          preselectProcedure={apacPreselect}
-          onPreselectConsumed={() => setApacPreselect("")}
-          onSelectPatient={(p) => {
-            setFormPatientId(p.id);
-            setFormPatientName(p.name || "");
-            setFormPatientBed(p.bed_number || "");
-            setFormPatientSector(p.sector || "");
-          }}
-        />
+          </div>
+          {/* Solicitações anteriores de regulação */}
+          <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
+            <TabsList className="bg-muted/50">
+              <TabsTrigger value="solicitar" className="gap-1.5 text-xs">
+                <Plus className="h-3.5 w-3.5" /> Solicitar
+              </TabsTrigger>
+              <TabsTrigger value="solicitados" className="gap-1.5 text-xs">
+                <Clock className="h-3.5 w-3.5" /> Solicitados
+                {pendingRequests.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{pendingRequests.length}</Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="resultados" className="gap-1.5 text-xs">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Laudos
+                {completedRequests.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{completedRequests.length}</Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="solicitados" className="mt-4 space-y-3">
+              {loading ? (
+                <SectionLoader message="Carregando regulações" subMessage="" size="sm" />
+              ) : pendingRequests.length === 0 ? (
+                <EmptyState icon={Navigation2} message="Nenhuma solicitação de regulação pendente" />
+              ) : (
+                pendingRequests.map(req => (
+                  <RequestCard key={req.id} request={req} category={activeCategory}
+                    onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
+                    onCancel={() => handleCancelRequest(req.id)} />
+                ))
+              )}
+            </TabsContent>
+            <TabsContent value="resultados" className="mt-4 space-y-3">
+              {loading ? (
+                <SectionLoader message="Carregando laudos" subMessage="" size="sm" />
+              ) : completedRequests.length === 0 ? (
+                <EmptyState icon={CheckCircle2} message="Nenhum laudo de regulação disponível" />
+              ) : (
+                completedRequests.map(req => (
+                  <RequestCard key={req.id} request={req} category={activeCategory}
+                    onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
+                    showResult />
+                ))
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
       ) : (
       <>
       {/* ── Sub Tabs: Solicitar | Solicitados | Resultados ── */}
@@ -1077,6 +1174,24 @@ const RequisicaoUnificadaPage = () => {
             </div>
           )}
 
+          {/* ── Cultura: atalho rápido dentro de Laboratório ── */}
+          {activeCategory === "laboratorio" && (
+            <button
+              type="button"
+              onClick={() => setCultureDialogOpen(true)}
+              className="w-full flex items-center gap-4 p-3 rounded-xl border-2 border-blue-200 bg-blue-50/50 dark:bg-blue-500/5 dark:border-blue-500/20 hover:border-blue-400 hover:bg-blue-100/50 transition-all text-left"
+            >
+              <div className="p-2.5 rounded-xl bg-blue-500/15 shrink-0">
+                <Microscope className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">Cultura Microbiológica</p>
+                <p className="text-[11px] text-muted-foreground">Hemocultura · Urinocultura · Secreção · LCR — formulário próprio</p>
+              </div>
+              <Badge variant="outline" className="text-[10px] shrink-0 border-blue-300 text-blue-700 dark:text-blue-300">Formulário específico</Badge>
+            </button>
+          )}
+
           {/* ── Pacotes rápidos de rotina (UTI / Enfermaria) ── */}
           {activeCategory === "laboratorio" && (
             <Card className="border-border/50 bg-muted/30">
@@ -1087,11 +1202,11 @@ const RequisicaoUnificadaPage = () => {
                   <Badge variant="outline" className="text-[10px] font-normal">Clique para aplicar</Badge>
                 </CardTitle>
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  Os pacotes de <strong>admissão (UTI e enfermaria)</strong> e <strong>sepse</strong> não são aplicáveis aqui — incluem RX tórax, ECG e culturas, que devem ser solicitados pelo fluxo próprio (aba <em>Imagem</em>, <em>Especiais → Cultura</em> e <em>Admissão</em>).
+                  Combos filtrados pelo setor do paciente. Culturas e exames de imagem devem ser solicitados pelo fluxo próprio (aba <em>Imagem</em> e <em>Cultura</em>).
                 </p>
               </CardHeader>
               <CardContent className="space-y-2">
-                {UTI_COMBOS.map(combo => {
+                {visibleCombos.map(combo => {
                   const ComboIcon = combo.icon;
                   const fullySelected = isComboFullySelected(combo);
                   const partiallySelected = isComboPartiallySelected(combo);
@@ -1522,6 +1637,25 @@ const RequisicaoUnificadaPage = () => {
         patientSector={formPatientSector}
       />
 
+      {/* AIH de Regulação — distinto da AIH de internação */}
+      <AihFormDialog
+        open={aihRegulacaoOpen}
+        onOpenChange={(o) => { setAihRegulacaoOpen(o); if (!o) setRegulacaoType(null); }}
+        patientId={formPatientId || ""}
+        patientName={formPatientName}
+        origin="regulacao"
+        regulacaoType={regulacaoType ?? undefined}
+      />
+
+      {/* OPME — Registro de Órtese, Prótese e Material Especial */}
+      <OPMEDialog
+        open={opmeOpen}
+        onOpenChange={setOpmeOpen}
+        patientId={formPatientId}
+        patientName={formPatientName}
+        patientBed={formPatientBed}
+        patientSector={formPatientSector}
+      />
       {/* ── Etapa 3 — Popup de bloqueio: exame de alta complexidade (APAC) ── */}
       <Dialog open={apacBlock.open} onOpenChange={(o) => !o && setApacBlock({ open: false, examName: "", label: "" })}>
         <DialogContent className="sm:max-w-md">
@@ -1596,48 +1730,48 @@ const RequisicaoUnificadaPage = () => {
 };
 
 // ── APAC Embedded Form ──
-const APAC_PROCEDURES = [
-  { code: "02.06.01.007-9", name: "TOMOGRAFIA COMPUTADORIZADA DO CRÂNIO", category: "TC" },
-  { code: "02.06.01.008-7", name: "TOMOGRAFIA COMPUTADORIZADA DE FACE / SEIOS DA FACE", category: "TC" },
-  { code: "02.06.01.009-5", name: "TOMOGRAFIA COMPUTADORIZADA DE SELA TÚRCICA", category: "TC" },
-  { code: "02.06.02.003-5", name: "TOMOGRAFIA COMPUTADORIZADA DO PESCOÇO", category: "TC" },
-  { code: "02.06.03.001-0", name: "TOMOGRAFIA COMPUTADORIZADA DO TÓRAX", category: "TC" },
-  { code: "02.06.03.002-9", name: "TOMOGRAFIA COMPUTADORIZADA DE ABDOMEN SUPERIOR", category: "TC" },
-  { code: "02.06.03.003-7", name: "TOMOGRAFIA COMPUTADORIZADA DE ABDOMEN INFERIOR", category: "TC" },
-  { code: "02.06.03.004-5", name: "TOMOGRAFIA COMPUTADORIZADA DE ABDOMEN TOTAL", category: "TC" },
-  { code: "02.06.03.005-3", name: "TOMOGRAFIA COMPUTADORIZADA DE PELVE / BACIA", category: "TC" },
-  { code: "02.06.04.001-6", name: "TOMOGRAFIA COMPUTADORIZADA DE COLUNA CERVICAL", category: "TC" },
-  { code: "02.06.04.002-4", name: "TOMOGRAFIA COMPUTADORIZADA DE COLUNA TORÁCICA", category: "TC" },
-  { code: "02.06.04.003-2", name: "TOMOGRAFIA COMPUTADORIZADA DE COLUNA LOMBO-SACRA", category: "TC" },
-  { code: "02.06.05.001-1", name: "TOMOGRAFIA COMPUTADORIZADA DE ARTICULAÇÕES", category: "TC" },
-  { code: "02.06.05.002-0", name: "TOMOGRAFIA COMPUTADORIZADA DE SEGMENTOS APENDICULARES", category: "TC" },
-  { code: "02.06.01.001-0", name: "ANGIOTOMOGRAFIA DE ARTÉRIAS CERVICO CEREBRAIS", category: "TC" },
-  { code: "02.06.01.002-8", name: "ANGIOTOMOGRAFIA DE AORTA TORÁCICA", category: "TC" },
-  { code: "02.06.01.003-6", name: "ANGIOTOMOGRAFIA DE AORTA ABDOMINAL", category: "TC" },
-  { code: "02.06.01.004-4", name: "ANGIOTOMOGRAFIA CORONARIANA", category: "TC" },
-  { code: "02.06.01.005-2", name: "ANGIOTOMOGRAFIA DE ARTÉRIAS PULMONARES (TEP)", category: "TC" },
-  { code: "02.07.01.001-3", name: "RESSONÂNCIA MAGNÉTICA DE CRÂNIO", category: "RM" },
-  { code: "02.07.01.002-1", name: "RESSONÂNCIA MAGNÉTICA DE SELA TÚRCICA", category: "RM" },
-  { code: "02.07.02.001-9", name: "RESSONÂNCIA MAGNÉTICA DE COLUNA CERVICAL", category: "RM" },
-  { code: "02.07.02.002-7", name: "RESSONÂNCIA MAGNÉTICA DE COLUNA TORÁCICA", category: "RM" },
-  { code: "02.07.02.003-5", name: "RESSONÂNCIA MAGNÉTICA DE COLUNA LOMBO-SACRA", category: "RM" },
-  { code: "02.07.03.001-4", name: "RESSONÂNCIA MAGNÉTICA DE TÓRAX", category: "RM" },
-  { code: "02.07.03.002-2", name: "RESSONÂNCIA MAGNÉTICA DE ABDOMEN SUPERIOR", category: "RM" },
-  { code: "02.07.03.003-0", name: "RESSONÂNCIA MAGNÉTICA DE PELVE", category: "RM" },
-  { code: "02.07.04.001-0", name: "RESSONÂNCIA MAGNÉTICA DE ARTICULAÇÃO", category: "RM" },
-  { code: "02.05.02.001-7", name: "DOPPLER COLORIDO DE VASOS CERVICAIS (CARÓTIDAS E VERTEBRAIS)", category: "DOPPLER" },
-  { code: "02.05.02.002-5", name: "DOPPLER COLORIDO VENOSO DE MEMBROS INFERIORES", category: "DOPPLER" },
-  { code: "02.05.02.003-3", name: "DOPPLER COLORIDO ARTERIAL DE MEMBROS INFERIORES", category: "DOPPLER" },
-  { code: "02.05.02.004-1", name: "DOPPLER COLORIDO VENOSO DE MEMBROS SUPERIORES", category: "DOPPLER" },
-  { code: "02.05.02.005-0", name: "DOPPLER COLORIDO DE AORTA E ARTÉRIAS RENAIS", category: "DOPPLER" },
-  { code: "02.05.01.003-0", name: "ULTRASSONOGRAFIA DE ABDOMEN TOTAL", category: "USG" },
-  { code: "02.05.01.004-8", name: "ULTRASSONOGRAFIA DE TÓRAX", category: "USG" },
-  { code: "02.05.01.005-6", name: "ECOCARDIOGRAMA TRANSTORÁCICO", category: "USG" },
-  { code: "02.07.03.004-9", name: "COLANGIORRESSONÂNCIA (CPRM)", category: "RM" },
-  { code: "02.07.01.003-0", name: "ANGIORRESSONÂNCIA DE CRÂNIO", category: "RM" },
-  { code: "02.07.03.005-7", name: "RESSONÂNCIA MAGNÉTICA DE FÍGADO E VIAS BILIARES", category: "RM" },
-  { code: "02.07.03.006-5", name: "RESSONÂNCIA MAGNÉTICA DE PÂNCREAS", category: "RM" },
-  { code: "02.06.01.006-0", name: "ANGIOTOMOGRAFIA DE ARTÉRIAS RENAIS", category: "TC" },
+const APAC_PROCEDURES: Array<{ code: string; name: string; category: string; instrumento: "APAC" | "AIH" }> = [
+  { code: "02.06.01.007-9", name: "TOMOGRAFIA COMPUTADORIZADA DO CRÂNIO", category: "TC", instrumento: "APAC" },
+  { code: "02.06.01.008-7", name: "TOMOGRAFIA COMPUTADORIZADA DE FACE / SEIOS DA FACE", category: "TC", instrumento: "APAC" },
+  { code: "02.06.01.009-5", name: "TOMOGRAFIA COMPUTADORIZADA DE SELA TÚRCICA", category: "TC", instrumento: "APAC" },
+  { code: "02.06.02.003-5", name: "TOMOGRAFIA COMPUTADORIZADA DO PESCOÇO", category: "TC", instrumento: "APAC" },
+  { code: "02.06.03.001-0", name: "TOMOGRAFIA COMPUTADORIZADA DO TÓRAX", category: "TC", instrumento: "APAC" },
+  { code: "02.06.03.002-9", name: "TOMOGRAFIA COMPUTADORIZADA DE ABDOMEN SUPERIOR", category: "TC", instrumento: "APAC" },
+  { code: "02.06.03.003-7", name: "TOMOGRAFIA COMPUTADORIZADA DE ABDOMEN INFERIOR", category: "TC", instrumento: "APAC" },
+  { code: "02.06.03.004-5", name: "TOMOGRAFIA COMPUTADORIZADA DE ABDOMEN TOTAL", category: "TC", instrumento: "APAC" },
+  { code: "02.06.03.005-3", name: "TOMOGRAFIA COMPUTADORIZADA DE PELVE / BACIA", category: "TC", instrumento: "APAC" },
+  { code: "02.06.04.001-6", name: "TOMOGRAFIA COMPUTADORIZADA DE COLUNA CERVICAL", category: "TC", instrumento: "APAC" },
+  { code: "02.06.04.002-4", name: "TOMOGRAFIA COMPUTADORIZADA DE COLUNA TORÁCICA", category: "TC", instrumento: "APAC" },
+  { code: "02.06.04.003-2", name: "TOMOGRAFIA COMPUTADORIZADA DE COLUNA LOMBO-SACRA", category: "TC", instrumento: "APAC" },
+  { code: "02.06.05.001-1", name: "TOMOGRAFIA COMPUTADORIZADA DE ARTICULAÇÕES", category: "TC", instrumento: "APAC" },
+  { code: "02.06.05.002-0", name: "TOMOGRAFIA COMPUTADORIZADA DE SEGMENTOS APENDICULARES", category: "TC", instrumento: "APAC" },
+  { code: "02.06.01.001-0", name: "ANGIOTOMOGRAFIA DE ARTÉRIAS CERVICO CEREBRAIS", category: "TC", instrumento: "APAC" },
+  { code: "02.06.01.002-8", name: "ANGIOTOMOGRAFIA DE AORTA TORÁCICA", category: "TC", instrumento: "APAC" },
+  { code: "02.06.01.003-6", name: "ANGIOTOMOGRAFIA DE AORTA ABDOMINAL", category: "TC", instrumento: "APAC" },
+  { code: "02.06.01.004-4", name: "ANGIOTOMOGRAFIA CORONARIANA", category: "TC", instrumento: "APAC" },
+  { code: "02.06.01.005-2", name: "ANGIOTOMOGRAFIA DE ARTÉRIAS PULMONARES (TEP)", category: "TC", instrumento: "APAC" },
+  { code: "02.07.01.001-3", name: "RESSONÂNCIA MAGNÉTICA DE CRÂNIO", category: "RM", instrumento: "APAC" },
+  { code: "02.07.01.002-1", name: "RESSONÂNCIA MAGNÉTICA DE SELA TÚRCICA", category: "RM", instrumento: "APAC" },
+  { code: "02.07.02.001-9", name: "RESSONÂNCIA MAGNÉTICA DE COLUNA CERVICAL", category: "RM", instrumento: "APAC" },
+  { code: "02.07.02.002-7", name: "RESSONÂNCIA MAGNÉTICA DE COLUNA TORÁCICA", category: "RM", instrumento: "APAC" },
+  { code: "02.07.02.003-5", name: "RESSONÂNCIA MAGNÉTICA DE COLUNA LOMBO-SACRA", category: "RM", instrumento: "APAC" },
+  { code: "02.07.03.001-4", name: "RESSONÂNCIA MAGNÉTICA DE TÓRAX", category: "RM", instrumento: "APAC" },
+  { code: "02.07.03.002-2", name: "RESSONÂNCIA MAGNÉTICA DE ABDOMEN SUPERIOR", category: "RM", instrumento: "APAC" },
+  { code: "02.07.03.003-0", name: "RESSONÂNCIA MAGNÉTICA DE PELVE", category: "RM", instrumento: "APAC" },
+  { code: "02.07.04.001-0", name: "RESSONÂNCIA MAGNÉTICA DE ARTICULAÇÃO", category: "RM", instrumento: "APAC" },
+  { code: "02.05.02.001-7", name: "DOPPLER COLORIDO DE VASOS CERVICAIS (CARÓTIDAS E VERTEBRAIS)", category: "DOPPLER", instrumento: "APAC" },
+  { code: "02.05.02.002-5", name: "DOPPLER COLORIDO VENOSO DE MEMBROS INFERIORES", category: "DOPPLER", instrumento: "APAC" },
+  { code: "02.05.02.003-3", name: "DOPPLER COLORIDO ARTERIAL DE MEMBROS INFERIORES", category: "DOPPLER", instrumento: "APAC" },
+  { code: "02.05.02.004-1", name: "DOPPLER COLORIDO VENOSO DE MEMBROS SUPERIORES", category: "DOPPLER", instrumento: "APAC" },
+  { code: "02.05.02.005-0", name: "DOPPLER COLORIDO DE AORTA E ARTÉRIAS RENAIS", category: "DOPPLER", instrumento: "APAC" },
+  { code: "02.05.01.003-0", name: "ULTRASSONOGRAFIA DE ABDOMEN TOTAL", category: "USG", instrumento: "APAC" },
+  { code: "02.05.01.004-8", name: "ULTRASSONOGRAFIA DE TÓRAX", category: "USG", instrumento: "APAC" },
+  { code: "02.05.01.005-6", name: "ECOCARDIOGRAMA TRANSTORÁCICO", category: "USG", instrumento: "APAC" },
+  { code: "02.07.03.004-9", name: "COLANGIORRESSONÂNCIA (CPRM)", category: "RM", instrumento: "APAC" },
+  { code: "02.07.01.003-0", name: "ANGIORRESSONÂNCIA DE CRÂNIO", category: "RM", instrumento: "APAC" },
+  { code: "02.07.03.005-7", name: "RESSONÂNCIA MAGNÉTICA DE FÍGADO E VIAS BILIARES", category: "RM", instrumento: "APAC" },
+  { code: "02.07.03.006-5", name: "RESSONÂNCIA MAGNÉTICA DE PÂNCREAS", category: "RM", instrumento: "APAC" },
+  { code: "02.06.01.006-0", name: "ANGIOTOMOGRAFIA DE ARTÉRIAS RENAIS", category: "TC", instrumento: "APAC" },
 ];
 
 const APAC_QUICK_ACCESS = [
@@ -1651,6 +1785,49 @@ const APAC_QUICK_ACCESS = [
   { code: "02.06.03.005-3", label: "TC Pelve" },
 ];
 
+
+// Procedimentos AIH (SIGTAP 03.xx / 04.xx) — instrumento AIH
+const AIH_PROCEDURES_SIGTAP: Array<{ code: string; name: string; category: string; instrumento: "APAC" | "AIH" }> = [
+  { code: "03.03.06.019-0", name: "TRATAMENTO DE PNEUMONIA OU INFLUENZA", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.04.014-9", name: "TRATAMENTO DE AVC ISQUÊMICO OU HEMORRÁGICO AGUDO", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.06.002-6", name: "TRATAMENTO DE INFECÇÃO DO TRATO URINÁRIO", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.02.001-4", name: "TRATAMENTO DE INSUFICIÊNCIA CARDÍACA", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.06.018-2", name: "TRATAMENTO DE SEPTICEMIA", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.04.001-7", name: "TRATAMENTO DE CRISE HIPERTENSIVA", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.03.003-0", name: "TRATAMENTO DE DIABETES MELLITUS", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.10.011-0", name: "TRATAMENTO DE INSUFICIÊNCIA RENAL AGUDA", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.06.007-7", name: "TRATAMENTO DE CELULITE", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.02.003-0", name: "TRATAMENTO DE INFARTO AGUDO DO MIOCÁRDIO", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.07.002-0", name: "TRATAMENTO DE ABDOME AGUDO", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.06.003-4", name: "TRATAMENTO DE ERISIPELA", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.04.003-3", name: "TRATAMENTO DE EPILEPSIA", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.02.004-9", name: "TRATAMENTO DE ANGINA INSTÁVEL", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "03.03.08.004-9", name: "TRATAMENTO DE DPOC", category: "CLÍNICA", instrumento: "AIH" },
+  { code: "04.08.04.001-4", name: "TRATAMENTO CIRÚRGICO DE FRATURA DO FÊMUR", category: "CIRÚRGICA", instrumento: "AIH" },
+  { code: "04.07.02.003-3", name: "COLECISTECTOMIA VIDEOLAPAROSCÓPICA", category: "CIRÚRGICA", instrumento: "AIH" },
+  { code: "04.07.02.010-6", name: "APENDICECTOMIA", category: "CIRÚRGICA", instrumento: "AIH" },
+  { code: "04.07.02.004-1", name: "HERNIORRAFIA", category: "CIRÚRGICA", instrumento: "AIH" },
+  { code: "04.12.02.002-1", name: "TRATAMENTO CIRÚRGICO DE FRATURA DO TORNOZELO", category: "CIRÚRGICA", instrumento: "AIH" },
+  { code: "04.14.01.009-2", name: "TRATAMENTO CIRÚRGICO DE HÉRNIA INGUINAL", category: "CIRÚRGICA", instrumento: "AIH" },
+  { code: "04.11.06.027-0", name: "TRAQUEOSTOMIA", category: "CIRÚRGICA", instrumento: "AIH" },
+  { code: "04.11.06.019-9", name: "DRENAGEM DE TÓRAX", category: "CIRÚRGICA", instrumento: "AIH" },
+  { code: "04.11.06.025-4", name: "LAPAROTOMIA EXPLORADORA", category: "CIRÚRGICA", instrumento: "AIH" },
+];
+
+// Lista unificada SIGTAP (APAC + AIH)
+const SIGTAP_PROCEDURES = [...APAC_PROCEDURES, ...AIH_PROCEDURES_SIGTAP];
+
+// Deriva instrumento pelo código SIGTAP ou por campo explícito
+function getInstrumento(code: string): "APAC" | "AIH" | null {
+  if (!code || !code.trim()) return null;
+  const proc = SIGTAP_PROCEDURES.find(p => p.code === code);
+  if (proc) return proc.instrumento;
+  // Heurística: código começa com 02. → APAC; 03./04. → AIH
+  if (code.startsWith("02.")) return "APAC";
+  if (code.startsWith("03.") || code.startsWith("04.")) return "AIH";
+  return null; // custom sem padrão conhecido → SEM CÓDIGO
+}
+
 const APAC_INSTITUTION = {
   name: "HOSPITAL MUNICIPAL DJALMA MARQUES",
   cnes: "2308762",
@@ -1660,6 +1837,7 @@ interface ApacSelectedProcedure {
   code: string;
   name: string;
   qty: number;
+  instrumento: "APAC" | "AIH" | null; // derivado do SIGTAP; null = sem código
 }
 
 function CollapsibleInfoCard({ title, summary, badge, children }: { title: string; summary: string; badge?: string; children: React.ReactNode }) {
@@ -1757,6 +1935,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preselectProcedure]);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [instrumentoFilter, setInstrumentoFilter] = useState<string>("all");
+  const [aihRoutingOpen, setAihRoutingOpen] = useState(false); // roteamento AIH por instrumento SIGTAP
 
   const [diagnosis, setDiagnosis] = useState("");
   const [cidPrimary, setCidPrimary] = useState("");
@@ -1846,8 +2026,18 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const addProcedure = (proc: { code: string; name: string }) => {
     if (selectedProcedures.find((p) => p.code === proc.code)) { toast.info("Procedimento já adicionado"); return; }
     if (selectedProcedures.length >= 6) { toast.error("Máximo de 6 procedimentos por laudo"); return; }
-    setSelectedProcedures((prev) => [...prev, { code: proc.code, name: proc.name, qty: 1 }]);
-    toast.success("Procedimento adicionado");
+    const instrumento = getInstrumento(proc.code);
+    // Warn when mixing APAC and AIH instruments in the same form
+    if (selectedProcedures.length > 0 && instrumento) {
+      const existingInstrumento = selectedProcedures[0].instrumento;
+      if (existingInstrumento && existingInstrumento !== instrumento) {
+        toast.warning(`Misturando ${existingInstrumento} com ${instrumento} — cada instrumento exige formulário separado`, { duration: 5000 });
+      }
+    }
+    setSelectedProcedures((prev) => [...prev, { code: proc.code, name: proc.name, qty: 1, instrumento }]);
+    if (instrumento === "AIH") toast.info("Procedimento AIH — será gerado Laudo AIH");
+    else if (instrumento === null) toast.warning("Procedimento sem código SIGTAP — será sinalizado internamente");
+    else toast.success("Procedimento adicionado");
   };
 
   const removeProcedure = (code: string) => setSelectedProcedures((prev) => prev.filter((p) => p.code !== code));
@@ -1863,6 +2053,13 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const handlePrint = () => {
     if (selectedProcedures.length === 0) { toast.error("Adicione ao menos um procedimento"); return; }
     if (!apacPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
+    const hasAih = selectedProcedures.some(p => p.instrumento === "AIH");
+    if (hasAih) {
+      // Roteamento: procedimento AIH → abre Laudo AIH
+      setAihRoutingOpen(true);
+      return;
+    }
+    // APAC ou sem código → imprime APAC normal (sem tarja para sem código)
     window.print();
   };
 
@@ -1911,10 +2108,11 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     finally { setImportingEvolution(false); }
   };
 
-  const filteredProcedures = APAC_PROCEDURES.filter((p) => {
+  const filteredProcedures = SIGTAP_PROCEDURES.filter((p) => {
     const matchSearch = searchProcedure === "" || p.name.toLowerCase().includes(searchProcedure.toLowerCase()) || p.code.includes(searchProcedure);
     const matchCategory = categoryFilter === "all" || p.category === categoryFilter;
-    return matchSearch && matchCategory;
+    const matchInstrumento = instrumentoFilter === "all" || p.instrumento === instrumentoFilter;
+    return matchSearch && matchCategory && matchInstrumento;
   });
 
   const todayFormatted = format(new Date(), "dd/MM/yyyy");
@@ -1963,6 +2161,14 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input value={searchProcedure} onChange={(e) => setSearchProcedure(e.target.value)} placeholder="Buscar por nome ou código SIGTAP..." className="pl-9" />
                 </div>
+                <Select value={instrumentoFilter} onValueChange={setInstrumentoFilter}>
+                  <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="APAC">APAC</SelectItem>
+                    <SelectItem value="AIH">AIH</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                   <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -1971,16 +2177,28 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                     <SelectItem value="RM">RM</SelectItem>
                     <SelectItem value="DOPPLER">Doppler</SelectItem>
                     <SelectItem value="USG">USG</SelectItem>
+                    <SelectSeparator />
+                    <SelectItem value="CLÍNICA">Clínica</SelectItem>
+                    <SelectItem value="CIRÚRGICA">Cirúrgica</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              {filteredProcedures.length === 0 && (
+                <div className="text-center py-6 text-sm text-muted-foreground border rounded-lg">
+                  <Search className="h-6 w-6 mx-auto mb-2 opacity-30" />
+                  Nenhum procedimento encontrado
+                </div>
+              )}
               <div className="max-h-48 overflow-y-auto border rounded-lg divide-y">
                 {filteredProcedures.map((proc) => {
                   const isSelected = selectedProcedures.some((p) => p.code === proc.code);
                   return (
                     <button key={proc.code} className={`w-full text-left px-3 py-2 text-sm hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 ${isSelected ? "bg-primary/5 opacity-60" : ""}`} onClick={() => addProcedure(proc)} disabled={isSelected}>
-                      <div className="min-w-0"><span className="font-mono text-xs text-muted-foreground mr-2">{proc.code}</span><span className="text-foreground">{proc.name}</span></div>
-                      <Badge variant="outline" className="shrink-0 text-xs">{proc.category}</Badge>
+                      <div className="min-w-0 flex-1"><span className="font-mono text-xs text-muted-foreground mr-2">{proc.code}</span><span className="text-foreground">{proc.name}</span></div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Badge variant="outline" className={`text-[10px] font-bold ${proc.instrumento === "AIH" ? "border-purple-400 text-purple-700 bg-purple-50 dark:bg-purple-500/10" : "border-orange-400 text-orange-700 bg-orange-50 dark:bg-orange-500/10"}`}>{proc.instrumento}</Badge>
+                        <Badge variant="outline" className="text-[10px]">{proc.category}</Badge>
+                      </div>
                     </button>
                   );
                 })}
@@ -2015,10 +2233,12 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                       if (selectedProcedures.length >= 6) {
                         toast.error("Máximo de 6 procedimentos por laudo"); return;
                       }
+                      const instrumento = getInstrumento(customProcCode.trim());
                       setSelectedProcedures((prev) => [
                         ...prev,
-                        { code, name: name.toUpperCase(), qty: 1 },
+                        { code, name: name.toUpperCase(), qty: 1, instrumento },
                       ]);
+                      if (!instrumento) toast.warning("Procedimento sem código SIGTAP — sinalizará internamente como 'sem código'");
                       setCustomProcCode("");
                       setCustomProcName("");
                       toast.success("Procedimento avulso adicionado");
@@ -2040,6 +2260,11 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                       <div key={proc.code} className="flex items-center gap-2 p-1.5 rounded border bg-card">
                         <Badge variant="secondary" className="shrink-0 font-mono text-[10px]">{idx === 0 ? "Princ." : `Sec.${idx}`}</Badge>
                         <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1 mb-0.5">
+                            {proc.instrumento === "AIH" && <Badge className="text-[9px] h-4 px-1.5 bg-purple-600 hover:bg-purple-600">AIH</Badge>}
+                            {proc.instrumento === "APAC" && <Badge className="text-[9px] h-4 px-1.5 bg-orange-500 hover:bg-orange-500">APAC</Badge>}
+                            {proc.instrumento === null && <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-amber-400 text-amber-700">SEM CÓDIGO</Badge>}
+                          </div>
                           <p className="text-xs font-medium text-foreground truncate">{proc.name}</p>
                           <p className="text-[10px] font-mono text-muted-foreground">{proc.code}</p>
                         </div>
@@ -2193,7 +2418,10 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
 
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1" onClick={resetApacForm}><RotateCcw className="h-4 w-4 mr-1" /> Limpar</Button>
-          <Button className="flex-1" onClick={handlePrint}><Printer className="h-4 w-4 mr-1" /> Imprimir APAC</Button>
+          <Button className="flex-1" onClick={handlePrint}>
+            <Printer className="h-4 w-4 mr-1" />
+            {selectedProcedures.some(p => p.instrumento === "AIH") ? "Encaminhar via AIH" : "Imprimir APAC"}
+          </Button>
         </div>
       </div>
 
@@ -2390,6 +2618,15 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           </table>
         </div>
       </div>
+
+      {/* ── AIH routing dialog ── */}
+      <AihFormDialog
+        open={aihRoutingOpen}
+        onOpenChange={setAihRoutingOpen}
+        patientName={apacPatientName}
+        origin="regulacao"
+        regulacaoType={undefined}
+      />
     </>
   );
 }
