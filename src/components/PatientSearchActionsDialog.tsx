@@ -108,13 +108,7 @@ export function PatientSearchActionsDialog({
     setIsForcing(false);
   };
 
-  // Auto-verifica atendimento ativo ao abrir o dialog — evita mostrar
-  // "Abrir novo atendimento" para pacientes já internados.
-  useEffect(() => {
-    if (open && patient) {
-      checkActiveEncounter();
-    }
-  }, [open, patient, checkActiveEncounter]);
+  // (auto-check moved below the checkActiveEncounter declaration to avoid TDZ)
 
   /**
    * Verifica se o paciente já tem atendimento ativo antes de prosseguir.
@@ -181,6 +175,14 @@ export function PatientSearchActionsDialog({
       setStep("preadmit_question");
     }
   }, [patient]);
+
+  // Auto-verifica atendimento ativo ao abrir o dialog — evita mostrar
+  // "Abrir novo atendimento" para pacientes já internados.
+  useEffect(() => {
+    if (open && patient) {
+      checkActiveEncounter();
+    }
+  }, [open, patient, checkActiveEncounter]);
 
   const handleClose = (next: boolean) => {
     if (isSubmitting) return;

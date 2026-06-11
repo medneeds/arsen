@@ -249,10 +249,11 @@ export function SatRequestDialog({
   const handlePrint = () => {
     const w = window.open("", "_blank", "width=820,height=1000");
     if (!w) return;
+    const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]!));
     const now = format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
     const productLabel = PRODUCT_LABEL[product];
     w.document.write(`
-      <html><head><title>Solicitação SAT — ${patientName}</title>
+      <html><head><title>Solicitação SAT — ${esc(patientName)}</title>
       <style>
         body { font-family: -apple-system, system-ui, sans-serif; padding: 32px; color: #111; }
         h1 { font-size: 18px; margin: 0 0 4px; }
@@ -264,30 +265,30 @@ export function SatRequestDialog({
         .sig { margin-top: 60px; border-top: 1px solid #333; padding-top: 6px; font-size: 12px; text-align: center; }
       </style></head><body>
         <h1>Solicitação de Imunização — Profilaxia do Tétano</h1>
-        <div class="meta">${currentHospital?.name || ""} • Emitido em ${now}</div>
+        <div class="meta">${esc(currentHospital?.name || "")} • Emitido em ${esc(now)}</div>
 
         <h2>Paciente</h2>
-        <div class="row"><b>Nome:</b> ${patientName}</div>
-        <div class="row"><b>Setor / Leito:</b> ${getSectorDisplayLabel(patientSector) || "—"} / ${patientBed || "—"}</div>
+        <div class="row"><b>Nome:</b> ${esc(patientName)}</div>
+        <div class="row"><b>Setor / Leito:</b> ${esc(getSectorDisplayLabel(patientSector) || "—")} / ${esc(patientBed || "—")}</div>
 
         <h2>Avaliação clínica</h2>
-        <div class="row"><b>Tipo de ferimento:</b> ${WOUND_LABEL[wound]}</div>
-        <div class="row"><b>Localização:</b> ${woundLocation || "—"}</div>
-        <div class="row"><b>Data/hora trauma:</b> ${traumaDate} ${traumaTime}</div>
-        <div class="row"><b>Descrição:</b> ${woundDescription}</div>
-        <div class="row"><b>Status vacinal:</b> ${VACCINATION_LABEL[vac]}</div>
-        <div class="row"><b>Alergia a soro:</b> ${allergyHistory}</div>
+        <div class="row"><b>Tipo de ferimento:</b> ${esc(WOUND_LABEL[wound])}</div>
+        <div class="row"><b>Localização:</b> ${esc(woundLocation || "—")}</div>
+        <div class="row"><b>Data/hora trauma:</b> ${esc(traumaDate)} ${esc(traumaTime)}</div>
+        <div class="row"><b>Descrição:</b> ${esc(woundDescription)}</div>
+        <div class="row"><b>Status vacinal:</b> ${esc(VACCINATION_LABEL[vac])}</div>
+        <div class="row"><b>Alergia a soro:</b> ${esc(allergyHistory)}</div>
 
         <h2>Conduta indicada</h2>
         <div class="box">
-          <div><b>${productLabel}</b></div>
-          <div>Dose: ${dose} • Via: ${route}</div>
-          <div style="margin-top:6px; color:#444">${recommendation.rationale}</div>
+          <div><b>${esc(productLabel)}</b></div>
+          <div>Dose: ${esc(dose)} • Via: ${esc(route)}</div>
+          <div style="margin-top:6px; color:#444">${esc(recommendation.rationale)}</div>
         </div>
 
-        ${observations ? `<h2>Observações</h2><div class="box">${observations}</div>` : ""}
+        ${observations ? `<h2>Observações</h2><div class="box">${esc(observations)}</div>` : ""}
 
-        <div class="sig">${doctorName}${doctorCrm ? " — CRM " + doctorCrm : ""}<br>Médico solicitante</div>
+        <div class="sig">${esc(doctorName)}${doctorCrm ? " — CRM " + esc(doctorCrm) : ""}<br>Médico solicitante</div>
       </body></html>
     `);
     w.document.close();

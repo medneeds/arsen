@@ -168,42 +168,43 @@ export function OPMEDialog({
   };
 
   const handlePrint = () => {
+    const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]!));
     const validMateriais = materiais.filter((m) => m.descricao.trim());
     const dataFormatada = dataHora ? format(new Date(dataHora), "dd/MM/yyyy HH:mm") : format(new Date(), "dd/MM/yyyy HH:mm");
 
     const materiaisRows = validMateriais.map((m, i) => `
       <tr>
         <td style="padding:4px 6px;border:1px solid #000;font-size:9pt;">${i + 1}</td>
-        <td style="padding:4px 6px;border:1px solid #000;font-size:9pt;">${m.descricao}</td>
-        <td style="padding:4px 6px;border:1px solid #000;font-size:9pt;text-align:center;">${m.quantidade}</td>
-        <td style="padding:4px 6px;border:1px solid #000;font-size:9pt;">${m.lote}</td>
+        <td style="padding:4px 6px;border:1px solid #000;font-size:9pt;">${esc(m.descricao)}</td>
+        <td style="padding:4px 6px;border:1px solid #000;font-size:9pt;text-align:center;">${esc(m.quantidade)}</td>
+        <td style="padding:4px 6px;border:1px solid #000;font-size:9pt;">${esc(m.lote)}</td>
       </tr>`).join("");
 
     const rastreabilidadeBlocks = validMateriais.map((m, i) => `
       <div style="margin-bottom:8px;padding:6px;border:1px solid #ccc;border-radius:4px;">
-        <strong style="font-size:9pt;">${i + 1}. ${m.descricao}</strong>
+        <strong style="font-size:9pt;">${i + 1}. ${esc(m.descricao)}</strong>
         <table style="width:100%;margin-top:4px;border-collapse:collapse;">
           <tr>
             <td style="font-size:8.5pt;padding:2px 6px;border:1px solid #ccc;background:#f5f5f5;width:25%;">Referência</td>
-            <td style="font-size:8.5pt;padding:2px 6px;border:1px solid #ccc;">${m.referencia || "—"}</td>
+            <td style="font-size:8.5pt;padding:2px 6px;border:1px solid #ccc;">${esc(m.referencia || "—")}</td>
             <td style="font-size:8.5pt;padding:2px 6px;border:1px solid #ccc;background:#f5f5f5;width:25%;">Lote</td>
-            <td style="font-size:8.5pt;padding:2px 6px;border:1px solid #ccc;">${m.lote || "—"}</td>
+            <td style="font-size:8.5pt;padding:2px 6px;border:1px solid #ccc;">${esc(m.lote || "—")}</td>
           </tr>
           <tr>
             <td style="font-size:8.5pt;padding:2px 6px;border:1px solid #ccc;background:#f5f5f5;">Fabricação</td>
-            <td style="font-size:8.5pt;padding:2px 6px;border:1px solid #ccc;">${m.fabricacao || "—"}</td>
+            <td style="font-size:8.5pt;padding:2px 6px;border:1px solid #ccc;">${esc(m.fabricacao || "—")}</td>
             <td style="font-size:8.5pt;padding:2px 6px;border:1px solid #ccc;background:#f5f5f5;">Validade</td>
-            <td style="font-size:8.5pt;padding:2px 6px;border:1px solid #ccc;">${m.validade || "—"}</td>
+            <td style="font-size:8.5pt;padding:2px 6px;border:1px solid #ccc;">${esc(m.validade || "—")}</td>
           </tr>
           <tr>
             <td style="font-size:8.5pt;padding:2px 6px;border:1px solid #ccc;background:#f5f5f5;">Reg. ANVISA</td>
-            <td style="font-size:8.5pt;padding:2px 6px;border:1px solid #ccc;" colspan="3">${m.registro_anvisa || "—"}</td>
+            <td style="font-size:8.5pt;padding:2px 6px;border:1px solid #ccc;" colspan="3">${esc(m.registro_anvisa || "—")}</td>
           </tr>
         </table>
       </div>`).join("");
 
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
-<title>Registro de OPME — ${resolvedName}</title>
+<title>Registro de OPME — ${esc(resolvedName)}</title>
 <style>
 @page{size:A4 portrait;margin:12mm 14mm;}
 body{font-family:Arial,sans-serif;font-size:10pt;color:#000;margin:0;}
@@ -233,18 +234,18 @@ th{background:#e8e8e8;font-size:9pt;font-weight:bold;padding:4px 6px;border:1px 
 </div>
 <div class="st">Identificação do Paciente</div>
 <div class="fr">
-<div class="f"><label>Nome</label><span>${resolvedName}</span></div>
-<div class="f" style="max-width:180px;"><label>Data do Procedimento</label><span>${dataFormatada}</span></div>
+<div class="f"><label>Nome</label><span>${esc(resolvedName)}</span></div>
+<div class="f" style="max-width:180px;"><label>Data do Procedimento</label><span>${esc(dataFormatada)}</span></div>
 </div>
 <div class="fr">
-<div class="f"><label>Cirurgia / Procedimento</label><span>${cirurgia || "—"}</span></div>
-<div class="f" style="max-width:120px;"><label>Leito</label><span>${resolvedBed || "—"}</span></div>
-<div class="f" style="max-width:160px;"><label>Setor</label><span>${getSectorDisplayLabel(resolvedSector) || resolvedSector || "—"}</span></div>
+<div class="f"><label>Cirurgia / Procedimento</label><span>${esc(cirurgia || "—")}</span></div>
+<div class="f" style="max-width:120px;"><label>Leito</label><span>${esc(resolvedBed || "—")}</span></div>
+<div class="f" style="max-width:160px;"><label>Setor</label><span>${esc(getSectorDisplayLabel(resolvedSector) || resolvedSector || "—")}</span></div>
 </div>
 <div class="fr">
-<div class="f"><label>Cirurgião</label><span>${cirurgiao || "—"}</span></div>
-<div class="f"><label>Instrumentador</label><span>${instrumentador || "—"}</span></div>
-<div class="f"><label>Empresa Fornecedora</label><span>${empresa || "—"}</span></div>
+<div class="f"><label>Cirurgião</label><span>${esc(cirurgiao || "—")}</span></div>
+<div class="f"><label>Instrumentador</label><span>${esc(instrumentador || "—")}</span></div>
+<div class="f"><label>Empresa Fornecedora</label><span>${esc(empresa || "—")}</span></div>
 </div>
 <div class="st">Descrição dos Materiais Utilizados</div>
 <table><thead><tr>
@@ -252,12 +253,12 @@ th{background:#e8e8e8;font-size:9pt;font-weight:bold;padding:4px 6px;border:1px 
 <th style="width:60px;text-align:center;">Qtd</th><th style="width:140px;">Lote</th>
 </tr></thead><tbody>${materiaisRows}</tbody></table>
 <div class="st">Intercorrências com o Material</div>
-<div class="ic">${intercorrencias || "Nenhuma intercorrência relatada."}</div>
+<div class="ic">${esc(intercorrencias || "Nenhuma intercorrência relatada.")}</div>
 <div class="st">Rastreabilidade dos Materiais (Etiquetas)</div>
 ${rastreabilidadeBlocks}
 <div class="st">Responsáveis</div>
 <div class="assinaturas">
-<div class="ab"><label>Médico Responsável</label><div class="al">${doctorName}${doctorCRM ? ` · CRM ${doctorCRM}` : ""}</div></div>
+<div class="ab"><label>Médico Responsável</label><div class="al">${esc(doctorName)}${doctorCRM ? ` · CRM ${esc(doctorCRM)}` : ""}</div></div>
 <div class="ab"><label>Circulante de Sala</label><div class="al">&nbsp;</div></div>
 <div class="ab"><label>Enfermeiro</label><div class="al">&nbsp;</div></div>
 <div class="ab"><label>Funcionário CME / Farmácia Satélite</label><div class="al">&nbsp;</div></div>

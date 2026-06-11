@@ -5,6 +5,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/**
+ * Cria/garante o usuário de sistema "rotina@sistema.local".
+ *
+ * SEGURANÇA: a senha é lida exclusivamente do segredo `ROTINA_USER_PASSWORD`.
+ * Nunca há senha em código. Apenas admins autenticados podem invocar.
+ */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -13,12 +19,46 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const rotinaPassword = Deno.env.get("ROTINA_USER_PASSWORD");
+
+    if (!rotinaPassword || rotinaPassword.length < 16) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error:
+            "ROTINA_USER_PASSWORD não configurado (ou muito curto). Defina o segredo antes de executar.",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Check if user already exists
+    // Exige caller autenticado e com role admin
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ success: false, error: "Não autenticado" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const token = authHeader.replace("Bearer ", "");
+    const { data: u } = await supabase.auth.getUser(token);
+    if (!u?.user) {
+      return new Response(JSON.stringify({ success: false, error: "Não autenticado" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: roles } = await supabase
+      .from("user_roles").select("role").eq("user_id", u.user.id);
+    if (!(roles ?? []).some((r) => r.role === "admin")) {
+      return new Response(JSON.stringify({ success: false, error: "Acesso negado" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Se já existe, apenas confirma
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
     const existingUser = existingUsers?.users?.find(
       (u) => u.email === "rotina@sistema.local"
@@ -31,10 +71,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create user
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
       email: "rotina@sistema.local",
-      password: "GIRAFA",
+      password: rotinaPassword,
       email_confirm: true,
       user_metadata: {
         full_name: "ROTINA UTI 2",
@@ -43,26 +82,21 @@ Deno.serve(async (req) => {
       },
     });
 
-    if (createError) {
-      throw createError;
-    }
+    if (createError) throw createError;
 
     const userId = newUser.user.id;
 
-    // Assign hospital
     await supabase.from("user_hospital_assignments").insert({
       user_id: userId,
       hospital_unit_id: "8297082d-bd9e-40da-a08b-8e3c0e53209f",
     });
 
-    // Assign UTI department
     await supabase.from("user_departments").insert({
       user_id: userId,
       department: "UTI",
     });
 
-    // Update profile status to approved
-    await supabase.from("profiles").update({ 
+    await supabase.from("profiles").update({
       status: "approved",
       approved_at: new Date().toISOString(),
     }).eq("id", userId);
@@ -73,7 +107,7 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
