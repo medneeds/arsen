@@ -264,12 +264,29 @@ const RequisicaoImagensPage = () => {
 
             if (ah.cid_primary) {
               const primaryStr = String(ah.cid_primary);
-              setCidPrimary((prev) => prev || extractCode(primaryStr));
-              const desc = extractDesc(primaryStr);
+              const cidCode = extractCode(primaryStr);
+              setCidPrimary((prev) => prev || cidCode);
+              let desc = extractDesc(primaryStr);
+
+              // CID puro (sem descrição embutida) → buscar em cid10_codes
+              if (!desc && cidCode) {
+                try {
+                  const { data: cidEntry } = await supabase
+                    .from("cid10_codes")
+                    .select("description")
+                    .ilike("code", cidCode)
+                    .limit(1)
+                    .maybeSingle();
+                  desc = (cidEntry as any)?.description || "";
+                } catch {
+                  /* sem catálogo — segue fallback */
+                }
+              }
+
               setDiagnosis((prev) =>
                 prev ||
-                ah.diagnostic_hypothesis ||
                 desc ||
+                ah.diagnostic_hypothesis ||
                 ah.macro_diagnosis ||
                 ah.chief_complaint ||
                 "",
