@@ -269,21 +269,25 @@ const RequisicaoImagensPage = () => {
             if (ah.cid_primary) {
               const primaryStr = String(ah.cid_primary);
               const cidCode = extractCode(primaryStr);
-              setCidPrimary((prev) => prev || cidCode);
-              let desc = extractDesc(primaryStr);
+              if (cidCode) setCidPrimary((prev) => prev || cidCode);
 
-              // CID puro (sem descrição embutida) → buscar em cid10_codes
-              if (!desc && cidCode) {
-                try {
-                  const { data: cidEntry } = await supabase
-                    .from("cid10_codes")
-                    .select("description")
-                    .ilike("code", cidCode)
-                    .limit(1)
-                    .maybeSingle();
-                  desc = (cidEntry as any)?.description || "";
-                } catch {
-                  /* sem catálogo — segue fallback */
+              let desc = "";
+              if (cidCode) {
+                // Tenta descrição embutida primeiro
+                desc = extractDesc(primaryStr);
+                // Senão, busca em cid10_codes pelo código
+                if (!desc) {
+                  try {
+                    const { data: cidEntry } = await supabase
+                      .from("cid10_codes")
+                      .select("description")
+                      .ilike("code", cidCode)
+                      .limit(1)
+                      .maybeSingle();
+                    desc = (cidEntry as any)?.description || "";
+                  } catch {
+                    /* sem catálogo — fallback abaixo */
+                  }
                 }
               }
 
@@ -305,13 +309,20 @@ const RequisicaoImagensPage = () => {
               );
             }
             if (ah.cid_secondary) {
-              const secArr = Array.isArray(ah.cid_secondary)
-                ? ah.cid_secondary
-                : [ah.cid_secondary];
-              const firstSec = secArr[0];
-              if (firstSec) {
-                setCidSecondary((prev) => prev || String(firstSec).split(/[\s—–-]/)[0].trim());
+              // cid_secondary é text — pode ser JSON string de array, ou código puro
+              let secValue: string = String(ah.cid_secondary);
+              try {
+                const parsed = JSON.parse(secValue);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  secValue = String(parsed[0]);
+                } else if (typeof parsed === "string") {
+                  secValue = parsed;
+                }
+              } catch {
+                /* não é JSON — usa string crua */
               }
+              const secCode = extractCode(secValue);
+              if (secCode) setCidSecondary((prev) => prev || secCode);
             }
           }
         } catch (err) {
