@@ -122,6 +122,8 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const [docDialogOpen, setDocDialogOpen] = useState(false);
   const [roundPrintOpen, setRoundPrintOpen] = useState(false);
   const [movementDialogOpen, setMovementDialogOpen] = useState(false);
+  const [receituarioOpen, setReceituarioOpen] = useState(false);
+  const { save: saveReceituario } = useReceituario(patient?.id ?? null, patient?.name ?? null);
   const isExpanded = variant === "inline" || pinned || hovering;
   const isMobile = useIsMobile();
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
