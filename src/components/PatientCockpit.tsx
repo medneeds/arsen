@@ -130,6 +130,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   // Live patient data — sync sector, bed, allergies, medical responsibility, etc.
   const { patient: livePatient } = usePatientLive(patientProp?.id || null);
   const patient = livePatient || patientProp;
+  const { save: saveReceituario } = useReceituario(patient?.id ?? null, patient?.name ?? null);
 
   // Watch for medical responsibility changes from other users
   const lastResponsibilityRef = useRef<string | null>(
