@@ -20,6 +20,7 @@ import { EvolutionRecord } from "@/hooks/useEvolutions";
 import { EvolutionForm } from "./EvolutionForm";
 import { DiagnosticsPanel } from "./DiagnosticsPanel";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePatientDiagnosticContext } from "@/hooks/usePatientDiagnosticContext";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -66,6 +67,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
 }) => {
   const { user } = useAuth();
   const { currentHospital } = useHospital();
+  const diagCtx = usePatientDiagnosticContext(patientId || null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [collapsedDays, setCollapsedDays] = useState<Set<number>>(new Set());
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -699,6 +701,14 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           }
                           antecedentes={Array.isArray((data.soap as any).antecedentes) ? (data.soap as any).antecedentes : []}
                           onAntecedentesChange={(items) => updateLocal(evo.id, "soap", "antecedentes", items)}
+                          hospitalDischargePrediction={diagCtx.hospitalDischargePrediction}
+                          onHospitalDischargePredictionChange={diagCtx.updateHospitalDischargePrediction}
+                          utiDischargePrediction={diagCtx.utiDischargePrediction}
+                          onUtiDischargePredictionChange={diagCtx.updateUtiDischargePrediction}
+                          isPalliative={diagCtx.isPalliative}
+                          onPalliativeChange={diagCtx.updateIsPalliative}
+                          isolationPrecautions={diagCtx.isolationPrecautions}
+                          onIsolationChange={diagCtx.updateIsolationPrecautions}
                         />
                       ) : diagnosticsSlot;
                       return (
