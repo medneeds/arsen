@@ -248,6 +248,7 @@ const RequisicaoImagensPage = () => {
           let ahQuery = supabase
             .from("admission_histories")
             .select("cid_primary, cid_secondary, diagnostic_hypothesis, macro_diagnosis, chief_complaint, created_at")
+            .is("archived_at", null)
             .order("created_at", { ascending: false })
             .limit(1);
           if (fetchedRegistryId) {
@@ -256,6 +257,8 @@ const RequisicaoImagensPage = () => {
             ahQuery = ahQuery.eq("patient_id", patientId);
           }
           const { data: ah } = await ahQuery.maybeSingle();
+          console.log("[APAC] admission_histories result:", ah);
+          console.log("[APAC] patientId:", patientId, "fetchedRegistryId:", fetchedRegistryId);
           if (ah) {
             // Extrai só o código CID válido (ex: "I63.9 - AVC" → "I63.9", "i64" → "I64")
             // Ignora texto livre como "ACIDENTE", "CIRROS".
@@ -347,6 +350,7 @@ const RequisicaoImagensPage = () => {
             evQuery = evQuery.eq("patient_id", patientId);
           }
           const { data: latestEvol } = await evQuery.maybeSingle();
+          console.log("[APAC] latestEvol:", latestEvol?.soap_data ? "encontrado" : "não encontrado");
           if (latestEvol?.soap_data) {
             const soap = latestEvol.soap_data as any;
             const evolDate = latestEvol.validated_at || latestEvol.created_at;
