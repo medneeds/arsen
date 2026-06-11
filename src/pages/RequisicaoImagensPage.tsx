@@ -264,12 +264,29 @@ const RequisicaoImagensPage = () => {
 
             if (ah.cid_primary) {
               const primaryStr = String(ah.cid_primary);
-              setCidPrimary((prev) => prev || extractCode(primaryStr));
-              const desc = extractDesc(primaryStr);
+              const cidCode = extractCode(primaryStr);
+              setCidPrimary((prev) => prev || cidCode);
+              let desc = extractDesc(primaryStr);
+
+              // CID puro (sem descrição embutida) → buscar em cid10_codes
+              if (!desc && cidCode) {
+                try {
+                  const { data: cidEntry } = await supabase
+                    .from("cid10_codes")
+                    .select("description")
+                    .ilike("code", cidCode)
+                    .limit(1)
+                    .maybeSingle();
+                  desc = (cidEntry as any)?.description || "";
+                } catch {
+                  /* sem catálogo — segue fallback */
+                }
+              }
+
               setDiagnosis((prev) =>
                 prev ||
-                ah.diagnostic_hypothesis ||
                 desc ||
+                ah.diagnostic_hypothesis ||
                 ah.macro_diagnosis ||
                 ah.chief_complaint ||
                 "",
@@ -331,7 +348,25 @@ const RequisicaoImagensPage = () => {
             const plano = stripHtml(soap.plan || "");
             if (plano) parts.push(`Conduta: ${plano}`);
             if (latestEvol.diagnostic_hypotheses) {
-              parts.push(`Hipóteses diagnósticas: ${latestEvol.diagnostic_hypotheses}`);
+              let hypoText: any = latestEvol.diagnostic_hypotheses;
+              try {
+                const parsed = typeof hypoText === "string" ? JSON.parse(hypoText) : hypoText;
+                if (Array.isArray(parsed)) {
+                  hypoText = parsed
+                    .map((h: any) => String(h).trim())
+                    .filter(Boolean)
+                    .join("; ");
+                } else if (parsed && typeof parsed === "object") {
+                  hypoText = Object.values(parsed)
+                    .map((h: any) => String(h).trim())
+                    .filter(Boolean)
+                    .join("; ");
+                }
+              } catch {
+                /* mantém como texto se não for JSON */
+              }
+              const cleanHypo = stripHtml(String(hypoText || "").trim());
+              if (cleanHypo) parts.push(`Hipóteses diagnósticas: ${cleanHypo}`);
             }
             const obsText = parts.join("\n").trim();
             if (obsText) setObservations((prev) => prev || obsText);
