@@ -214,6 +214,7 @@ export function CVCChecklistDialog({
 
   // ── Print ─────────────────────────────────────────────────────────────────
   const handlePrint = () => {
+    const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]!));
     const answerLabel = (a: BundleAnswer) =>
       a === "sim" ? "SIM" : a === "sim_lembrado" ? "SIM*" : a === "nao" ? "NÃO" : "—";
     const answerColor = (a: BundleAnswer) =>
@@ -223,7 +224,7 @@ export function CVCChecklistDialog({
       const a = answers[s.id] ?? null;
       return `<tr>
         <td style="padding:3px 6px;border:1px solid #ccc;font-size:8.5pt;">${s.id}.</td>
-        <td style="padding:3px 6px;border:1px solid #ccc;font-size:8.5pt;">${s.text}</td>
+        <td style="padding:3px 6px;border:1px solid #ccc;font-size:8.5pt;">${esc(s.text)}</td>
         <td style="padding:3px 6px;border:1px solid #ccc;font-size:8.5pt;text-align:center;font-weight:bold;color:${a === "sim" ? "#166534" : "#6b7280"}">${a === "sim" ? "✓" : ""}</td>
         <td style="padding:3px 6px;border:1px solid #ccc;font-size:8.5pt;text-align:center;font-weight:bold;color:${a === "sim_lembrado" ? "#854d0e" : "#6b7280"}">${a === "sim_lembrado" ? "✓" : ""}</td>
         <td style="padding:3px 6px;border:1px solid #ccc;font-size:8.5pt;text-align:center;font-weight:bold;color:${a === "nao" ? "#991b1b" : "#6b7280"}">${a === "nao" ? "✗" : ""}</td>
@@ -243,7 +244,7 @@ export function CVCChecklistDialog({
       : format(new Date(), "dd/MM/yyyy");
 
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
-<title>Checklist CVC — ${resolvedName}</title>
+<title>Checklist CVC — ${esc(resolvedName)}</title>
 <style>
 @page{size:A4 portrait;margin:10mm 12mm;}
 body{font-family:Arial,sans-serif;font-size:9.5pt;color:#000;margin:0;}
@@ -275,20 +276,20 @@ th{background:#e8e8e8;font-size:8.5pt;font-weight:bold;padding:3px 5px;border:1p
 </div>
 <div class="st">Identificação do Paciente</div>
 <div class="fr">
-<div class="f"><label>Nome</label><span>${resolvedName}</span></div>
-<div class="f" style="max-width:130px;"><label>Data de Nascimento</label><span>${dataNascimento || "—"}</span></div>
-<div class="f" style="max-width:130px;"><label>Data do Procedimento</label><span>${dataFormatada}</span></div>
+<div class="f"><label>Nome</label><span>${esc(resolvedName)}</span></div>
+<div class="f" style="max-width:130px;"><label>Data de Nascimento</label><span>${esc(dataNascimento || "—")}</span></div>
+<div class="f" style="max-width:130px;"><label>Data do Procedimento</label><span>${esc(dataFormatada)}</span></div>
 </div>
 <div class="fr">
-<div class="f" style="max-width:100px;"><label>Leito</label><span>${resolvedBed || "—"}</span></div>
-<div class="f" style="max-width:160px;"><label>Setor</label><span>${getSectorDisplayLabel(resolvedSector) || resolvedSector || "—"}</span></div>
-<div class="f"><label>Flags</label><span style="font-size:8pt;">${flagsAtivos}</span></div>
+<div class="f" style="max-width:100px;"><label>Leito</label><span>${esc(resolvedBed || "—")}</span></div>
+<div class="f" style="max-width:160px;"><label>Setor</label><span>${esc(getSectorDisplayLabel(resolvedSector) || resolvedSector || "—")}</span></div>
+<div class="f"><label>Flags</label><span style="font-size:8pt;">${esc(flagsAtivos)}</span></div>
 </div>
-${obs ? `<div class="flags"><strong>OBS:</strong> ${obs}</div>` : ""}
+${obs ? `<div class="flags"><strong>OBS:</strong> ${esc(obs)}</div>` : ""}
 
 <div class="st">Indicação do CVC</div>
 <div style="margin-bottom:5px;font-size:8.5pt;">
-${INDICACOES.map((i) => `<span style="margin-right:12px;">${indicacoes.has(i.id) ? "☑" : "☐"} ${i.label}</span>`).join(" ")}
+${INDICACOES.map((i) => `<span style="margin-right:12px;">${indicacoes.has(i.id) ? "☑" : "☐"} ${esc(i.label)}</span>`).join(" ")}
 </div>
 <div style="font-size:8.5pt;margin-bottom:5px;">
 <strong>Condição:</strong>
@@ -318,11 +319,11 @@ ${INDICACOES.map((i) => `<span style="margin-right:12px;">${indicacoes.has(i.id)
 <tbody>${bundleRows}</tbody>
 </table>
 <p class="nota">* SIM (depois de lembrado) — etapa realizada somente após orientação do Auditor do Bundle</p>
-${justificativa ? `<div class="st">Justificativa de Não Cumprimento</div><div style="border:1px solid #999;min-height:30px;padding:4px 5px;font-size:8.5pt;margin-bottom:5px;">${justificativa}</div>` : ""}
+${justificativa ? `<div class="st">Justificativa de Não Cumprimento</div><div style="border:1px solid #999;min-height:30px;padding:4px 5px;font-size:8.5pt;margin-bottom:5px;">${esc(justificativa)}</div>` : ""}
 
 <div class="assinaturas">
-<div class="ab"><label>Executante</label><div class="al">${executanteNome}${executanteCRM ? ` · CRM ${executanteCRM}` : ""}</div></div>
-<div class="ab"><label>Auditor do Bundle</label><div class="al">${auditorNome}${auditorCRM ? ` · CRM ${auditorCRM}` : ""}&nbsp;</div></div>
+<div class="ab"><label>Executante</label><div class="al">${esc(executanteNome)}${executanteCRM ? ` · CRM ${esc(executanteCRM)}` : ""}</div></div>
+<div class="ab"><label>Auditor do Bundle</label><div class="al">${esc(auditorNome)}${auditorCRM ? ` · CRM ${esc(auditorCRM)}` : ""}&nbsp;</div></div>
 </div>
 <div class="rodape">
 CCIH — Protocolo de Prevenção de IPCS (Infecção Primária de Corrente Sanguínea)<br/>
