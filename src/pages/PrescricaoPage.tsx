@@ -702,8 +702,18 @@ function buildSolutoToken(item: PrescriptionItem): string {
       return qtyStr || doseRaw;
     }
     if (isUnitUnit && qtyStr) {
-      // Prescrito em amp/FA → "1 AMP (10mL)"
-      return `${qtyStr} (${doseRaw})`;
+      // Prescrito em amp/FA → mostrar volume TOTAL quando qty > 1.
+      // Bug crítico: "2 amp (2 mL)" exibia o volume UNITÁRIO da ampola, levando a
+      // enfermagem a administrar metade da dose. Agora multiplica pela quantidade.
+      const qtyNum = parseFloat((item.quantity || '').replace(',', '.'));
+      const volUnit = parseFloat(doseRaw.replace(',', '.'));
+      const hasMl = /m[lL]\b/.test(doseRaw);
+      if (qtyNum > 1 && volUnit > 0 && hasMl) {
+        const total = qtyNum * volUnit;
+        const totalStr = Number.isInteger(total) ? String(total) : String(total).replace('.', ',');
+        return `${qtyStr} (total ${totalStr} mL)`;
+      }
+      return `${qtyStr} (${doseRaw})`; // qty = 1 → volume unitário é o total
     }
     return doseRaw;
   }
