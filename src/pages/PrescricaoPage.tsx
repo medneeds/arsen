@@ -10712,13 +10712,10 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   </div>
                 )}
 
-                {/* Instruções livres / recomendações à enfermagem
-                    (quando NÃO há preparo/inalação/insulina/nutrição que já as embutiu) */}
-                {item.instructions && !hasIvPreparo && !insulinDesc && !isInhalation && item.category !== 'nutrition' && (
-                  <div style={{ fontSize: '7pt', color: '#475569', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #cbd5e1', fontStyle: 'italic', fontWeight: 500 }}>
-                    {item.instructions}
-                  </div>
-                )}
+                {/* Recomendações livres já são impressas no bloco principal (linha 10560),
+                    tanto no ramo com `prepLine` (italic com "— ") quanto no ramo sem `prepLine`.
+                    Bloco de fallback removido para evitar duplicação na via SNE/SNG/enteral. */}
+
               </td>
               <td style={{ ...cellStyle, width: '230px', textAlign: 'left', verticalAlign: 'top', backgroundColor: '#fff', padding: '4px 6px' }}>
                 {/* Coluna de aprazamento manual — em branco para preenchimento pela enfermagem */}
