@@ -17,13 +17,35 @@ serve(async (req) => {
     );
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Não autenticado" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { targetUserId, newStatus, approverId } = await req.json();
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userErr } = await supabaseAdmin.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Não autenticado" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const callerId = userData.user.id;
+
+    // Verifica role do caller — apenas admin, gestor ou coordenador podem aprovar
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", callerId);
+    const allowed = new Set(["admin", "gestor", "coordenador"]);
+    const hasRole = (roles ?? []).some((r) => allowed.has(r.role as string));
+    if (!hasRole) {
+      return new Response(JSON.stringify({ error: "Acesso negado" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { targetUserId, newStatus } = await req.json();
 
     if (!targetUserId || !newStatus) {
       return new Response(JSON.stringify({ error: "Parâmetros inválidos" }), {
@@ -36,7 +58,7 @@ serve(async (req) => {
       .update({
         status: newStatus,
         approved_at: new Date().toISOString(),
-        approved_by: approverId ?? null,
+        approved_by: callerId,
       })
       .eq("id", targetUserId);
 
