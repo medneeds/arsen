@@ -9536,21 +9536,22 @@ const PrescricaoPage = () => {
               if (el) {
                 const printW = window.open('', '_blank', 'width=400,height=600');
                 if (printW) {
-                  printW.document.write(`<html><head><title>Guia ${dispensationSlip?.code}</title><style>body{font-family:system-ui,-apple-system,sans-serif;padding:12px;font-size:11px;color:#0f172a}*{margin:0;padding:0;box-sizing:border-box}.slip{border:1px solid #cbd5e1;border-radius:6px;padding:12px}.center{text-align:center}.mono{font-family:monospace}.bold{font-weight:700}.code{font-size:18px;font-weight:800;margin:4px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px}.sep{border-top:1px solid #e2e8f0;padding-top:6px;margin-top:6px}.item{display:flex;gap:6px;padding:2px 0;border-bottom:1px solid #f1f5f9}.muted{color:#64748b}.footer{display:flex;justify-content:space-between;font-size:9px;color:#94a3b8}</style></head><body>`);
+                  const escH = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]!));
+                  printW.document.write(`<html><head><title>Guia ${escH(dispensationSlip?.code)}</title><style>body{font-family:system-ui,-apple-system,sans-serif;padding:12px;font-size:11px;color:#0f172a}*{margin:0;padding:0;box-sizing:border-box}.slip{border:1px solid #cbd5e1;border-radius:6px;padding:12px}.center{text-align:center}.mono{font-family:monospace}.bold{font-weight:700}.code{font-size:18px;font-weight:800;margin:4px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px}.sep{border-top:1px solid #e2e8f0;padding-top:6px;margin-top:6px}.item{display:flex;gap:6px;padding:2px 0;border-bottom:1px solid #f1f5f9}.muted{color:#64748b}.footer{display:flex;justify-content:space-between;font-size:9px;color:#94a3b8}</style></head><body>`);
                   printW.document.write('<div class="slip">');
-                  printW.document.write(`<div class="center"><div class="bold" style="text-transform:uppercase;letter-spacing:1px;font-size:9px">Guia de Dispensação Farmacêutica</div><div class="mono code">${dispensationSlip?.code}</div></div>`);
+                  printW.document.write(`<div class="center"><div class="bold" style="text-transform:uppercase;letter-spacing:1px;font-size:9px">Guia de Dispensação Farmacêutica</div><div class="mono code">${escH(dispensationSlip?.code)}</div></div>`);
                   printW.document.write('<div class="sep grid">');
-                  printW.document.write(`<div><span class="muted">Paciente:</span> <strong>${dispensationSlip?.patientName}</strong></div>`);
-                  printW.document.write(`<div><span class="muted">Leito:</span> <strong>${dispensationSlip?.bed}</strong></div>`);
-                  printW.document.write(`<div><span class="muted">Data:</span> ${dispensationSlip?.date}</div>`);
-                  if (patient.encounterCode) printW.document.write(`<div><span class="muted">Atend:</span> <span class="mono">${patient.encounterCode}</span></div>`);
+                  printW.document.write(`<div><span class="muted">Paciente:</span> <strong>${escH(dispensationSlip?.patientName)}</strong></div>`);
+                  printW.document.write(`<div><span class="muted">Leito:</span> <strong>${escH(dispensationSlip?.bed)}</strong></div>`);
+                  printW.document.write(`<div><span class="muted">Data:</span> ${escH(dispensationSlip?.date)}</div>`);
+                  if (patient.encounterCode) printW.document.write(`<div><span class="muted">Atend:</span> <span class="mono">${escH(patient.encounterCode)}</span></div>`);
                   printW.document.write('</div>');
                   printW.document.write('<div class="sep"><div class="bold" style="font-size:9px;letter-spacing:1px;margin-bottom:4px">ITENS DISPENSADOS</div>');
                   dispensationSlip?.items.forEach((item, i) => {
-                    printW.document.write(`<div class="item"><span class="mono muted" style="width:16px;text-align:right">${i+1}.</span><div><strong>${item.name}</strong>${item.presentation && item.presentation !== '-' ? ` (${item.presentation})` : ''} — ${item.quantity||'1'} ${item.quantityUnit||'un'}${item.dose && item.dose !== '-' ? ` · ${item.dose}` : ''}${item.route && item.route !== '-' ? ` · ${item.route}` : ''}</div></div>`);
+                    printW.document.write(`<div class="item"><span class="mono muted" style="width:16px;text-align:right">${i+1}.</span><div><strong>${escH(item.name)}</strong>${item.presentation && item.presentation !== '-' ? ` (${escH(item.presentation)})` : ''} — ${escH(item.quantity||'1')} ${escH(item.quantityUnit||'un')}${item.dose && item.dose !== '-' ? ` · ${escH(item.dose)}` : ''}${item.route && item.route !== '-' ? ` · ${escH(item.route)}` : ''}</div></div>`);
                   });
                   printW.document.write('</div>');
-                  printW.document.write(`<div class="sep footer"><span>Dispensado por: ${user?.email?.split('@')[0] || '—'}</span><span>Arsen</span></div>`);
+                  printW.document.write(`<div class="sep footer"><span>Dispensado por: ${escH(user?.email?.split('@')[0] || '—')}</span><span>Arsen</span></div>`);
                   printW.document.write('</div></body></html>');
                   printW.document.close();
                   printW.print();
