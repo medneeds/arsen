@@ -2272,6 +2272,7 @@ export type Database = {
           changed_at: string
           changed_by: string | null
           changed_by_name: string | null
+          hospital_unit_id: string | null
           id: string
           new_value: string
           old_value: string | null
@@ -2282,6 +2283,7 @@ export type Database = {
           changed_at?: string
           changed_by?: string | null
           changed_by_name?: string | null
+          hospital_unit_id?: string | null
           id?: string
           new_value: string
           old_value?: string | null
@@ -2292,6 +2294,7 @@ export type Database = {
           changed_at?: string
           changed_by?: string | null
           changed_by_name?: string | null
+          hospital_unit_id?: string | null
           id?: string
           new_value?: string
           old_value?: string | null
