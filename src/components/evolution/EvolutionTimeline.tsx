@@ -701,6 +701,14 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           }
                           antecedentes={Array.isArray((data.soap as any).antecedentes) ? (data.soap as any).antecedentes : []}
                           onAntecedentesChange={(items) => updateLocal(evo.id, "soap", "antecedentes", items)}
+                          hospitalDischargePrediction={diagCtx.hospitalDischargePrediction}
+                          onHospitalDischargePredictionChange={diagCtx.updateHospitalDischargePrediction}
+                          utiDischargePrediction={diagCtx.utiDischargePrediction}
+                          onUtiDischargePredictionChange={diagCtx.updateUtiDischargePrediction}
+                          isPalliative={diagCtx.isPalliative}
+                          onIsPalliativeChange={diagCtx.updateIsPalliative}
+                          isolationPrecautions={diagCtx.isolationPrecautions}
+                          onIsolationPrecautionsChange={diagCtx.updateIsolationPrecautions}
                         />
                       ) : diagnosticsSlot;
                       return (
