@@ -764,6 +764,12 @@ export function PatientMovementDialog({
                 hospital_name: currentHospital?.name,
                 signed_by_name: responsibleDoctor || signerProfile.name || undefined,
                 signed_by_crm: signerProfile.crm || undefined,
+                // Data de admissão — vem de admitted_at (prioridade) ou created_at do paciente
+                admission_date: (patient as any).admitted_at
+                  ? ((patient as any).admitted_at as string).slice(0, 10)
+                  : (patient as any).created_at
+                    ? ((patient as any).created_at as string).slice(0, 10)
+                    : undefined,
               }}
               onChange={(payload, complete) => { setDocPayload(payload); setDocComplete(complete); }}
             />

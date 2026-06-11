@@ -91,6 +91,17 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
             onChange={(e) => setField(isDeath ? "death_date_time" : "discharge_date", e.target.value)}
           />
         </Field>
+        {!isDeath && (
+          <Field label="Data de admissão">
+            <Input
+              type="date"
+              className="h-8 text-xs"
+              value={form.admission_date ? form.admission_date.slice(0, 10) : ""}
+              onChange={(e) => setField("admission_date", e.target.value)}
+              placeholder="dd/mm/aaaa"
+            />
+          </Field>
+        )}
         {isDeath ? (
           <Field label="Local do óbito">
             <Input

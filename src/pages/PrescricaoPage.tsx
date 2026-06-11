@@ -6958,7 +6958,11 @@ const PrescricaoPage = () => {
       }
       fetchPrescriptions();
     } catch (err: any) {
-      toast.error("Erro ao salvar prescrição", { description: err.message });
+      const detail = err?.message || err?.toString() || "Verifique sua conexão e tente novamente.";
+      toast.error("Erro ao salvar prescrição", {
+        description: detail.length < 200 ? detail : "Falha no servidor. Verifique se há itens com campos obrigatórios em branco e tente novamente.",
+        duration: 7000,
+      });
     } finally {
       setSaving(false);
     }
@@ -6974,8 +6978,9 @@ const PrescricaoPage = () => {
 
   const handleNewPrescription = () => {
     if (prescriptionLocked) {
-      toast.error("Já existe uma prescrição validada hoje", {
-        description: "Use revalidação 05h ou aguarde o corte. Não é possível iniciar nova prescrição enquanto a atual estiver validada.",
+      toast.error("Prescrição do dia já validada — não é possível abrir nova", {
+        description: "O dia clínico encerra às 05h. Se estiver após esse horário, aguarde o corte automático ou use o botão de revalidação 05h para liberar a prescrição do novo dia.",
+        duration: 7000,
       });
       return;
     }
@@ -6985,8 +6990,9 @@ const PrescricaoPage = () => {
 
   const handleCopyPreviousFlow = useCallback(async () => {
     if (prescriptionLocked) {
-      toast.error("Já existe uma prescrição validada hoje", {
-        description: "Não é possível iniciar nova prescrição enquanto a atual estiver validada.",
+      toast.error("Prescrição do dia já validada — não é possível copiar", {
+        description: "Aguarde o corte das 05h ou use o botão de revalidação 05h para liberar o novo dia. A cópia da prescrição anterior ficará disponível após a liberação.",
+        duration: 7000,
       });
       return;
     }
