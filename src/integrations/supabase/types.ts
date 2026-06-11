@@ -2052,9 +2052,11 @@ export type Database = {
           form: string
           id: string
           infusion_time: string | null
+          iv_bolus: boolean
           max_daily_dose: string | null
           medication_id: string
           pharmaceutical_form: string | null
+          pharmacy_suggestion_enabled: boolean
           route: string
           standard_dilution: string | null
           unit: string
@@ -2067,9 +2069,11 @@ export type Database = {
           form: string
           id?: string
           infusion_time?: string | null
+          iv_bolus?: boolean
           max_daily_dose?: string | null
           medication_id: string
           pharmaceutical_form?: string | null
+          pharmacy_suggestion_enabled?: boolean
           route?: string
           standard_dilution?: string | null
           unit?: string
@@ -2082,9 +2086,11 @@ export type Database = {
           form?: string
           id?: string
           infusion_time?: string | null
+          iv_bolus?: boolean
           max_daily_dose?: string | null
           medication_id?: string
           pharmaceutical_form?: string | null
+          pharmacy_suggestion_enabled?: boolean
           route?: string
           standard_dilution?: string | null
           unit?: string
@@ -3702,6 +3708,72 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      receituarios: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          free_text: string | null
+          hospital_unit_id: string | null
+          id: string
+          items: Json
+          patient_bed: string | null
+          patient_id: string | null
+          patient_name: string
+          patient_sector: string | null
+          signed_by_crm: string | null
+          signed_by_name: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          free_text?: string | null
+          hospital_unit_id?: string | null
+          id?: string
+          items?: Json
+          patient_bed?: string | null
+          patient_id?: string | null
+          patient_name: string
+          patient_sector?: string | null
+          signed_by_crm?: string | null
+          signed_by_name?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          free_text?: string | null
+          hospital_unit_id?: string | null
+          id?: string
+          items?: Json
+          patient_bed?: string | null
+          patient_id?: string | null
+          patient_name?: string
+          patient_sector?: string | null
+          signed_by_crm?: string | null
+          signed_by_name?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receituarios_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receituarios_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reception_desk_sessions: {
         Row: {
