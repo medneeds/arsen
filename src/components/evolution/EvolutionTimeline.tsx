@@ -708,7 +708,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           isPalliative={diagCtx.isPalliative}
                           onPalliativeChange={diagCtx.updateIsPalliative}
                           isolationPrecautions={diagCtx.isolationPrecautions}
-                          onIsolationPrecautionsChange={diagCtx.updateIsolationPrecautions}
+                          onIsolationChange={diagCtx.updateIsolationPrecautions}
                         />
                       ) : diagnosticsSlot;
                       return (
