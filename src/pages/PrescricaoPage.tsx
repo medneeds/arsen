@@ -7500,7 +7500,7 @@ const PrescricaoPage = () => {
           /* Margem inferior maior reserva espaço para o rodapé fixo + numeração */
           @page {
             size: A4 portrait;
-            margin: 5mm 12mm 14mm 12mm;
+            margin: 5mm 12mm 16mm 12mm;
           }
           /* Numeração de página nativa do motor de impressão (robusta) */
           @page {
@@ -10555,8 +10555,34 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
 
   const docCode = generatePrintDocCode("PRESC");
 
+  // Linha de identificação discreta do paciente (repetida no rodapé de TODAS as páginas)
+  const footerPatientLine = [
+    patient.name || null,
+    patient.age || null,
+    patient.birthDate
+      ? (() => { try { const d = new Date(patient.birthDate + 'T12:00:00'); return isNaN(d.getTime()) ? patient.birthDate : d.toLocaleDateString('pt-BR'); } catch { return patient.birthDate; } })()
+      : null,
+    patient.bed ? `Leito ${patient.bed}` : null,
+    patient.record ? `Pront. ${patient.record}` : null,
+  ].filter(Boolean).join(' · ');
+
   return (
     <div style={{ fontFamily: '"Helvetica Neue", "Segoe UI", "Inter", Arial, sans-serif', color: '#1e293b', width: '186mm', margin: '0 auto', lineHeight: 1.3, letterSpacing: '-0.005em' }}>
+      {/* Rodapé fixo de identificação — repetido no rodapé de TODAS as páginas (inclusive a 1ª) */}
+      {footerPatientLine && (
+        <div id="prescription-page-footer" style={{
+          fontSize: '6pt',
+          fontWeight: 600,
+          color: '#64748b',
+          textAlign: 'center',
+          padding: '2pt 12mm',
+          borderTop: '0.5px dotted #cbd5e1',
+          background: '#ffffff',
+          letterSpacing: '0.2px',
+        }}>
+          {footerPatientLine}
+        </div>
+      )}
       {/* Bloco cabeçalho + paciente — não pode ser separado do corpo da prescrição */}
       <div style={{ pageBreakInside: 'auto', breakInside: 'auto' }}>
       {/* Cabeçalho institucional Norma Zero (MAN.05-001) */}
@@ -10915,20 +10941,10 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
         </div>
       </div>
 
-      {/* Rodapé Norma Zero (MAN.05-001) + identificação do paciente (rastreabilidade por folha) */}
-      <NormaZeroPrintFooter
-        width="186mm"
-        showAddress
-        patientInfo={{
-          name: patient.name || undefined,
-          age: patient.age || undefined,
-          birthDate: patient.birthDate
-            ? (() => { try { const d = new Date(patient.birthDate + 'T12:00:00'); return isNaN(d.getTime()) ? patient.birthDate : d.toLocaleDateString('pt-BR'); } catch { return patient.birthDate; } })()
-            : undefined,
-          bed: patient.bed || undefined,
-          record: patient.record || undefined,
-        }}
-      />
+      {/* Rodapé Norma Zero (MAN.05-001).
+          A identificação do paciente vem do rodapé fixo (#prescription-page-footer),
+          repetido em todas as páginas — não duplicar aqui. */}
+      <NormaZeroPrintFooter width="186mm" showAddress />
     </div>
   );
 }
