@@ -2622,6 +2622,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       <AihFormDialog
         open={aihRoutingOpen}
         onOpenChange={setAihRoutingOpen}
+        patientId={patientId}
         patientName={apacPatientName}
         origin="regulacao"
         regulacaoType={undefined}
