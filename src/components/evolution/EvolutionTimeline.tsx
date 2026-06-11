@@ -67,6 +67,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
 }) => {
   const { user } = useAuth();
   const { currentHospital } = useHospital();
+  const diagCtx = usePatientDiagnosticContext(patientId || null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [collapsedDays, setCollapsedDays] = useState<Set<number>>(new Set());
   const [savingId, setSavingId] = useState<string | null>(null);
