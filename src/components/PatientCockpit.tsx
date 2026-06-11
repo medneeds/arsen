@@ -1101,6 +1101,31 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         patientId={patient.id}
         patientName={patient.name}
       />
+      {/* Receituário ambulatorial */}
+      <Dialog open={receituarioOpen} onOpenChange={setReceituarioOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-sm flex items-center gap-2">
+              <ScrollText className="h-4 w-4" />
+              Receituário Ambulatorial
+            </DialogTitle>
+          </DialogHeader>
+          {patient?.name && (
+            <ReceituarioForm
+              type="ambulatorial"
+              patientName={patient.name}
+              patientId={patient.id}
+              patientBed={patient.bedNumber}
+              patientSector={patient.sector}
+              onSave={async (data) => {
+                await saveReceituario(data);
+                setReceituarioOpen(false);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       <PatientMovementDialog
         patient={patient}
         movementType={null}

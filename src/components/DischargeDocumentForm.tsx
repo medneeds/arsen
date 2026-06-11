@@ -11,6 +11,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Printer, Skull, Home, FileSignature } from "lucide-react";
+import { ReceituarioForm } from "@/components/ReceituarioForm";
+import { useReceituario } from "@/hooks/useReceituario";
 import { cn } from "@/lib/utils";
 import {
   type DischargeDocType,
@@ -23,6 +25,8 @@ export interface DischargeDocFormProps {
   type: DischargeDocType;
   initial?: Partial<DischargeDocPayload>;
   onChange: (payload: DischargeDocPayload, isComplete: boolean) => void;
+  patientId?: string | null;
+  hospitalName?: string;
 }
 
 // Comunicação à família é opcional — registro deve fluir mesmo sem contato familiar
@@ -37,7 +41,7 @@ const RELATION_OPTIONS = [
   "TIO(A)", "SOBRINHO(A)", "PRIMO(A)", "RESPONSÁVEL LEGAL", "OUTRO",
 ];
 
-export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocFormProps) {
+export function DischargeDocumentForm({ type, initial, onChange, patientId, hospitalName }: DischargeDocFormProps) {
   const [form, setForm] = useState<DischargeDocPayload>(() => ({
     patient_name: "",
     discharge_date: new Date().toISOString().slice(0, 16),
@@ -49,6 +53,9 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
 
   const setField = <K extends keyof DischargeDocPayload>(k: K, v: DischargeDocPayload[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  const { save: saveReceituario } = useReceituario(patientId, form.patient_name || undefined);
+
 
   const isComplete = useMemo(() => {
     const req = REQUIRED_BY_TYPE[type];
@@ -206,11 +213,20 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
               onChange={(e) => setField("orientations", upper(e.target.value))}
               placeholder="CUIDADOS DOMICILIARES, SINAIS DE ALERTA, USO DE MEDICAÇÕES, RETORNO" />
           </Field>
-          <Field label="Prescrição de alta">
-            <Textarea rows={3} className="text-xs" value={form.prescription || ""}
-              onChange={(e) => setField("prescription", upper(e.target.value))}
-              placeholder="MEDICAMENTOS, DOSES E DURAÇÃO" />
-          </Field>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">Receituário de alta</label>
+            <ReceituarioForm
+              type="alta"
+              patientName={form.patient_name}
+              patientId={patientId}
+              patientBed={form.patient_bed}
+              patientSector={form.patient_sector}
+              signedByName={form.signed_by_name}
+              signedByCrm={form.signed_by_crm}
+              hospitalName={hospitalName}
+              onSave={saveReceituario}
+            />
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <Field label="Retorno (data)">
               <Input type="date" className="h-8 text-xs" value={form.return_date || ""}
