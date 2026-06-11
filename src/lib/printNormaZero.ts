@@ -85,17 +85,28 @@ export const generateDocCode = (prefix: string = "DOC"): string => {
 export const normaZeroBaseStyles = (orientation: "portrait" | "landscape" = "portrait") => `
   @page {
     size: A4 ${orientation};
-    margin: ${orientation === "landscape" ? "10mm 12mm" : "12mm 14mm"};
+    margin: ${orientation === "landscape" ? "40mm 12mm 16mm 12mm" : "42mm 14mm 18mm 14mm"};
     @bottom-right { content: "Pág. " counter(page) "/" counter(pages); font-size: 6pt; color: #94a3b8; }
   }
   @media print {
     body { margin: 0; }
-    .nz-header { page-break-after: avoid; }
+    .nz-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: #fff;
+      padding-bottom: 4px;
+      page-break-after: avoid;
+    }
+    .nz-body-content { margin-top: 0; }
     .nz-footer { page-break-before: avoid; }
     h2.nz-section { page-break-after: avoid; }
     table.nz { page-break-inside: auto; }
     table.nz tr { page-break-inside: avoid; }
   }
+
   :root { color-scheme: light only; }
   * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   html, body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: #0f172a; background: #ffffff; margin: 0; font-size: 9.5pt; line-height: 1.35; }
