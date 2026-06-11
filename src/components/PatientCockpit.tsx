@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Patient } from "@/types/patient";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { sanitizeRichHtml } from "@/components/ui/rich-text-editor";
+import { ScrollText } from "lucide-react";
+import { ReceituarioForm } from "./ReceituarioForm";
+import { useReceituario } from "@/hooks/useReceituario";
 import {
   Activity, AlertTriangle, ArrowRight, BedDouble, ChevronDown, ChevronLeft, ChevronRight,
   ClipboardList, Copy, Droplet, FileText, FlaskConical, Heart, IdCard, LogOut, NotebookPen, Pill, Plus, Route,
@@ -118,6 +122,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const [docDialogOpen, setDocDialogOpen] = useState(false);
   const [roundPrintOpen, setRoundPrintOpen] = useState(false);
   const [movementDialogOpen, setMovementDialogOpen] = useState(false);
+  const [receituarioOpen, setReceituarioOpen] = useState(false);
   const isExpanded = variant === "inline" || pinned || hovering;
   const isMobile = useIsMobile();
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
@@ -125,6 +130,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   // Live patient data — sync sector, bed, allergies, medical responsibility, etc.
   const { patient: livePatient } = usePatientLive(patientProp?.id || null);
   const patient = livePatient || patientProp;
+  const { save: saveReceituario } = useReceituario(patient?.id ?? null, patient?.name ?? null);
 
   // Watch for medical responsibility changes from other users
   const lastResponsibilityRef = useRef<string | null>(

@@ -30,6 +30,8 @@ interface MedicationPresentation {
   standard_dilution: string | null;
   max_daily_dose: string | null;
   infusion_time: string | null;
+  iv_bolus: boolean;
+  pharmacy_suggestion_enabled: boolean;
 }
 
 interface MedicationCatalogItem {
@@ -63,10 +65,12 @@ export default function MedicationCatalogPage() {
   const [classFilter, setClassFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<{ standard_dilution: string; max_daily_dose: string; infusion_time: string }>({
+  const [editDraft, setEditDraft] = useState<{ standard_dilution: string; max_daily_dose: string; infusion_time: string; iv_bolus: boolean; pharmacy_suggestion_enabled: boolean }>({
     standard_dilution: "",
     max_daily_dose: "",
     infusion_time: "",
+    iv_bolus: false,
+    pharmacy_suggestion_enabled: false,
   });
   const [savingId, setSavingId] = useState<string | null>(null);
 
