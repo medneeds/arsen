@@ -302,6 +302,12 @@ export async function printExtraPrescription(opts: ExtraPrintOptions) {
     hospitalName,
     docCodePrefix: "PRESC-EXT",
     bodyHtml,
+    patientFooterInfo: {
+      name: patient.name || undefined,
+      age: patient.age || undefined,
+      bed: patient.bed || undefined,
+      record: patient.record || undefined,
+    },
     signatures: [
       {
         label: doctorName ? `Dr(a). ${doctorName}` : "Médico Responsável",

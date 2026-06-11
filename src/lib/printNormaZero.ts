@@ -44,6 +44,15 @@ export interface NormaZeroDocOptions {
   orientation?: "portrait" | "landscape";
   /** Estilos CSS adicionais específicos do documento */
   extraStyles?: string;
+  /** Identificação discreta do paciente repetida no rodapé (rastreabilidade por folha).
+   *  Usado em prescrições. Quando ausente, o rodapé permanece como nos demais documentos. */
+  patientFooterInfo?: {
+    name?: string;
+    age?: string;
+    birthDate?: string;
+    bed?: string;
+    record?: string;
+  };
 }
 
 /** Converte um asset de imagem (importado) em data URL para uso em janelas pop-up */
@@ -74,7 +83,11 @@ export const generateDocCode = (prefix: string = "DOC"): string => {
 
 /** CSS base do timbrado Norma Zero — compartilhado por todos os documentos */
 export const normaZeroBaseStyles = (orientation: "portrait" | "landscape" = "portrait") => `
-  @page { size: A4 ${orientation}; margin: ${orientation === "landscape" ? "10mm 12mm" : "12mm 14mm"}; }
+  @page {
+    size: A4 ${orientation};
+    margin: ${orientation === "landscape" ? "10mm 12mm" : "12mm 14mm"};
+    @bottom-right { content: "Pág. " counter(page) "/" counter(pages); font-size: 6pt; color: #94a3b8; }
+  }
   @media print {
     body { margin: 0; }
     .nz-header { page-break-after: avoid; }
@@ -143,7 +156,19 @@ export function buildNormaZeroDocument(opts: NormaZeroDocOptions): string {
     logoDataUrl,
     orientation = "portrait",
     extraStyles = "",
+    patientFooterInfo,
   } = opts;
+
+  // Linha de identificação do paciente (rastreabilidade por folha)
+  const patientFooterLine = patientFooterInfo
+    ? [
+        patientFooterInfo.name,
+        patientFooterInfo.age,
+        patientFooterInfo.birthDate,
+        patientFooterInfo.bed ? `Leito ${patientFooterInfo.bed}` : null,
+        patientFooterInfo.record ? `Pront. ${patientFooterInfo.record}` : null,
+      ].filter(Boolean).join(" · ")
+    : "";
 
   const inst = whitelabel.print.institutionalHeader;
   const colors = whitelabel.theme.institutionalColors;
@@ -206,6 +231,7 @@ ${bodyHtml}
 
 ${signaturesHtml}
 
+${patientFooterLine ? `<div style="font-size:6pt;font-weight:600;color:#64748b;padding-bottom:2pt;margin-bottom:2pt;border-bottom:0.5px dotted #cbd5e1;letter-spacing:0.2px;">${patientFooterLine}</div>` : ""}
 <div class="nz-footer">
   <div><b>${whitelabel.institution.hospitalAbbreviation}</b> — ${whitelabel.platform.fullName}</div>
   <div>${whitelabel.compliance.normaZeroCode} v${whitelabel.compliance.normaZeroVersion} • ${whitelabel.compliance.legalReferences}</div>

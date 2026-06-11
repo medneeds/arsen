@@ -7497,11 +7497,32 @@ const PrescricaoPage = () => {
       {/* Print styles — hide everything except portal */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          @page { size: A4 portrait; margin: 5mm 12mm 8mm 12mm; }
+          /* Margem inferior maior reserva espaço para o rodapé fixo + numeração */
+          @page {
+            size: A4 portrait;
+            margin: 5mm 12mm 14mm 12mm;
+          }
+          /* Numeração de página nativa do motor de impressão (robusta) */
+          @page {
+            @bottom-right {
+              content: "Pág. " counter(page) "/" counter(pages);
+              font-size: 6pt;
+              color: #94a3b8;
+            }
+          }
           body > *:not(#prescription-print-root) { display: none !important; }
           #prescription-print-root { display: block !important; }
           #prescription-print-root * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          /* Rodapé de identificação repetido em todas as páginas */
+          #prescription-page-footer {
+            display: block !important;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+          }
         }
+        #prescription-page-footer { display: none; }
       ` }} />
 
       {/* Banner didático — peso e alergias obrigatórios para liberar a prescrição */}
@@ -10894,8 +10915,20 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
         </div>
       </div>
 
-      {/* Rodapé Norma Zero (MAN.05-001) */}
-      <NormaZeroPrintFooter width="186mm" showAddress />
+      {/* Rodapé Norma Zero (MAN.05-001) + identificação do paciente (rastreabilidade por folha) */}
+      <NormaZeroPrintFooter
+        width="186mm"
+        showAddress
+        patientInfo={{
+          name: patient.name || undefined,
+          age: patient.age || undefined,
+          birthDate: patient.birthDate
+            ? (() => { try { const d = new Date(patient.birthDate + 'T12:00:00'); return isNaN(d.getTime()) ? patient.birthDate : d.toLocaleDateString('pt-BR'); } catch { return patient.birthDate; } })()
+            : undefined,
+          bed: patient.bed || undefined,
+          record: patient.record || undefined,
+        }}
+      />
     </div>
   );
 }

@@ -214,18 +214,44 @@ export function NormaZeroPrintHeader({
 }
 
 /** Rodapé Norma Zero — código MAN.05-001 + referências legais */
+/** Identificação mínima do paciente para o rodapé (rastreabilidade por folha). */
+export interface NormaZeroPatientInfo {
+  name?: string;
+  age?: string;
+  birthDate?: string;   // ISO ou já formatado
+  bed?: string;
+  record?: string;      // prontuário
+}
+
 export function NormaZeroPrintFooter({
   width = "182mm",
   showAddress = false,
+  patientInfo,
 }: {
   width?: string;
   /** Quando true, adiciona uma 2ª linha discreta com o endereço institucional
    *  (usado quando o header está em variant="compact" e o endereço foi removido dele). */
   showAddress?: boolean;
+  /** Quando presente, adiciona uma linha discreta de identificação do paciente.
+   *  Usado em prescrições para rastreabilidade por folha. */
+  patientInfo?: NormaZeroPatientInfo;
 }) {
   const now = new Date();
   const dateStr = now.toLocaleDateString("pt-BR");
   const timeStr = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+  // Monta a linha de identificação do paciente (campos não vazios, separados por ·)
+  const patientLine = patientInfo
+    ? [
+        patientInfo.name,
+        patientInfo.age,
+        patientInfo.birthDate,
+        patientInfo.bed ? `Leito ${patientInfo.bed}` : null,
+        patientInfo.record ? `Pront. ${patientInfo.record}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
 
   return (
     <div
@@ -238,6 +264,22 @@ export function NormaZeroPrintFooter({
         color: inkSoft,
       }}
     >
+      {/* Linha de identificação do paciente (rastreabilidade) */}
+      {patientLine && (
+        <div
+          style={{
+            fontSize: "6pt",
+            fontWeight: 600,
+            color: inkMuted,
+            paddingBottom: "2pt",
+            marginBottom: "2pt",
+            borderBottom: `0.5px dotted ${lineSoft}`,
+            letterSpacing: "0.2px",
+          }}
+        >
+          {patientLine}
+        </div>
+      )}
       <div
         style={{
           display: "flex",
