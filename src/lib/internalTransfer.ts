@@ -40,6 +40,16 @@ function coerceToIsoTimestamp(value: unknown): string | null {
  * Snapshot JSONB pode trazer string ("1,2,3" / "[1,2]") quando vem de versões antigas;
  * a coluna destino é integer[] e PostgREST rejeita string.
  */
+/** Converte campo do snapshot para string: aceita array, string ou null/undefined.
+ *  Evita TypeError ("F.join is not a function") quando o snapshot foi gravado
+ *  com texto direto em vez de array. */
+function toJoinedText(value: unknown): string | null {
+  if (value == null) return null;
+  if (Array.isArray(value)) return value.join("\n") || null;
+  if (typeof value === "string") return value || null;
+  return String(value) || null;
+}
+
 function toIntArray(value: unknown): number[] | null {
   if (value == null) return null;
   let arr: unknown = value;
@@ -545,26 +555,26 @@ export async function completeInternalTransfer(
     const destinationFields = {
       name:                     snapshot.name,
       age:                      snapshot.age?.toString() || null,
-      diagnoses:                snapshot.diagnoses?.join("\n") || null,
-      medical_history:          snapshot.medicalHistory?.join("\n") || null,
-      relevant_exams:           snapshot.relevantExams?.join("\n") || null,
-      pendencies:               snapshot.pendencies?.join("\n") || null,
-      schedule:                 snapshot.schedule?.join("\n") || null,
+      diagnoses:                toJoinedText(snapshot.diagnoses),
+      medical_history:          toJoinedText(snapshot.medicalHistory),
+      relevant_exams:           toJoinedText(snapshot.relevantExams),
+      pendencies:               toJoinedText(snapshot.pendencies),
+      schedule:                 toJoinedText(snapshot.schedule),
       admission_date:           coerceToIsoTimestamp(snapshot.admissionDate),
       highlighted_diagnoses:    toIntArray(snapshot.highlightedDiagnoses),
       highlighted_medical_history: toIntArray(snapshot.highlightedMedicalHistory),
       highlighted_pendencies:   toIntArray(snapshot.highlightedPendencies),
       highlighted_conducts:     toIntArray(snapshot.highlightedConducts),
       uti_admission_date:       coerceToIsoTimestamp(snapshot.utiAdmissionDate),
-      uti_discharge_prediction: snapshot.utiDischargePrediction?.join("\n") || null,
-      uti_allergies:            snapshot.utiAllergies?.join("\n") || null,
-      uti_admission_reason:     snapshot.utiAdmissionReason?.join("\n") || null,
-      uti_current_status:       snapshot.utiCurrentStatus?.join("\n") || null,
-      uti_devices:              snapshot.utiDevices?.join("\n") || null,
-      uti_cultures_antibiotics: snapshot.utiCulturesAntibiotics?.join("\n") || null,
-      uti_specialties:          snapshot.utiSpecialties?.join("\n") || null,
-      uti_origin_sector:        snapshot.utiOriginSector?.join("\n") || null,
-      uti_daily_conducts:       snapshot.utiDailyConducts?.join("\n") || null,
+      uti_discharge_prediction: toJoinedText(snapshot.utiDischargePrediction),
+      uti_allergies:            toJoinedText(snapshot.utiAllergies),
+      uti_admission_reason:     toJoinedText(snapshot.utiAdmissionReason),
+      uti_current_status:       toJoinedText(snapshot.utiCurrentStatus),
+      uti_devices:              toJoinedText(snapshot.utiDevices),
+      uti_cultures_antibiotics: toJoinedText(snapshot.utiCulturesAntibiotics),
+      uti_specialties:          toJoinedText(snapshot.utiSpecialties),
+      uti_origin_sector:        toJoinedText(snapshot.utiOriginSector),
+      uti_daily_conducts:       toJoinedText(snapshot.utiDailyConducts),
       clinical_status:          snapshot.clinicalStatus || null,
       psm_status:               snapshot.psmStatus || null,
       admission_history:        destinationAdmissionHistory,
@@ -617,11 +627,11 @@ export async function completeInternalTransfer(
       .update({
         name: snapshot.name,
         age: snapshot.age?.toString() || null,
-        diagnoses: snapshot.diagnoses?.join("\n") || null,
-        medical_history: snapshot.medicalHistory?.join("\n") || null,
-        relevant_exams: snapshot.relevantExams?.join("\n") || null,
-        pendencies: snapshot.pendencies?.join("\n") || null,
-        schedule: snapshot.schedule?.join("\n") || null,
+        diagnoses: toJoinedText(snapshot.diagnoses),
+        medical_history: toJoinedText(snapshot.medicalHistory),
+        relevant_exams: toJoinedText(snapshot.relevantExams),
+        pendencies: toJoinedText(snapshot.pendencies),
+        schedule: toJoinedText(snapshot.schedule),
 
         admission_date: coerceToIsoTimestamp(snapshot.admissionDate),
         highlighted_diagnoses: snapshot.highlightedDiagnoses || null,
@@ -629,15 +639,15 @@ export async function completeInternalTransfer(
         highlighted_pendencies: snapshot.highlightedPendencies || null,
         highlighted_conducts: snapshot.highlightedConducts || null,
         uti_admission_date: coerceToIsoTimestamp(snapshot.utiAdmissionDate),
-        uti_discharge_prediction: snapshot.utiDischargePrediction?.join("\n") || null,
-        uti_allergies: snapshot.utiAllergies?.join("\n") || null,
-        uti_admission_reason: snapshot.utiAdmissionReason?.join("\n") || null,
-        uti_current_status: snapshot.utiCurrentStatus?.join("\n") || null,
-        uti_devices: snapshot.utiDevices?.join("\n") || null,
-        uti_cultures_antibiotics: snapshot.utiCulturesAntibiotics?.join("\n") || null,
-        uti_specialties: snapshot.utiSpecialties?.join("\n") || null,
-        uti_origin_sector: snapshot.utiOriginSector?.join("\n") || null,
-        uti_daily_conducts: snapshot.utiDailyConducts?.join("\n") || null,
+        uti_discharge_prediction: toJoinedText(snapshot.utiDischargePrediction),
+        uti_allergies: toJoinedText(snapshot.utiAllergies),
+        uti_admission_reason: toJoinedText(snapshot.utiAdmissionReason),
+        uti_current_status: toJoinedText(snapshot.utiCurrentStatus),
+        uti_devices: toJoinedText(snapshot.utiDevices),
+        uti_cultures_antibiotics: toJoinedText(snapshot.utiCulturesAntibiotics),
+        uti_specialties: toJoinedText(snapshot.utiSpecialties),
+        uti_origin_sector: toJoinedText(snapshot.utiOriginSector),
+        uti_daily_conducts: toJoinedText(snapshot.utiDailyConducts),
         clinical_status: snapshot.clinicalStatus || null,
         psm_status: snapshot.psmStatus || null,
         admission_history: destinationAdmissionHistory,
@@ -761,54 +771,26 @@ export async function cancelInternalTransferRequest(
         .update({
           name:                     snapshot.name ?? "",
           age:                      snapshot.age?.toString() || null,
-          diagnoses:                Array.isArray(snapshot.diagnoses)
-                                      ? snapshot.diagnoses.join("\n")
-                                      : snapshot.diagnoses || null,
-          medical_history:          Array.isArray(snapshot.medicalHistory)
-                                      ? snapshot.medicalHistory.join("\n")
-                                      : snapshot.medicalHistory || null,
-          relevant_exams:           Array.isArray(snapshot.relevantExams)
-                                      ? snapshot.relevantExams.join("\n")
-                                      : snapshot.relevantExams || null,
-          pendencies:               Array.isArray(snapshot.pendencies)
-                                      ? snapshot.pendencies.join("\n")
-                                      : snapshot.pendencies || null,
-          schedule:                 Array.isArray(snapshot.schedule)
-                                      ? snapshot.schedule.join("\n")
-                                      : snapshot.schedule || null,
+          diagnoses:                toJoinedText(snapshot.diagnoses),
+          medical_history:          toJoinedText(snapshot.medicalHistory),
+          relevant_exams:           toJoinedText(snapshot.relevantExams),
+          pendencies:               toJoinedText(snapshot.pendencies),
+          schedule:                 toJoinedText(snapshot.schedule),
           admission_date:           coerceToIsoTimestamp(snapshot.admissionDate),
           highlighted_diagnoses:    snapshot.highlightedDiagnoses || null,
           highlighted_medical_history: snapshot.highlightedMedicalHistory || null,
           highlighted_pendencies:   snapshot.highlightedPendencies || null,
           highlighted_conducts:     snapshot.highlightedConducts || null,
           uti_admission_date:       coerceToIsoTimestamp(snapshot.utiAdmissionDate),
-          uti_discharge_prediction: Array.isArray(snapshot.utiDischargePrediction)
-                                      ? snapshot.utiDischargePrediction.join("\n")
-                                      : snapshot.utiDischargePrediction || null,
-          uti_allergies:            Array.isArray(snapshot.utiAllergies)
-                                      ? snapshot.utiAllergies.join("\n")
-                                      : snapshot.utiAllergies || null,
-          uti_admission_reason:     Array.isArray(snapshot.utiAdmissionReason)
-                                      ? snapshot.utiAdmissionReason.join("\n")
-                                      : snapshot.utiAdmissionReason || null,
-          uti_current_status:       Array.isArray(snapshot.utiCurrentStatus)
-                                      ? snapshot.utiCurrentStatus.join("\n")
-                                      : snapshot.utiCurrentStatus || null,
-          uti_devices:              Array.isArray(snapshot.utiDevices)
-                                      ? snapshot.utiDevices.join("\n")
-                                      : snapshot.utiDevices || null,
-          uti_cultures_antibiotics: Array.isArray(snapshot.utiCulturesAntibiotics)
-                                      ? snapshot.utiCulturesAntibiotics.join("\n")
-                                      : snapshot.utiCulturesAntibiotics || null,
-          uti_specialties:          Array.isArray(snapshot.utiSpecialties)
-                                      ? snapshot.utiSpecialties.join("\n")
-                                      : snapshot.utiSpecialties || null,
-          uti_origin_sector:        Array.isArray(snapshot.utiOriginSector)
-                                      ? snapshot.utiOriginSector.join("\n")
-                                      : snapshot.utiOriginSector || null,
-          uti_daily_conducts:       Array.isArray(snapshot.utiDailyConducts)
-                                      ? snapshot.utiDailyConducts.join("\n")
-                                      : snapshot.utiDailyConducts || null,
+          uti_discharge_prediction: toJoinedText(snapshot.utiDischargePrediction),
+          uti_allergies:            toJoinedText(snapshot.utiAllergies),
+          uti_admission_reason:     toJoinedText(snapshot.utiAdmissionReason),
+          uti_current_status:       toJoinedText(snapshot.utiCurrentStatus),
+          uti_devices:              toJoinedText(snapshot.utiDevices),
+          uti_cultures_antibiotics: toJoinedText(snapshot.utiCulturesAntibiotics),
+          uti_specialties:          toJoinedText(snapshot.utiSpecialties),
+          uti_origin_sector:        toJoinedText(snapshot.utiOriginSector),
+          uti_daily_conducts:       toJoinedText(snapshot.utiDailyConducts),
           clinical_status:          snapshot.clinicalStatus || null,
           psm_status:               snapshot.psmStatus || null,
           admission_history:        snapshot._admissionHistory ?? null,
