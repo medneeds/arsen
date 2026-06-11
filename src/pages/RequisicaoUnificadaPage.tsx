@@ -1942,6 +1942,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const [cidSecondary, setCidSecondary] = useState("");
   const [cidAssociated, setCidAssociated] = useState("");
   const [observations, setObservations] = useState("");
+  const [observationsAutoFilled, setObservationsAutoFilled] = useState(false);
 
   useEffect(() => { setApacPatientName(initialPatientName); }, [initialPatientName]);
 
@@ -1969,10 +1970,10 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         if (!pat || cancelled) return;
         const registryId = (pat as any).patient_registry_id as string | null;
 
-        // Diagnóstico/CID via admissão mais recente
+        // Diagnóstico/CID e justificativa via admissão mais recente (ORDER BY garante)
         const { data: adm } = await supabase
           .from("admission_histories")
-          .select("diagnostic_hypothesis, primary_cid10, secondary_cid10")
+          .select("diagnostic_hypothesis, primary_cid10, secondary_cid10, chief_complaint, clinical_history, initial_conduct")
           .eq("patient_id", validPid)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -1981,6 +1982,18 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           setDiagnosis((adm as any).diagnostic_hypothesis || "");
           setCidPrimary((adm as any).primary_cid10 || "");
           setCidSecondary((adm as any).secondary_cid10 || "");
+          const admParts: string[] = [];
+          if ((adm as any).chief_complaint)  admParts.push(`QP: ${(adm as any).chief_complaint}`);
+          if ((adm as any).clinical_history) admParts.push(`HDA: ${(adm as any).clinical_history}`);
+          if ((adm as any).diagnostic_hypothesis) admParts.push(`HD: ${(adm as any).diagnostic_hypothesis}`);
+          if ((adm as any).initial_conduct)  admParts.push(`Conduta: ${(adm as any).initial_conduct}`);
+          if (admParts.length > 0) {
+            setObservations(prev => {
+              if (prev.trim()) return prev;
+              setObservationsAutoFilled(true);
+              return admParts.join("\n");
+            });
+          }
         }
 
         if (!registryId) {
@@ -2292,7 +2305,14 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <Label className="text-xs text-muted-foreground">Observações / Justificativa</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label className="text-xs text-muted-foreground">Observações / Justificativa</Label>
+                    {observationsAutoFilled && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/30">
+                        ✦ Preenchido automaticamente · Editável
+                      </span>
+                    )}
+                  </div>
                   <div className="flex gap-1.5">
                     <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={importAdmission} disabled={!patientId || importingAdmission}>
                       <FileText className="h-3 w-3" /> {importingAdmission ? "..." : "Admissão"}
@@ -2302,7 +2322,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                     </Button>
                   </div>
                 </div>
-                <Textarea value={observations} onChange={(e) => setObservations(e.target.value)} placeholder="Informações clínicas relevantes..." rows={6} />
+                <Textarea value={observations} onChange={(e) => { setObservations(e.target.value); setObservationsAutoFilled(false); }} placeholder="Informações clínicas relevantes..." rows={6} />
               </div>
             </CardContent>
           </Card>
