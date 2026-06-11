@@ -483,7 +483,8 @@ function calcConcentration(item: PrescriptionItem): string {
 }
 
 function isIVRoute(route: string): boolean {
-  return ['Intravenosa'].includes(route);
+  const r = (route || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return /(intravenosa|endovenosa|\bev\b|\biv\b)/.test(r);
 }
 
 function posologyToIntervals(posology: string): number {
@@ -5500,13 +5501,28 @@ const PrescricaoPage = () => {
   const createItem = (med: MedicationEntry): PrescriptionItem => {
     const autoUnit = detectQuantityUnit(med.presentation, med.defaultDose);
     const autoDefaults = detectDiluentDefaults(med.instructions || '');
-    const isIV = isIVRoute(med.defaultRoute);
+    // Inferência por NOME corrige drogas do banco sem via/apresentacao cadastrada
+    // (ex.: Fluconazol EV vinha sem route e era tratado como oral/cápsula no corpo).
+    // CUIDADO: algumas drogas (fluconazol) existem em forma oral E EV. A inferência por
+    // nome só assume EV quando NÃO há indicação explícita de via oral, para não inverter o erro.
+    const _routeNorm = (med.defaultRoute || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const _presNorm = (med.presentation || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const explicitlyOral = /(oral|\bvo\b|sublingual|enteral|sonda)/.test(_routeNorm)
+      || /(comprimido|capsula|cap\.|dragea|drágea|gota|xarope|suspensao|solucao oral|sache|sachê)/.test(_presNorm);
+    const inferredType = inferPresentationType(med.presentation, med.defaultRoute, med.name);
+    const inferredIV = !explicitlyOral && (inferredType === 'iv_continuous' || inferredType === 'iv_intermittent' || inferredType === 'iv_bolus');
+    // Via efetiva: usa a cadastrada; só assume Intravenosa se ausente/ambígua E nome indica EV E não é oral.
+    const routeIsAmbiguous = !med.defaultRoute || !med.defaultRoute.trim();
+    const effectiveRoute = !routeIsAmbiguous
+      ? med.defaultRoute
+      : (inferredIV ? 'Intravenosa' : med.defaultRoute);
+    const isIV = isIVRoute(effectiveRoute) || inferredIV;
     const baseItem: PrescriptionItem = {
       id: crypto.randomUUID(),
       name: med.name,
       presentation: med.presentation,
       dose: med.defaultDose,
-      route: med.defaultRoute,
+      route: effectiveRoute,
       posology: med.defaultPosology,
       schedule: '',
       instructions: "", // Recomendação sempre em branco — preenchimento exclusivo do médico
