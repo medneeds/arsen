@@ -706,7 +706,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           utiDischargePrediction={diagCtx.utiDischargePrediction}
                           onUtiDischargePredictionChange={diagCtx.updateUtiDischargePrediction}
                           isPalliative={diagCtx.isPalliative}
-                          onIsPalliativeChange={diagCtx.updateIsPalliative}
+                          onPalliativeChange={diagCtx.updateIsPalliative}
                           isolationPrecautions={diagCtx.isolationPrecautions}
                           onIsolationPrecautionsChange={diagCtx.updateIsolationPrecautions}
                         />
