@@ -348,7 +348,25 @@ const RequisicaoImagensPage = () => {
             const plano = stripHtml(soap.plan || "");
             if (plano) parts.push(`Conduta: ${plano}`);
             if (latestEvol.diagnostic_hypotheses) {
-              parts.push(`Hipóteses diagnósticas: ${latestEvol.diagnostic_hypotheses}`);
+              let hypoText: any = latestEvol.diagnostic_hypotheses;
+              try {
+                const parsed = typeof hypoText === "string" ? JSON.parse(hypoText) : hypoText;
+                if (Array.isArray(parsed)) {
+                  hypoText = parsed
+                    .map((h: any) => String(h).trim())
+                    .filter(Boolean)
+                    .join("; ");
+                } else if (parsed && typeof parsed === "object") {
+                  hypoText = Object.values(parsed)
+                    .map((h: any) => String(h).trim())
+                    .filter(Boolean)
+                    .join("; ");
+                }
+              } catch {
+                /* mantém como texto se não for JSON */
+              }
+              const cleanHypo = stripHtml(String(hypoText || "").trim());
+              if (cleanHypo) parts.push(`Hipóteses diagnósticas: ${cleanHypo}`);
             }
             const obsText = parts.join("\n").trim();
             if (obsText) setObservations((prev) => prev || obsText);
