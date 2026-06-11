@@ -257,10 +257,14 @@ const RequisicaoImagensPage = () => {
           }
           const { data: ah } = await ahQuery.maybeSingle();
           if (ah) {
-            // Extrai só o código CID (ex: "I63.9 - AVC Isquêmico" → "I63.9")
-            const extractCode = (raw: string) => raw.split(/[\s—–-]/)[0].trim();
+            // Extrai só o código CID válido (ex: "I63.9 - AVC" → "I63.9", "i64" → "I64")
+            // Ignora texto livre como "ACIDENTE", "CIRROS".
+            const extractCode = (raw: string) => {
+              const match = raw.match(/([A-Za-z]\d{2}\.?\d*)/);
+              return match ? match[1].toUpperCase() : "";
+            };
             const extractDesc = (raw: string) =>
-              raw.replace(/^[\w.]+\s*[-–—]\s*/, "").trim();
+              raw.replace(/^[A-Za-z]\d{2}\.?\d*\s*[-–—]\s*/, "").trim();
 
             if (ah.cid_primary) {
               const primaryStr = String(ah.cid_primary);
