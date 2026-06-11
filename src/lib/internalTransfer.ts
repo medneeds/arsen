@@ -407,6 +407,27 @@ export async function signalInternalTransfer(
       .single();
     if (insertError) throw insertError;
 
+    // ── PASSO 2: registra patient_movements ANTES de vagar o leito ─────
+    // CRÍTICO: o guard de tg_archive_on_bed_vacate procura este registro.
+    // Se gravarmos depois do UPDATE patients, a trigger arquiva tudo.
+    try {
+      const { error: movErr } = await supabase.from("patient_movements").insert({
+        patient_id: source.id, patient_name: source.name,
+        patient_bed: source.bedNumber, patient_sector: source.sector,
+        movement_type: "TRANSFERÊNCIA INTERNA — SINALIZADA",
+        destination: sectorLabelFromCode(targetSectorCode),
+        notes: `Etapa 1/2 — Sinalização para ${sectorLabelFromCode(targetSectorCode)} (${classification})` +
+          (needsSaps ? " — escalada crítica: exigirá SAPS 3 após alocação" : "") +
+          (reason ? ` | Motivo: ${reason}` : ""),
+        created_by: currentUserId ?? null, patient_snapshot: snapshot as any,
+        department: department ?? null, state_id: stateId, hospital_unit_id: hospitalUnitId,
+      });
+      if (movErr) console.error("[signalInternalTransfer] falha ao registrar patient_movements:", movErr);
+    } catch (e) {
+      console.error("[signalInternalTransfer] falha ao registrar patient_movements:", e);
+    }
+
+    // ── PASSO 3: vaga o leito (trigger dispara com movement já no banco) ──
     const { error: clearError } = await supabase
       .from("patients")
       .update({
@@ -430,22 +451,6 @@ export async function signalInternalTransfer(
 
     invalidateResolvedRegistry(source.id);
 
-    try {
-      const { error: movErr } = await supabase.from("patient_movements").insert({
-        patient_id: source.id, patient_name: source.name,
-        patient_bed: source.bedNumber, patient_sector: source.sector,
-        movement_type: "TRANSFERÊNCIA INTERNA — SINALIZADA",
-        destination: sectorLabelFromCode(targetSectorCode),
-        notes: `Etapa 1/2 — Sinalização para ${sectorLabelFromCode(targetSectorCode)} (${classification})` +
-          (needsSaps ? " — escalada crítica: exigirá SAPS 3 após alocação" : "") +
-          (reason ? ` | Motivo: ${reason}` : ""),
-        created_by: currentUserId ?? null, patient_snapshot: snapshot as any,
-        department: department ?? null, state_id: stateId, hospital_unit_id: hospitalUnitId,
-      });
-      if (movErr) console.error("[signalInternalTransfer] falha ao registrar patient_movements:", movErr);
-    } catch (e) {
-      console.error("[signalInternalTransfer] falha ao registrar patient_movements:", e);
-    }
 
     return { ok: true, requestId: inserted?.id, classification, needsSaps };
   } catch (err: any) {
