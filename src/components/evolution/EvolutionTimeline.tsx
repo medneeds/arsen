@@ -20,6 +20,7 @@ import { EvolutionRecord } from "@/hooks/useEvolutions";
 import { EvolutionForm } from "./EvolutionForm";
 import { DiagnosticsPanel } from "./DiagnosticsPanel";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePatientDiagnosticContext } from "@/hooks/usePatientDiagnosticContext";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
