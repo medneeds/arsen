@@ -243,28 +243,103 @@ const RequisicaoImagensPage = () => {
 
         // 2) Hidrata CID-10 + diagnóstico a partir da admissão validada do paciente
         //    (não sobrescreve campos já preenchidos manualmente).
+        const fetchedRegistryId: string | null = (pat as any).patient_registry_id || null;
         try {
-          const { data: ah } = await supabase
+          let ahQuery = supabase
             .from("admission_histories")
-            .select("cid_primary, cid_secondary, diagnostic_hypothesis, macro_diagnosis, chief_complaint")
-            .eq("patient_id", patientId)
+            .select("cid_primary, cid_secondary, diagnostic_hypothesis, macro_diagnosis, chief_complaint, created_at")
             .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
+            .limit(1);
+          if (fetchedRegistryId) {
+            ahQuery = ahQuery.or(`patient_id.eq.${patientId},patient_registry_id.eq.${fetchedRegistryId}`);
+          } else {
+            ahQuery = ahQuery.eq("patient_id", patientId);
+          }
+          const { data: ah } = await ahQuery.maybeSingle();
           if (ah) {
-            setCidPrimary((prev) => prev || (ah.cid_primary || ""));
-            setCidSecondary((prev) => prev || (ah.cid_secondary || ""));
-            setDiagnosis((prev) =>
-              prev ||
-              ah.diagnostic_hypothesis ||
-              ah.macro_diagnosis ||
-              ah.chief_complaint ||
-              ""
-            );
+            // Extrai só o código CID (ex: "I63.9 - AVC Isquêmico" → "I63.9")
+            const extractCode = (raw: string) => raw.split(/[\s—–-]/)[0].trim();
+            const extractDesc = (raw: string) =>
+              raw.replace(/^[\w.]+\s*[-–—]\s*/, "").trim();
+
+            if (ah.cid_primary) {
+              const primaryStr = String(ah.cid_primary);
+              setCidPrimary((prev) => prev || extractCode(primaryStr));
+              const desc = extractDesc(primaryStr);
+              setDiagnosis((prev) =>
+                prev ||
+                ah.diagnostic_hypothesis ||
+                desc ||
+                ah.macro_diagnosis ||
+                ah.chief_complaint ||
+                "",
+              );
+            } else {
+              setDiagnosis((prev) =>
+                prev ||
+                ah.diagnostic_hypothesis ||
+                ah.macro_diagnosis ||
+                ah.chief_complaint ||
+                "",
+              );
+            }
+            if (ah.cid_secondary) {
+              const secArr = Array.isArray(ah.cid_secondary)
+                ? ah.cid_secondary
+                : [ah.cid_secondary];
+              const firstSec = secArr[0];
+              if (firstSec) {
+                setCidSecondary((prev) => prev || String(firstSec).split(/[\s—–-]/)[0].trim());
+              }
+            }
           }
         } catch (err) {
           console.error("[APAC] admission hydrate error", err);
         }
+
+        // 3) Hidrata Observações (campo 40) a partir da última evolução validada.
+        //    Concatena SOAP (S/A/P) + hipóteses, sem sobrescrever edição manual.
+        try {
+          let evQuery = supabase
+            .from("clinical_evolutions")
+            .select("soap_data, diagnostic_hypotheses, created_at, validated_at")
+            .eq("status", "validated")
+            .is("archived_at", null)
+            .order("created_at", { ascending: false })
+            .limit(1);
+          if (fetchedRegistryId) {
+            evQuery = evQuery.or(
+              `patient_id.eq.${patientId},patient_registry_id.eq.${fetchedRegistryId}`,
+            );
+          } else {
+            evQuery = evQuery.eq("patient_id", patientId);
+          }
+          const { data: latestEvol } = await evQuery.maybeSingle();
+          if (latestEvol?.soap_data) {
+            const soap = latestEvol.soap_data as any;
+            const evolDate = latestEvol.validated_at || latestEvol.created_at;
+            const dateStr = evolDate ? new Date(evolDate).toLocaleDateString("pt-BR") : "";
+            const stripHtml = (html: string) =>
+              (html || "").replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim();
+
+            const parts: string[] = [];
+            if (dateStr) parts.push(`Evolução de ${dateStr}:`);
+            const evolucao = stripHtml(soap.subjective || soap.evolucao || "");
+            if (evolucao) parts.push(evolucao);
+            const avaliacao = stripHtml(soap.assessment || "");
+            if (avaliacao && avaliacao !== evolucao) parts.push(`Avaliação: ${avaliacao}`);
+            const plano = stripHtml(soap.plan || "");
+            if (plano) parts.push(`Conduta: ${plano}`);
+            if (latestEvol.diagnostic_hypotheses) {
+              parts.push(`Hipóteses diagnósticas: ${latestEvol.diagnostic_hypotheses}`);
+            }
+            const obsText = parts.join("\n").trim();
+            if (obsText) setObservations((prev) => prev || obsText);
+          }
+        } catch (err) {
+          console.error("[APAC] evolution hydrate error", err);
+        }
+
 
         // Notify when key SUS field is missing — APAC requires CNS
         if (!reg?.cns) {
