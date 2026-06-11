@@ -2654,11 +2654,17 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     onChange={(e) => {
                       onUpdate(item.id, "quantity", e.target.value);
                       const tempItem = { ...item, quantity: e.target.value };
-                      const autoVol = calcVolumeTotal(tempItem);
-                      if (autoVol) {
-                        onUpdate(item.id, "volumeTotal", autoVol);
-                        const autoConc = calcConcentration({ ...tempItem, volumeTotal: autoVol });
-                        if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                      // Só recalcula volumeTotal quando a unidade é mL — caso contrário
+                      // (frasco, amp, comp...) o medVol vem da dose do catálogo e
+                      // sobrescreveria qualquer valor que o usuário editou manualmente.
+                      const isQtyMl = (tempItem.quantityUnit || '').toLowerCase() === 'ml';
+                      if (isQtyMl) {
+                        const autoVol = calcVolumeTotal(tempItem);
+                        if (autoVol) {
+                          onUpdate(item.id, "volumeTotal", autoVol);
+                          const autoConc = calcConcentration({ ...tempItem, volumeTotal: autoVol });
+                          if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                        }
                       }
                     }}
                     className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 px-1.5 text-center focus-visible:ring-1 focus-visible:ring-primary"
@@ -2687,11 +2693,18 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   <Select value={item.diluent || ''} onValueChange={(v) => {
                     onUpdate(item.id, "diluent", v);
                     const tempItem = { ...item, diluent: v };
-                    const autoVol = calcVolumeTotal(tempItem);
-                    if (autoVol) {
-                      onUpdate(item.id, "volumeTotal", autoVol);
-                      const autoConc = calcConcentration({ ...tempItem, volumeTotal: autoVol });
-                      if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                    // Só recalcula volumeTotal quando há diluentVolume já definido (soma
+                    // tem sentido) ou quando o diluente está sendo removido — evita
+                    // sobrescrever valor editado manualmente pelo usuário ao apenas
+                    // selecionar o tipo de diluente sem informar o volume.
+                    const hasDilVol = parseFloat(item.diluentVolume || '') > 0;
+                    if (v === 'sem_diluente' || hasDilVol) {
+                      const autoVol = calcVolumeTotal(tempItem);
+                      if (autoVol) {
+                        onUpdate(item.id, "volumeTotal", autoVol);
+                        const autoConc = calcConcentration({ ...tempItem, volumeTotal: autoVol });
+                        if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                      }
                     }
                     if (v === 'sem_diluente') {
                       onUpdate(item.id, "diluentVolume", '');
