@@ -157,7 +157,6 @@ const CATEGORIES = {
       { group: "Urina", items: ["EAS/Urina Tipo I", "Creatinina Urinária", "Ureia Urinária", "Sódio Urinário", "Potássio Urinário", "Proteinúria 24h", "Microalbuminúria", "Clearance de Creatinina", "Urocultura", "Relação Proteína/Creatinina Urinária", "Osmolaridade Urinária"] },
       { group: "Sorologias", items: ["Sífilis (VDRL)", "HBsAg", "Anti-HBc", "Anti-HBs", "Anti-HCV", "Anti-HIV", "Anti-HAV IgM", "Anti-HAV IgG"] },
       { group: "Imunologia / Reumatologia", items: ["FAN", "Fator Reumatoide", "Anti-DNA", "Complemento C3", "Complemento C4", "Anti-CCP", "ANCA", "Imunoglobulinas (IgG/IgA/IgM)"] },
-      { group: "Sorologias", items: ["Sífilis (VDRL)", "HBsAg", "Anti-HBc", "Anti-HBs", "Anti-HCV", "Anti-HIV"] },
     ],
   },
   imagem: {
