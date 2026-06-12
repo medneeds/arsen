@@ -821,13 +821,17 @@ function buildInlinePrepLine(item: PrescriptionItem): string {
     segs.push(`Reconstituir ${qtyFA} FA em ${item.reconstitutionVolume}mL ${item.reconstitutionSolvent}`);
   }
 
-  // Dil.: SF0,9% 96mL
+  // Dil.: SF0,9% 96mL  —  ou "Sem diluente" quando o médico marca explicitamente
   const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
   if (hasDiluent) {
+    const dilLabel = item.diluent === 'diluente_proprio' ? 'Diluente próprio' : item.diluent;
     const dilPart = item.diluentVolume
-      ? `Dil.: ${item.diluent} ${item.diluentVolume}mL`
-      : `Dil.: ${item.diluent}`;
+      ? `Dil.: ${dilLabel} ${item.diluentVolume}mL`
+      : `Dil.: ${dilLabel}`;
     segs.push(dilPart);
+  } else if (item.diluent === 'sem_diluente') {
+    // Exibe explicitamente quando o médico declarou que não há diluição (ponto 6).
+    segs.push('Sem diluente');
   }
 
   // Vol.: 100mL (só quando diferente do diluente)
@@ -4669,7 +4673,10 @@ const PrescricaoPage = () => {
     // Escape universal removido.
     if (ptype === 'iv_continuous') {
       if (empty(item.diluent)) missing.push('diluente');
-      if (empty(item.volumeTotal) && empty(item.diluentVolume)) {
+      // Quando "sem diluente" (medicamento puro na seringa, ex.: Propofol),
+      // não há volume de diluição a exigir — evita travamento indevido (ponto 8).
+      if (item.diluent !== 'sem_diluente'
+          && empty(item.volumeTotal) && empty(item.diluentVolume)) {
         missing.push('volume total');
       }
       if (empty(item.infusionTime) && empty(item.infusionRate)) {
