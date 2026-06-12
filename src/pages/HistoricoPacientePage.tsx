@@ -310,12 +310,25 @@ export default function HistoricoPacientePage() {
             {grouped.map(([day, items]) => (
               <div key={day}>
                 <div className="sticky top-[105px] z-[1] bg-background/95 backdrop-blur py-1.5 mb-2 border-b print:static">
-                  <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    {format(new Date(day + "T00:00:00"), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                    <Badge variant="secondary" className="ml-2 h-4 text-[10px]">
-                      {items.length}
-                    </Badge>
-                  </h2>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      {format(new Date(day + "T00:00:00"), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                      <Badge variant="secondary" className="ml-2 h-4 text-[10px]">
+                        {items.length}
+                      </Badge>
+                    </h2>
+                    <button
+                      onClick={() => printEvents(
+                        items,
+                        format(new Date(day + "T00:00:00"), "EEEE, dd/MM/yyyy", { locale: ptBR })
+                      )}
+                      className="print:hidden flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-muted"
+                      title="Imprimir registros deste dia"
+                    >
+                      <Printer className="h-3 w-3" />
+                      Imprimir dia
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-2 pl-2 border-l-2 border-border ml-2">
                   {items.map((e) => {
