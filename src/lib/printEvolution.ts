@@ -389,7 +389,7 @@ export const printEvolution = async (
           background: #fff;
           z-index: 10;
         }
-        .nz-body-content { margin-top: 90px; }
+        .nz-body-content { margin-top: 185px; }
       }
     `,
   });
