@@ -169,7 +169,7 @@ export const printEvolution = async (
   const labelS = `${cellS};font-weight:700;font-size:6.5pt;background:#f1f5f9;color:#334155;text-transform:uppercase;letter-spacing:0.3px`;
 
   const patientHeader = `
-    <table style="width:100%;border-collapse:collapse;margin-bottom:6pt;page-break-inside:avoid">
+    <table id="patient-header-repeat" style="width:100%;border-collapse:collapse;margin-bottom:4pt;page-break-inside:avoid">
       <tbody>
         <tr>
           <td style="${labelS}">Paciente</td>
@@ -209,7 +209,7 @@ export const printEvolution = async (
   const diagnosticsHtml = hasDiagnostics
     ? `
       <h2 class="nz-section">Diagnósticos</h2>
-      <table class="nz" style="font-size:8.5pt;margin-bottom:6pt"><tbody>
+      <table class="nz" style="font-size:8.5pt;margin-bottom:3pt"><tbody>
         ${cidPrimary ? `<tr><th style="width:140px">CID-10 Primário</th><td>${escape(cidPrimary)}</td></tr>` : ""}
         ${cidSecondary ? `<tr><th>CID-10 Secundário</th><td>${escape(cidSecondary)}</td></tr>` : ""}
         ${hypothesesText ? `<tr><th>Hipóteses Diagnósticas</th><td>${escape(hypothesesText)}</td></tr>` : ""}
@@ -230,7 +230,7 @@ export const printEvolution = async (
 
   const antecedentesHtml = antecedentesArr.length > 0
     ? `<h2 class="nz-section">Antecedentes Clínicos</h2>
-       <table style="width:100%;border-collapse:collapse;background:#eff6ff;border:1px solid #bfdbfe;border-radius:3pt;margin-bottom:6pt">
+       <table style="width:100%;border-collapse:collapse;background:#eff6ff;border:1px solid #bfdbfe;border-radius:3pt;margin-bottom:3pt">
          <tbody>
            ${antecedentesArr.map((a, i) =>
              `<tr><td style="width:18pt;padding:2pt 4pt;font-weight:700;color:#1d4ed8;vertical-align:top;font-size:8pt">${i+1}.</td><td style="padding:2pt 4pt;font-size:8.5pt;line-height:1.35">${escape(a)}</td></tr>`
@@ -369,7 +369,7 @@ export const printEvolution = async (
       },
     ],
     extraStyles: `
-      .nz-section { font-size: 9pt; margin-top: 7pt; margin-bottom: 3pt; }
+      .nz-section { font-size: 9pt; margin-top: 4pt; margin-bottom: 2pt; }
       .nz-rich p { margin: 0 0 4pt 0; }
       .nz-rich p:last-child { margin-bottom: 0; }
       .nz-rich ul, .nz-rich ol { margin: 3pt 0 4pt 16pt; padding: 0; }
@@ -377,6 +377,20 @@ export const printEvolution = async (
       .nz-rich strong, .nz-rich b { font-weight: 600; }
       .nz-rich em, .nz-rich i { font-style: italic; }
       .nz-rich u { text-decoration: underline; }
+      @media print {
+        #patient-header-repeat {
+          position: fixed;
+          top: 95px;
+          left: 0;
+          right: 0;
+          display: table;
+          width: 100%;
+          page-break-inside: avoid;
+          background: #fff;
+          z-index: 10;
+        }
+        .nz-body-content { margin-top: 90px; }
+      }
     `,
   });
 
