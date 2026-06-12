@@ -29,6 +29,16 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { SectionLoader } from "@/components/SectionLoader";
+import { supabase } from "@/integrations/supabase/client";
+
+const PRINTABLE_TYPES = new Set<TimelineEventType>([
+  "evolution",
+  "prescription",
+  "exam_request",
+  "admission_history",
+  "discharge_document",
+  "culture_result",
+]);
 
 const ICONS: Record<TimelineEventType, React.ElementType> = {
   pre_admission: Hospital,
