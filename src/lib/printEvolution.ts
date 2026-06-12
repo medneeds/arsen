@@ -380,7 +380,7 @@ export const printEvolution = async (
       @media print {
         #patient-header-repeat {
           position: fixed;
-          top: 95px;
+          top: 112px;
           left: 0;
           right: 0;
           display: table;
