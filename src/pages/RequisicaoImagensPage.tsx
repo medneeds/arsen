@@ -464,7 +464,7 @@ const RequisicaoImagensPage = () => {
     toast.info("Formulário limpo — paciente será re-sincronizado do prontuário");
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (selectedProcedures.length === 0) {
       toast.error("Adicione ao menos um procedimento");
       return;
@@ -473,6 +473,74 @@ const RequisicaoImagensPage = () => {
       toast.error("Informe o nome do paciente");
       return;
     }
+
+    // ── Persistir APAC em exam_requests (rastreamento no histórico) ──
+    const pid = searchParams.get("patientId");
+    const validPid = pid && pid.length > 10 ? pid : null;
+    const urlBed = searchParams.get("patientBed") || "";
+    const urlSector = searchParams.get("patientSector") || "";
+    if (validPid) {
+      try {
+        const { data: patRow } = await supabase
+          .from("patients")
+          .select("patient_registry_id, hospital_unit_id, state_id")
+          .eq("id", validPid)
+          .maybeSingle();
+        const registryId = (patRow as any)?.patient_registry_id ?? null;
+        const hospitalUnitId = (patRow as any)?.hospital_unit_id ?? null;
+        const stateId = (patRow as any)?.state_id ?? null;
+
+        let encounterId: string | null = null;
+        if (registryId) {
+          const { data: encRow } = await supabase
+            .from("patient_encounters")
+            .select("id")
+            .eq("registry_id", registryId)
+            .eq("status", "active")
+            .order("admission_date", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          encounterId = (encRow as any)?.id ?? null;
+        }
+
+        const apacItems = selectedProcedures
+          .filter((p: any) => p.code || p.name)
+          .map((p: any) => ({
+            code: p.code || "",
+            name: p.name || "",
+            quantity: p.quantity ?? 1,
+          }));
+
+        const notesMeta: string[] = [];
+        if (cidPrimary) notesMeta.push(`CID Principal: ${cidPrimary}`);
+        if (cidSecondary) notesMeta.push(`CID Secundário: ${cidSecondary}`);
+        if (cidAssociated) notesMeta.push(`CID Associado: ${cidAssociated}`);
+        if (diagnosis) notesMeta.push(`Diagnóstico: ${diagnosis}`);
+        if (doctorName) notesMeta.push(`Médico: ${doctorName}${doctorCRM ? ` (CRM ${doctorCRM})` : ""}`);
+
+        await supabase.from("exam_requests").insert({
+          patient_id: validPid,
+          patient_registry_id: registryId,
+          encounter_id: encounterId,
+          patient_name: patientName || "",
+          patient_bed: urlBed,
+          patient_sector: urlSector,
+          category: "apac",
+          items: apacItems.length > 0 ? apacItems : [{ name: "APAC" }],
+          clinical_indication: observations || "",
+          priority: "eletivo",
+          status: "solicitado",
+          notes: notesMeta.join(" | ") || null,
+          requested_by: user?.id ?? null,
+          requested_by_name: doctorName || null,
+          hospital_unit_id: hospitalUnitId,
+          state_id: stateId,
+        } as any);
+      } catch (err) {
+        console.warn("[APAC] falha ao registrar em exam_requests:", err);
+      }
+    }
+
     window.print();
   };
 
