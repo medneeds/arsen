@@ -247,7 +247,7 @@ export const printEvolution = async (
     ? `<h2 class="nz-section">Programações e Pendências</h2><ul class="nz-list">${pendItems.map((p, i) => `<li>${i + 1}. ${p}</li>`).join('')}</ul>`
     : '';
 
-  let bodyHtml = patientHeader + diagnosticsHtml + antecedentesHtml;
+  let sectionsHtml = diagnosticsHtml + antecedentesHtml;
 
   if (intercurrence) {
     const evoTypeLabel = {
@@ -256,7 +256,7 @@ export const printEvolution = async (
       noturna:       "Evolução Noturna",
     }[getEvolutionType(evo)] ?? "Intercorrência";
 
-    bodyHtml += `
+    sectionsHtml += `
       <h2 class="nz-section">${evoTypeLabel}</h2>
       <div class="nz-rich" style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8.5pt;line-height:1.35">
         ${renderRich(evo.soap_data.subjective)}
@@ -291,7 +291,7 @@ export const printEvolution = async (
     const evolucaoHtml = [subjHtml, assessHtml].filter((h) => richHtmlToPlainText(h)).join("");
     const evolucaoOut = evolucaoHtml || "<em>—</em>";
 
-    bodyHtml += `
+    sectionsHtml += `
       ${
         vitalsRow
           ? `<h2 class="nz-section">Sinais Vitais</h2><div style="padding:5pt 7pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8pt">${vitalsRow}</div>`
@@ -332,6 +332,22 @@ export const printEvolution = async (
       })()}
     `;
   }
+
+  const bodyHtml = `
+    <table id="evo-print-wrapper" style="width:100%;border-collapse:collapse;table-layout:fixed">
+      <thead id="evo-print-thead">
+        <tr><td style="padding:0;border:none">
+          <div id="nz-thead-spacer" style="height:0;display:block"></div>
+          ${patientHeader}
+        </td></tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:0;border:none">
+          ${sectionsHtml}
+        </td></tr>
+      </tbody>
+    </table>
+  `;
 
 
 
@@ -377,20 +393,6 @@ export const printEvolution = async (
       .nz-rich strong, .nz-rich b { font-weight: 600; }
       .nz-rich em, .nz-rich i { font-style: italic; }
       .nz-rich u { text-decoration: underline; }
-      @media print {
-        #patient-header-repeat {
-          position: fixed;
-          top: 112px;
-          left: 0;
-          right: 0;
-          display: table;
-          width: 100%;
-          page-break-inside: avoid;
-          background: #fff;
-          z-index: 10;
-        }
-        .nz-body-content { margin-top: 185px; }
-      }
     `,
   });
 
