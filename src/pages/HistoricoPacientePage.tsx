@@ -375,13 +375,18 @@ export default function HistoricoPacientePage() {
                                 <p className="text-xs text-muted-foreground mt-0.5">{e.summary}</p>
                               )}
                             </div>
-                            <button
-                              onClick={() => printEvents([e], EVENT_TYPE_LABELS[e.event_type] ?? e.event_label ?? "Evento")}
-                              className="print:hidden opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-                              title="Imprimir este registro"
-                            >
-                              <Printer className="h-3.5 w-3.5" />
-                            </button>
+                            {PRINTABLE_TYPES.has(e.event_type) && (
+                              <button
+                                onClick={() => printDocumentFromHistory(e)}
+                                disabled={printingId === e.event_id}
+                                className="print:hidden opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-50"
+                                title="Imprimir documento"
+                              >
+                                {printingId === e.event_id
+                                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  : <Printer className="h-3.5 w-3.5" />}
+                              </button>
+                            )}
                           </div>
                         </Card>
                       </div>
