@@ -333,8 +333,16 @@ export const printEvolution = async (
     `;
   }
 
+  // Divide sectionsHtml em múltiplos <tr> (um por seção h2) para que o Chrome
+  // posicione cada linha APÓS o <thead> repetido em cada página, evitando corte de conteúdo.
+  const sectionRows = sectionsHtml
+    .split(/(?=<h2 class="nz-section)/)
+    .filter(s => s.trim().length > 0)
+    .map(s => `<tr style="page-break-inside:avoid"><td style="padding:0;border:none">${s}</td></tr>`)
+    .join('');
+
   const bodyHtml = `
-    ${patientHeader}
+    <div style="height:0;overflow:visible">${patientHeader}</div>
     <table id="evo-print-wrapper" style="width:100%;border-collapse:collapse">
       <thead id="evo-print-thead">
         <tr><td style="padding:0;border:none">
@@ -342,9 +350,7 @@ export const printEvolution = async (
         </td></tr>
       </thead>
       <tbody>
-        <tr><td style="padding:0;border:none">
-          ${sectionsHtml}
-        </td></tr>
+        ${sectionRows}
       </tbody>
     </table>
   `;
