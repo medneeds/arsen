@@ -704,6 +704,9 @@ function buildSolutoToken(item: PrescriptionItem): string {
   if (isPureMlVolume) {
     if (isVolumeUnit) {
       // Prescrito em mL: usar qtyStr ("20 mL") em vez do dose da ampola
+      // Se qty é o padrão '1' e doseRaw traz o volume real (ex: '100mL', '500mL'),
+      // o médico não editou a quantidade — usar doseRaw para evitar exibir "1 mL"
+      if (qty === '1' && doseRaw) return doseRaw;
       return qtyStr || doseRaw;
     }
     if (isUnitUnit && qtyStr) {
