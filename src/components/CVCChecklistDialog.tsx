@@ -30,6 +30,7 @@ import { resolvePatientHeader, resolveCurrentBedSector } from "@/lib/resolvePati
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
+import { formatDateBR } from "@/utils/dateUtils";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -137,6 +138,9 @@ export function CVCChecklistDialog({
     if (!validPid || !currentHospital?.id) return;
     resolvePatientHeader(validPid, patientName, currentHospital.id).then((h) => {
       if (h.name) setResolvedName(h.name);
+      // Sincroniza a data de nascimento a partir do cadastro do paciente.
+      // O dado já vem resolvido — preenche o campo automaticamente (continua editável).
+      if (h.birthDate) setDataNascimento(formatDateBR(h.birthDate));
     });
     resolveCurrentBedSector(validPid).then(({ bed, sector }) => {
       if (bed) setResolvedBed(bed);
