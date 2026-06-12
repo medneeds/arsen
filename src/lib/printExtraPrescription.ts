@@ -162,31 +162,47 @@ function buildLine2(it: ExtraPrintItem): string {
   }
 
   // Medicação / Hidratação / ATB / High Alert — campos explícitos, SEM frases automáticas
+  // NOVA ORDEM (raciocínio do médico): DOSE · Dil. · Vol. · Via · Acesso · Intervalo · Modo · Tempo · Vazão
   const parts: string[] = [];
 
+  // 1. Dose
   if (it.dose && it.dose !== '-') parts.push(escape(it.dose));
 
+  // 2. Diluente — logo após a dose (ou "Sem diluente" explícito)
   if (it.diluent && it.diluent !== '-' && it.diluent !== 'sem_diluente') {
-    parts.push(`Diluente: ${escape(it.diluent)}${it.diluentVolume ? ` ${escape(it.diluentVolume)} mL` : ''}`);
+    const dilLabel = it.diluent === 'diluente_proprio' ? 'Diluente próprio' : escape(it.diluent);
+    parts.push(`Dil.: ${dilLabel}${it.diluentVolume ? ` ${escape(it.diluentVolume)} mL` : ''}`);
   } else if (it.diluent === 'sem_diluente') {
-    parts.push('Sem diluição');
+    parts.push('Sem diluente');
   }
 
-  if (it.volumeTotal) parts.push(`Vol. final: ${escape(it.volumeTotal)} mL`);
+  // 3. Volume total
+  if (it.volumeTotal) parts.push(`Vol.: ${escape(it.volumeTotal)} mL`);
+
+  // 4. Via
   if (it.route && it.route !== '-') parts.push(escape(it.route));
+
+  // 5. Acesso (só quando preenchido)
+  if (it.accessType && it.accessType !== '-') parts.push(escape(it.accessType));
+
+  // 6. Intervalo / posologia
   if (it.posology && it.posology !== '-') parts.push(escape(it.posology));
 
-  if (it.infusionTime) {
+  // 7. Modo (BIC/Bolus)
+  if (it.ivBolus) parts.push('Bolus EV');
+  else if (it.infusionMode === 'BIC') parts.push('BIC');
+
+  // 8. Tempo de infusão (não em bolus)
+  if (!it.ivBolus && it.infusionTime) {
     const unit = it.infusionTimeUnit === 'h' ? 'h' : 'min';
-    parts.push(`Tempo: ${escape(it.infusionTime)}${unit}`);
+    parts.push(`Correr em: ${escape(it.infusionTime)}${unit}`);
   }
 
-  if (it.infusionRate) {
+  // 9. Vazão (não em bolus)
+  if (!it.ivBolus && it.infusionRate) {
     const rateUnit = it.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
     parts.push(`Vazão: ${escape(it.infusionRate)} ${rateUnit}`);
   }
-
-  if (it.infusionMode === 'BIC') parts.push('BIC');
 
   if (!parts.length) return '';
   return `<div style="font-size:8pt;color:#444;line-height:1.4;margin-top:2pt">${parts.join(` ${SEP} `)}</div>`;

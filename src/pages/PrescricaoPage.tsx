@@ -869,6 +869,73 @@ function buildInlinePrepLine(item: PrescriptionItem): string {
   return segs.join('  |  ');
 }
 
+/**
+ * Separa o preparo em duas partes para a NOVA ORDEM do PDF (dose → diluente → … ):
+ *   head = [Reconstituir, Dil.: / Sem diluente, Vol.:]  → vem COLADO à dose
+ *   tail = [Modo (BIC/Bolus), Correr em, Vazão]         → vem DEPOIS de via/intervalo
+ * Preserva integralmente os mesmos campos de buildInlinePrepLine — só reordena.
+ */
+function buildPrepSegments(item: PrescriptionItem): { head: string[]; tail: string[] } {
+  const head: string[] = [];
+  const tail: string[] = [];
+
+  if (item.category === 'inhalation' || item.category === 'nutrition') {
+    return { head, tail };
+  }
+
+  // ── HEAD ──────────────────────────────────────────────────────────────────
+  // Reconstituição (pó liofilizado) — antes do diluente
+  if (item.reconstitutionSolvent && item.reconstitutionVolume) {
+    const qtyFA = item.quantity?.trim() && item.quantity.trim() !== '0' ? item.quantity.trim() : '1';
+    head.push(`Reconstituir ${qtyFA} FA em ${item.reconstitutionVolume}mL ${item.reconstitutionSolvent}`);
+  }
+
+  // Diluente — ou "Sem diluente" explícito
+  const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
+  if (hasDiluent) {
+    const dilLabel = item.diluent === 'diluente_proprio' ? 'Diluente próprio' : item.diluent;
+    head.push(item.diluentVolume ? `Dil.: ${dilLabel} ${item.diluentVolume}mL` : `Dil.: ${dilLabel}`);
+  } else if (item.diluent === 'sem_diluente') {
+    head.push('Sem diluente');
+  }
+
+  // Volume total (só quando difere do volume do diluente)
+  if (item.volumeTotal) {
+    const volTotalNum = parseFloat(item.volumeTotal.replace(',', '.'));
+    const volDilNum = parseFloat((item.diluentVolume || '').replace(',', '.'));
+    if (volTotalNum > 0 && (!volDilNum || volTotalNum !== volDilNum)) {
+      head.push(`Vol.: ${item.volumeTotal}mL`);
+    }
+  }
+
+  // ── TAIL ──────────────────────────────────────────────────────────────────
+  // Modo de infusão
+  const isContinuous = /cont[ií]nu/i.test(item.posology || '') || item.infusionMode === 'BIC';
+  if (item.ivBolus) {
+    tail.push('Bolus EV');
+  } else if (isContinuous) {
+    tail.push('BIC');
+  }
+
+  // Correr em / Vazão — mL/h ou gts/min (SEM mcg/kg/min)
+  if (!item.ivBolus && (item.infusionTime || item.infusionRate)) {
+    const unit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
+    const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
+    if (item.infusionTime && item.infusionRate) {
+      tail.push(`Correr em: ${item.infusionTime}${unit}`);
+      tail.push(`Vazão: ${item.infusionRate} ${modeLabel}`);
+    } else if (item.infusionTime) {
+      tail.push(`Correr em: ${item.infusionTime}${unit}`);
+    } else if (item.infusionRate) {
+      tail.push(`Vazão: ${item.infusionRate} ${modeLabel}`);
+    }
+  } else if (isContinuous && !item.infusionRate && !item.infusionTime) {
+    tail.push('Vazão: conforme protocolo');
+  }
+
+  return { head, tail };
+}
+
 interface PatientHeader {
   name: string;
   birthDate: string;
@@ -3648,26 +3715,39 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
           )}
         </div>
         {!isNutrition && (() => {
-          // ── Linha 2: DOSE em destaque + via + frequência ──────────────
+          // ── Linha única (NOVA ORDEM): DOSE · Dil. · Vol. · Via · Acesso · Intervalo · Modo · Infusão ──
           const dose = buildSolutoToken(item);
           const via   = item.route && item.route !== '-' ? item.route : null;
           const freq  = item.posology && item.posology !== '-' ? item.posology : null;
-          // ── Linha 3 (inline): Dil. + Vol. + BIC/Bolus + Vazão ────────
-          const prepLine = buildInlinePrepLine(item);
+          const access = item.accessType && item.accessType !== '-' ? item.accessType : null;
+          const { head, tail } = buildPrepSegments(item);
+          const hasPrep = (head.length + tail.length) > 0;
+          type Seg = { text: string; strong?: boolean; dil?: boolean };
+          const bodySegs: Seg[] = [];
+          head.forEach(h => bodySegs.push({ text: h, dil: h.startsWith('Dil.') || h === 'Sem diluente' }));
+          if (via)  bodySegs.push({ text: via, strong: true });
+          if (access) bodySegs.push({ text: access });
+          if (freq) bodySegs.push({ text: freq, strong: true });
+          tail.forEach(t => bodySegs.push({ text: t }));
           return (
             <div style={{ marginTop: '1px' }}>
-              {/* Linha dose + via + freq */}
-              <div style={{ fontSize: '7.5pt', color: '#0f172a', lineHeight: '1.35', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0 4px' }}>
+              <div style={{ fontSize: '7.5pt', color: '#0f172a', lineHeight: '1.4', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0 3px' }}>
                 {/* DOSE — destaque visual */}
                 {dose && (
                   <span style={{ fontWeight: 800, fontSize: '8pt', color: '#0f172a', letterSpacing: '-0.1px', backgroundColor: '#f1f5f9', padding: '0 4px', borderRadius: '3px', border: '0.5px solid #cbd5e1' }}>
                     {dose}
                   </span>
                 )}
-                {via && <span style={{ color: '#334155' }}>·</span>}
-                {via && <span style={{ color: '#334155', fontWeight: 500 }}>{via}</span>}
-                {freq && <span style={{ color: '#334155' }}>·</span>}
-                {freq && <span style={{ color: '#334155', fontWeight: 600 }}>{freq}</span>}
+                {bodySegs.map((seg, i) => (
+                  <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                    <span style={{ color: '#94a3b8', fontWeight: 300 }}>·</span>
+                    <span style={{
+                      fontWeight: seg.dil ? 700 : (seg.strong ? 600 : 400),
+                      color: seg.dil ? '#0f172a' : (seg.strong ? '#334155' : '#475569'),
+                      fontSize: seg.dil ? '7.5pt' : '7pt',
+                    }}>{seg.text}</span>
+                  </span>
+                ))}
                 {/* Chips */}
                 {item.flags.length > 0 && (
                   <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '2px', color: '#fff', backgroundColor: '#0f172a', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
@@ -3679,22 +3759,12 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
                   <span style={{ fontSize: '6.5pt', fontWeight: 700, color: '#fff', backgroundColor: '#dc2626', padding: '0.5px 4px', borderRadius: '2px' }}>SUSPENSO</span>
                 )}
               </div>
-              {/* Linha inline: Dil. + Vol. + infusão — continuação visual */}
-              {prepLine && (
-                <div style={{ fontSize: '7pt', color: '#334155', lineHeight: '1.3', marginTop: '2px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0 2px' }}>
-                  {prepLine.split('  |  ').map((seg, i) => (
-                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                      {i > 0 && <span style={{ color: '#94a3b8', margin: '0 3px', fontWeight: 300 }}>|</span>}
-                      <span style={{ fontWeight: seg.startsWith('Dil.') ? 600 : 400, color: seg.startsWith('Dil.') ? '#0f172a' : '#475569' }}>{seg}</span>
-                    </span>
-                  ))}
-                  {item.instructions && (
-                    <span style={{ fontStyle: 'italic', color: '#64748b', marginLeft: '4px' }}>— {item.instructions}</span>
-                  )}
-                </div>
+              {/* Recomendação livre do médico (preservada, opcional) */}
+              {hasPrep && item.instructions && (
+                <div style={{ fontSize: '7pt', fontStyle: 'italic', color: '#64748b', lineHeight: '1.3', marginTop: '1px' }}>— {item.instructions}</div>
               )}
-              {/* Observações / instruções de preparo quando campos estruturados estão vazios */}
-              {!prepLine && item.instructions && !isNutrition && (
+              {/* Observações / instruções de preparo quando NÃO há campos estruturados (fallback) */}
+              {!hasPrep && item.instructions && !isNutrition && (
                 <div style={{
                   fontSize: '7pt',
                   color: item.ivBolus ? '#334155' : '#1e293b',
@@ -3727,9 +3797,9 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
           </div>
         )}
         {item.instructions && !hasPreparo && !isNutrition && (() => {
-          // Guard: if already rendered inline (no prepLine path), skip to avoid duplication.
-          const prepLineCheck = buildInlinePrepLine(item);
-          if (!prepLineCheck) return null; // already shown above in the !prepLine branch
+          // Guard: if already rendered inline (no prep path), skip to avoid duplication.
+          const prepCheck = buildPrepSegments(item);
+          if ((prepCheck.head.length + prepCheck.tail.length) === 0) return null; // already shown above
           return (
             <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: '1.2', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #cbd5e1' }}>
               {item.instructions}
@@ -10714,19 +10784,36 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   const dose = buildSolutoToken(item);
                   const via  = item.route && item.route !== '-' ? abbrevRoute(item.route) : null;
                   const freq = item.posology && item.posology !== '-' ? item.posology : null;
-                  const prepLine = buildInlinePrepLine(item);
+                  const access = item.accessType && item.accessType !== '-' ? item.accessType : null;
+                  const { head, tail } = buildPrepSegments(item);
                   const slots = parseScheduleSlots(item.schedule || '');
+                  const hasPrep = (head.length + tail.length) > 0;
+                  // NOVA ORDEM (raciocínio do médico): DOSE · Dil. · Vol. · Via · Acesso · Intervalo · Modo · Infusão
+                  // Segmentos do corpo da linha, na ordem definida. Cada um vira um "·"-separado.
+                  type Seg = { text: string; strong?: boolean; dil?: boolean };
+                  const bodySegs: Seg[] = [];
+                  head.forEach(h => bodySegs.push({ text: h, dil: h.startsWith('Dil.') || h === 'Sem diluente' }));
+                  if (via)  bodySegs.push({ text: via, strong: true });
+                  if (access) bodySegs.push({ text: access });
+                  if (freq) bodySegs.push({ text: freq, strong: true });
+                  tail.forEach(t => bodySegs.push({ text: t }));
                   return (
                     <div style={{ marginTop: '2px' }}>
-                      {/* Linha 2: DOSE + via + freq */}
-                      <div style={{ fontSize: '7.5pt', color: '#0f172a', lineHeight: 1.35, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0 4px' }}>
+                      {/* Linha única: DOSE + (Dil./Vol.) + Via + Acesso + Intervalo + Modo/Infusão */}
+                      <div style={{ fontSize: '7.5pt', color: '#0f172a', lineHeight: 1.4, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0 3px' }}>
                         {dose && (
                           <span style={{ fontWeight: 800, fontSize: '8pt', backgroundColor: '#f1f5f9', padding: '0 4px', borderRadius: '3px', border: '0.5px solid #cbd5e1', letterSpacing: '-0.1px' }}>{dose}</span>
                         )}
-                        {via && <span style={{ color: '#64748b' }}>·</span>}
-                        {via && <span style={{ fontWeight: 600, color: '#1e293b' }}>{via}</span>}
-                        {freq && <span style={{ color: '#64748b' }}>·</span>}
-                        {freq && <span style={{ fontWeight: 700, color: '#1e293b' }}>{freq}</span>}
+                        {bodySegs.map((seg, i) => (
+                          <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <span style={{ color: '#94a3b8', fontWeight: 300 }}>·</span>
+                            <span style={{
+                              fontWeight: seg.dil ? 700 : (seg.strong ? 700 : 500),
+                              color: seg.dil ? '#0f172a' : (seg.strong ? '#1e293b' : '#475569'),
+                              fontSize: seg.dil ? '7.5pt' : '7pt',
+                            }}>{seg.text}</span>
+                          </span>
+                        ))}
                         {slots.length > 0 && (
                           <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '4px', color: '#0c4a6e', backgroundColor: '#e0f2fe', padding: '0.5px 5px', borderRadius: '8px', letterSpacing: '0.2px' }}>⏱ {slots.join(' · ')}</span>
                         )}
@@ -10737,22 +10824,12 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                           <span style={{ fontSize: '5.5pt', fontWeight: 700, marginLeft: '2px', color: '#9a3412', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fdba74' }}>EXTRA</span>
                         )}
                       </div>
-                      {/* Linha inline: Dil. + Vol. + infusão */}
-                      {prepLine && !insulinDesc && !isInhalation && (
-                        <div style={{ fontSize: '7pt', color: '#334155', lineHeight: 1.3, marginTop: '2px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0 2px' }}>
-                          {prepLine.split('  |  ').map((seg, i) => (
-                            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                              {i > 0 && <span style={{ color: '#94a3b8', margin: '0 3px', fontWeight: 300 }}>|</span>}
-                              <span style={{ fontWeight: seg.startsWith('Dil.') ? 700 : 500, color: seg.startsWith('Dil.') ? '#0f172a' : '#475569' }}>{seg}</span>
-                            </span>
-                          ))}
-                          {item.instructions && !insulinDesc && (
-                            <span style={{ fontStyle: 'italic', color: '#64748b', marginLeft: '4px' }}>— {item.instructions}</span>
-                          )}
-                        </div>
+                      {/* Recomendação livre do médico (preservada, opcional) */}
+                      {hasPrep && item.instructions && !insulinDesc && (
+                        <div style={{ fontSize: '7pt', fontStyle: 'italic', color: '#64748b', lineHeight: 1.3, marginTop: '1px' }}>— {item.instructions}</div>
                       )}
-                      {/* Instrução de preparo quando campos estruturados estão vazios */}
-                      {!prepLine && item.instructions && !insulinDesc && !isInhalation && (
+                      {/* Instrução de preparo quando NÃO há campos estruturados (fallback) */}
+                      {!hasPrep && item.instructions && !insulinDesc && !isInhalation && (
                         <div style={{
                           fontSize: '7pt',
                           color: item.ivBolus ? '#475569' : '#1e293b',
