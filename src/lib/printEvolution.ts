@@ -393,20 +393,6 @@ export const printEvolution = async (
       .nz-rich strong, .nz-rich b { font-weight: 600; }
       .nz-rich em, .nz-rich i { font-style: italic; }
       .nz-rich u { text-decoration: underline; }
-      @media print {
-        #patient-header-repeat {
-          position: fixed;
-          top: 112px;
-          left: 0;
-          right: 0;
-          display: table;
-          width: 100%;
-          page-break-inside: avoid;
-          background: #fff;
-          z-index: 10;
-        }
-        .nz-body-content { margin-top: 185px; }
-      }
     `,
   });
 
