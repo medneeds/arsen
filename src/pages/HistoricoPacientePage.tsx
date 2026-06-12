@@ -341,7 +341,7 @@ export default function HistoricoPacientePage() {
                         )}>
                           <Icon className="h-2.5 w-2.5" />
                         </div>
-                        <Card className="p-3 hover:shadow-sm transition-shadow">
+                        <Card className="p-3 hover:shadow-sm transition-shadow group">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
@@ -364,6 +364,13 @@ export default function HistoricoPacientePage() {
                                 <p className="text-xs text-muted-foreground mt-0.5">{e.summary}</p>
                               )}
                             </div>
+                            <button
+                              onClick={() => printEvents([e], EVENT_TYPE_LABELS[e.event_type] ?? e.event_label ?? "Evento")}
+                              className="print:hidden opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                              title="Imprimir este registro"
+                            >
+                              <Printer className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         </Card>
                       </div>
