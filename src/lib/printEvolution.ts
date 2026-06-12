@@ -334,11 +334,11 @@ export const printEvolution = async (
   }
 
   const bodyHtml = `
-    <table id="evo-print-wrapper" style="width:100%;border-collapse:collapse;table-layout:fixed">
+    ${patientHeader}
+    <table id="evo-print-wrapper" style="width:100%;border-collapse:collapse">
       <thead id="evo-print-thead">
         <tr><td style="padding:0;border:none">
           <div id="nz-thead-spacer" style="height:0;display:block"></div>
-          ${patientHeader}
         </td></tr>
       </thead>
       <tbody>
