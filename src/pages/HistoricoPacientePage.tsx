@@ -210,6 +210,199 @@ export default function HistoricoPacientePage() {
     setTimeout(() => { w.print(); w.close(); }, 400);
   };
 
+  const printDocumentFromHistory = async (e: TimelineEvent) => {
+    if (!PRINTABLE_TYPES.has(e.event_type)) return;
+    setPrintingId(e.event_id);
+
+    const openPrint = (html: string) => {
+      const w = window.open("", "_blank", "width=960,height=720");
+      if (!w) return;
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      setTimeout(() => { try { w.print(); } finally { /* noop */ } }, 500);
+    };
+
+    const docHeader = (tipo: string) => `
+      <!DOCTYPE html><html lang="pt-BR"><head>
+      <meta charset="UTF-8"/>
+      <title>${tipo} — ${patientName}</title>
+      <style>
+        * { box-sizing: border-box; }
+        body { font-family:'Segoe UI',Arial,sans-serif; margin:0; padding:18px 20px; color:#1e293b; font-size:12px; }
+        .hdr { border-bottom:2px solid #0f172a; padding-bottom:8px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:flex-end; }
+        .hdr-left h1 { margin:0 0 2px; font-size:15px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
+        .hdr-left p  { margin:0; font-size:10px; color:#64748b; }
+        .hdr-right   { text-align:right; font-size:10px; color:#64748b; }
+        .doc-title   { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#0f172a; margin:0 0 12px; border-left:3px solid #0ea5e9; padding-left:8px; }
+        .section     { margin-bottom:12px; }
+        .section-lbl { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#94a3b8; margin-bottom:3px; }
+        .section-val { font-size:12px; color:#1e293b; white-space:pre-wrap; line-height:1.5; }
+        .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+        .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:12px; }
+        table { width:100%; border-collapse:collapse; margin-bottom:12px; }
+        th { background:#f8fafc; padding:5px 8px; text-align:left; font-size:9px; font-weight:700; text-transform:uppercase; color:#64748b; border-bottom:2px solid #e2e8f0; }
+        td { padding:5px 8px; font-size:11px; border-bottom:1px solid #f1f5f9; vertical-align:top; }
+        .badge { display:inline-block; padding:1px 7px; border-radius:4px; font-size:9px; font-weight:700; background:#f1f5f9; color:#334155; }
+        @page { size:A4 portrait; margin:14mm; }
+        @media print { body { padding:0; } }
+      </style></head><body>
+      <div class="hdr">
+        <div class="hdr-left">
+          <h1>${patientName}</h1>
+          <p>${[patientBed ? "Leito " + patientBed : "", patientSector ? patientSector : ""].filter(Boolean).join(" · ")}</p>
+        </div>
+        <div class="hdr-right">
+          ${tipo}<br/>
+          Impresso em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+        </div>
+      </div>`;
+
+    const stripHtml = (s: string) =>
+      (s || "").replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim();
+
+    try {
+      if (e.event_type === "evolution") {
+        const { data } = await supabase
+          .from("clinical_evolutions")
+          .select("soap_data,vital_signs,diagnostic_hypotheses,validated_by_name,created_by_name,validated_at,created_at,status,evolution_type,cid_primary")
+          .eq("id", e.event_id)
+          .maybeSingle();
+        if (!data) { alert("Evolução não encontrada."); setPrintingId(null); return; }
+        const soap = (data.soap_data ?? {}) as any;
+        const vs   = (data.vital_signs ?? {}) as any;
+        const dt   = data.validated_at || data.created_at;
+        const dateStr = dt ? format(new Date(dt), "dd/MM/yyyy 'às' HH:mm") : "";
+        let hypo: any = data.diagnostic_hypotheses ?? "";
+        try {
+          const p = typeof hypo === "string" ? JSON.parse(hypo) : hypo;
+          if (Array.isArray(p)) hypo = p.join("; ");
+        } catch { /* mantém */ }
+        const vsLine = [
+          vs.temperature ? `Temp: ${vs.temperature}°C` : "",
+          vs.heart_rate  ? `FC: ${vs.heart_rate} bpm`  : "",
+          vs.systolic_bp && vs.diastolic_bp ? `PA: ${vs.systolic_bp}/${vs.diastolic_bp} mmHg` : "",
+          vs.spo2        ? `SpO₂: ${vs.spo2}%`         : "",
+          vs.rr          ? `FR: ${vs.rr} irpm`          : "",
+        ].filter(Boolean).join("  ·  ");
+        const html = docHeader("EVOLUÇÃO CLÍNICA") + `
+          <p class="doc-title">Evolução Clínica · ${dateStr}</p>
+          <div class="grid2">
+            <div><div class="section-lbl">Autor</div><div class="section-val">${data.validated_by_name || data.created_by_name || ""}</div></div>
+            <div><div class="section-lbl">Status</div><div class="section-val"><span class="badge">${data.status ?? ""}</span></div></div>
+          </div>
+          ${vsLine ? `<div class="section"><div class="section-lbl">Sinais Vitais</div><div class="section-val">${vsLine}</div></div>` : ""}
+          ${hypo   ? `<div class="section"><div class="section-lbl">Hipóteses Diagnósticas</div><div class="section-val">${hypo}</div></div>` : ""}
+          ${soap.subjective ? `<div class="section"><div class="section-lbl">Evolução</div><div class="section-val">${stripHtml(soap.subjective)}</div></div>` : ""}
+          ${soap.assessment ? `<div class="section"><div class="section-lbl">Avaliação</div><div class="section-val">${stripHtml(soap.assessment)}</div></div>` : ""}
+          ${soap.plan       ? `<div class="section"><div class="section-lbl">Plano / Conduta</div><div class="section-val">${stripHtml(soap.plan)}</div></div>` : ""}
+        </body></html>`;
+        openPrint(html); setPrintingId(null); return;
+      }
+
+      if (e.event_type === "prescription") {
+        const { data } = await supabase
+          .from("prescriptions")
+          .select("items,patient_data,status,version,created_at,notes")
+          .eq("id", e.event_id)
+          .maybeSingle();
+        if (!data) { alert("Prescrição não encontrada."); setPrintingId(null); return; }
+        const items = Array.isArray(data.items) ? data.items as any[] : [];
+        const rows  = items.map((it: any, i: number) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td><strong>${it.medication || it.name || it.description || ""}</strong>${it.presentation ? ` <span style="color:#64748b">(${it.presentation})</span>` : ""}</td>
+            <td>${it.dose || ""}</td>
+            <td>${it.route || ""}</td>
+            <td>${it.frequency || it.frequencia || ""}</td>
+          </tr>`).join("");
+        const html = docHeader("PRESCRIÇÃO MÉDICA") + `
+          <p class="doc-title">Prescrição Médica · ${format(new Date(data.created_at), "dd/MM/yyyy 'às' HH:mm")}</p>
+          <div class="grid2" style="margin-bottom:14px">
+            <div><div class="section-lbl">Status</div><div class="section-val"><span class="badge">${data.status ?? ""}</span></div></div>
+            <div><div class="section-lbl">Versão</div><div class="section-val">${data.version ?? ""}</div></div>
+          </div>
+          <table>
+            <thead><tr><th>#</th><th>Medicamento</th><th>Dose</th><th>Via</th><th>Frequência</th></tr></thead>
+            <tbody>${rows || "<tr><td colspan='5' style='text-align:center;color:#94a3b8'>Sem itens registrados</td></tr>"}</tbody>
+          </table>
+          ${data.notes ? `<div class="section"><div class="section-lbl">Observações</div><div class="section-val">${data.notes}</div></div>` : ""}
+        </body></html>`;
+        openPrint(html); setPrintingId(null); return;
+      }
+
+      if (e.event_type === "exam_request") {
+        const { data } = await supabase
+          .from("exam_requests")
+          .select("category,items,clinical_indication,priority,status,requested_by_name,notes,created_at,results")
+          .eq("id", e.event_id)
+          .maybeSingle();
+        if (!data) { alert("Requisição não encontrada."); setPrintingId(null); return; }
+        const items = Array.isArray(data.items) ? data.items as any[] : [];
+        const rows  = items.map((it: any) => `
+          <tr>
+            <td>${it.code || ""}</td>
+            <td>${it.name || it.description || ""}</td>
+            <td>${it.quantity ?? 1}</td>
+          </tr>`).join("");
+        const catLabel: Record<string, string> = {
+          lab: "Laboratório", imagem: "Imagem", parecer: "Parecer",
+          cultura: "Cultura", apac: "APAC", hemocomponente: "Hemocomponente",
+        };
+        const html = docHeader(`REQUISIÇÃO — ${(catLabel[data.category ?? ""] || (data.category ?? "EXAME")).toUpperCase()}`) + `
+          <p class="doc-title">${catLabel[data.category ?? ""] || data.category} · ${format(new Date(data.created_at), "dd/MM/yyyy 'às' HH:mm")}</p>
+          <div class="grid3" style="margin-bottom:14px">
+            <div><div class="section-lbl">Prioridade</div><div class="section-val"><span class="badge">${data.priority ?? ""}</span></div></div>
+            <div><div class="section-lbl">Status</div><div class="section-val"><span class="badge">${data.status ?? ""}</span></div></div>
+            <div><div class="section-lbl">Solicitante</div><div class="section-val">${data.requested_by_name ?? ""}</div></div>
+          </div>
+          ${data.clinical_indication ? `<div class="section"><div class="section-lbl">Indicação Clínica / Observações</div><div class="section-val">${data.clinical_indication}</div></div>` : ""}
+          ${data.notes ? `<div class="section"><div class="section-lbl">Notas</div><div class="section-val">${data.notes}</div></div>` : ""}
+          <table>
+            <thead><tr><th>Código</th><th>Exame / Procedimento</th><th>Qtd</th></tr></thead>
+            <tbody>${rows || "<tr><td colspan='3' style='text-align:center;color:#94a3b8'>Sem itens</td></tr>"}</tbody>
+          </table>
+          ${data.results ? `<div class="section"><div class="section-lbl">Resultado</div><div class="section-val">${data.results}</div></div>` : ""}
+        </body></html>`;
+        openPrint(html); setPrintingId(null); return;
+      }
+
+      if (e.event_type === "admission_history") {
+        const { data } = await supabase
+          .from("admission_histories")
+          .select("chief_complaint,clinical_history,diagnostic_hypothesis,initial_conduct,cid_primary,cid_secondary,macro_diagnosis,created_at")
+          .eq("id", e.event_id)
+          .maybeSingle();
+        if (!data) { alert("Admissão não encontrada."); setPrintingId(null); return; }
+        const html = docHeader("FICHA DE ADMISSÃO") + `
+          <p class="doc-title">Admissão · ${format(new Date(data.created_at), "dd/MM/yyyy 'às' HH:mm")}</p>
+          <div class="grid2">
+            <div><div class="section-lbl">CID Principal</div><div class="section-val">${data.cid_primary ?? "—"}</div></div>
+            <div><div class="section-lbl">CID Secundário</div><div class="section-val">${data.cid_secondary ?? "—"}</div></div>
+          </div>
+          ${data.macro_diagnosis       ? `<div class="section"><div class="section-lbl">Diagnóstico</div><div class="section-val">${data.macro_diagnosis}</div></div>` : ""}
+          ${data.chief_complaint       ? `<div class="section"><div class="section-lbl">Queixa Principal</div><div class="section-val">${data.chief_complaint}</div></div>` : ""}
+          ${data.clinical_history      ? `<div class="section"><div class="section-lbl">História Clínica</div><div class="section-val">${data.clinical_history}</div></div>` : ""}
+          ${data.diagnostic_hypothesis ? `<div class="section"><div class="section-lbl">Hipótese Diagnóstica</div><div class="section-val">${data.diagnostic_hypothesis}</div></div>` : ""}
+          ${data.initial_conduct       ? `<div class="section"><div class="section-lbl">Conduta Inicial</div><div class="section-val">${data.initial_conduct}</div></div>` : ""}
+        </body></html>`;
+        openPrint(html); setPrintingId(null); return;
+      }
+
+      const html = docHeader(EVENT_TYPE_LABELS[e.event_type] ?? "EVENTO") + `
+        <p class="doc-title">${e.event_label}</p>
+        <div class="section"><div class="section-lbl">Data/Hora</div><div class="section-val">${format(new Date(e.event_at), "dd/MM/yyyy 'às' HH:mm")}</div></div>
+        ${e.summary ? `<div class="section"><div class="section-lbl">Resumo</div><div class="section-val">${e.summary}</div></div>` : ""}
+      </body></html>`;
+      openPrint(html);
+    } catch (err) {
+      console.error("[HistoricoPrint]", err);
+      alert("Erro ao carregar o documento para impressão.");
+    }
+    setPrintingId(null);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
