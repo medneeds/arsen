@@ -429,12 +429,22 @@ const RequisicaoUnificadaPage = () => {
     if (!unitId || !stateId) return;
     setLoading(true);
     try {
+      // Algumas categorias agregam sub-fluxos que persistem com category própria:
+      //   terapeutico → hemocomponente + sat (diálogos especializados)
+      //   regulacao   → regulacao + transferencia + vaga + externo
+      // A aba precisa buscar TODAS as categorias relacionadas para o rastro aparecer.
+      const CATEGORY_GROUPS: Record<string, string[]> = {
+        terapeutico: ["terapeutico", "hemocomponente", "sat"],
+        regulacao: ["regulacao", "transferencia", "vaga", "externo"],
+      };
+      const categoriesToFetch = CATEGORY_GROUPS[activeCategory] || [activeCategory];
+
       let query = supabase
         .from("exam_requests")
         .select("*")
         .eq("hospital_unit_id", unitId)
         .eq("state_id", stateId)
-        .eq("category", activeCategory)
+        .in("category", categoriesToFetch)
         .order("created_at", { ascending: false })
         .limit(200);
 
@@ -995,7 +1005,9 @@ const RequisicaoUnificadaPage = () => {
               )}
             </TabsTrigger>
             <TabsTrigger value="resultados" className="gap-1.5 text-xs">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Resultados
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {/* Terapêutico/Regulação não geram laudo: o desfecho é "Executados". */}
+              {activeCategory === "terapeutico" || activeCategory === "regulacao" ? "Executados" : "Resultados"}
               {completedRequests.length > 0 && (
                 <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{completedRequests.length}</Badge>
               )}
