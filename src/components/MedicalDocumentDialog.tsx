@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  FileSignature, ClipboardList, FileCheck2, Pill, PillBottle, ArrowLeft, Printer, Plus, Trash2,
+  FileSignature, ClipboardList, FileCheck2, Pill, PillBottle, ShieldCheck, ArrowLeft, Printer, Plus, Trash2,
 } from "lucide-react";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { usePatientLive } from "@/hooks/usePatientLive";
@@ -43,12 +43,15 @@ interface Props {
   patientBed?: string;
   patientSector?: string;
   hospitalName?: string;
+  /** Abre o Checklist de CVC (diálogo próprio) a partir deste fluxo. */
+  onOpenCvc?: () => void;
 }
 
 interface RxItem { name: string; dose: string; route: string; freq: string; duration: string; }
 
 export function MedicalDocumentDialog({
   open, onOpenChange, patientId, patientName, patientBed, patientSector, hospitalName,
+  onOpenCvc,
 }: Props) {
   const doctor = useCurrentDoctor();
   const { patient } = usePatientLive(patientId);
@@ -211,6 +214,22 @@ export function MedicalDocumentDialog({
                 </button>
               );
             })}
+            {/* Checklist de CVC — incorporado ao fluxo de documentos; abre o diálogo próprio */}
+            {onOpenCvc && (
+              <button
+                type="button"
+                onClick={() => { onOpenChange(false); onOpenCvc(); }}
+                className="group flex items-start gap-3 p-4 rounded-xl border border-border/60 bg-card/50 hover:bg-muted/40 hover:border-primary/40 transition-all text-left"
+              >
+                <div className="p-2 rounded-lg bg-sky-500/10">
+                  <ShieldCheck className="h-5 w-5 text-sky-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground normal-case">Checklist de CVC</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 normal-case">Bundle de inserção · prevenção de IPCS (CCIH)</p>
+                </div>
+              </button>
+            )}
           </div>
         )}
 

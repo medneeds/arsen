@@ -360,7 +360,7 @@ Gerado pelo sistema ARSen em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="max-w-2xl h-[90vh] flex flex-col p-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 border-b">
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-blue-600" />
@@ -372,17 +372,15 @@ Gerado pelo sistema ARSen em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-6">
+        <ScrollArea className="flex-1 min-h-0 px-6">
           <div className="space-y-5 py-4">
 
             {/* ── Cabeçalho ── */}
             <div className="space-y-3">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Identificação</h3>
+              {/* Data de Nascimento NÃO aparece na UI — é resolvida automaticamente
+                  pelo patientId e só é exibida no PDF (pré-visualização / impressão). */}
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Data de Nascimento</Label>
-                  <Input value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} placeholder="DD/MM/AAAA" className="mt-1 font-mono text-sm" />
-                </div>
                 <div>
                   <Label className="text-xs">Data do Procedimento</Label>
                   <Input type="date" value={dataProcedimento} onChange={(e) => setDataProcedimento(e.target.value)} className="mt-1" />

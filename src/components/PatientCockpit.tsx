@@ -42,7 +42,7 @@ import { usePatientLive } from "@/hooks/usePatientLive";
 import { formatDistanceToNow } from "date-fns";
 import { usePatientDischargeDocs } from "@/hooks/usePatientDischargeDocs";
 import { printDischargeDocument, DISCHARGE_DOC_SHORT } from "@/lib/dischargeDocuments";
-import { Skull, FileSignature, ClipboardCheck, ArrowLeftRight, Pencil } from "lucide-react";
+import { Skull, FileSignature, ArrowLeftRight, Pencil } from "lucide-react";
 import { MedicalDocumentDialog } from "./MedicalDocumentDialog";
 import { CVCChecklistDialog } from "./CVCChecklistDialog";
 import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
@@ -471,15 +471,6 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           >
             <FileSignature className="h-3.5 w-3.5" />
             Emitir documentos médicos
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full h-8 text-xs gap-1.5"
-            onClick={() => setCvcChecklistOpen(true)}
-          >
-            <ClipboardCheck className="h-3.5 w-3.5" />
-            Checklist de CVC
           </Button>
           <DischargeQuickActions
             patientId={patient.id}
@@ -1111,6 +1102,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         patientName={patient.name}
         patientBed={patient.bedNumber}
         patientSector={patient.sector}
+        onOpenCvc={() => setCvcChecklistOpen(true)}
       />
       <MedicalRecordEditDialog
         open={recordEditOpen}
