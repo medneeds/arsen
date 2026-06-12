@@ -2062,6 +2062,44 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     toast.info("Formulário limpo");
   };
 
+  // Registra o rastro da solicitação de procedimento no histórico do paciente.
+  // Complementar ao laudo — NUNCA bloqueia a impressão se o insert falhar.
+  const registerProcedureTrace = async () => {
+    try {
+      const validPid = asUuidOrNull(patientId);
+      // Só registra quando há vínculo real de paciente e contexto de unidade/estado.
+      if (!validPid || !user?.id || !currentHospital?.id || !currentState?.id) return;
+      const requesterName = (() => {
+        const nm = (doctorName || "").trim() || user.email?.split("@")[0] || "Médico";
+        const crm = (doctorCRM || "").trim();
+        return crm ? `${nm} — CRM ${crm}` : nm;
+      })();
+      const payload = {
+        category: "procedimento",
+        patient_id: validPid,
+        patient_name: apacPatientName.trim(),
+        patient_bed: (patientBed || "").trim() || null,
+        patient_sector: (patientSector || "").trim() || null,
+        items: selectedProcedures.map(p => ({ name: p.code ? `${p.name} (${p.code})` : p.name })),
+        clinical_indication: null, // laudo APAC já contempla o procedimento no corpo
+        priority: "rotina",
+        notes: "[PROCEDIMENTO — Laudo APAC gerado]",
+        requested_by: user.id,
+        requested_by_name: requesterName,
+        hospital_unit_id: currentHospital.id,
+        state_id: currentState.id,
+        // Validação direta: o laudo APAC é o próprio documento — entra concluído.
+        status: "completed",
+        completed_at: new Date().toISOString(),
+        completed_by: user.email?.split("@")[0] || "Sistema",
+      };
+      const { error } = await (supabase as any).from("exam_requests").insert(payload);
+      if (error) console.error("[Procedimento] Falha ao registrar rastro:", error);
+    } catch (err) {
+      console.error("[Procedimento] Erro ao registrar rastro:", err);
+    }
+  };
+
   const handlePrint = () => {
     if (selectedProcedures.length === 0) { toast.error("Adicione ao menos um procedimento"); return; }
     if (!apacPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
@@ -2071,6 +2109,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       setAihRoutingOpen(true);
       return;
     }
+    // Registra o rastro (não-bloqueante) e imprime o laudo APAC.
+    void registerProcedureTrace();
     // APAC ou sem código → imprime APAC normal (sem tarja para sem código)
     window.print();
   };
