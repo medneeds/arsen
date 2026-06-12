@@ -252,7 +252,22 @@ ${patientFooterLine ? `<div style="font-size:6pt;font-weight:600;color:#64748b;p
   <div>${dateStr} ${timeStr}</div>
 </div>
 
-<script>window.onload = () => { setTimeout(() => window.print(), 350); };</script>
+<script>
+window.onload = () => {
+  var nzHeader = document.querySelector('.nz-header');
+  var patientHeader = document.getElementById('patient-header-repeat');
+  var bodyContent = document.querySelector('.nz-body-content');
+  if (nzHeader && patientHeader) {
+    var nzH = Math.ceil(nzHeader.getBoundingClientRect().height);
+    patientHeader.style.top = nzH + 'px';
+    if (bodyContent) {
+      var phH = Math.ceil(patientHeader.getBoundingClientRect().height);
+      bodyContent.style.marginTop = (nzH + phH + 6) + 'px';
+    }
+  }
+  setTimeout(() => window.print(), 350);
+};
+</script>
 </body></html>`;
 }
 

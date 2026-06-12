@@ -380,7 +380,7 @@ export const printEvolution = async (
       @media print {
         #patient-header-repeat {
           position: fixed;
-          top: 95px;
+          top: 112px;
           left: 0;
           right: 0;
           display: table;
@@ -389,7 +389,7 @@ export const printEvolution = async (
           background: #fff;
           z-index: 10;
         }
-        .nz-body-content { margin-top: 90px; }
+        .nz-body-content { margin-top: 185px; }
       }
     `,
   });
