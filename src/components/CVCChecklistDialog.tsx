@@ -26,6 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { asUuidOrNull } from "@/lib/utils";
+import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 import { resolvePatientHeader, resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -208,7 +209,7 @@ export function CVCChecklistDialog({
       } as any);
       if (error) throw error;
       toast.success("Checklist CVC salvo");
-      handlePrint();
+      await handlePrint();
     } catch (err: any) {
       toast.error(`Erro ao salvar: ${err.message}`);
     } finally {
@@ -217,21 +218,17 @@ export function CVCChecklistDialog({
   };
 
   // ── Print ─────────────────────────────────────────────────────────────────
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]!));
-    const answerLabel = (a: BundleAnswer) =>
-      a === "sim" ? "SIM" : a === "sim_lembrado" ? "SIM*" : a === "nao" ? "NÃO" : "—";
-    const answerColor = (a: BundleAnswer) =>
-      a === "sim" ? "#166534" : a === "sim_lembrado" ? "#854d0e" : a === "nao" ? "#991b1b" : "#6b7280";
 
     const bundleRows = BUNDLE_STEPS.map((s) => {
       const a = answers[s.id] ?? null;
       return `<tr>
-        <td style="padding:3px 6px;border:1px solid #ccc;font-size:8.5pt;">${s.id}.</td>
-        <td style="padding:3px 6px;border:1px solid #ccc;font-size:8.5pt;">${esc(s.text)}</td>
-        <td style="padding:3px 6px;border:1px solid #ccc;font-size:8.5pt;text-align:center;font-weight:bold;color:${a === "sim" ? "#166534" : "#6b7280"}">${a === "sim" ? "✓" : ""}</td>
-        <td style="padding:3px 6px;border:1px solid #ccc;font-size:8.5pt;text-align:center;font-weight:bold;color:${a === "sim_lembrado" ? "#854d0e" : "#6b7280"}">${a === "sim_lembrado" ? "✓" : ""}</td>
-        <td style="padding:3px 6px;border:1px solid #ccc;font-size:8.5pt;text-align:center;font-weight:bold;color:${a === "nao" ? "#991b1b" : "#6b7280"}">${a === "nao" ? "✗" : ""}</td>
+        <td style="padding:3px 6px;border:1px solid #cbd5e1;font-size:8.5pt;">${s.id}.</td>
+        <td style="padding:3px 6px;border:1px solid #cbd5e1;font-size:8.5pt;">${esc(s.text)}</td>
+        <td style="padding:3px 6px;border:1px solid #cbd5e1;font-size:8.5pt;text-align:center;font-weight:bold;color:${a === "sim" ? "#166534" : "#cbd5e1"}">${a === "sim" ? "\u2713" : ""}</td>
+        <td style="padding:3px 6px;border:1px solid #cbd5e1;font-size:8.5pt;text-align:center;font-weight:bold;color:${a === "sim_lembrado" ? "#854d0e" : "#cbd5e1"}">${a === "sim_lembrado" ? "\u2713" : ""}</td>
+        <td style="padding:3px 6px;border:1px solid #cbd5e1;font-size:8.5pt;text-align:center;font-weight:bold;color:${a === "nao" ? "#991b1b" : "#cbd5e1"}">${a === "nao" ? "\u2717" : ""}</td>
       </tr>`;
     }).join("");
 
@@ -247,99 +244,95 @@ export function CVCChecklistDialog({
       ? format(new Date(dataProcedimento + "T00:00"), "dd/MM/yyyy")
       : format(new Date(), "dd/MM/yyyy");
 
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
-<title>Checklist CVC — ${esc(resolvedName)}</title>
-<style>
-@page{size:A4 portrait;margin:10mm 12mm;}
-body{font-family:Arial,sans-serif;font-size:9.5pt;color:#000;margin:0;}
-.header{text-align:center;border-bottom:2px solid #000;padding-bottom:5px;margin-bottom:8px;}
-.header h1{font-size:12pt;font-weight:bold;margin:0 0 2px 0;text-transform:uppercase;}
-.header h2{font-size:9pt;font-weight:normal;margin:0;}
-.header h3{font-size:10pt;font-weight:bold;margin:3px 0 0 0;text-transform:uppercase;letter-spacing:.8px;}
-.st{font-size:8.5pt;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;background:#e8e8e8;padding:2px 5px;margin:7px 0 3px 0;border-left:3px solid #333;}
-.fr{display:flex;gap:10px;margin-bottom:4px;}
-.f{flex:1;}
-.f label{font-size:7.5pt;font-weight:bold;display:block;margin-bottom:1px;color:#444;}
-.f span{font-size:9pt;border-bottom:1px solid #999;display:block;min-height:14px;}
-.flags{font-size:8.5pt;padding:3px 5px;background:#f5f5f5;border:1px solid #ddd;margin-bottom:5px;}
-table{width:100%;border-collapse:collapse;margin-bottom:6px;}
-th{background:#e8e8e8;font-size:8.5pt;font-weight:bold;padding:3px 5px;border:1px solid #ccc;}
-.metrics{display:flex;gap:8px;margin-bottom:6px;font-size:8pt;}
-.met{padding:3px 8px;border-radius:3px;font-weight:bold;}
-.assinaturas{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
-.ab{border:1px solid #999;padding:5px;}
-.ab label{font-size:7.5pt;font-weight:bold;display:block;margin-bottom:18px;}
-.al{border-top:1px solid #000;font-size:7.5pt;padding-top:2px;text-align:center;}
-.rodape{margin-top:10px;border-top:1px solid #ccc;padding-top:3px;font-size:7.5pt;color:#666;text-align:center;}
-.nota{font-size:7.5pt;color:#555;font-style:italic;margin-top:3px;}
-</style></head><body>
-<div class="header">
-<h2>PREFEITURA MUNICIPAL DE SÃO LUÍS — SECRETARIA MUNICIPAL DE SAÚDE</h2>
-<h1>Hospital Municipal Djalma Marques — Socorrão I</h1>
-<h3>Checklist de Inserção de CVC — Bundle de Segurança</h3>
+    const body = `
+<div class="cvc-section">Identificação do Paciente</div>
+<div class="cvc-fr">
+  <div class="cvc-f"><label>Nome</label><span>${esc(resolvedName)}</span></div>
+  <div class="cvc-f" style="max-width:130px;"><label>Data de Nascimento</label><span>${esc(dataNascimento || "—")}</span></div>
+  <div class="cvc-f" style="max-width:130px;"><label>Data do Procedimento</label><span>${esc(dataFormatada)}</span></div>
 </div>
-<div class="st">Identificação do Paciente</div>
-<div class="fr">
-<div class="f"><label>Nome</label><span>${esc(resolvedName)}</span></div>
-<div class="f" style="max-width:130px;"><label>Data de Nascimento</label><span>${esc(dataNascimento || "—")}</span></div>
-<div class="f" style="max-width:130px;"><label>Data do Procedimento</label><span>${esc(dataFormatada)}</span></div>
+<div class="cvc-fr">
+  <div class="cvc-f" style="max-width:100px;"><label>Leito</label><span>${esc(resolvedBed || "—")}</span></div>
+  <div class="cvc-f" style="max-width:160px;"><label>Setor</label><span>${esc(getSectorDisplayLabel(resolvedSector) || resolvedSector || "—")}</span></div>
+  <div class="cvc-f"><label>Flags</label><span style="font-size:8pt;">${esc(flagsAtivos)}</span></div>
 </div>
-<div class="fr">
-<div class="f" style="max-width:100px;"><label>Leito</label><span>${esc(resolvedBed || "—")}</span></div>
-<div class="f" style="max-width:160px;"><label>Setor</label><span>${esc(getSectorDisplayLabel(resolvedSector) || resolvedSector || "—")}</span></div>
-<div class="f"><label>Flags</label><span style="font-size:8pt;">${esc(flagsAtivos)}</span></div>
-</div>
-${obs ? `<div class="flags"><strong>OBS:</strong> ${esc(obs)}</div>` : ""}
+${obs ? `<div class="cvc-box"><strong>OBS:</strong> ${esc(obs)}</div>` : ""}
 
-<div class="st">Indicação do CVC</div>
+<div class="cvc-section">Indicação do CVC</div>
 <div style="margin-bottom:5px;font-size:8.5pt;">
-${INDICACOES.map((i) => `<span style="margin-right:12px;">${indicacoes.has(i.id) ? "☑" : "☐"} ${esc(i.label)}</span>`).join(" ")}
+${INDICACOES.map((i) => `<span style="margin-right:12px;">${indicacoes.has(i.id) ? "\u2611" : "\u2610"} ${esc(i.label)}</span>`).join(" ")}
 </div>
 <div style="font-size:8.5pt;margin-bottom:5px;">
-<strong>Condição:</strong>
-<span style="margin-right:12px;">${condicao === "emergencia" ? "☑" : "☐"} Emergência</span>
-<span style="margin-right:12px;">${condicao === "rotina" ? "☑" : "☐"} Rotina</span>
-&nbsp;&nbsp;&nbsp;<strong>Via escolhida:</strong>
-<span style="margin-right:12px;">${via === "subclavia" ? "☑" : "☐"} 1ª Subclávia (preferencial)</span>
-<span style="margin-right:12px;">${via === "jugular" ? "☑" : "☐"} 2ª Jugular</span>
-<span>${via === "femoral" ? "☑" : "☐"} 3ª Femoral</span>
+  <strong>Condição:</strong>
+  <span style="margin-right:12px;">${condicao === "emergencia" ? "\u2611" : "\u2610"} Emergência</span>
+  <span style="margin-right:12px;">${condicao === "rotina" ? "\u2611" : "\u2610"} Rotina</span>
+  &nbsp;&nbsp;&nbsp;<strong>Via escolhida:</strong>
+  <span style="margin-right:12px;">${via === "subclavia" ? "\u2611" : "\u2610"} 1ª Subclávia (preferencial)</span>
+  <span style="margin-right:12px;">${via === "jugular" ? "\u2611" : "\u2610"} 2ª Jugular</span>
+  <span>${via === "femoral" ? "\u2611" : "\u2610"} 3ª Femoral</span>
 </div>
 
-<div class="st">Etapas do Bundle (15 Passos)</div>
-<div class="metrics">
-<span class="met" style="background:#dcfce7;color:#166534;">SIM: ${simCount}</span>
-<span class="met" style="background:#fef9c3;color:#854d0e;">SIM* (lembrado): ${lembradoCount}</span>
-<span class="met" style="background:#fee2e2;color:#991b1b;">NÃO: ${naoCount}</span>
-<span class="met" style="background:#f3f4f6;color:#374151;">Adesão espontânea: ${pctAdesao}%</span>
+<div class="cvc-section">Etapas do Bundle (15 Passos)</div>
+<div class="cvc-metrics">
+  <span class="cvc-met" style="background:#dcfce7;color:#166534;">SIM: ${simCount}</span>
+  <span class="cvc-met" style="background:#fef9c3;color:#854d0e;">SIM* (lembrado): ${lembradoCount}</span>
+  <span class="cvc-met" style="background:#fee2e2;color:#991b1b;">NÃO: ${naoCount}</span>
+  <span class="cvc-met" style="background:#f1f5f9;color:#374151;">Adesão espontânea: ${pctAdesao}%</span>
 </div>
-<table>
-<thead><tr>
-<th style="width:24px;">#</th>
-<th>Etapa do Bundle</th>
-<th style="width:40px;text-align:center;">SIM</th>
-<th style="width:55px;text-align:center;">SIM*</th>
-<th style="width:40px;text-align:center;">NÃO</th>
-</tr></thead>
-<tbody>${bundleRows}</tbody>
+<table class="cvc-table">
+  <thead><tr>
+    <th style="width:24px;">#</th>
+    <th>Etapa do Bundle</th>
+    <th style="width:40px;text-align:center;">SIM</th>
+    <th style="width:55px;text-align:center;">SIM*</th>
+    <th style="width:40px;text-align:center;">NÃO</th>
+  </tr></thead>
+  <tbody>${bundleRows}</tbody>
 </table>
-<p class="nota">* SIM (depois de lembrado) — etapa realizada somente após orientação do Auditor do Bundle</p>
-${justificativa ? `<div class="st">Justificativa de Não Cumprimento</div><div style="border:1px solid #999;min-height:30px;padding:4px 5px;font-size:8.5pt;margin-bottom:5px;">${esc(justificativa)}</div>` : ""}
+<p class="cvc-nota">* SIM (depois de lembrado) — etapa realizada somente após orientação do Auditor do Bundle</p>
+${justificativa ? `<div class="cvc-section">Justificativa de Não Cumprimento</div><div class="cvc-box" style="min-height:30px;">${esc(justificativa)}</div>` : ""}`;
 
-<div class="assinaturas">
-<div class="ab"><label>Executante</label><div class="al">${esc(executanteNome)}${executanteCRM ? ` · CRM ${esc(executanteCRM)}` : ""}</div></div>
-<div class="ab"><label>Auditor do Bundle</label><div class="al">${esc(auditorNome)}${auditorCRM ? ` · CRM ${esc(auditorCRM)}` : ""}&nbsp;</div></div>
-</div>
-<div class="rodape">
-CCIH — Protocolo de Prevenção de IPCS (Infecção Primária de Corrente Sanguínea)<br/>
-Gerado pelo sistema ARSen em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
-</div>
-</body></html>`;
+    const extraStyles = `
+.cvc-section{font-size:8.5pt;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;background:#eef2f7;padding:3px 6px;margin:8pt 0 4pt 0;border-left:3px solid #0054A6;color:#1e293b;}
+.cvc-fr{display:flex;gap:10px;margin-bottom:4px;}
+.cvc-f{flex:1;}
+.cvc-f label{font-size:7.5pt;font-weight:bold;display:block;margin-bottom:1px;color:#475569;}
+.cvc-f span{font-size:9pt;border-bottom:1px solid #cbd5e1;display:block;min-height:14px;padding-bottom:1px;}
+.cvc-box{font-size:8.5pt;padding:4px 6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;margin-bottom:5px;}
+.cvc-table{width:100%;border-collapse:collapse;margin-bottom:6px;}
+.cvc-table th{background:#eef2f7;font-size:8.5pt;font-weight:bold;padding:3px 5px;border:1px solid #cbd5e1;}
+.cvc-metrics{display:flex;gap:8px;margin-bottom:6px;font-size:8pt;flex-wrap:wrap;}
+.cvc-met{padding:3px 8px;border-radius:3px;font-weight:bold;}
+.cvc-nota{font-size:7.5pt;color:#64748b;font-style:italic;margin:3px 0 0 0;}`;
 
-    const win = window.open("", "_blank", "width=800,height=950");
-    if (!win) { toast.error("Popup bloqueado — permita pop-ups para imprimir"); return; }
-    win.document.write(html);
-    win.document.close();
-    win.onload = () => win.print();
+    const logo = await prepareLogo();
+    const html = buildNormaZeroDocument({
+      title: "Checklist de Inserção de CVC — Bundle de Segurança",
+      subtitle: "CCIH — Protocolo de Prevenção de IPCS",
+      sectorLabel: getSectorDisplayLabel(resolvedSector) || resolvedSector
+        ? `Dispositivos — ${getSectorDisplayLabel(resolvedSector) || resolvedSector}`
+        : "Dispositivos / CCIH",
+      docCodePrefix: "CVC",
+      bodyHtml: body,
+      signatures: [
+        {
+          label: executanteNome ? executanteNome.toUpperCase() : "EXECUTANTE",
+          caption: executanteCRM ? `CRM ${executanteCRM}` : "Carimbo e assinatura",
+        },
+        {
+          label: auditorNome ? auditorNome.toUpperCase() : "AUDITOR DO BUNDLE",
+          caption: auditorCRM ? `CRM ${auditorCRM}` : "Carimbo e assinatura",
+        },
+      ],
+      logoDataUrl: logo,
+      extraStyles,
+      patientFooterInfo: {
+        name: resolvedName,
+        birthDate: dataNascimento || undefined,
+        bed: resolvedBed || undefined,
+      },
+    });
+    openPrintWindow(html, "Preparando checklist de CVC…");
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
