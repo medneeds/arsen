@@ -605,6 +605,7 @@ const EvolucaoPage = () => {
               onPendenciasItemsChange={setPendenciasItems}
               cidPrimary={cidPrimary}
               cidSecondary={cidSecondary}
+              patientId={initialPatientId || null}
               devices={newDevices}
               onDevicesChange={setNewDevices}
               culturesHtml={newCulturesHtml}

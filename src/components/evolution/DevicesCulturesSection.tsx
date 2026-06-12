@@ -23,6 +23,9 @@ interface DevicesCulturesSectionProps {
   onCulturesChange: (html: string) => void;
   /** Data base p/ presets do date picker (admissão no setor). Aceita ISO ou BR. */
   admissionDate?: string | null;
+  /** Identificação do paciente — necessária para o Checklist/Bundle de CVC. */
+  patientId?: string | null;
+  patientName?: string;
 }
 
 /** Normaliza admissionDate (ISO yyyy-MM-dd ou BR dd/MM/yyyy) para DD/MM/YYYY */
@@ -42,6 +45,8 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
   culturesHtml,
   onCulturesChange,
   admissionDate,
+  patientId,
+  patientName,
 }) => {
   const admissionDateBR = parseAdmissionDateBR(admissionDate);
   const [cvcChecklistOpen, setCvcChecklistOpen] = useState(false);
@@ -292,6 +297,8 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
         open={cvcChecklistOpen}
         onOpenChange={setCvcChecklistOpen}
         insertedAt={cvcActive?.insertedAt || ""}
+        patientId={patientId}
+        patientName={patientName}
       />
     </div>
   );

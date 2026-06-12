@@ -516,6 +516,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               culturesHtml={culturesHtml || ""}
               onCulturesChange={onCulturesChange}
               admissionDate={admissionDate || undefined}
+              patientId={patientId}
             />
           </SectionItem>
         )}
