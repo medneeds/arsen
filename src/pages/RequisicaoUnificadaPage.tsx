@@ -2103,21 +2103,116 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     if (!validPid) { toast.error("Paciente não vinculado ao mapa (sem ID válido)"); return; }
     setImportingEvolution(true);
     try {
-      const { data: patient } = await supabase
+      // 1. patient_registry_id do paciente atual
+      const { data: pat } = await supabase
         .from("patients")
-        .select("diagnoses, medical_history, pendencies")
+        .select("patient_registry_id")
         .eq("id", validPid)
         .maybeSingle();
-      if (!patient) { toast.error("Dados do paciente não encontrados"); return; }
-      const parts: string[] = [];
-      if (patient.diagnoses) parts.push(`Diagnósticos: ${patient.diagnoses}`);
-      if (patient.medical_history) parts.push(`Antecedentes: ${patient.medical_history}`);
-      if (patient.pendencies) parts.push(`Pendências: ${patient.pendencies}`);
-      if (parts.length === 0) { toast.info("Sem dados de evolução preenchidos"); return; }
-      setObservations(prev => prev ? prev + "\n\n" + parts.join("\n") : parts.join("\n"));
-      toast.success("Dados da evolução importados");
-    } catch { toast.error("Erro ao importar evolução"); }
-    finally { setImportingEvolution(false); }
+      const registryId = (pat as any)?.patient_registry_id ?? null;
+
+      // 2. Última evolução VALIDADA em clinical_evolutions
+      let evQuery = supabase
+        .from("clinical_evolutions")
+        .select("soap_data, diagnostic_hypotheses, created_at, validated_at")
+        .eq("status", "validated")
+        .is("archived_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (registryId) {
+        evQuery = evQuery.or(`patient_id.eq.${validPid},patient_registry_id.eq.${registryId}`);
+      } else {
+        evQuery = evQuery.eq("patient_id", validPid);
+      }
+      const { data: evol } = await evQuery.maybeSingle();
+
+      // 3. CID da admissão ativa
+      let ahQuery = supabase
+        .from("admission_histories")
+        .select("cid_primary, cid_secondary, macro_diagnosis, diagnostic_hypothesis")
+        .is("archived_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (registryId) {
+        ahQuery = ahQuery.or(`patient_id.eq.${validPid},patient_registry_id.eq.${registryId}`);
+      } else {
+        ahQuery = ahQuery.eq("patient_id", validPid);
+      }
+      const { data: ah } = await ahQuery.maybeSingle();
+
+      // 4. CID-10 Principal + Diagnóstico Inicial
+      if (ah?.cid_primary) {
+        const primaryStr = String(ah.cid_primary);
+        const cidMatch = primaryStr.match(/([A-Za-z]\d{2}\.?\d*)/);
+        const cidCode = cidMatch ? cidMatch[1].toUpperCase() : "";
+        if (cidCode) setCidPrimary(cidCode);
+
+        let desc = primaryStr.replace(/^[A-Za-z]\d{2}\.?\d*\s*[-–—]\s*/, "").trim();
+        if (!desc || desc === primaryStr.trim()) {
+          try {
+            const { data: cidEntry } = await supabase
+              .from("cid10_codes")
+              .select("description")
+              .ilike("code", cidCode)
+              .limit(1)
+              .maybeSingle();
+            desc = (cidEntry as any)?.description || (ah as any).macro_diagnosis || (ah as any).diagnostic_hypothesis || "";
+          } catch {
+            desc = (ah as any).macro_diagnosis || (ah as any).diagnostic_hypothesis || "";
+          }
+        }
+        if (desc) setDiagnosis(desc);
+      }
+
+      // 5. Observações a partir do SOAP
+      let imported = false;
+      if (evol?.soap_data) {
+        const soap = evol.soap_data as any;
+        const evolDate = evol.validated_at || evol.created_at;
+        const dateStr = evolDate ? new Date(evolDate).toLocaleDateString("pt-BR") : "";
+        const stripHtml = (html: string) =>
+          (html || "").replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim();
+
+        const parts: string[] = [];
+        if (dateStr) parts.push(`Evolução de ${dateStr}:`);
+
+        const subj = stripHtml(soap.subjective || soap.evolucao || "");
+        if (subj) parts.push(subj);
+
+        const assess = stripHtml(soap.assessment || "");
+        if (assess && assess !== subj) parts.push(`Avaliação: ${assess}`);
+
+        const plan = stripHtml(soap.plan || "");
+        if (plan) parts.push(`Conduta: ${plan}`);
+
+        if (evol.diagnostic_hypotheses) {
+          let hypo: any = evol.diagnostic_hypotheses;
+          try {
+            const parsed = typeof hypo === "string" ? JSON.parse(hypo) : hypo;
+            hypo = Array.isArray(parsed)
+              ? parsed.map((h: any) => String(h).trim()).filter(Boolean).join("; ")
+              : String(parsed).trim();
+          } catch { /* mantém */ }
+          if (String(hypo).trim()) parts.push(`Hipóteses: ${String(hypo).trim()}`);
+        }
+
+        const obsText = parts.join("\n").trim();
+        if (obsText) {
+          setObservations(obsText);
+          setObservationsAutoFilled(true);
+          imported = true;
+        }
+      }
+
+      if (imported || ah?.cid_primary) {
+        toast.success("Dados da evolução importados");
+      } else {
+        toast.info("Nenhuma evolução validada encontrada");
+      }
+    } catch (err) {
+      console.error("[APAC] importEvolution error:", err);
+      toast.error("Erro ao importar evolução");
+    } finally { setImportingEvolution(false); }
   };
 
   const filteredProcedures = SIGTAP_PROCEDURES.filter((p) => {
