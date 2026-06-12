@@ -137,6 +137,68 @@ export default function HistoricoPacientePage() {
 
   const handlePrint = () => window.print();
 
+  // Imprime um subconjunto de eventos (card individual ou grupo de dia)
+  const printEvents = (eventsToprint: TimelineEvent[], title: string) => {
+    const rows = eventsToprint.map((e) => `
+      <tr>
+        <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;font-size:11px;color:#64748b;white-space:nowrap">
+          ${format(new Date(e.event_at), "dd/MM/yyyy HH:mm")}
+        </td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;font-size:11px">
+          <span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:#f1f5f9;color:#334155">
+            ${EVENT_TYPE_LABELS[e.event_type] ?? e.event_type}
+          </span>
+        </td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:500">
+          ${e.event_label ?? ""}
+        </td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;font-size:11px;color:#64748b">
+          ${e.summary ?? ""}
+        </td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;font-size:11px;color:#64748b">
+          ${e.author_email ?? ""}
+        </td>
+      </tr>`).join("");
+
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head>
+      <meta charset="UTF-8"/>
+      <title>Histórico — ${patientName}</title>
+      <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 16px; color: #1e293b; }
+        .header { border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 14px; }
+        .header h1 { margin: 0 0 2px; font-size: 15px; font-weight: 700; text-transform: uppercase; }
+        .header p { margin: 0; font-size: 11px; color: #64748b; }
+        .section-title { font-size: 12px; font-weight: 600; text-transform: uppercase;
+          letter-spacing: .06em; color: #475569; margin: 0 0 8px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; padding: 6px 8px; text-align: left; font-size: 10px;
+          font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+          color: #64748b; border-bottom: 2px solid #e2e8f0; }
+        @page { size: A4 portrait; margin: 14mm; }
+        @media print { body { padding: 0; } }
+      </style>
+    </head><body>
+      <div class="header">
+        <h1>${patientName}</h1>
+        <p>${[patientBed ? "Leito " + patientBed : "", patientSector ?? ""].filter(Boolean).join(" · ")} · Impresso em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+      </div>
+      <p class="section-title">${title} · ${eventsToprint.length} registro${eventsToprint.length !== 1 ? "s" : ""}</p>
+      <table>
+        <thead><tr>
+          <th>Data/Hora</th><th>Tipo</th><th>Evento</th><th>Resumo</th><th>Responsável</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </body></html>`;
+
+    const w = window.open("", "_blank", "width=900,height=700");
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); w.close(); }, 400);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -248,12 +310,25 @@ export default function HistoricoPacientePage() {
             {grouped.map(([day, items]) => (
               <div key={day}>
                 <div className="sticky top-[105px] z-[1] bg-background/95 backdrop-blur py-1.5 mb-2 border-b print:static">
-                  <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    {format(new Date(day + "T00:00:00"), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                    <Badge variant="secondary" className="ml-2 h-4 text-[10px]">
-                      {items.length}
-                    </Badge>
-                  </h2>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      {format(new Date(day + "T00:00:00"), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                      <Badge variant="secondary" className="ml-2 h-4 text-[10px]">
+                        {items.length}
+                      </Badge>
+                    </h2>
+                    <button
+                      onClick={() => printEvents(
+                        items,
+                        format(new Date(day + "T00:00:00"), "EEEE, dd/MM/yyyy", { locale: ptBR })
+                      )}
+                      className="print:hidden flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-muted"
+                      title="Imprimir registros deste dia"
+                    >
+                      <Printer className="h-3 w-3" />
+                      Imprimir dia
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-2 pl-2 border-l-2 border-border ml-2">
                   {items.map((e) => {
@@ -266,7 +341,7 @@ export default function HistoricoPacientePage() {
                         )}>
                           <Icon className="h-2.5 w-2.5" />
                         </div>
-                        <Card className="p-3 hover:shadow-sm transition-shadow">
+                        <Card className="p-3 hover:shadow-sm transition-shadow group">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
@@ -289,6 +364,13 @@ export default function HistoricoPacientePage() {
                                 <p className="text-xs text-muted-foreground mt-0.5">{e.summary}</p>
                               )}
                             </div>
+                            <button
+                              onClick={() => printEvents([e], EVENT_TYPE_LABELS[e.event_type] ?? e.event_label ?? "Evento")}
+                              className="print:hidden opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                              title="Imprimir este registro"
+                            >
+                              <Printer className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         </Card>
                       </div>
