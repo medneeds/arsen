@@ -303,7 +303,13 @@ ${justificativa ? `<div class="cvc-section">Justificativa de Não Cumprimento</d
 .cvc-table th{background:#eef2f7;font-size:8.5pt;font-weight:bold;padding:3px 5px;border:1px solid #cbd5e1;}
 .cvc-metrics{display:flex;gap:8px;margin-bottom:6px;font-size:8pt;flex-wrap:wrap;}
 .cvc-met{padding:3px 8px;border-radius:3px;font-weight:bold;}
-.cvc-nota{font-size:7.5pt;color:#64748b;font-style:italic;margin:3px 0 0 0;}`;
+.cvc-nota{font-size:7.5pt;color:#64748b;font-style:italic;margin:3px 0 0 0;}
+/* Correção de sobreposição: em documento de página única, o header NÃO deve ser
+   fixed (flutuava sobre a barra de documento, esmagando-a acima do nome do paciente).
+   Tornando-o static no print, ele entra no fluxo e empurra o conteúdo corretamente.
+   Margem superior do @page reduzida (o header não flutua mais). Escopo SÓ do CVC. */
+@media print { .nz-header { position: static !important; } }
+@page { margin: 14mm 14mm 18mm 14mm; }`;
 
     const logo = await prepareLogo();
     const html = buildNormaZeroDocument({
