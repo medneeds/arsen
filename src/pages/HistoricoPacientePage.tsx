@@ -111,6 +111,7 @@ export default function HistoricoPacientePage() {
   const [selectedTypes, setSelectedTypes] = useState<TimelineEventType[]>([]);
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
+  const [printingId, setPrintingId] = useState<string | null>(null);
 
   const { data: events = [], isLoading } = usePatientTimeline({
     patientRegistryId,
