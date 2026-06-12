@@ -505,7 +505,11 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
         </ScrollArea>
       </DialogContent>
 
-      {/* ── AIH Print Layout (padrão APAC: A4 retrato, página única) ── */}
+      {/* ── AIH Print Layout (padrão APAC: A4 retrato, página única) ──
+          IMPORTANTE: só monta quando o diálogo está aberto. Sem isso, o print root
+          fica sempre no DOM e a impressão de OUTRO documento (ex.: APAC) arrasta
+          junto esta AIH em branco/desconfigurada. Independência entre fluxos. */}
+      {open && (
       <div ref={printRef} className="hidden print:block">
         <style>{`
           @media print {
@@ -716,6 +720,7 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
           </table>
         </div>
       </div>
+      )}
     </Dialog>
   );
 }

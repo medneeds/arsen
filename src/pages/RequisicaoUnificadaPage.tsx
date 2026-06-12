@@ -2591,7 +2591,10 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         </div>
       </div>
 
-      {/* ── APAC Print Layout ── */}
+      {/* ── APAC Print Layout ──
+          Só imprime quando a AIH routing NÃO está aberta. Garante que gerar a AIH
+          não arraste o laudo APAC junto, e vice-versa — fluxos independentes. */}
+      {!aihRoutingOpen && (
       <div ref={printRef} className="hidden print:block">
         <style>{`
           @media print {
@@ -2784,6 +2787,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           </table>
         </div>
       </div>
+      )}
 
       {/* ── AIH routing dialog ── */}
       <AihFormDialog
