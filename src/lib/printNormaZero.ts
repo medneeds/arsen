@@ -266,7 +266,14 @@ window.onload = () => {
       if (subtitle) nzHeader.appendChild(subtitle);
     }
     var nzH = Math.ceil((nzHeader || document.body).getBoundingClientRect().height);
-    spacer.style.height = nzH + 'px';
+    var patientHdr = document.getElementById('patient-header-repeat');
+    if (patientHdr) {
+      patientHdr.style.top = nzH + 'px';
+      var patH = Math.ceil(patientHdr.getBoundingClientRect().height);
+      spacer.style.height = (nzH + patH + 4) + 'px';
+    } else {
+      spacer.style.height = nzH + 'px';
+    }
   } else {
     var nzHeader2 = document.querySelector('.nz-header');
     var patientHeader = document.getElementById('patient-header-repeat');
