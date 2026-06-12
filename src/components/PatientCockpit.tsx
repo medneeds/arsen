@@ -42,8 +42,9 @@ import { usePatientLive } from "@/hooks/usePatientLive";
 import { formatDistanceToNow } from "date-fns";
 import { usePatientDischargeDocs } from "@/hooks/usePatientDischargeDocs";
 import { printDischargeDocument, DISCHARGE_DOC_SHORT } from "@/lib/dischargeDocuments";
-import { Skull, FileSignature, ArrowLeftRight, Pencil } from "lucide-react";
+import { Skull, FileSignature, ClipboardCheck, ArrowLeftRight, Pencil } from "lucide-react";
 import { MedicalDocumentDialog } from "./MedicalDocumentDialog";
+import { CVCChecklistDialog } from "./CVCChecklistDialog";
 import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
 import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
 import { PatientMovementDialog } from "./PatientMovementDialog";
@@ -123,6 +124,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const [roundPrintOpen, setRoundPrintOpen] = useState(false);
   const [movementDialogOpen, setMovementDialogOpen] = useState(false);
   const [receituarioOpen, setReceituarioOpen] = useState(false);
+  const [cvcChecklistOpen, setCvcChecklistOpen] = useState(false);
   const isExpanded = variant === "inline" || pinned || hovering;
   const isMobile = useIsMobile();
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
@@ -469,6 +471,15 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           >
             <FileSignature className="h-3.5 w-3.5" />
             Emitir documentos médicos
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full h-8 text-xs gap-1.5"
+            onClick={() => setCvcChecklistOpen(true)}
+          >
+            <ClipboardCheck className="h-3.5 w-3.5" />
+            Checklist de CVC
           </Button>
           <DischargeQuickActions
             patientId={patient.id}
@@ -1131,6 +1142,15 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           )}
         </DialogContent>
       </Dialog>
+
+      <CVCChecklistDialog
+        open={cvcChecklistOpen}
+        onOpenChange={setCvcChecklistOpen}
+        patientId={patient.id}
+        patientName={patient.name}
+        patientBed={patient.bedNumber}
+        patientSector={patient.sector}
+      />
 
       <PatientMovementDialog
         patient={patient}
