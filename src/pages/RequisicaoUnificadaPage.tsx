@@ -747,6 +747,65 @@ const RequisicaoUnificadaPage = () => {
     }
   };
 
+  // Bloco reutilizável de rastreabilidade (Solicitar | Solicitados | <3ª aba>).
+  // Usado por Procedimento, Terapêutico e Regulação para listar o que foi solicitado
+  // e permitir reimprimir/visualizar. O rótulo da 3ª aba varia por categoria.
+  const renderTrackingTabs = (thirdLabel: string, emptyIcon: typeof Clock, emptyMsg: string) => {
+    // O formulário de solicitação destes fluxos (APAC / hemo+SAT / regulação) fica ACIMA
+    // deste bloco. Por isso aqui só mostramos o rastro: Solicitados + <3ª aba>.
+    // Garante que a sub-aba ativa seja sempre uma das duas de rastreio.
+    const trackTab = activeSubTab === "resultados" ? "resultados" : "solicitados";
+    return (
+    <div className="mt-2 pt-3 border-t border-border/60">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
+        Histórico de solicitações
+      </p>
+      <Tabs value={trackTab} onValueChange={setActiveSubTab}>
+      <TabsList className="bg-muted/50">
+        <TabsTrigger value="solicitados" className="gap-1.5 text-xs">
+          <Clock className="h-3.5 w-3.5" /> Solicitados
+          {pendingRequests.length > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{pendingRequests.length}</Badge>
+          )}
+        </TabsTrigger>
+        <TabsTrigger value="resultados" className="gap-1.5 text-xs">
+          <CheckCircle2 className="h-3.5 w-3.5" /> {thirdLabel}
+          {completedRequests.length > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{completedRequests.length}</Badge>
+          )}
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="solicitados" className="mt-4 space-y-3">
+        {loading ? (
+          <SectionLoader message="Carregando solicitações" subMessage="" size="sm" />
+        ) : pendingRequests.length === 0 ? (
+          <EmptyState icon={emptyIcon} message={emptyMsg} />
+        ) : (
+          pendingRequests.map(req => (
+            <RequestCard key={req.id} request={req} category={activeCategory}
+              onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
+              onCancel={() => handleCancelRequest(req.id)} />
+          ))
+        )}
+      </TabsContent>
+      <TabsContent value="resultados" className="mt-4 space-y-3">
+        {loading ? (
+          <SectionLoader message="Carregando" subMessage="" size="sm" />
+        ) : completedRequests.length === 0 ? (
+          <EmptyState icon={CheckCircle2} message={`Nenhum item em "${thirdLabel}"`} />
+        ) : (
+          completedRequests.map(req => (
+            <RequestCard key={req.id} request={req} category={activeCategory}
+              onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
+              showResult />
+          ))
+        )}
+      </TabsContent>
+      </Tabs>
+    </div>
+    );
+  };
+
   const catConfig = CATEGORIES[activeCategory];
   if (!catConfig) console.error("[Requisicoes] catConfig undefined; activeCategory =", activeCategory);
   const CatIcon = catConfig?.icon ?? ClipboardList;
@@ -849,6 +908,8 @@ const RequisicaoUnificadaPage = () => {
               setFormPatientSector(p.sector || "");
             }}
           />
+          {/* Rastreabilidade — procedimentos solicitados (entre o laudo e o acesso rápido/OPME) */}
+          {renderTrackingTabs("Laudos", FileText, "Nenhum procedimento solicitado")}
           {/* OPME — complementar ao laudo */}
           <div className="border rounded-lg p-3 bg-muted/20">
             <div className="flex items-center justify-between">
@@ -868,6 +929,8 @@ const RequisicaoUnificadaPage = () => {
       ) : activeCategory === "terapeutico" ? (
         /* ── Terapêutico: Hemocomponentes + SAT ── */
         <div className="space-y-3">
+          {/* Rastreabilidade — terapêuticos solicitados (logo abaixo, antes das guias) */}
+          {renderTrackingTabs("Executados", Droplet, "Nenhum terapêutico solicitado")}
           <p className="text-[11px] text-muted-foreground font-medium px-1">
             Selecione o formulário terapêutico para o paciente:
           </p>
@@ -942,52 +1005,8 @@ const RequisicaoUnificadaPage = () => {
               ))}
             </div>
           </div>
-          {/* Solicitações anteriores de regulação */}
-          <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
-            <TabsList className="bg-muted/50">
-              <TabsTrigger value="solicitar" className="gap-1.5 text-xs">
-                <Plus className="h-3.5 w-3.5" /> Solicitar
-              </TabsTrigger>
-              <TabsTrigger value="solicitados" className="gap-1.5 text-xs">
-                <Clock className="h-3.5 w-3.5" /> Solicitados
-                {pendingRequests.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{pendingRequests.length}</Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="resultados" className="gap-1.5 text-xs">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Laudos
-                {completedRequests.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{completedRequests.length}</Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="solicitados" className="mt-4 space-y-3">
-              {loading ? (
-                <SectionLoader message="Carregando regulações" subMessage="" size="sm" />
-              ) : pendingRequests.length === 0 ? (
-                <EmptyState icon={Navigation2} message="Nenhuma solicitação de regulação pendente" />
-              ) : (
-                pendingRequests.map(req => (
-                  <RequestCard key={req.id} request={req} category={activeCategory}
-                    onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
-                    onCancel={() => handleCancelRequest(req.id)} />
-                ))
-              )}
-            </TabsContent>
-            <TabsContent value="resultados" className="mt-4 space-y-3">
-              {loading ? (
-                <SectionLoader message="Carregando laudos" subMessage="" size="sm" />
-              ) : completedRequests.length === 0 ? (
-                <EmptyState icon={CheckCircle2} message="Nenhum laudo de regulação disponível" />
-              ) : (
-                completedRequests.map(req => (
-                  <RequestCard key={req.id} request={req} category={activeCategory}
-                    onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
-                    showResult />
-                ))
-              )}
-            </TabsContent>
-          </Tabs>
+          {/* Rastreabilidade — regulações solicitadas (logo abaixo dos subtópicos) */}
+          {renderTrackingTabs("Laudos", Navigation2, "Nenhuma solicitação de regulação pendente")}
         </div>
       ) : (
       <>
