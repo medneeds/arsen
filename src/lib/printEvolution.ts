@@ -341,13 +341,13 @@ export const printEvolution = async (
     .map(s => `<tr style="page-break-inside:avoid"><td style="padding:0;border:none">${s}</td></tr>`)
     .join('');
 
+  // Header repetível via <thead> NATIVO: o navegador repete o thead em cada
+  // página automaticamente, reservando o espaço correto — sem position:fixed
+  // nem script de runtime (que causavam sobreposição do nome e sumiço de campos).
   const bodyHtml = `
-    <div style="height:0;overflow:visible">${patientHeader}</div>
-    <table id="evo-print-wrapper" style="width:100%;border-collapse:collapse">
-      <thead id="evo-print-thead">
-        <tr><td style="padding:0;border:none">
-          <div id="nz-thead-spacer" style="height:0;display:block"></div>
-        </td></tr>
+    <table style="width:100%;border-collapse:collapse">
+      <thead style="display:table-header-group">
+        <tr><td style="padding:0;border:none">${patientHeader}</td></tr>
       </thead>
       <tbody>
         ${sectionRows}
@@ -399,16 +399,8 @@ export const printEvolution = async (
       .nz-rich strong, .nz-rich b { font-weight: 600; }
       .nz-rich em, .nz-rich i { font-style: italic; }
       .nz-rich u { text-decoration: underline; }
-      @media print {
-        #patient-header-repeat {
-          position: fixed;
-          left: 0;
-          right: 0;
-          width: 100%;
-          background: #fff;
-          z-index: 10;
-        }
-      }
+      /* O header do paciente repete via <thead> nativo — sem position:fixed. */
+      #patient-header-repeat { background: #fff; }
     `,
   });
 

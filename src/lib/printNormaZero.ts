@@ -85,22 +85,12 @@ export const generateDocCode = (prefix: string = "DOC"): string => {
 export const normaZeroBaseStyles = (orientation: "portrait" | "landscape" = "portrait") => `
   @page {
     size: A4 ${orientation};
-    margin: ${orientation === "landscape" ? "40mm 12mm 16mm 12mm" : "42mm 14mm 18mm 14mm"};
+    margin: ${orientation === "landscape" ? "10mm 12mm" : "12mm 14mm"};
     @bottom-right { content: "Pág. " counter(page) "/" counter(pages); font-size: 6pt; color: #94a3b8; }
   }
   @media print {
     body { margin: 0; }
-    .nz-header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
-      background: #fff;
-      padding-bottom: 4px;
-      page-break-after: avoid;
-    }
-    .nz-body-content { margin-top: 0; }
+    .nz-header { page-break-after: avoid; }
     .nz-footer { page-break-before: avoid; }
     h2.nz-section { page-break-after: avoid; }
     table.nz { page-break-inside: auto; }
@@ -252,44 +242,7 @@ ${patientFooterLine ? `<div style="font-size:6pt;font-weight:600;color:#64748b;p
   <div>${dateStr} ${timeStr}</div>
 </div>
 
-<script>
-window.onload = () => {
-  var spacer = document.getElementById('nz-thead-spacer');
-  if (spacer) {
-    var nzHeader = document.querySelector('.nz-header');
-    var docBar = document.querySelector('.nz-doc-bar');
-    var h1Title = document.querySelector('h1.nz-title');
-    var subtitle = document.querySelector('.nz-subtitle');
-    if (nzHeader) {
-      if (docBar) nzHeader.appendChild(docBar);
-      if (h1Title) nzHeader.appendChild(h1Title);
-      if (subtitle) nzHeader.appendChild(subtitle);
-    }
-    var nzH = Math.ceil((nzHeader || document.body).getBoundingClientRect().height);
-    var patientHdr = document.getElementById('patient-header-repeat');
-    if (patientHdr) {
-      patientHdr.style.top = nzH + 'px';
-      var patH = Math.ceil(patientHdr.getBoundingClientRect().height);
-      spacer.style.height = (nzH + patH + 4) + 'px';
-    } else {
-      spacer.style.height = nzH + 'px';
-    }
-  } else {
-    var nzHeader2 = document.querySelector('.nz-header');
-    var patientHeader = document.getElementById('patient-header-repeat');
-    var bodyContent = document.querySelector('.nz-body-content');
-    if (nzHeader2 && patientHeader) {
-      var nzH2 = Math.ceil(nzHeader2.getBoundingClientRect().height);
-      patientHeader.style.top = nzH2 + 'px';
-      if (bodyContent) {
-        var phH = Math.ceil(patientHeader.getBoundingClientRect().height);
-        bodyContent.style.marginTop = (nzH2 + phH + 6) + 'px';
-      }
-    }
-  }
-  setTimeout(() => window.print(), 350);
-};
-</script>
+<script>window.onload = () => { setTimeout(() => window.print(), 350); };</script>
 </body></html>`;
 }
 
