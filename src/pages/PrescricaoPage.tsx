@@ -650,6 +650,11 @@ function buildLine2Tokens(item: PrescriptionItem): Array<{ text: string; isBadge
   return tokens;
 }
 
+// ── Controle de ativação da reconstituição automática (Correção C) ──────────────
+// FALSE até a auditoria farmacêutica validar a lista de medicamentos que exigem
+// reconstituição (ver relatório de implantação §7). Mecânica pronta; lista pendente.
+const RECONSTITUTION_AUTOFILL_ENABLED = false;
+
 function buildSolutoToken(item: PrescriptionItem): string {
   const qtyRaw  = (item.quantity || '').trim();
   const qty     = qtyRaw && qtyRaw !== '0' ? qtyRaw : '';
@@ -5653,6 +5658,19 @@ const PrescricaoPage = () => {
       baseItem.diluent = 'sem_diluente';
       baseItem.diluentVolume = '';
       // volumeTotal continua como o volume da bolsa (já vem preenchido) p/ cálculo de vazão
+    }
+    // ── Reconstituição (pó liofilizado) — Correção C ──────────────────────────
+    // Mecânica de sinalização POR NOME de medicação (não volume por dose).
+    // A gravação automática só ocorre quando RECONSTITUTION_AUTOFILL_ENABLED = true,
+    // que será ligado APÓS a auditoria farmacêutica validar a lista-fonte.
+    // Até lá, a mecânica está pronta mas inerte — zero risco de instrução não-validada.
+    if (RECONSTITUTION_AUTOFILL_ENABLED && isIV && !baseItem.reconstitutionSolvent) {
+      const recon = getReconstitutionDefault(med.name);
+      if (recon.required) {
+        // Sinaliza reconstituição; solvente/volume entram como SUGESTÃO editável.
+        baseItem.reconstitutionSolvent = recon.solvent || 'AD';
+        baseItem.reconstitutionVolume = recon.volumeMl || '';
+      }
     }
     // Autofill inhalation defaults from catalog
     if (med.category === 'inhalation') {
