@@ -75,6 +75,8 @@ export interface ExtraPrintItem {
   nutManual?: boolean;
   // Insulinoterapia
   insulinPlan?: InsulinPlan;
+  // IV
+  ivBolus?: boolean;
 }
 
 export interface ExtraPrintPatient {

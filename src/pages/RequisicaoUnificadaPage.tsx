@@ -1007,7 +1007,7 @@ const RequisicaoUnificadaPage = () => {
             <TabsTrigger value="resultados" className="gap-1.5 text-xs">
               <CheckCircle2 className="h-3.5 w-3.5" />
               {/* Terapêutico/Regulação não geram laudo: o desfecho é "Executados". */}
-              {activeCategory === "terapeutico" || activeCategory === "regulacao" ? "Executados" : "Resultados"}
+              {(activeCategory as string) === "terapeutico" || (activeCategory as string) === "regulacao" ? "Executados" : "Resultados"}
               {completedRequests.length > 0 && (
                 <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{completedRequests.length}</Badge>
               )}
