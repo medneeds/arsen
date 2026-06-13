@@ -43,6 +43,7 @@ interface WaitingPatient {
   patient_name: string;
   risk_classification: string | null;
   chief_complaint: string | null;
+  patient_registry_id: string | null;
   source: "pre_admission" | "encounter";
 }
 
@@ -319,7 +320,7 @@ export default function UeVerticalPage() {
     if (!currentHospital?.id || !currentState?.id) return;
     try {
       const { data: preAdm } = await supabase.from("pre_admissions")
-        .select("id, patient_name, risk_classification, chief_complaint")
+        .select("id, patient_name, risk_classification, chief_complaint, patient_registry_id")
         .eq("hospital_unit_id", currentHospital.id).eq("state_id", currentState.id)
         .in("status", ["classificado", "aguardando_leito"])
         .order("created_at", { ascending: true });
@@ -327,6 +328,7 @@ export default function UeVerticalPage() {
       setWaitingPatients((preAdm || []).map(p => ({
         id: p.id, patient_name: p.patient_name,
         risk_classification: p.risk_classification, chief_complaint: p.chief_complaint,
+        patient_registry_id: (p as any).patient_registry_id ?? null,
         source: "pre_admission" as const,
       })));
     } catch (err) { console.error("Fetch waiting error:", err); }
@@ -374,6 +376,7 @@ export default function UeVerticalPage() {
         hospital_unit_id: currentHospital!.id, state_id: currentState!.id,
         department: UE_DEPARTMENT, admission_date: new Date().toISOString(),
         diagnoses: wp.chief_complaint || null, display_order: nextNum,
+        patient_registry_id: wp.patient_registry_id ?? null,
       } as any);
       if (error) throw error;
 

@@ -47,6 +47,7 @@ interface PreAdmission {
   sex: string | null;
   risk_classification: string | null;
   chief_complaint: string | null;
+  patient_registry_id: string | null;
   status: string;
   created_at: string;
 }
@@ -152,7 +153,7 @@ const TriageQueuePage = () => {
     try {
       const { data, error } = await supabase
         .from("pre_admissions")
-        .select("id, patient_name, birth_date, sex, risk_classification, chief_complaint, status, created_at")
+        .select("id, patient_name, birth_date, sex, risk_classification, chief_complaint, patient_registry_id, status, created_at")
         .eq("hospital_unit_id", currentHospital.id)
         .eq("state_id", currentState.id)
         .in("status", ["pre_admissao", "classificado", "aguardando_leito"])
@@ -217,6 +218,7 @@ const TriageQueuePage = () => {
         hospital_unit_id: currentHospital!.id, state_id: currentState!.id,
         department: "URGÊNCIA E EMERGÊNCIA ADULTO", admission_date: new Date().toISOString(),
         display_order: nextNum,
+        patient_registry_id: patient.registry_id ?? null,
       } as any).select("id").single();
       if (insertErr) throw insertErr;
 
@@ -243,6 +245,7 @@ const TriageQueuePage = () => {
         hospital_unit_id: currentHospital!.id, state_id: currentState!.id,
         department: "URGÊNCIA E EMERGÊNCIA ADULTO", admission_date: new Date().toISOString(),
         display_order: nextNum,
+        patient_registry_id: patient.registry_id ?? null,
       } as any).select("id").single();
       if (insertErr) throw insertErr;
 
@@ -274,6 +277,7 @@ const TriageQueuePage = () => {
           clinical_status: routeTarget.risk_classification === "vermelho" ? "gravissimo"
             : routeTarget.risk_classification === "laranja" ? "grave" : "potencialmente_grave",
           diagnoses: routeTarget.chief_complaint || null,
+          patient_registry_id: routeTarget.patient_registry_id ?? null,
         } as any);
         if (error) throw error;
         toast.success(`${routeTarget.patient_name} → Maca ${bedNumber} (UE Horizontal)`);
@@ -291,6 +295,7 @@ const TriageQueuePage = () => {
           hospital_unit_id: currentHospital!.id, state_id: currentState!.id,
           department: "URGÊNCIA E EMERGÊNCIA ADULTO", admission_date: new Date().toISOString(),
           diagnoses: routeTarget.chief_complaint || null, display_order: nextNum,
+          patient_registry_id: routeTarget.patient_registry_id ?? null,
         } as any);
         if (error) throw error;
         toast.success(`${routeTarget.patient_name} → Consultório ${consultorio} (${bedNumber})`);

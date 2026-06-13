@@ -343,6 +343,8 @@ const RequisicaoUnificadaPage = () => {
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [allProcedureRequests, setAllProcedureRequests] = useState<any[]>([]);
+  const [loadingAllProcedures, setLoadingAllProcedures] = useState(false);
 
   // Cockpit (right rail) — same pattern as Evolução / Prescrição
   const cockpitPatient = useCockpitPatient();
@@ -422,7 +424,10 @@ const RequisicaoUnificadaPage = () => {
   }, [searchParams.get("categoria"), searchParams.get("especial")]);
 
   useEffect(() => {
-    if (unitId && stateId) fetchRequests();
+    if (unitId && stateId) {
+      fetchRequests();
+      if (activeCategory === "procedimento") fetchAllProcedures();
+    }
   }, [unitId, stateId, activeCategory, formPatientId]);
 
   const fetchRequests = async () => {
@@ -467,6 +472,26 @@ const RequisicaoUnificadaPage = () => {
     }
   };
 
+  const fetchAllProcedures = async () => {
+    if (!unitId || !stateId) return;
+    setLoadingAllProcedures(true);
+    try {
+      const { data } = await supabase
+        .from("exam_requests")
+        .select("*")
+        .eq("hospital_unit_id", unitId)
+        .eq("state_id", stateId)
+        .eq("category", "procedimento")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      setAllProcedureRequests(data || []);
+    } catch {
+      // silent — histórico geral é suplementar
+    } finally {
+      setLoadingAllProcedures(false);
+    }
+  };
+
   // ── Filtered lists ──
   // Defesa em profundidade: mesmo após o filtro server-side, garante que
   // só apareçam itens do paciente atualmente aberto quando há contexto.
@@ -492,6 +517,15 @@ const RequisicaoUnificadaPage = () => {
     scopedRequests.filter(r => r.status === "completed" &&
       (!search || r.patient_name?.toLowerCase().includes(search.toLowerCase()))),
     [scopedRequests, search]
+  );
+
+  const allPendingProcedures = useMemo(() =>
+    allProcedureRequests.filter(r => r.status === "pending" || r.status === "in_progress"),
+    [allProcedureRequests]
+  );
+  const allCompletedProcedures = useMemo(() =>
+    allProcedureRequests.filter(r => r.status === "completed"),
+    [allProcedureRequests]
   );
 
   const toggleItem = (item: string) => {
@@ -742,6 +776,7 @@ const RequisicaoUnificadaPage = () => {
       if (error) throw error;
       toast.success("Requisição cancelada");
       fetchRequests();
+      if (activeCategory === "procedimento") fetchAllProcedures();
     } catch {
       toast.error("Erro ao cancelar");
     }
@@ -750,38 +785,52 @@ const RequisicaoUnificadaPage = () => {
   // Bloco reutilizável de rastreabilidade (Solicitar | Solicitados | <3ª aba>).
   // Usado por Procedimento, Terapêutico e Regulação para listar o que foi solicitado
   // e permitir reimprimir/visualizar. O rótulo da 3ª aba varia por categoria.
-  const renderTrackingTabs = (thirdLabel: string, emptyIcon: typeof Clock, emptyMsg: string) => {
-    // O formulário de solicitação destes fluxos (APAC / hemo+SAT / regulação) fica ACIMA
-    // deste bloco. Por isso aqui só mostramos o rastro: Solicitados + <3ª aba>.
-    // Garante que a sub-aba ativa seja sempre uma das duas de rastreio.
-    const trackTab = activeSubTab === "resultados" ? "resultados" : "solicitados";
+  const renderTrackingTabs = (
+    thirdLabel: string,
+    emptyIcon: typeof Clock,
+    emptyMsg: string,
+    opts?: {
+      header?: string;
+      pending?: any[];
+      completed?: any[];
+      isLoading?: boolean;
+      tabValue?: string;
+      onTabChange?: (v: string) => void;
+    }
+  ) => {
+    const activePending   = opts?.pending    ?? pendingRequests;
+    const activeCompleted = opts?.completed  ?? completedRequests;
+    const activeLoading   = opts?.isLoading  ?? loading;
+    const trackTab        = opts?.tabValue   ?? (activeSubTab === "resultados" ? "resultados" : "solicitados");
+    const setTrackTab     = opts?.onTabChange ?? setActiveSubTab;
+    const sectionHeader   = opts?.header     ?? "Histórico de solicitações";
     return (
     <div className="mt-2 pt-3 border-t border-border/60">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
-        Histórico de solicitações
+        {sectionHeader}
       </p>
-      <Tabs value={trackTab} onValueChange={setActiveSubTab}>
+      <Tabs value={trackTab} onValueChange={setTrackTab}>
       <TabsList className="bg-muted/50">
         <TabsTrigger value="solicitados" className="gap-1.5 text-xs">
           <Clock className="h-3.5 w-3.5" /> Solicitados
-          {pendingRequests.length > 0 && (
-            <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{pendingRequests.length}</Badge>
+          {activePending.length > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{activePending.length}</Badge>
           )}
         </TabsTrigger>
         <TabsTrigger value="resultados" className="gap-1.5 text-xs">
           <CheckCircle2 className="h-3.5 w-3.5" /> {thirdLabel}
-          {completedRequests.length > 0 && (
-            <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{completedRequests.length}</Badge>
+          {activeCompleted.length > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{activeCompleted.length}</Badge>
           )}
         </TabsTrigger>
       </TabsList>
       <TabsContent value="solicitados" className="mt-4 space-y-3">
-        {loading ? (
+        {activeLoading ? (
           <SectionLoader message="Carregando solicitações" subMessage="" size="sm" />
-        ) : pendingRequests.length === 0 ? (
+        ) : activePending.length === 0 ? (
           <EmptyState icon={emptyIcon} message={emptyMsg} />
         ) : (
-          pendingRequests.map(req => (
+          activePending.map(req => (
             <RequestCard key={req.id} request={req} category={activeCategory}
               onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
               onCancel={() => handleCancelRequest(req.id)} />
@@ -789,12 +838,12 @@ const RequisicaoUnificadaPage = () => {
         )}
       </TabsContent>
       <TabsContent value="resultados" className="mt-4 space-y-3">
-        {loading ? (
+        {activeLoading ? (
           <SectionLoader message="Carregando" subMessage="" size="sm" />
-        ) : completedRequests.length === 0 ? (
+        ) : activeCompleted.length === 0 ? (
           <EmptyState icon={CheckCircle2} message={`Nenhum item em "${thirdLabel}"`} />
         ) : (
-          completedRequests.map(req => (
+          activeCompleted.map(req => (
             <RequestCard key={req.id} request={req} category={activeCategory}
               onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
               showResult />
@@ -891,41 +940,96 @@ const RequisicaoUnificadaPage = () => {
         })}
       </div>
 
-      {/* ── Procedimento: formulário APAC embutido + OPME ── */}
+      {/* ── Procedimento: abas Solicitar | Solicitados | Laudos — igual ao padrão de Lab/Imagem ── */}
       {activeCategory === "procedimento" ? (
-        <div className="space-y-4">
-          <ApacEmbeddedForm
-            patientName={formPatientName}
-            patientBed={formPatientBed}
-            patientSector={formPatientSector}
-            patientId={formPatientId}
-            preselectProcedure={apacPreselect}
-            onPreselectConsumed={() => setApacPreselect("")}
-            onSelectPatient={(p) => {
-              setFormPatientId(p.id);
-              setFormPatientName(p.name || "");
-              setFormPatientBed(p.bed_number || "");
-              setFormPatientSector(p.sector || "");
-            }}
-          />
-          {/* Rastreabilidade — procedimentos solicitados (entre o laudo e o acesso rápido/OPME) */}
-          {renderTrackingTabs("Laudos", FileText, "Nenhum procedimento solicitado")}
-          {/* OPME — complementar ao laudo */}
-          <div className="border rounded-lg p-3 bg-muted/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-orange-500" />
-                <div>
-                  <p className="text-sm font-medium">Registro de OPME</p>
-                  <p className="text-[11px] text-muted-foreground">Órtese, Prótese e Material Especial — complementar ao laudo</p>
-                </div>
-              </div>
-              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setOpmeOpen(true)}>
-                <Package className="h-3.5 w-3.5" /> Registrar OPME
-              </Button>
-            </div>
+        <Tabs
+          value={["solicitados", "resultados"].includes(activeSubTab) ? activeSubTab : "solicitar"}
+          onValueChange={setActiveSubTab}
+        >
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <TabsList className="bg-muted/50">
+              <TabsTrigger value="solicitar" className="gap-1.5 text-xs">
+                <Plus className="h-3.5 w-3.5" /> Solicitar
+              </TabsTrigger>
+              <TabsTrigger value="solicitados" className="gap-1.5 text-xs">
+                <Clock className="h-3.5 w-3.5" /> Solicitados
+                {allPendingProcedures.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{allPendingProcedures.length}</Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="resultados" className="gap-1.5 text-xs">
+                <FileText className="h-3.5 w-3.5" /> Laudos
+                {allCompletedProcedures.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{allCompletedProcedures.length}</Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
           </div>
-        </div>
+
+          {/* ── Aba: Solicitar ── */}
+          <TabsContent value="solicitar" className="mt-4 space-y-4">
+            <ApacEmbeddedForm
+              patientName={formPatientName}
+              patientBed={formPatientBed}
+              patientSector={formPatientSector}
+              patientId={formPatientId}
+              preselectProcedure={apacPreselect}
+              onPreselectConsumed={() => setApacPreselect("")}
+              onSelectPatient={(p) => {
+                setFormPatientId(p.id);
+                setFormPatientName(p.name || "");
+                setFormPatientBed(p.bed_number || "");
+                setFormPatientSector(p.sector || "");
+              }}
+              onProcedureRegistered={() => { fetchAllProcedures(); setActiveSubTab("solicitados"); }}
+            />
+            {/* OPME — complementar ao laudo */}
+            <div className="border rounded-lg p-3 bg-muted/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="h-4 w-4 text-orange-500" />
+                  <div>
+                    <p className="text-sm font-medium">Registro de OPME</p>
+                    <p className="text-[11px] text-muted-foreground">Órtese, Prótese e Material Especial — complementar ao laudo</p>
+                  </div>
+                </div>
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setOpmeOpen(true)}>
+                  <Package className="h-3.5 w-3.5" /> Registrar OPME
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* ── Aba: Solicitados (todos os pacientes da unidade) ── */}
+          <TabsContent value="solicitados" className="mt-4 space-y-3">
+            {loadingAllProcedures ? (
+              <SectionLoader message="Carregando solicitações" subMessage="" size="sm" />
+            ) : allPendingProcedures.length === 0 ? (
+              <EmptyState icon={FileText} message="Nenhum procedimento solicitado" />
+            ) : (
+              allPendingProcedures.map(req => (
+                <RequestCard key={req.id} request={req} category="procedimento"
+                  onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
+                  onCancel={() => handleCancelRequest(req.id)} />
+              ))
+            )}
+          </TabsContent>
+
+          {/* ── Aba: Laudos (todos os concluídos da unidade) ── */}
+          <TabsContent value="resultados" className="mt-4 space-y-3">
+            {loadingAllProcedures ? (
+              <SectionLoader message="Carregando" subMessage="" size="sm" />
+            ) : allCompletedProcedures.length === 0 ? (
+              <EmptyState icon={CheckCircle2} message="Nenhum item em &quot;Laudos&quot;" />
+            ) : (
+              allCompletedProcedures.map(req => (
+                <RequestCard key={req.id} request={req} category="procedimento"
+                  onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
+                  showResult />
+              ))
+            )}
+          </TabsContent>
+        </Tabs>
       ) : activeCategory === "terapeutico" ? (
         /* ── Terapêutico: Hemocomponentes + SAT ── */
         <div className="space-y-3">
@@ -1891,7 +1995,7 @@ function CollapsibleInfoCard({ title, summary, badge, children }: { title: strin
   );
 }
 
-function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patientSector, patientId, onSelectPatient, preselectProcedure, onPreselectConsumed }: {
+function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patientSector, patientId, onSelectPatient, preselectProcedure, onPreselectConsumed, onProcedureRegistered }: {
   patientName: string;
   patientBed: string;
   patientSector: string;
@@ -1899,6 +2003,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   onSelectPatient?: (p: { id: string; name: string; bed_number: string | null; sector: string | null }) => void;
   preselectProcedure?: string;
   onPreselectConsumed?: () => void;
+  onProcedureRegistered?: () => void;
 }) {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
@@ -1920,6 +2025,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const [patientAddress, setPatientAddress] = useState("");
   const [patientCity, setPatientCity] = useState("São Luís");
   const [patientUF, setPatientUF] = useState("MA");
+  // UUID permanente do paciente (patients.patient_registry_id) — persiste entre admissões
+  const [patientRegistryId, setPatientRegistryId] = useState<string | null>(null);
 
   // ── Seletor de paciente (apenas quando entrou em /requisicoes sem patientId) ──
   const [unitPatients, setUnitPatients] = useState<Array<{ id: string; name: string; bed_number: string | null; sector: string | null; medical_record: string | null }>>([]);
@@ -1988,6 +2095,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
 
   // Auto-hidratação do prontuário do paciente vinculado (patient_registry via patients.patient_registry_id)
   useEffect(() => {
+    setPatientRegistryId(null); // reseta ao trocar de paciente, evita ID obsoleto
     const validPid = asUuidOrNull(patientId);
     if (!validPid) return;
     let cancelled = false;
@@ -2000,6 +2108,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           .maybeSingle();
         if (!pat || cancelled) return;
         const registryId = (pat as any).patient_registry_id as string | null;
+        if (!cancelled) setPatientRegistryId(registryId);
 
         // Diagnóstico/CID e justificativa via admissão mais recente (ORDER BY garante)
         const { data: adm } = await supabase
@@ -2107,7 +2216,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       })();
       const payload = {
         category: "procedimento",
-        patient_id: validPid,
+        patient_id: validPid,                              // FK → patients.id (UUID do leito)
+        patient_registry_id: patientRegistryId ?? null,    // FK → patient_registry.id (permanente)
         patient_name: apacPatientName.trim(),
         patient_bed: (patientBed || "").trim() || null,
         patient_sector: (patientSector || "").trim() || null,
@@ -2119,13 +2229,14 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         requested_by_name: requesterName,
         hospital_unit_id: currentHospital.id,
         state_id: currentState.id,
-        // Validação direta: o laudo APAC é o próprio documento — entra concluído.
-        status: "completed",
-        completed_at: new Date().toISOString(),
-        completed_by: user.email?.split("@")[0] || "Sistema",
+        status: "pending",
       };
       const { error } = await (supabase as any).from("exam_requests").insert(payload);
-      if (error) console.error("[Procedimento] Falha ao registrar rastro:", error);
+      if (error) {
+        console.error("[Procedimento] Falha ao registrar rastro:", error);
+      } else {
+        onProcedureRegistered?.();
+      }
     } catch (err) {
       console.error("[Procedimento] Erro ao registrar rastro:", err);
     }

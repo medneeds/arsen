@@ -349,6 +349,7 @@ export default function HistoricoPacientePage() {
         const catLabel: Record<string, string> = {
           lab: "Laboratório", imagem: "Imagem", parecer: "Parecer",
           cultura: "Cultura", apac: "APAC", hemocomponente: "Hemocomponente",
+          procedimento: "Procedimento", terapeutico: "Terapêutico", regulacao: "Regulação",
         };
         const html = docHeader(`REQUISIÇÃO — ${(catLabel[data.category ?? ""] || (data.category ?? "EXAME")).toUpperCase()}`) + `
           <p class="doc-title">${catLabel[data.category ?? ""] || data.category} · ${format(new Date(data.created_at), "dd/MM/yyyy 'às' HH:mm")}</p>
