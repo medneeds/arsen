@@ -1,0 +1,5 @@
+ARSEN DEPLOY CHECK
+marcador: deploy-check-20260615T060751Z-8588b9d4
+gerado: 2026-06-15T06:07:51Z (UTC)
+proposito: teste de sincronizacao GitHub -> Lovable -> producao.
+seguro de apagar. nenhum impacto clinico ou de UI.
