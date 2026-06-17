@@ -638,7 +638,7 @@ function buildLine2Tokens(item: PrescriptionItem): Array<{ text: string; isBadge
 
   // Vazão — infusionRate digitado pelo médico tem prioridade sobre cálculo automático
   if (item.ivBolus) {
-    tokens.push({ text: 'Bolus EV' });
+    tokens.push({ text: 'Bolus' });
   } else if (item.infusionRate) {
     // Valor digitado manualmente pelo médico → usar diretamente
     const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
@@ -872,7 +872,7 @@ function buildInlinePrepLine(item: PrescriptionItem): string {
 
   // Tipo de infusão — regra unificada via isContinuousInfusion (fonte única de verdade).
   if (item.ivBolus) {
-    segs.push('Bolus EV');
+    segs.push('Bolus');
   } else if (isContinuousInfusion(item)) {
     segs.push('BIC');
   }
@@ -937,7 +937,7 @@ function buildPrepSegments(item: PrescriptionItem): { head: string[]; tail: stri
   // ── TAIL ──────────────────────────────────────────────────────────────────
   // Modo de infusão — regra unificada via isContinuousInfusion (fonte única de verdade).
   if (item.ivBolus) {
-    tail.push('Bolus EV');
+    tail.push('Bolus');
   } else if (isContinuousInfusion(item)) {
     tail.push('BIC');
   }
@@ -6053,7 +6053,17 @@ const PrescricaoPage = () => {
         toast.error("Item validado", { description: "Suspenda o item para alterar ou aguarde a renovação 05h." });
         return item;
       }
-      return { ...item, [field]: value };
+      const next = { ...item, [field]: value } as PrescriptionItem;
+      // Sync posology ↔ flags sn/acm para evitar duplicidade no PDF
+      // (dropdown de aprazamento grava em posology; FlagToggle grava em flags).
+      if (field === 'posology') {
+        const upper = String(value || '').trim().toUpperCase();
+        let flags = next.flags;
+        if (upper === 'S/N') flags = flags.filter(f => f !== 'sn' && f !== 'acm');
+        else if (upper === 'ACM') flags = flags.filter(f => f !== 'acm' && f !== 'sn');
+        next.flags = flags;
+      }
+      return next;
     }));
   }, [isItemEditLocked]);
 
@@ -6088,10 +6098,20 @@ const PrescricaoPage = () => {
         toast.error("Item validado", { description: "Flags não podem ser alteradas após validação." });
         return item;
       }
-      const flags = item.flags.includes(flag)
-        ? item.flags.filter(f => f !== flag)
-        : [...item.flags, flag];
-      return { ...item, flags };
+      const willEnable = !item.flags.includes(flag);
+      const flags = willEnable
+        ? [...item.flags, flag]
+        : item.flags.filter(f => f !== flag);
+      const next = { ...item, flags } as PrescriptionItem;
+      // Sync flags sn/acm → posology: se ativar sn/acm e posology já carrega o mesmo
+      // rótulo (vindo do dropdown de aprazamento), limpa o posology para não duplicar.
+      if (willEnable && (flag === 'sn' || flag === 'acm')) {
+        const posUpper = String(item.posology || '').trim().toUpperCase();
+        if ((flag === 'sn' && posUpper === 'S/N') || (flag === 'acm' && posUpper === 'ACM')) {
+          next.posology = '';
+        }
+      }
+      return next;
     }));
   }, [isItemEditLocked]);
 
@@ -10856,7 +10876,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                           <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '4px', color: '#0c4a6e', backgroundColor: '#e0f2fe', padding: '0.5px 5px', borderRadius: '8px', letterSpacing: '0.2px' }}>⏱ {slots.join(' · ')}</span>
                         )}
                         {item.flags.length > 0 && (
-                          <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '2px', color: '#fff', backgroundColor: '#334155', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
+                          <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '2px', color: '#fff', backgroundColor: '#0f172a', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
                         )}
                         {item.isExtra && (
                           <span style={{ fontSize: '5.5pt', fontWeight: 700, marginLeft: '2px', color: '#9a3412', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fdba74' }}>EXTRA</span>

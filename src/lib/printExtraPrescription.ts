@@ -195,7 +195,7 @@ function buildLine2(it: ExtraPrintItem): string {
   // (ex.: Domperidona/Simeticona via SNE, clister glicerinado).
   const routeNorm = (it.route || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const isIV = /(intravenosa|endovenosa|\bev\b|\biv\b)/.test(routeNorm);
-  if (it.ivBolus && isIV) parts.push('Bolus EV');
+  if (it.ivBolus && isIV) parts.push('Bolus');
   else if (it.infusionMode === 'BIC' && isIV) parts.push('BIC');
 
   // 8. Tempo de infusão (não em bolus)
