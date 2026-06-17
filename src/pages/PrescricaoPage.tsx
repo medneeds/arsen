@@ -7206,17 +7206,25 @@ const PrescricaoPage = () => {
       });
     }
     setShowPrintPortal(true);
-    // FIX bug "PDF em branco" em prescrições longas (25+ itens, logo institucional async):
-    // troca o setTimeout(300ms) por requestAnimationFrame duplo (garante commit do React)
-    // + delay extra de 500ms (dá tempo do <img> do logo decodificar). Sem isso o
-    // window.print() podia capturar o DOM ANTES do portal pintar.
+    // FIX bug "PDF em branco": mantém o portal montado DURANTE o diálogo de impressão
+    // (alguns browsers serializam a página depois que o diálogo abre — se removermos o
+    // portal cedo o "Salvar como PDF" captura DOM vazio). Só desmontamos no afterprint
+    // (ou via fallback de segurança após 30s).
+    let cleaned = false;
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      setShowPrintPortal(false);
+      setPrintSelectionIds(null);
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         setTimeout(() => {
           window.print();
-          setShowPrintPortal(false);
-          // Limpa filtro de seleção após o ciclo de impressão (se houver)
-          setPrintSelectionIds(null);
+          // fallback caso afterprint não dispare (alguns browsers/iframes)
+          setTimeout(cleanup, 30000);
         }, 500);
       });
     });
@@ -7239,12 +7247,20 @@ const PrescricaoPage = () => {
     }
     setPrintSelectionIds(new Set(selectedIds));
     setShowPrintPortal(true);
+    let cleaned = false;
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      setShowPrintPortal(false);
+      setPrintSelectionIds(null);
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         setTimeout(() => {
           window.print();
-          setShowPrintPortal(false);
-          setPrintSelectionIds(null);
+          setTimeout(cleanup, 30000);
         }, 500);
       });
     });
