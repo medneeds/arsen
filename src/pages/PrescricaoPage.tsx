@@ -2520,7 +2520,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 <span className="font-normal text-muted-foreground ml-1 normal-case">({formatPresentation(item.presentation)})</span>
               )}
             </p>
-            <MedicationFlagChips name={item.name} size="sm" />
+            <MedicationFlagChips name={item.name} route={item.route} size="sm" />
             {(() => {
               const ev = getEvidenceSuggestion(item.name);
               if (!ev) return null;
