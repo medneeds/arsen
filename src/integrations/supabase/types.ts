@@ -32,7 +32,7 @@ export type Database = {
           id: string
           initial_conduct: string | null
           macro_diagnosis: string | null
-          patient_id: string
+          patient_id: string | null
           patient_registry_id: string | null
           state_id: string
           updated_at: string
@@ -55,7 +55,7 @@ export type Database = {
           id?: string
           initial_conduct?: string | null
           macro_diagnosis?: string | null
-          patient_id: string
+          patient_id?: string | null
           patient_registry_id?: string | null
           state_id: string
           updated_at?: string
@@ -78,7 +78,7 @@ export type Database = {
           id?: string
           initial_conduct?: string | null
           macro_diagnosis?: string | null
-          patient_id?: string
+          patient_id?: string | null
           patient_registry_id?: string | null
           state_id?: string
           updated_at?: string

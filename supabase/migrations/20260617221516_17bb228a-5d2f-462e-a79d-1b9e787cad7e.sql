@@ -1,0 +1,1 @@
+ALTER TABLE public.admission_histories ALTER COLUMN patient_id DROP NOT NULL;
