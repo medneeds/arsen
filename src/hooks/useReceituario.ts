@@ -48,8 +48,13 @@ export function useReceituario(
   /** Salva um novo receituário. Retorna o id criado. */
   const save = useCallback(async (data: ReceituarioData): Promise<string | null> => {
     try {
+      if (!currentHospital?.id) {
+        toast.error("Selecione a unidade hospitalar antes de salvar o receituário");
+        return null;
+      }
       const payload = {
         type: data.type,
+        hospital_unit_id: currentHospital.id,
         patient_id: data.patient_id ?? null,
         patient_name: data.patient_name,
         patient_bed: data.patient_bed ?? null,
@@ -75,7 +80,7 @@ export function useReceituario(
       toast.error("Erro ao salvar receituário", { description: err.message });
       return null;
     }
-  }, [user, fetch]);
+  }, [user, currentHospital, fetch]);
 
   /** Atualiza um receituário existente. */
   const update = useCallback(async (id: string, data: Partial<ReceituarioData>): Promise<boolean> => {
