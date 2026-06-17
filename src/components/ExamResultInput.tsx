@@ -21,6 +21,7 @@ interface ExamResultInputProps {
   onResultFilesChange: (files: ResultFile[]) => void;
   readOnly?: boolean;
   requestId: string;
+  hospitalUnitId?: string | null;
 }
 
 const ExamResultInput: React.FC<ExamResultInputProps> = ({
@@ -30,6 +31,7 @@ const ExamResultInput: React.FC<ExamResultInputProps> = ({
   onResultFilesChange,
   readOnly = false,
   requestId,
+  hospitalUnitId,
 }) => {
   const [uploading, setUploading] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
