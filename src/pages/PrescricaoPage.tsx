@@ -10769,6 +10769,20 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
   const headerCellStyle: React.CSSProperties = { ...cellStyle, fontWeight: 700, fontSize: '6.5pt', backgroundColor: '#f1f5f9', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.3px' };
   const sectionStyle: React.CSSProperties = { fontWeight: 800, fontSize: '7pt', backgroundColor: '#0c4a6e', color: '#fff', textAlign: 'center', letterSpacing: '0.5px', padding: '4px 6px', border: '0.5px solid #0c4a6e' };
   const thStyle: React.CSSProperties = { backgroundColor: '#0c4a6e', color: '#fff', padding: '5px 6px', fontSize: '7pt', fontWeight: 700, textAlign: 'left', letterSpacing: '0.5px', border: '0.5px solid #0c4a6e' };
+  const safeFormatPatientDate = (value?: string | null): string => {
+    if (!value) return '—';
+    const raw = String(value).trim();
+    const isoDate = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (isoDate) {
+      const [, y, m, d] = isoDate;
+      const year = Number(y);
+      if (year >= 1850 && year <= new Date().getFullYear()) return `${d}/${m}/${y}`;
+      return raw;
+    }
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) return raw;
+    return parsed.toLocaleDateString('pt-BR');
+  };
 
   const isSimple = (cat: PrescriptionCategory) => ['nutrition', 'care'].includes(cat);
 
@@ -10778,9 +10792,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
   const footerPatientLine = [
     patient.name || null,
     patient.age || null,
-    patient.birthDate
-      ? (() => { try { const d = new Date(patient.birthDate + 'T12:00:00'); return isNaN(d.getTime()) ? patient.birthDate : d.toLocaleDateString('pt-BR'); } catch { return patient.birthDate; } })()
-      : null,
+    patient.birthDate ? safeFormatPatientDate(patient.birthDate) : null,
     patient.bed ? `Leito ${patient.bed}` : null,
     patient.record ? `Pront. ${patient.record}` : null,
   ].filter(Boolean).join(' · ');
@@ -10832,11 +10844,11 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
             <td style={headerCellStyle}>Sexo</td>
             <td style={cellStyle}>{patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'M' : 'F') : '—'}</td>
             <td style={headerCellStyle}>Admissão</td>
-            <td style={cellStyle}>{patient.admissionDate ? format(new Date(patient.admissionDate + 'T12:00:00'), 'dd/MM/yyyy') : '—'}</td>
+            <td style={cellStyle}>{safeFormatPatientDate(patient.admissionDate)}</td>
           </tr>
           <tr>
             <td style={headerCellStyle}>Nascimento</td>
-            <td style={cellStyle}>{patient.birthDate ? format(new Date(patient.birthDate + 'T12:00:00'), 'dd/MM/yyyy') : '—'}</td>
+            <td style={cellStyle}>{safeFormatPatientDate(patient.birthDate)}</td>
             <td style={headerCellStyle}>Unidade</td>
             <td style={cellStyle}>{patient.unit || '—'}</td>
             <td style={headerCellStyle}>Atendimento</td>
