@@ -14,6 +14,7 @@ export function useReceituario(
   patientName?: string | null,
 ) {
   const { user } = useAuth();
+  const { currentHospital } = useHospital();
   const [receituarios, setReceituarios] = useState<ReceituarioData[]>([]);
   const [loading, setLoading] = useState(false);
 
