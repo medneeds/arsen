@@ -21,6 +21,7 @@ interface ExamResultInputProps {
   onResultFilesChange: (files: ResultFile[]) => void;
   readOnly?: boolean;
   requestId: string;
+  hospitalUnitId?: string | null;
 }
 
 const ExamResultInput: React.FC<ExamResultInputProps> = ({
@@ -30,6 +31,7 @@ const ExamResultInput: React.FC<ExamResultInputProps> = ({
   onResultFilesChange,
   readOnly = false,
   requestId,
+  hospitalUnitId,
 }) => {
   const [uploading, setUploading] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -51,10 +53,14 @@ const ExamResultInput: React.FC<ExamResultInputProps> = ({
         toast.error("Sessão expirada. Faça login novamente.");
         return;
       }
+      if (!hospitalUnitId) {
+        toast.error("Selecione a unidade hospitalar antes de anexar arquivos.");
+        return;
+      }
       const userId = authData.user.id;
       const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
-      // RLS exige primeiro segmento da pasta == auth.uid()
-      const filePath = `${userId}/${requestId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      // RLS exige: pasta[1] = hospital_unit_id (uuid), pasta[2] = auth.uid().
+      const filePath = `${hospitalUnitId}/${userId}/${requestId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from("exam-results")

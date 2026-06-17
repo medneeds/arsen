@@ -1709,6 +1709,7 @@ const RequisicaoUnificadaPage = () => {
                   onResultFilesChange={() => {}}
                   readOnly={true}
                   requestId={viewingRequest.id}
+                  hospitalUnitId={unitId}
                 />
               ) : (
                 <div className="p-4 rounded-lg border border-border/50 bg-muted/20 text-center">

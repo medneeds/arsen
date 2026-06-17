@@ -597,6 +597,7 @@ const SetorLaboratorioPage = () => {
                   onResultFilesChange={setResultFiles}
                   readOnly={selectedRequest.status === "completed"}
                   requestId={selectedRequest.id}
+                  hospitalUnitId={selectedHospitalId}
                 />
               )}
 

@@ -626,6 +626,7 @@ const SetorImagemPage = () => {
                   onResultFilesChange={setResultFiles}
                   readOnly={selectedRequest.status === "completed"}
                   requestId={selectedRequest.id}
+                  hospitalUnitId={selectedHospitalId}
                 />
               )}
 

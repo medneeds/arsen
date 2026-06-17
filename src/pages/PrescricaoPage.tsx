@@ -884,7 +884,7 @@ function buildInlinePrepLine(item: PrescriptionItem): string {
     } else if (item.infusionRate) {
       segs.push(`Vazão: ${item.infusionRate} ${modeLabel}`);
     }
-  } else if (isContinuous && !item.infusionRate && !item.infusionTime) {
+  } else if (isContinuousInfusion(item) && !item.infusionRate && !item.infusionTime) {
     segs.push('Vazão: conforme protocolo');
   }
 
@@ -950,7 +950,7 @@ function buildPrepSegments(item: PrescriptionItem): { head: string[]; tail: stri
     } else if (item.infusionRate) {
       tail.push(`Vazão: ${item.infusionRate} ${modeLabel}`);
     }
-  } else if (isContinuous && !item.infusionRate && !item.infusionTime) {
+  } else if (isContinuousInfusion(item) && !item.infusionRate && !item.infusionTime) {
     tail.push('Vazão: conforme protocolo');
   }
 

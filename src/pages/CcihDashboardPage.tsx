@@ -736,6 +736,7 @@ const CcihDashboardPage = () => {
               onResultFilesChange={setResultFiles}
               readOnly={false}
               requestId={selectedPatient?.id || "new"}
+              hospitalUnitId={hospitalId}
             />
           </div>
 
@@ -818,6 +819,7 @@ const CcihDashboardPage = () => {
                   onResultFilesChange={() => {}}
                   readOnly={true}
                   requestId={viewCulture.id}
+                  hospitalUnitId={hospitalId}
                 />
               )}
 

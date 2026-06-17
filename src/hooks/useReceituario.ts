@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useHospital } from "@/contexts/HospitalContext";
 import type { ReceituarioData } from "@/lib/receituario";
 import { toast } from "sonner";
 
@@ -13,6 +14,7 @@ export function useReceituario(
   patientName?: string | null,
 ) {
   const { user } = useAuth();
+  const { currentHospital } = useHospital();
   const [receituarios, setReceituarios] = useState<ReceituarioData[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -46,8 +48,13 @@ export function useReceituario(
   /** Salva um novo receituário. Retorna o id criado. */
   const save = useCallback(async (data: ReceituarioData): Promise<string | null> => {
     try {
+      if (!currentHospital?.id) {
+        toast.error("Selecione a unidade hospitalar antes de salvar o receituário");
+        return null;
+      }
       const payload = {
         type: data.type,
+        hospital_unit_id: currentHospital.id,
         patient_id: data.patient_id ?? null,
         patient_name: data.patient_name,
         patient_bed: data.patient_bed ?? null,
@@ -73,7 +80,7 @@ export function useReceituario(
       toast.error("Erro ao salvar receituário", { description: err.message });
       return null;
     }
-  }, [user, fetch]);
+  }, [user, currentHospital, fetch]);
 
   /** Atualiza um receituário existente. */
   const update = useCallback(async (id: string, data: Partial<ReceituarioData>): Promise<boolean> => {
