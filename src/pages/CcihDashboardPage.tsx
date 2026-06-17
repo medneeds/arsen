@@ -736,6 +736,7 @@ const CcihDashboardPage = () => {
               onResultFilesChange={setResultFiles}
               readOnly={false}
               requestId={selectedPatient?.id || "new"}
+              hospitalUnitId={hospitalId}
             />
           </div>
 
