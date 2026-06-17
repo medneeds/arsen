@@ -190,9 +190,13 @@ function buildLine2(it: ExtraPrintItem): string {
   // 6. Intervalo / posologia
   if (it.posology && it.posology !== '-') parts.push(escape(it.posology));
 
-  // 7. Modo (BIC/Bolus)
-  if (it.ivBolus) parts.push('Bolus EV');
-  else if (it.infusionMode === 'BIC') parts.push('BIC');
+  // 7. Modo (BIC/Bolus) — só faz sentido para via intravenosa.
+  // Sem esse gate, itens enterais/orais/retais/SC com diluente herdavam "BIC"
+  // (ex.: Domperidona/Simeticona via SNE, clister glicerinado).
+  const routeNorm = (it.route || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const isIV = /(intravenosa|endovenosa|\bev\b|\biv\b)/.test(routeNorm);
+  if (it.ivBolus && isIV) parts.push('Bolus EV');
+  else if (it.infusionMode === 'BIC' && isIV) parts.push('BIC');
 
   // 8. Tempo de infusão (não em bolus)
   if (!it.ivBolus && it.infusionTime) {
