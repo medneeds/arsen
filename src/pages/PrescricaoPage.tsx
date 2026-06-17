@@ -10781,6 +10781,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
     }
     const parsed = new Date(raw);
     if (Number.isNaN(parsed.getTime())) return raw;
+    const parsedYear = parsed.getFullYear();
+    if (parsedYear < 1850 || parsedYear > new Date().getFullYear()) return raw;
     return parsed.toLocaleDateString('pt-BR');
   };
 
