@@ -5,8 +5,15 @@ import { deriveIvMedicationFlags } from "@/lib/ivMedicationFlags";
 
 interface MedicationFlagChipsProps {
   name: string;
+  /** Via prescrita — chips de fotoproteção/filtro/BIC só fazem sentido em via IV. */
+  route?: string;
   className?: string;
   size?: "xs" | "sm";
+}
+
+function isIVRouteChip(route?: string): boolean {
+  const r = (route || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return /(intravenosa|endovenosa|\bev\b|\biv\b)/.test(r);
 }
 
 /**
@@ -17,8 +24,13 @@ interface MedicationFlagChipsProps {
  *
  * Sprint A — derivação heurística por nome. Quando o catálogo HMDM ganhar
  * colunas dedicadas, basta trocar a fonte em deriveIvMedicationFlags.
+ *
+ * Quando `route` é informada e não é intravenosa, NÃO renderiza nada — as três
+ * flags são conceitos exclusivos de infusão EV (ex.: nimodipino cápsula via SNE
+ * não precisa de fotoproteção/filtro/BIC obrigatória).
  */
-export function MedicationFlagChips({ name, className, size = "xs" }: MedicationFlagChipsProps) {
+export function MedicationFlagChips({ name, route, className, size = "xs" }: MedicationFlagChipsProps) {
+  if (route !== undefined && route !== '' && !isIVRouteChip(route)) return null;
   const flags = deriveIvMedicationFlags(name);
   const items: Array<{ key: string; icon: typeof Sun; label: string; tip: string }> = [];
 
