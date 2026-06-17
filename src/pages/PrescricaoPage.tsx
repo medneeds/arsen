@@ -574,6 +574,10 @@ function getPresetsForPosology(posology: string): typeof SCHEDULE_PRESETS[string
 // Bolus EV é mutuamente exclusivo e tem precedência (tratado em quem chama).
 function isContinuousInfusion(item: PrescriptionItem): boolean {
   if ((item as any).ivBolus) return false;
+  // BIC/infusão contínua é conceito EXCLUSIVO de via intravenosa.
+  // Sem esse gate, itens enterais (SNE: Domperidona/Simeticona), orais,
+  // retais (clister glicerinado) ou SC que tenham diluente herdavam BIC.
+  if (!isIVRoute(item.route || '')) return false;
   const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
   return (
     /cont[ií]nu/i.test(item.posology || '') ||
