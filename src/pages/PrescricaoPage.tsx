@@ -7239,11 +7239,15 @@ const PrescricaoPage = () => {
     }
     setPrintSelectionIds(new Set(selectedIds));
     setShowPrintPortal(true);
-    setTimeout(() => {
-      window.print();
-      setShowPrintPortal(false);
-      setPrintSelectionIds(null);
-    }, 300);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          window.print();
+          setShowPrintPortal(false);
+          setPrintSelectionIds(null);
+        }, 500);
+      });
+    });
   }, [selectedIds, items, isItemValidatedToday]);
 
 
