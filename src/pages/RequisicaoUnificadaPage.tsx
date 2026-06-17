@@ -1969,6 +1969,152 @@ const APAC_INSTITUTION = {
   cnes: "2308762",
 };
 
+// ── Builder do HTML do Laudo APAC para impressão isolada (janela própria) ──
+// Mantém o layout SUS oficial (5 colunas, faixas escuras, página A4 única) e
+// é totalmente independente da UI da página — evita que outros painéis
+// vazem para o PDF.
+function buildApacHtml(input: {
+  institution: { name: string; cnes: string };
+  patient: {
+    name: string; record: string; cpf: string; cns: string; dob: string;
+    sex: string; motherName: string; phone: string; address: string;
+    city: string; uf: string;
+  };
+  procedures: Array<{ code: string; name: string; qty: number }>;
+  diagnosis: string;
+  cidPrimary: string;
+  cidSecondary: string;
+  cidAssociated: string;
+  observations: string;
+  doctor: { name: string; cpf: string; crm: string };
+  today: string;
+}): string {
+  const esc = (s: string) =>
+    String(s ?? "")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  const up = (s: string) => esc((s || "").toUpperCase());
+  const dobFmt = (() => {
+    if (!input.patient.dob) return "";
+    try { return format(new Date(input.patient.dob + "T12:00:00"), "dd/MM/yyyy"); }
+    catch { return ""; }
+  })();
+  const sexFmt = input.patient.sex === "M" ? "Masculino" : input.patient.sex === "F" ? "Feminino" : "";
+  const main = input.procedures[0];
+  const secRows = [1, 2, 3, 4, 5].map((idx) => {
+    const proc = input.procedures[idx];
+    const fn = 18 + (idx - 1) * 3;
+    return `<tr>
+      <td><span class="lbl">${fn} — Código</span><div class="val-mono">${esc(proc?.code || "")}</div></td>
+      <td colspan="3"><span class="lbl">${fn + 1} — Nome do Procedimento</span><div class="val">${esc(proc?.name || "")}</div></td>
+      <td><span class="lbl">${fn + 2} — Qtde.</span><div class="val" style="text-align:center">${esc(String(proc?.qty || ""))}</div></td>
+    </tr>`;
+  }).join("");
+
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Laudo APAC</title>
+<style>
+  @page { size: A4 portrait; margin: 12mm; }
+  html, body { margin: 0; padding: 0; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: Arial, Helvetica, sans-serif; color: #000; }
+  .apac-root { width: 186mm; height: 273mm; box-sizing: border-box; display: flex; flex-direction: column; margin: 0 auto; }
+  .apac-root * { box-sizing: border-box; }
+  .apac-doc-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 3px; }
+  .apac-doc-header .apac-sus { font-size: 6.5pt; margin: 0; color: #333; }
+  .apac-doc-header .apac-title { font-size: 9pt; font-weight: 700; margin: 2px 0 0 0; letter-spacing: 0.3px; }
+  .apac-form { width: 100%; border-collapse: collapse; table-layout: fixed; flex: 1; }
+  .apac-form col.c1, .apac-form col.c2, .apac-form col.c3 { width: 22%; }
+  .apac-form col.c4, .apac-form col.c5 { width: 17%; }
+  .apac-form td, .apac-form th { border: 0.5pt solid #000; padding: 2px 4px; vertical-align: top; font-size: 8pt; line-height: 1.2; }
+  .apac-form .sec { background: #1e293b; color: #fff; font-weight: 700; font-size: 7.5pt; padding: 2.5px 4px; text-transform: uppercase; letter-spacing: 0.3px; text-align: center; }
+  .apac-form .lbl { font-size: 6.5pt; color: #555; display: block; line-height: 1.1; margin-bottom: 0.5px; white-space: nowrap; }
+  .apac-form .val { font-size: 8.5pt; font-weight: 500; min-height: 11px; line-height: 1.2; }
+  .apac-form .val-mono { font-family: 'Courier New', monospace; font-size: 8.5pt; font-weight: 600; min-height: 11px; line-height: 1.2; }
+  .apac-form .obs-space { min-height: 95px; white-space: pre-wrap; font-size: 8pt; font-weight: 400; line-height: 1.25; }
+  .apac-form .sig-space { height: 12px; }
+  .apac-form .sig-space-sm { height: 9px; }
+</style></head><body>
+<div class="apac-root">
+  <div class="apac-doc-header">
+    <p class="apac-sus">SISTEMA ÚNICO DE SAÚDE — SUS &nbsp;·&nbsp; MINISTÉRIO DA SAÚDE</p>
+    <p class="apac-title">LAUDO PARA SOLICITAÇÃO / AUTORIZAÇÃO DE PROCEDIMENTO AMBULATORIAL</p>
+  </div>
+  <table class="apac-form">
+    <colgroup><col class="c1"/><col class="c2"/><col class="c3"/><col class="c4"/><col class="c5"/></colgroup>
+    <tbody>
+      <tr><td colspan="5" class="sec">Identificação do Estabelecimento de Saúde (Solicitante)</td></tr>
+      <tr>
+        <td colspan="4"><span class="lbl">1 — Nome do Estabelecimento</span><div class="val">${esc(input.institution.name)}</div></td>
+        <td><span class="lbl">2 — CNES</span><div class="val-mono" style="font-size:9pt">${esc(input.institution.cnes)}</div></td>
+      </tr>
+      <tr><td colspan="5" class="sec">Identificação do Paciente</td></tr>
+      <tr>
+        <td colspan="3"><span class="lbl">3 — Nome do Paciente</span><div class="val">${up(input.patient.name)}</div></td>
+        <td colspan="2"><span class="lbl">4 — Nº do Prontuário</span><div class="val">${esc(input.patient.record)}</div></td>
+      </tr>
+      <tr>
+        <td><span class="lbl">5a — CPF</span><div class="val-mono">${esc(input.patient.cpf)}</div></td>
+        <td><span class="lbl">5 — CNS</span><div class="val">${esc(input.patient.cns)}</div></td>
+        <td><span class="lbl">6 — Data de Nascimento</span><div class="val">${esc(dobFmt)}</div></td>
+        <td colspan="2"><span class="lbl">7 — Sexo</span><div class="val">${esc(sexFmt)}</div></td>
+      </tr>
+      <tr>
+        <td colspan="3"><span class="lbl">8 — Nome da Mãe ou Responsável</span><div class="val">${up(input.patient.motherName)}</div></td>
+        <td colspan="2"><span class="lbl">9 — Telefone de Contato</span><div class="val">${esc(input.patient.phone)}</div></td>
+      </tr>
+      <tr>
+        <td colspan="2"><span class="lbl">10 — Endereço (Rua, Nº)</span><div class="val">${up(input.patient.address)}</div></td>
+        <td><span class="lbl">11 — Município</span><div class="val">${up(input.patient.city)}</div></td>
+        <td><span class="lbl">13 — UF</span><div class="val">${esc(input.patient.uf)}</div></td>
+        <td><span class="lbl">14 — CEP</span><div class="val"></div></td>
+      </tr>
+      <tr><td colspan="5" class="sec">Procedimento(s) Solicitado(s)</td></tr>
+      <tr>
+        <td><span class="lbl">15 — Cód. Proc. Principal</span><div class="val-mono">${esc(main?.code || "")}</div></td>
+        <td colspan="3"><span class="lbl">16 — Nome do Procedimento Principal</span><div class="val">${esc(main?.name || "")}</div></td>
+        <td><span class="lbl">17 — Qtde.</span><div class="val" style="text-align:center">${esc(String(main?.qty || ""))}</div></td>
+      </tr>
+      <tr><td colspan="5" class="sec">Procedimento(s) Secundário(s)</td></tr>
+      ${secRows}
+      <tr><td colspan="5" class="sec">Justificativa do(s) Procedimento(s) Solicitado(s)</td></tr>
+      <tr>
+        <td colspan="2"><span class="lbl">33 — Diagnóstico Inicial</span><div class="val">${up(input.diagnosis)}</div></td>
+        <td><span class="lbl">34 — CID-10 Principal</span><div class="val-mono">${up(input.cidPrimary)}</div></td>
+        <td><span class="lbl">35 — CID-10 Secundário</span><div class="val-mono">${up(input.cidSecondary)}</div></td>
+        <td><span class="lbl">36 — CID-10 Causas Assoc.</span><div class="val-mono">${up(input.cidAssociated)}</div></td>
+      </tr>
+      <tr>
+        <td colspan="5"><span class="lbl">37 — Observações</span><div class="obs-space">${esc(input.observations)}</div></td>
+      </tr>
+      <tr><td colspan="5" class="sec">Solicitação</td></tr>
+      <tr>
+        <td colspan="2"><span class="lbl">38 — Nome do Profissional Solicitante</span><div class="val">${up(input.doctor.name)}</div></td>
+        <td><span class="lbl">39 — Data da Solicitação</span><div class="val">${esc(input.today)}</div></td>
+        <td><span class="lbl">40 — Doc. (X) CPF ( ) CNS</span><div class="val-mono">${esc(input.doctor.cpf)}</div></td>
+        <td><span class="lbl">42 — Assinatura / Carimbo</span><div class="sig-space"></div></td>
+      </tr>
+      <tr>
+        <td colspan="5"><span class="lbl">41 — Nº do Documento / CRM</span><div class="val-mono">${esc(input.doctor.cpf)} ${input.doctor.crm ? `· CRM: ${esc(input.doctor.crm)}` : ""}</div></td>
+      </tr>
+      <tr><td colspan="5" class="sec">Autorização (Preenchimento pelo Autorizador)</td></tr>
+      <tr>
+        <td colspan="2"><span class="lbl">43 — Nome do Profissional Autorizador</span><div class="sig-space-sm"></div></td>
+        <td><span class="lbl">44 — Cód. Órgão Emissor</span><div class="sig-space-sm"></div></td>
+        <td><span class="lbl">45 — Doc. ( ) CPF ( ) CNS</span><div class="sig-space-sm"></div></td>
+        <td><span class="lbl">49 — Nº da Autorização (APAC)</span><div class="sig-space-sm"></div></td>
+      </tr>
+      <tr>
+        <td><span class="lbl">46 — Nº do Documento</span><div class="sig-space-sm"></div></td>
+        <td colspan="2"><span class="lbl">47 — Data da Autorização</span><div class="sig-space-sm"></div></td>
+        <td colspan="2"><span class="lbl">48 — Assinatura e Carimbo (Autorizador)</span><div class="sig-space"></div></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<script>window.onload = function(){ setTimeout(function(){ window.print(); }, 350); };</script>
+</body></html>`;
+}
+
+
 interface ApacSelectedProcedure {
   code: string;
   name: string;
