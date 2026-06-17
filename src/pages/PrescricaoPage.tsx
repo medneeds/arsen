@@ -567,6 +567,21 @@ function getPresetsForPosology(posology: string): typeof SCHEDULE_PRESETS[string
 // Ordem padronizada (segura p/ enfermagem):
 //   SOLUTO > SOLUÇÃO > VIA > TEMPO/VAZÃO > INTERVALO
 // Ex.: "Diluir 100 mg (10 mL) em 100 mL de SF 0,9%. EV. Correr em 4h (25 mL/h). Dose única."
+// ── Fonte ÚNICA de verdade: quando um item conta como "BIC" (infusão contínua) ──
+// Unifica a regra entre o corpo da prescrição (badge) e o PDF (segmentos), que
+// antes divergiam: o corpo olhava diluente, o PDF olhava posologia — o mesmo item
+// podia mostrar "BIC" num e não no outro (marcação residual/inconsistente).
+// Bolus EV é mutuamente exclusivo e tem precedência (tratado em quem chama).
+function isContinuousInfusion(item: PrescriptionItem): boolean {
+  if ((item as any).ivBolus) return false;
+  const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
+  return (
+    /cont[ií]nu/i.test(item.posology || '') ||
+    item.infusionMode === 'BIC' ||
+    (!item.infusionMode && hasDiluent)
+  );
+}
+
 // Tokens estruturados para Line 2 do novo padrão de prescrição
 function buildLine2Tokens(item: PrescriptionItem): Array<{ text: string; isBadge?: boolean }> {
   const tokens: Array<{ text: string; isBadge?: boolean }> = [];
@@ -641,9 +656,9 @@ function buildLine2Tokens(item: PrescriptionItem): Array<{ text: string; isBadge
     }
   }
 
-  // Badge BIC — não exibir quando for Bolus EV (mutuamente exclusivos)
-  const isBolus = !!(item as any).ivBolus;
-  if (!isBolus && (item.infusionMode === 'BIC' || (!item.infusionMode && hasDiluent))) {
+  // Badge BIC — regra unificada via isContinuousInfusion (fonte única de verdade).
+  // Bolus EV é mutuamente exclusivo (isContinuousInfusion já retorna false p/ bolus).
+  if (isContinuousInfusion(item)) {
     tokens.push({ text: 'BIC', isBadge: true });
   }
 
@@ -851,11 +866,10 @@ function buildInlinePrepLine(item: PrescriptionItem): string {
     }
   }
 
-  // Tipo de infusão
-  const isContinuous = /cont[ií]nu/i.test(item.posology || '') || item.infusionMode === 'BIC';
+  // Tipo de infusão — regra unificada via isContinuousInfusion (fonte única de verdade).
   if (item.ivBolus) {
     segs.push('Bolus EV');
-  } else if (isContinuous) {
+  } else if (isContinuousInfusion(item)) {
     segs.push('BIC');
   }
 
@@ -917,11 +931,10 @@ function buildPrepSegments(item: PrescriptionItem): { head: string[]; tail: stri
   }
 
   // ── TAIL ──────────────────────────────────────────────────────────────────
-  // Modo de infusão
-  const isContinuous = /cont[ií]nu/i.test(item.posology || '') || item.infusionMode === 'BIC';
+  // Modo de infusão — regra unificada via isContinuousInfusion (fonte única de verdade).
   if (item.ivBolus) {
     tail.push('Bolus EV');
-  } else if (isContinuous) {
+  } else if (isContinuousInfusion(item)) {
     tail.push('BIC');
   }
 
