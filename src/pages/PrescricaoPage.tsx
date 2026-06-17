@@ -7194,19 +7194,32 @@ const PrescricaoPage = () => {
 
   const doPrintPrescription = async () => {
     // Garante snapshot persistido ANTES da impressão (assinatura, validações, etc.)
+    // FIX bug "PDF em branco": persistItems falhando silenciosamente abortava o print
+    // sem o usuário entender; agora avisamos e seguimos imprimindo o snapshot em memória
+    // (que é exatamente o que o usuário vê na tela).
     try {
       await persistItems(items);
-    } catch {
-      // persistItems já mostrou toast de erro; aborta impressão para não imprimir item não rastreado
-      return;
+    } catch (err: any) {
+      console.warn('[Prescrição] persistItems falhou antes de imprimir — seguindo com snapshot em memória', err);
+      toast.warning("Snapshot não persistido — imprimindo prescrição atual mesmo assim", {
+        description: err?.message || "Reabra a prescrição depois para confirmar o salvamento.",
+      });
     }
     setShowPrintPortal(true);
-    setTimeout(() => {
-      window.print();
-      setShowPrintPortal(false);
-      // Limpa filtro de seleção após o ciclo de impressão (se houver)
-      setPrintSelectionIds(null);
-    }, 300);
+    // FIX bug "PDF em branco" em prescrições longas (25+ itens, logo institucional async):
+    // troca o setTimeout(300ms) por requestAnimationFrame duplo (garante commit do React)
+    // + delay extra de 500ms (dá tempo do <img> do logo decodificar). Sem isso o
+    // window.print() podia capturar o DOM ANTES do portal pintar.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          window.print();
+          setShowPrintPortal(false);
+          // Limpa filtro de seleção após o ciclo de impressão (se houver)
+          setPrintSelectionIds(null);
+        }, 500);
+      });
+    });
   };
 
   // === Impressão parcial — itens selecionados na barra de seleção em lote ===
@@ -7226,11 +7239,15 @@ const PrescricaoPage = () => {
     }
     setPrintSelectionIds(new Set(selectedIds));
     setShowPrintPortal(true);
-    setTimeout(() => {
-      window.print();
-      setShowPrintPortal(false);
-      setPrintSelectionIds(null);
-    }, 300);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          window.print();
+          setShowPrintPortal(false);
+          setPrintSelectionIds(null);
+        }, 500);
+      });
+    });
   }, [selectedIds, items, isItemValidatedToday]);
 
 
