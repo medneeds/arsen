@@ -3714,7 +3714,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           free_text: string | null
-          hospital_unit_id: string | null
+          hospital_unit_id: string
           id: string
           items: Json
           patient_bed: string | null
@@ -3730,7 +3730,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           free_text?: string | null
-          hospital_unit_id?: string | null
+          hospital_unit_id: string
           id?: string
           items?: Json
           patient_bed?: string | null
@@ -3746,7 +3746,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           free_text?: string | null
-          hospital_unit_id?: string | null
+          hospital_unit_id?: string
           id?: string
           items?: Json
           patient_bed?: string | null
