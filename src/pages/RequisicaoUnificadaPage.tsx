@@ -2208,9 +2208,12 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   // Complementar ao laudo — NUNCA bloqueia a impressão se o insert falhar.
   const registerProcedureTrace = async () => {
     try {
+      // Requisitos mínimos para registrar o rastro na unidade.
+      if (!user?.id || !currentHospital?.id || !currentState?.id) {
+        toast.warning("Laudo impresso, mas não foi possível registrar em 'Solicitados' (contexto de unidade/usuário ausente)");
+        return;
+      }
       const validPid = asUuidOrNull(patientId);
-      // Só registra quando há vínculo real de paciente e contexto de unidade/estado.
-      if (!validPid || !user?.id || !currentHospital?.id || !currentState?.id) return;
       const requesterName = (() => {
         const nm = (doctorName || "").trim() || user.email?.split("@")[0] || "Médico";
         const crm = (doctorCRM || "").trim();
@@ -2218,7 +2221,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       })();
       const payload = {
         category: "procedimento",
-        patient_id: validPid,                              // FK → patients.id (UUID do leito)
+        patient_id: validPid,                              // FK → patients.id (pode ser null p/ paciente avulso)
         patient_registry_id: patientRegistryId ?? null,    // FK → patient_registry.id (permanente)
         patient_name: apacPatientName.trim(),
         patient_bed: (patientBed || "").trim() || null,
@@ -2236,11 +2239,13 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       const { error } = await (supabase as any).from("exam_requests").insert(payload);
       if (error) {
         console.error("[Procedimento] Falha ao registrar rastro:", error);
+        toast.error("Falha ao registrar laudo em 'Solicitados': " + (error.message || "erro desconhecido"));
       } else {
         onProcedureRegistered?.();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("[Procedimento] Erro ao registrar rastro:", err);
+      toast.error("Erro ao registrar laudo em 'Solicitados'");
     }
   };
 
@@ -2253,11 +2258,37 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       setAihRoutingOpen(true);
       return;
     }
-    // Registra o rastro (não-bloqueante) e imprime o laudo APAC.
+    // Gera o HTML do laudo APAC em janela isolada (garante página única
+    // sem interferência do restante da UI da página).
+    const html = buildApacHtml({
+      institution: APAC_INSTITUTION,
+      patient: {
+        name: apacPatientName,
+        record: patientRecord,
+        cpf: patientCPF,
+        cns: patientCNS,
+        dob: patientDOB,
+        sex: patientSex,
+        motherName: patientMotherName,
+        phone: patientPhone,
+        address: patientAddress,
+        city: patientCity,
+        uf: patientUF,
+      },
+      procedures: selectedProcedures,
+      diagnosis,
+      cidPrimary,
+      cidSecondary,
+      cidAssociated,
+      observations,
+      doctor: { name: doctorName, cpf: doctorCPF, crm: doctorCRM },
+      today: todayFormatted,
+    });
+    openPrintWindow(html, "Preparando Laudo APAC…");
+    // Registra o rastro (não-bloqueante) após disparar a impressão.
     void registerProcedureTrace();
-    // APAC ou sem código → imprime APAC normal (sem tarja para sem código)
-    window.print();
   };
+
 
   const importAdmission = async () => {
     const validPid = asUuidOrNull(patientId);
