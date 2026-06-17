@@ -2446,7 +2446,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               {routePosology.join(' | ')}
             </span>
           )}
-          <MedicationFlagChips name={item.name} className="shrink-0" size="xs" />
+          <MedicationFlagChips name={item.name} route={item.route} className="shrink-0" size="xs" />
           {item.isExtra && (
             <Badge variant="outline" className="text-[8px] px-1 shrink-0 bg-muted/50 text-muted-foreground border-border/50">EXTRA</Badge>
           )}
