@@ -7688,8 +7688,19 @@ const PrescricaoPage = () => {
               color: #94a3b8;
             }
           }
+          html, body { display: block !important; height: auto !important; overflow: visible !important; background: #ffffff !important; }
           body > *:not(#prescription-print-root) { display: none !important; }
-          #prescription-print-root { display: block !important; }
+          #prescription-print-root {
+            display: block !important;
+            position: static !important;
+            inset: auto !important;
+            width: auto !important;
+            min-height: auto !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            background: #ffffff !important;
+          }
           #prescription-print-root * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           /* Rodapé de identificação repetido em todas as páginas */
           #prescription-page-footer {
@@ -9497,7 +9508,21 @@ const PrescricaoPage = () => {
             })()
           : itemsByCategory;
         return createPortal(
-          <div id="prescription-print-root" style={{ display: 'none' }}>
+          <div
+            id="prescription-print-root"
+            aria-hidden={!showPrintPortal}
+            style={{
+              position: 'fixed',
+              left: '-10000px',
+              top: 0,
+              width: '186mm',
+              minHeight: '1px',
+              opacity: 0,
+              visibility: 'hidden',
+              pointerEvents: 'none',
+              background: '#ffffff',
+            }}
+          >
             <PrintablePrescription
               patient={patient}
               items={printItems}
