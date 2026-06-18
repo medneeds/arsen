@@ -687,10 +687,43 @@ export function AntimicrobialGuideDialog({
                   </div>
                 </div>
               )}
+                </div>
+              )}
+
+              {/* Banner didático: sugestão de reconstituição (1x por sessão) */}
+              {reconBannerOpen && (
+                <div className="rounded-lg border border-amber-300 dark:border-amber-700/60 bg-amber-50/80 dark:bg-amber-950/20 p-3 text-xs relative">
+                  <button
+                    type="button"
+                    onClick={dismissReconBanner}
+                    className="absolute top-2 right-2 text-amber-700 hover:text-amber-900 dark:text-amber-400"
+                    aria-label="Dispensar aviso"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                  <div className="flex items-start gap-2 pr-6">
+                    <Beaker className="h-4 w-4 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 space-y-1">
+                      <div className="font-semibold text-amber-800 dark:text-amber-300">
+                        Reconstituição: sugestão revisável
+                      </div>
+                      <div className="text-[11px] text-amber-800/90 dark:text-amber-300/90 leading-snug">
+                        Antibióticos com evidência convergente (bula ANVISA / Sanford / ASHP) trazem
+                        diluente, volume, diluição final e tempo de infusão <strong>pré-preenchidos</strong>.
+                        Todos os campos são <strong>editáveis</strong> — confira sempre antes de validar.
+                        A fonte aparece junto do bloco. Ajustes feitos pela equipe alimentam o
+                        feedback diário à farmácia.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {entries.map((entry, idx) => {
                 const missing = missingByEntry[entry.id] || [];
                 const isComplete = missing.length === 0;
                 const showThisError = mode === 'prescribe' && (showErrors || highlightId === entry.id);
+                const hasRecon = !!entry.reconSuggestedSnapshot;
                 const cardCls = cn(
                   "rounded-lg border p-4 space-y-3 transition-all",
                   highlightId === entry.id ? "border-red-400 ring-2 ring-red-200 dark:ring-red-900/40" :
