@@ -828,6 +828,85 @@ export function AntimicrobialGuideDialog({
                     </div>
                   </div>
 
+                  {/* ===== Bloco "Sugestão revisável" — Reconstituição & Diluição ===== */}
+                  {hasRecon && (
+                    <div className="rounded-lg border border-amber-300/70 dark:border-amber-700/50 bg-amber-50/40 dark:bg-amber-950/10 p-2.5 space-y-2">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Beaker className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400 shrink-0" />
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+                            Reconstituição / Diluição
+                          </span>
+                          <Badge variant="outline" className="border-amber-400 bg-amber-100/70 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 text-[9px] gap-0.5 px-1.5">
+                            <Info className="h-2.5 w-2.5" /> SUGESTÃO — REVISE
+                          </Badge>
+                        </div>
+                        {entry.reconSource && (
+                          <span className="text-[10px] text-amber-700/80 dark:text-amber-400/70">
+                            Fonte: <strong>{entry.reconSource}</strong>
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-5 gap-2">
+                        <div>
+                          <Label className="text-[10px]">Solvente</Label>
+                          <Input
+                            value={entry.reconSolvent ?? ''}
+                            onChange={e => updateEntry(entry.id, "reconSolvent", e.target.value)}
+                            placeholder="AD / SF / —"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Vol. reconstit. (mL)</Label>
+                          <Input
+                            value={entry.reconVolume ?? ''}
+                            onChange={e => updateEntry(entry.id, "reconVolume", e.target.value)}
+                            placeholder="10"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Diluente final</Label>
+                          <Input
+                            value={entry.reconFinalDiluent ?? ''}
+                            onChange={e => updateEntry(entry.id, "reconFinalDiluent", e.target.value)}
+                            placeholder="SF 0,9%"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Vol. final (mL)</Label>
+                          <Input
+                            value={entry.reconFinalVolume ?? ''}
+                            onChange={e => updateEntry(entry.id, "reconFinalVolume", e.target.value)}
+                            placeholder="100"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Tempo infusão (min)</Label>
+                          <Input
+                            value={entry.reconInfusionTime ?? ''}
+                            onChange={e => updateEntry(entry.id, "reconInfusionTime", e.target.value)}
+                            placeholder="30"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      {entry.reconNotes && (
+                        <div className="flex items-start gap-1.5 text-[10.5px] text-amber-800/90 dark:text-amber-300/90 bg-amber-100/40 dark:bg-amber-900/20 border border-amber-200/70 dark:border-amber-800/40 rounded px-2 py-1.5">
+                          <AlertCircle className="h-3 w-3 shrink-0 mt-0.5" />
+                          <span>{entry.reconNotes}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+
+
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label className="text-[10px]">Sítio de Infecção / Indicação Clínica{mode === 'prescribe' && <Req />}</Label>
