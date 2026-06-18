@@ -687,8 +687,8 @@ export function AntimicrobialGuideDialog({
                   </div>
                 </div>
               )}
-                </div>
-              )}
+
+
 
               {/* Banner didático: sugestão de reconstituição (1x por sessão) */}
               {reconBannerOpen && (
