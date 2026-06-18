@@ -592,6 +592,23 @@ export function AntimicrobialGuideDialog({
       startDate: e.startDate, plannedDuration: e.plannedDuration, infectionSite: e.infectionSite,
       justification: e.justification, cultureCollected: e.cultureCollected, cultureResult: e.cultureResult,
     })));
+    // Feedback à farmácia: para cada ATB anexado, grava se o médico manteve
+    // ou editou a sugestão de reconstituição. Falha silenciosa.
+    valid.forEach(e => {
+      if (!e.reconSuggestedSnapshot && !(e.reconSolvent || e.reconFinalDiluent)) return;
+      logReconstitutionFeedback({
+        medication: e.medication,
+        patientId,
+        suggested: e.reconSuggestedSnapshot,
+        prescribed: {
+          solvent: e.reconSolvent,
+          volumeMl: e.reconVolume,
+          finalDiluent: e.reconFinalDiluent,
+          finalVolumeMl: e.reconFinalVolume,
+          infusionTimeMin: e.reconInfusionTime,
+        },
+      });
+    });
     if (draftKey) localStorage.removeItem(draftKey);
     if (autosaveKey) localStorage.removeItem(autosaveKey);
     if (close) onOpenChange(false);
