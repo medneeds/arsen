@@ -5,7 +5,10 @@ import { ptBR } from "date-fns/locale";
 import {
   Shield, Printer, Plus, Trash2, AlertTriangle, FileText, ClipboardList,
   Loader2, FlaskConical, Check, ChevronsUpDown, Pill, CheckCircle2, AlertCircle,
+  Beaker, Info, X,
 } from "lucide-react";
+import { getReconstitutionDefault, hasReconstitutionSuggestion, type ReconstitutionDefault } from "@/lib/ivMedicationFlags";
+import { logReconstitutionFeedback } from "@/lib/auditReconstitution";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -45,6 +48,55 @@ interface AntimicrobialEntry {
   previousAntibiotic: string;
   ccihApproval: "pendente" | "aprovado" | "restrito" | "negado";
   ccihNotes: string;
+  // === Reconstituição / Diluição (modelo "Sugestão revisável") ===
+  // Pré-preenchidos a partir de getReconstitutionDefault(medication) quando há
+  // evidência convergente. Todos editáveis pelo médico. A fonte original (`reconSource`,
+  // `reconSuggestedSnapshot`) é mantida para auditoria do feedback à farmácia.
+  reconSolvent?: string;
+  reconVolume?: string;
+  reconFinalDiluent?: string;
+  reconFinalVolume?: string;
+  reconInfusionTime?: string;
+  reconSource?: string;
+  reconNotes?: string;
+  // Snapshot imutável da sugestão original — usado para detectar o que o médico editou
+  reconSuggestedSnapshot?: {
+    solvent?: string;
+    volumeMl?: string;
+    finalDiluent?: string;
+    finalVolumeMl?: string;
+    infusionTimeMin?: string;
+    source?: string;
+  };
+}
+
+/**
+ * Aplica a sugestão de reconstituição (se houver) sobre uma entry.
+ * Modelo "Sugestão revisável": pré-preenche apenas campos vazios e grava
+ * snapshot da sugestão original para auditoria de feedback à farmácia.
+ */
+function applyReconSuggestion(entry: AntimicrobialEntry, medicationName: string): AntimicrobialEntry {
+  if (!medicationName) return entry;
+  const recon = getReconstitutionDefault(medicationName);
+  if (!hasReconstitutionSuggestion(medicationName)) return entry;
+  return {
+    ...entry,
+    reconSolvent: entry.reconSolvent ?? recon.solvent ?? '',
+    reconVolume: entry.reconVolume ?? recon.volumeMl ?? '',
+    reconFinalDiluent: entry.reconFinalDiluent ?? recon.finalDiluent ?? '',
+    reconFinalVolume: entry.reconFinalVolume ?? recon.finalVolumeMl ?? '',
+    reconInfusionTime: entry.reconInfusionTime ?? recon.infusionTimeMin ?? '',
+    reconSource: entry.reconSource ?? recon.source ?? '',
+    reconNotes: entry.reconNotes ?? recon.notes ?? '',
+    reconSuggestedSnapshot: entry.reconSuggestedSnapshot ?? {
+      solvent: recon.solvent,
+      volumeMl: recon.volumeMl,
+      finalDiluent: recon.finalDiluent,
+      finalVolumeMl: recon.finalVolumeMl,
+      infusionTimeMin: recon.infusionTimeMin,
+      source: recon.source,
+    },
+  };
 }
 
 interface PatientData {
@@ -139,9 +191,10 @@ const Req = () => <span className="text-red-500 ml-0.5" aria-label="obrigatório
 
 function createEmptyEntry(item?: PrescriptionItem | MedicationEntry): AntimicrobialEntry {
   const isMed = item && 'defaultDose' in item;
-  return {
+  const medicationName = item ? (isMed ? (item as MedicationEntry).name : (item as PrescriptionItem).name) : "";
+  const base: AntimicrobialEntry = {
     id: crypto.randomUUID(),
-    medication: item ? (isMed ? (item as MedicationEntry).name : (item as PrescriptionItem).name) : "",
+    medication: medicationName,
     presentation: item && isMed ? (item as MedicationEntry).presentation || "" : "",
     dose: item ? (isMed ? (item as MedicationEntry).defaultDose : (item as PrescriptionItem).dose) : "",
     route: item ? (isMed ? (item as MedicationEntry).defaultRoute : (item as PrescriptionItem).route) : "",
@@ -156,6 +209,7 @@ function createEmptyEntry(item?: PrescriptionItem | MedicationEntry): Antimicrob
     ccihApproval: "pendente",
     ccihNotes: "",
   };
+  return medicationName ? applyReconSuggestion(base, medicationName) : base;
 }
 
 // === Searchable antimicrobial combobox (allows free text + selectable presets) ===
@@ -238,7 +292,8 @@ export function AntimicrobialGuideDialog({
   const [availableCultures, setAvailableCultures] = useState<Array<{ id: string; culture_type: string; collection_date: string | null; status: string; microorganism: string | null; antibiogram: string | null; sensitivity_profile: string | null; result_text: string | null; created_at: string }>>([]);
   // Versão do schema do rascunho — incrementar quando AntimicrobialEntry mudar.
   // Rascunhos com versão diferente são descartados automaticamente com aviso ao usuário.
-  const DRAFT_V = 1;
+  // v2: adicionados campos de reconstituição (reconSolvent, reconVolume, …)
+  const DRAFT_V = 2;
   const draftKey = patientId ? `atb-draft-v${DRAFT_V}-${patientId}` : null;
   const entryRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [showErrors, setShowErrors] = useState(false);
@@ -359,14 +414,33 @@ export function AntimicrobialGuideDialog({
   };
 
   const updateEntryFromMed = (id: string, med: MedicationEntry) => {
-    setEntries(prev => prev.map(e => e.id === id ? {
-      ...e,
-      medication: med.name,
-      presentation: med.presentation || '',
-      dose: med.defaultDose || e.dose,
-      route: med.defaultRoute || e.route,
-      posology: med.defaultPosology || e.posology,
-    } : e));
+    setEntries(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      const updated: AntimicrobialEntry = {
+        ...e,
+        medication: med.name,
+        presentation: med.presentation || '',
+        dose: med.defaultDose || e.dose,
+        route: med.defaultRoute || e.route,
+        posology: med.defaultPosology || e.posology,
+      };
+      // Aplica sugestão de reconstituição apenas se for outro medicamento
+      // ou se ainda não há sugestão preenchida (evita sobrescrever ajustes do médico).
+      if (e.medication !== med.name || !e.reconSuggestedSnapshot) {
+        return applyReconSuggestion({
+          ...updated,
+          reconSolvent: undefined,
+          reconVolume: undefined,
+          reconFinalDiluent: undefined,
+          reconFinalVolume: undefined,
+          reconInfusionTime: undefined,
+          reconSource: undefined,
+          reconNotes: undefined,
+          reconSuggestedSnapshot: undefined,
+        }, med.name);
+      }
+      return updated;
+    }));
   };
 
   const addEntry = () => setEntries(prev => [...prev, createEmptyEntry()]);
