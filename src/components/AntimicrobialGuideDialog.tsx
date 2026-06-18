@@ -636,6 +636,9 @@ export function AntimicrobialGuideDialog({
       medication: e.medication, dose: e.dose, route: e.route, posology: e.posology,
       startDate: e.startDate, plannedDuration: e.plannedDuration, infectionSite: e.infectionSite,
       justification: e.justification, cultureCollected: e.cultureCollected, cultureResult: e.cultureResult,
+      reconSolvent: e.reconSolvent, reconVolume: e.reconVolume,
+      reconFinalDiluent: e.reconFinalDiluent, reconFinalVolume: e.reconFinalVolume,
+      reconInfusionTime: e.reconInfusionTime,
     })));
     // Feedback à farmácia: para cada ATB anexado, grava se o médico manteve
     // ou editou a sugestão de reconstituição. Falha silenciosa.
