@@ -972,15 +972,48 @@ export function AntimicrobialGuideDialog({
                         )}
                       </div>
 
+                      {(() => {
+                        const SOLVENT_OPTS = [
+                          { v: 'AD', l: 'AD — Água destilada' },
+                          { v: 'SF 0,9%', l: 'SF 0,9%' },
+                          { v: 'SG 5%', l: 'SG 5%' },
+                          { v: 'próprio diluente', l: 'Próprio diluente do fabricante' },
+                        ];
+                        const DILUENT_OPTS = [
+                          { v: 'Sem diluente', l: 'Sem diluente' },
+                          { v: 'Diluente próprio', l: 'Diluente próprio' },
+                          { v: 'SF 0,9%', l: 'SF 0,9%' },
+                          { v: 'SG 5%', l: 'SG 5%' },
+                          { v: 'SG 10%', l: 'SG 10%' },
+                          { v: 'Ringer Lactato', l: 'Ringer Lactato' },
+                          { v: 'AD', l: 'AD' },
+                          { v: 'SF 0,45%', l: 'SF 0,45%' },
+                          { v: 'Outro', l: 'Outro' },
+                        ];
+                        const solventValue = entry.reconSolvent ?? '';
+                        const diluentValue = entry.reconFinalDiluent ?? '';
+                        const solventExtra = solventValue && !SOLVENT_OPTS.some(o => o.v === solventValue) ? solventValue : null;
+                        const diluentExtra = diluentValue && !DILUENT_OPTS.some(o => o.v === diluentValue) ? diluentValue : null;
+                        return (
                       <div className="grid grid-cols-5 gap-2">
                         <div>
-                          <Label className="text-[10px]">Solvente</Label>
-                          <Input
-                            value={entry.reconSolvent ?? ''}
-                            onChange={e => updateEntry(entry.id, "reconSolvent", e.target.value)}
-                            placeholder="AD / SF / —"
-                            className="h-8 text-xs"
-                          />
+                          <Label className="text-[10px]">Solvente (reconstituir em)</Label>
+                          <Select
+                            value={solventValue}
+                            onValueChange={v => updateEntry(entry.id, "reconSolvent", v)}
+                          >
+                            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                            <SelectContent>
+                              {solventExtra && (
+                                <SelectItem value={solventExtra} className="text-xs italic text-amber-700">
+                                  {solventExtra} <span className="text-[9px]">(sugestão do catálogo)</span>
+                                </SelectItem>
+                              )}
+                              {SOLVENT_OPTS.map(o => (
+                                <SelectItem key={o.v} value={o.v} className="text-xs">{o.l}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div>
                           <Label className="text-[10px]">Vol. reconstit. (mL)</Label>
@@ -993,12 +1026,22 @@ export function AntimicrobialGuideDialog({
                         </div>
                         <div>
                           <Label className="text-[10px]">Diluente final</Label>
-                          <Input
-                            value={entry.reconFinalDiluent ?? ''}
-                            onChange={e => updateEntry(entry.id, "reconFinalDiluent", e.target.value)}
-                            placeholder="SF 0,9%"
-                            className="h-8 text-xs"
-                          />
+                          <Select
+                            value={diluentValue}
+                            onValueChange={v => updateEntry(entry.id, "reconFinalDiluent", v)}
+                          >
+                            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                            <SelectContent>
+                              {diluentExtra && (
+                                <SelectItem value={diluentExtra} className="text-xs italic text-amber-700">
+                                  {diluentExtra} <span className="text-[9px]">(sugestão do catálogo)</span>
+                                </SelectItem>
+                              )}
+                              {DILUENT_OPTS.map(o => (
+                                <SelectItem key={o.v} value={o.v} className="text-xs">{o.l}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div>
                           <Label className="text-[10px]">Vol. final (mL)</Label>
@@ -1019,6 +1062,8 @@ export function AntimicrobialGuideDialog({
                           />
                         </div>
                       </div>
+                        );
+                      })()}
 
                       {entry.reconNotes && (
                         <div className="flex items-start gap-1.5 text-[10.5px] text-amber-800/90 dark:text-amber-300/90 bg-amber-100/40 dark:bg-amber-900/20 border border-amber-200/70 dark:border-amber-800/40 rounded px-2 py-1.5">
