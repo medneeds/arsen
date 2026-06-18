@@ -5,7 +5,10 @@ import { ptBR } from "date-fns/locale";
 import {
   Shield, Printer, Plus, Trash2, AlertTriangle, FileText, ClipboardList,
   Loader2, FlaskConical, Check, ChevronsUpDown, Pill, CheckCircle2, AlertCircle,
+  Beaker, Info, X,
 } from "lucide-react";
+import { getReconstitutionDefault, hasReconstitutionSuggestion } from "@/lib/ivMedicationFlags";
+import { logReconstitutionFeedback } from "@/lib/auditReconstitution";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -45,6 +48,55 @@ interface AntimicrobialEntry {
   previousAntibiotic: string;
   ccihApproval: "pendente" | "aprovado" | "restrito" | "negado";
   ccihNotes: string;
+  // === Reconstituição / Diluição (modelo "Sugestão revisável") ===
+  // Pré-preenchidos a partir de getReconstitutionDefault(medication) quando há
+  // evidência convergente. Todos editáveis pelo médico. A fonte original (`reconSource`,
+  // `reconSuggestedSnapshot`) é mantida para auditoria do feedback à farmácia.
+  reconSolvent?: string;
+  reconVolume?: string;
+  reconFinalDiluent?: string;
+  reconFinalVolume?: string;
+  reconInfusionTime?: string;
+  reconSource?: string;
+  reconNotes?: string;
+  // Snapshot imutável da sugestão original — usado para detectar o que o médico editou
+  reconSuggestedSnapshot?: {
+    solvent?: string;
+    volumeMl?: string;
+    finalDiluent?: string;
+    finalVolumeMl?: string;
+    infusionTimeMin?: string;
+    source?: string;
+  };
+}
+
+/**
+ * Aplica a sugestão de reconstituição (se houver) sobre uma entry.
+ * Modelo "Sugestão revisável": pré-preenche apenas campos vazios e grava
+ * snapshot da sugestão original para auditoria de feedback à farmácia.
+ */
+function applyReconSuggestion(entry: AntimicrobialEntry, medicationName: string): AntimicrobialEntry {
+  if (!medicationName) return entry;
+  const recon = getReconstitutionDefault(medicationName);
+  if (!hasReconstitutionSuggestion(medicationName)) return entry;
+  return {
+    ...entry,
+    reconSolvent: entry.reconSolvent ?? recon.solvent ?? '',
+    reconVolume: entry.reconVolume ?? recon.volumeMl ?? '',
+    reconFinalDiluent: entry.reconFinalDiluent ?? recon.finalDiluent ?? '',
+    reconFinalVolume: entry.reconFinalVolume ?? recon.finalVolumeMl ?? '',
+    reconInfusionTime: entry.reconInfusionTime ?? recon.infusionTimeMin ?? '',
+    reconSource: entry.reconSource ?? recon.source ?? '',
+    reconNotes: entry.reconNotes ?? recon.notes ?? '',
+    reconSuggestedSnapshot: entry.reconSuggestedSnapshot ?? {
+      solvent: recon.solvent,
+      volumeMl: recon.volumeMl,
+      finalDiluent: recon.finalDiluent,
+      finalVolumeMl: recon.finalVolumeMl,
+      infusionTimeMin: recon.infusionTimeMin,
+      source: recon.source,
+    },
+  };
 }
 
 interface PatientData {
@@ -139,9 +191,10 @@ const Req = () => <span className="text-red-500 ml-0.5" aria-label="obrigatório
 
 function createEmptyEntry(item?: PrescriptionItem | MedicationEntry): AntimicrobialEntry {
   const isMed = item && 'defaultDose' in item;
-  return {
+  const medicationName = item ? (isMed ? (item as MedicationEntry).name : (item as PrescriptionItem).name) : "";
+  const base: AntimicrobialEntry = {
     id: crypto.randomUUID(),
-    medication: item ? (isMed ? (item as MedicationEntry).name : (item as PrescriptionItem).name) : "",
+    medication: medicationName,
     presentation: item && isMed ? (item as MedicationEntry).presentation || "" : "",
     dose: item ? (isMed ? (item as MedicationEntry).defaultDose : (item as PrescriptionItem).dose) : "",
     route: item ? (isMed ? (item as MedicationEntry).defaultRoute : (item as PrescriptionItem).route) : "",
@@ -156,6 +209,7 @@ function createEmptyEntry(item?: PrescriptionItem | MedicationEntry): Antimicrob
     ccihApproval: "pendente",
     ccihNotes: "",
   };
+  return medicationName ? applyReconSuggestion(base, medicationName) : base;
 }
 
 // === Searchable antimicrobial combobox (allows free text + selectable presets) ===
@@ -238,11 +292,21 @@ export function AntimicrobialGuideDialog({
   const [availableCultures, setAvailableCultures] = useState<Array<{ id: string; culture_type: string; collection_date: string | null; status: string; microorganism: string | null; antibiogram: string | null; sensitivity_profile: string | null; result_text: string | null; created_at: string }>>([]);
   // Versão do schema do rascunho — incrementar quando AntimicrobialEntry mudar.
   // Rascunhos com versão diferente são descartados automaticamente com aviso ao usuário.
-  const DRAFT_V = 1;
+  // v2: adicionados campos de reconstituição (reconSolvent, reconVolume, …)
+  const DRAFT_V = 2;
   const draftKey = patientId ? `atb-draft-v${DRAFT_V}-${patientId}` : null;
   const entryRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [showErrors, setShowErrors] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  // Banner didático da sugestão de reconstituição — aparece 1x por sessão do navegador.
+  const RECON_BANNER_KEY = 'atb-recon-banner-dismissed-v1';
+  const [reconBannerOpen, setReconBannerOpen] = useState<boolean>(() => {
+    try { return sessionStorage.getItem(RECON_BANNER_KEY) !== '1'; } catch { return true; }
+  });
+  const dismissReconBanner = () => {
+    setReconBannerOpen(false);
+    try { sessionStorage.setItem(RECON_BANNER_KEY, '1'); } catch { /* ignore */ }
+  };
 
   // Mapa de erros por entrada (sempre calculado, mas só exibido após tentativa de anexar
   // ou quando o item já tem alguma coisa preenchida — evita poluir a tela inicial).
@@ -359,14 +423,33 @@ export function AntimicrobialGuideDialog({
   };
 
   const updateEntryFromMed = (id: string, med: MedicationEntry) => {
-    setEntries(prev => prev.map(e => e.id === id ? {
-      ...e,
-      medication: med.name,
-      presentation: med.presentation || '',
-      dose: med.defaultDose || e.dose,
-      route: med.defaultRoute || e.route,
-      posology: med.defaultPosology || e.posology,
-    } : e));
+    setEntries(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      const updated: AntimicrobialEntry = {
+        ...e,
+        medication: med.name,
+        presentation: med.presentation || '',
+        dose: med.defaultDose || e.dose,
+        route: med.defaultRoute || e.route,
+        posology: med.defaultPosology || e.posology,
+      };
+      // Aplica sugestão de reconstituição apenas se for outro medicamento
+      // ou se ainda não há sugestão preenchida (evita sobrescrever ajustes do médico).
+      if (e.medication !== med.name || !e.reconSuggestedSnapshot) {
+        return applyReconSuggestion({
+          ...updated,
+          reconSolvent: undefined,
+          reconVolume: undefined,
+          reconFinalDiluent: undefined,
+          reconFinalVolume: undefined,
+          reconInfusionTime: undefined,
+          reconSource: undefined,
+          reconNotes: undefined,
+          reconSuggestedSnapshot: undefined,
+        }, med.name);
+      }
+      return updated;
+    }));
   };
 
   const addEntry = () => setEntries(prev => [...prev, createEmptyEntry()]);
@@ -509,6 +592,23 @@ export function AntimicrobialGuideDialog({
       startDate: e.startDate, plannedDuration: e.plannedDuration, infectionSite: e.infectionSite,
       justification: e.justification, cultureCollected: e.cultureCollected, cultureResult: e.cultureResult,
     })));
+    // Feedback à farmácia: para cada ATB anexado, grava se o médico manteve
+    // ou editou a sugestão de reconstituição. Falha silenciosa.
+    valid.forEach(e => {
+      if (!e.reconSuggestedSnapshot && !(e.reconSolvent || e.reconFinalDiluent)) return;
+      logReconstitutionFeedback({
+        medication: e.medication,
+        patientId,
+        suggested: e.reconSuggestedSnapshot,
+        prescribed: {
+          solvent: e.reconSolvent,
+          volumeMl: e.reconVolume,
+          finalDiluent: e.reconFinalDiluent,
+          finalVolumeMl: e.reconFinalVolume,
+          infusionTimeMin: e.reconInfusionTime,
+        },
+      });
+    });
     if (draftKey) localStorage.removeItem(draftKey);
     if (autosaveKey) localStorage.removeItem(autosaveKey);
     if (close) onOpenChange(false);
@@ -604,10 +704,43 @@ export function AntimicrobialGuideDialog({
                   </div>
                 </div>
               )}
+
+
+
+              {/* Banner didático: sugestão de reconstituição (1x por sessão) */}
+              {reconBannerOpen && (
+                <div className="rounded-lg border border-amber-300 dark:border-amber-700/60 bg-amber-50/80 dark:bg-amber-950/20 p-3 text-xs relative">
+                  <button
+                    type="button"
+                    onClick={dismissReconBanner}
+                    className="absolute top-2 right-2 text-amber-700 hover:text-amber-900 dark:text-amber-400"
+                    aria-label="Dispensar aviso"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                  <div className="flex items-start gap-2 pr-6">
+                    <Beaker className="h-4 w-4 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 space-y-1">
+                      <div className="font-semibold text-amber-800 dark:text-amber-300">
+                        Reconstituição: sugestão revisável
+                      </div>
+                      <div className="text-[11px] text-amber-800/90 dark:text-amber-300/90 leading-snug">
+                        Antibióticos com evidência convergente (bula ANVISA / Sanford / ASHP) trazem
+                        diluente, volume, diluição final e tempo de infusão <strong>pré-preenchidos</strong>.
+                        Todos os campos são <strong>editáveis</strong> — confira sempre antes de validar.
+                        A fonte aparece junto do bloco. Ajustes feitos pela equipe alimentam o
+                        feedback diário à farmácia.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {entries.map((entry, idx) => {
                 const missing = missingByEntry[entry.id] || [];
                 const isComplete = missing.length === 0;
                 const showThisError = mode === 'prescribe' && (showErrors || highlightId === entry.id);
+                const hasRecon = !!entry.reconSuggestedSnapshot;
                 const cardCls = cn(
                   "rounded-lg border p-4 space-y-3 transition-all",
                   highlightId === entry.id ? "border-red-400 ring-2 ring-red-200 dark:ring-red-900/40" :
@@ -711,6 +844,85 @@ export function AntimicrobialGuideDialog({
                       </Select>
                     </div>
                   </div>
+
+                  {/* ===== Bloco "Sugestão revisável" — Reconstituição & Diluição ===== */}
+                  {hasRecon && (
+                    <div className="rounded-lg border border-amber-300/70 dark:border-amber-700/50 bg-amber-50/40 dark:bg-amber-950/10 p-2.5 space-y-2">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Beaker className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400 shrink-0" />
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+                            Reconstituição / Diluição
+                          </span>
+                          <Badge variant="outline" className="border-amber-400 bg-amber-100/70 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 text-[9px] gap-0.5 px-1.5">
+                            <Info className="h-2.5 w-2.5" /> SUGESTÃO — REVISE
+                          </Badge>
+                        </div>
+                        {entry.reconSource && (
+                          <span className="text-[10px] text-amber-700/80 dark:text-amber-400/70">
+                            Fonte: <strong>{entry.reconSource}</strong>
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-5 gap-2">
+                        <div>
+                          <Label className="text-[10px]">Solvente</Label>
+                          <Input
+                            value={entry.reconSolvent ?? ''}
+                            onChange={e => updateEntry(entry.id, "reconSolvent", e.target.value)}
+                            placeholder="AD / SF / —"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Vol. reconstit. (mL)</Label>
+                          <Input
+                            value={entry.reconVolume ?? ''}
+                            onChange={e => updateEntry(entry.id, "reconVolume", e.target.value)}
+                            placeholder="10"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Diluente final</Label>
+                          <Input
+                            value={entry.reconFinalDiluent ?? ''}
+                            onChange={e => updateEntry(entry.id, "reconFinalDiluent", e.target.value)}
+                            placeholder="SF 0,9%"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Vol. final (mL)</Label>
+                          <Input
+                            value={entry.reconFinalVolume ?? ''}
+                            onChange={e => updateEntry(entry.id, "reconFinalVolume", e.target.value)}
+                            placeholder="100"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Tempo infusão (min)</Label>
+                          <Input
+                            value={entry.reconInfusionTime ?? ''}
+                            onChange={e => updateEntry(entry.id, "reconInfusionTime", e.target.value)}
+                            placeholder="30"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      {entry.reconNotes && (
+                        <div className="flex items-start gap-1.5 text-[10.5px] text-amber-800/90 dark:text-amber-300/90 bg-amber-100/40 dark:bg-amber-900/20 border border-amber-200/70 dark:border-amber-800/40 rounded px-2 py-1.5">
+                          <AlertCircle className="h-3 w-3 shrink-0 mt-0.5" />
+                          <span>{entry.reconNotes}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -908,6 +1120,22 @@ function buildAtmBodyHtml({
               <th>Sítio Infecção</th><td colspan="3">${esc(e.infectionSite)}</td>
               <th>ATB Prévio</th><td>${esc(e.previousAntibiotic)}</td>
             </tr>
+            ${(() => {
+              const hasRecon = e.reconSolvent || e.reconVolume || e.reconFinalDiluent || e.reconFinalVolume || e.reconInfusionTime;
+              if (!hasRecon) return '';
+              const reconLine = [
+                (e.reconSolvent && e.reconSolvent !== '—' && e.reconVolume && e.reconVolume !== '—')
+                  ? `Reconstituir em ${esc(e.reconVolume)} mL de ${esc(e.reconSolvent)}`
+                  : null,
+                (e.reconFinalDiluent && e.reconFinalVolume)
+                  ? `Diluir em ${esc(e.reconFinalVolume)} mL de ${esc(e.reconFinalDiluent)}`
+                  : (e.reconFinalDiluent ? esc(e.reconFinalDiluent) : null),
+                e.reconInfusionTime ? `Infundir em ${esc(e.reconInfusionTime)} min` : null,
+              ].filter(Boolean).join(' · ');
+              const source = e.reconSource ? ` <span style="font-size:8pt;color:#92400e">(fonte: ${esc(e.reconSource)})</span>` : '';
+              const notes = e.reconNotes ? `<div style="font-size:8pt;color:#92400e;margin-top:2px">⚠ ${esc(e.reconNotes)}</div>` : '';
+              return `<tr><th>Reconstituição</th><td colspan="5">${reconLine}${source}${notes}</td></tr>`;
+            })()}
             <tr>
               <th>Cultura</th>
               <td>${e.cultureCollected === 'sim' ? '✓ Sim' : e.cultureCollected === 'pendente' ? '⏳ Pendente' : '✗ Não'}</td>
