@@ -298,6 +298,15 @@ export function AntimicrobialGuideDialog({
   const entryRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [showErrors, setShowErrors] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  // Banner didático da sugestão de reconstituição — aparece 1x por sessão do navegador.
+  const RECON_BANNER_KEY = 'atb-recon-banner-dismissed-v1';
+  const [reconBannerOpen, setReconBannerOpen] = useState<boolean>(() => {
+    try { return sessionStorage.getItem(RECON_BANNER_KEY) !== '1'; } catch { return true; }
+  });
+  const dismissReconBanner = () => {
+    setReconBannerOpen(false);
+    try { sessionStorage.setItem(RECON_BANNER_KEY, '1'); } catch { /* ignore */ }
+  };
 
   // Mapa de erros por entrada (sempre calculado, mas só exibido após tentativa de anexar
   // ou quando o item já tem alguma coisa preenchida — evita poluir a tela inicial).
