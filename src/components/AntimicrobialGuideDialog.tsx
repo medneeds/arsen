@@ -1062,6 +1062,8 @@ export function AntimicrobialGuideDialog({
                           />
                         </div>
                       </div>
+                        );
+                      })()}
 
                       {entry.reconNotes && (
                         <div className="flex items-start gap-1.5 text-[10.5px] text-amber-800/90 dark:text-amber-300/90 bg-amber-100/40 dark:bg-amber-900/20 border border-amber-200/70 dark:border-amber-800/40 rounded px-2 py-1.5">
