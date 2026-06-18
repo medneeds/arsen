@@ -841,9 +841,28 @@ export function AntimicrobialGuideDialog({
                         <div className="text-[10px] text-muted-foreground mt-0.5 truncate">📦 {entry.presentation}</div>
                       )}
                     </div>
+                    {/* Fase 1: Dose = Input numérico + Select de unidade (lista fechada) */}
                     <div>
                       <Label className="text-[10px]">Dose{mode === 'prescribe' && <Req />}</Label>
-                      <Input value={entry.dose} onChange={e => updateEntry(entry.id, "dose", e.target.value)} className="h-8 text-xs" />
+                      <div className="flex gap-1">
+                        <Input
+                          value={entry.doseValue}
+                          onChange={e => updateDoseField(entry.id, "doseValue", e.target.value)}
+                          placeholder="Ex: 1"
+                          className="h-8 text-xs flex-1 min-w-0"
+                          inputMode="decimal"
+                        />
+                        <Select value={entry.doseUnit} onValueChange={v => updateDoseField(entry.id, "doseUnit", v)}>
+                          <SelectTrigger className="h-8 text-xs w-[90px] shrink-0">
+                            <SelectValue placeholder="un." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {DOSE_UNITS.map(u => (
+                              <SelectItem key={u.value} value={u.value} className="text-xs">{u.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                     <div>
                       <Label className="text-[10px]">Via{mode === 'prescribe' && <Req />}</Label>
@@ -852,9 +871,30 @@ export function AntimicrobialGuideDialog({
                   </div>
 
                   <div className="grid grid-cols-4 gap-2">
+                    {/* Fase 2: Posologia = Select com lista canônica (inclui 48/48h, 72/72h) */}
                     <div>
                       <Label className="text-[10px]">Posologia{mode === 'prescribe' && <Req />}</Label>
-                      <Input value={entry.posology} onChange={e => updateEntry(entry.id, "posology", e.target.value)} className="h-8 text-xs" />
+                      <Select value={entry.posology} onValueChange={v => updateEntry(entry.id, "posology", v)}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Selecionar..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {INTERVAL_GROUPS.map(g => (
+                            <React.Fragment key={g.key}>
+                              <div className="text-[9px] uppercase tracking-wider text-muted-foreground px-2 pt-1.5 pb-0.5">{g.title}</div>
+                              {g.items.map(i => (
+                                <SelectItem key={i.value} value={i.value} className="text-xs">{i.label}</SelectItem>
+                              ))}
+                            </React.Fragment>
+                          ))}
+                          {/* Compatibilidade: se o valor atual não está na lista canônica, mostra para preservar */}
+                          {entry.posology && !PRESCRIPTION_INTERVAL_VALUES.includes(entry.posology) && (
+                            <SelectItem value={entry.posology} className="text-xs italic">
+                              {entry.posology} (legado)
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label className="text-[10px]">Data de Início{mode === 'prescribe' && <Req />}</Label>
