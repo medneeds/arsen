@@ -139,6 +139,9 @@ interface Props {
     medication: string; dose: string; route: string; posology: string;
     startDate?: string; plannedDuration?: string; infectionSite?: string;
     justification?: string; cultureCollected?: string; cultureResult?: string;
+    reconSolvent?: string; reconVolume?: string;
+    reconFinalDiluent?: string; reconFinalVolume?: string;
+    reconInfusionTime?: string;
   }>) => void;
   mode?: 'review' | 'prescribe';
   patientId?: string;
