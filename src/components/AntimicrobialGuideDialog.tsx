@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { getReconstitutionDefault, hasReconstitutionSuggestion } from "@/lib/ivMedicationFlags";
 import { logReconstitutionFeedback } from "@/lib/auditReconstitution";
+import { INTERVAL_GROUPS, PRESCRIPTION_INTERVAL_VALUES } from "@/lib/prescriptionIntervals";
+import { DOSE_UNITS, parseDoseLegacy, formatDose } from "@/lib/doseUnits";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
