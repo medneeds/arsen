@@ -7,7 +7,7 @@ import {
   Loader2, FlaskConical, Check, ChevronsUpDown, Pill, CheckCircle2, AlertCircle,
   Beaker, Info, X,
 } from "lucide-react";
-import { getReconstitutionDefault, hasReconstitutionSuggestion, type ReconstitutionDefault } from "@/lib/ivMedicationFlags";
+import { getReconstitutionDefault, hasReconstitutionSuggestion } from "@/lib/ivMedicationFlags";
 import { logReconstitutionFeedback } from "@/lib/auditReconstitution";
 import { supabase } from "@/integrations/supabase/client";
 import {
