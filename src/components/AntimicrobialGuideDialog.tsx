@@ -924,7 +924,10 @@ export function AntimicrobialGuideDialog({
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
                   </div>
+
+
 
                   {/* Fase 3: Setor/Unidade editável (pré-preenchido com o setor atual do paciente) */}
                   <div className="grid grid-cols-4 gap-2">
