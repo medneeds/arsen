@@ -1120,6 +1120,22 @@ function buildAtmBodyHtml({
               <th>Sítio Infecção</th><td colspan="3">${esc(e.infectionSite)}</td>
               <th>ATB Prévio</th><td>${esc(e.previousAntibiotic)}</td>
             </tr>
+            ${(() => {
+              const hasRecon = e.reconSolvent || e.reconVolume || e.reconFinalDiluent || e.reconFinalVolume || e.reconInfusionTime;
+              if (!hasRecon) return '';
+              const reconLine = [
+                (e.reconSolvent && e.reconSolvent !== '—' && e.reconVolume && e.reconVolume !== '—')
+                  ? `Reconstituir em ${esc(e.reconVolume)} mL de ${esc(e.reconSolvent)}`
+                  : null,
+                (e.reconFinalDiluent && e.reconFinalVolume)
+                  ? `Diluir em ${esc(e.reconFinalVolume)} mL de ${esc(e.reconFinalDiluent)}`
+                  : (e.reconFinalDiluent ? esc(e.reconFinalDiluent) : null),
+                e.reconInfusionTime ? `Infundir em ${esc(e.reconInfusionTime)} min` : null,
+              ].filter(Boolean).join(' · ');
+              const source = e.reconSource ? ` <span style="font-size:8pt;color:#92400e">(fonte: ${esc(e.reconSource)})</span>` : '';
+              const notes = e.reconNotes ? `<div style="font-size:8pt;color:#92400e;margin-top:2px">⚠ ${esc(e.reconNotes)}</div>` : '';
+              return `<tr><th>Reconstituição</th><td colspan="5">${reconLine}${source}${notes}</td></tr>`;
+            })()}
             <tr>
               <th>Cultura</th>
               <td>${e.cultureCollected === 'sim' ? '✓ Sim' : e.cultureCollected === 'pendente' ? '⏳ Pendente' : '✗ Não'}</td>
