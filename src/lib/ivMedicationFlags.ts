@@ -435,6 +435,212 @@ const RECONSTITUTION: Array<{ rx: RegExp } & ReconstitutionDefault> = [
     notes: 'Apresentação EV restrita — preferir via enteral.',
   },
 
+  // ===== Penicilinas adicionais =====
+  {
+    rx: /amoxicilin.*clavulanato|clavulin\s*ev/i, required: true,
+    solvent: 'AD', volumeMl: '10',
+    finalDiluent: 'SF 0,9%', finalVolumeMl: '100',
+    infusionTimeMin: '30',
+    source: 'ANVISA + ASHP',
+    notes: 'Estabilidade reduzida em SG. Infundir em até 30 min após preparo.',
+  },
+  {
+    rx: /benzilpenicilin|penicilina\s*g(?!.*benzatina)(?!.*procain)/i, required: true,
+    solvent: 'AD', volumeMl: '8',
+    finalDiluent: 'SF 0,9%', finalVolumeMl: '100',
+    infusionTimeMin: '30',
+    source: 'ANVISA',
+    notes: 'Doses altas (≥10 MUI) diluir em 250 mL e infundir em 60 min.',
+  },
+
+  // ===== Cefalosporinas / β-lactâmicos novos =====
+  {
+    rx: /cefoxitin/i, required: true,
+    solvent: 'AD', volumeMl: '10',
+    finalDiluent: 'SF 0,9%', finalVolumeMl: '100',
+    infusionTimeMin: '30',
+    source: 'ANVISA + ASHP',
+  },
+  {
+    rx: /cefiderocol|fetroja/i, required: true,
+    solvent: 'SF 0,9% ou AD', volumeMl: '10',
+    finalDiluent: 'SF 0,9% ou SG 5%', finalVolumeMl: '100',
+    infusionTimeMin: '180',
+    source: 'ANVISA + IDSA',
+    notes: 'Infusão estendida obrigatória (3 h). Indicação por gram-negativos MDR.',
+  },
+  {
+    rx: /meropenem[\s-]*vaborbactam|vabomere/i, required: true,
+    solvent: 'SF 0,9%', volumeMl: '20',
+    finalDiluent: 'SF 0,9%', finalVolumeMl: '250',
+    infusionTimeMin: '180',
+    source: 'ANVISA',
+    notes: 'Infusão estendida (3 h). NÃO usar SG.',
+  },
+  {
+    rx: /imipenem.*relebactam|recarbrio/i, required: true,
+    solvent: 'SF 0,9%', volumeMl: '100',
+    finalDiluent: 'SF 0,9%', finalVolumeMl: '100',
+    infusionTimeMin: '30',
+    source: 'ANVISA',
+    notes: 'Frasco-ampola requer reconstituição com 100 mL SF antes de transferir para bolsa.',
+  },
+  {
+    rx: /sulbactam[\s-]*durlobactam|xacduro/i, required: true,
+    solvent: 'AD', volumeMl: '20',
+    finalDiluent: 'SF 0,9%', finalVolumeMl: '100',
+    infusionTimeMin: '180',
+    source: 'IDSA',
+    notes: 'Infusão estendida (3 h). Indicação: Acinetobacter MDR.',
+  },
+
+  // ===== Carbapenêmicos adicionais =====
+  {
+    rx: /doripenem/i, required: true,
+    solvent: 'AD ou SF 0,9%', volumeMl: '10',
+    finalDiluent: 'SF 0,9%', finalVolumeMl: '100',
+    infusionTimeMin: '60',
+    source: 'ANVISA + ASHP',
+  },
+
+  // ===== Glicopeptídeos / lipoglicopeptídeos novos =====
+  {
+    rx: /telavancin/i, required: true,
+    solvent: 'AD ou SG 5%', volumeMl: '15',
+    finalDiluent: 'SG 5% ou SF 0,9%', finalVolumeMl: '100',
+    infusionTimeMin: '60',
+    source: 'ANVISA',
+    notes: 'Síndrome do homem vermelho se infusão rápida.',
+  },
+  {
+    rx: /dalbavancin/i, required: true,
+    solvent: 'AD', volumeMl: '25',
+    finalDiluent: 'SG 5%', finalVolumeMl: '250',
+    infusionTimeMin: '30',
+    source: 'ANVISA',
+    notes: 'NÃO usar SF (precipita). Dose única ou semanal.',
+  },
+  {
+    rx: /oritavancin/i, required: true,
+    solvent: 'AD', volumeMl: '40',
+    finalDiluent: 'SG 5%', finalVolumeMl: '1000',
+    infusionTimeMin: '180',
+    source: 'ANVISA',
+    notes: 'NÃO usar SF. Infusão única em 3 h.',
+  },
+
+  // ===== Oxazolidinonas adicionais =====
+  {
+    rx: /tedizolid/i, required: true,
+    solvent: 'AD', volumeMl: '4',
+    finalDiluent: 'SF 0,9%', finalVolumeMl: '250',
+    infusionTimeMin: '60',
+    source: 'ANVISA',
+  },
+
+  // ===== Tetraciclinas / glicilciclinas novas =====
+  {
+    rx: /eravaciclin/i, required: true,
+    solvent: 'AD', volumeMl: '5',
+    finalDiluent: 'SF 0,9%', finalVolumeMl: '100',
+    infusionTimeMin: '60',
+    source: 'ANVISA',
+  },
+  {
+    rx: /doxiciclin.*ev|vibramicin\s*ev/i, required: true,
+    solvent: 'AD', volumeMl: '10',
+    finalDiluent: 'SF 0,9% ou SG 5%', finalVolumeMl: '250',
+    infusionTimeMin: '120',
+    source: 'ANVISA + ASHP',
+    notes: 'Fotossensível. Infundir em 1–4 h.',
+  },
+
+  // ===== Aminoglicosídeos adicionais =====
+  {
+    rx: /plazomicin/i, required: false,
+    solvent: '—', volumeMl: '—',
+    finalDiluent: 'SF 0,9%', finalVolumeMl: '50',
+    infusionTimeMin: '30',
+    source: 'ANVISA',
+  },
+  {
+    rx: /estreptomicin/i, required: true,
+    solvent: 'AD', volumeMl: '4,5',
+    finalDiluent: 'IM preferível / SF 0,9% se EV', finalVolumeMl: '100',
+    infusionTimeMin: '60',
+    source: 'ANVISA',
+    notes: 'Via IM é padrão. EV apenas em situações excepcionais.',
+  },
+
+  // ===== Antifúngicos adicionais =====
+  {
+    rx: /isavuconazol|cresemba/i, required: true,
+    solvent: 'AD (próprio diluente)', volumeMl: '5',
+    finalDiluent: 'SF 0,9% ou SG 5%', finalVolumeMl: '250',
+    infusionTimeMin: '60',
+    source: 'ANVISA',
+    notes: 'Usar filtro 0,2–1,2 µm em linha. Não infundir junto com outras soluções.',
+  },
+  {
+    rx: /posaconazol\s*ev/i, required: false,
+    solvent: '—', volumeMl: '—',
+    finalDiluent: 'SF 0,9% ou SG 5% (CVC obrigatório)', finalVolumeMl: '150',
+    infusionTimeMin: '90',
+    source: 'ANVISA',
+    notes: 'Infundir apenas por acesso venoso central. Em via periférica → bolus único possível em emergência.',
+  },
+  {
+    rx: /itraconazol\s*ev/i, required: false,
+    solvent: '—', volumeMl: '—',
+    finalDiluent: 'SF 0,9% (próprio diluente)', finalVolumeMl: '50',
+    infusionTimeMin: '60',
+    source: 'ANVISA',
+    notes: 'Usar equipo dedicado e filtro 0,2 µm em linha.',
+  },
+
+  // ===== Antivirais adicionais =====
+  {
+    rx: /foscarnet/i, required: false,
+    solvent: '—', volumeMl: '—',
+    finalDiluent: 'SF 0,9% ou SG 5% (1:1 em periférico)', finalVolumeMl: '250',
+    infusionTimeMin: '120',
+    source: 'ANVISA + ASHP',
+    notes: 'Nefrotóxico — hidratação prévia obrigatória. CVC preferível.',
+  },
+  {
+    rx: /cidofovir/i, required: false,
+    solvent: '—', volumeMl: '—',
+    finalDiluent: 'SF 0,9%', finalVolumeMl: '100',
+    infusionTimeMin: '60',
+    source: 'ANVISA',
+    notes: 'Pré-medicar com probenecida + hidratação. Nefrotóxico.',
+  },
+  {
+    rx: /remdesivir/i, required: true,
+    solvent: 'AD', volumeMl: '19',
+    finalDiluent: 'SF 0,9%', finalVolumeMl: '100',
+    infusionTimeMin: '60',
+    source: 'ANVISA + IDSA',
+    notes: 'Infundir em 30–120 min. Estabilidade 24 h em geladeira após diluição.',
+  },
+
+  // ===== Tuberculostáticos EV =====
+  {
+    rx: /isoniazida\s*ev/i, required: true,
+    solvent: 'AD', volumeMl: '2',
+    finalDiluent: 'SF 0,9%', finalVolumeMl: '100',
+    infusionTimeMin: '60',
+    source: 'ANVISA',
+  },
+  {
+    rx: /rifampicina\s*ev/i, required: true,
+    solvent: 'AD (próprio diluente)', volumeMl: '10',
+    finalDiluent: 'SG 5%', finalVolumeMl: '500',
+    infusionTimeMin: '180',
+    source: 'ANVISA',
+    notes: 'Coloração avermelhada de fluidos corporais é esperada. Fotossensível.',
+  },
+
   // ===== Outros (não-ATB que costumam aparecer no guia/protetor de fluxo) =====
   {
     rx: /cloranfenicol/i, required: true,
