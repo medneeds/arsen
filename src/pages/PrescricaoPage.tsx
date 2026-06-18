@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
+import { PRESCRIPTION_INTERVALS, intervalToPhases as canonicalIntervalToPhases } from "@/lib/prescriptionIntervals";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageLoader } from "@/components/PageLoader";
