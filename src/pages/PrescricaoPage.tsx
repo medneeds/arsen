@@ -5906,6 +5906,9 @@ const PrescricaoPage = () => {
   const handleAntimicrobialConfirm = useCallback((confirmedEntries: Array<{
     medication: string; dose: string; route: string; posology: string;
     startDate?: string; plannedDuration?: string; infectionSite?: string;
+    reconSolvent?: string; reconVolume?: string;
+    reconFinalDiluent?: string; reconFinalVolume?: string;
+    reconInfusionTime?: string;
   }>) => {
     const antimicrobialOptions = UNIFIED_CATALOG['antimicrobial'] || [];
     const newItems: PrescriptionItem[] = confirmedEntries.map(entry => {
@@ -5929,6 +5932,34 @@ const PrescricaoPage = () => {
       base.atbStartDate = entry.startDate || format(new Date(), 'yyyy-MM-dd');
       base.atbPlannedDays = entry.plannedDuration || '';
       base.atbInfectionSite = entry.infectionSite || '';
+
+      // Migração Guia ATM → corpo da prescrição (NÃO sobrescrever campos já preenchidos)
+      // Diluente final + volume final → item.diluent / item.diluentVolume
+      const finalDil = (entry.reconFinalDiluent || '').trim();
+      if (finalDil && !base.diluent) {
+        base.diluent = finalDil;
+      }
+      const finalVol = (entry.reconFinalVolume || '').trim();
+      if (finalVol && !base.diluentVolume) {
+        base.diluentVolume = finalVol;
+      }
+      // Tempo de infusão → item.infusionTime (assume minutos, padrão da Guia)
+      const infTime = (entry.reconInfusionTime || '').trim();
+      if (infTime && !base.infusionTime) {
+        base.infusionTime = infTime;
+        if (!base.infusionTimeUnit) base.infusionTimeUnit = 'min';
+      }
+      // Reconstituição (solvente + volume): concatenar nas instructions (não há campo dedicado)
+      const solv = (entry.reconSolvent || '').trim();
+      const solvVol = (entry.reconVolume || '').trim();
+      if (solv && solvVol) {
+        const reconLine = `Reconstituir em ${solvVol} mL de ${solv}`;
+        const current = (base.instructions || '').trim();
+        // Evita duplicar se já existir esta orientação
+        if (!current.toLowerCase().includes('reconstituir em')) {
+          base.instructions = current ? `${current} · ${reconLine}` : reconLine;
+        }
+      }
       return base;
     });
     setItems(prev => [...prev, ...newItems]);
