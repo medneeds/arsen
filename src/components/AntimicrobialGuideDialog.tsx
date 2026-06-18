@@ -924,6 +924,28 @@ export function AntimicrobialGuideDialog({
                           ))}
                         </SelectContent>
                       </Select>
+                  </div>
+
+                  {/* Fase 3: Setor/Unidade editável (pré-preenchido com o setor atual do paciente) */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="col-span-2">
+                      <Label className="text-[10px]">
+                        Setor / Unidade do paciente
+                        {patient?.unit && entry.unit && entry.unit !== patient.unit && (
+                          <span className="text-amber-700 dark:text-amber-400 ml-1.5 text-[9px]">
+                            (sobrescrito — atual: {patient.unit})
+                          </span>
+                        )}
+                      </Label>
+                      <Input
+                        value={entry.unit}
+                        onChange={e => updateEntry(entry.id, "unit", e.target.value)}
+                        placeholder={patient?.unit || "Ex: UTI-A"}
+                        className="h-8 text-xs"
+                      />
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        Pré-preenchido com o setor atual. Edite só se este ATB seguir o paciente em transferência.
+                      </div>
                     </div>
                   </div>
 
