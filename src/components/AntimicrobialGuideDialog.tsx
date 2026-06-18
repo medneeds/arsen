@@ -387,11 +387,13 @@ export function AntimicrobialGuideDialog({
     }
 
     // 2) Sem autosave → seed limpo do parent (ou rascunho em review).
+    // Fase 3: passa patient.unit como default do setor de cada nova entry.
+    const defaultUnit = patient?.unit;
     if (mode === 'prescribe') {
       if (antimicrobialItems.length > 0) {
-        setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item)));
+        setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item, { defaultUnit })));
       } else {
-        setEntries([createEmptyEntry()]);
+        setEntries([createEmptyEntry(undefined, { defaultUnit })]);
       }
       return;
     }
@@ -403,11 +405,11 @@ export function AntimicrobialGuideDialog({
     }
 
     if (antimicrobialItems.length > 0) {
-      setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item)));
+      setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item, { defaultUnit })));
     } else {
-      setEntries([createEmptyEntry()]);
+      setEntries([createEmptyEntry(undefined, { defaultUnit })]);
     }
-  }, [open, antimicrobialItems, draftKey, autosaveKey, mode, legacyDraftKey]);
+  }, [open, antimicrobialItems, draftKey, autosaveKey, mode, legacyDraftKey, patient?.unit]);
 
   // === Autosave com debounce — preserva tudo ao trocar de aba/voltar ===
   useEffect(() => {
