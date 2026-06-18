@@ -19,6 +19,8 @@ export interface AtmPrintEntry {
   previousAntibiotic?: string;
   ccihApproval?: "pendente" | "aprovado" | "restrito" | "negado" | "livre" | "restrito_24h" | "restrito_ccih" | "profilaxia" | string;
   ccihNotes?: string;
+  // Fase 3: setor/unidade específico desta entry (pode diferir de patient.unit em transferências)
+  unit?: string;
   // Reconstituição / Diluição — sugestão revisável
   reconSolvent?: string;
   reconVolume?: string;
@@ -111,6 +113,10 @@ export function buildAtmBodyHtml({
               <th>Sítio Infecção</th><td colspan="3">${esc(e.infectionSite)}</td>
               <th>ATB Prévio</th><td>${esc(e.previousAntibiotic)}</td>
             </tr>
+            ${e.unit && e.unit !== patient.unit ? `
+            <tr>
+              <th>Setor de origem da prescrição</th><td colspan="5">${esc(e.unit)} <em>(diferente do setor atual do paciente — ${esc(patient.unit || '—')})</em></td>
+            </tr>` : ''}
             ${(() => {
               const hasRecon = e.reconSolvent || e.reconVolume || e.reconFinalDiluent || e.reconFinalVolume || e.reconInfusionTime;
               if (!hasRecon) return '';
