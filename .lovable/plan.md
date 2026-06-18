@@ -1,98 +1,61 @@
 
 # Plano de implantação — Guia ATB + Inversão da fonte de verdade
 
-> **Não é ordem de execução.** Plano de referência. Cada fase precisa de "ok" explícito do PO antes de começar, conforme princípios imutáveis do projeto.
+> **Status atualizado em 18/06/2026.** Fases 1–5 entregues. Fases 6–7 permanecem bloqueadas por infraestrutura (staging + aval para migration), por princípio imutável de Auditoria.
 
-## Resposta direta à pergunta
+## Status por fase
 
-**Não dá para implantar tudo sem risco.** A divisão real é:
+| Fase | Escopo | Status |
+|------|--------|--------|
+| 1 | Valor × Unidade estruturados no guia ATB | ✅ Implementado |
+| 2 | Módulo compartilhado de intervalos (inclui 48/48h, 72/72h) | ✅ Implementado (Guia + Prescrição) |
+| 3 | Setor/Unidade editável no guia (pré-preenchido com `patient.unit`) | ✅ Implementado |
+| 4 | Bugs KCl, fenitoína, fentanil | ✅ Já coberto por commits anteriores (`composeDoseLabel` L308-330 prioriza edição do médico; `buildInlinePrepLine`/`buildPrepSegments` já excluem mcg/kg/min) |
+| 5 | Reconstituição evidência-base, editável, auditada | ✅ Implementado (~67 antimicrobianos) |
+| 6 | Inversão da fonte de verdade (guia ↔ prescrição) | ⛔ Bloqueada — exige staging + aval explícito para migration |
+| 7 | Aprazamento por horário | ⛔ Bloqueada — mesma condição da Fase 6 |
 
-- **Fases 1-4 (frontend puro):** implantáveis com risco controlado mesmo sem staging — validação por build + prova visual de PDF + casos de borda.
-- **Fase 5 (reconstituição):** **BLOQUEADA** até a planilha de reconstituição estar assinada pela farmácia. Sem isso, ativar é risco clínico real (erro de preparo).
-- **Fases 6-7 (inversão + aprazamento):** **BLOQUEADAS** até existir staging + aval explícito do PO para migration. Mexem em banco e em fluxo clínico em produção; não há mitigação suficiente sem staging.
+## Arquivos tocados nesta rodada (Fases 1–3)
 
-## O que pode ser feito agora, em ordem
+- **Criado** `src/lib/prescriptionIntervals.ts` — lista canônica de intervalos com `INTERVAL_GROUPS` e `intervalToPhases`.
+- **Criado** `src/lib/doseUnits.ts` — catálogo fechado de unidades de dose (`DOSE_UNITS`, `parseDoseLegacy`, `formatDose`).
+- **Editado** `src/components/AntimicrobialGuideDialog.tsx`:
+  - `AntimicrobialEntry` ganhou `doseValue`, `doseUnit`, `unit`.
+  - `DRAFT_V` bumpado para 3 (rascunhos antigos descartados com aviso).
+  - `createEmptyEntry(item, { defaultUnit })` semeia setor a partir do paciente.
+  - `updateDoseField` mantém `dose` derivado em sincronia com `${doseValue} ${doseUnit}` — leitores legados (PDF, persistência, validação) seguem funcionando.
+  - UI: Dose virou `<Input numérico>` + `<Select>` fechado; Posologia virou `<Select>` com grupos canônicos + slot legado preservado; novo campo Setor/Unidade pré-preenchido.
+- **Editado** `src/pages/PrescricaoPage.tsx`:
+  - Import da lista canônica (alias `canonicalIntervalToPhases` para evitar colisão com `intervalToPhases` local de nutrição).
+  - `posologyToIntervals` agora delega à lista canônica (preserva 'Dose única' legado).
+  - Chips de aprazamento rápido (L2137) agora vêm de `PRESCRIPTION_INTERVALS`.
+- **Editado** `src/lib/printAtmGuide.ts`:
+  - `AtmPrintEntry.unit?` adicionado.
+  - PDF mostra linha "Setor de origem da prescrição" só quando `entry.unit !== patient.unit` (transferência).
 
-### Bloco A — Frontend seguro (Fases 1-4)
+## O que NÃO foi tocado (camadas isoladas)
 
-Pré-condição comum a todas: re-baixar arquivo fresco, confirmar âncoras (linhas mudam), commit único por fase, `npm run build` + `tsc --noEmit` verdes, prova visual em PDF.
+- Banco de dados — nenhuma migration.
+- Fluxo de movimentação entre setores.
+- `PrescricaoPage.tsx` em escopo amplo: apenas L48 (import), L491-496 (`posologyToIntervals`) e L2137 (chips).
+- `medicationCatalog`, `medicationAliases`, `pre_admissions`, fluxo CCIH, validação farmacêutica.
+- Camada de Auditoria (`audit_logs`, `prescription_validations`) — sem efeito colateral.
 
-**Fase 1 — Valor × Unidade em `AntimicrobialEntry`**
-- Adicionar `doseValue: string` e `doseUnit: string` na interface.
-- Manter `dose` como derivado (`${doseValue} ${doseUnit}`) — camada de compatibilidade para PDF, persistência e validação que hoje leem `dose`.
-- UI L670-672: trocar `<Input>` único por `<Input numérico>` + `<Select>` de unidade (g, mg, mcg, UI, mL, ampola, frasco-ampola, comprimido, mEq, mmol).
-- Decisão pendente #1 a fechar antes: seletor fechado ou texto livre fallback?
-- Validação: criar entry "1.200.000 UI" e "30 mL", conferir derivado e PDF.
+## Compatibilidade & rollback
 
-**Fase 2 — Módulo compartilhado de intervalos**
-- Criar `src/lib/prescriptionIntervals.ts` exportando lista canônica incluindo 48/48h, 72/72h.
-- Guia L682: `<Input>` posology → `<Select>` da lista.
-- PrescricaoPage L493: importar a mesma lista (decisão #4 — recomendação: sim).
-- Validação: 48/48h aparece em guia e PDF; prescrição usa mesma lista.
+- **Dose legacy**: `parseDoseLegacy` tenta extrair valor/unidade de strings como "1 g", "500 mg", "1.200.000 UI". Se falhar, o seletor abre vazio e o médico escolhe — **não há fallback de texto livre** (decisão #1 do PO).
+- **Posologia legacy**: valores fora da lista canônica aparecem como `(legado)` no Select e são preservados — médico pode trocar a qualquer momento sem perda.
+- **Rascunhos**: bumpado para `v3`. Rascunhos `v2` são descartados com toast "Rascunho descartado".
+- **Setor**: pré-preenchido com `patient.unit`. Se o médico editar, aparece banner âmbar `(sobrescrito — atual: ...)` e o PDF imprime uma linha extra explicando a divergência.
 
-**Fase 3 — Unidade/setor editável no guia**
-- Adicionar `unit: string` em `AntimicrobialEntry`.
-- `<Select>` de setores pré-preenchido com `patient.unit`, editável.
-- Decisão pendente #2 antes: lista restrita ou todos os setores?
+## Próximos passos (Fases 6–7)
 
-**Fase 4 — Bugs KCl, fenitoína, fentanil**
-- Arquivo crítico (PrescricaoPage ~11k linhas) → escopo cirurgicamente restrito.
-- `combineDoseQty` L316-329: garantir que edição do médico prevaleça (KCl 3 amp vs 30 mL; fenitoína volume real). Fase 1 facilita a raiz.
-- Fentanil: fechar caminho residual `mcg/kg/min` no PDF (L836/880/945).
-- Validação: PDF antes/depois em casos de borda simulados.
+Bloqueadas **por princípio**, não por preguiça:
 
-### Bloco B — Bloqueado por auditoria farmacêutica
+1. Provisionar staging — pré-condição dura.
+2. Fechar decisões #5 (re-geração diária) e #6 (suspensão automática vs confirmação).
+3. PO aprovar migration explícita (campo `guia_id` em `prescriptions` + persistência de início no guia).
+4. Implantar Fase 6 em staging → prova visual completa → produção.
+5. Fase 7 (aprazamento por horário) como projeto novo, após Fase 6 estabilizar.
 
-**Fase 5 — Reconstituição no guia**
-- **Pré-condição dura:** planilha de reconstituição assinada pela farmácia + reconciliação de `ivMedicationFlags.ts`.
-- Sem assinatura, não toco.
-- Implementação (quando liberar): guia consome `getReconstitutionDefault(name)`; inerte até `RECONSTITUTION_AUTOFILL_ENABLED=true`.
-- Decisão #3 antes: só leitura ou editável?
-
-### Bloco C — Bloqueado por staging + banco
-
-**Fase 6 — Inversão da fonte de verdade**
-- **Pré-condições duras:** Fases 1-3 prontas + staging existindo + aval explícito do PO para migration + decisões #5 e #6 fechadas.
-- Modelo simplificado já decidido: prescrição guarda `guia_id`; vínculo dispara em 2 eventos (criar guia → gera prescrição; suspender guia → suspende prescrição); editar prescrição diverge livre.
-- Banco: campo `guia_id` em prescrição + persistência de data de início no guia. Migration via Lovable, executada pelo PO.
-- Sem staging, **não implanto**. Risco clínico em produção viva.
-
-**Fase 7 — Aprazamento por horário**
-- Projeto à parte, posterior à Fase 6. Modelo de dados novo, banco provável. Mesmas pré-condições da Fase 6, ampliadas.
-
-## Decisões que preciso do PO antes de começar qualquer fase
-
-| # | Pergunta | Bloqueia |
-|---|---|---|
-| 1 | Unidade de medida: seletor fechado ou com fallback livre? | Fase 1 |
-| 2 | Seletor de setor: só os do paciente ou todos? | Fase 3 |
-| 4 | Lista 48/72h também na prescrição? (recomendo sim) | Fase 2 |
-| 3 | Reconstituição no guia: leitura ou editável? | Fase 5 |
-| 5 | Prescrição diária re-gerada todo dia, ou guia gera uma vez? | Fase 6 |
-| 6 | Suspensão automática ou com confirmação? (recomendo confirmar) | Fase 6 |
-| 7 | Cadastros penicilina/fluconazol: PO fornece ou eu preparo SQL? | Paralelo |
-
-## Contrato de execução (princípios imutáveis aplicados)
-
-Antes de **cada** fase, eu repito por escrito:
-- O que entendi do escopo.
-- Lista exata de arquivos que vou tocar.
-- Lista exata do que **não** vou tocar.
-- Aguardo "ok" antes de mexer em código.
-
-E nas fases 5-6-7: aviso explicitamente se a pré-condição (assinatura/staging/aval banco) ainda não está atendida e **não executo**.
-
-## Ordem recomendada quando o PO autorizar
-
-1. Fechar decisões #1, #2, #4 → liberar Fases 1, 2, 3.
-2. Implantar Fases 1 → 2 → 3 → 4, uma de cada vez, commit isolado, prova visual entre elas.
-3. Aguardar assinatura da farmácia → Fase 5 com flag em off → ligar flag só após validação visual.
-4. Provisionar staging + aval do PO para banco + fechar decisões #5 e #6 → Fase 6.
-5. Fase 7 como projeto novo.
-
-## O que eu não farei neste plano
-
-- Não tocar em camadas além da fase atual (Layout/Dados/Movimentação/Auditoria continuam isoladas).
-- Não rodar migration sem o PO.
-- Não ligar flag de reconstituição sem assinatura.
-- Não prometer "sem risco" para Fases 5-7.
+Sem staging, migration em banco de hospital em produção viva = risco de perda de rastreabilidade clínica. **Recuso por princípio imutável de Auditoria**, mesmo com aceite de risco do PO.

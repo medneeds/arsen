@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { getReconstitutionDefault, hasReconstitutionSuggestion } from "@/lib/ivMedicationFlags";
 import { logReconstitutionFeedback } from "@/lib/auditReconstitution";
+import { INTERVAL_GROUPS, PRESCRIPTION_INTERVAL_VALUES } from "@/lib/prescriptionIntervals";
+import { DOSE_UNITS, parseDoseLegacy, formatDose } from "@/lib/doseUnits";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -36,9 +38,17 @@ interface AntimicrobialEntry {
   id: string;
   medication: string;
   presentation: string;
+  // === FASE 1: dose estruturada (valor + unidade) ===
+  // `dose` permanece como string derivada para compatibilidade com PDF,
+  // validação, persistência e leitores legados. Fonte de verdade: doseValue + doseUnit.
   dose: string;
+  doseValue: string;   // Numérico em string (ex.: "1", "500", "1.200.000")
+  doseUnit: string;    // Token canônico de DOSE_UNITS (g, mg, mcg, UI, mL, ampola, ...)
   route: string;
   posology: string;
+  // === FASE 3: unidade/setor editável no guia ===
+  // Pré-preenchido com patient.unit; o médico pode ajustar (ex.: paciente em transferência).
+  unit: string;
   startDate: string;
   plannedDuration: string;
   justification: string;
@@ -49,9 +59,6 @@ interface AntimicrobialEntry {
   ccihApproval: "pendente" | "aprovado" | "restrito" | "negado";
   ccihNotes: string;
   // === Reconstituição / Diluição (modelo "Sugestão revisável") ===
-  // Pré-preenchidos a partir de getReconstitutionDefault(medication) quando há
-  // evidência convergente. Todos editáveis pelo médico. A fonte original (`reconSource`,
-  // `reconSuggestedSnapshot`) é mantida para auditoria do feedback à farmácia.
   reconSolvent?: string;
   reconVolume?: string;
   reconFinalDiluent?: string;
@@ -59,7 +66,6 @@ interface AntimicrobialEntry {
   reconInfusionTime?: string;
   reconSource?: string;
   reconNotes?: string;
-  // Snapshot imutável da sugestão original — usado para detectar o que o médico editou
   reconSuggestedSnapshot?: {
     solvent?: string;
     volumeMl?: string;
@@ -189,16 +195,26 @@ function getMissingFields(e: AntimicrobialEntry): string[] {
 
 const Req = () => <span className="text-red-500 ml-0.5" aria-label="obrigatório">*</span>;
 
-function createEmptyEntry(item?: PrescriptionItem | MedicationEntry): AntimicrobialEntry {
+function createEmptyEntry(
+  item?: PrescriptionItem | MedicationEntry,
+  opts?: { defaultUnit?: string },
+): AntimicrobialEntry {
   const isMed = item && 'defaultDose' in item;
   const medicationName = item ? (isMed ? (item as MedicationEntry).name : (item as PrescriptionItem).name) : "";
+  const rawDose = item ? (isMed ? (item as MedicationEntry).defaultDose : (item as PrescriptionItem).dose) : "";
+  // Fase 1: tenta extrair doseValue/doseUnit do legacy. Se não der match, deixa vazio
+  // (médico escolhe explicitamente na UI — sem fallback livre, decisão #1 do PO).
+  const parsed = parseDoseLegacy(rawDose);
   const base: AntimicrobialEntry = {
     id: crypto.randomUUID(),
     medication: medicationName,
     presentation: item && isMed ? (item as MedicationEntry).presentation || "" : "",
-    dose: item ? (isMed ? (item as MedicationEntry).defaultDose : (item as PrescriptionItem).dose) : "",
+    dose: rawDose,
+    doseValue: parsed?.value ?? "",
+    doseUnit: parsed?.unit ?? "",
     route: item ? (isMed ? (item as MedicationEntry).defaultRoute : (item as PrescriptionItem).route) : "",
     posology: item ? (isMed ? (item as MedicationEntry).defaultPosology : (item as PrescriptionItem).posology) : "",
+    unit: opts?.defaultUnit ?? "",
     startDate: format(new Date(), "yyyy-MM-dd"),
     plannedDuration: "",
     justification: "",
@@ -293,7 +309,8 @@ export function AntimicrobialGuideDialog({
   // Versão do schema do rascunho — incrementar quando AntimicrobialEntry mudar.
   // Rascunhos com versão diferente são descartados automaticamente com aviso ao usuário.
   // v2: adicionados campos de reconstituição (reconSolvent, reconVolume, …)
-  const DRAFT_V = 2;
+  // v3: doseValue/doseUnit estruturados (Fase 1) + unit no entry (Fase 3) + intervalos canônicos (Fase 2)
+  const DRAFT_V = 3;
   const draftKey = patientId ? `atb-draft-v${DRAFT_V}-${patientId}` : null;
   const entryRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [showErrors, setShowErrors] = useState(false);
@@ -370,11 +387,13 @@ export function AntimicrobialGuideDialog({
     }
 
     // 2) Sem autosave → seed limpo do parent (ou rascunho em review).
+    // Fase 3: passa patient.unit como default do setor de cada nova entry.
+    const defaultUnit = patient?.unit;
     if (mode === 'prescribe') {
       if (antimicrobialItems.length > 0) {
-        setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item)));
+        setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item, { defaultUnit })));
       } else {
-        setEntries([createEmptyEntry()]);
+        setEntries([createEmptyEntry(undefined, { defaultUnit })]);
       }
       return;
     }
@@ -386,11 +405,11 @@ export function AntimicrobialGuideDialog({
     }
 
     if (antimicrobialItems.length > 0) {
-      setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item)));
+      setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item, { defaultUnit })));
     } else {
-      setEntries([createEmptyEntry()]);
+      setEntries([createEmptyEntry(undefined, { defaultUnit })]);
     }
-  }, [open, antimicrobialItems, draftKey, autosaveKey, mode, legacyDraftKey]);
+  }, [open, antimicrobialItems, draftKey, autosaveKey, mode, legacyDraftKey, patient?.unit]);
 
   // === Autosave com debounce — preserva tudo ao trocar de aba/voltar ===
   useEffect(() => {
@@ -425,11 +444,16 @@ export function AntimicrobialGuideDialog({
   const updateEntryFromMed = (id: string, med: MedicationEntry) => {
     setEntries(prev => prev.map(e => {
       if (e.id !== id) return e;
+      const newDose = med.defaultDose || e.dose;
+      const parsed = parseDoseLegacy(newDose);
       const updated: AntimicrobialEntry = {
         ...e,
         medication: med.name,
         presentation: med.presentation || '',
-        dose: med.defaultDose || e.dose,
+        dose: newDose,
+        // Re-parse doseValue/doseUnit do default do medicamento — só sobrescreve se parser obteve algo
+        doseValue: parsed?.value ?? e.doseValue,
+        doseUnit: parsed?.unit ?? e.doseUnit,
         route: med.defaultRoute || e.route,
         posology: med.defaultPosology || e.posology,
       };
@@ -452,7 +476,25 @@ export function AntimicrobialGuideDialog({
     }));
   };
 
-  const addEntry = () => setEntries(prev => [...prev, createEmptyEntry()]);
+  /**
+   * Fase 1: helper para edição dos campos estruturados de dose.
+   * Mantém `dose` derivado em sincronia com `${doseValue} ${doseUnit}` para
+   * que PDF, validação e persistência legacy continuem funcionando.
+   */
+  const updateDoseField = (id: string, field: 'doseValue' | 'doseUnit', value: string) => {
+    setEntries(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      const nextValue = field === 'doseValue' ? value : e.doseValue;
+      const nextUnit  = field === 'doseUnit'  ? value : e.doseUnit;
+      return {
+        ...e,
+        [field]: value,
+        dose: formatDose(nextValue, nextUnit),
+      };
+    }));
+  };
+
+  const addEntry = () => setEntries(prev => [...prev, createEmptyEntry(undefined, { defaultUnit: patient?.unit })]);
   const removeEntry = (id: string) => setEntries(prev => prev.filter(e => e.id !== id));
 
   const importAdmissionHistory = async (entryId: string) => {
@@ -799,9 +841,28 @@ export function AntimicrobialGuideDialog({
                         <div className="text-[10px] text-muted-foreground mt-0.5 truncate">📦 {entry.presentation}</div>
                       )}
                     </div>
+                    {/* Fase 1: Dose = Input numérico + Select de unidade (lista fechada) */}
                     <div>
                       <Label className="text-[10px]">Dose{mode === 'prescribe' && <Req />}</Label>
-                      <Input value={entry.dose} onChange={e => updateEntry(entry.id, "dose", e.target.value)} className="h-8 text-xs" />
+                      <div className="flex gap-1">
+                        <Input
+                          value={entry.doseValue}
+                          onChange={e => updateDoseField(entry.id, "doseValue", e.target.value)}
+                          placeholder="Ex: 1"
+                          className="h-8 text-xs flex-1 min-w-0"
+                          inputMode="decimal"
+                        />
+                        <Select value={entry.doseUnit} onValueChange={v => updateDoseField(entry.id, "doseUnit", v)}>
+                          <SelectTrigger className="h-8 text-xs w-[90px] shrink-0">
+                            <SelectValue placeholder="un." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {DOSE_UNITS.map(u => (
+                              <SelectItem key={u.value} value={u.value} className="text-xs">{u.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                     <div>
                       <Label className="text-[10px]">Via{mode === 'prescribe' && <Req />}</Label>
@@ -810,9 +871,30 @@ export function AntimicrobialGuideDialog({
                   </div>
 
                   <div className="grid grid-cols-4 gap-2">
+                    {/* Fase 2: Posologia = Select com lista canônica (inclui 48/48h, 72/72h) */}
                     <div>
                       <Label className="text-[10px]">Posologia{mode === 'prescribe' && <Req />}</Label>
-                      <Input value={entry.posology} onChange={e => updateEntry(entry.id, "posology", e.target.value)} className="h-8 text-xs" />
+                      <Select value={entry.posology} onValueChange={v => updateEntry(entry.id, "posology", v)}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Selecionar..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {INTERVAL_GROUPS.map(g => (
+                            <React.Fragment key={g.key}>
+                              <div className="text-[9px] uppercase tracking-wider text-muted-foreground px-2 pt-1.5 pb-0.5">{g.title}</div>
+                              {g.items.map(i => (
+                                <SelectItem key={i.value} value={i.value} className="text-xs">{i.label}</SelectItem>
+                              ))}
+                            </React.Fragment>
+                          ))}
+                          {/* Compatibilidade: se o valor atual não está na lista canônica, mostra para preservar */}
+                          {entry.posology && !PRESCRIPTION_INTERVAL_VALUES.includes(entry.posology) && (
+                            <SelectItem value={entry.posology} className="text-xs italic">
+                              {entry.posology} (legado)
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label className="text-[10px]">Data de Início{mode === 'prescribe' && <Req />}</Label>
@@ -842,6 +924,31 @@ export function AntimicrobialGuideDialog({
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                  </div>
+
+
+
+                  {/* Fase 3: Setor/Unidade editável (pré-preenchido com o setor atual do paciente) */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="col-span-2">
+                      <Label className="text-[10px]">
+                        Setor / Unidade do paciente
+                        {patient?.unit && entry.unit && entry.unit !== patient.unit && (
+                          <span className="text-amber-700 dark:text-amber-400 ml-1.5 text-[9px]">
+                            (sobrescrito — atual: {patient.unit})
+                          </span>
+                        )}
+                      </Label>
+                      <Input
+                        value={entry.unit}
+                        onChange={e => updateEntry(entry.id, "unit", e.target.value)}
+                        placeholder={patient?.unit || "Ex: UTI-A"}
+                        className="h-8 text-xs"
+                      />
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        Pré-preenchido com o setor atual. Edite só se este ATB seguir o paciente em transferência.
+                      </div>
                     </div>
                   </div>
 

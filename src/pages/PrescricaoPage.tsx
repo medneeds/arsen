@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
+import { PRESCRIPTION_INTERVALS, intervalToPhases as canonicalIntervalToPhases } from "@/lib/prescriptionIntervals";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageLoader } from "@/components/PageLoader";
@@ -488,12 +489,10 @@ function isIVRoute(route: string): boolean {
 }
 
 function posologyToIntervals(posology: string): number {
-  const map: Record<string, number> = {
-    '1x/dia': 1, '2x/dia': 2, '3x/dia': 3, '4x/dia': 4,
-    '6/6h': 4, '8/8h': 3, '12/12h': 2, '24/24h': 1,
-    '4/4h': 6, '3/3h': 8, '2/2h': 12, 'Contínuo': 1, 'Dose única': 1,
-  };
-  return map[posology] || 1;
+  // Fase 2: delega à lista canônica compartilhada (inclui 48/48h, 72/72h).
+  // Mantém compatibilidade com legacy 'Dose única' → 1 (canonical usa 'Única').
+  if (posology === 'Dose única') return 1;
+  return canonicalIntervalToPhases(posology);
 }
 
 // --- Common schedule presets ---
@@ -2134,7 +2133,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             <PopoverContent className="w-64 p-3" align="end">
               <p className="text-[11px] font-semibold text-muted-foreground mb-2">Aprazamento</p>
               <div className="grid grid-cols-3 gap-1.5">
-                {['1/1h','2/2h','4/4h','6/6h','8/8h','12/12h','1x/dia','2x/dia','3x/dia','Única','Contínuo','S/N','ACM'].map(opt => (
+                {PRESCRIPTION_INTERVALS.map(p => p.value).map(opt => (
                   <button
                     key={opt}
                     type="button"
