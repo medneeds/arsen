@@ -38,9 +38,17 @@ interface AntimicrobialEntry {
   id: string;
   medication: string;
   presentation: string;
+  // === FASE 1: dose estruturada (valor + unidade) ===
+  // `dose` permanece como string derivada para compatibilidade com PDF,
+  // validação, persistência e leitores legados. Fonte de verdade: doseValue + doseUnit.
   dose: string;
+  doseValue: string;   // Numérico em string (ex.: "1", "500", "1.200.000")
+  doseUnit: string;    // Token canônico de DOSE_UNITS (g, mg, mcg, UI, mL, ampola, ...)
   route: string;
   posology: string;
+  // === FASE 3: unidade/setor editável no guia ===
+  // Pré-preenchido com patient.unit; o médico pode ajustar (ex.: paciente em transferência).
+  unit: string;
   startDate: string;
   plannedDuration: string;
   justification: string;
@@ -51,9 +59,6 @@ interface AntimicrobialEntry {
   ccihApproval: "pendente" | "aprovado" | "restrito" | "negado";
   ccihNotes: string;
   // === Reconstituição / Diluição (modelo "Sugestão revisável") ===
-  // Pré-preenchidos a partir de getReconstitutionDefault(medication) quando há
-  // evidência convergente. Todos editáveis pelo médico. A fonte original (`reconSource`,
-  // `reconSuggestedSnapshot`) é mantida para auditoria do feedback à farmácia.
   reconSolvent?: string;
   reconVolume?: string;
   reconFinalDiluent?: string;
@@ -61,7 +66,6 @@ interface AntimicrobialEntry {
   reconInfusionTime?: string;
   reconSource?: string;
   reconNotes?: string;
-  // Snapshot imutável da sugestão original — usado para detectar o que o médico editou
   reconSuggestedSnapshot?: {
     solvent?: string;
     volumeMl?: string;
