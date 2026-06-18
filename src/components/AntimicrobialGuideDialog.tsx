@@ -442,11 +442,16 @@ export function AntimicrobialGuideDialog({
   const updateEntryFromMed = (id: string, med: MedicationEntry) => {
     setEntries(prev => prev.map(e => {
       if (e.id !== id) return e;
+      const newDose = med.defaultDose || e.dose;
+      const parsed = parseDoseLegacy(newDose);
       const updated: AntimicrobialEntry = {
         ...e,
         medication: med.name,
         presentation: med.presentation || '',
-        dose: med.defaultDose || e.dose,
+        dose: newDose,
+        // Re-parse doseValue/doseUnit do default do medicamento — só sobrescreve se parser obteve algo
+        doseValue: parsed?.value ?? e.doseValue,
+        doseUnit: parsed?.unit ?? e.doseUnit,
         route: med.defaultRoute || e.route,
         posology: med.defaultPosology || e.posology,
       };
@@ -469,7 +474,25 @@ export function AntimicrobialGuideDialog({
     }));
   };
 
-  const addEntry = () => setEntries(prev => [...prev, createEmptyEntry()]);
+  /**
+   * Fase 1: helper para edição dos campos estruturados de dose.
+   * Mantém `dose` derivado em sincronia com `${doseValue} ${doseUnit}` para
+   * que PDF, validação e persistência legacy continuem funcionando.
+   */
+  const updateDoseField = (id: string, field: 'doseValue' | 'doseUnit', value: string) => {
+    setEntries(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      const nextValue = field === 'doseValue' ? value : e.doseValue;
+      const nextUnit  = field === 'doseUnit'  ? value : e.doseUnit;
+      return {
+        ...e,
+        [field]: value,
+        dose: formatDose(nextValue, nextUnit),
+      };
+    }));
+  };
+
+  const addEntry = () => setEntries(prev => [...prev, createEmptyEntry(undefined, { defaultUnit: patient?.unit })]);
   const removeEntry = (id: string) => setEntries(prev => prev.filter(e => e.id !== id));
 
   const importAdmissionHistory = async (entryId: string) => {
