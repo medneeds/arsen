@@ -974,13 +974,19 @@ export function AntimicrobialGuideDialog({
 
                       <div className="grid grid-cols-5 gap-2">
                         <div>
-                          <Label className="text-[10px]">Solvente</Label>
-                          <Input
+                          <Label className="text-[10px]">Solvente (reconstituir em)</Label>
+                          <Select
                             value={entry.reconSolvent ?? ''}
-                            onChange={e => updateEntry(entry.id, "reconSolvent", e.target.value)}
-                            placeholder="AD / SF / —"
-                            className="h-8 text-xs"
-                          />
+                            onValueChange={v => updateEntry(entry.id, "reconSolvent", v)}
+                          >
+                            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="AD" className="text-xs">AD — Água destilada</SelectItem>
+                              <SelectItem value="SF 0,9%" className="text-xs">SF 0,9%</SelectItem>
+                              <SelectItem value="SG 5%" className="text-xs">SG 5%</SelectItem>
+                              <SelectItem value="próprio diluente" className="text-xs">Próprio diluente do fabricante</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div>
                           <Label className="text-[10px]">Vol. reconstit. (mL)</Label>
@@ -993,12 +999,23 @@ export function AntimicrobialGuideDialog({
                         </div>
                         <div>
                           <Label className="text-[10px]">Diluente final</Label>
-                          <Input
+                          <Select
                             value={entry.reconFinalDiluent ?? ''}
-                            onChange={e => updateEntry(entry.id, "reconFinalDiluent", e.target.value)}
-                            placeholder="SF 0,9%"
-                            className="h-8 text-xs"
-                          />
+                            onValueChange={v => updateEntry(entry.id, "reconFinalDiluent", v)}
+                          >
+                            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Sem diluente" className="text-xs font-medium">Sem diluente</SelectItem>
+                              <SelectItem value="Diluente próprio" className="text-xs font-medium">Diluente próprio</SelectItem>
+                              <SelectItem value="SF 0,9%" className="text-xs">SF 0,9%</SelectItem>
+                              <SelectItem value="SG 5%" className="text-xs">SG 5%</SelectItem>
+                              <SelectItem value="SG 10%" className="text-xs">SG 10%</SelectItem>
+                              <SelectItem value="Ringer Lactato" className="text-xs">Ringer Lactato</SelectItem>
+                              <SelectItem value="AD" className="text-xs">AD</SelectItem>
+                              <SelectItem value="SF 0,45%" className="text-xs">SF 0,45%</SelectItem>
+                              <SelectItem value="Outro" className="text-xs">Outro</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div>
                           <Label className="text-[10px]">Vol. final (mL)</Label>
