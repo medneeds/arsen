@@ -309,7 +309,8 @@ export function AntimicrobialGuideDialog({
   // Versão do schema do rascunho — incrementar quando AntimicrobialEntry mudar.
   // Rascunhos com versão diferente são descartados automaticamente com aviso ao usuário.
   // v2: adicionados campos de reconstituição (reconSolvent, reconVolume, …)
-  const DRAFT_V = 2;
+  // v3: doseValue/doseUnit estruturados (Fase 1) + unit no entry (Fase 3) + intervalos canônicos (Fase 2)
+  const DRAFT_V = 3;
   const draftKey = patientId ? `atb-draft-v${DRAFT_V}-${patientId}` : null;
   const entryRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [showErrors, setShowErrors] = useState(false);
