@@ -195,16 +195,26 @@ function getMissingFields(e: AntimicrobialEntry): string[] {
 
 const Req = () => <span className="text-red-500 ml-0.5" aria-label="obrigatório">*</span>;
 
-function createEmptyEntry(item?: PrescriptionItem | MedicationEntry): AntimicrobialEntry {
+function createEmptyEntry(
+  item?: PrescriptionItem | MedicationEntry,
+  opts?: { defaultUnit?: string },
+): AntimicrobialEntry {
   const isMed = item && 'defaultDose' in item;
   const medicationName = item ? (isMed ? (item as MedicationEntry).name : (item as PrescriptionItem).name) : "";
+  const rawDose = item ? (isMed ? (item as MedicationEntry).defaultDose : (item as PrescriptionItem).dose) : "";
+  // Fase 1: tenta extrair doseValue/doseUnit do legacy. Se não der match, deixa vazio
+  // (médico escolhe explicitamente na UI — sem fallback livre, decisão #1 do PO).
+  const parsed = parseDoseLegacy(rawDose);
   const base: AntimicrobialEntry = {
     id: crypto.randomUUID(),
     medication: medicationName,
     presentation: item && isMed ? (item as MedicationEntry).presentation || "" : "",
-    dose: item ? (isMed ? (item as MedicationEntry).defaultDose : (item as PrescriptionItem).dose) : "",
+    dose: rawDose,
+    doseValue: parsed?.value ?? "",
+    doseUnit: parsed?.unit ?? "",
     route: item ? (isMed ? (item as MedicationEntry).defaultRoute : (item as PrescriptionItem).route) : "",
     posology: item ? (isMed ? (item as MedicationEntry).defaultPosology : (item as PrescriptionItem).posology) : "",
+    unit: opts?.defaultUnit ?? "",
     startDate: format(new Date(), "yyyy-MM-dd"),
     plannedDuration: "",
     justification: "",
