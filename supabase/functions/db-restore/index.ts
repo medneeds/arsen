@@ -39,10 +39,10 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   const token = authHeader.replace("Bearer ", "");
-  const { data: claims, error: cErr } = await userClient.auth.getClaims(token);
-  if (cErr || !claims?.claims?.sub) return json({ error: "Unauthorized" }, 401);
-  const userId = claims.claims.sub as string;
-  const userEmail = (claims.claims.email as string | undefined) ?? null;
+  const { data: udata, error: cErr } = await userClient.auth.getUser(token);
+  if (cErr || !udata?.user?.id) return json({ error: "Unauthorized" }, 401);
+  const userId = udata.user.id;
+  const userEmail = udata.user.email ?? null;
 
   const { data: roleRow } = await admin
     .from("user_roles")
@@ -78,7 +78,6 @@ async function startRestore(admin: any, userId: string, userEmail: string | null
 
   if (!backupId) return json({ error: "backup_id required" }, 400);
   if (!["full", "partial"].includes(mode)) return json({ error: "mode must be full|partial" }, 400);
-  if (reason.length < 20) return json({ error: "reason must be ≥ 20 chars" }, 400);
   if (!password) return json({ error: "password required" }, 400);
   if (!userEmail) return json({ error: "user email missing" }, 400);
 
