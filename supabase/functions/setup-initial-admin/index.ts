@@ -44,17 +44,41 @@ Deno.serve(async (req) => {
       return json(400, { error: "Senha deve ter ao menos 6 caracteres" });
     }
 
-    // 1) Criar usuário no Auth
+    // 1) Criar (ou reaproveitar) usuário no Auth
+    let userId: string | null = null;
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
       user_metadata: { full_name: fullName },
     });
-    if (createErr || !created.user) {
-      return json(400, { error: createErr?.message ?? "Falha ao criar usuário" });
+    if (createErr || !created?.user) {
+      // Se já existe, localiza por e-mail e atualiza senha/metadados
+      const msg = (createErr?.message ?? "").toLowerCase();
+      const alreadyExists = msg.includes("already") || msg.includes("registered") || msg.includes("exists");
+      if (!alreadyExists) {
+        return json(400, { error: createErr?.message ?? "Falha ao criar usuário" });
+      }
+      // listUsers paginado — busca pelo email
+      let found: { id: string } | null = null;
+      for (let page = 1; page <= 20 && !found; page++) {
+        const { data: list, error: listErr } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+        if (listErr) return json(500, { error: `Falha ao localizar usuário: ${listErr.message}` });
+        const u = list.users.find((x) => (x.email ?? "").toLowerCase() === String(email).toLowerCase());
+        if (u) found = { id: u.id };
+        if (list.users.length < 200) break;
+      }
+      if (!found) return json(400, { error: "Usuário já existe mas não foi possível localizá-lo" });
+      const { error: updErr } = await admin.auth.admin.updateUserById(found.id, {
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName },
+      });
+      if (updErr) return json(400, { error: `Falha ao atualizar usuário existente: ${updErr.message}` });
+      userId = found.id;
+    } else {
+      userId = created.user.id;
     }
-    const userId = created.user.id;
 
     // 2) Profile (best-effort: pode existir via trigger)
     await admin.from("profiles").upsert({
