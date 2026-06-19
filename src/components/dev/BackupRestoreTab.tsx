@@ -132,6 +132,12 @@ function OverviewPanel() {
   const [backups, setBackups] = useState<BackupRow[]>([]);
   const [restores, setRestores] = useState<RestoreRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [listDialog, setListDialog] = useState<null | {
+    backupId: string;
+    files: Array<{ table: string; path: string; filename: string; url: string | null; size_bytes: number }>;
+    expiresIn: number;
+  }>(null);
 
   const refresh = async () => {
     setLoading(true);
@@ -144,6 +150,31 @@ function OverviewPanel() {
     setLoading(false);
   };
   useEffect(() => { refresh(); }, []);
+
+  const handleDownload = async (backupId: string) => {
+    setDownloadingId(backupId);
+    try {
+      const { data, error } = await supabase.functions.invoke("db-backup", {
+        body: { action: "download", backup_id: backupId },
+      });
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error("Resposta vazia");
+      if (data.mode === "zip" && data.url) {
+        window.location.href = data.url;
+        toast.success(`Download iniciado (${fmtBytes(data.size_bytes ?? 0)})`);
+      } else if (data.mode === "list" && Array.isArray(data.files)) {
+        setListDialog({ backupId, files: data.files, expiresIn: Number(data.expires_in ?? 600) });
+      } else if (data.error) {
+        throw new Error(data.error);
+      } else {
+        throw new Error("Resposta inválida da função");
+      }
+    } catch (e: any) {
+      toast.error(`Falha no download: ${e?.message ?? e}`);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -168,6 +199,7 @@ function OverviewPanel() {
                     <th className="text-left p-1.5">Status</th>
                     <th className="text-right p-1.5">Tabelas</th>
                     <th className="text-right p-1.5">Tamanho</th>
+                    <th className="text-right p-1.5 w-20">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -178,6 +210,20 @@ function OverviewPanel() {
                       <td className="p-1.5"><StatusBadge status={b.status} /></td>
                       <td className="p-1.5 text-right tabular-nums">{b.tables.length}</td>
                       <td className="p-1.5 text-right tabular-nums">{fmtBytes(b.size_bytes)}</td>
+                      <td className="p-1.5 text-right">
+                        {b.status === "completed" ? (
+                          <Button
+                            size="sm" variant="ghost" className="h-7 px-2"
+                            disabled={downloadingId === b.id}
+                            onClick={() => handleDownload(b.id)}
+                            title="Baixar backup"
+                          >
+                            {downloadingId === b.id
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : <Download className="h-3.5 w-3.5" />}
+                          </Button>
+                        ) : null}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -220,7 +266,124 @@ function OverviewPanel() {
           )}
         </CardContent>
       </Card>
+
+      <BackupListDialog dialog={listDialog} onClose={() => setListDialog(null)} />
     </div>
+  );
+}
+
+function BackupListDialog({
+  dialog, onClose,
+}: {
+  dialog: null | {
+    backupId: string;
+    files: Array<{ table: string; path: string; filename: string; url: string | null; size_bytes: number }>;
+    expiresIn: number;
+  };
+  onClose: () => void;
+}) {
+  const [downloadingAll, setDownloadingAll] = useState(false);
+
+  const grouped = useMemo(() => {
+    if (!dialog) return [] as Array<{ table: string; files: typeof dialog.files; totalBytes: number }>;
+    const map = new Map<string, typeof dialog.files>();
+    for (const f of dialog.files) {
+      const arr = map.get(f.table) ?? [];
+      arr.push(f);
+      map.set(f.table, arr);
+    }
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([table, files]) => ({
+        table,
+        files: files.sort((x, y) => x.filename.localeCompare(y.filename)),
+        totalBytes: files.reduce((s, f) => s + (f.size_bytes ?? 0), 0),
+      }));
+  }, [dialog]);
+
+  const totalBytes = useMemo(() => grouped.reduce((s, g) => s + g.totalBytes, 0), [grouped]);
+
+  const downloadOne = (url: string | null, filename: string) => {
+    if (!url) { toast.error(`Sem URL para ${filename}`); return; }
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const downloadAll = async () => {
+    if (!dialog) return;
+    setDownloadingAll(true);
+    try {
+      for (const f of dialog.files) {
+        downloadOne(f.url, f.filename || f.path.split("/").pop()!);
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      toast.success(`${dialog.files.length} downloads iniciados`);
+    } finally {
+      setDownloadingAll(false);
+    }
+  };
+
+  return (
+    <Dialog open={!!dialog} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Download por arquivo</DialogTitle>
+          <DialogDescription>
+            Backup grande demais para empacotamento em .zip. {dialog?.files.length ?? 0} arquivos
+            ({fmtBytes(totalBytes)} no total) agrupados por tabela. Links expiram em{" "}
+            {Math.round((dialog?.expiresIn ?? 600) / 60)} min.
+          </DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="h-96 border rounded">
+          <table className="w-full text-xs">
+            <thead className="text-muted-foreground sticky top-0 bg-background z-10">
+              <tr className="border-b">
+                <th className="text-left p-2">Tabela / Arquivo</th>
+                <th className="text-right p-2">Tamanho</th>
+                <th className="text-right p-2 w-16">Baixar</th>
+              </tr>
+            </thead>
+            <tbody>
+              {grouped.map((g) => (
+                <Fragment key={g.table}>
+                  <tr className="bg-muted/40">
+                    <td className="p-1.5 font-medium" colSpan={2}>
+                      {g.table} <span className="text-muted-foreground font-normal">({g.files.length} arq.)</span>
+                    </td>
+                    <td className="p-1.5 text-right tabular-nums text-muted-foreground">{fmtBytes(g.totalBytes)}</td>
+                  </tr>
+                  {g.files.map((f) => (
+                    <tr key={f.path} className="border-b border-border/50">
+                      <td className="p-1.5 pl-6 font-mono text-[11px] truncate max-w-md" title={f.filename}>{f.filename}</td>
+                      <td className="p-1.5 text-right tabular-nums">{fmtBytes(f.size_bytes)}</td>
+                      <td className="p-1.5 text-right">
+                        <Button size="sm" variant="ghost" className="h-6 px-2"
+                          disabled={!f.url}
+                          onClick={() => downloadOne(f.url, f.filename || f.path.split("/").pop()!)}>
+                          <Download className="h-3 w-3" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </ScrollArea>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Fechar</Button>
+          <Button onClick={downloadAll} disabled={downloadingAll || !dialog?.files.length}>
+            {downloadingAll ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+            Baixar todos
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
