@@ -881,7 +881,23 @@ function ConfirmDialog({
 // ─── helper ────────────────────────────────────────────────────────────
 async function invoke(fn: "db-backup" | "db-restore", body: Record<string, unknown>) {
   const { data, error } = await supabase.functions.invoke(fn, { body });
-  if (error) throw new Error(error.message);
+  if (error) {
+    // Try to extract real error from the response body (FunctionsHttpError swallows it)
+    let detail = error.message;
+    const ctx: any = (error as any).context;
+    if (ctx && typeof ctx.text === "function") {
+      try {
+        const txt = await ctx.text();
+        try {
+          const parsed = JSON.parse(txt);
+          if (parsed?.error) detail = `${error.message}: ${parsed.error}`;
+        } catch {
+          if (txt && txt.length < 500) detail = `${error.message}: ${txt}`;
+        }
+      } catch { /* ignore */ }
+    }
+    throw new Error(detail);
+  }
   if (data?.error) throw new Error(data.error);
   return data;
 }
