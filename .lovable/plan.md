@@ -1,61 +1,123 @@
+# Setup Super Admin — Backup & Restore na aba Desenvolvedor
 
-# Plano de implantação — Guia ATB + Inversão da fonte de verdade
+## Parte 1 — Levantamento do que já existe
 
-> **Status atualizado em 18/06/2026.** Fases 1–5 entregues. Fases 6–7 permanecem bloqueadas por infraestrutura (staging + aval para migration), por princípio imutável de Auditoria.
+### 1. Aba "Desenvolvedor" (Dev Console)
+- **Existe**, em `src/pages/DevConsolePage.tsx` (rota `/dev-console`, ver `App.tsx`).
+- Acesso restrito via `useIsDev()` → checa `user_roles.role IN ('dev','admin')` (server-side).
+- Já é estruturado em **Tabs**: Pendências, Customização, Merges, Limpar Sinalização, Resíduo, IP Allowlist, AI Chat, Health, Audit.
+- Existe perfil dedicado `desenvolvedor` em `AccessProfile` (landingRoute `/dev-console`), hoje restrito ao Arthur Batista.
+- Já chama uma edge function central `dev-console-ops` para operações privilegiadas (padrão `callOps(action, params, confirm)`).
 
-## Status por fase
+### 2. Autenticação / Autorização (RBAC)
+- **Supabase Auth nativo** (e-mail + senha, sem OAuth). Login aceita usuário/CPF/e-mail via edge `resolve-login`.
+- Roles em **tabela separada** `public.user_roles` (enum `app_role`):
+  `admin, medico, porta, visitante, farmacia, nir, dev, coordenador`.
+- Função `public.has_role(uuid, app_role)` SECURITY DEFINER usada nas RLS.
+- Perfis (UI) ortogonais aos roles em `profiles.access_profile` / `access_profiles[]` (11 perfis), incluindo `desenvolvedor`, `admin`, `gestor`.
+- **Não existe role `super_admin`** hoje. Hierarquia atual: `admin` é o topo; `dev` é técnico/operacional.
 
-| Fase | Escopo | Status |
-|------|--------|--------|
-| 1 | Valor × Unidade estruturados no guia ATB | ✅ Implementado |
-| 2 | Módulo compartilhado de intervalos (inclui 48/48h, 72/72h) | ✅ Implementado (Guia + Prescrição) |
-| 3 | Setor/Unidade editável no guia (pré-preenchido com `patient.unit`) | ✅ Implementado |
-| 4 | Bugs KCl, fenitoína, fentanil | ✅ Já coberto por commits anteriores (`composeDoseLabel` L308-330 prioriza edição do médico; `buildInlinePrepLine`/`buildPrepSegments` já excluem mcg/kg/min) |
-| 5 | Reconstituição evidência-base, editável, auditada | ✅ Implementado (~67 antimicrobianos) |
-| 6 | Inversão da fonte de verdade (guia ↔ prescrição) | ⛔ Bloqueada — exige staging + aval explícito para migration |
-| 7 | Aprazamento por horário | ⛔ Bloqueada — mesma condição da Fase 6 |
+### 3. Backups Supabase
+- Projeto Lovable Cloud (Supabase gerenciado). **PITR (Point-In-Time Recovery) não está confirmado** — depende do plano do Supabase subjacente; em projetos Cloud típicos vem **backup diário automático (snapshot)**, não PITR, salvo upgrade.
+- Lovable **não expõe pg_dump nem dump completo** — só CSV por tabela (regra explícita do ambiente). Restore completo via SQL puro também é proibido pelo runtime.
+- **Implicação crítica:** um "backup completo nativo" 100% fiel (incluindo `auth.users`, `storage`, sequences, triggers, extensões) **não é viável dentro do app** — só pelo painel Supabase / suporte Lovable.
 
-## Arquivos tocados nesta rodada (Fases 1–3)
+### 4. Edge Functions já configuradas
+23 funções, incluindo as administrativas: `admin-create-user`, `admin-approve-user`, `admin-change-email`, `reset-user-password`, `dev-console-ops`, `dev-console-ai`, `export-user-data`, `process-data-deletion`. Padrão de privilegiada = service role + `verify_jwt=false` com validação interna.
 
-- **Criado** `src/lib/prescriptionIntervals.ts` — lista canônica de intervalos com `INTERVAL_GROUPS` e `intervalToPhases`.
-- **Criado** `src/lib/doseUnits.ts` — catálogo fechado de unidades de dose (`DOSE_UNITS`, `parseDoseLegacy`, `formatDose`).
-- **Editado** `src/components/AntimicrobialGuideDialog.tsx`:
-  - `AntimicrobialEntry` ganhou `doseValue`, `doseUnit`, `unit`.
-  - `DRAFT_V` bumpado para 3 (rascunhos antigos descartados com aviso).
-  - `createEmptyEntry(item, { defaultUnit })` semeia setor a partir do paciente.
-  - `updateDoseField` mantém `dose` derivado em sincronia com `${doseValue} ${doseUnit}` — leitores legados (PDF, persistência, validação) seguem funcionando.
-  - UI: Dose virou `<Input numérico>` + `<Select>` fechado; Posologia virou `<Select>` com grupos canônicos + slot legado preservado; novo campo Setor/Unidade pré-preenchido.
-- **Editado** `src/pages/PrescricaoPage.tsx`:
-  - Import da lista canônica (alias `canonicalIntervalToPhases` para evitar colisão com `intervalToPhases` local de nutrição).
-  - `posologyToIntervals` agora delega à lista canônica (preserva 'Dose única' legado).
-  - Chips de aprazamento rápido (L2137) agora vêm de `PRESCRIPTION_INTERVALS`.
-- **Editado** `src/lib/printAtmGuide.ts`:
-  - `AtmPrintEntry.unit?` adicionado.
-  - PDF mostra linha "Setor de origem da prescrição" só quando `entry.unit !== patient.unit` (transferência).
+### 5. Tamanho do banco
+- **72 tabelas** no schema `public`.
+- DB total: **981 MB**, mas **`audit_logs` sozinho ocupa 900 MB** (≈92%). Restante clínico ≈ 80 MB.
+- Top tabelas: audit_logs 900MB, prescriptions 31MB, clinical_evolutions 11MB, prescriptions_archive 4.5MB, exam_requests 3.4MB.
 
-## O que NÃO foi tocado (camadas isoladas)
+### 6. Auditoria
+- Sim, robusta:
+  - `audit_logs` (17 cols, 111k linhas) — log genérico.
+  - `user_admin_audit` (imutável, 144 linhas) — gestão de usuários (LGPD).
+  - Tabelas de histórico imutáveis específicas: `patient_admission_date_history`, `medical_record_edit_history`, `patient_registry_edit_history`, `patient_merge_audit`, `prescription_draft_deletion_audit`, `bed_status_history`, `locked_sector_cleanup_log`, `ip_access_log`.
+- Padrão de uso: helper `logUserAdminAction` (client) + inserts dentro de RPC/edge.
 
-- Banco de dados — nenhuma migration.
-- Fluxo de movimentação entre setores.
-- `PrescricaoPage.tsx` em escopo amplo: apenas L48 (import), L491-496 (`posologyToIntervals`) e L2137 (chips).
-- `medicationCatalog`, `medicationAliases`, `pre_admissions`, fluxo CCIH, validação farmacêutica.
-- Camada de Auditoria (`audit_logs`, `prescription_validations`) — sem efeito colateral.
+### 7. Login
+- 100% Supabase Auth nativo (sem custom JWT). Detalhes em `AuthContext.tsx` + edge `resolve-login`. Sessão persistida em localStorage. Suporta ProfileChooser pós-login (múltiplos `access_profiles`).
 
-## Compatibilidade & rollback
+---
 
-- **Dose legacy**: `parseDoseLegacy` tenta extrair valor/unidade de strings como "1 g", "500 mg", "1.200.000 UI". Se falhar, o seletor abre vazio e o médico escolhe — **não há fallback de texto livre** (decisão #1 do PO).
-- **Posologia legacy**: valores fora da lista canônica aparecem como `(legado)` no Select e são preservados — médico pode trocar a qualquer momento sem perda.
-- **Rascunhos**: bumpado para `v3`. Rascunhos `v2` são descartados com toast "Rascunho descartado".
-- **Setor**: pré-preenchido com `patient.unit`. Se o médico editar, aparece banner âmbar `(sobrescrito — atual: ...)` e o PDF imprime uma linha extra explicando a divergência.
+## Parte 2 — Realidade técnica sobre Backup/Restore (importante antes de aprovar)
 
-## Próximos passos (Fases 6–7)
+Antes de planejar UI, alinhar limitações:
 
-Bloqueadas **por princípio**, não por preguiça:
+1. **Backup full nativo (pg_dump) é proibido** pelo ambiente Lovable. Só Supabase/suporte fazem.
+2. **PITR** não é controlado pela aplicação — é flag de plano no Supabase.
+3. **`auth.users`, `storage.objects` e `vault`** não podem ser tocados por migrações ou edge functions do projeto (regra de plataforma). Restore de usuários por dentro do app é **parcial** (só `public.*`).
+4. **`audit_logs` (900 MB)** torna qualquer "backup full" via edge function inviável em uma chamada — limite de payload e timeout estouram.
+5. Restore SQL bruto seria perigoso: precisaria desligar triggers, recriar FKs em ordem, lidar com sequences. Risco operacional alto em produção clínica.
 
-1. Provisionar staging — pré-condição dura.
-2. Fechar decisões #5 (re-geração diária) e #6 (suspensão automática vs confirmação).
-3. PO aprovar migration explícita (campo `guia_id` em `prescriptions` + persistência de início no guia).
-4. Implantar Fase 6 em staging → prova visual completa → produção.
-5. Fase 7 (aprazamento por horário) como projeto novo, após Fase 6 estabilizar.
+**Conclusão:** o que dá pra entregar dentro do Arsen é um **backup/restore lógico de tabelas `public.*` selecionadas**, com auditoria forte. PITR/full real fica documentado como "operação Supabase".
 
-Sem staging, migration em banco de hospital em produção viva = risco de perda de rastreabilidade clínica. **Recuso por princípio imutável de Auditoria**, mesmo com aceite de risco do PO.
+---
+
+## Parte 3 — Arquitetura proposta (para aprovar antes de codar)
+
+### A. RBAC — novo role `super_admin`
+- Adicionar `super_admin` ao enum `app_role` (migração).
+- `has_role(uuid,'super_admin')` reutilizável em RLS.
+- Hook `useIsSuperAdmin` (espelho de `useIsDev`).
+- Setup inicial: aba "Setup Super Admin" só aparece se **nenhum** super_admin existir ainda OU se o usuário já for super_admin (bootstrap único, auditado).
+
+### B. UI — nova tab "Backup & Restore" no DevConsolePage
+Sub-abas:
+1. **Visão geral** — tamanho por tabela, último backup, status PITR (info-only).
+2. **Backup**
+   - Botão "Backup completo (todas tabelas `public.*`)" → executa em background, gera arquivos por tabela em Storage.
+   - Seleção de tabelas específicas (checkbox list) + "Backup parcial".
+   - Histórico de backups (tabela `db_backups`).
+3. **Restore**
+   - Lista de backups disponíveis.
+   - Modo "completo" (todas as tabelas do snapshot) ou "seletivo" (escolher tabelas).
+   - Confirmação dupla com senha + frase digitada + motivo obrigatório.
+   - Pré-visualização: linhas atuais vs linhas no backup.
+4. **Documentação** — card explicando que PITR/auth/storage exige Supabase direto.
+
+### C. Backend — 1 bucket + 1 tabela + 2 edge functions
+- Bucket Storage privado `db-backups/` (service-role only).
+- Tabela `public.db_backups`:
+  - id, created_by, created_at, kind (`full|partial`), tables[], object_paths[], row_counts (jsonb), size_bytes, status, notes, restored_from (nullable).
+  - RLS: só super_admin lê; só service_role escreve.
+- Tabela `public.db_restore_audit` (imutável): id, super_admin_id, backup_id, mode, tables[], rows_before jsonb, rows_after jsonb, started_at, finished_at, status, error, reason.
+- Edge function **`db-backup`**:
+  - Valida JWT + checa `has_role(super_admin)`.
+  - Recebe `{ mode, tables[] }`.
+  - Faz `SELECT *` por tabela em lotes (cursor/keyset), serializa JSONL, faz upload incremental no bucket.
+  - Pula `audit_logs` por padrão (opt-in explícito por causa do tamanho).
+  - Registra em `db_backups`.
+- Edge function **`db-restore`**:
+  - Valida JWT + super_admin + payload (zod).
+  - Para cada tabela: download do JSONL, `BEGIN` → truncate opcional → insert em lotes com `ON CONFLICT DO UPDATE` por PK → registra contagens.
+  - Respeita ordem de FKs (topological sort prévio gerado no backup).
+  - Sempre dentro de transação por tabela; falha rola back a tabela.
+  - Registra `db_restore_audit` com antes/depois.
+
+### D. Segurança e blindagem
+- Toda operação exige reautenticação (senha) + motivo ≥ 20 caracteres.
+- Restore bloqueado se houver `patient_encounters` ativo modificado nas últimas N horas (guard clínico) — override exige checkbox extra.
+- Rate-limit (1 backup em andamento por vez, lock advisory Postgres).
+- Logs em `audit_logs` (action `SUPER_ADMIN_BACKUP` / `SUPER_ADMIN_RESTORE`).
+- Tabelas críticas (`patients`, `patient_encounters`, `prescriptions`, `clinical_evolutions`) marcadas como "alta criticidade" → confirmação extra.
+
+### E. Fora de escopo (documentado na UI)
+- Backup de `auth.users`, `storage.objects`, schemas `auth/storage/vault/realtime`.
+- PITR — instruir abrir Lovable Cloud → Database, ou contatar suporte.
+- Restore cross-project.
+
+---
+
+## Parte 4 — Perguntas para fechar antes de implementar
+
+1. **Bootstrap do super_admin:** primeiro super_admin promovido por qual mecanismo? Opções: (a) pelo `admin` atual via aba (one-time), (b) por edge function chamada manualmente com chave de setup, (c) por migração SQL pontual.
+2. **Escopo do "backup completo":** inclui `audit_logs` (900 MB)? Sugestão: NÃO por padrão, com opt-in.
+3. **Política de retenção:** quantos backups manter no Storage? (custo)
+4. **Restore destrutivo:** `TRUNCATE + INSERT` ou `UPSERT` (preserva linhas criadas após o backup)? Padrão sugerido = UPSERT por PK.
+5. **Disponibilidade durante restore:** colocar app em "modo manutenção" (banner global + bloqueio de escrita)? Recomendado.
+6. OK em assumir que `auth.users` / Storage / PITR ficam **fora** do recurso e só são documentados?
+
+Quando responder essas 6, transformo em plano executável e abrimos a migração + edge functions.
