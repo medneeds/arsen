@@ -21,7 +21,7 @@ import {
 import { toast } from "sonner";
 import { PromoteSuperAdminDialog } from "./PromoteSuperAdminDialog";
 
-const CHUNK = 1000;
+const CHUNK_DEFAULT = 1000;
 
 type BackupRow = {
   id: string; created_at: string; finished_at: string | null; kind: string;
