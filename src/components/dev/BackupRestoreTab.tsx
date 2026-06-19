@@ -283,6 +283,8 @@ function BackupListDialog({
   onClose: () => void;
 }) {
   const [downloadingAll, setDownloadingAll] = useState(false);
+  const [zipping, setZipping] = useState(false);
+  const [zipProgress, setZipProgress] = useState<{ done: number; total: number; phase: string }>({ done: 0, total: 0, phase: "" });
 
   const grouped = useMemo(() => {
     if (!dialog) return [] as Array<{ table: string; files: typeof dialog.files; totalBytes: number }>;
@@ -327,6 +329,79 @@ function BackupListDialog({
       setDownloadingAll(false);
     }
   };
+
+  const downloadAsZip = async () => {
+    if (!dialog) return;
+    const files = dialog.files.filter((f) => !!f.url);
+    if (files.length === 0) { toast.error("Nenhum arquivo com URL válida"); return; }
+
+    setZipping(true);
+    setZipProgress({ done: 0, total: files.length, phase: "Baixando arquivos..." });
+
+    try {
+      const { default: JSZip } = await import("jszip");
+      const zip = new JSZip();
+      const failed: string[] = [];
+      const BATCH = 3;
+      let done = 0;
+
+      for (let i = 0; i < files.length; i += BATCH) {
+        const batch = files.slice(i, i + BATCH);
+        await Promise.all(batch.map(async (f) => {
+          try {
+            const res = await fetch(f.url!);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const buf = new Uint8Array(await res.arrayBuffer());
+            // path dentro do zip: <tabela>/<arquivo>
+            const inner = `${f.table}/${f.filename || f.path.split("/").pop()!}`;
+            zip.file(inner, buf);
+          } catch (e) {
+            failed.push(`${f.table}/${f.filename}: ${e instanceof Error ? e.message : String(e)}`);
+          } finally {
+            done += 1;
+            setZipProgress({ done, total: files.length, phase: "Baixando arquivos..." });
+          }
+        }));
+      }
+
+      setZipProgress({ done: files.length, total: files.length, phase: "Compactando zip..." });
+      const blob = await zip.generateAsync(
+        { type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } },
+        (meta) => {
+          setZipProgress({
+            done: Math.round(meta.percent),
+            total: 100,
+            phase: `Compactando zip... ${Math.round(meta.percent)}%`,
+          });
+        },
+      );
+
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, "-");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `backup-${dialog.backupId.slice(0, 8)}-${stamp}.zip`;
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+      if (failed.length > 0) {
+        toast.warning(`Zip gerado com ${failed.length} falha(s)`, {
+          description: failed.slice(0, 3).join(" • ") + (failed.length > 3 ? ` • +${failed.length - 3}` : ""),
+        });
+      } else {
+        toast.success(`Zip pronto: ${files.length} arquivos`);
+      }
+    } catch (e) {
+      toast.error(`Falha ao gerar zip: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setZipping(false);
+      setZipProgress({ done: 0, total: 0, phase: "" });
+    }
+  };
+
 
   return (
     <Dialog open={!!dialog} onOpenChange={(v) => { if (!v) onClose(); }}>
