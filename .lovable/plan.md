@@ -1,123 +1,60 @@
-# Setup Super Admin — Backup & Restore na aba Desenvolvedor
+# Diagnóstico — agrimario33@gmail.com (somente leitura, nenhuma alteração)
 
-## Parte 1 — Levantamento do que já existe
+## Conclusão
+**Não há problema no backend.** O usuário está íntegro, logou com sucesso às 20:15:29 UTC, e tem privilégios máximos (`admin` + `super_admin`). O erro "JWS" é **client-side** — token antigo no `localStorage` do navegador, assinado com JWT secret diferente do atual ou pertencente a outra origem.
 
-### 1. Aba "Desenvolvedor" (Dev Console)
-- **Existe**, em `src/pages/DevConsolePage.tsx` (rota `/dev-console`, ver `App.tsx`).
-- Acesso restrito via `useIsDev()` → checa `user_roles.role IN ('dev','admin')` (server-side).
-- Já é estruturado em **Tabs**: Pendências, Customização, Merges, Limpar Sinalização, Resíduo, IP Allowlist, AI Chat, Health, Audit.
-- Existe perfil dedicado `desenvolvedor` em `AccessProfile` (landingRoute `/dev-console`), hoje restrito ao Arthur Batista.
-- Já chama uma edge function central `dev-console-ops` para operações privilegiadas (padrão `callOps(action, params, confirm)`).
+## Evidências coletadas
 
-### 2. Autenticação / Autorização (RBAC)
-- **Supabase Auth nativo** (e-mail + senha, sem OAuth). Login aceita usuário/CPF/e-mail via edge `resolve-login`.
-- Roles em **tabela separada** `public.user_roles` (enum `app_role`):
-  `admin, medico, porta, visitante, farmacia, nir, dev, coordenador`.
-- Função `public.has_role(uuid, app_role)` SECURITY DEFINER usada nas RLS.
-- Perfis (UI) ortogonais aos roles em `profiles.access_profile` / `access_profiles[]` (11 perfis), incluindo `desenvolvedor`, `admin`, `gestor`.
-- **Não existe role `super_admin`** hoje. Hierarquia atual: `admin` é o topo; `dev` é técnico/operacional.
+### auth.users — OK
+- `id`: 99c4d8b1-b9cc-4e14-82a1-9c3f70fc795f
+- `email_confirmed_at`: 2026-04-29 ✅
+- `banned_until`: null · `deleted_at`: null
+- `last_sign_in_at`: **2026-06-19 20:15:29 UTC** (login bem-sucedido recentíssimo)
 
-### 3. Backups Supabase
-- Projeto Lovable Cloud (Supabase gerenciado). **PITR (Point-In-Time Recovery) não está confirmado** — depende do plano do Supabase subjacente; em projetos Cloud típicos vem **backup diário automático (snapshot)**, não PITR, salvo upgrade.
-- Lovable **não expõe pg_dump nem dump completo** — só CSV por tabela (regra explícita do ambiente). Restore completo via SQL puro também é proibido pelo runtime.
-- **Implicação crítica:** um "backup completo nativo" 100% fiel (incluindo `auth.users`, `storage`, sequences, triggers, extensões) **não é viável dentro do app** — só pelo painel Supabase / suporte Lovable.
+### profiles — OK
+- `status`: approved
+- `access_profile`: desenvolvedor (+ 11 perfis em access_profiles[])
+- `must_change_password`: false · `terms_version`: 1.0.0
 
-### 4. Edge Functions já configuradas
-23 funções, incluindo as administrativas: `admin-create-user`, `admin-approve-user`, `admin-change-email`, `reset-user-password`, `dev-console-ops`, `dev-console-ai`, `export-user-data`, `process-data-deletion`. Padrão de privilegiada = service role + `verify_jwt=false` com validação interna.
+### user_roles — OK
+- admin
+- super_admin
 
-### 5. Tamanho do banco
-- **72 tabelas** no schema `public`.
-- DB total: **981 MB**, mas **`audit_logs` sozinho ocupa 900 MB** (≈92%). Restante clínico ≈ 80 MB.
-- Top tabelas: audit_logs 900MB, prescriptions 31MB, clinical_evolutions 11MB, prescriptions_archive 4.5MB, exam_requests 3.4MB.
+### Auth logs (deste user_id) — todos 200
+- 20:15:29 POST /token password → 200
+- 20:13:01 POST /token password → 200
+- 20:10:27 POST /token refresh → 200
+- 1x 400 invalid_credentials às 20:12:28 (senha errada digitada uma vez em arsen.com.br)
+- 1x 400 refresh_token_not_found às 20:15:36 (refresh expirado em arsen.com.br)
 
-### 6. Auditoria
-- Sim, robusta:
-  - `audit_logs` (17 cols, 111k linhas) — log genérico.
-  - `user_admin_audit` (imutável, 144 linhas) — gestão de usuários (LGPD).
-  - Tabelas de histórico imutáveis específicas: `patient_admission_date_history`, `medical_record_edit_history`, `patient_registry_edit_history`, `patient_merge_audit`, `prescription_draft_deletion_audit`, `bed_status_history`, `locked_sector_cleanup_log`, `ip_access_log`.
-- Padrão de uso: helper `logUserAdminAction` (client) + inserts dentro de RPC/edge.
+### Busca por "JWS" / "invalid signature" / "JWT expired"
+- Zero ocorrências em auth_logs e postgres_logs.
 
-### 7. Login
-- 100% Supabase Auth nativo (sem custom JWT). Detalhes em `AuthContext.tsx` + edge `resolve-login`. Sessão persistida em localStorage. Suporta ProfileChooser pós-login (múltiplos `access_profiles`).
+### Mudanças recentes (super_admin/maintenance/setup)
+- Nenhuma afeta este user_id; ele já é super_admin e nenhum trigger novo bloqueia login.
 
----
+## Causa raiz provável
+`JWSError` / `JWSInvalidSignature` é lançado pelo cliente `@supabase/supabase-js` quando o access_token salvo no `localStorage` foi assinado com um JWT secret antigo ou pertence a outro projeto Supabase. Cenários compatíveis com os logs:
+1. Token órfão em `localStorage` de um dos domínios (arsen.com.br, arsen.lovable.app, id-preview…lovable.app) — cada origin tem storage isolado.
+2. Refresh token revogado (vimos 400 refresh_token_not_found em arsen.com.br) + access token ainda em cache.
 
-## Parte 2 — Realidade técnica sobre Backup/Restore (importante antes de aprovar)
+**Camada do erro:** frontend (cliente Supabase no navegador). Não é Auth, RLS, trigger nem edge function.
 
-Antes de planejar UI, alinhar limitações:
+## Próximos passos sugeridos (a serem aprovados antes de qualquer mudança)
 
-1. **Backup full nativo (pg_dump) é proibido** pelo ambiente Lovable. Só Supabase/suporte fazem.
-2. **PITR** não é controlado pela aplicação — é flag de plano no Supabase.
-3. **`auth.users`, `storage.objects` e `vault`** não podem ser tocados por migrações ou edge functions do projeto (regra de plataforma). Restore de usuários por dentro do app é **parcial** (só `public.*`).
-4. **`audit_logs` (900 MB)** torna qualquer "backup full" via edge function inviável em uma chamada — limite de payload e timeout estouram.
-5. Restore SQL bruto seria perigoso: precisaria desligar triggers, recriar FKs em ordem, lidar com sequences. Risco operacional alto em produção clínica.
+### A) Coletar evidência adicional do usuário (sem código)
+1. Em qual URL exata vê o erro (arsen.com.br / arsen.lovable.app / preview)?
+2. Mensagem literal do console (distinguir `JWSError JWSInvalidSignature` de `JWT expired`).
+3. Print das chaves `sb-*-auth-token` em Application → Local Storage.
 
-**Conclusão:** o que dá pra entregar dentro do Arsen é um **backup/restore lógico de tabelas `public.*` selecionadas**, com auditoria forte. PITR/full real fica documentado como "operação Supabase".
+### B) Correção imediata (sem deploy)
+Pedir que ele rode no console do domínio com erro:
+```
+localStorage.clear(); sessionStorage.clear(); location.reload()
+```
+Ou DevTools → Application → Clear site data. Em seguida fazer login normalmente.
 
----
+### C) Mitigação preventiva (opcional, requer aprovação)
+Adicionar no `AuthContext` um handler global para detectar `JWSError`/`AuthApiError` no `onAuthStateChange` e fazer `supabase.auth.signOut()` + redirect para `/auth` automaticamente, evitando que outros usuários fiquem presos quando o token local fica inválido. Mudança restrita a `src/contexts/AuthContext.tsx`.
 
-## Parte 3 — Arquitetura proposta (para aprovar antes de codar)
-
-### A. RBAC — novo role `super_admin`
-- Adicionar `super_admin` ao enum `app_role` (migração).
-- `has_role(uuid,'super_admin')` reutilizável em RLS.
-- Hook `useIsSuperAdmin` (espelho de `useIsDev`).
-- Setup inicial: aba "Setup Super Admin" só aparece se **nenhum** super_admin existir ainda OU se o usuário já for super_admin (bootstrap único, auditado).
-
-### B. UI — nova tab "Backup & Restore" no DevConsolePage
-Sub-abas:
-1. **Visão geral** — tamanho por tabela, último backup, status PITR (info-only).
-2. **Backup**
-   - Botão "Backup completo (todas tabelas `public.*`)" → executa em background, gera arquivos por tabela em Storage.
-   - Seleção de tabelas específicas (checkbox list) + "Backup parcial".
-   - Histórico de backups (tabela `db_backups`).
-3. **Restore**
-   - Lista de backups disponíveis.
-   - Modo "completo" (todas as tabelas do snapshot) ou "seletivo" (escolher tabelas).
-   - Confirmação dupla com senha + frase digitada + motivo obrigatório.
-   - Pré-visualização: linhas atuais vs linhas no backup.
-4. **Documentação** — card explicando que PITR/auth/storage exige Supabase direto.
-
-### C. Backend — 1 bucket + 1 tabela + 2 edge functions
-- Bucket Storage privado `db-backups/` (service-role only).
-- Tabela `public.db_backups`:
-  - id, created_by, created_at, kind (`full|partial`), tables[], object_paths[], row_counts (jsonb), size_bytes, status, notes, restored_from (nullable).
-  - RLS: só super_admin lê; só service_role escreve.
-- Tabela `public.db_restore_audit` (imutável): id, super_admin_id, backup_id, mode, tables[], rows_before jsonb, rows_after jsonb, started_at, finished_at, status, error, reason.
-- Edge function **`db-backup`**:
-  - Valida JWT + checa `has_role(super_admin)`.
-  - Recebe `{ mode, tables[] }`.
-  - Faz `SELECT *` por tabela em lotes (cursor/keyset), serializa JSONL, faz upload incremental no bucket.
-  - Pula `audit_logs` por padrão (opt-in explícito por causa do tamanho).
-  - Registra em `db_backups`.
-- Edge function **`db-restore`**:
-  - Valida JWT + super_admin + payload (zod).
-  - Para cada tabela: download do JSONL, `BEGIN` → truncate opcional → insert em lotes com `ON CONFLICT DO UPDATE` por PK → registra contagens.
-  - Respeita ordem de FKs (topological sort prévio gerado no backup).
-  - Sempre dentro de transação por tabela; falha rola back a tabela.
-  - Registra `db_restore_audit` com antes/depois.
-
-### D. Segurança e blindagem
-- Toda operação exige reautenticação (senha) + motivo ≥ 20 caracteres.
-- Restore bloqueado se houver `patient_encounters` ativo modificado nas últimas N horas (guard clínico) — override exige checkbox extra.
-- Rate-limit (1 backup em andamento por vez, lock advisory Postgres).
-- Logs em `audit_logs` (action `SUPER_ADMIN_BACKUP` / `SUPER_ADMIN_RESTORE`).
-- Tabelas críticas (`patients`, `patient_encounters`, `prescriptions`, `clinical_evolutions`) marcadas como "alta criticidade" → confirmação extra.
-
-### E. Fora de escopo (documentado na UI)
-- Backup de `auth.users`, `storage.objects`, schemas `auth/storage/vault/realtime`.
-- PITR — instruir abrir Lovable Cloud → Database, ou contatar suporte.
-- Restore cross-project.
-
----
-
-## Parte 4 — Perguntas para fechar antes de implementar
-
-1. **Bootstrap do super_admin:** primeiro super_admin promovido por qual mecanismo? Opções: (a) pelo `admin` atual via aba (one-time), (b) por edge function chamada manualmente com chave de setup, (c) por migração SQL pontual.
-2. **Escopo do "backup completo":** inclui `audit_logs` (900 MB)? Sugestão: NÃO por padrão, com opt-in.
-3. **Política de retenção:** quantos backups manter no Storage? (custo)
-4. **Restore destrutivo:** `TRUNCATE + INSERT` ou `UPSERT` (preserva linhas criadas após o backup)? Padrão sugerido = UPSERT por PK.
-5. **Disponibilidade durante restore:** colocar app em "modo manutenção" (banner global + bloqueio de escrita)? Recomendado.
-6. OK em assumir que `auth.users` / Storage / PITR ficam **fora** do recurso e só são documentados?
-
-Quando responder essas 6, transformo em plano executável e abrimos a migração + edge functions.
+Aguardando sua decisão sobre A/B/C antes de qualquer alteração.
