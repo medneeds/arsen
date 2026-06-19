@@ -23,6 +23,7 @@ import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import LandingPage from "./pages/LandingPage";
+const SetupPage = lazy(() => import("./pages/SetupPage"));
 
 // Demais páginas: lazy para reduzir bundle inicial e uso de memória
 const SignupRedirectPage = lazy(() => import("./pages/SignupRedirectPage"));
@@ -197,6 +198,7 @@ const App = () => {
               <Route path="/apresentacao" element={<ApresentacaoPage />} />
               <Route path="/apresentacao-hmdm" element={<ApresentacaoPage />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/setup" element={<SetupPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/signup" element={<SignupRedirectPage />} />
               <Route path="/sign-up" element={<SignupRedirectPage />} />
