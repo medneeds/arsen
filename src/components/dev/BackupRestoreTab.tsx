@@ -450,11 +450,20 @@ function BackupListDialog({
             </tbody>
           </table>
         </ScrollArea>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Fechar</Button>
-          <Button onClick={downloadAll} disabled={downloadingAll || !dialog?.files.length}>
+        <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2 items-stretch sm:items-center">
+          {zipping && (
+            <div className="flex-1 text-xs text-muted-foreground text-left">
+              {zipProgress.phase} ({zipProgress.done}/{zipProgress.total})
+            </div>
+          )}
+          <Button variant="outline" onClick={onClose} disabled={zipping}>Fechar</Button>
+          <Button variant="outline" onClick={downloadAll} disabled={downloadingAll || zipping || !dialog?.files.length}>
             {downloadingAll ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-            Baixar todos
+            Baixar separadamente
+          </Button>
+          <Button onClick={downloadAsZip} disabled={zipping || downloadingAll || !dialog?.files.length}>
+            {zipping ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+            Baixar tudo em um único .zip
           </Button>
         </DialogFooter>
       </DialogContent>
