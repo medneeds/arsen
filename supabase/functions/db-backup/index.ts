@@ -389,6 +389,134 @@ async function finalizeBackup(
   return json({ ok: true });
 }
 
+
+// ─── download ───────────────────────────────────────────────────────────
+// Hybrid: zip in memory when total payload fits (~150MB), otherwise return
+// per-file signed URLs grouped by table.
+const ZIP_THRESHOLD_BYTES = 150 * 1024 * 1024;
+const SIGNED_URL_TTL = 600; // 10 minutes
+
+async function downloadBackup(
+  admin: any, userId: string, userEmail: string | null, body: any,
+) {
+  const backupId = String(body?.backup_id ?? "");
+  if (!backupId) return json({ error: "backup_id required" }, 400);
+
+  const { data: bk, error: bkErr } = await admin
+    .from("db_backups").select("*").eq("id", backupId).maybeSingle();
+  if (bkErr) return json({ error: bkErr.message }, 500);
+  if (!bk) return json({ error: "Backup não encontrado" }, 404);
+  if (bk.status !== "completed") {
+    return json({ error: `Backup status=${bk.status}; download requer 'completed'` }, 400);
+  }
+  const paths: string[] = Array.isArray(bk.object_paths) ? bk.object_paths : [];
+  if (paths.length === 0) return json({ error: "Backup sem arquivos" }, 400);
+
+  const totalBytes = Number(bk.size_bytes ?? 0);
+
+  // ── ZIP mode ────────────────────────────────────────────────────────
+  if (totalBytes > 0 && totalBytes <= ZIP_THRESHOLD_BYTES) {
+    try {
+      const { default: JSZip } = await import("npm:jszip@3.10.1");
+      const zip = new JSZip();
+      for (const p of paths) {
+        const { data: blob, error: dErr } = await admin.storage.from(BUCKET).download(p);
+        if (dErr || !blob) {
+          return json({ error: `Falha ao baixar ${p}: ${dErr?.message ?? "vazio"}` }, 500);
+        }
+        const buf = new Uint8Array(await blob.arrayBuffer());
+        const inner = p.startsWith(`${backupId}/`) ? p.slice(backupId.length + 1) : p;
+        zip.file(inner, buf);
+      }
+      const zipBytes: Uint8Array = await zip.generateAsync({
+        type: "uint8array",
+        compression: "DEFLATE",
+        compressionOptions: { level: 1 },
+      });
+      const exportPath = `_exports/${backupId}.zip`;
+      const { error: upErr } = await admin.storage.from(BUCKET).upload(
+        exportPath, zipBytes,
+        { contentType: "application/zip", upsert: true },
+      );
+      if (upErr) return json({ error: `Upload zip: ${upErr.message}` }, 500);
+
+      const { data: signed, error: sErr } = await admin.storage.from(BUCKET)
+        .createSignedUrl(exportPath, SIGNED_URL_TTL);
+      if (sErr || !signed?.signedUrl) {
+        return json({ error: `Signed URL: ${sErr?.message ?? "vazio"}` }, 500);
+      }
+
+      await logAudit(admin, userId, userEmail, "SUPER_ADMIN_BACKUP_DOWNLOAD", {
+        backup_id: backupId, mode: "zip", zip_bytes: zipBytes.byteLength,
+      });
+
+      return json({
+        mode: "zip",
+        url: signed.signedUrl,
+        size_bytes: zipBytes.byteLength,
+        expires_in: SIGNED_URL_TTL,
+        file_count: paths.length,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      // OOM / memória estourada → cai automaticamente para o modo lista
+      console.warn("[db-backup] zip failed, falling back to list:", msg);
+    }
+  }
+
+  // ── LIST mode (fallback / size > threshold) ─────────────────────────
+  const { data: signedList, error: slErr } = await admin.storage.from(BUCKET)
+    .createSignedUrls(paths, SIGNED_URL_TTL);
+  if (slErr || !signedList) {
+    return json({ error: `Signed URLs: ${slErr?.message ?? "vazio"}` }, 500);
+  }
+
+  // Build per-file size map by listing each table dir under the backup
+  const sizeMap: Record<string, number> = {};
+  const dirs = new Set<string>();
+  for (const p of paths) {
+    const i = p.lastIndexOf("/");
+    if (i > 0) dirs.add(p.slice(0, i));
+  }
+  for (const dir of dirs) {
+    const { data: list } = await admin.storage.from(BUCKET).list(dir, { limit: 1000 });
+    if (list) {
+      for (const item of list) {
+        const fullPath = `${dir}/${item.name}`;
+        const size = (item.metadata as any)?.size ?? (item as any)?.size ?? 0;
+        sizeMap[fullPath] = Number(size) || 0;
+      }
+    }
+  }
+
+  const files = signedList.map((s: any, i: number) => {
+    const p = paths[i];
+    const rel = p.startsWith(`${backupId}/`) ? p.slice(backupId.length + 1) : p;
+    const table = rel.split("/")[0] ?? "(root)";
+    const fname = rel.split("/").slice(1).join("/") || rel;
+    return {
+      table,
+      path: p,
+      filename: fname,
+      url: s.signedUrl ?? s.signedURL ?? null,
+      size_bytes: sizeMap[p] ?? 0,
+      error: s.error ?? null,
+    };
+  });
+
+  await logAudit(admin, userId, userEmail, "SUPER_ADMIN_BACKUP_DOWNLOAD", {
+    backup_id: backupId, mode: "list", file_count: files.length,
+  });
+
+  return json({
+    mode: "list",
+    files,
+    expires_in: SIGNED_URL_TTL,
+    file_count: files.length,
+    total_size_bytes: totalBytes,
+  });
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 async function logAudit(
   admin: any, userId: string, userEmail: string | null, action: string, payload: unknown,
