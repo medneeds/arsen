@@ -5443,6 +5443,14 @@ export type Database = {
           pk: string[]
         }[]
       }
+      get_public_tables_with_pk_and_size: {
+        Args: never
+        Returns: {
+          name: string
+          pk: string[]
+          size_bytes: number
+        }[]
+      }
       get_user_app_role: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
