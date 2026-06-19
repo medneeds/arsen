@@ -935,6 +935,104 @@ export type Database = {
         }
         Relationships: []
       }
+      db_backups: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          kind: string
+          notes: string | null
+          object_paths: string[]
+          row_counts: Json
+          size_bytes: number
+          status: string
+          tables: string[]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind: string
+          notes?: string | null
+          object_paths?: string[]
+          row_counts?: Json
+          size_bytes?: number
+          status?: string
+          tables?: string[]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          notes?: string | null
+          object_paths?: string[]
+          row_counts?: Json
+          size_bytes?: number
+          status?: string
+          tables?: string[]
+        }
+        Relationships: []
+      }
+      db_restore_audit: {
+        Row: {
+          backup_id: string | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          mode: string
+          reason: string
+          rows_after: Json
+          rows_before: Json
+          started_at: string
+          status: string
+          super_admin_id: string | null
+          tables: string[]
+        }
+        Insert: {
+          backup_id?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          mode: string
+          reason: string
+          rows_after?: Json
+          rows_before?: Json
+          started_at?: string
+          status?: string
+          super_admin_id?: string | null
+          tables?: string[]
+        }
+        Update: {
+          backup_id?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          reason?: string
+          rows_after?: Json
+          rows_before?: Json
+          started_at?: string
+          status?: string
+          super_admin_id?: string | null
+          tables?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "db_restore_audit_backup_id_fkey"
+            columns: ["backup_id"]
+            isOneToOne: false
+            referencedRelation: "db_backups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dev_pendencies: {
         Row: {
           category: string | null
@@ -4726,6 +4824,36 @@ export type Database = {
         }
         Relationships: []
       }
+      system_maintenance_mode: {
+        Row: {
+          expected_end_at: string | null
+          id: number
+          is_active: boolean
+          reason: string | null
+          started_at: string | null
+          started_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          expected_end_at?: string | null
+          id?: number
+          is_active?: boolean
+          reason?: string | null
+          started_at?: string | null
+          started_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          expected_end_at?: string | null
+          id?: number
+          is_active?: boolean
+          reason?: string | null
+          started_at?: string | null
+          started_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       therapeutic_templates: {
         Row: {
           created_at: string
@@ -5321,6 +5449,7 @@ export type Database = {
         Args: { _ip: unknown; _module: string }
         Returns: boolean
       }
+      is_maintenance_mode_active: { Args: never; Returns: boolean }
       is_username_available: {
         Args: { p_exclude_user?: string; p_username: string }
         Returns: boolean
@@ -5340,6 +5469,10 @@ export type Database = {
         Returns: string
       }
       normalize_text_immutable: { Args: { input: string }; Returns: string }
+      promote_to_super_admin: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
       promote_unidentified_patient: {
         Args: {
           p_address?: string
@@ -5467,6 +5600,7 @@ export type Database = {
         | "nir"
         | "dev"
         | "coordenador"
+        | "super_admin"
       audit_action:
         | "INSERT"
         | "UPDATE"
@@ -5610,6 +5744,7 @@ export const Constants = {
         "nir",
         "dev",
         "coordenador",
+        "super_admin",
       ],
       audit_action: ["INSERT", "UPDATE", "DELETE", "SELECT", "LOGIN", "LOGOUT"],
     },
