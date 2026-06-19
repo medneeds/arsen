@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Activity, Database, Users, AlertTriangle, Bot, Send, RefreshCw, ShieldAlert, Terminal, Sliders, ListChecks, ShieldCheck, GitMerge, Eraser, Archive } from "lucide-react";
+import { Loader2, Activity, Database, Users, AlertTriangle, Bot, Send, RefreshCw, ShieldAlert, Terminal, Sliders, ListChecks, ShieldCheck, GitMerge, Eraser, Archive, HardDrive } from "lucide-react";
 import { CustomizationTab } from "@/components/dev/CustomizationTab";
 import { PendenciesTab } from "@/components/dev/PendenciesTab";
 import { MergesTab } from "@/components/dev/MergesTab";
 import { ClearSignalingTab } from "@/components/dev/ClearSignalingTab";
 import { ResidualHistoryTab } from "@/components/dev/ResidualHistoryTab";
+import { BackupRestoreTab } from "@/components/dev/BackupRestoreTab";
 import IpAllowlistPage from "@/pages/admin/IpAllowlistPage";
 import { toast } from "sonner";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -99,6 +100,7 @@ export default function DevConsolePage() {
                 { v: "actions", icon: Users, label: "Ações" },
                 { v: "customization", icon: Sliders, label: "Personalização" },
                 { v: "ip", icon: ShieldCheck, label: "Restrição IP" },
+                { v: "backup", icon: HardDrive, label: "Backup & Restore" },
               ].map(({ v, icon: Icon, label }) => (
                 <TabsTrigger
                   key={v}
@@ -121,6 +123,7 @@ export default function DevConsolePage() {
           <TabsContent value="actions"><ActionsTab /></TabsContent>
           <TabsContent value="customization"><CustomizationTab /></TabsContent>
           <TabsContent value="ip"><IpAllowlistPage /></TabsContent>
+          <TabsContent value="backup"><BackupRestoreTab /></TabsContent>
         </Tabs>
       </main>
     </div>
