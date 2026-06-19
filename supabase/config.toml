@@ -2,3 +2,6 @@ project_id = "wgugmnpwliupwewtduvt"
 
 [functions.extract-patient-data]
 verify_jwt = false
+
+[functions.setup-initial-admin]
+verify_jwt = false
