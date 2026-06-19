@@ -101,6 +101,7 @@ Deno.serve(async (req) => {
     if (action === "resume") return await resumeBackup(admin, userId, userEmail, body);
     if (action === "chunk") return await chunkBackup(admin, body);
     if (action === "finalize") return await finalizeBackup(admin, userId, userEmail, body);
+    if (action === "download") return await downloadBackup(admin, userId, userEmail, body);
     return json({ error: `Unknown action: ${action}` }, 400);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
