@@ -241,23 +241,69 @@ function fmtBytes(n: number) {
 }
 
 // ─── Backup panel ──────────────────────────────────────────────────────
+const MAX_CLIENT_RETRIES = 2; // additional retries on top of edge's own retries
+const RETRY_PAUSE_MS = 2000;
+
+type TableInfo = { name: string; pk: string[]; size_bytes: number };
+type TablePlan = {
+  name: string; count: number; pk: string[]; size_bytes: number;
+  chunk_limit: number; use_keyset: boolean; pk_column: string | null;
+};
+type ResumeData = {
+  backup_id: string;
+  checkpoint: {
+    table: string; pk_column: string | null; last_cursor: string | null;
+    next_offset: number; next_seq: number; done_for_table: boolean;
+  };
+  completed_tables: Record<string, number>;
+  object_paths: string[];
+  size_bytes: number;
+};
+
+function isTransientMsg(msg: string): boolean {
+  return /non-2xx|Unexpected token|<html|<\!DOCTYPE|5\d\d|timeout|gateway|fetch failed|network|aborted/i
+    .test(msg);
+}
+
 function BackupPanel({ onDone }: { onDone: () => void }) {
-  const [tables, setTables] = useState<{ name: string; pk: string[] }[]>([]);
+  const [tables, setTables] = useState<TableInfo[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [mode, setMode] = useState<"full" | "partial">("full");
+  const [mode, setMode] = useState<"full" | "partial" | "resume">("full");
+  const [resumeData, setResumeData] = useState<ResumeData | null>(null);
+  const [lastFailed, setLastFailed] = useState<BackupRow | null>(null);
   const [password, setPassword] = useState("");
   const [reason, setReason] = useState("");
   const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState({ table: "", done: 0, total: 0, pct: 0, log: [] as string[] });
+  const [progress, setProgress] = useState({
+    table: "", done: 0, total: 0, pct: 0,
+    attemptLabel: "", log: [] as string[],
+  });
 
   useEffect(() => {
     (async () => {
-      const { data } = await (supabase.rpc as any)("get_public_tables_with_pk");
+      const { data } = await (supabase.rpc as any)("get_public_tables_with_pk_and_size");
       const excluded = new Set(["system_maintenance_mode", "db_backups", "db_restore_audit"]);
       setTables((data ?? []).filter((t: any) => !excluded.has(t.name)));
     })();
+    refreshLastFailed();
   }, []);
+
+  const refreshLastFailed = async () => {
+    const { data } = await supabase
+      .from("db_backups")
+      .select("*")
+      .eq("status", "failed")
+      .not("checkpoint", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    setLastFailed(((data ?? [])[0] as any) ?? null);
+  };
+
+  const totalSelectedBytes = useMemo(
+    () => tables.filter((t) => selected.has(t.name)).reduce((s, t) => s + (t.size_bytes ?? 0), 0),
+    [tables, selected],
+  );
 
   const toggle = (n: string) => {
     const s = new Set(selected);
@@ -265,42 +311,104 @@ function BackupPanel({ onDone }: { onDone: () => void }) {
     setSelected(s);
   };
 
-  const openConfirm = (m: "full" | "partial") => {
+  const openConfirm = (m: "full" | "partial" | "resume") => {
     if (m === "partial" && selected.size === 0) {
       toast.error("Selecione pelo menos uma tabela");
+      return;
+    }
+    if (m === "resume" && !lastFailed) {
+      toast.error("Nenhum backup falho com checkpoint para retomar");
       return;
     }
     setMode(m);
     setConfirmOpen(true);
   };
 
+  // Per-chunk client-side retry on top of edge retries
+  const invokeChunkWithRetry = async (
+    payload: Record<string, unknown>,
+    tableName: string,
+    onAttempt: (n: number) => void,
+  ): Promise<any> => {
+    let lastErr: any = null;
+    for (let attempt = 1; attempt <= MAX_CLIENT_RETRIES + 1; attempt++) {
+      onAttempt(attempt);
+      try {
+        return await invoke("db-backup", payload);
+      } catch (e) {
+        lastErr = e;
+        const msg = e instanceof Error ? e.message : String(e);
+        if (attempt > MAX_CLIENT_RETRIES || !isTransientMsg(msg)) throw e;
+        console.warn(`[backup] cliente retry ${attempt}/${MAX_CLIENT_RETRIES + 1} em ${tableName}: ${msg}`);
+        setProgress((p) => ({
+          ...p,
+          log: [...p.log, `  ↻ retry cliente ${attempt}/${MAX_CLIENT_RETRIES + 1}: ${msg.slice(0, 80)}`],
+        }));
+        await new Promise((r) => setTimeout(r, RETRY_PAUSE_MS));
+      }
+    }
+    throw lastErr;
+  };
+
   const runBackup = async () => {
     if (!password) { toast.error("Informe a senha"); return; }
     setConfirmOpen(false);
     setRunning(true);
-    setProgress({ table: "", done: 0, total: 0, pct: 0, log: [] });
+    setProgress({ table: "", done: 0, total: 0, pct: 0, attemptLabel: "", log: [] });
 
     let backupId: string | null = null;
     let opError: string | null = null;
-    const rowCounts: Record<string, number> = {};
-    const objectPaths: string[] = [];
+    let rowCounts: Record<string, number> = {};
+    let objectPaths: string[] = [];
     let sizeBytes = 0;
+    let tablesPlan: TablePlan[] = [];
+    let resume: ResumeData | null = null;
 
     try {
-      const tablesArr = mode === "full" ? [] : Array.from(selected);
-      const startRes = await invoke("db-backup", {
-        action: "start", kind: mode, tables: tablesArr, reason, password,
-      });
-      backupId = startRes.backup_id as string;
-      const tablesPlan: {
-        name: string; count: number; pk: string[]; size_bytes: number;
-        chunk_limit: number; use_keyset: boolean; pk_column: string | null;
-      }[] = startRes.tables;
+      if (mode === "resume") {
+        const res = await invoke("db-backup", {
+          action: "resume", backup_id: lastFailed!.id, password,
+        });
+        backupId = res.backup_id;
+        tablesPlan = res.tables;
+        resume = {
+          backup_id: res.backup_id,
+          checkpoint: res.checkpoint,
+          completed_tables: res.completed_tables ?? {},
+          object_paths: res.object_paths ?? [],
+          size_bytes: res.size_bytes ?? 0,
+        };
+        rowCounts = { ...resume.completed_tables };
+        objectPaths = [...resume.object_paths];
+        sizeBytes = resume.size_bytes;
+        setProgress((p) => ({
+          ...p,
+          log: [
+            ...p.log,
+            `↻ RETOMANDO backup ${backupId} a partir de ${resume!.checkpoint.table} cursor=${resume!.checkpoint.last_cursor ?? "0"} seq=${resume!.checkpoint.next_seq}`,
+          ],
+        }));
+      } else {
+        const tablesArr = mode === "full" ? [] : Array.from(selected);
+        const startRes = await invoke("db-backup", {
+          action: "start", kind: mode, tables: tablesArr, reason, password,
+        });
+        backupId = startRes.backup_id as string;
+        tablesPlan = startRes.tables;
+      }
 
       const totalRows = tablesPlan.reduce((s, t) => s + t.count, 0);
-      let doneRows = 0;
+      let doneRows = Object.values(rowCounts).reduce((s, n) => s + (n ?? 0), 0);
 
-      for (const t of tablesPlan) {
+      // Determine starting table index when resuming
+      let startTableIdx = 0;
+      if (resume) {
+        startTableIdx = tablesPlan.findIndex((t) => t.name === resume!.checkpoint.table);
+        if (startTableIdx < 0) startTableIdx = 0;
+      }
+
+      for (let ti = startTableIdx; ti < tablesPlan.length; ti++) {
+        const t = tablesPlan[ti];
         setProgress((p) => ({
           ...p,
           table: t.name,
@@ -314,17 +422,42 @@ function BackupPanel({ onDone }: { onDone: () => void }) {
         let cursor: string | null = null;
         let offset = 0;
         let seq = 0;
+
+        // If resuming on this table, jump to checkpoint
+        if (resume && resume.checkpoint.table === t.name && !resume.checkpoint.done_for_table) {
+          cursor = resume.checkpoint.last_cursor;
+          offset = resume.checkpoint.next_offset;
+          seq = resume.checkpoint.next_seq;
+          setProgress((p) => ({
+            ...p,
+            log: [...p.log, `  ↻ checkpoint: cursor=${cursor ?? "0"} offset=${offset} seq=${seq}`],
+          }));
+        } else if (resume && (rowCounts[t.name] ?? 0) >= t.count && t.count > 0) {
+          // Table already fully done in previous run
+          setProgress((p) => ({ ...p, log: [...p.log, `  ✓ já concluída (${rowCounts[t.name]} linhas)`] }));
+          continue;
+        }
+        resume = null; // only apply checkpoint to first relevant table
+
         while (true) {
-          const res = await invoke("db-backup", {
-            action: "chunk",
-            backup_id: backupId,
-            table: t.name,
-            limit: t.chunk_limit,
-            pk_column: t.use_keyset ? t.pk_column : undefined,
-            cursor: t.use_keyset ? cursor : undefined,
-            offset: t.use_keyset ? undefined : offset,
-            seq,
-          });
+          const res = await invokeChunkWithRetry(
+            {
+              action: "chunk",
+              backup_id: backupId,
+              table: t.name,
+              limit: t.chunk_limit,
+              pk_column: t.use_keyset ? t.pk_column : undefined,
+              cursor: t.use_keyset ? cursor : undefined,
+              offset: t.use_keyset ? undefined : offset,
+              seq,
+            },
+            t.name,
+            (n) => setProgress((p) => ({
+              ...p,
+              attemptLabel: n > 1 ? `tentativa ${n}/${MAX_CLIENT_RETRIES + 1}` : "",
+            })),
+          );
+          setProgress((p) => ({ ...p, attemptLabel: "" }));
           if (res.object_path) objectPaths.push(res.object_path);
           sizeBytes += res.bytes ?? 0;
           const written = res.rows_written ?? 0;
@@ -350,7 +483,6 @@ function BackupPanel({ onDone }: { onDone: () => void }) {
       onDone();
     } catch (e) {
       opError = e instanceof Error ? e.message : String(e);
-      // Garante que o registro não fique 'running' eternamente
       if (backupId) {
         try {
           await invoke("db-backup", {
@@ -362,14 +494,36 @@ function BackupPanel({ onDone }: { onDone: () => void }) {
         }
       }
       toast.error(opError);
+      await refreshLastFailed();
     } finally {
       setRunning(false);
       setPassword(""); setReason("");
+      setResumeData(null);
     }
   };
 
   return (
     <div className="space-y-4">
+      {lastFailed && !running && (
+        <Card className="border-amber-500/40 bg-amber-50/40 dark:bg-amber-950/20">
+          <CardContent className="pt-4 space-y-2">
+            <div className="flex items-start gap-2">
+              <RefreshCw className="h-4 w-4 mt-0.5 text-amber-600" />
+              <div className="flex-1 text-xs">
+                <p className="font-semibold">Backup falho com checkpoint disponível</p>
+                <p className="text-muted-foreground">
+                  {new Date(lastFailed.created_at).toLocaleString("pt-BR")} · {lastFailed.tables.length} tabelas ·
+                  {" "}{fmtBytes(lastFailed.size_bytes)} já gravados · erro: {lastFailed.error?.slice(0, 100) ?? "—"}
+                </p>
+              </div>
+              <Button size="sm" variant="default" onClick={() => openConfirm("resume")}>
+                Retomar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -379,7 +533,8 @@ function BackupPanel({ onDone }: { onDone: () => void }) {
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
             Faz backup de <strong>todas as {tables.length} tabelas</strong> do esquema público (inclui <code>audit_logs</code>).
-            Processa em lotes adaptativos ({CHUNK_DEFAULT} linhas por padrão, 200 para tabelas {'>'} 100 MB) e armazena no bucket privado <code>db-backups</code>.
+            Processa em lotes adaptativos ({CHUNK_DEFAULT} linhas por padrão, 200 para tabelas {'>'} 100 MB), com
+            retry automático (3 tentativas na edge + 2 no cliente) e checkpoint a cada chunk.
           </p>
           <Button onClick={() => openConfirm("full")} disabled={running}>
             <Download className="h-4 w-4 mr-2" /> Iniciar backup completo
@@ -390,24 +545,43 @@ function BackupPanel({ onDone }: { onDone: () => void }) {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Database className="h-4 w-4" /> Backup parcial
+            <Database className="h-4 w-4" /> Backup parcial — selecionar tabelas
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          <div className="flex items-center gap-2 text-xs">
+            <Button size="sm" variant="ghost" onClick={() => setSelected(new Set(tables.map((t) => t.name)))} disabled={running}>
+              Marcar todas
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())} disabled={running}>
+              Limpar
+            </Button>
+            <span className="text-muted-foreground">·</span>
+            <Button size="sm" variant="ghost" onClick={() => {
+              const big = tables.filter((t) => (t.size_bytes ?? 0) < LARGE_BYTES).map((t) => t.name);
+              setSelected(new Set(big));
+            }} disabled={running}>
+              Só tabelas pequenas (&lt; 100 MB)
+            </Button>
+          </div>
           <ScrollArea className="h-72 border rounded p-2">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
               {tables.map((t) => (
-                <label key={t.name} className="flex items-center gap-1.5 text-xs cursor-pointer hover:bg-muted/50 rounded px-1.5 py-1">
+                <label key={t.name} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/50 rounded px-1.5 py-1">
                   <Checkbox checked={selected.has(t.name)} onCheckedChange={() => toggle(t.name)} disabled={running} />
-                  <span className="font-mono truncate">{t.name}</span>
+                  <span className="font-mono truncate flex-1">{t.name}</span>
+                  <span className="text-muted-foreground tabular-nums shrink-0">{fmtBytes(t.size_bytes)}</span>
                 </label>
               ))}
             </div>
           </ScrollArea>
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">{selected.size} tabela(s) selecionada(s)</span>
+            <span className="text-xs text-muted-foreground">
+              <strong>{selected.size}</strong> tabela(s) selecionada(s)
+              {selected.size > 0 && <> · ~{fmtBytes(totalSelectedBytes)} estimado</>}
+            </span>
             <Button size="sm" variant="secondary" onClick={() => openConfirm("partial")} disabled={running || selected.size === 0}>
-              Backup parcial
+              Backup das tabelas selecionadas
             </Button>
           </div>
         </CardContent>
@@ -417,7 +591,14 @@ function BackupPanel({ onDone }: { onDone: () => void }) {
         <Card>
           <CardContent className="pt-4 space-y-2">
             <div className="flex justify-between text-xs">
-              <span>Processando: <strong>{progress.table}</strong></span>
+              <span>
+                Processando: <strong>{progress.table}</strong>
+                {progress.attemptLabel && (
+                  <Badge variant="outline" className="ml-2 bg-amber-500/15 text-amber-700 border-amber-500/40">
+                    {progress.attemptLabel}
+                  </Badge>
+                )}
+              </span>
               <span className="tabular-nums">{progress.done}/{progress.total} linhas ({progress.pct}%)</span>
             </div>
             <Progress value={progress.pct} />
@@ -431,8 +612,16 @@ function BackupPanel({ onDone }: { onDone: () => void }) {
       <ConfirmDialog
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
-        title={`Confirmar backup ${mode === "full" ? "completo" : "parcial"}`}
-        warning="Esta operação lê todos os dados das tabelas selecionadas e grava em arquivos JSONL no Storage privado."
+        title={
+          mode === "resume"
+            ? "Confirmar retomada de backup"
+            : `Confirmar backup ${mode === "full" ? "completo" : "parcial"}`
+        }
+        warning={
+          mode === "resume"
+            ? "Continua do checkpoint salvo, sem refazer os chunks já gravados no Storage."
+            : "Esta operação lê todos os dados das tabelas selecionadas e grava em arquivos JSONL no Storage privado."
+        }
         password={password} setPassword={setPassword}
         reason={reason} setReason={setReason}
         onConfirm={runBackup}
@@ -441,6 +630,8 @@ function BackupPanel({ onDone }: { onDone: () => void }) {
     </div>
   );
 }
+
+const LARGE_BYTES = 100 * 1024 * 1024;
 
 // ─── Restore panel ─────────────────────────────────────────────────────
 function RestorePanel({ onDone }: { onDone: () => void }) {
@@ -690,7 +881,23 @@ function ConfirmDialog({
 // ─── helper ────────────────────────────────────────────────────────────
 async function invoke(fn: "db-backup" | "db-restore", body: Record<string, unknown>) {
   const { data, error } = await supabase.functions.invoke(fn, { body });
-  if (error) throw new Error(error.message);
+  if (error) {
+    // Try to extract real error from the response body (FunctionsHttpError swallows it)
+    let detail = error.message;
+    const ctx: any = (error as any).context;
+    if (ctx && typeof ctx.text === "function") {
+      try {
+        const txt = await ctx.text();
+        try {
+          const parsed = JSON.parse(txt);
+          if (parsed?.error) detail = `${error.message}: ${parsed.error}`;
+        } catch {
+          if (txt && txt.length < 500) detail = `${error.message}: ${txt}`;
+        }
+      } catch { /* ignore */ }
+    }
+    throw new Error(detail);
+  }
   if (data?.error) throw new Error(data.error);
   return data;
 }

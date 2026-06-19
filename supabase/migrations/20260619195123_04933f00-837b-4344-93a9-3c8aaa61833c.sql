@@ -1,0 +1,1 @@
+ALTER TABLE public.db_backups ADD COLUMN IF NOT EXISTS checkpoint jsonb;

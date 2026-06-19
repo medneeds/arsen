@@ -937,6 +937,7 @@ export type Database = {
       }
       db_backups: {
         Row: {
+          checkpoint: Json | null
           created_at: string
           created_by: string | null
           error: string | null
@@ -951,6 +952,7 @@ export type Database = {
           tables: string[]
         }
         Insert: {
+          checkpoint?: Json | null
           created_at?: string
           created_by?: string | null
           error?: string | null
@@ -965,6 +967,7 @@ export type Database = {
           tables?: string[]
         }
         Update: {
+          checkpoint?: Json | null
           created_at?: string
           created_by?: string | null
           error?: string | null
