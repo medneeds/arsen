@@ -24,25 +24,17 @@ Deno.serve(async (req) => {
     );
 
     if (req.method === "GET") {
-      const { count, error } = await admin
-        .from("user_roles")
-        .select("user_id", { count: "exact", head: true })
-        .in("role", ["super_admin", "admin"] as any);
-      if (error) return json(500, { error: error.message });
-      return json(200, { needsSetup: (count ?? 0) === 0 });
+      // Por decisão do owner: setup permanece aberto para criar novos super_admins
+      // mesmo com admins já existentes. Mantém formulário sempre disponível.
+      return json(200, { needsSetup: true });
     }
 
     if (req.method !== "POST") return json(405, { error: "Método não permitido" });
 
-    // Guard: já existe admin?
-    const { count: existing, error: countErr } = await admin
-      .from("user_roles")
-      .select("user_id", { count: "exact", head: true })
-      .in("role", ["super_admin", "admin"] as any);
-    if (countErr) return json(500, { error: countErr.message });
-    if ((existing ?? 0) > 0) {
-      return json(403, { error: "Setup já foi realizado. Contate um administrador existente." });
-    }
+    // Guard removido a pedido do owner — /setup pode criar novos super_admins
+    // mesmo com admins existentes. ATENÇÃO: rota pública, qualquer um com a URL
+    // consegue criar super_admin. Considere proteger por IP allowlist ou desativar
+    // quando não estiver em uso.
 
     const { fullName, email, password } = (await req.json()) ?? {};
     if (!fullName || !email || !password) {
