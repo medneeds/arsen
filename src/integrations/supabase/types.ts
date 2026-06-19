@@ -5467,6 +5467,7 @@ export type Database = {
         | "nir"
         | "dev"
         | "coordenador"
+        | "super_admin"
       audit_action:
         | "INSERT"
         | "UPDATE"
@@ -5610,6 +5611,7 @@ export const Constants = {
         "nir",
         "dev",
         "coordenador",
+        "super_admin",
       ],
       audit_action: ["INSERT", "UPDATE", "DELETE", "SELECT", "LOGIN", "LOGOUT"],
     },
