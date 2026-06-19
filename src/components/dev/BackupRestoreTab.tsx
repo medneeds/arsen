@@ -280,34 +280,62 @@ function BackupPanel({ onDone }: { onDone: () => void }) {
     setRunning(true);
     setProgress({ table: "", done: 0, total: 0, pct: 0, log: [] });
 
+    let backupId: string | null = null;
+    let opError: string | null = null;
+    const rowCounts: Record<string, number> = {};
+    const objectPaths: string[] = [];
+    let sizeBytes = 0;
+
     try {
       const tablesArr = mode === "full" ? [] : Array.from(selected);
       const startRes = await invoke("db-backup", {
         action: "start", kind: mode, tables: tablesArr, reason, password,
       });
-      const backupId: string = startRes.backup_id;
-      const tablesPlan: { name: string; count: number; pk: string[] }[] = startRes.tables;
+      backupId = startRes.backup_id as string;
+      const tablesPlan: {
+        name: string; count: number; pk: string[]; size_bytes: number;
+        chunk_limit: number; use_keyset: boolean; pk_column: string | null;
+      }[] = startRes.tables;
 
       const totalRows = tablesPlan.reduce((s, t) => s + t.count, 0);
       let doneRows = 0;
-      const rowCounts: Record<string, number> = {};
-      const objectPaths: string[] = [];
-      let sizeBytes = 0;
-      let opError: string | null = null;
 
       for (const t of tablesPlan) {
-        setProgress((p) => ({ ...p, table: t.name, log: [...p.log, `→ ${t.name} (${t.count} linhas)`] }));
-        let offset = 0;
+        setProgress((p) => ({
+          ...p,
+          table: t.name,
+          log: [
+            ...p.log,
+            `→ ${t.name} (${t.count} linhas, ${fmtBytes(t.size_bytes)}, chunk=${t.chunk_limit}${t.use_keyset ? `, keyset:${t.pk_column}` : ", offset"})`,
+          ],
+        }));
         if (t.count === 0) { rowCounts[t.name] = 0; continue; }
+
+        let cursor: string | null = null;
+        let offset = 0;
+        let seq = 0;
         while (true) {
           const res = await invoke("db-backup", {
-            action: "chunk", backup_id: backupId, table: t.name, offset, limit: CHUNK,
+            action: "chunk",
+            backup_id: backupId,
+            table: t.name,
+            limit: t.chunk_limit,
+            pk_column: t.use_keyset ? t.pk_column : undefined,
+            cursor: t.use_keyset ? cursor : undefined,
+            offset: t.use_keyset ? undefined : offset,
+            seq,
           });
           if (res.object_path) objectPaths.push(res.object_path);
           sizeBytes += res.bytes ?? 0;
-          doneRows += res.rows_written ?? 0;
-          rowCounts[t.name] = (rowCounts[t.name] ?? 0) + (res.rows_written ?? 0);
-          offset = res.next_offset;
+          const written = res.rows_written ?? 0;
+          doneRows += written;
+          rowCounts[t.name] = (rowCounts[t.name] ?? 0) + written;
+          if (t.use_keyset) {
+            cursor = res.next_cursor ?? null;
+          } else {
+            offset = res.next_offset ?? (offset + written);
+          }
+          seq++;
           const pct = totalRows ? Math.round((doneRows / totalRows) * 100) : 100;
           setProgress((p) => ({ ...p, done: doneRows, total: totalRows, pct }));
           if (res.done) break;
@@ -315,13 +343,25 @@ function BackupPanel({ onDone }: { onDone: () => void }) {
       }
 
       await invoke("db-backup", {
-        action: "finalize", backup_id: backupId, success: !opError,
-        row_counts: rowCounts, size_bytes: sizeBytes, object_paths: objectPaths, error: opError,
+        action: "finalize", backup_id: backupId, success: true,
+        row_counts: rowCounts, size_bytes: sizeBytes, object_paths: objectPaths, error: null,
       });
       toast.success(`Backup concluído (${Object.keys(rowCounts).length} tabelas, ${fmtBytes(sizeBytes)})`);
       onDone();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha no backup");
+      opError = e instanceof Error ? e.message : String(e);
+      // Garante que o registro não fique 'running' eternamente
+      if (backupId) {
+        try {
+          await invoke("db-backup", {
+            action: "finalize", backup_id: backupId, success: false,
+            row_counts: rowCounts, size_bytes: sizeBytes, object_paths: objectPaths, error: opError,
+          });
+        } catch (finErr) {
+          console.error("[backup] finalize(failed) também falhou:", finErr);
+        }
+      }
+      toast.error(opError);
     } finally {
       setRunning(false);
       setPassword(""); setReason("");
