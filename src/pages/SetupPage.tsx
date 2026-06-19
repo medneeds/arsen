@@ -90,7 +90,7 @@ export default function SetupPage() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <p className="text-sm text-muted-foreground text-center mb-2">
-              Nenhum administrador encontrado. Crie o primeiro administrador do sistema.
+              Cria um novo super_admin do sistema. Esta rota permanece aberta — use credenciais seguras e considere desativá-la quando não estiver em uso.
             </p>
             <div className="space-y-2">
               <Label htmlFor="fullName">Nome Completo</Label>
