@@ -379,7 +379,7 @@ function BackupPanel({ onDone }: { onDone: () => void }) {
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
             Faz backup de <strong>todas as {tables.length} tabelas</strong> do esquema público (inclui <code>audit_logs</code>).
-            Processa em lotes de {CHUNK} linhas e armazena no bucket privado <code>db-backups</code>.
+            Processa em lotes adaptativos ({CHUNK_DEFAULT} linhas por padrão, 200 para tabelas {'>'} 100 MB) e armazena no bucket privado <code>db-backups</code>.
           </p>
           <Button onClick={() => openConfirm("full")} disabled={running}>
             <Download className="h-4 w-4 mr-2" /> Iniciar backup completo
