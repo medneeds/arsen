@@ -14,6 +14,7 @@ import { startIdlePrefetch } from "@/lib/prefetchRoutes";
 import { HelpTourProvider } from "@/contexts/HelpTourContext";
 import { HelpTourButton } from "@/components/help/HelpTourButton";
 import { HelpTourOverlay } from "@/components/help/HelpTourOverlay";
+import { MaintenanceModeBanner } from "@/components/MaintenanceModeBanner";
 
 // Telas críticas (eager): impactam first paint do app
 // Index (mapa de leitos) é pesado e requer auth — lazy para não competir com o login
@@ -189,6 +190,7 @@ const App = () => {
           <HelpTourProvider>
             <Toaster />
             <Sonner />
+            <MaintenanceModeBanner />
             <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route path="/welcome" element={<LandingPage />} />
