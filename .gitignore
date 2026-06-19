@@ -25,10 +25,10 @@ dist-ssr
 .claude/settings.json
 
 # Environment (never commit secrets)
-!.env
-.env.local
-.env.*.local
-!.env.example
+#!.env
+#.env.local
+#.env.*.local
+#!.env.example
 
 # Security scan artifacts (local only)
 gitleaks-report.json
