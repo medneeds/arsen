@@ -393,7 +393,8 @@ async function finalizeBackup(
 // ─── download ───────────────────────────────────────────────────────────
 // Hybrid: zip in memory when total payload fits (~150MB), otherwise return
 // per-file signed URLs grouped by table.
-const ZIP_THRESHOLD_BYTES = 150 * 1024 * 1024;
+const ZIP_THRESHOLD_BYTES = 15 * 1024 * 1024;
+const ZIP_MAX_FILES = 25;
 const SIGNED_URL_TTL = 600; // 10 minutes
 
 async function downloadBackup(
@@ -415,7 +416,7 @@ async function downloadBackup(
   const totalBytes = Number(bk.size_bytes ?? 0);
 
   // ── ZIP mode ────────────────────────────────────────────────────────
-  if (totalBytes > 0 && totalBytes <= ZIP_THRESHOLD_BYTES) {
+  if (totalBytes > 0 && totalBytes <= ZIP_THRESHOLD_BYTES && paths.length <= ZIP_MAX_FILES) {
     try {
       const { default: JSZip } = await import("npm:jszip@3.10.1");
       const zip = new JSZip();
