@@ -5429,6 +5429,20 @@ export type Database = {
           summary: string
         }[]
       }
+      get_public_fk_pairs: {
+        Args: never
+        Returns: {
+          child: string
+          parent: string
+        }[]
+      }
+      get_public_tables_with_pk: {
+        Args: never
+        Returns: {
+          name: string
+          pk: string[]
+        }[]
+      }
       get_user_app_role: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
