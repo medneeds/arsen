@@ -275,7 +275,6 @@ function BackupPanel({ onDone }: { onDone: () => void }) {
   };
 
   const runBackup = async () => {
-    if (reason.trim().length < 20) { toast.error("Motivo deve ter ao menos 20 caracteres"); return; }
     if (!password) { toast.error("Informe a senha"); return; }
     setConfirmOpen(false);
     setRunning(true);
@@ -436,7 +435,6 @@ function RestorePanel({ onDone }: { onDone: () => void }) {
   };
 
   const runRestore = async () => {
-    if (reason.trim().length < 20) { toast.error("Motivo deve ter ao menos 20 caracteres"); return; }
     if (!password) { toast.error("Informe a senha"); return; }
     if (!backup) return;
     setConfirmOpen(false);
@@ -633,14 +631,13 @@ function ConfirmDialog({
             <Input id="confirm-pw" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" disabled={busy} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="confirm-reason">Motivo (mínimo 20 caracteres)</Label>
-            <Textarea id="confirm-reason" value={reason} onChange={(e) => setReason(e.target.value)} rows={3} disabled={busy} />
-            <p className="text-xs text-muted-foreground">{reason.length}/20 caracteres</p>
+            <Label htmlFor="confirm-reason">Motivo (opcional)</Label>
+            <Textarea id="confirm-reason" value={reason} onChange={(e) => setReason(e.target.value)} rows={3} disabled={busy} placeholder="Descreva o motivo desta operação (opcional, mas recomendado para auditoria)" />
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={busy}>Cancelar</Button>
-          <Button variant={destructive ? "destructive" : "default"} onClick={onConfirm} disabled={busy || !password || reason.length < 20}>
+          <Button variant={destructive ? "destructive" : "default"} onClick={onConfirm} disabled={busy || !password}>
             {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Confirmar
           </Button>
