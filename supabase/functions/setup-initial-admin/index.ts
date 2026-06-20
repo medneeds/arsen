@@ -80,17 +80,38 @@ Deno.serve(async (req) => {
       userId = created.user.id;
     }
 
-    // 2) Profile (best-effort: pode existir via trigger)
+    // 2) Profile — super_admin criado pelo /setup NÃO passa por aprovação.
+    // Faz upsert + UPDATE explícito para garantir status=approved mesmo quando
+    // o trigger handle_new_user já criou a linha com default status='pending'.
     await admin.from("profiles").upsert({
       id: userId,
       full_name: fullName,
       email,
-      access_profile: "admin",
-      access_profiles: ["admin"],
+      access_profile: "desenvolvedor",
+      access_profiles: ["desenvolvedor"],
       status: "approved",
+      must_change_password: false,
       approved_at: new Date().toISOString(),
       approved_by: userId,
     }, { onConflict: "id" });
+    // Garantia extra: força os campos críticos mesmo se o upsert tiver caído
+    // em modo "insert ignore" por algum trigger/constraint.
+    const { error: forceErr } = await admin
+      .from("profiles")
+      .update({
+        status: "approved",
+        access_profile: "desenvolvedor",
+        access_profiles: ["desenvolvedor"],
+        must_change_password: false,
+        approved_at: new Date().toISOString(),
+        approved_by: userId,
+        full_name: fullName,
+        email,
+      })
+      .eq("id", userId);
+    if (forceErr) {
+      console.warn("force-approve profile failed (non-blocking)", forceErr);
+    }
 
     // 3) Roles: super_admin + admin
     await admin.from("user_roles").delete().eq("user_id", userId);
