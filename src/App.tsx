@@ -240,6 +240,8 @@ const App = () => {
               <Route path="/admin/states" element={<ProtectedRoute><AdminStatesPage /></ProtectedRoute>} />
               <Route path="/admin/units" element={<ProtectedRoute><AdminUnitsPage /></ProtectedRoute>} />
               <Route path="/admin/coordinators" element={<ProtectedRoute><AdminCoordinatorsPage /></ProtectedRoute>} />
+              <Route path="/admin/backup-restore" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><BackupRestorePage /></MainLayout></ProtectedRoute>} />
+
               <Route path="/therapeutic-templates" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><TherapeuticTemplatesPage /></MainLayout></ProtectedRoute>} />
               <Route path="/round" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RoundPage /></MainLayout></ProtectedRoute>} />
               <Route path="/relatorio" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RelatorioPage /></MainLayout></ProtectedRoute>} />
