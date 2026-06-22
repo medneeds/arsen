@@ -257,7 +257,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   };
 
   // ── Mobile: FAB flutuante + Sheet ──────────────────────────────────
-  if (isMobile && variant === "fixed" && patient?.name) {
+  if (isBelowLg && variant === "fixed" && patient?.name) {
     return (
       <>
         {/* FAB — botão flutuante que abre a cockpit no mobile */}
