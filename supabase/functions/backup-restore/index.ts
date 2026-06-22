@@ -677,7 +677,10 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
 
         // Upsert com fallback linha-a-linha em caso de min(uuid).
         for (let i = 0; i < allRows.length; i += BATCH) {
-          const slice = allRows.slice(i, i + BATCH);
+          // Normaliza shape: todas as linhas com mesmo conjunto de chaves.
+          // Evita que PostgREST agregue (min/max) para uniformizar e exploda
+          // em "function min(uuid) does not exist".
+          const slice = normalizeShape(allRows.slice(i, i + BATCH));
           const { error } = await admin.from(table).upsert(slice, { onConflict });
           if (error) {
             const msg = error.message ?? String(error);
