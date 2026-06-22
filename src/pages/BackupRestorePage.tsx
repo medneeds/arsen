@@ -225,12 +225,13 @@ export default function BackupRestorePage() {
   useEffect(() => {
     if (!allowed) return;
     setLoading(true);
-    Promise.all([loadJobs(), loadAudit(), loadRestoreJobs()]).finally(() => setLoading(false));
+    Promise.all([loadJobs(), loadAudit(), loadRestoreJobs(), loadMaintenance()]).finally(() => setLoading(false));
     const interval = setInterval(() => {
-      loadJobs(); loadRestoreJobs();
+      loadJobs(); loadRestoreJobs(); loadMaintenance();
     }, 3000);
     return () => clearInterval(interval);
   }, [allowed]);
+
 
   if (lA || lS) {
     return <div className="p-8 flex items-center gap-2 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Carregando permissões…</div>;
