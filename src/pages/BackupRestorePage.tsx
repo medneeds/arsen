@@ -139,14 +139,22 @@ export default function BackupRestorePage() {
     if (error) { console.warn(error); return; }
     setAudit((data as unknown as BackupAudit[]) ?? []);
   }
+  async function loadRestoreJobs() {
+    const { data, error } = await supabase
+      .from("restore_jobs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) { console.warn(error); return; }
+    setRestoreJobs((data as unknown as RestoreJob[]) ?? []);
+  }
 
   useEffect(() => {
     if (!allowed) return;
     setLoading(true);
-    Promise.all([loadJobs(), loadAudit()]).finally(() => setLoading(false));
-    // Polling enquanto houver job rodando
+    Promise.all([loadJobs(), loadAudit(), loadRestoreJobs()]).finally(() => setLoading(false));
     const interval = setInterval(() => {
-      loadJobs();
+      loadJobs(); loadRestoreJobs();
     }, 3000);
     return () => clearInterval(interval);
   }, [allowed]);
