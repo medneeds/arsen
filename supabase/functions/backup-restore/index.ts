@@ -734,6 +734,32 @@ async function handleFinalize(admin: any, body: any, userId: string, userEmail: 
     idMapCounts[t] = Object.keys(m as Record<string, string>).length;
   }
 
+  // ── Pass B: reaplicar parent_id em prescriptions (auto-FK) ──
+  let parentIdRelinked = 0;
+  let parentIdDropped = 0;
+  const pendingFix: Record<string, Record<string, string>> =
+    rj?.progress?.pending_parent_id_fixups ?? {};
+  if (success && !rj?.dry_run) {
+    for (const [tbl, map] of Object.entries(pendingFix)) {
+      const entries = Object.entries(map ?? {});
+      if (entries.length === 0) continue;
+      const parentIds = Array.from(new Set(entries.map(([, p]) => p)));
+      const existing = new Set<string>();
+      const CHUNK = 500;
+      for (let i = 0; i < parentIds.length; i += CHUNK) {
+        const chunk = parentIds.slice(i, i + CHUNK);
+        const { data } = await admin.from(tbl).select("id").in("id", chunk);
+        for (const r of (data ?? [])) existing.add(String((r as any).id));
+      }
+      // Atualiza em lotes pequenos (uma chamada por linha — simples e seguro)
+      for (const [childId, parentId] of entries) {
+        if (!existing.has(String(parentId))) { parentIdDropped++; continue; }
+        const { error: uErr } = await admin.from(tbl).update({ parent_id: parentId }).eq("id", childId);
+        if (uErr) parentIdDropped++; else parentIdRelinked++;
+      }
+    }
+  }
+
   const finishedAt = new Date();
   const startedAtMs = rj?.started_at ? new Date(rj.started_at).getTime() : finishedAt.getTime();
   await admin.from("restore_jobs").update({
@@ -752,6 +778,11 @@ async function handleFinalize(admin: any, body: any, userId: string, userEmail: 
       id_map_counts: idMapCounts,
       bed_number_reassigned: Number(rj?.progress?.bed_number_reassigned ?? 0),
       slice_dedupes_dropped: Number(rj?.progress?.slice_dedupes_dropped ?? 0),
+      dropped_no_pk: Number(rj?.progress?.dropped_no_pk ?? 0),
+      min_uuid_retries: Number(rj?.progress?.min_uuid_retries ?? 0),
+      orphan_fk_dropped_by_table: rj?.progress?.orphan_fk_dropped_by_table ?? {},
+      parent_id_relinked: parentIdRelinked,
+      parent_id_dropped: parentIdDropped,
     },
     progress: { ...(rj?.progress ?? {}), step: success ? "concluído" : "falhou", percent: 100 },
   }).eq("id", restoreId);
