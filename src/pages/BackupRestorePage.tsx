@@ -624,7 +624,14 @@ export default function BackupRestorePage() {
                   {jobs.filter((j) => j.status === "completed").map((j) => (
                     <div key={j.id} className="border rounded-md p-3 flex items-center justify-between gap-3">
                       <div className="text-sm">
-                        <div className="font-medium">{formatDate(j.created_at)} · {formatBytes(j.file_size_bytes)}</div>
+                        <div className="font-medium flex items-center gap-2">
+                          {formatDate(j.created_at)} · {formatBytes(j.file_size_bytes)}
+                          {(j.progress as any)?.imported && (
+                            <Badge variant="outline" className="text-xs border-blue-400 text-blue-700">
+                              <Upload className="w-3 h-3 mr-1" />Importado
+                            </Badge>
+                          )}
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           {j.table_counts ? Object.keys(j.table_counts).length : 0} tabelas ·
                           {" "}{j.table_counts ? Object.values(j.table_counts).reduce((a, b) => a + b, 0).toLocaleString("pt-BR") : 0} registros
