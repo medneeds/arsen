@@ -48,8 +48,8 @@ Deno.serve(async (req) => {
   const userEmail = udata.user.email ?? null;
 
   const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userId);
-  const isSuper = (roles ?? []).some((r: { role: string }) => r.role === "super_admin");
-  if (!isSuper) return json({ error: "Acesso restrito a super administradores" }, 403);
+  const allowed = (roles ?? []).some((r: { role: string }) => r.role === "admin" || r.role === "super_admin");
+  if (!allowed) return json({ error: "Acesso restrito a administradores" }, 403);
 
   let body: any = {};
   try { body = await req.json(); } catch { /* */ }
