@@ -241,12 +241,6 @@ export default function BackupRestorePage() {
               <CardDescription>Gera um arquivo ZIP completo com manifest, dados, usuários e checksum SHA-256.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="reason">Motivo / descrição (opcional)</Label>
-                <Textarea id="reason" value={reason} onChange={(e) => setReason(e.target.value)}
-                  placeholder="Ex: backup mensal, antes de migração de produção, etc."
-                  rows={2} disabled={creating} />
-              </div>
               <div className="flex items-center gap-2">
                 <Checkbox id="audit" checked={includeAudit} onCheckedChange={(c) => setIncludeAudit(!!c)} disabled={creating} />
                 <Label htmlFor="audit" className="text-sm cursor-pointer">
