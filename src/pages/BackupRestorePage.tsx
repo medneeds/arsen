@@ -272,6 +272,89 @@ export default function BackupRestorePage() {
     }
   }
 
+  async function handleImportFile(file: File) {
+    if (!file) return;
+    if (file.size > 600 * 1024 * 1024) {
+      toast.error("Arquivo maior que 600 MB. Limite atual: ~500 MB.");
+      return;
+    }
+    setImporting(true);
+    setImportProgress({ percent: 0, step: "lendo arquivo…" });
+    try {
+      const { unzip } = await import("fflate");
+      const buf = new Uint8Array(await file.arrayBuffer());
+      setImportProgress({ percent: 5, step: "extraindo ZIP…" });
+      const entries: Record<string, Uint8Array> = await new Promise((resolve, reject) => {
+        unzip(buf, (err, data) => err ? reject(err) : resolve(data as any));
+      });
+
+      // Filtra apenas arquivos (não diretórios)
+      const files = Object.entries(entries).filter(([_, v]) => v && v.byteLength >= 0);
+      const manifestEntry = files.find(([k]) => k === "manifest.json" || k.endsWith("/manifest.json"));
+      if (!manifestEntry) throw new Error("manifest.json não encontrado no ZIP");
+      const manifestText = new TextDecoder().decode(manifestEntry[1]);
+      const manifest = JSON.parse(manifestText);
+      if (!String(manifest.backup_version ?? "").startsWith("3.")) {
+        throw new Error(`Versão de backup não suportada: ${manifest.backup_version}`);
+      }
+
+      // Prefixo (caso o ZIP tenha um diretório raiz)
+      const prefix = manifestEntry[0].endsWith("/manifest.json")
+        ? manifestEntry[0].slice(0, -"manifest.json".length)
+        : "";
+
+      setImportProgress({ percent: 10, step: "criando job…" });
+      const { data: initRes, error: initErr } = await supabase.functions.invoke("backup-import", {
+        body: { action: "init", manifest },
+      });
+      if (initErr) throw initErr;
+      const newBackupId = (initRes as any)?.backup_id;
+      if (!newBackupId) throw new Error("backup_id não retornado");
+
+      // Envia cada part declarado no manifest
+      const parts: { path: string; bytes: number }[] = manifest.parts ?? [];
+      const total = parts.length;
+      let done = 0;
+      for (const p of parts) {
+        const key = prefix + p.path;
+        const bytes = entries[key];
+        if (!bytes) throw new Error(`part ausente no ZIP: ${p.path}`);
+        // base64 encode
+        let bin = "";
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)) as any);
+        }
+        const b64 = btoa(bin);
+        const { error: pErr } = await supabase.functions.invoke("backup-import", {
+          body: { action: "part", backup_id: newBackupId, rel_path: p.path, content_b64: b64 },
+        });
+        if (pErr) throw pErr;
+        done++;
+        setImportProgress({
+          percent: 10 + Math.floor((done / total) * 85),
+          step: `enviando ${done}/${total}: ${p.path}`,
+        });
+      }
+
+      setImportProgress({ percent: 96, step: "finalizando…" });
+      const { error: fErr } = await supabase.functions.invoke("backup-import", {
+        body: { action: "finalize", backup_id: newBackupId },
+      });
+      if (fErr) throw fErr;
+
+      setImportProgress({ percent: 100, step: "concluído" });
+      toast.success("Backup importado. Clique em Restaurar para usar.");
+      await loadJobs(); await loadAudit();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error("Falha ao importar: " + msg);
+    } finally {
+      setImporting(false);
+      setTimeout(() => setImportProgress(null), 2000);
+    }
+  }
+
   function openRestoreDialog(job: BackupJob) {
     setRestoreTarget(job);
     setRestoreStep(1);
