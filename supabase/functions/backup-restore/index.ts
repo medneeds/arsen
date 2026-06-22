@@ -137,7 +137,7 @@ async function handlePlan(admin: any, body: any, userId: string, userEmail: stri
     backup_job_id: backupId,
     uploaded_file_path: `${backupId}/manifest.json`,
     dry_run: dryRun,
-    conflict_strategy: "upsert_pk",
+    conflict_strategy: "replace",
     status: "running",
     started_at: new Date().toISOString(),
     target_instance: SUPABASE_URL,
