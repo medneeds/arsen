@@ -50,6 +50,22 @@ interface BackupAudit {
   error: string | null;
 }
 
+interface RestoreJob {
+  id: string;
+  created_at: string;
+  created_by_email: string | null;
+  backup_job_id: string | null;
+  dry_run: boolean | null;
+  status: "pending" | "running" | "completed" | "failed" | "cancelled";
+  progress: any;
+  report: any;
+  reason: string | null;
+  error: string | null;
+  duration_ms: number | null;
+}
+
+type PlanItem = { table: string; pk: string[]; parts: { path: string }[]; rows_expected: number };
+
 function formatBytes(n: number | null) {
   if (!n || n < 0) return "—";
   const units = ["B", "KB", "MB", "GB"];
