@@ -101,11 +101,25 @@ export default function BackupRestorePage() {
   const allowed = isAdmin || isSuperAdmin;
 
   const [jobs, setJobs] = useState<BackupJob[]>([]);
+  const [restoreJobs, setRestoreJobs] = useState<RestoreJob[]>([]);
   const [audit, setAudit] = useState<BackupAudit[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [includeAudit, setIncludeAudit] = useState(false);
   const [reason, setReason] = useState("");
+
+  // ── Restore state
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [restoreTarget, setRestoreTarget] = useState<BackupJob | null>(null);
+  const [restoreStep, setRestoreStep] = useState<1 | 2 | 3>(1);
+  const [restoreMode, setRestoreMode] = useState<"full" | "partial">("full");
+  const [restoreDryRun, setRestoreDryRun] = useState(true);
+  const [restoreTables, setRestoreTables] = useState<Set<string>>(new Set());
+  const [restoreReason, setRestoreReason] = useState("");
+  const [restorePassword, setRestorePassword] = useState("");
+  const [restoreConfirm, setRestoreConfirm] = useState("");
+  const [restoreRunning, setRestoreRunning] = useState(false);
+  const [restoreProgress, setRestoreProgress] = useState<{ percent: number; step: string; processed: number; errors: number } | null>(null);
 
   async function loadJobs() {
     const { data, error } = await supabase
