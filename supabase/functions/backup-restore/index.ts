@@ -48,6 +48,18 @@ const FK_TRANSLATIONS: Record<string, string> = {
   medication_id: "medication_catalog",
 };
 
+// FKs cujo id é PRESERVADO entre backup e destino (não-catálogo).
+// Antes do upsert filtramos linhas órfãs (pai inexistente no destino) para
+// não estourar o slice inteiro por FK violation. Auto-FKs (parent_id em
+// prescriptions) ficam de fora — tratadas via two-pass.
+const FK_PARENTS: Record<string, string> = {
+  patient_id: "patients",
+  registry_id: "patient_registry",
+  patient_registry_id: "patient_registry",
+  encounter_id: "patient_encounters",
+  medical_record_id: "medical_records",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Método não permitido" }, 405);
