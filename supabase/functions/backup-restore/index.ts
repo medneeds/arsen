@@ -528,7 +528,7 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
         allRows = dedupeBy(allRows, (r) => `${String((r as any).user_id)}::${String((r as any).role)}`);
         sliceDedupesDropped += beforeDedupe - allRows.length;
         for (let i = 0; i < allRows.length; i += BATCH) {
-          const slice = allRows.slice(i, i + BATCH);
+          const slice = normalizeShape(allRows.slice(i, i + BATCH));
           const { error } = await admin.from("user_roles").upsert(slice, { onConflict: "user_id,role" });
           if (error) {
             errors += slice.length;
