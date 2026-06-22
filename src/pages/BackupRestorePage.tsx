@@ -340,7 +340,7 @@ export default function BackupRestorePage() {
       const { data: initRes, error: initErr } = await supabase.functions.invoke("backup-import", {
         body: { action: "init", manifest },
       });
-      if (initErr) throw initErr;
+      if (initErr) throw new Error(await extractEdgeError(initErr, "backup-import:init"));
       const newBackupId = (initRes as any)?.backup_id;
       if (!newBackupId) throw new Error("backup_id não retornado");
 
@@ -355,7 +355,7 @@ export default function BackupRestorePage() {
         const { data: uploadRes, error: pErr } = await supabase.functions.invoke("backup-import", {
           body: { action: "part", backup_id: newBackupId, rel_path: p.path },
         });
-        if (pErr) throw pErr;
+        if (pErr) throw new Error(await extractEdgeError(pErr, "backup-import:part"));
         const uploadPath = (uploadRes as any)?.path;
         const uploadToken = (uploadRes as any)?.token;
         if (!uploadPath || !uploadToken) throw new Error(`URL de upload não retornada para ${p.path}`);
@@ -378,7 +378,8 @@ export default function BackupRestorePage() {
       const { error: fErr } = await supabase.functions.invoke("backup-import", {
         body: { action: "finalize", backup_id: newBackupId },
       });
-      if (fErr) throw fErr;
+      if (fErr) throw new Error(await extractEdgeError(fErr, "backup-import:finalize"));
+
 
       setImportProgress({ percent: 100, step: "concluído" });
       toast.success("Backup importado. Clique em Restaurar para usar.");
