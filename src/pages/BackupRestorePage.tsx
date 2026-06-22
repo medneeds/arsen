@@ -16,7 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import {
   Database, Download, RefreshCw, ShieldAlert, History as HistoryIcon,
-  Loader2, FileArchive, AlertTriangle, CheckCircle2, XCircle, RotateCcw, FlaskConical,
+  Loader2, FileArchive, AlertTriangle, CheckCircle2, XCircle, RotateCcw, FlaskConical, Upload,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -27,7 +27,7 @@ interface BackupJob {
   created_at: string;
   created_by_email: string | null;
   status: "pending" | "running" | "completed" | "failed" | "cancelled";
-  progress: { step: string; percent: number; current?: number | null; total?: number | null } | null;
+  progress: { step: string; percent: number; current?: number | null; total?: number | null; imported?: boolean } | null;
   storage_path: string | null;
   file_size_bytes: number | null;
   table_counts: Record<string, number> | null;
@@ -120,6 +120,11 @@ export default function BackupRestorePage() {
   const [restoreConfirm, setRestoreConfirm] = useState("");
   const [restoreRunning, setRestoreRunning] = useState(false);
   const [restoreProgress, setRestoreProgress] = useState<{ percent: number; step: string; processed: number; errors: number } | null>(null);
+
+  // ── Import state
+  const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ percent: number; step: string } | null>(null);
+
 
   async function loadJobs() {
     const { data, error } = await supabase
@@ -264,6 +269,89 @@ export default function BackupRestorePage() {
       toast.success(`Backup baixado (${formatBytes(blob.size)})`, { id: toastId });
     } catch (e) {
       toast.error("Falha ao baixar: " + (e instanceof Error ? e.message : String(e)));
+    }
+  }
+
+  async function handleImportFile(file: File) {
+    if (!file) return;
+    if (file.size > 600 * 1024 * 1024) {
+      toast.error("Arquivo maior que 600 MB. Limite atual: ~500 MB.");
+      return;
+    }
+    setImporting(true);
+    setImportProgress({ percent: 0, step: "lendo arquivo…" });
+    try {
+      const { unzip } = await import("fflate");
+      const buf = new Uint8Array(await file.arrayBuffer());
+      setImportProgress({ percent: 5, step: "extraindo ZIP…" });
+      const entries: Record<string, Uint8Array> = await new Promise((resolve, reject) => {
+        unzip(buf, (err, data) => err ? reject(err) : resolve(data as any));
+      });
+
+      // Filtra apenas arquivos (não diretórios)
+      const files = Object.entries(entries).filter(([_, v]) => v && v.byteLength >= 0);
+      const manifestEntry = files.find(([k]) => k === "manifest.json" || k.endsWith("/manifest.json"));
+      if (!manifestEntry) throw new Error("manifest.json não encontrado no ZIP");
+      const manifestText = new TextDecoder().decode(manifestEntry[1]);
+      const manifest = JSON.parse(manifestText);
+      if (!String(manifest.backup_version ?? "").startsWith("3.")) {
+        throw new Error(`Versão de backup não suportada: ${manifest.backup_version}`);
+      }
+
+      // Prefixo (caso o ZIP tenha um diretório raiz)
+      const prefix = manifestEntry[0].endsWith("/manifest.json")
+        ? manifestEntry[0].slice(0, -"manifest.json".length)
+        : "";
+
+      setImportProgress({ percent: 10, step: "criando job…" });
+      const { data: initRes, error: initErr } = await supabase.functions.invoke("backup-import", {
+        body: { action: "init", manifest },
+      });
+      if (initErr) throw initErr;
+      const newBackupId = (initRes as any)?.backup_id;
+      if (!newBackupId) throw new Error("backup_id não retornado");
+
+      // Envia cada part declarado no manifest
+      const parts: { path: string; bytes: number }[] = manifest.parts ?? [];
+      const total = parts.length;
+      let done = 0;
+      for (const p of parts) {
+        const key = prefix + p.path;
+        const bytes = entries[key];
+        if (!bytes) throw new Error(`part ausente no ZIP: ${p.path}`);
+        // base64 encode
+        let bin = "";
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)) as any);
+        }
+        const b64 = btoa(bin);
+        const { error: pErr } = await supabase.functions.invoke("backup-import", {
+          body: { action: "part", backup_id: newBackupId, rel_path: p.path, content_b64: b64 },
+        });
+        if (pErr) throw pErr;
+        done++;
+        setImportProgress({
+          percent: 10 + Math.floor((done / total) * 85),
+          step: `enviando ${done}/${total}: ${p.path}`,
+        });
+      }
+
+      setImportProgress({ percent: 96, step: "finalizando…" });
+      const { error: fErr } = await supabase.functions.invoke("backup-import", {
+        body: { action: "finalize", backup_id: newBackupId },
+      });
+      if (fErr) throw fErr;
+
+      setImportProgress({ percent: 100, step: "concluído" });
+      toast.success("Backup importado. Clique em Restaurar para usar.");
+      await loadJobs(); await loadAudit();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error("Falha ao importar: " + msg);
+    } finally {
+      setImporting(false);
+      setTimeout(() => setImportProgress(null), 2000);
     }
   }
 
@@ -485,6 +573,41 @@ export default function BackupRestorePage() {
             </Card>
           )}
 
+          {/* Importar backup externo */}
+          <Card className="border-blue-300">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2"><Upload className="w-5 h-5 text-blue-600" />Importar backup (ZIP)</CardTitle>
+              <CardDescription>
+                Envie um arquivo ZIP gerado pelo próprio sistema (v3). Ele aparecerá na lista abaixo como
+                <Badge variant="outline" className="mx-1 text-xs">Importado</Badge>
+                e ficará pronto para restaurar. Limite prático: ~500 MB.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept=".zip,application/zip"
+                  disabled={importing || !canRestore}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleImportFile(f);
+                    e.target.value = "";
+                  }}
+                />
+                {importing && <Loader2 className="w-4 h-4 animate-spin text-blue-600" />}
+              </div>
+              {importProgress && (
+                <div className="space-y-1 border rounded-md p-2 bg-blue-50">
+                  <div className="flex justify-between text-xs"><span>{importProgress.step}</span><span>{importProgress.percent}%</span></div>
+                  <Progress value={importProgress.percent} />
+                </div>
+              )}
+              {!canRestore && <p className="text-xs text-rose-700">Apenas Super Administradores podem importar.</p>}
+            </CardContent>
+          </Card>
+
+
           <Card className="border-rose-300">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2"><RotateCcw className="w-5 h-5 text-rose-600" />Restaurar a partir de um backup</CardTitle>
@@ -501,7 +624,14 @@ export default function BackupRestorePage() {
                   {jobs.filter((j) => j.status === "completed").map((j) => (
                     <div key={j.id} className="border rounded-md p-3 flex items-center justify-between gap-3">
                       <div className="text-sm">
-                        <div className="font-medium">{formatDate(j.created_at)} · {formatBytes(j.file_size_bytes)}</div>
+                        <div className="font-medium flex items-center gap-2">
+                          {formatDate(j.created_at)} · {formatBytes(j.file_size_bytes)}
+                          {(j.progress as any)?.imported && (
+                            <Badge variant="outline" className="text-xs border-blue-400 text-blue-700">
+                              <Upload className="w-3 h-3 mr-1" />Importado
+                            </Badge>
+                          )}
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           {j.table_counts ? Object.keys(j.table_counts).length : 0} tabelas ·
                           {" "}{j.table_counts ? Object.values(j.table_counts).reduce((a, b) => a + b, 0).toLocaleString("pt-BR") : 0} registros
