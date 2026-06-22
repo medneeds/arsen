@@ -27,7 +27,7 @@ interface BackupJob {
   created_at: string;
   created_by_email: string | null;
   status: "pending" | "running" | "completed" | "failed" | "cancelled";
-  progress: { step: string; percent: number; current?: number | null; total?: number | null } | null;
+  progress: { step: string; percent: number; current?: number | null; total?: number | null; imported?: boolean } | null;
   storage_path: string | null;
   file_size_bytes: number | null;
   table_counts: Record<string, number> | null;
