@@ -1,128 +1,61 @@
-# Backup & Restore Multi-Instância — Plano
+## Entendimento
 
-## Escopo
+Construir a aba "Restaurar" usando os backups gerados pelo novo formato v3 (chunked, `db-backups/<jobId>/...` + `manifest.json` em `backup_jobs`). O restore atual (`db-restore`) foi escrito para o formato antigo (`db_backups`, `super_admin`) e **não serve**.
 
-Construir módulo completo de Backup & Restauração com migração entre instâncias, incluindo schema, dados, usuários Auth, profiles, roles, storage e configurações. UI 100% pt-BR, acesso restrito a `admin` e `super_admin`, todas operações auditadas.
+## O QUE NÃO SERÁ TOCADO
 
-> ⚠️ **Aviso de realidade técnica importante (Lovable Cloud)**
-> Algumas exigências do pedido **não são executáveis** no ambiente atual e precisam ser ajustadas antes de implementar. Por favor leia esta seção antes de aprovar:
->
-> 1. **Schema SQL (DDL) completo NÃO pode ser exportado nem restaurado pela aplicação.** `pg_dump` está bloqueado no Lovable Cloud (ver regra de exportação CSV-only). DDL (CREATE TABLE/FUNCTION/TRIGGER/POLICY/EXTENSION) é controlado por **migrations versionadas** no próprio projeto — a instância destino precisa ter as MESMAS migrations aplicadas antes do restore. O backup vai conter um **snapshot de dados**, não DDL.
-> 2. **`auth.users` não pode ser exportado com hash de senha.** A Admin API do Supabase só permite criar usuário com senha nova ou enviar magic link. Portanto: ou (a) restore gera senha temporária + email de reset, ou (b) usa convite por e-mail. **Login com a mesma senha antiga é impossível** sem acesso ao banco do Auth (que nenhum tenant tem). Isso é limitação do Supabase, não desta implementação.
-> 3. **MFA factors, sessions e identities externas (Google/Apple)** também não são restauráveis via Admin API — usuário precisa reconfigurar.
-> 4. **Storage**: este projeto **não usa Storage buckets de aplicação** hoje (só `db-backups` interno do super admin). Vou pular Storage até existir bucket de domínio.
-> 5. **Rollback transacional de um restore completo é inviável** com volumes reais (115k+ audit_logs). Vou implementar **isolamento por job** + marcação de linhas restauradas (`restored_from_backup_id`) e ação de "desfazer" por tabela, em vez de transação única.
-> 6. **Princípios imutáveis do projeto (mem://preferences/immutable-principles)** proíbem mudanças não-triviais sem confirmação camada-por-camada. Este módulo toca **Dados + Auditoria + Movimentação** simultaneamente — exige aprovação explícita.
->
-> Se concordar com esses ajustes, o plano abaixo é o que de fato funciona.
+- ❌ `backup-create` (já estável)
+- ❌ `backup-download` (já estável)
+- ❌ `db-restore` antigo (mantido como legacy, não removo)
+- ❌ Tabelas clínicas em si — apenas escritas via UPSERT durante a execução do restore
+- ❌ Auth de usuários (senhas não voltam — apenas metadados; quem precisar redefine)
+- ❌ Nenhuma alteração de schema / migration
 
-## Arquitetura
+## Arquivos tocados
+
+1. **Nova edge function** `supabase/functions/backup-restore/index.ts`
+   - 3 actions: `plan`, `step`, `finalize`
+   - `plan`: valida senha do super_admin, lê `manifest.json` do storage, calcula ordem topológica via `get_public_fk_pairs` (já existe), lista parts por tabela, cria linha em `restore_jobs`, ATIVA `system_maintenance_mode`, retorna plano
+   - `step`: baixa **uma part** por chamada, faz UPSERT em batches de 500 (mesma estratégia do db-restore antigo), atualiza progresso
+   - `finalize`: marca job done/failed, DESATIVA manutenção (sempre), grava `backup_audit`
+   - Suporte a **dry-run**: baixa as parts, conta linhas e valida JSON, mas não escreve no banco
+   - Suporte a **modo parcial**: cliente passa lista de tabelas; só essas são restauradas
+
+2. **`src/pages/BackupRestorePage.tsx`** — habilitar aba "Restaurar"
+   - Lista backups `completed` com botão "Restaurar"
+   - Dialog de confirmação multietapa:
+     - Etapa 1: escolher modo (Completo / Parcial com checkboxes de tabelas) + dry-run on/off
+     - Etapa 2: avisos didáticos (manutenção, irreversível, senhas não voltam, MFA não volta)
+     - Etapa 3: digitar a frase exata "RESTAURAR AGORA" + senha do usuário
+   - Durante execução: progress bar + tabela atual + linhas processadas/erros
+   - Bloqueio: só **super_admin** vê o botão (admin comum apenas baixa)
+
+3. **`supabase/migrations/<ts>_restore_jobs_grants.sql`** (se necessário) — garantir que `restore_jobs` tem GRANTs e RLS para a UI ler (apenas super_admin SELECT). Verifico antes; se já existir, pulo.
+
+## Pontos de segurança não-negociáveis
+
+- Reverificação de senha via `signInWithPassword` na action `plan` (já no padrão db-restore antigo)
+- `system_maintenance_mode` ATIVO durante toda execução; DESATIVA em qualquer saída (sucesso, falha, exceção)
+- Conflict strategy padrão: **UPSERT por PK** (mesma da v anterior). Sem TRUNCATE — restore não apaga linhas que existem só no destino, só sobrescreve as que vieram do backup.
+- Auditoria em `backup_audit` em cada transição (start/step/done/fail)
+- Dry-run é o **default sugerido** na UI
+
+## Diagrama do fluxo
 
 ```text
-UI (/admin/backup-restore)
-  │
-  ├─ Aba "Backups"        → criar / listar / baixar / excluir
-  ├─ Aba "Restaurar"      → upload → validar → dry-run → confirmar → executar
-  └─ Aba "Histórico"      → jobs de backup e restore + relatórios
-
-Edge Functions (service role)
-  ├─ backup-create        → snapshot de dados + auth users + profiles → ZIP em storage
-  ├─ backup-validate      → checa manifest, checksum, versão, conflitos
-  ├─ restore-dry-run      → simula, retorna relatório de conflitos
-  ├─ restore-execute      → executa em ordem fixa, atualiza progresso
-  └─ backup-job-status    → polling de progresso
-
-Tabelas novas
-  ├─ backup_jobs          → 1 linha por backup (status, progress, file path, manifest, checksum)
-  ├─ restore_jobs         → 1 linha por restore (status, progress, dry_run, conflict_resolution, error)
-  └─ backup_audit         → trilha imutável de TODAS operações
+[UI] click Restaurar
+  └─ Dialog 3 etapas (modo, avisos, senha)
+       └─ plan ──────────────────────────────────► restore_jobs (running) + maintenance ON
+            ├─ step (part 0) ─► UPSERT 500/500/...
+            ├─ step (part 1) ─► ...
+            ├─ ...
+            └─ finalize ─► restore_jobs (completed/failed) + maintenance OFF
 ```
 
-## Conteúdo do ZIP
+## O que NÃO faço nesta entrega
 
-```text
-backup-<id>.zip
-├── manifest.json          versão, contagens, hash, autor, instância origem
-├── data/                  uma pasta por tabela pública
-│   ├── patients.jsonl
-│   ├── prescriptions.jsonl
-│   └── ... (todas as 73 tabelas, ordenadas por FK)
-├── auth/
-│   └── users.json         id, email, phone, metadata, app_metadata, role,
-│                          email_confirmed_at, created_at, last_sign_in_at, banned
-├── profiles.json          (já está em public.profiles, separado para conveniência)
-├── roles.json             user_roles + user_departments + user_hospital_assignments
-├── settings.json          institution_branding, hospital_units, states, system_maintenance_mode
-└── checksum.sha256        hash de cada arquivo + hash do conjunto
-```
+- Restauração de auth users (apenas relato no manifest quais sumiriam — restore de auth fica para fase futura, mais arriscada)
+- Restore cross-instance (manifest informa `source_instance`; se diferente do destino, mostro aviso vermelho mas não bloqueio)
+- Rollback automático em caso de falha parcial (apenas relatório; usuário decide rodar de novo)
 
-`schema.sql` NÃO entra (ver aviso #1). Manifest declara `schema_migration_version` exigida no destino.
-
-## Fluxo de Restore (ordem fixa, imutável)
-
-1. **Validate** — manifest, checksum, versão de schema, contagens
-2. **Dry-run** — detecta conflitos (emails duplicados, FKs órfãs, registros existentes), gera relatório
-3. **Confirm** — admin escolhe estratégia global e por categoria: `ignorar | substituir | mesclar | criar novo`
-4. **Auth Users** — `supabase.auth.admin.createUser` com `email_confirm: true`, senha provisória, email de reset enviado
-5. **Profiles** — `upsert` por id (já existe linha criada pelo trigger de signup)
-6. **Roles** — `user_roles`, `user_departments`, `user_hospital_assignments`
-7. **Settings** — tabelas de configuração
-8. **Dados clínicos** — todas tabelas restantes em ordem de FK (mesmo algoritmo topológico de `db-restore`)
-9. **Validation** — recontagem, checksum pós-restore, relatório final
-
-Cada etapa grava progresso em `restore_jobs.progress` (JSONB) → UI faz polling a cada 2s.
-
-## Controle de Acesso
-
-- Rota `/admin/backup-restore` protegida por `useIsAdmin() || useIsSuperAdmin()`.
-- Edge functions verificam `user_roles` server-side antes de qualquer ação.
-- Operações destrutivas (restaurar, excluir backup) exigem **reconfirmação de senha** (mesmo padrão do `db-restore` existente).
-- Modo Manutenção ativado durante restore (reusa `system_maintenance_mode` que já existe).
-
-## Auditoria
-
-`backup_audit` (imutável, sem UPDATE/DELETE):
-- `actor_id, actor_email, action, job_id, started_at, finished_at, duration_ms, result, error, ip_address, user_agent, source_instance, target_instance, payload jsonb`
-
-Ações: `BACKUP_CREATE_START/DONE/FAIL`, `BACKUP_DOWNLOAD`, `RESTORE_VALIDATE`, `RESTORE_DRY_RUN`, `RESTORE_START`, `RESTORE_STEP_DONE`, `RESTORE_DONE/FAIL`, `RESTORE_ROLLBACK`.
-
-## UI (pt-BR)
-
-- Página `/admin/backup-restore` com 3 abas (Backups, Restaurar, Histórico).
-- Componente de Progress (já existe `Progress` em ui/) com etapa atual + tempo decorrido + estimado.
-- Diálogos de confirmação no padrão `MovementConfirmDialog` (resumo + bloqueios + consequências didáticas) — preferência imutável do projeto.
-- Sidebar: novo item "Backup & Restauração" no grupo Admin, ícone Database/Archive.
-
-## Entregáveis por sprint
-
-**Sprint 1 — Fundação (este PR)**
-- Migration: `backup_jobs`, `restore_jobs`, `backup_audit` + RLS + GRANT
-- Edge function `backup-create` (snapshot de dados + auth + profiles + roles + settings → ZIP em bucket `db-backups`)
-- Edge function `backup-job-status` (polling)
-- Página `/admin/backup-restore` com aba **Backups** (criar, listar, baixar, progresso, auditoria)
-- Item de sidebar + rota protegida
-
-**Sprint 2 — Validação e Dry-run**
-- Edge function `backup-validate` (manifest, checksum, versão)
-- Edge function `restore-dry-run` (relatório de conflitos sem mudar nada)
-- Aba **Restaurar**: upload, validação, relatório, escolha de estratégia
-
-**Sprint 3 — Execução**
-- Edge function `restore-execute` em ordem fixa, com modo Manutenção
-- Restore de Auth users com email de reset
-- Progresso em tempo real + rollback parcial por tabela
-- Relatório PDF final
-
-**Sprint 4 — Histórico e polimento**
-- Aba **Histórico** com filtros, drawer de detalhes, export CSV
-- Testes (vitest) cobrindo dry-run, ordem topológica, conflito de email
-- Documentação `/docs/backup-restore.md`
-
-## Confirmação necessária antes de codar
-
-Por favor responda:
-
-1. **Aceita os 6 ajustes técnicos do aviso?** (especialmente: sem DDL no backup, senha NÃO migra, sem rollback transacional global)
-2. **Senha dos usuários restaurados**: (a) senha provisória + email de reset automático, (b) convite por email, ou (c) admin define senha única temporária?
-3. **Posso começar pelo Sprint 1** ou prefere ver mockup da UI antes?
-4. **Confirma que o projeto NÃO usa Storage buckets de aplicação hoje?** Se usa, me diga quais buckets para incluir.
+**Confirma que posso seguir nessa direção?**
