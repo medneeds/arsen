@@ -182,9 +182,11 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
   if (!tEntry) return json({ error: "tabela fora do plano" }, 400);
   if (!tEntry.parts.some((p: any) => p.path === partPath)) return json({ error: "part fora do plano" }, 400);
 
-  // Download
-  const { data: file, error: dErr } = await admin.storage.from(BUCKET).download(partPath);
-  if (dErr || !file) return json({ error: `download: ${dErr?.message}` }, 500);
+  // Download — partPath é relativo ao backup (ex: "data/patients.part-0000.jsonl");
+  // os objetos no Storage estão sob "<backup_job_id>/<partPath>", então prefixamos aqui.
+  const fullPath = partPath.startsWith(`${rj.backup_job_id}/`) ? partPath : `${rj.backup_job_id}/${partPath}`;
+  const { data: file, error: dErr } = await admin.storage.from(BUCKET).download(fullPath);
+  if (dErr || !file) return json({ error: `download (${fullPath}): ${dErr?.message}` }, 500);
   const text = await file.text();
   const rows: any[] = text.split("\n").filter(Boolean).map((l) => JSON.parse(l));
 
