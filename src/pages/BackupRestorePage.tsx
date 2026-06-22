@@ -701,27 +701,102 @@ export default function BackupRestorePage() {
                 <p className="text-sm text-muted-foreground">Nenhuma restauração executada ainda.</p>
               ) : (
                 <div className="space-y-2">
-                  {restoreJobs.map((r) => (
-                    <div key={r.id} className="border rounded-md p-3 text-sm">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {statusBadge(r.status)}
-                        {r.dry_run && <Badge variant="outline" className="text-xs"><FlaskConical className="w-3 h-3 mr-1" />dry-run</Badge>}
-                        <span className="font-medium">{formatDate(r.created_at)}</span>
-                        <span className="text-xs text-muted-foreground">por {r.created_by_email ?? "—"} · {formatDuration(r.duration_ms)}</span>
-                      </div>
-                      {r.status === "running" && r.progress && (
-                        <div className="mt-2 space-y-1">
-                          <Progress value={r.progress.percent ?? 0} />
-                          <p className="text-xs text-muted-foreground">{r.progress.step} · {r.progress.processed ?? 0} linhas · {r.progress.errors ?? 0} erros</p>
+                  {restoreJobs.map((r) => {
+                    // Erros podem vir do report (após finalize) ou ainda do progress (em execução)
+                    const errorsByTable: Record<string, { processed: number; errors: number }> =
+                      r.report?.errors_by_table ?? r.progress?.errors_by_table ?? {};
+                    const errorSamples: Array<{ table: string; part: string; message: string; at: string }> =
+                      (Array.isArray(r.report?.error_samples) && r.report.error_samples) ||
+                      (Array.isArray(r.progress?.error_samples) && r.progress.error_samples) || [];
+                    const totalErrors = r.report?.errors ?? r.progress?.errors ?? 0;
+                    const totalProcessed = r.report?.processed ?? r.progress?.processed ?? 0;
+                    const tableRows = Object.entries(errorsByTable).sort(
+                      ([, a], [, b]) => (b?.errors ?? 0) - (a?.errors ?? 0),
+                    );
+                    const hasDetails = tableRows.length > 0 || errorSamples.length > 0;
+
+                    return (
+                      <div key={r.id} className="border rounded-md p-3 text-sm">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {statusBadge(r.status)}
+                          {r.dry_run && <Badge variant="outline" className="text-xs"><FlaskConical className="w-3 h-3 mr-1" />dry-run</Badge>}
+                          <span className="font-medium">{formatDate(r.created_at)}</span>
+                          <span className="text-xs text-muted-foreground">por {r.created_by_email ?? "—"} · {formatDuration(r.duration_ms)}</span>
                         </div>
-                      )}
-                      {r.report && r.status === "completed" && (
-                        <p className="text-xs text-emerald-700 mt-1">{r.report.processed ?? 0} linhas processadas · {r.report.errors ?? 0} erros</p>
-                      )}
-                      {r.reason && <p className="text-xs italic text-slate-600 mt-1">{r.reason}</p>}
-                      {r.error && <p className="text-xs text-rose-700 break-all">Erro: {r.error}</p>}
-                    </div>
-                  ))}
+                        {r.status === "running" && r.progress && (
+                          <div className="mt-2 space-y-1">
+                            <Progress value={r.progress.percent ?? 0} />
+                            <p className="text-xs text-muted-foreground">{r.progress.step} · {r.progress.processed ?? 0} linhas · {r.progress.errors ?? 0} erros</p>
+                          </div>
+                        )}
+                        {r.report && r.status === "completed" && (
+                          <p className={`text-xs mt-1 ${totalErrors > 0 ? "text-amber-700" : "text-emerald-700"}`}>
+                            {totalProcessed} linhas processadas · {totalErrors} erros
+                          </p>
+                        )}
+                        {r.reason && <p className="text-xs italic text-slate-600 mt-1">{r.reason}</p>}
+                        {r.error && <p className="text-xs text-rose-700 break-all">Erro: {r.error}</p>}
+
+                        {hasDetails && (
+                          <details className="mt-2 group">
+                            <summary className="cursor-pointer text-xs font-medium text-slate-700 hover:text-slate-900 select-none">
+                              Ver detalhes ({tableRows.length} tabela{tableRows.length !== 1 ? "s" : ""} · {errorSamples.length} amostra{errorSamples.length !== 1 ? "s" : ""} de erro)
+                            </summary>
+                            <div className="mt-2 space-y-3">
+                              {tableRows.length > 0 && (
+                                <div>
+                                  <p className="text-[11px] font-semibold uppercase text-slate-500 mb-1">Erros por tabela</p>
+                                  <div className="border rounded overflow-hidden">
+                                    <table className="w-full text-xs">
+                                      <thead className="bg-slate-50">
+                                        <tr>
+                                          <th className="text-left px-2 py-1 font-medium">Tabela</th>
+                                          <th className="text-right px-2 py-1 font-medium">Processados</th>
+                                          <th className="text-right px-2 py-1 font-medium">Erros</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {tableRows.map(([t, s]) => (
+                                          <tr key={t} className="border-t">
+                                            <td className="px-2 py-1 font-mono">{t}</td>
+                                            <td className="px-2 py-1 text-right">{s?.processed ?? 0}</td>
+                                            <td className={`px-2 py-1 text-right font-semibold ${(s?.errors ?? 0) > 0 ? "text-rose-700" : "text-slate-500"}`}>
+                                              {s?.errors ?? 0}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              )}
+                              {errorSamples.length > 0 && (
+                                <div>
+                                  <p className="text-[11px] font-semibold uppercase text-slate-500 mb-1">
+                                    Amostras de erro (últimas {errorSamples.length}, cap 50)
+                                  </p>
+                                  <ScrollArea className="h-48 border rounded bg-slate-50">
+                                    <ul className="divide-y">
+                                      {errorSamples.slice().reverse().map((s, i) => (
+                                        <li key={i} className="p-2 text-xs">
+                                          <div className="flex items-center gap-2 flex-wrap text-[10px] text-slate-500">
+                                            <span className="font-mono">{s.at ? formatDate(s.at) : "—"}</span>
+                                            <Badge variant="outline" className="text-[10px]">{s.table}</Badge>
+                                            <span className="font-mono truncate">{s.part}</span>
+                                          </div>
+                                          <p className="text-rose-700 break-all mt-1">{s.message}</p>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </ScrollArea>
+                                </div>
+                              )}
+                            </div>
+                          </details>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
