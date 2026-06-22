@@ -424,7 +424,7 @@ export default function BackupRestorePage() {
           password: restorePassword,
         },
       });
-      if (planErr) throw planErr;
+      if (planErr) throw new Error(await extractEdgeError(planErr, "backup-restore:plan"));
       restoreId = (planRes as any)?.restore_id;
       plan = (planRes as any)?.plan ?? [];
       if (!restoreId) throw new Error("restore_id não retornado");
@@ -440,7 +440,7 @@ export default function BackupRestorePage() {
           const { data: sd, error: se } = await supabase.functions.invoke("backup-restore", {
             body: { action: "step", restore_id: restoreId, table: t.table, part_path: part.path },
           });
-          if (se) throw se;
+          if (se) throw new Error(await extractEdgeError(se, `backup-restore:step ${t.table}/${part.path}`));
           processedTotal += (sd as any)?.rows_processed ?? 0;
           errorsTotal += (sd as any)?.errors ?? 0;
           doneParts++;
