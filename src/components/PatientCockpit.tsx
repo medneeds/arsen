@@ -259,19 +259,24 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
 
   // ── Mobile: FAB flutuante + Sheet ──────────────────────────────────
   if (isBelowLg && variant === "fixed" && patient?.name) {
+    // Portala o FAB para document.body: evita que `transform` de ancestrais
+    // (ex.: PageTransition/framer-motion) quebre o `position: fixed`.
+    const fab = typeof document !== "undefined"
+      ? createPortal(
+          <button
+            type="button"
+            onClick={() => setMobileSheetOpen(true)}
+            className="fixed bottom-20 right-4 z-50 flex flex-col items-center justify-center w-12 h-12 rounded-full shadow-lg bg-[hsl(217,72%,36%)] text-white transition-all active:scale-95 print:hidden"
+            aria-label="Ver dados do paciente"
+          >
+            <User2 className="h-5 w-5" />
+          </button>,
+          document.body
+        )
+      : null;
     return (
       <>
-        {/* FAB — botão flutuante que abre a cockpit no mobile */}
-        <button
-          type="button"
-          onClick={() => setMobileSheetOpen(true)}
-          className="fixed bottom-20 right-4 z-40 flex flex-col items-center justify-center w-12 h-12 rounded-full shadow-lg bg-[hsl(217,72%,36%)] text-white transition-all active:scale-95"
-          aria-label="Ver dados do paciente"
-        >
-          <User2 className="h-5 w-5" />
-        </button>
-
-        {/* Sheet — cockpit completa em tela cheia no mobile */}
+        {fab}
         <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
           <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col gap-0 h-[100dvh]">
             <div className="flex-1 min-h-0 overflow-hidden">
