@@ -573,6 +573,41 @@ export default function BackupRestorePage() {
             </Card>
           )}
 
+          {/* Importar backup externo */}
+          <Card className="border-blue-300">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2"><Upload className="w-5 h-5 text-blue-600" />Importar backup (ZIP)</CardTitle>
+              <CardDescription>
+                Envie um arquivo ZIP gerado pelo próprio sistema (v3). Ele aparecerá na lista abaixo como
+                <Badge variant="outline" className="mx-1 text-xs">Importado</Badge>
+                e ficará pronto para restaurar. Limite prático: ~500 MB.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept=".zip,application/zip"
+                  disabled={importing || !canRestore}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleImportFile(f);
+                    e.target.value = "";
+                  }}
+                />
+                {importing && <Loader2 className="w-4 h-4 animate-spin text-blue-600" />}
+              </div>
+              {importProgress && (
+                <div className="space-y-1 border rounded-md p-2 bg-blue-50">
+                  <div className="flex justify-between text-xs"><span>{importProgress.step}</span><span>{importProgress.percent}%</span></div>
+                  <Progress value={importProgress.percent} />
+                </div>
+              )}
+              {!canRestore && <p className="text-xs text-rose-700">Apenas Super Administradores podem importar.</p>}
+            </CardContent>
+          </Card>
+
+
           <Card className="border-rose-300">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2"><RotateCcw className="w-5 h-5 text-rose-600" />Restaurar a partir de um backup</CardTitle>
