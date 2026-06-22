@@ -121,6 +121,11 @@ export default function BackupRestorePage() {
   const [restoreRunning, setRestoreRunning] = useState(false);
   const [restoreProgress, setRestoreProgress] = useState<{ percent: number; step: string; processed: number; errors: number } | null>(null);
 
+  // ── Import state
+  const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ percent: number; step: string } | null>(null);
+
+
   async function loadJobs() {
     const { data, error } = await supabase
       .from("backup_jobs")
