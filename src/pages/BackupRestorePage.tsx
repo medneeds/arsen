@@ -440,6 +440,95 @@ export default function BackupRestorePage() {
           </Card>
         </TabsContent>
 
+        {/* ── RESTAURAR ── */}
+        <TabsContent value="restore" className="space-y-4">
+          {!canRestore && (
+            <Card className="border-rose-300 bg-rose-50">
+              <CardContent className="pt-4 text-sm text-rose-900 flex gap-3">
+                <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
+                <div>
+                  A restauração é restrita a <strong>Super Administradores</strong>. Admin comum pode apenas
+                  baixar backups. Solicite ao super admin se precisar restaurar.
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="border-rose-300">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2"><RotateCcw className="w-5 h-5 text-rose-600" />Restaurar a partir de um backup</CardTitle>
+              <CardDescription>
+                Operação <strong>irreversível</strong>. Sobrescreve dados existentes via UPSERT por chave primária.
+                Recomendado executar <strong>simulação (dry-run)</strong> antes do restore real.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {jobs.filter((j) => j.status === "completed").length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum backup concluído disponível.</p>
+              ) : (
+                <div className="space-y-2">
+                  {jobs.filter((j) => j.status === "completed").map((j) => (
+                    <div key={j.id} className="border rounded-md p-3 flex items-center justify-between gap-3">
+                      <div className="text-sm">
+                        <div className="font-medium">{formatDate(j.created_at)} · {formatBytes(j.file_size_bytes)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {j.table_counts ? Object.keys(j.table_counts).length : 0} tabelas ·
+                          {" "}{j.table_counts ? Object.values(j.table_counts).reduce((a, b) => a + b, 0).toLocaleString("pt-BR") : 0} registros
+                          {" "}· por {j.created_by_email ?? "—"}
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={!canRestore || !!runningRestore}
+                        onClick={() => openRestoreDialog(j)}
+                      >
+                        <RotateCcw className="w-4 h-4 mr-1" />Restaurar
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Restaurações executadas</CardTitle>
+              <CardDescription>{restoreJobs.length} registro(s)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {restoreJobs.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma restauração executada ainda.</p>
+              ) : (
+                <div className="space-y-2">
+                  {restoreJobs.map((r) => (
+                    <div key={r.id} className="border rounded-md p-3 text-sm">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {statusBadge(r.status)}
+                        {r.dry_run && <Badge variant="outline" className="text-xs"><FlaskConical className="w-3 h-3 mr-1" />dry-run</Badge>}
+                        <span className="font-medium">{formatDate(r.created_at)}</span>
+                        <span className="text-xs text-muted-foreground">por {r.created_by_email ?? "—"} · {formatDuration(r.duration_ms)}</span>
+                      </div>
+                      {r.status === "running" && r.progress && (
+                        <div className="mt-2 space-y-1">
+                          <Progress value={r.progress.percent ?? 0} />
+                          <p className="text-xs text-muted-foreground">{r.progress.step} · {r.progress.processed ?? 0} linhas · {r.progress.errors ?? 0} erros</p>
+                        </div>
+                      )}
+                      {r.report && r.status === "completed" && (
+                        <p className="text-xs text-emerald-700 mt-1">{r.report.processed ?? 0} linhas processadas · {r.report.errors ?? 0} erros</p>
+                      )}
+                      {r.reason && <p className="text-xs italic text-slate-600 mt-1">{r.reason}</p>}
+                      {r.error && <p className="text-xs text-rose-700 break-all">Erro: {r.error}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* ── HISTÓRICO (auditoria) ── */}
         <TabsContent value="historico">
           <Card>
