@@ -16,7 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import {
   Database, Download, RefreshCw, ShieldAlert, History as HistoryIcon,
-  Loader2, FileArchive, AlertTriangle, CheckCircle2, XCircle, RotateCcw, FlaskConical,
+  Loader2, FileArchive, AlertTriangle, CheckCircle2, XCircle, RotateCcw, FlaskConical, Upload,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
