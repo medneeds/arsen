@@ -86,20 +86,81 @@ Deno.serve(async (req) => {
   let body: any = {};
   try { body = await req.json(); } catch { /* */ }
   const action = String(body.action ?? "");
+  const restoreIdInBody = String(body.restore_id ?? "");
 
   try {
-    if (action === "plan")     return await handlePlan(admin, body, userId, userEmail);
-    if (action === "step")     return await handleStep(admin, body, userId, userEmail);
-    if (action === "finalize") return await handleFinalize(admin, body, userId, userEmail);
+    if (action === "plan")         return await handlePlan(admin, body, userId, userEmail);
+    if (action === "step")         return await handleStep(admin, body, userId, userEmail);
+    if (action === "finalize")     return await handleFinalize(admin, body, userId, userEmail);
+    if (action === "force_unlock") return await handleForceUnlock(admin, body, userId, userEmail);
     return json({ error: `action inválida: ${action}` }, 400);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[backup-restore]", action, msg);
-    // best-effort: desativa manutenção em erro fatal
-    try { await admin.from("system_maintenance_mode").update({ is_active: false }).eq("id", 1); } catch { /* */ }
     return json({ error: msg }, 500);
+  } finally {
+    // Garantia final: se o restore já está em estado terminal (ou força),
+    // garante que o modo manutenção esteja desligado. NUNCA derruba manutenção
+    // durante um restore ainda em execução (status='running').
+    try {
+      let shouldUnlock = action === "force_unlock" || action === "finalize";
+      if (!shouldUnlock && restoreIdInBody) {
+        const { data: rj } = await admin.from("restore_jobs").select("status").eq("id", restoreIdInBody).maybeSingle();
+        if (rj && (rj.status === "completed" || rj.status === "failed")) shouldUnlock = true;
+      }
+      if (shouldUnlock) await forceDeactivateMaintenance(admin);
+    } catch (e) {
+      console.warn("[backup-restore] finally cleanup failed", e);
+    }
   }
 });
+
+async function handleForceUnlock(admin: any, body: any, userId: string, userEmail: string | null) {
+  const reason = String(body?.reason ?? "").trim() || "force_unlock por admin";
+  const { data: running } = await admin
+    .from("restore_jobs")
+    .select("id")
+    .in("status", ["running", "pending"]);
+  const ids = (running ?? []).map((r: any) => r.id);
+  if (ids.length > 0) {
+    await admin.from("restore_jobs").update({
+      status: "failed",
+      finished_at: new Date().toISOString(),
+      error: `force_unlock por admin: ${reason}`,
+    }).in("id", ids);
+  }
+  await forceDeactivateMaintenance(admin);
+  await audit(admin, userId, userEmail, "MAINTENANCE_FORCE_OFF", {
+    result: "success",
+    payload: { reason, aborted_restore_ids: ids },
+  });
+  return json({ ok: true, aborted_restore_ids: ids });
+}
+
+async function forceDeactivateMaintenance(admin: any) {
+  await admin.from("system_maintenance_mode").update({
+    is_active: false,
+    started_at: null,
+    started_by: null,
+    reason: null,
+    expected_end_at: null,
+  }).eq("id", 1);
+}
+
+// Normaliza o shape do array para upsert: todas as linhas com o MESMO conjunto
+// de chaves (preenchendo ausentes com null). Sem isso, PostgREST agrega para
+// uniformizar e dispara "function min(uuid) does not exist" em colunas UUID.
+function normalizeShape<T extends Record<string, unknown>>(rows: T[]): T[] {
+  if (rows.length <= 1) return rows;
+  const keys = new Set<string>();
+  for (const r of rows) for (const k of Object.keys(r)) keys.add(k);
+  return rows.map((r) => {
+    const out: Record<string, unknown> = { ...r };
+    for (const k of keys) if (!(k in out)) out[k] = null;
+    return out as T;
+  });
+}
+
 
 async function handlePlan(admin: any, body: any, userId: string, userEmail: string | null) {
   const backupId = String(body.backup_id ?? "");
