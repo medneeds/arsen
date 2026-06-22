@@ -211,10 +211,25 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
     processed = rows.length;
   }
 
-  // Atualiza progresso
+  // Atualiza progresso (acumula amostras de erro globalmente, cap=50, com contexto tabela+part)
   const totalParts = plan.reduce((a: number, x: any) => a + (x.parts?.length ?? 0), 0) || 1;
   const doneParts = (rj.progress?.done_parts ?? 0) + 1;
   const percent = Math.min(99, Math.floor((doneParts / totalParts) * 100));
+
+  const prevSamples: Array<{ table: string; part: string; message: string; at: string }> =
+    Array.isArray(rj.progress?.error_samples) ? rj.progress.error_samples : [];
+  const nowIso = new Date().toISOString();
+  const newSamples = errorSamples.map((m) => ({ table, part: partPath, message: m, at: nowIso }));
+  // cap em 50, preservando as MAIS RECENTES
+  const mergedSamples = [...prevSamples, ...newSamples].slice(-50);
+
+  // Contadores por tabela (processed/errors)
+  const prevByTable: Record<string, { processed: number; errors: number }> =
+    (rj.progress?.errors_by_table && typeof rj.progress.errors_by_table === "object")
+      ? { ...rj.progress.errors_by_table } : {};
+  const tStats = prevByTable[table] ?? { processed: 0, errors: 0 };
+  prevByTable[table] = { processed: tStats.processed + processed, errors: tStats.errors + errors };
+
   const newProgress = {
     ...(rj.progress ?? {}),
     step: `${table} (${doneParts}/${totalParts})`,
@@ -225,6 +240,8 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
     errors: (rj.progress?.errors ?? 0) + errors,
     done_parts: doneParts,
     total_parts: totalParts,
+    error_samples: mergedSamples,
+    errors_by_table: prevByTable,
   };
   await admin.from("restore_jobs").update({ progress: newProgress }).eq("id", restoreId);
 
