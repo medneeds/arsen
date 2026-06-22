@@ -267,6 +267,8 @@ async function handleFinalize(admin: any, body: any, userId: string, userEmail: 
       processed: rj?.progress?.processed ?? 0,
       errors: rj?.progress?.errors ?? 0,
       dry_run: rj?.dry_run ?? false,
+      error_samples: Array.isArray(rj?.progress?.error_samples) ? rj.progress.error_samples : [],
+      errors_by_table: rj?.progress?.errors_by_table ?? {},
     },
     progress: { ...(rj?.progress ?? {}), step: success ? "concluído" : "falhou", percent: 100 },
   }).eq("id", restoreId);
