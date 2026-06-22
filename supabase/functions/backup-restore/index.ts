@@ -30,7 +30,7 @@ const BATCH = 500;
 // Tabelas-catálogo com chave natural conhecida. Só é aplicada se existir UNIQUE real no destino.
 const CATALOG_NATURAL_KEYS: Record<string, string[][]> = {
   hospital_units: [["name"]],
-  states: [["code"]],
+  states: [["name"], ["code"]],
   cid10_codes: [["code"]],
   medical_codes: [["code"]],
   medication_catalog: [["name"]],
