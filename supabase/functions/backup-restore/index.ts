@@ -305,6 +305,12 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
   let catalogStats = { matched_existing: 0, inserted: 0, overwritten: 0 };
   let bedNumberReassigned = 0;
   let sliceDedupesDropped = 0;
+  let droppedNoPk = 0;
+  let minUuidRetries = 0;
+  // orphanFkDropped[fkCol] = n (escopado a esta tabela/part; merge depois)
+  const orphanFkDropped: Record<string, number> = {};
+  // parent_id pendings desta part (prescriptions); merge no progress, aplicado em finalize
+  const pendingParentFixups: Record<string, string> = {};
 
   const schema = rj.progress?.schema ?? { cols_by_table: {}, unique_by_table: {} };
   const idMaps: Record<string, Record<string, string>> = rj.progress?.id_maps ?? {};
