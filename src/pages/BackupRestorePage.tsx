@@ -550,6 +550,70 @@ export default function BackupRestorePage() {
         </CardContent>
       </Card>
 
+      {/* Modo manutenção — destrava forçado para super_admin */}
+      {maintenanceActive && isSuperAdmin && (
+        <Card className="border-red-400 bg-red-50">
+          <CardContent className="pt-4 text-sm text-red-900 flex items-start justify-between gap-3">
+            <div className="flex gap-3">
+              <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
+              <div>
+                <strong>Modo manutenção ATIVO.</strong> Todas as escritas estão bloqueadas para usuários comuns.
+                Se um restore travou e não foi finalizado, use o botão ao lado para liberar o sistema.
+              </div>
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setForceUnlockOpen(true)}
+              disabled={forceUnlocking}
+            >
+              {forceUnlocking ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
+              Forçar saída do modo manutenção
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <Dialog open={forceUnlockOpen} onOpenChange={setForceUnlockOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-700">
+              <ShieldAlert className="w-5 h-5" />
+              Forçar saída do modo manutenção
+            </DialogTitle>
+            <DialogDescription className="space-y-2 pt-2">
+              <span className="block">
+                Esta ação <strong>desativa imediatamente</strong> o modo manutenção e marca como <code>failed</code> qualquer restore em execução.
+              </span>
+              <span className="block">
+                Use apenas se você tem certeza de que nenhum restore legítimo está rodando neste momento.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="force-reason" className="text-sm">Motivo (opcional)</Label>
+            <Textarea
+              id="force-reason"
+              placeholder="Ex.: restore travou no meio, navegador fechou"
+              value={forceUnlockReason}
+              onChange={(e) => setForceUnlockReason(e.target.value)}
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setForceUnlockOpen(false)} disabled={forceUnlocking}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleForceUnlock} disabled={forceUnlocking}>
+              {forceUnlocking ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Desativar manutenção
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
+
       <Tabs defaultValue="backups">
         <TabsList>
           <TabsTrigger value="backups"><Database className="w-4 h-4 mr-2" />Backups</TabsTrigger>
