@@ -673,6 +673,22 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
   // Merge bed_number_reassigned (acumulado entre steps de patients)
   const prevBedReassigned: number = Number(rj.progress?.bed_number_reassigned ?? 0);
 
+  // Merge orphan_fk_dropped_by_table[table][col] = n
+  const prevOrphanFk: Record<string, Record<string, number>> =
+    rj.progress?.orphan_fk_dropped_by_table ?? {};
+  if (Object.keys(orphanFkDropped).length > 0) {
+    const t = { ...(prevOrphanFk[table] ?? {}) };
+    for (const [c, n] of Object.entries(orphanFkDropped)) t[c] = (t[c] ?? 0) + n;
+    prevOrphanFk[table] = t;
+  }
+
+  // Merge pending_parent_id_fixups[table] = { id: parent_id, ... }
+  const prevPendingFix: Record<string, Record<string, string>> =
+    rj.progress?.pending_parent_id_fixups ?? {};
+  if (Object.keys(pendingParentFixups).length > 0) {
+    prevPendingFix[table] = { ...(prevPendingFix[table] ?? {}), ...pendingParentFixups };
+  }
+
   const newProgress = {
     ...(rj.progress ?? {}),
     step: `${table} (${doneParts}/${totalParts})`,
@@ -690,6 +706,10 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
     id_maps: mergedIdMaps,
     bed_number_reassigned: prevBedReassigned + bedNumberReassigned,
     slice_dedupes_dropped: Number(rj.progress?.slice_dedupes_dropped ?? 0) + sliceDedupesDropped,
+    dropped_no_pk: Number(rj.progress?.dropped_no_pk ?? 0) + droppedNoPk,
+    min_uuid_retries: Number(rj.progress?.min_uuid_retries ?? 0) + minUuidRetries,
+    orphan_fk_dropped_by_table: prevOrphanFk,
+    pending_parent_id_fixups: prevPendingFix,
   };
   await admin.from("restore_jobs").update({ progress: newProgress }).eq("id", restoreId);
 
