@@ -22,6 +22,39 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsSuperAdmin } from "@/hooks/useIsSuperAdmin";
 
+// Extrai mensagem específica do campo "error" do JSON retornado pela edge function
+// em respostas não-2xx. supabase.functions.invoke devolve FunctionsHttpError
+// com `.context` = Response — precisamos ler/parsear esse body manualmente.
+async function extractEdgeError(err: unknown, fnName: string): Promise<string> {
+  const fallback = err instanceof Error ? err.message : String(err);
+  try {
+    const ctx = (err as { context?: Response } | null)?.context;
+    if (!ctx) {
+      console.error(`[${fnName}] erro sem context:`, err);
+      return fallback;
+    }
+    const status = ctx.status;
+    let bodyText = "";
+    try {
+      const cloned = typeof ctx.clone === "function" ? ctx.clone() : null;
+      bodyText = cloned ? await cloned.text() : await ctx.text();
+    } catch { /* body já consumido */ }
+    console.error(`[${fnName}] HTTP ${status} — body:`, bodyText);
+    if (bodyText) {
+      try {
+        const parsed = JSON.parse(bodyText);
+        if (parsed && typeof parsed.error === "string" && parsed.error.trim()) return parsed.error;
+        if (parsed && typeof parsed.message === "string" && parsed.message.trim()) return parsed.message;
+      } catch { /* não-JSON */ }
+      return `HTTP ${status}: ${bodyText.slice(0, 300)}`;
+    }
+    return `HTTP ${status}: ${fallback}`;
+  } catch (parseErr) {
+    console.error(`[${fnName}] falha ao extrair erro:`, parseErr, err);
+    return fallback;
+  }
+}
+
 interface BackupJob {
   id: string;
   created_at: string;
@@ -307,7 +340,7 @@ export default function BackupRestorePage() {
       const { data: initRes, error: initErr } = await supabase.functions.invoke("backup-import", {
         body: { action: "init", manifest },
       });
-      if (initErr) throw initErr;
+      if (initErr) throw new Error(await extractEdgeError(initErr, "backup-import:init"));
       const newBackupId = (initRes as any)?.backup_id;
       if (!newBackupId) throw new Error("backup_id não retornado");
 
@@ -322,7 +355,7 @@ export default function BackupRestorePage() {
         const { data: uploadRes, error: pErr } = await supabase.functions.invoke("backup-import", {
           body: { action: "part", backup_id: newBackupId, rel_path: p.path },
         });
-        if (pErr) throw pErr;
+        if (pErr) throw new Error(await extractEdgeError(pErr, "backup-import:part"));
         const uploadPath = (uploadRes as any)?.path;
         const uploadToken = (uploadRes as any)?.token;
         if (!uploadPath || !uploadToken) throw new Error(`URL de upload não retornada para ${p.path}`);
@@ -345,7 +378,8 @@ export default function BackupRestorePage() {
       const { error: fErr } = await supabase.functions.invoke("backup-import", {
         body: { action: "finalize", backup_id: newBackupId },
       });
-      if (fErr) throw fErr;
+      if (fErr) throw new Error(await extractEdgeError(fErr, "backup-import:finalize"));
+
 
       setImportProgress({ percent: 100, step: "concluído" });
       toast.success("Backup importado. Clique em Restaurar para usar.");
@@ -390,7 +424,7 @@ export default function BackupRestorePage() {
           password: restorePassword,
         },
       });
-      if (planErr) throw planErr;
+      if (planErr) throw new Error(await extractEdgeError(planErr, "backup-restore:plan"));
       restoreId = (planRes as any)?.restore_id;
       plan = (planRes as any)?.plan ?? [];
       if (!restoreId) throw new Error("restore_id não retornado");
@@ -406,7 +440,7 @@ export default function BackupRestorePage() {
           const { data: sd, error: se } = await supabase.functions.invoke("backup-restore", {
             body: { action: "step", restore_id: restoreId, table: t.table, part_path: part.path },
           });
-          if (se) throw se;
+          if (se) throw new Error(await extractEdgeError(se, `backup-restore:step ${t.table}/${part.path}`));
           processedTotal += (sd as any)?.rows_processed ?? 0;
           errorsTotal += (sd as any)?.errors ?? 0;
           doneParts++;
