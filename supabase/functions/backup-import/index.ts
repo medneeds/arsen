@@ -4,7 +4,7 @@
 //
 // Actions:
 //   "init"     { manifest, original_reason? } -> { backup_id }
-//   "part"     { backup_id, rel_path, content_b64 } -> { ok, bytes }
+//   "part"     { backup_id, rel_path, content_b64? } -> { ok, bytes } ou { upload, token, path }
 //   "finalize" { backup_id } -> { ok }
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
@@ -21,6 +21,9 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const BUCKET = "db-backups";
+
+const contentTypeForPath = (relPath: string) => relPath.endsWith(".jsonl") ? "application/x-ndjson" :
+  relPath.endsWith(".json") ? "application/json" : "application/octet-stream";
 
 function b64ToBytes(b64: string): Uint8Array {
   const bin = atob(b64);
@@ -123,16 +126,21 @@ async function handleInit(admin: any, body: any, userId: string, userEmail: stri
 async function handlePart(admin: any, body: any) {
   const backupId = String(body.backup_id ?? "");
   const relPath = String(body.rel_path ?? "");
-  const contentB64 = String(body.content_b64 ?? "");
-  if (!backupId || !relPath || !contentB64) return json({ error: "backup_id+rel_path+content_b64 obrigatórios" }, 400);
+  const contentB64 = typeof body.content_b64 === "string" ? body.content_b64 : "";
+  if (!backupId || !relPath) return json({ error: "backup_id+rel_path obrigatórios" }, 400);
   if (relPath.includes("..") || relPath.startsWith("/")) return json({ error: "rel_path inválido" }, 400);
   if (relPath === "manifest.json") return json({ error: "manifest.json é reservado" }, 400);
 
+  const fullPath = `${backupId}/${relPath}`;
+  if (!contentB64) {
+    const { data, error } = await admin.storage.from(BUCKET).createSignedUploadUrl(fullPath, { upsert: true });
+    if (error || !data) return json({ error: `url upload ${relPath}: ${error?.message}` }, 500);
+    return json({ upload: true, token: data.token, path: fullPath, rel_path: relPath, content_type: contentTypeForPath(relPath) });
+  }
+
   const bytes = b64ToBytes(contentB64);
-  const ct = relPath.endsWith(".jsonl") ? "application/x-ndjson" :
-             relPath.endsWith(".json")  ? "application/json"     : "application/octet-stream";
-  const { error } = await admin.storage.from(BUCKET).upload(`${backupId}/${relPath}`, bytes, {
-    contentType: ct, upsert: true,
+  const { error } = await admin.storage.from(BUCKET).upload(fullPath, bytes, {
+    contentType: contentTypeForPath(relPath), upsert: true,
   });
   if (error) return json({ error: `upload ${relPath}: ${error.message}` }, 500);
   return json({ ok: true, bytes: bytes.byteLength });
