@@ -597,6 +597,7 @@ async function handleFinalize(admin: any, body: any, userId: string, userEmail: 
       dropped_columns_by_table: rj?.progress?.dropped_columns_by_table ?? {},
       catalog_conflicts_by_table: rj?.progress?.catalog_conflicts_by_table ?? {},
       id_map_counts: idMapCounts,
+      bed_number_reassigned: Number(rj?.progress?.bed_number_reassigned ?? 0),
     },
     progress: { ...(rj?.progress ?? {}), step: success ? "concluído" : "falhou", percent: 100 },
   }).eq("id", restoreId);
