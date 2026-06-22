@@ -124,17 +124,18 @@ export default function BackupRestorePage() {
   async function handleCreateBackup() {
     setCreating(true);
     try {
-      toast.info("Iniciando backup… isso pode levar alguns minutos.");
+      toast.info("Backup iniciado em segundo plano — acompanhe abaixo.");
       const { data, error } = await supabase.functions.invoke("backup-create", {
         body: { reason: reason || "Backup manual", include_audit_logs: includeAudit },
       });
       if (error) throw error;
-      toast.success(`Backup concluído (${formatBytes((data as any)?.file_size_bytes ?? 0)})`);
+      const id = (data as any)?.backup_id;
+      if (id) toast.success(`Job criado: ${String(id).slice(0, 8)}…`);
       setReason("");
       await loadJobs(); await loadAudit();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error("Falha ao gerar backup: " + msg);
+      toast.error("Falha ao iniciar backup: " + msg);
       await loadJobs(); await loadAudit();
     } finally {
       setCreating(false);
@@ -142,16 +143,38 @@ export default function BackupRestorePage() {
   }
 
   async function handleDownload(job: BackupJob) {
-    if (!job.storage_path) { toast.error("Arquivo indisponível"); return; }
-    const { data, error } = await supabase.storage.from("db-backups").createSignedUrl(job.storage_path, 60 * 5);
-    if (error || !data?.signedUrl) { toast.error("Falha ao gerar link: " + (error?.message ?? "desconhecido")); return; }
-    // Registra download na auditoria (best-effort)
-    await supabase.from("backup_audit").insert({
-      action: "BACKUP_DOWNLOAD", backup_job_id: job.id,
-      result: "success", payload: { storage_path: job.storage_path } as any,
-    });
-    window.open(data.signedUrl, "_blank");
+    try {
+      toast.info("Montando ZIP… pode levar alguns segundos.");
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) { toast.error("Sessão expirada"); return; }
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/backup-download`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ backup_id: job.id }),
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || `HTTP ${res.status}`);
+      }
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `backup-${job.id}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+    } catch (e) {
+      toast.error("Falha ao baixar: " + (e instanceof Error ? e.message : String(e)));
+    }
   }
+
 
   const runningJob = jobs.find((j) => j.status === "running" || j.status === "pending");
 

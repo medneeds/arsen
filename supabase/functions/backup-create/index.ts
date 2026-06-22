@@ -1,15 +1,13 @@
 // backup-create — Admin / Super Admin only.
 // Cria um snapshot completo (dados públicos + auth users + profiles + roles + settings)
-// e empacota em um ZIP único, salvo no bucket `db-backups`.
+// como múltiplos arquivos no bucket `db-backups`, sob o prefixo `${jobId}/`.
+// Nenhum ZIP é montado em memória — isso é feito sob demanda pela função `backup-download`.
 //
 // Body: { reason?: string, include_audit_logs?: boolean }
-// Retorna: { backup_id, status, file_size_bytes, table_counts, auth_user_count }
-//
-// NOTA: backup síncrono. Para datasets muito grandes (>100MB ou >300s),
-// considere migrar para fluxo assíncrono em chunks (ver edge function db-backup).
+// Retorna: { backup_id, status: "running" } (202) — o trabalho roda em background.
+// Cliente acompanha por polling em backup_jobs.
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
-import JSZip from "npm:jszip@3.10.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,10 +21,9 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const BUCKET = "db-backups";
-const BACKUP_VERSION = "1.0";
+const BACKUP_VERSION = "2.0"; // v2: arquivos separados, sem ZIP em memória
 const PAGE_SIZE = 1000;
 
-// Tabelas tratadas em seções dedicadas (não vão em data/)
 const SPECIAL_TABLES = new Set([
   "profiles", "user_roles", "user_departments", "user_hospital_assignments",
   "institution_branding", "hospital_units", "states", "system_maintenance_mode",
@@ -50,20 +47,18 @@ Deno.serve(async (req) => {
   const userId = udata.user.id;
   const userEmail = udata.user.email ?? null;
 
-  // Autorização: admin OU super_admin
   const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userId);
   const allowed = (roles ?? []).some((r: { role: string }) => r.role === "admin" || r.role === "super_admin");
   if (!allowed) return json({ error: "Acesso restrito a administradores" }, 403);
 
   let body: { reason?: string; include_audit_logs?: boolean } = {};
-  try { body = await req.json(); } catch { /* body opcional */ }
+  try { body = await req.json(); } catch { /* opcional */ }
   const reason = body.reason ?? "Backup manual";
   const includeAudit = !!body.include_audit_logs;
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? null;
   const userAgent = req.headers.get("user-agent") ?? null;
 
-  // Cria backup_jobs
   const startedAt = Date.now();
   const { data: jobRow, error: jobErr } = await admin.from("backup_jobs").insert({
     created_by: userId,
@@ -79,8 +74,6 @@ Deno.serve(async (req) => {
 
   await audit(admin, userId, userEmail, "BACKUP_CREATE_START", { backup_job_id: jobId, payload: { reason, include_audit_logs: includeAudit }, ip, userAgent });
 
-  // Roda o trabalho pesado em background — evita WORKER_RESOURCE_LIMIT / timeout do request HTTP.
-  // O cliente acompanha via polling em backup_jobs.
   // deno-lint-ignore no-explicit-any
   const waitUntil = (globalThis as any).EdgeRuntime?.waitUntil?.bind((globalThis as any).EdgeRuntime);
   const work = runBackup({ admin, jobId, userId, userEmail, reason, includeAudit, startedAt, ip, userAgent })
@@ -93,7 +86,7 @@ Deno.serve(async (req) => {
       }).eq("id", jobId);
       await audit(admin, userId, userEmail, "BACKUP_CREATE_FAIL", { backup_job_id: jobId, result: "fail", error: msg, ip, userAgent });
     });
-  if (waitUntil) waitUntil(work); // melhor esforço; sem waitUntil cai no fluxo normal do isolate
+  if (waitUntil) waitUntil(work);
 
   return json({ backup_id: jobId, status: "running" }, 202);
 });
@@ -104,8 +97,18 @@ async function runBackup(args: {
   ip: string | null; userAgent: string | null;
 }) {
   const { admin, jobId, userId, userEmail, reason, includeAudit, startedAt, ip, userAgent } = args;
-  const zip = new JSZip();
   const tableCounts: Record<string, number> = {};
+  const parts: { path: string; bytes: number }[] = [];
+  let totalBytes = 0;
+
+  const putFile = async (relPath: string, content: string, contentType = "application/json") => {
+    const bytes = new TextEncoder().encode(content);
+    const fullPath = `${jobId}/${relPath}`;
+    const { error } = await admin.storage.from(BUCKET).upload(fullPath, bytes, { contentType, upsert: true });
+    if (error) throw new Error(`upload ${relPath}: ${error.message}`);
+    parts.push({ path: relPath, bytes: bytes.byteLength });
+    totalBytes += bytes.byteLength;
+  };
 
   await updateProgress(admin, jobId, "listando tabelas", 5);
   const tablesRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_tables_with_pk`, {
@@ -125,40 +128,43 @@ async function runBackup(args: {
     .filter((n) => includeAudit || n !== "audit_logs")
     .sort();
 
+  // Dados — uma tabela por arquivo, streaming por páginas (sem acumular tudo na RAM)
   let idx = 0;
   for (const table of dataTables) {
     idx++;
-    const pct = 5 + Math.floor((idx / dataTables.length) * 60);
+    const pct = 5 + Math.floor((idx / dataTables.length) * 65);
     await updateProgress(admin, jobId, `tabela: ${table}`, pct, idx, dataTables.length);
-    const rows = await dumpTable(admin, table);
-    tableCounts[table] = rows.length;
-    const jsonl = rows.map((r) => JSON.stringify(r)).join("\n");
-    zip.file(`data/${table}.jsonl`, jsonl);
+    const { content, count } = await dumpTableToJsonl(admin, table);
+    tableCounts[table] = count;
+    await putFile(`data/${table}.jsonl`, content, "application/x-ndjson");
   }
 
-  await updateProgress(admin, jobId, "perfis e papéis", 70);
-  const profiles = await dumpTable(admin, "profiles");
+  // Perfis e papéis
+  await updateProgress(admin, jobId, "perfis e papéis", 75);
+  const profiles = await dumpTableArray(admin, "profiles");
   tableCounts["profiles"] = profiles.length;
-  zip.file("profiles.json", JSON.stringify(profiles));
+  await putFile("profiles.json", JSON.stringify(profiles));
 
-  const roles_rows = await dumpTable(admin, "user_roles");
-  const depts = await dumpTable(admin, "user_departments");
-  const hosps = await dumpTable(admin, "user_hospital_assignments");
+  const roles_rows = await dumpTableArray(admin, "user_roles");
+  const depts = await dumpTableArray(admin, "user_departments");
+  const hosps = await dumpTableArray(admin, "user_hospital_assignments");
   tableCounts["user_roles"] = roles_rows.length;
   tableCounts["user_departments"] = depts.length;
   tableCounts["user_hospital_assignments"] = hosps.length;
-  zip.file("roles.json", JSON.stringify({ user_roles: roles_rows, user_departments: depts, user_hospital_assignments: hosps }));
+  await putFile("roles.json", JSON.stringify({ user_roles: roles_rows, user_departments: depts, user_hospital_assignments: hosps }));
 
-  await updateProgress(admin, jobId, "configurações", 75);
+  // Configurações
+  await updateProgress(admin, jobId, "configurações", 80);
   const settings: Record<string, unknown> = {};
   for (const t of ["institution_branding", "hospital_units", "states", "system_maintenance_mode"]) {
-    const rows = await dumpTable(admin, t);
+    const rows = await dumpTableArray(admin, t);
     settings[t] = rows;
     tableCounts[t] = rows.length;
   }
-  zip.file("settings.json", JSON.stringify(settings));
+  await putFile("settings.json", JSON.stringify(settings));
 
-  await updateProgress(admin, jobId, "usuários auth", 80);
+  // Auth users
+  await updateProgress(admin, jobId, "usuários auth", 85);
   const authUsers: unknown[] = [];
   let page = 1;
   while (true) {
@@ -179,9 +185,10 @@ async function runBackup(args: {
     page++;
     if (page > 200) break;
   }
-  zip.file("auth/users.json", JSON.stringify(authUsers));
+  await putFile("auth/users.json", JSON.stringify(authUsers));
 
-  await updateProgress(admin, jobId, "gerando manifesto", 85);
+  // Manifest
+  await updateProgress(admin, jobId, "gerando manifesto", 95);
   const totalRecords = Object.values(tableCounts).reduce((a, b) => a + b, 0);
   const manifest = {
     backup_version: BACKUP_VERSION,
@@ -194,41 +201,25 @@ async function runBackup(args: {
     auth_users: authUsers.length,
     include_audit_logs: includeAudit,
     reason,
+    parts,
+    total_bytes: totalBytes,
     notes: [
+      "Backup v2.0 — arquivos separados. Use backup-download para gerar um ZIP único.",
       "DDL (schema) NÃO está incluso — a instância destino deve ter as mesmas migrations aplicadas.",
       "Hashes de senha NÃO são exportados; usuários restaurados recebem email de reset.",
       "MFA e identidades externas (Google/Apple) não são restauráveis via Admin API.",
     ],
   };
-  zip.file("manifest.json", JSON.stringify(manifest, null, 2));
-
-  // Gera o ZIP UMA ÚNICA vez (compressão nível 3 — mais leve em CPU que 6).
-  await updateProgress(admin, jobId, "compactando", 90);
-  const finalBytes = await zip.generateAsync({
-    type: "uint8array",
-    compression: "DEFLATE",
-    compressionOptions: { level: 3 },
-  });
-  const checksum = await sha256Hex(finalBytes);
-
-  await updateProgress(admin, jobId, "salvando arquivo", 95);
-  const storagePath = `${jobId}/backup.zip`;
-  const { error: upErr } = await admin.storage.from(BUCKET).upload(storagePath, finalBytes, {
-    contentType: "application/zip", upsert: true,
-  });
-  if (upErr) throw new Error(`storage upload: ${upErr.message}`);
-  // checksum como sidecar (evita re-zippar)
-  await admin.storage.from(BUCKET).upload(`${jobId}/checksum.sha256`, new TextEncoder().encode(`${checksum}  backup.zip\n`), {
-    contentType: "text/plain", upsert: true,
-  });
+  const manifestStr = JSON.stringify(manifest, null, 2);
+  const manifestBytes = new TextEncoder().encode(manifestStr);
+  await admin.storage.from(BUCKET).upload(`${jobId}/manifest.json`, manifestBytes, { contentType: "application/json", upsert: true });
 
   const finishedAt = Date.now();
   await admin.from("backup_jobs").update({
     status: "completed",
-    storage_path: storagePath,
-    file_size_bytes: finalBytes.byteLength,
+    storage_path: `${jobId}/manifest.json`, // aponta pro manifest; download monta o ZIP
+    file_size_bytes: totalBytes + manifestBytes.byteLength,
     manifest,
-    checksum_sha256: checksum,
     table_counts: tableCounts,
     auth_user_count: authUsers.length,
     finished_at: new Date(finishedAt).toISOString(),
@@ -238,12 +229,31 @@ async function runBackup(args: {
 
   await audit(admin, userId, userEmail, "BACKUP_CREATE_DONE", {
     backup_job_id: jobId, result: "success", duration_ms: finishedAt - startedAt,
-    payload: { size_bytes: finalBytes.byteLength, records: totalRecords, auth_users: authUsers.length },
+    payload: { total_bytes: totalBytes, records: totalRecords, auth_users: authUsers.length, parts: parts.length },
     ip, userAgent,
   });
 }
 
-async function dumpTable(admin: any, table: string): Promise<any[]> {
+// Dump streaming → JSONL string (uma linha por registro)
+async function dumpTableToJsonl(admin: any, table: string): Promise<{ content: string; count: number }> {
+  const chunks: string[] = [];
+  let from = 0;
+  let count = 0;
+  while (true) {
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await admin.from(table).select("*").range(from, to);
+    if (error) throw new Error(`dump ${table}: ${error.message}`);
+    if (!data || data.length === 0) break;
+    for (const row of data) chunks.push(JSON.stringify(row));
+    count += data.length;
+    if (data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+    if (from > 1_000_000) break;
+  }
+  return { content: chunks.join("\n"), count };
+}
+
+async function dumpTableArray(admin: any, table: string): Promise<any[]> {
   const out: any[] = [];
   let from = 0;
   while (true) {
@@ -254,7 +264,7 @@ async function dumpTable(admin: any, table: string): Promise<any[]> {
     out.push(...data);
     if (data.length < PAGE_SIZE) break;
     from += PAGE_SIZE;
-    if (from > 1_000_000) break; // safety
+    if (from > 1_000_000) break;
   }
   return out;
 }
@@ -263,11 +273,6 @@ async function updateProgress(admin: any, jobId: string, step: string, percent: 
   await admin.from("backup_jobs").update({
     progress: { step, percent, current: current ?? null, total: total ?? null },
   }).eq("id", jobId);
-}
-
-async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const buf = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 async function audit(admin: any, userId: string, email: string | null, action: string, extra: Record<string, unknown>) {
