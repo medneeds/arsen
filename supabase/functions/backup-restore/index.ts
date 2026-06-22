@@ -521,14 +521,14 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
   }
 
   // Merge catalog_conflicts_by_table
-  const prevCatalog: Record<string, { matched_existing: number; inserted: number; skipped_updates: number }> =
+  const prevCatalog: Record<string, { matched_existing: number; inserted: number; overwritten: number }> =
     rj.progress?.catalog_conflicts_by_table ?? {};
-  if (catalogStats.matched_existing || catalogStats.inserted || catalogStats.skipped_updates) {
-    const c = prevCatalog[table] ?? { matched_existing: 0, inserted: 0, skipped_updates: 0 };
+  if (catalogStats.matched_existing || catalogStats.inserted || catalogStats.overwritten) {
+    const c = prevCatalog[table] ?? { matched_existing: 0, inserted: 0, overwritten: 0 };
     prevCatalog[table] = {
       matched_existing: c.matched_existing + catalogStats.matched_existing,
       inserted: c.inserted + catalogStats.inserted,
-      skipped_updates: c.skipped_updates + catalogStats.skipped_updates,
+      overwritten: (c.overwritten ?? 0) + catalogStats.overwritten,
     };
   }
 
@@ -537,6 +537,9 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
   for (const [t, m] of Object.entries(idMapDelta)) {
     mergedIdMaps[t] = { ...(mergedIdMaps[t] ?? {}), ...m };
   }
+
+  // Merge bed_number_reassigned (acumulado entre steps de patients)
+  const prevBedReassigned: number = Number(rj.progress?.bed_number_reassigned ?? 0);
 
   const newProgress = {
     ...(rj.progress ?? {}),
@@ -553,6 +556,7 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
     dropped_columns_by_table: prevDropped,
     catalog_conflicts_by_table: prevCatalog,
     id_maps: mergedIdMaps,
+    bed_number_reassigned: prevBedReassigned + bedNumberReassigned,
   };
   await admin.from("restore_jobs").update({ progress: newProgress }).eq("id", restoreId);
 
