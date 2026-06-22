@@ -268,10 +268,10 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             onClick={() => setMobileSheetOpen(true)}
             aria-label="Abrir painel do paciente"
             className={cn(
-              "group fixed right-0 top-1/2 -translate-y-1/2 z-50 w-9 print:hidden",
+              "group fixed right-2 top-24 z-50 w-9 print:hidden rounded-xl border-r",
               "h-[20dvh] min-h-[140px]",
               "flex flex-col items-center justify-center gap-3 py-4",
-              "rounded-l-xl border border-r-0 border-[hsl(217,30%,75%)]/50 dark:border-[hsl(217,30%,24%)]/50",
+              "rounded-xl border border-[hsl(217,30%,75%)]/50 dark:border-[hsl(217,30%,24%)]/50",
               "bg-gradient-to-b from-[#0a1628]/5 via-[#0f2847]/10 to-[#1a3a5c]/5",
               "dark:from-[#0a1628]/40 dark:via-[#0f2847]/50 dark:to-[#1a3a5c]/40",
               "backdrop-blur-sm shadow-[-2px_0_10px_rgba(10,22,56,0.18)]",
