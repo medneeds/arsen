@@ -158,6 +158,41 @@ export default function BackupRestorePage() {
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState<{ percent: number; step: string } | null>(null);
 
+  // ── Maintenance state
+  const [maintenanceActive, setMaintenanceActive] = useState(false);
+  const [forceUnlocking, setForceUnlocking] = useState(false);
+  const [forceUnlockOpen, setForceUnlockOpen] = useState(false);
+  const [forceUnlockReason, setForceUnlockReason] = useState("");
+
+  async function loadMaintenance() {
+    const { data } = await supabase
+      .from("system_maintenance_mode")
+      .select("is_active")
+      .eq("id", 1)
+      .maybeSingle();
+    setMaintenanceActive(!!(data as any)?.is_active);
+  }
+
+  async function handleForceUnlock() {
+    setForceUnlocking(true);
+    try {
+      const { error } = await supabase.functions.invoke("backup-restore", {
+        body: { action: "force_unlock", reason: forceUnlockReason.trim() || undefined },
+      });
+      if (error) throw new Error(await extractEdgeError(error, "backup-restore:force_unlock"));
+      toast.success("Modo manutenção desativado.");
+      setForceUnlockOpen(false);
+      setForceUnlockReason("");
+      await Promise.all([loadMaintenance(), loadRestoreJobs(), loadAudit()]);
+    } catch (e) {
+      toast.error("Falha ao destravar: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setForceUnlocking(false);
+    }
+  }
+
+
+
 
   async function loadJobs() {
     const { data, error } = await supabase
