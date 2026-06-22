@@ -159,3 +159,4 @@
 
 
 - [Contextual Help Tour](mem://features/contextual-help-tour) — Botão "?" bottom-5 left-5 com overlay focused-tour escurecido em /prescricao, /evolucao e /requisicoes; conteúdo didático em src/lib/helpTours.ts, camada puramente de UI sem tocar dados/hooks/RLS
+- [Backup Restore Module](mem://features/backup-restore-module) — Sprint 1: /admin/backup-restore (admin+super_admin), edge backup-create gera ZIP único (manifest+data/*.jsonl+profiles+roles+settings+auth+sha256) no bucket db-backups; tabelas backup_jobs/restore_jobs/backup_audit; DDL e hashes de senha NÃO migram (limitações documentadas)
