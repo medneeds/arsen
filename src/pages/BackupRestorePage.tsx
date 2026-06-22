@@ -319,17 +319,21 @@ export default function BackupRestorePage() {
         const key = prefix + p.path;
         const bytes = entries[key];
         if (!bytes) throw new Error(`part ausente no ZIP: ${p.path}`);
-        // base64 encode
-        let bin = "";
-        const chunk = 0x8000;
-        for (let i = 0; i < bytes.length; i += chunk) {
-          bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)) as any);
-        }
-        const b64 = btoa(bin);
-        const { error: pErr } = await supabase.functions.invoke("backup-import", {
-          body: { action: "part", backup_id: newBackupId, rel_path: p.path, content_b64: b64 },
+        const { data: uploadRes, error: pErr } = await supabase.functions.invoke("backup-import", {
+          body: { action: "part", backup_id: newBackupId, rel_path: p.path },
         });
         if (pErr) throw pErr;
+        const uploadPath = (uploadRes as any)?.path;
+        const uploadToken = (uploadRes as any)?.token;
+        if (!uploadPath || !uploadToken) throw new Error(`URL de upload não retornada para ${p.path}`);
+
+        const { error: upErr } = await supabase.storage
+          .from("db-backups")
+          .uploadToSignedUrl(uploadPath, uploadToken, bytes, {
+            contentType: (uploadRes as any)?.content_type ?? "application/octet-stream",
+            upsert: true,
+          });
+        if (upErr) throw new Error(`upload ${p.path}: ${upErr.message}`);
         done++;
         setImportProgress({
           percent: 10 + Math.floor((done / total) * 85),
