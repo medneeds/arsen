@@ -48,6 +48,18 @@ const FK_TRANSLATIONS: Record<string, string> = {
   medication_id: "medication_catalog",
 };
 
+// FKs cujo id é PRESERVADO entre backup e destino (não-catálogo).
+// Antes do upsert filtramos linhas órfãs (pai inexistente no destino) para
+// não estourar o slice inteiro por FK violation. Auto-FKs (parent_id em
+// prescriptions) ficam de fora — tratadas via two-pass.
+const FK_PARENTS: Record<string, string> = {
+  patient_id: "patients",
+  registry_id: "patient_registry",
+  patient_registry_id: "patient_registry",
+  encounter_id: "patient_encounters",
+  medical_record_id: "medical_records",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Método não permitido" }, 405);
@@ -293,6 +305,12 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
   let catalogStats = { matched_existing: 0, inserted: 0, overwritten: 0 };
   let bedNumberReassigned = 0;
   let sliceDedupesDropped = 0;
+  let droppedNoPk = 0;
+  let minUuidRetries = 0;
+  // orphanFkDropped[fkCol] = n (escopado a esta tabela/part; merge depois)
+  const orphanFkDropped: Record<string, number> = {};
+  // parent_id pendings desta part (prescriptions); merge no progress, aplicado em finalize
+  const pendingParentFixups: Record<string, string> = {};
 
   const schema = rj.progress?.schema ?? { cols_by_table: {}, unique_by_table: {} };
   const idMaps: Record<string, Record<string, string>> = rj.progress?.id_maps ?? {};
@@ -459,28 +477,32 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
           }
         }
       } else {
-        // Não-catálogo: filtro + tradução de FK + dedupe por PK + upsert em batch.
+        // Não-catálogo: filtro + tradução de FK + dedupe por PK + filtro de FK órfã + upsert.
         const onConflict = pk.join(",");
         const pkCol = pk[0] ?? "id";
         let allRows = rows.map((r) => translateRow(cleanRow(r as Record<string, unknown>)));
 
-        // Dedupe por PK (last-wins): blinda contra min(uuid) do PostgREST quando o payload
-        // tem duplicatas (típico em prescriptions por parent_id/versionamento).
+        // Drop linhas sem PK válido (id null/""): impossíveis em upsert por id, e
+        // colapsam entre si no PostgREST disparando min(uuid).
+        const beforeNoPk = allRows.length;
+        allRows = allRows.filter((r) => pk.every((c) => {
+          const v = (r as any)[c];
+          return v != null && v !== "";
+        }));
+        droppedNoPk += beforeNoPk - allRows.length;
+
+        // Dedupe por PK (last-wins): blinda contra min(uuid) do PostgREST.
         const beforePkDedupe = allRows.length;
         allRows = dedupeBy(allRows, (r) => pk.map((c) => String((r as any)[c])).join("::"));
         sliceDedupesDropped += beforePkDedupe - allRows.length;
 
-        // patients: libera bed_number ocupado no destino por outros ids (backup vence)
-        // Roda UMA VEZ por arquivo, sobre o conjunto completo de beds do backup.
+        // patients: libera bed_number ocupado no destino por outros ids (backup vence).
         if (table === "patients") {
-          // Dedupe extra por bed_number (last-wins) para evitar duas linhas do backup
-          // brigando pelo mesmo leito dentro do mesmo batch.
           const beds = Array.from(new Set(
             allRows.map((r) => (r as any).bed_number).filter((v) => v != null && v !== "")
           ));
           const backupIds = new Set(allRows.map((r) => String((r as any)[pkCol])).filter((v) => v != null));
           if (beds.length > 0) {
-            // Processa em chunks para não estourar URL length em .in()
             const CHUNK = 500;
             for (let i = 0; i < beds.length; i += CHUNK) {
               const bedChunk = beds.slice(i, i + CHUNK);
@@ -505,14 +527,9 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
                 if (errorSamples.length < 3) errorSamples.push(`patients bed_number release: ${updErr.message}`);
               } else {
                 bedNumberReassigned += count ?? toFree.length;
-                if ((count ?? 0) === 0 && toFree.length > 0 && errorSamples.length < 3) {
-                  errorSamples.push(`patients bed_number release: 0 rows updated apesar de ${toFree.length} conflitos`);
-                }
               }
             }
           }
-          // Dedupe por bed_number dentro do payload do backup (last-wins).
-          // Preserva linhas sem bed_number (NULL) sem colapsá-las.
           const beforeBedDedupe = allRows.length;
           const withBed = allRows.filter((r) => (r as any).bed_number != null && (r as any).bed_number !== "");
           const withoutBed = allRows.filter((r) => (r as any).bed_number == null || (r as any).bed_number === "");
@@ -521,12 +538,85 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
           sliceDedupesDropped += beforeBedDedupe - allRows.length;
         }
 
+        // ── Filtro de FK órfã: drop linhas cujo pai não existe no destino ──
+        const allowedCols = new Set<string>(meta?.allowed ?? []);
+        const fkColsApplicable = Object.entries(FK_PARENTS).filter(
+          ([col]) => (allowedCols.size === 0 || allowedCols.has(col)) &&
+                     allRows.some((r) => (r as any)[col] != null && (r as any)[col] !== "")
+        );
+        for (const [fkCol, parentTable] of fkColsApplicable) {
+          if (parentTable === table) continue; // segurança contra auto-FK
+          const vals = Array.from(new Set(
+            allRows.map((r) => (r as any)[fkCol]).filter((v) => v != null && v !== "")
+          ));
+          if (vals.length === 0) continue;
+          const existing = new Set<string>();
+          const CHUNK = 500;
+          let lookupOk = true;
+          for (let i = 0; i < vals.length; i += CHUNK) {
+            const chunk = vals.slice(i, i + CHUNK);
+            const { data, error: selErr } = await admin
+              .from(parentTable)
+              .select("id")
+              .in("id", chunk);
+            if (selErr) {
+              lookupOk = false;
+              if (errorSamples.length < 3) errorSamples.push(`FK lookup ${table}.${fkCol}→${parentTable}: ${selErr.message}`);
+              break;
+            }
+            for (const row of (data ?? [])) existing.add(String((row as any).id));
+          }
+          if (!lookupOk) continue;
+          const before = allRows.length;
+          allRows = allRows.filter((r) => {
+            const v = (r as any)[fkCol];
+            if (v == null || v === "") return true;
+            return existing.has(String(v));
+          });
+          const dropped = before - allRows.length;
+          if (dropped > 0) {
+            orphanFkDropped[fkCol] = (orphanFkDropped[fkCol] ?? 0) + dropped;
+            if (errorSamples.length < 3) {
+              errorSamples.push(`FK órfã ${table}.${fkCol}→${parentTable}: ${dropped} linha(s) dropada(s)`);
+            }
+          }
+        }
+
+        // ── Two-pass parent_id para prescriptions (auto-FK) ──
+        // Pass A: envia parent_id=null e guarda mapa para reaplicar em finalize.
+        if (table === "prescriptions" && allowedCols.has("parent_id")) {
+          for (const r of allRows) {
+            const id = (r as any).id;
+            const parent = (r as any).parent_id;
+            if (id != null && parent != null && parent !== "" && String(parent) !== String(id)) {
+              pendingParentFixups[String(id)] = String(parent);
+            }
+            (r as any).parent_id = null;
+          }
+        }
+
+        // Upsert com fallback linha-a-linha em caso de min(uuid).
         for (let i = 0; i < allRows.length; i += BATCH) {
           const slice = allRows.slice(i, i + BATCH);
           const { error } = await admin.from(table).upsert(slice, { onConflict });
           if (error) {
-            errors += slice.length;
-            if (errorSamples.length < 3) errorSamples.push(error.message);
+            const msg = error.message ?? String(error);
+            if (/min\(uuid\)/i.test(msg)) {
+              // Fallback: refaz linha-a-linha. Lento, mas isola e contabiliza.
+              minUuidRetries++;
+              for (const row of slice) {
+                const { error: e1 } = await admin.from(table).upsert([row], { onConflict });
+                if (e1) {
+                  errors++;
+                  if (errorSamples.length < 3) errorSamples.push(`row-fallback ${table}: ${e1.message}`);
+                } else {
+                  processed++;
+                }
+              }
+            } else {
+              errors += slice.length;
+              if (errorSamples.length < 3) errorSamples.push(msg);
+            }
           } else {
             processed += slice.length;
           }
@@ -583,6 +673,22 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
   // Merge bed_number_reassigned (acumulado entre steps de patients)
   const prevBedReassigned: number = Number(rj.progress?.bed_number_reassigned ?? 0);
 
+  // Merge orphan_fk_dropped_by_table[table][col] = n
+  const prevOrphanFk: Record<string, Record<string, number>> =
+    rj.progress?.orphan_fk_dropped_by_table ?? {};
+  if (Object.keys(orphanFkDropped).length > 0) {
+    const t = { ...(prevOrphanFk[table] ?? {}) };
+    for (const [c, n] of Object.entries(orphanFkDropped)) t[c] = (t[c] ?? 0) + n;
+    prevOrphanFk[table] = t;
+  }
+
+  // Merge pending_parent_id_fixups[table] = { id: parent_id, ... }
+  const prevPendingFix: Record<string, Record<string, string>> =
+    rj.progress?.pending_parent_id_fixups ?? {};
+  if (Object.keys(pendingParentFixups).length > 0) {
+    prevPendingFix[table] = { ...(prevPendingFix[table] ?? {}), ...pendingParentFixups };
+  }
+
   const newProgress = {
     ...(rj.progress ?? {}),
     step: `${table} (${doneParts}/${totalParts})`,
@@ -600,6 +706,10 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
     id_maps: mergedIdMaps,
     bed_number_reassigned: prevBedReassigned + bedNumberReassigned,
     slice_dedupes_dropped: Number(rj.progress?.slice_dedupes_dropped ?? 0) + sliceDedupesDropped,
+    dropped_no_pk: Number(rj.progress?.dropped_no_pk ?? 0) + droppedNoPk,
+    min_uuid_retries: Number(rj.progress?.min_uuid_retries ?? 0) + minUuidRetries,
+    orphan_fk_dropped_by_table: prevOrphanFk,
+    pending_parent_id_fixups: prevPendingFix,
   };
   await admin.from("restore_jobs").update({ progress: newProgress }).eq("id", restoreId);
 
@@ -624,6 +734,32 @@ async function handleFinalize(admin: any, body: any, userId: string, userEmail: 
     idMapCounts[t] = Object.keys(m as Record<string, string>).length;
   }
 
+  // ── Pass B: reaplicar parent_id em prescriptions (auto-FK) ──
+  let parentIdRelinked = 0;
+  let parentIdDropped = 0;
+  const pendingFix: Record<string, Record<string, string>> =
+    rj?.progress?.pending_parent_id_fixups ?? {};
+  if (success && !rj?.dry_run) {
+    for (const [tbl, map] of Object.entries(pendingFix)) {
+      const entries = Object.entries(map ?? {});
+      if (entries.length === 0) continue;
+      const parentIds = Array.from(new Set(entries.map(([, p]) => p)));
+      const existing = new Set<string>();
+      const CHUNK = 500;
+      for (let i = 0; i < parentIds.length; i += CHUNK) {
+        const chunk = parentIds.slice(i, i + CHUNK);
+        const { data } = await admin.from(tbl).select("id").in("id", chunk);
+        for (const r of (data ?? [])) existing.add(String((r as any).id));
+      }
+      // Atualiza em lotes pequenos (uma chamada por linha — simples e seguro)
+      for (const [childId, parentId] of entries) {
+        if (!existing.has(String(parentId))) { parentIdDropped++; continue; }
+        const { error: uErr } = await admin.from(tbl).update({ parent_id: parentId }).eq("id", childId);
+        if (uErr) parentIdDropped++; else parentIdRelinked++;
+      }
+    }
+  }
+
   const finishedAt = new Date();
   const startedAtMs = rj?.started_at ? new Date(rj.started_at).getTime() : finishedAt.getTime();
   await admin.from("restore_jobs").update({
@@ -642,6 +778,11 @@ async function handleFinalize(admin: any, body: any, userId: string, userEmail: 
       id_map_counts: idMapCounts,
       bed_number_reassigned: Number(rj?.progress?.bed_number_reassigned ?? 0),
       slice_dedupes_dropped: Number(rj?.progress?.slice_dedupes_dropped ?? 0),
+      dropped_no_pk: Number(rj?.progress?.dropped_no_pk ?? 0),
+      min_uuid_retries: Number(rj?.progress?.min_uuid_retries ?? 0),
+      orphan_fk_dropped_by_table: rj?.progress?.orphan_fk_dropped_by_table ?? {},
+      parent_id_relinked: parentIdRelinked,
+      parent_id_dropped: parentIdDropped,
     },
     progress: { ...(rj?.progress ?? {}), step: success ? "concluído" : "falhou", percent: 100 },
   }).eq("id", restoreId);
