@@ -253,7 +253,7 @@ export default function BackupRestorePage() {
       });
       void strToU8; // marca uso para evitar tree-shake remover import
 
-      const blob = new Blob([zipped], { type: "application/zip" });
+      const blob = new Blob([zipped as BlobPart], { type: "application/zip" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `backup-${job.id}.zip`;
