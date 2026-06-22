@@ -236,8 +236,96 @@ export default function BackupRestorePage() {
     }
   }
 
+  function openRestoreDialog(job: BackupJob) {
+    setRestoreTarget(job);
+    setRestoreStep(1);
+    setRestoreMode("full");
+    setRestoreDryRun(true);
+    setRestoreTables(new Set(Object.keys(job.table_counts ?? {})));
+    setRestoreReason("");
+    setRestorePassword("");
+    setRestoreConfirm("");
+    setRestoreProgress(null);
+    setRestoreOpen(true);
+  }
+
+  async function runRestore() {
+    if (!restoreTarget) return;
+    setRestoreRunning(true);
+    let restoreId: string | null = null;
+    let plan: PlanItem[] = [];
+    try {
+      toast.info(restoreDryRun ? "Iniciando simulação (dry-run)…" : "Iniciando restauração…");
+      const { data: planRes, error: planErr } = await supabase.functions.invoke("backup-restore", {
+        body: {
+          action: "plan",
+          backup_id: restoreTarget.id,
+          mode: restoreMode,
+          tables: restoreMode === "partial" ? Array.from(restoreTables) : undefined,
+          dry_run: restoreDryRun,
+          reason: restoreReason,
+          password: restorePassword,
+        },
+      });
+      if (planErr) throw planErr;
+      restoreId = (planRes as any)?.restore_id;
+      plan = (planRes as any)?.plan ?? [];
+      if (!restoreId) throw new Error("restore_id não retornado");
+      toast.success(`Job criado: ${String(restoreId).slice(0, 8)}…`);
+      await loadRestoreJobs();
+
+      const totalParts = plan.reduce((a, p) => a + p.parts.length, 0) || 1;
+      let doneParts = 0;
+      let processedTotal = 0;
+      let errorsTotal = 0;
+      for (const t of plan) {
+        for (const part of t.parts) {
+          const { data: sd, error: se } = await supabase.functions.invoke("backup-restore", {
+            body: { action: "step", restore_id: restoreId, table: t.table, part_path: part.path },
+          });
+          if (se) throw se;
+          processedTotal += (sd as any)?.rows_processed ?? 0;
+          errorsTotal += (sd as any)?.errors ?? 0;
+          doneParts++;
+          setRestoreProgress({
+            percent: Math.floor((doneParts / totalParts) * 100),
+            step: `${t.table} — ${doneParts}/${totalParts}`,
+            processed: processedTotal,
+            errors: errorsTotal,
+          });
+          await new Promise((r) => setTimeout(r, 30));
+        }
+      }
+
+      await supabase.functions.invoke("backup-restore", {
+        body: { action: "finalize", restore_id: restoreId, success: errorsTotal === 0 },
+      });
+      if (errorsTotal === 0) {
+        toast.success(restoreDryRun ? `Simulação OK: ${processedTotal} linhas validadas.` : `Restauração concluída: ${processedTotal} linhas.`);
+      } else {
+        toast.warning(`Concluído com ${errorsTotal} erros (verifique histórico).`);
+      }
+      setRestoreOpen(false);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error("Falha no restore: " + msg);
+      if (restoreId) {
+        try {
+          await supabase.functions.invoke("backup-restore", {
+            body: { action: "finalize", restore_id: restoreId, success: false, error: msg },
+          });
+        } catch { /* */ }
+      }
+    } finally {
+      setRestoreRunning(false);
+      await loadRestoreJobs();
+      await loadAudit();
+    }
+  }
 
   const runningJob = jobs.find((j) => j.status === "running" || j.status === "pending");
+  const runningRestore = restoreJobs.find((j) => j.status === "running" || j.status === "pending");
+  const canRestore = isSuperAdmin;
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
