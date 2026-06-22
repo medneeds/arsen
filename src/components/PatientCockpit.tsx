@@ -127,6 +127,17 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const [cvcChecklistOpen, setCvcChecklistOpen] = useState(false);
   const isExpanded = variant === "inline" || pinned || hovering;
   const isMobile = useIsMobile();
+  // Cockpit fixa só aparece a partir de lg (≥1024px). Abaixo disso (mobile,
+  // tablets, monitores verticais, janelas reduzidas) usamos FAB + Sheet.
+  const [isBelowLg, setIsBelowLg] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsBelowLg(mql.matches);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, []);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
   // Live patient data — sync sector, bed, allergies, medical responsibility, etc.
