@@ -205,25 +205,55 @@ export default function BackupRestorePage() {
 
   async function handleDownload(job: BackupJob) {
     try {
-      toast.info("Montando ZIP… pode levar alguns segundos.");
-      const { data: sess } = await supabase.auth.getSession();
-      const token = sess.session?.access_token;
-      if (!token) { toast.error("Sessão expirada"); return; }
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/backup-download`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ backup_id: job.id }),
+      toast.info("Listando arquivos do backup…");
+      const { data, error } = await supabase.functions.invoke("backup-download", {
+        body: { backup_id: job.id },
       });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || `HTTP ${res.status}`);
+      if (error) throw error;
+      const files: { rel: string; url: string; bytes: number }[] = (data as any)?.files ?? [];
+      if (files.length === 0) throw new Error("Nenhum arquivo retornado");
+
+      // Baixa cada parte e monta o ZIP no browser via fflate
+      const { zip: makeZip, strToU8 } = await import("fflate");
+      const tree: Record<string, Uint8Array> = {};
+      let done = 0;
+      const total = files.length;
+      const totalBytes = files.reduce((a, f) => a + (f.bytes ?? 0), 0);
+      let downloadedBytes = 0;
+      const toastId = toast.loading(`Baixando ${total} arquivos… 0%`);
+
+      for (const f of files) {
+        const res = await fetch(f.url);
+        if (!res.ok) throw new Error(`HTTP ${res.status} em ${f.rel}`);
+        const buf = new Uint8Array(await res.arrayBuffer());
+        tree[f.rel] = buf;
+        done++;
+        downloadedBytes += buf.byteLength;
+        const pct = totalBytes > 0
+          ? Math.floor((downloadedBytes / totalBytes) * 100)
+          : Math.floor((done / total) * 100);
+        toast.loading(`Baixando ${done}/${total} arquivos · ${pct}%`, { id: toastId });
       }
-      const blob = await res.blob();
+
+      // Reorganiza em estrutura de pastas
+      const structured: any = {};
+      for (const [path, bytes] of Object.entries(tree)) {
+        const parts = path.split("/");
+        let cur = structured;
+        for (let i = 0; i < parts.length - 1; i++) {
+          cur[parts[i]] = cur[parts[i]] ?? {};
+          cur = cur[parts[i]];
+        }
+        cur[parts[parts.length - 1]] = bytes;
+      }
+
+      toast.loading("Compactando ZIP…", { id: toastId });
+      const zipped: Uint8Array = await new Promise((resolve, reject) => {
+        makeZip(structured, { level: 0 }, (err, out) => err ? reject(err) : resolve(out));
+      });
+      void strToU8; // marca uso para evitar tree-shake remover import
+
+      const blob = new Blob([zipped as BlobPart], { type: "application/zip" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `backup-${job.id}.zip`;
@@ -231,6 +261,7 @@ export default function BackupRestorePage() {
       a.click();
       a.remove();
       URL.revokeObjectURL(a.href);
+      toast.success(`Backup baixado (${formatBytes(blob.size)})`, { id: toastId });
     } catch (e) {
       toast.error("Falha ao baixar: " + (e instanceof Error ? e.message : String(e)));
     }
