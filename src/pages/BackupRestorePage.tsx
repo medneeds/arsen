@@ -360,7 +360,7 @@ export default function BackupRestorePage() {
       <Tabs defaultValue="backups">
         <TabsList>
           <TabsTrigger value="backups"><Database className="w-4 h-4 mr-2" />Backups</TabsTrigger>
-          <TabsTrigger value="restore" disabled><RefreshCw className="w-4 h-4 mr-2" />Restaurar (em breve)</TabsTrigger>
+          <TabsTrigger value="restore"><RefreshCw className="w-4 h-4 mr-2" />Restaurar</TabsTrigger>
           <TabsTrigger value="historico"><HistoryIcon className="w-4 h-4 mr-2" />Histórico</TabsTrigger>
         </TabsList>
 
