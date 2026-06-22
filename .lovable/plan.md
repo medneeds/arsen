@@ -1,122 +1,89 @@
-Escopo: `supabase/functions/backup-restore/index.ts` apenas. Sem migration. Regra mantida: backup vence.
+Escopo: `supabase/functions/backup-restore/index.ts` e `src/pages/BackupRestorePage.tsx`. Sem migration. Regra mantida: backup vence.
 
-## Diagnóstico
+## Diagnóstico (causas raiz reais)
 
-### Problema 1 (raiz dominante) — `patient_encounters_patient_id_fkey`
+### ROBUSTEZ 1 — manutenção presa
+O `handlePlan` ativa `system_maintenance_mode` e o `handleFinalize` desativa. Quando um `step` aborta no meio (timeout, erro HTTP no client, navegador fechado, Promise rejection no front), o `finalize` simplesmente nunca é chamado e a flag fica `is_active=true` para sempre. O `try/catch` no `serve()` só roda em exceção da própria função; perda de conexão do client não dispara nada server-side.
 
-**Não é ordem.** Verifiquei o constraint real:
+Correção: criar `forceDeactivateMaintenance(admin)` (UPDATE puro com `is_active=false`, `started_at=null`, `started_by=null`, `reason=null`, `expected_end_at=null`) e chamá-la em **três pontos**:
+1. `try/finally` envolvendo o corpo completo do `serve()` — garante limpeza no fim de qualquer chamada cujo restore esteja `failed/completed` (idempotente: se o restore segue rodando, NÃO derruba).
+2. `handleFinalize` (já existe).
+3. **Nova action `"force_unlock"`** — exposta para o botão admin, exige `super_admin`, escreve em `backup_audit` (`MAINTENANCE_FORCE_OFF`) com `actor_id` e motivo opcional do body, e marca como `failed` qualquer `restore_jobs.status='running'` desse user (campo `error = "force_unlock by admin"`).
 
+Como o `try/finally` decide quando limpar: ler `restore_jobs.status` ANTES de limpar; só limpa se status ∈ `{completed, failed}` OU se a action era `force_unlock`. Para `step`/`plan` em andamento (`status='running'`), não toca. Isso evita que o finally derrube manutenção no meio de um restore válido.
+
+### ROBUSTEZ 2 — botão "Forçar saída do modo manutenção"
+Em `BackupRestorePage.tsx`, adicionar:
+- Indicador visual lendo `system_maintenance_mode.is_active` (já em uso pelo `MaintenanceModeBanner`).
+- Botão **destrutivo** "Forçar saída do modo manutenção" visível só se `isSuperAdmin && maintenanceActive`. Confirma via `AlertDialog` (texto "DESBLOQUEAR"), chama `supabase.functions.invoke("backup-restore", { body: { action: "force_unlock", reason } })`, recarrega lista de jobs e toast de sucesso.
+
+### DADOS 1 — `patient_encounters` falha em `patient_id_fkey`
+Verificado em `pg_constraint`:
 ```
-patient_encounters.patient_id  → patients(id)        ON DELETE CASCADE
-patient_encounters.registry_id → patient_registry(id)
-patient_encounters.medical_record_id → medical_records(id)
-patient_encounters.hospital_unit_id  → hospital_units(id)
+patient_encounters.patient_id → patients(id)           -- preservado
+patient_encounters.registry_id → patient_registry(id)  -- preservado
 ```
+Ordem topológica está correta (`patients` → `patient_encounters`). Patients entrou com 167/0. FK aponta para `patients(id)` literal (sem catálogo, sem remapeamento). **Não é ordem nem alvo de FK.**
 
-E as arestas do `topoOrder` (via `get_public_fk_pairs`):
+Causa real: o filtro de FK órfã EXISTE (linhas 547-583) mas **não está dropando todas as órfãs**. Investigando o select:
 
-```
-patient_registry → patients → patient_encounters
-```
-
-O cliente percorre `for (const t of plan)` em ordem, então quando `patient_encounters` roda, `patients` já entrou (167/0 erros, confirmado). O FK também aponta para `patients(id)` literal — não há remapeamento de id em jogo (patients usa upsert por PK preservando o id do backup).
-
-**Causa real: encounters órfãos no backup.** O backup contém 328 encounters mas só 167 patients. Vários `patient_id` referenciados nas linhas de `patient_encounters` simplesmente não existem na exportação de `patients` (paciente arquivado/deletado na origem, exportação parcial filtrou patients). Como nenhum dos 328 encontra o pai, o slice inteiro estoura — daí `0 processed, 328 errors`.
-
-**Correção:** filtro de integridade referencial pré-upsert, genérico e parametrizado por `FK_TRANSLATIONS` + um novo mapa `FK_PARENTS` (col → tabela pai com PK preservada por id). Antes de cada upsert de tabela filha:
-
-1. Coletar todos os valores não-nulos de cada coluna FK no slice já traduzido/dedupado.
-2. Para cada coluna, fazer um `select pk from <parent> where pk in (...)` em chunks de 500.
-3. Filtrar do slice as linhas cuja FK aponta para id ausente.
-4. Acumular contador `orphan_fk_dropped_by_table[table][col]` e amostra didática.
-
-Esse mesmo mecanismo cobre a cascata: `prescriptions`, `clinical_evolutions`, `exam_requests`, `patient_movements`, `bed_census`, `saps3_assessments`, `discharge_documents`, `medical_records`, `admission_histories`, `internal_transfer_requests`, `prescription_validations`, `medical_record_edit_history`. Cada uma vai dropar suas próprias linhas órfãs em vez de explodir o slice todo. **Estimativa: derruba ~90% dos 12k erros.**
-
-`FK_PARENTS` mínimo a registrar (FKs que já vimos quebrar; outras seguem o caminho normal):
-
-```
-patient_id           → patients
-registry_id          → patient_registry
-patient_registry_id  → patient_registry
-encounter_id         → patient_encounters
-parent_id            → (auto-FK; tratado em Problema 2)
-medical_record_id    → medical_records
+```ts
+admin.from(parentTable).select("id").in("id", chunk) // CHUNK=500
 ```
 
-### Problema 2 — `min(uuid) does not exist` persistente em `prescriptions`
+PostgREST envia esse `in.()` como query string em GET. 500 UUIDs × 38 chars ≈ **19 KB de URL**, acima do default seguro do PostgREST/edge (16 KB típico) — a request retorna 414/silenciosamente trunca em alguns proxies, e o set `existing` fica incompleto. Linhas cujo pai REALMENTE existe ficam fora de `existing` e seriam dropadas (falso negativo); mas pior, em alguns chunks a query falha → `lookupOk=false` → `continue` PULA o filtro para essa coluna, e o slice inteiro vai para upsert sem filtro → 328 erros de FK.
 
-A dedupe por PK eliminou a maioria, mas algum slice ainda dispara. Possíveis raízes residuais que sobreviveram à dedupe atual:
+Correção:
+1. Reduzir `CHUNK` do FK filter para **100** (≈ 3.8 KB de URL, seguro).
+2. Mudar o fallback de erro: se `selErr` ocorrer, **NÃO** pular o filtro — em vez disso, marcar a tabela como "filtro inconclusivo" e dropar **todas** as linhas com FK não-nula naquela coluna (fail-safe pela regra "backup vence só onde há integridade"). Loga em `orphanFkDropped[fkCol]` + sample.
+3. Acrescentar log `console.error` com o erro real do select para diagnóstico.
 
-(a) **Dedupe não normaliza id**: `String(r[pk])` deixa `null/undefined/""` como chaves distintas, então duas linhas órfãs com id ausente passam intactas e o PostgREST agrega.
-(b) **Caso PostgREST**: quando o body de upsert contém o mesmo id em duas linhas com payload diferente E o cliente PostgREST resolve duplicatas internamente via `min()/max()` sobre todas as colunas para "fundir" — em algumas versões inclui colunas UUID. Mesmo após dedupe nosso por PK, pode haver duplicatas vindas de **dois arquivos `part-*` distintos** lidos em uma única chamada — não é o caso aqui (1 part por upsert), mas vale blindar.
-(c) **Auto-FK `parent_id`**: `prescriptions.parent_id → prescriptions.id`. Se um slice tem filho antes do pai (e o pai está em outro part), o `upsert` não erra por isso (FK só dispara no commit). Mas o ramo de filtro de FK do Problema 1, se ingênuo, removeria o filho — temos que **excluir `parent_id` do filtro FK** (auto-referência) e tratar separadamente.
+Bônus: incluir filtro para **`patient_encounters` nos próprios encounters do backup** — se um encounter referencia patient_id que ESTÁ no backup mas foi dedupado em patients (ex.: colisão de bed_number na dedupe), também vira órfão. O filtro genérico já cobre esse caso porque consulta o destino real após o patients ter sido carregado.
 
-**Correção:**
+### DADOS 2 — `min(uuid) does not exist` ainda vivo em prescriptions
+Investigação no caminho atual:
+- Dedupe por PK: feito (linha 496).
+- Drop sem PK: feito (linha 488).
+- Two-pass parent_id: feito (linha 587).
 
-1. **Dedupe robusta**: chave de dedupe deve descartar a linha quando o PK é null/undefined/"". Linhas sem PK são impossíveis em `upsert` por id mesmo — drop e contabiliza em `slice_dedupes_dropped` com nota didática.
-2. **Fallback automático em `min(uuid)`**: se `error.message` contém `min(uuid)`, refazer o slice em **modo individual** (`upsert` linha-a-linha em loop) para isolar e blindar. Lento (≤ batch atual ÷ 500 chamadas) mas só dispara quando necessário. Acumula `min_uuid_retries`.
-3. **Auto-FK `parent_id`**: aplicar two-pass quando `table === "prescriptions"`:
-   - **Pass A**: upsert removendo temporariamente `parent_id` (envia `null`), guardando o mapa `id → parent_id` original em memória.
-   - **Pass B**: após todos os parts de `prescriptions` processados, um `update` em batch reescrevendo `parent_id` (só onde o pai existe — usar filtro FK). O Pass B precisa ocorrer ao FIM da tabela, então marcamos no `restore_jobs.progress.pending_parent_id_fixups[]` cada batch e aplicamos no `handleFinalize` antes de fechar.
-   - Alternativa mais simples se preferir não tocar finalize: aceitar que algumas linhas vão falhar no Pass A se `parent_id` apontar para id ainda não inserido. Não recomendo — quebra os 4322.
+**Causa restante**: PostgREST, ao receber um array de upsert com **shapes diferentes** entre linhas (uma linha tem `parent_id`, outra não tem a chave; uma tem `validated_by`, outra não), normaliza o conjunto de colunas internamente via agregados — para colunas UUID, dispara `min(uuid) does not exist`. Isto é independente da dedupe por PK; basta haver **duas linhas com keys-set distintos** no array enviado.
 
-### Cascata (confirmação)
+Ocorre em prescriptions porque o backup pode conter rascunhos antigos sem campos novos (validated_by, parent_id, etc.) misturados com prescrições novas.
 
-Com FK filter ativo, cada filha drena suas próprias órfãs sem matar o slice. Resolver Problema 1 + 2 derruba:
+Correção: novo helper `normalizeShape(rows)` aplicado **antes de TODO upsert** no ramo não-catálogo:
+1. Calcula `keysUnion = união de Object.keys de todas as rows`.
+2. Para cada row, atribui `null` (não `undefined`) em cada chave de `keysUnion` ausente.
+3. Resultado: array uniforme — PostgREST não precisa agregar e o min(uuid) some.
 
-- `prescriptions` (4322): dropa órfãos por `patient_id`/`encounter_id`/`patient_registry_id`; parent_id via two-pass; min(uuid) via fallback.
-- `clinical_evolutions` (3679), `exam_requests` (2955), demais — dropam órfãos por `patient_id`/`encounter_id` e entram.
+Combinado com o fallback linha-a-linha já existente (que segue ativo como rede de segurança), elimina o erro.
 
-Sobrarão apenas: linhas verdadeiramente órfãs (sem pai disponível mesmo após restore), CHECKs/triggers de domínio (`enforce_*_affinity`), e tabelas com UNIQUE composta ainda não mapeadas.
+Confirmação parent_id auto-FK: tratado em dois passes. Pass A escreve `parent_id=null` (já feito). Pass B em `handleFinalize` valida pai no destino antes de atualizar (já feito). Mantém.
 
-## Mudanças no arquivo
+### Cascata
+Resolver DADOS 1 (filtro FK confiável) destrava:
+- `prescriptions` (4322): perde órfãs `patient_id`/`encounter_id`/`patient_registry_id`; entra o resto.
+- `clinical_evolutions` (3679), `exam_requests` (2955), `patient_movements`, `bed_census`, `saps3_assessments`, `discharge_documents`, `medical_records`, `admission_histories`, `internal_transfer_requests`, `prescription_validations`, `medical_record_edit_history`: idem.
 
-`supabase/functions/backup-restore/index.ts`:
+Estimativa: derruba ~90% dos 12k. Sobra: órfãs verdadeiras, regras de afinidade (triggers `enforce_*_affinity`), uniques compostas raras.
 
-1. **Novo mapa `FK_PARENTS`** no topo (paralelo a `FK_TRANSLATIONS`). Lista FKs do tipo "id preservado no destino" (não catálogo). `parent_id` fica de fora e é tratado à parte.
+## Mudanças
 
-2. **Novo helper `dropOrphansByFk(admin, slice, table, fkCol, parentTable, parentPk='id')`**: query em chunks, retorna `{ kept, dropped }`. Contabiliza em `orphanFkDropped[table][fkCol]`.
+**`supabase/functions/backup-restore/index.ts`:**
+1. Helper `forceDeactivateMaintenance(admin)` no topo dos helpers.
+2. Wrap do corpo do `serve()` em `try/finally` que: lê status do restore (se `restore_id` está no body) e só desativa manutenção se status ∈ `{completed, failed}` OU action === `force_unlock`.
+3. Nova action `force_unlock`: super_admin obrigatório, marca restore_jobs.running do user como failed, chama `forceDeactivateMaintenance`, audita `MAINTENANCE_FORCE_OFF`.
+4. FK filter chunk 500 → 100 + fail-safe (drop tudo com FK não-nula em caso de selErr) + console.error.
+5. Helper `normalizeShape(rows)` e aplicação antes de cada `.upsert(slice, ...)` no ramo não-catálogo (inclui o ramo `user_roles`).
 
-3. **No ramo não-catálogo (após dedupe por PK e tradução)**: percorre `FK_PARENTS` aplicáveis ao `table`; aplica `dropOrphansByFk` sequencial; remove órfãs antes do upsert. Adiciona contador `orphan_fk_dropped_by_table` ao progress merge e ao report final.
-
-4. **Dedupe endurecida**: `dedupeBy(allRows, r => { const k = pk.map(c => r[c]).join('::'); return k.includes('null') || k.includes('undefined') || k === '' ? `__drop__${Math.random()}` : k })` — não; melhor: filtrar `allRows.filter(r => pk.every(c => r[c] != null && r[c] !== ""))` ANTES da dedupe, contabilizando `dropped_no_pk`.
-
-5. **Fallback `min(uuid)`**: ao detectar a mensagem no `error.message`, refazer o slice em loop linha-a-linha (`upsert([row], { onConflict })`). Acumula `min_uuid_retries`. Mantém contagem de processados/erros precisa.
-
-6. **Two-pass `parent_id` em prescriptions**:
-   - Pass A: ao iterar `allRows`, separar `originalParentById` (Map). Antes do upsert, `delete row.parent_id` (envia null). Salva o mapa em `rj.progress.pending_parent_id_fixups[<table>][id]=parentId` por part.
-   - Em `handleFinalize`: ler `pending_parent_id_fixups.prescriptions`, filtrar pares cujo `parentId` existe em `prescriptions.id` (chunked select), aplicar `update({ parent_id }).eq('id', ...)` em batch. Acumula `parent_id_relinked` e `parent_id_dropped` (pai inexistente).
-
-7. **Report final**: adicionar `orphan_fk_dropped_by_table`, `min_uuid_retries`, `parent_id_relinked`, `parent_id_dropped`, `dropped_no_pk`.
-
-## Ordem de execução (inalterada para o usuário)
-
-```
-handlePlan → topoOrder (patient_registry → patients → patient_encounters → filhos)
-handleStep auth_users
-handleStep catálogos (com translateRow)
-handleStep não-catálogo:
-  cleanRow → translateRow → drop_no_pk → dedupe PK
-  if table === patients: liberar bed_number 1x, dedupe bed_number
-  drop órfãs por FK (FK_PARENTS) com select de validação
-  if table === prescriptions: separar parent_id em pending_fixups
-  upsert; on min(uuid) → fallback linha-a-linha
-handleFinalize:
-  aplicar pending_parent_id_fixups (prescriptions parent_id pass B)
-  desativa manutenção, escreve report
-```
-
-## O que ainda pode sobrar
-
-1. Encounters/prescriptions/evoluções verdadeiramente órfãs (sem pai em lugar nenhum): serão logadas em `orphan_fk_dropped_by_table` — visível e auditável, não erra mais.
-2. `enforce_prescription_patient_affinity` / `enforce_encounter_patient_affinity` podem rejeitar linhas com `patient_name` divergente do `patient_registry.full_name` — não é erro de FK, é regra de negócio; sobreviverá como `errorSample` específico.
-3. UNIQUEs compostas em tabelas filhas (raro hoje) ainda fora de `CATALOG_NATURAL_KEYS`.
-4. `medical_records.id` é FK de `patient_encounters`; se medical_records vier vazio do backup, todos os encounters com `medical_record_id` não-nulo serão dropados. O ranking em ordem topológica garante medical_records antes (ele referencia patient_registry), mas se source não exportou, é dado faltante real.
-5. Modo manutenção bloqueia escritas para não-service_role — service_role bypassa (`block_writes_during_maintenance` verifica `current_user`), confirmado OK.
+**`src/pages/BackupRestorePage.tsx`:**
+1. Hook `useMaintenanceActive()` (`select is_active from system_maintenance_mode where id=1`, com realtime opcional ou refetch a cada 5s).
+2. Botão destrutivo "Forçar saída do modo manutenção" com `AlertDialog`, motivo opcional, exige super_admin. Invoca `backup-restore` com `action: "force_unlock"`.
+3. Toast + recarregamento de jobs e audit após sucesso.
 
 ## Resposta direta ao usuário
 
-- **Problema 1 não era ordem nem remapeamento**: a ordem topológica está certa e `patient_encounters.patient_id` aponta literalmente para `patients(id)` (preservamos ids do backup). Era **órfão de dados**: 328 encounters referenciam `patient_id`s que não existem nos 167 patients exportados.
-- **min(uuid) restante**: a dedupe atual mantém linhas sem PK (id null/""), e essas colidem entre si no PostgREST. Mais: não há fallback quando o erro ocorre. Adicionar (a) drop pré-dedupe das linhas sem PK e (b) fallback linha-a-linha quando `min(uuid)` aparece, blinda em definitivo. Para `parent_id` (auto-FK), two-pass.
+- **patient_encounters não era ordem nem alvo**: era o filtro de FK órfã estourando o URL do PostgREST com chunks de 500 UUIDs (~19 KB), causando falha no select → fallback ingênuo pulava o filtro → upsert recebia órfãs e falhava com `patient_id_fkey`. Reduzir o chunk para 100 + fail-safe resolve.
+- **min(uuid) restante em prescriptions**: era PostgREST agregando para uniformizar shape do array quando linhas tinham conjuntos de chaves diferentes. `normalizeShape` força keys idênticas (preenchendo com `null`) e elimina a agregação.
+- **try/finally do modo manutenção**: corpo do `serve()` envolto em finally que lê o status do restore antes de limpar — só desativa quando o job está em estado terminal (completed/failed) ou quando a action é a explícita `force_unlock`. Para restores ainda rodando entre chamadas, NÃO toca. O botão admin é o último recurso quando o client morre no meio.
 
-Auditoria/manutenção: intocadas. `handleFinalize` ganha apenas o passo de reaplicar `parent_id`.
+Auditoria existente: intocada. Apenas adiciona evento novo `MAINTENANCE_FORCE_OFF`.
