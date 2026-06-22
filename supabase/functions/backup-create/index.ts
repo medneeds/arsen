@@ -1,11 +1,12 @@
-// backup-create — Admin / Super Admin only.
-// Cria um snapshot completo (dados públicos + auth users + profiles + roles + settings)
-// como múltiplos arquivos no bucket `db-backups`, sob o prefixo `${jobId}/`.
-// Nenhum ZIP é montado em memória — isso é feito sob demanda pela função `backup-download`.
+// backup-create v3 — Admin / Super Admin only.
+// Backup chunked: cliente invoca repetidamente; cada chamada faz UM passo curto
+// (uma página de uma tabela / uma seção). Estado persistido em backup_jobs.progress.state.
 //
-// Body: { reason?: string, include_audit_logs?: boolean }
-// Retorna: { backup_id, status: "running" } (202) — o trabalho roda em background.
-// Cliente acompanha por polling em backup_jobs.
+// Actions:
+//   { action: "start", reason?, include_audit_logs? } -> { backup_id, status:"running" }
+//   { action: "step",  backup_id }                    -> { phase, percent, done }
+//
+// Sem background work. Sem ZIP em memória. Cada invocação dura <2s.
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
@@ -21,13 +22,37 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const BUCKET = "db-backups";
-const BACKUP_VERSION = "2.0"; // v2: arquivos separados, sem ZIP em memória
-const PAGE_SIZE = 1000;
+const BACKUP_VERSION = "3.0";
+const PAGE_SIZE = 500;
 
-const SPECIAL_TABLES = new Set([
+const SPECIAL_TABLES = [
   "profiles", "user_roles", "user_departments", "user_hospital_assignments",
   "institution_branding", "hospital_units", "states", "system_maintenance_mode",
-]);
+];
+const SPECIAL_SET = new Set(SPECIAL_TABLES);
+
+type Part = { path: string; bytes: number };
+type State = {
+  phase: "init" | "data" | "special" | "auth" | "manifest" | "done";
+  tables?: string[];
+  tableIdx?: number;
+  pageFrom?: number;
+  partN?: number;
+  specialIdx?: number;
+  specialPageFrom?: number;
+  specialPartN?: number;
+  authPage?: number;
+  authPartN?: number;
+  authTotal?: number;
+  tableCounts: Record<string, number>;
+  parts: Part[];
+  totalBytes: number;
+  reason: string;
+  includeAudit: boolean;
+  userId: string;
+  userEmail: string | null;
+  startedAt: number;
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -51,15 +76,32 @@ Deno.serve(async (req) => {
   const allowed = (roles ?? []).some((r: { role: string }) => r.role === "admin" || r.role === "super_admin");
   if (!allowed) return json({ error: "Acesso restrito a administradores" }, 403);
 
-  let body: { reason?: string; include_audit_logs?: boolean } = {};
-  try { body = await req.json(); } catch { /* opcional */ }
+  let body: any = {};
+  try { body = await req.json(); } catch { /* */ }
+  const action = body.action ?? "start";
+
+  if (action === "start") return await handleStart(admin, body, userId, userEmail, req);
+  if (action === "step")  return await handleStep(admin, body, userId, userEmail);
+  return json({ error: "action inválida" }, 400);
+});
+
+async function handleStart(admin: any, body: any, userId: string, userEmail: string | null, req: Request) {
   const reason = body.reason ?? "Backup manual";
   const includeAudit = !!body.include_audit_logs;
-
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? null;
   const userAgent = req.headers.get("user-agent") ?? null;
-
   const startedAt = Date.now();
+
+  const initState: State = {
+    phase: "init",
+    tableCounts: {},
+    parts: [],
+    totalBytes: 0,
+    reason, includeAudit,
+    userId, userEmail,
+    startedAt,
+  };
+
   const { data: jobRow, error: jobErr } = await admin.from("backup_jobs").insert({
     created_by: userId,
     created_by_email: userEmail,
@@ -67,212 +109,228 @@ Deno.serve(async (req) => {
     started_at: new Date(startedAt).toISOString(),
     source_instance: SUPABASE_URL,
     reason,
-    progress: { step: "iniciando", percent: 0 },
+    progress: { step: "iniciando", percent: 0, state: initState },
   }).select().single();
   if (jobErr || !jobRow) return json({ error: `Falha ao criar job: ${jobErr?.message}` }, 500);
-  const jobId = jobRow.id as string;
 
-  await audit(admin, userId, userEmail, "BACKUP_CREATE_START", { backup_job_id: jobId, payload: { reason, include_audit_logs: includeAudit }, ip, userAgent });
-
-  // deno-lint-ignore no-explicit-any
-  const waitUntil = (globalThis as any).EdgeRuntime?.waitUntil?.bind((globalThis as any).EdgeRuntime);
-  const work = runBackup({ admin, jobId, userId, userEmail, reason, includeAudit, startedAt, ip, userAgent })
-    .catch(async (e) => {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error("[backup-create] background", msg);
-      await admin.from("backup_jobs").update({
-        status: "failed", error: msg, finished_at: new Date().toISOString(),
-        duration_ms: Date.now() - startedAt,
-      }).eq("id", jobId);
-      await audit(admin, userId, userEmail, "BACKUP_CREATE_FAIL", { backup_job_id: jobId, result: "fail", error: msg, ip, userAgent });
-    });
-  if (waitUntil) waitUntil(work);
-
-  return json({ backup_id: jobId, status: "running" }, 202);
-});
-
-async function runBackup(args: {
-  admin: any; jobId: string; userId: string; userEmail: string | null;
-  reason: string; includeAudit: boolean; startedAt: number;
-  ip: string | null; userAgent: string | null;
-}) {
-  const { admin, jobId, userId, userEmail, reason, includeAudit, startedAt, ip, userAgent } = args;
-  const tableCounts: Record<string, number> = {};
-  const parts: { path: string; bytes: number }[] = [];
-  let totalBytes = 0;
-
-  const putFile = async (relPath: string, content: string, contentType = "application/json") => {
-    const bytes = new TextEncoder().encode(content);
-    const fullPath = `${jobId}/${relPath}`;
-    const { error } = await admin.storage.from(BUCKET).upload(fullPath, bytes, { contentType, upsert: true });
-    if (error) throw new Error(`upload ${relPath}: ${error.message}`);
-    parts.push({ path: relPath, bytes: bytes.byteLength });
-    totalBytes += bytes.byteLength;
-  };
-
-  await updateProgress(admin, jobId, "listando tabelas", 5);
-  const tablesRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_tables_with_pk`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "apikey": SUPABASE_SERVICE_ROLE_KEY,
-      "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-    },
-    body: JSON.stringify({}),
+  await audit(admin, userId, userEmail, "BACKUP_CREATE_START", {
+    backup_job_id: jobRow.id, payload: { reason, include_audit_logs: includeAudit }, ip, userAgent,
   });
-  if (!tablesRes.ok) throw new Error(`Helper get_public_tables_with_pk indisponível: ${tablesRes.status}`);
-  const allTables: { name: string; pk: string[] }[] = await tablesRes.json();
-  const dataTables = allTables
-    .map((t) => t.name)
-    .filter((n) => !SPECIAL_TABLES.has(n))
-    .filter((n) => includeAudit || n !== "audit_logs")
-    .sort();
+  return json({ backup_id: jobRow.id, status: "running" }, 202);
+}
 
-  // Dados — uma tabela por arquivo, streaming por páginas (sem acumular tudo na RAM)
-  let idx = 0;
-  for (const table of dataTables) {
-    idx++;
-    const pct = 5 + Math.floor((idx / dataTables.length) * 65);
-    await updateProgress(admin, jobId, `tabela: ${table}`, pct, idx, dataTables.length);
-    const { content, count } = await dumpTableToJsonl(admin, table);
-    tableCounts[table] = count;
-    await putFile(`data/${table}.jsonl`, content, "application/x-ndjson");
+async function handleStep(admin: any, body: any, userId: string, userEmail: string | null) {
+  const backupId = body.backup_id;
+  if (!backupId) return json({ error: "backup_id obrigatório" }, 400);
+
+  const { data: job, error } = await admin.from("backup_jobs").select("*").eq("id", backupId).maybeSingle();
+  if (error || !job) return json({ error: "job não encontrado" }, 404);
+  if (job.status !== "running") return json({ phase: "done", percent: 100, done: true, status: job.status });
+
+  const state: State = job.progress?.state;
+  if (!state) return json({ error: "state ausente" }, 500);
+
+  try {
+    const { step, percent, done } = await doOneStep(admin, backupId, state);
+    if (done) {
+      return json({ phase: "done", percent: 100, done: true, status: "completed" });
+    }
+    await admin.from("backup_jobs").update({
+      progress: { step, percent, state, current: state.tableIdx ?? null, total: state.tables?.length ?? null },
+    }).eq("id", backupId);
+    return json({ phase: state.phase, percent, step, done: false });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[backup-create.step]", msg);
+    await admin.from("backup_jobs").update({
+      status: "failed", error: msg, finished_at: new Date().toISOString(),
+      duration_ms: Date.now() - state.startedAt,
+    }).eq("id", backupId);
+    await audit(admin, userId, userEmail, "BACKUP_CREATE_FAIL", { backup_job_id: backupId, result: "fail", error: msg });
+    return json({ error: msg, phase: "failed", done: true }, 500);
+  }
+}
+
+async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: string; percent: number; done: boolean }> {
+  // ───────────── INIT: planejar tabelas
+  if (s.phase === "init") {
+    const tablesRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_tables_with_pk`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify({}),
+    });
+    if (!tablesRes.ok) throw new Error(`get_public_tables_with_pk: ${tablesRes.status}`);
+    const allTables: { name: string }[] = await tablesRes.json();
+    s.tables = allTables.map((t) => t.name)
+      .filter((n) => !SPECIAL_SET.has(n))
+      .filter((n) => s.includeAudit || n !== "audit_logs")
+      .sort();
+    s.phase = "data";
+    s.tableIdx = 0;
+    s.pageFrom = 0;
+    s.partN = 0;
+    return { step: "planejado", percent: 2, done: false };
   }
 
-  // Perfis e papéis
-  await updateProgress(admin, jobId, "perfis e papéis", 75);
-  const profiles = await dumpTableArray(admin, "profiles");
-  tableCounts["profiles"] = profiles.length;
-  await putFile("profiles.json", JSON.stringify(profiles));
-
-  const roles_rows = await dumpTableArray(admin, "user_roles");
-  const depts = await dumpTableArray(admin, "user_departments");
-  const hosps = await dumpTableArray(admin, "user_hospital_assignments");
-  tableCounts["user_roles"] = roles_rows.length;
-  tableCounts["user_departments"] = depts.length;
-  tableCounts["user_hospital_assignments"] = hosps.length;
-  await putFile("roles.json", JSON.stringify({ user_roles: roles_rows, user_departments: depts, user_hospital_assignments: hosps }));
-
-  // Configurações
-  await updateProgress(admin, jobId, "configurações", 80);
-  const settings: Record<string, unknown> = {};
-  for (const t of ["institution_branding", "hospital_units", "states", "system_maintenance_mode"]) {
-    const rows = await dumpTableArray(admin, t);
-    settings[t] = rows;
-    tableCounts[t] = rows.length;
+  // ───────────── DATA: uma página por chamada
+  if (s.phase === "data") {
+    const tables = s.tables!;
+    if (s.tableIdx! >= tables.length) {
+      s.phase = "special";
+      s.specialIdx = 0;
+      s.specialPageFrom = 0;
+      s.specialPartN = 0;
+      return { step: "tabelas concluídas", percent: 70, done: false };
+    }
+    const table = tables[s.tableIdx!];
+    const from = s.pageFrom!;
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await admin.from(table).select("*").range(from, to);
+    if (error) throw new Error(`dump ${table}: ${error.message}`);
+    const rows = data ?? [];
+    if (rows.length > 0) {
+      const content = rows.map((r: any) => JSON.stringify(r)).join("\n");
+      const path = `data/${table}.part-${String(s.partN!).padStart(4, "0")}.jsonl`;
+      await putContent(admin, jobId, path, content, "application/x-ndjson", s);
+      s.tableCounts[table] = (s.tableCounts[table] ?? 0) + rows.length;
+      s.partN! += 1;
+    }
+    if (rows.length < PAGE_SIZE) {
+      // tabela concluída
+      s.tableIdx! += 1;
+      s.pageFrom = 0;
+      s.partN = 0;
+    } else {
+      s.pageFrom = from + PAGE_SIZE;
+    }
+    const pct = 5 + Math.floor((s.tableIdx! / tables.length) * 65);
+    return { step: `tabela: ${table} (${(s.tableCounts[table] ?? 0).toLocaleString("pt-BR")} regs)`, percent: pct, done: false };
   }
-  await putFile("settings.json", JSON.stringify(settings));
 
-  // Auth users
-  await updateProgress(admin, jobId, "usuários auth", 85);
-  const authUsers: unknown[] = [];
-  let page = 1;
-  while (true) {
+  // ───────────── SPECIAL: profiles/roles/units/etc paginados
+  if (s.phase === "special") {
+    if (s.specialIdx! >= SPECIAL_TABLES.length) {
+      s.phase = "auth";
+      s.authPage = 1;
+      s.authPartN = 0;
+      s.authTotal = 0;
+      return { step: "configurações concluídas", percent: 82, done: false };
+    }
+    const table = SPECIAL_TABLES[s.specialIdx!];
+    const from = s.specialPageFrom!;
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await admin.from(table).select("*").range(from, to);
+    if (error) throw new Error(`dump ${table}: ${error.message}`);
+    const rows = data ?? [];
+    if (rows.length > 0) {
+      const content = rows.map((r: any) => JSON.stringify(r)).join("\n");
+      const path = `special/${table}.part-${String(s.specialPartN!).padStart(4, "0")}.jsonl`;
+      await putContent(admin, jobId, path, content, "application/x-ndjson", s);
+      s.tableCounts[table] = (s.tableCounts[table] ?? 0) + rows.length;
+      s.specialPartN! += 1;
+    }
+    if (rows.length < PAGE_SIZE) {
+      s.specialIdx! += 1;
+      s.specialPageFrom = 0;
+      s.specialPartN = 0;
+    } else {
+      s.specialPageFrom = from + PAGE_SIZE;
+    }
+    return { step: `config: ${table}`, percent: 72 + Math.floor((s.specialIdx! / SPECIAL_TABLES.length) * 10), done: false };
+  }
+
+  // ───────────── AUTH: uma página por chamada
+  if (s.phase === "auth") {
+    const page = s.authPage!;
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: PAGE_SIZE });
     if (error) throw new Error(`auth.listUsers: ${error.message}`);
     const users = data?.users ?? [];
-    for (const u of users) {
-      authUsers.push({
+    if (users.length > 0) {
+      const slim = users.map((u: any) => ({
         id: u.id, email: u.email, phone: u.phone,
         email_confirmed_at: u.email_confirmed_at, phone_confirmed_at: u.phone_confirmed_at,
         created_at: u.created_at, last_sign_in_at: u.last_sign_in_at,
         user_metadata: u.user_metadata, app_metadata: u.app_metadata,
-        role: u.role, banned_until: (u as any).banned_until ?? null,
-        is_sso_user: (u as any).is_sso_user ?? false,
-      });
+        role: u.role, banned_until: u.banned_until ?? null,
+        is_sso_user: u.is_sso_user ?? false,
+      }));
+      const path = `auth/users.part-${String(s.authPartN!).padStart(4, "0")}.json`;
+      await putContent(admin, jobId, path, JSON.stringify(slim), "application/json", s);
+      s.authPartN! += 1;
+      s.authTotal! += users.length;
     }
-    if (users.length < PAGE_SIZE) break;
-    page++;
-    if (page > 200) break;
+    if (users.length < PAGE_SIZE) {
+      s.phase = "manifest";
+      return { step: `auth concluída (${s.authTotal} usuários)`, percent: 92, done: false };
+    }
+    s.authPage! += 1;
+    return { step: `auth users página ${page}`, percent: 84, done: false };
   }
-  await putFile("auth/users.json", JSON.stringify(authUsers));
 
-  // Manifest
-  await updateProgress(admin, jobId, "gerando manifesto", 95);
-  const totalRecords = Object.values(tableCounts).reduce((a, b) => a + b, 0);
-  const manifest = {
-    backup_version: BACKUP_VERSION,
-    backup_id: jobId,
-    created_at: new Date().toISOString(),
-    created_by: { id: userId, email: userEmail },
-    source_instance: SUPABASE_URL,
-    table_counts: tableCounts,
-    database_records: totalRecords,
-    auth_users: authUsers.length,
-    include_audit_logs: includeAudit,
-    reason,
-    parts,
-    total_bytes: totalBytes,
-    notes: [
-      "Backup v2.0 — arquivos separados. Use backup-download para gerar um ZIP único.",
-      "DDL (schema) NÃO está incluso — a instância destino deve ter as mesmas migrations aplicadas.",
-      "Hashes de senha NÃO são exportados; usuários restaurados recebem email de reset.",
-      "MFA e identidades externas (Google/Apple) não são restauráveis via Admin API.",
-    ],
-  };
-  const manifestStr = JSON.stringify(manifest, null, 2);
-  const manifestBytes = new TextEncoder().encode(manifestStr);
-  await admin.storage.from(BUCKET).upload(`${jobId}/manifest.json`, manifestBytes, { contentType: "application/json", upsert: true });
+  // ───────────── MANIFEST + finalizar
+  if (s.phase === "manifest") {
+    const totalRecords = Object.values(s.tableCounts).reduce((a, b) => a + b, 0);
+    const manifest = {
+      backup_version: BACKUP_VERSION,
+      backup_id: jobId,
+      created_at: new Date().toISOString(),
+      created_by: { id: s.userId, email: s.userEmail },
+      source_instance: SUPABASE_URL,
+      table_counts: s.tableCounts,
+      database_records: totalRecords,
+      auth_users: s.authTotal ?? 0,
+      include_audit_logs: s.includeAudit,
+      reason: s.reason,
+      parts: s.parts,
+      total_bytes: s.totalBytes,
+      notes: [
+        "Backup v3.0 — chunked. Use backup-download para gerar um ZIP único.",
+        "DDL (schema) NÃO está incluso — a instância destino deve ter as mesmas migrations aplicadas.",
+        "Hashes de senha NÃO são exportados; usuários restaurados recebem email de reset.",
+        "MFA e identidades externas (Google/Apple) não são restauráveis via Admin API.",
+      ],
+    };
+    const manifestStr = JSON.stringify(manifest, null, 2);
+    const manifestBytes = new TextEncoder().encode(manifestStr);
+    const { error: upErr } = await admin.storage.from(BUCKET).upload(`${jobId}/manifest.json`, manifestBytes, {
+      contentType: "application/json", upsert: true,
+    });
+    if (upErr) throw new Error(`upload manifest: ${upErr.message}`);
 
-  const finishedAt = Date.now();
-  await admin.from("backup_jobs").update({
-    status: "completed",
-    storage_path: `${jobId}/manifest.json`, // aponta pro manifest; download monta o ZIP
-    file_size_bytes: totalBytes + manifestBytes.byteLength,
-    manifest,
-    table_counts: tableCounts,
-    auth_user_count: authUsers.length,
-    finished_at: new Date(finishedAt).toISOString(),
-    duration_ms: finishedAt - startedAt,
-    progress: { step: "concluído", percent: 100 },
-  }).eq("id", jobId);
+    const finishedAt = Date.now();
+    await admin.from("backup_jobs").update({
+      status: "completed",
+      storage_path: `${jobId}/manifest.json`,
+      file_size_bytes: s.totalBytes + manifestBytes.byteLength,
+      manifest,
+      table_counts: s.tableCounts,
+      auth_user_count: s.authTotal ?? 0,
+      finished_at: new Date(finishedAt).toISOString(),
+      duration_ms: finishedAt - s.startedAt,
+      progress: { step: "concluído", percent: 100, state: { ...s, phase: "done" } },
+    }).eq("id", jobId);
 
-  await audit(admin, userId, userEmail, "BACKUP_CREATE_DONE", {
-    backup_job_id: jobId, result: "success", duration_ms: finishedAt - startedAt,
-    payload: { total_bytes: totalBytes, records: totalRecords, auth_users: authUsers.length, parts: parts.length },
-    ip, userAgent,
-  });
+    await audit(admin, s.userId, s.userEmail, "BACKUP_CREATE_DONE", {
+      backup_job_id: jobId, result: "success", duration_ms: finishedAt - s.startedAt,
+      payload: { total_bytes: s.totalBytes, records: totalRecords, auth_users: s.authTotal ?? 0, parts: s.parts.length },
+    });
+    return { step: "concluído", percent: 100, done: true };
+  }
+
+  return { step: "?", percent: 0, done: true };
 }
 
-// Dump streaming → JSONL string (uma linha por registro)
-async function dumpTableToJsonl(admin: any, table: string): Promise<{ content: string; count: number }> {
-  const chunks: string[] = [];
-  let from = 0;
-  let count = 0;
-  while (true) {
-    const to = from + PAGE_SIZE - 1;
-    const { data, error } = await admin.from(table).select("*").range(from, to);
-    if (error) throw new Error(`dump ${table}: ${error.message}`);
-    if (!data || data.length === 0) break;
-    for (const row of data) chunks.push(JSON.stringify(row));
-    count += data.length;
-    if (data.length < PAGE_SIZE) break;
-    from += PAGE_SIZE;
-    if (from > 1_000_000) break;
-  }
-  return { content: chunks.join("\n"), count };
-}
-
-async function dumpTableArray(admin: any, table: string): Promise<any[]> {
-  const out: any[] = [];
-  let from = 0;
-  while (true) {
-    const to = from + PAGE_SIZE - 1;
-    const { data, error } = await admin.from(table).select("*").range(from, to);
-    if (error) throw new Error(`dump ${table}: ${error.message}`);
-    if (!data || data.length === 0) break;
-    out.push(...data);
-    if (data.length < PAGE_SIZE) break;
-    from += PAGE_SIZE;
-    if (from > 1_000_000) break;
-  }
-  return out;
-}
-
-async function updateProgress(admin: any, jobId: string, step: string, percent: number, current?: number, total?: number) {
-  await admin.from("backup_jobs").update({
-    progress: { step, percent, current: current ?? null, total: total ?? null },
-  }).eq("id", jobId);
+async function putContent(admin: any, jobId: string, relPath: string, content: string, contentType: string, s: State) {
+  const bytes = new TextEncoder().encode(content);
+  const fullPath = `${jobId}/${relPath}`;
+  const { error } = await admin.storage.from(BUCKET).upload(fullPath, bytes, { contentType, upsert: true });
+  if (error) throw new Error(`upload ${relPath}: ${error.message}`);
+  s.parts.push({ path: relPath, bytes: bytes.byteLength });
+  s.totalBytes += bytes.byteLength;
 }
 
 async function audit(admin: any, userId: string, email: string | null, action: string, extra: Record<string, unknown>) {

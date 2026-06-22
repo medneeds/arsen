@@ -123,19 +123,37 @@ export default function BackupRestorePage() {
 
   async function handleCreateBackup() {
     setCreating(true);
+    let backupId: string | null = null;
     try {
-      toast.info("Backup iniciado em segundo plano — acompanhe abaixo.");
+      toast.info("Iniciando backup chunked…");
       const { data, error } = await supabase.functions.invoke("backup-create", {
-        body: { reason: reason || "Backup manual", include_audit_logs: includeAudit },
+        body: { action: "start", reason: reason || "Backup manual", include_audit_logs: includeAudit },
       });
       if (error) throw error;
-      const id = (data as any)?.backup_id;
-      if (id) toast.success(`Job criado: ${String(id).slice(0, 8)}…`);
+      backupId = (data as any)?.backup_id;
+      if (!backupId) throw new Error("backup_id não retornado");
+      toast.success(`Job criado: ${String(backupId).slice(0, 8)}… processando…`);
       setReason("");
+      await loadJobs();
+
+      // Loop de steps até concluir/falhar — cada chamada é curta (<2s)
+      let safety = 5000;
+      while (safety-- > 0) {
+        const { data: sd, error: se } = await supabase.functions.invoke("backup-create", {
+          body: { action: "step", backup_id: backupId },
+        });
+        if (se) throw se;
+        if ((sd as any)?.done) {
+          if ((sd as any)?.phase === "failed") throw new Error((sd as any)?.error ?? "falha desconhecida");
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 60));
+      }
       await loadJobs(); await loadAudit();
+      toast.success("Backup concluído.");
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error("Falha ao iniciar backup: " + msg);
+      toast.error("Falha no backup: " + msg);
       await loadJobs(); await loadAudit();
     } finally {
       setCreating(false);

@@ -1,0 +1,1 @@
+UPDATE backup_jobs SET status='failed', error='Refatorado para invocação chunked — execute novamente', finished_at=COALESCE(finished_at, now()) WHERE status IN ('running','pending');
