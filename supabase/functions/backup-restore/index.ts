@@ -599,6 +599,7 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
     catalog_conflicts_by_table: prevCatalog,
     id_maps: mergedIdMaps,
     bed_number_reassigned: prevBedReassigned + bedNumberReassigned,
+    slice_dedupes_dropped: Number(rj.progress?.slice_dedupes_dropped ?? 0) + sliceDedupesDropped,
   };
   await admin.from("restore_jobs").update({ progress: newProgress }).eq("id", restoreId);
 
