@@ -612,7 +612,9 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
           ));
           if (vals.length === 0) continue;
           const existing = new Set<string>();
-          const CHUNK = 500;
+          // Chunk pequeno: 500 UUIDs estouram URL do PostgREST (~19 KB) e o
+          // select falha silenciosamente; 100 dá ~3.8 KB, seguro.
+          const CHUNK = 100;
           let lookupOk = true;
           for (let i = 0; i < vals.length; i += CHUNK) {
             const chunk = vals.slice(i, i + CHUNK);
@@ -622,12 +624,29 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
               .in("id", chunk);
             if (selErr) {
               lookupOk = false;
+              console.error(`[backup-restore] FK lookup ${table}.${fkCol}→${parentTable}:`, selErr.message);
               if (errorSamples.length < 3) errorSamples.push(`FK lookup ${table}.${fkCol}→${parentTable}: ${selErr.message}`);
               break;
             }
             for (const row of (data ?? [])) existing.add(String((row as any).id));
           }
-          if (!lookupOk) continue;
+          // Fail-safe: se lookup falhou, dropa TODAS as linhas com FK não-nula
+          // nessa coluna (não enviamos órfãs presumidas para a upsert).
+          if (!lookupOk) {
+            const before = allRows.length;
+            allRows = allRows.filter((r) => {
+              const v = (r as any)[fkCol];
+              return v == null || v === "";
+            });
+            const dropped = before - allRows.length;
+            if (dropped > 0) {
+              orphanFkDropped[fkCol] = (orphanFkDropped[fkCol] ?? 0) + dropped;
+              if (errorSamples.length < 3) {
+                errorSamples.push(`FK fail-safe ${table}.${fkCol}→${parentTable}: ${dropped} linha(s) dropada(s) (lookup falhou)`);
+              }
+            }
+            continue;
+          }
           const before = allRows.length;
           allRows = allRows.filter((r) => {
             const v = (r as any)[fkCol];
