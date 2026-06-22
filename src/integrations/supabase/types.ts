@@ -5636,6 +5636,15 @@ export type Database = {
           parent: string
         }[]
       }
+      get_public_table_columns: {
+        Args: { tables: string[] }
+        Returns: {
+          column_name: string
+          is_generated: boolean
+          is_identity: boolean
+          table_name: string
+        }[]
+      }
       get_public_tables_with_pk: {
         Args: never
         Returns: {
@@ -5649,6 +5658,14 @@ export type Database = {
           name: string
           pk: string[]
           size_bytes: number
+        }[]
+      }
+      get_public_unique_constraints: {
+        Args: { tables: string[] }
+        Returns: {
+          columns: string[]
+          constraint_name: string
+          table_name: string
         }[]
       }
       get_user_app_role: { Args: { _user_id: string }; Returns: string }

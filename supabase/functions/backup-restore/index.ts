@@ -27,6 +27,27 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const BUCKET = "db-backups";
 const BATCH = 500;
 
+// Tabelas-catálogo com chave natural conhecida. Só é aplicada se existir UNIQUE real no destino.
+const CATALOG_NATURAL_KEYS: Record<string, string[][]> = {
+  hospital_units: [["name"]],
+  states: [["code"]],
+  cid10_codes: [["code"]],
+  medical_codes: [["code"]],
+  medication_catalog: [["name"]],
+  medication_presentations: [["medication_id", "presentation"]],
+  medication_aliases: [["alias"]],
+  data_retention_policies: [["data_type"]],
+};
+
+// Tradução de FKs por nome de coluna → tabela-catálogo alvo (id_map[table][backup_id]=local_id)
+const FK_TRANSLATIONS: Record<string, string> = {
+  hospital_unit_id: "hospital_units",
+  state_id: "states",
+  cid10_code_id: "cid10_codes",
+  cid_id: "cid10_codes",
+  medication_id: "medication_catalog",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Método não permitido" }, 405);
@@ -98,19 +119,26 @@ async function handlePlan(admin: any, body: any, userId: string, userEmail: stri
   const { data: manifestFile, error: mErr } = await admin.storage.from(BUCKET).download(`${backupId}/manifest.json`);
   if (mErr || !manifestFile) return json({ error: `manifest indisponível: ${mErr?.message}` }, 500);
   const manifest = JSON.parse(await manifestFile.text());
-  const parts: { path: string; bytes: number }[] = manifest.parts ?? [];
+  const allParts: { path: string; bytes: number }[] = manifest.parts ?? [];
 
   // Mapeia parts por tabela: data/<table>.part-XXXX.jsonl e special/<table>.part-XXXX.jsonl
-  // Ignora auth/ e a própria audit_logs se não solicitada
   const partsByTable = new Map<string, string[]>();
-  for (const p of parts) {
-    const m = p.path.match(/^(data|special)\/([^/]+)\.part-\d{4}\.jsonl$/);
-    if (!m) continue;
-    const table = m[2];
-    if (!partsByTable.has(table)) partsByTable.set(table, []);
-    partsByTable.get(table)!.push(p.path);
+  // Parts de auth/users (json único ou jsonl em parts)
+  const authUserParts: string[] = [];
+  for (const p of allParts) {
+    const mData = p.path.match(/^(data|special)\/([^/]+)\.part-\d{4}\.jsonl$/);
+    if (mData) {
+      const table = mData[2];
+      if (!partsByTable.has(table)) partsByTable.set(table, []);
+      partsByTable.get(table)!.push(p.path);
+      continue;
+    }
+    if (/^auth\/users(\.part-\d{4})?\.(jsonl|json)$/.test(p.path)) {
+      authUserParts.push(p.path);
+    }
   }
   for (const arr of partsByTable.values()) arr.sort();
+  authUserParts.sort();
 
   let targetTables = Array.from(partsByTable.keys());
   if (mode === "partial") {
@@ -123,12 +151,63 @@ async function handlePlan(admin: any, body: any, userId: string, userEmail: stri
   const ordered = await topoOrder(targetTables);
   const pkMap = await fetchPks(ordered);
 
-  const plan = ordered.map((t) => ({
-    table: t,
-    pk: pkMap[t] ?? ["id"],
-    parts: (partsByTable.get(t) ?? []).map((path) => ({ path })),
-    rows_expected: manifest.table_counts?.[t] ?? 0,
-  }));
+  // Schema do destino (colunas + uniques) — uma única descoberta
+  const cols_by_table: Record<string, { allowed: string[]; generated: string[]; identity: string[] }> = {};
+  const unique_by_table: Record<string, Array<{ name: string; columns: string[] }>> = {};
+  try {
+    const { data: colsRows } = await admin.rpc("get_public_table_columns", { tables: ordered });
+    for (const r of (colsRows ?? []) as Array<{ table_name: string; column_name: string; is_generated: boolean; is_identity: boolean }>) {
+      const e = cols_by_table[r.table_name] ?? (cols_by_table[r.table_name] = { allowed: [], generated: [], identity: [] });
+      e.allowed.push(r.column_name);
+      if (r.is_generated) e.generated.push(r.column_name);
+      if (r.is_identity) e.identity.push(r.column_name);
+    }
+    const { data: uqRows } = await admin.rpc("get_public_unique_constraints", { tables: ordered });
+    for (const r of (uqRows ?? []) as Array<{ table_name: string; constraint_name: string; columns: string[] }>) {
+      (unique_by_table[r.table_name] ??= []).push({ name: r.constraint_name, columns: r.columns });
+    }
+  } catch (e) {
+    console.warn("[backup-restore] schema discovery failed (fallback to legacy):", e);
+  }
+
+  // Marca catalog_strategy por tabela: chave natural válida se existir UNIQUE no destino
+  const catalogStrategyByTable: Record<string, { natural: string[] } | null> = {};
+  for (const t of ordered) {
+    const candidates = CATALOG_NATURAL_KEYS[t];
+    if (!candidates) { catalogStrategyByTable[t] = null; continue; }
+    const uniques = unique_by_table[t] ?? [];
+    const allowed = new Set(cols_by_table[t]?.allowed ?? []);
+    let chosen: string[] | null = null;
+    for (const cand of candidates) {
+      const matches = uniques.some(u => sameCols(u.columns, cand));
+      const allColsExist = cand.every(c => allowed.has(c));
+      if (matches && allColsExist) { chosen = cand; break; }
+    }
+    catalogStrategyByTable[t] = chosen ? { natural: chosen } : null;
+  }
+
+  const plan: any[] = [];
+
+  // Injeta etapa virtual de auth.users no início, se houver
+  if (authUserParts.length > 0) {
+    plan.push({
+      table: "__auth_users__",
+      pk: ["id"],
+      parts: authUserParts.map((path) => ({ path })),
+      rows_expected: manifest.table_counts?.["auth.users"] ?? null,
+    });
+  }
+
+  for (const t of ordered) {
+    plan.push({
+      table: t,
+      pk: pkMap[t] ?? ["id"],
+      parts: (partsByTable.get(t) ?? []).map((path) => ({ path })),
+      rows_expected: manifest.table_counts?.[t] ?? 0,
+      catalog_natural_key: catalogStrategyByTable[t]?.natural ?? null,
+      is_catalog: !!catalogStrategyByTable[t],
+    });
+  }
 
   // Cria restore_job
   const { data: rj, error: rjErr } = await admin.from("restore_jobs").insert({
@@ -142,7 +221,15 @@ async function handlePlan(admin: any, body: any, userId: string, userEmail: stri
     started_at: new Date().toISOString(),
     target_instance: SUPABASE_URL,
     reason,
-    progress: { step: "iniciando", percent: 0, plan, current_table: null, current_part: null, processed: 0, errors: 0 },
+    progress: {
+      step: "iniciando", percent: 0, plan,
+      current_table: null, current_part: null,
+      processed: 0, errors: 0,
+      schema: { cols_by_table, unique_by_table },
+      id_maps: {},
+      dropped_columns_by_table: {},
+      catalog_conflicts_by_table: {},
+    },
   }).select().single();
   if (rjErr) return json({ error: `restore_job: ${rjErr.message}` }, 500);
 
@@ -160,7 +247,7 @@ async function handlePlan(admin: any, body: any, userId: string, userEmail: stri
 
   await audit(admin, userId, userEmail, "BACKUP_RESTORE_START", {
     restore_job_id: rj.id, backup_job_id: backupId,
-    payload: { mode, dry_run: dryRun, tables: ordered, reason },
+    payload: { mode, dry_run: dryRun, tables: ordered, reason, has_auth_users: authUserParts.length > 0 },
   });
 
   return json({ restore_id: rj.id, dry_run: dryRun, plan });
@@ -176,42 +263,175 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
   if (rjErr || !rj) return json({ error: "restore não encontrado" }, 404);
   if (rj.status !== "running") return json({ error: `restore status=${rj.status}` }, 400);
 
-  // Sanity: o part deve estar no plano da tabela
   const plan = rj.progress?.plan ?? [];
   const tEntry = plan.find((x: any) => x.table === table);
   if (!tEntry) return json({ error: "tabela fora do plano" }, 400);
   if (!tEntry.parts.some((p: any) => p.path === partPath)) return json({ error: "part fora do plano" }, 400);
 
-  // Download — partPath é relativo ao backup (ex: "data/patients.part-0000.jsonl");
-  // os objetos no Storage estão sob "<backup_job_id>/<partPath>", então prefixamos aqui.
+  // Download
   const fullPath = partPath.startsWith(`${rj.backup_job_id}/`) ? partPath : `${rj.backup_job_id}/${partPath}`;
   const { data: file, error: dErr } = await admin.storage.from(BUCKET).download(fullPath);
   if (dErr || !file) return json({ error: `download (${fullPath}): ${dErr?.message}` }, 500);
   const text = await file.text();
-  const rows: any[] = text.split("\n").filter(Boolean).map((l) => JSON.parse(l));
 
-  let processed = 0, errors = 0;
-  const errorSamples: string[] = [];
-
-  if (rows.length > 0 && !rj.dry_run) {
-    const pk = tEntry.pk ?? ["id"];
-    const onConflict = pk.join(",");
-    for (let i = 0; i < rows.length; i += BATCH) {
-      const slice = rows.slice(i, i + BATCH);
-      const { error } = await admin.from(table).upsert(slice, { onConflict });
-      if (error) {
-        errors += slice.length;
-        if (errorSamples.length < 3) errorSamples.push(error.message);
-      } else {
-        processed += slice.length;
-      }
-    }
-  } else if (rj.dry_run) {
-    // dry-run: só conta linhas válidas
-    processed = rows.length;
+  // auth/users pode vir como JSON array único OU jsonl
+  let rows: any[];
+  if (table === "__auth_users__" && partPath.endsWith(".json") && !partPath.endsWith(".jsonl")) {
+    try {
+      const parsed = JSON.parse(text);
+      rows = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.users) ? parsed.users : []);
+    } catch { rows = []; }
+  } else {
+    rows = text.split("\n").filter(Boolean).map((l) => JSON.parse(l));
   }
 
-  // Atualiza progresso (acumula amostras de erro globalmente, cap=50, com contexto tabela+part)
+  // Acumuladores
+  let processed = 0, errors = 0;
+  const errorSamples: string[] = [];
+  const droppedCols: Record<string, number> = {};
+  const idMapDelta: Record<string, Record<string, string>> = {};
+  let catalogStats = { matched_existing: 0, inserted: 0, skipped_updates: 0 };
+
+  const schema = rj.progress?.schema ?? { cols_by_table: {}, unique_by_table: {} };
+  const idMaps: Record<string, Record<string, string>> = rj.progress?.id_maps ?? {};
+
+  // ── Branch 1: recriar auth.users ──
+  if (table === "__auth_users__") {
+    if (!rj.dry_run) {
+      for (const u of rows) {
+        if (!u || !u.email) { errors++; if (errorSamples.length < 5) errorSamples.push(`auth.users sem email: id=${u?.id ?? "?"}`); continue; }
+        try {
+          const { data: created, error: cErr } = await admin.auth.admin.createUser({
+            id: u.id,
+            email: u.email,
+            email_confirm: true,
+            user_metadata: u.user_metadata ?? u.raw_user_meta_data ?? {},
+            app_metadata: u.app_metadata ?? u.raw_app_meta_data ?? {},
+          });
+          if (cErr) {
+            const msg = String(cErr.message ?? cErr);
+            const exists = /already|exist|registered/i.test(msg);
+            if (exists && u.id) {
+              const { error: uErr } = await admin.auth.admin.updateUserById(u.id, {
+                user_metadata: u.user_metadata ?? u.raw_user_meta_data ?? undefined,
+                app_metadata: u.app_metadata ?? u.raw_app_meta_data ?? undefined,
+              });
+              if (uErr) { errors++; if (errorSamples.length < 5) errorSamples.push(`auth.update ${u.email}: ${uErr.message}`); }
+              else processed++;
+            } else {
+              errors++; if (errorSamples.length < 5) errorSamples.push(`auth.create ${u.email}: ${msg}`);
+            }
+          } else {
+            processed++;
+            void created;
+          }
+        } catch (e) {
+          errors++;
+          if (errorSamples.length < 5) errorSamples.push(`auth.exception ${u.email}: ${e instanceof Error ? e.message : String(e)}`);
+        }
+      }
+    } else {
+      processed = rows.length;
+    }
+  } else {
+    // ── Branch 2: tabelas públicas ──
+    const meta = schema.cols_by_table?.[table];
+    const allowed = new Set<string>(meta?.allowed ?? []);
+    const generated = new Set<string>([...(meta?.generated ?? []), ...(meta?.identity ?? [])]);
+
+    // Higieniza linhas: remove generated/identity sempre; remove desconhecidas se temos a lista
+    const cleanRow = (row: Record<string, unknown>): Record<string, unknown> => {
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(row)) {
+        if (generated.has(k)) { droppedCols[k] = (droppedCols[k] ?? 0) + 1; continue; }
+        if (allowed.size && !allowed.has(k)) { droppedCols[k] = (droppedCols[k] ?? 0) + 1; continue; }
+        out[k] = v;
+      }
+      return out;
+    };
+
+    // Traduz FKs via id_maps
+    const translateRow = (row: Record<string, unknown>) => {
+      for (const [col, targetTable] of Object.entries(FK_TRANSLATIONS)) {
+        const v = row[col];
+        if (v == null) continue;
+        const m = idMaps[targetTable];
+        if (!m) continue;
+        const local = m[String(v)];
+        if (local && local !== v) row[col] = local;
+      }
+      return row;
+    };
+
+    if (rows.length > 0 && !rj.dry_run) {
+      const pk = tEntry.pk ?? ["id"];
+      const isCatalog = !!tEntry.is_catalog && Array.isArray(tEntry.catalog_natural_key) && tEntry.catalog_natural_key.length > 0;
+
+      if (isCatalog) {
+        // Catálogo: resolve por chave natural, popula id_map, NÃO sobrescreve linha existente
+        const naturalKey: string[] = tEntry.catalog_natural_key;
+        const pkCol = pk[0] ?? "id";
+        for (const raw of rows) {
+          const cleaned = cleanRow(raw as Record<string, unknown>);
+          const backupId = (raw as any)[pkCol];
+          // monta lookup
+          let q = admin.from(table).select(`${pkCol}`).limit(1);
+          let lookupOk = true;
+          for (const k of naturalKey) {
+            const v = (cleaned as any)[k];
+            if (v == null) { lookupOk = false; break; }
+            q = q.eq(k, v);
+          }
+          if (!lookupOk) {
+            errors++;
+            if (errorSamples.length < 5) errorSamples.push(`${table}: chave natural ausente (${naturalKey.join(",")})`);
+            continue;
+          }
+          const { data: existing, error: selErr } = await q.maybeSingle();
+          if (selErr) {
+            errors++;
+            if (errorSamples.length < 5) errorSamples.push(`${table} lookup: ${selErr.message}`);
+            continue;
+          }
+          if (existing && (existing as any)[pkCol] != null) {
+            const localId = (existing as any)[pkCol];
+            if (backupId != null && String(backupId) !== String(localId)) {
+              (idMapDelta[table] ??= {})[String(backupId)] = String(localId);
+            }
+            catalogStats.matched_existing++;
+            catalogStats.skipped_updates++;
+            processed++;
+          } else {
+            const { error: insErr } = await admin.from(table).insert(cleaned);
+            if (insErr) {
+              errors++;
+              if (errorSamples.length < 5) errorSamples.push(`${table} insert: ${insErr.message}`);
+            } else {
+              catalogStats.inserted++;
+              processed++;
+            }
+          }
+        }
+      } else {
+        // Não-catálogo: filtro + tradução de FK + upsert por PK em batch
+        const onConflict = pk.join(",");
+        for (let i = 0; i < rows.length; i += BATCH) {
+          const slice = rows.slice(i, i + BATCH).map((r) => translateRow(cleanRow(r as Record<string, unknown>)));
+          const { error } = await admin.from(table).upsert(slice, { onConflict });
+          if (error) {
+            errors += slice.length;
+            if (errorSamples.length < 3) errorSamples.push(error.message);
+          } else {
+            processed += slice.length;
+          }
+        }
+      }
+    } else if (rj.dry_run) {
+      processed = rows.length;
+    }
+  }
+
+  // ── Atualiza progress ──
   const totalParts = plan.reduce((a: number, x: any) => a + (x.parts?.length ?? 0), 0) || 1;
   const doneParts = (rj.progress?.done_parts ?? 0) + 1;
   const percent = Math.min(99, Math.floor((doneParts / totalParts) * 100));
@@ -220,15 +440,39 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
     Array.isArray(rj.progress?.error_samples) ? rj.progress.error_samples : [];
   const nowIso = new Date().toISOString();
   const newSamples = errorSamples.map((m) => ({ table, part: partPath, message: m, at: nowIso }));
-  // cap em 50, preservando as MAIS RECENTES
   const mergedSamples = [...prevSamples, ...newSamples].slice(-50);
 
-  // Contadores por tabela (processed/errors)
   const prevByTable: Record<string, { processed: number; errors: number }> =
     (rj.progress?.errors_by_table && typeof rj.progress.errors_by_table === "object")
       ? { ...rj.progress.errors_by_table } : {};
   const tStats = prevByTable[table] ?? { processed: 0, errors: 0 };
   prevByTable[table] = { processed: tStats.processed + processed, errors: tStats.errors + errors };
+
+  // Merge dropped_columns_by_table
+  const prevDropped: Record<string, Record<string, number>> = rj.progress?.dropped_columns_by_table ?? {};
+  if (Object.keys(droppedCols).length > 0) {
+    const tDrop = { ...(prevDropped[table] ?? {}) };
+    for (const [c, n] of Object.entries(droppedCols)) tDrop[c] = (tDrop[c] ?? 0) + n;
+    prevDropped[table] = tDrop;
+  }
+
+  // Merge catalog_conflicts_by_table
+  const prevCatalog: Record<string, { matched_existing: number; inserted: number; skipped_updates: number }> =
+    rj.progress?.catalog_conflicts_by_table ?? {};
+  if (catalogStats.matched_existing || catalogStats.inserted || catalogStats.skipped_updates) {
+    const c = prevCatalog[table] ?? { matched_existing: 0, inserted: 0, skipped_updates: 0 };
+    prevCatalog[table] = {
+      matched_existing: c.matched_existing + catalogStats.matched_existing,
+      inserted: c.inserted + catalogStats.inserted,
+      skipped_updates: c.skipped_updates + catalogStats.skipped_updates,
+    };
+  }
+
+  // Merge id_maps
+  const mergedIdMaps = { ...idMaps };
+  for (const [t, m] of Object.entries(idMapDelta)) {
+    mergedIdMaps[t] = { ...(mergedIdMaps[t] ?? {}), ...m };
+  }
 
   const newProgress = {
     ...(rj.progress ?? {}),
@@ -242,10 +486,17 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
     total_parts: totalParts,
     error_samples: mergedSamples,
     errors_by_table: prevByTable,
+    dropped_columns_by_table: prevDropped,
+    catalog_conflicts_by_table: prevCatalog,
+    id_maps: mergedIdMaps,
   };
   await admin.from("restore_jobs").update({ progress: newProgress }).eq("id", restoreId);
 
-  return json({ rows_processed: processed, errors, error_samples: errorSamples, percent, done_parts: doneParts, total_parts: totalParts });
+  return json({
+    rows_processed: processed, errors, error_samples: errorSamples,
+    percent, done_parts: doneParts, total_parts: totalParts,
+    dropped_columns: droppedCols, catalog_stats: catalogStats,
+  });
 }
 
 async function handleFinalize(admin: any, body: any, userId: string, userEmail: string | null) {
@@ -255,6 +506,12 @@ async function handleFinalize(admin: any, body: any, userId: string, userEmail: 
   if (!restoreId) return json({ error: "restore_id obrigatório" }, 400);
 
   const { data: rj } = await admin.from("restore_jobs").select("*").eq("id", restoreId).maybeSingle();
+
+  // Conta id_maps
+  const idMapCounts: Record<string, number> = {};
+  for (const [t, m] of Object.entries(rj?.progress?.id_maps ?? {})) {
+    idMapCounts[t] = Object.keys(m as Record<string, string>).length;
+  }
 
   const finishedAt = new Date();
   const startedAtMs = rj?.started_at ? new Date(rj.started_at).getTime() : finishedAt.getTime();
@@ -269,6 +526,9 @@ async function handleFinalize(admin: any, body: any, userId: string, userEmail: 
       dry_run: rj?.dry_run ?? false,
       error_samples: Array.isArray(rj?.progress?.error_samples) ? rj.progress.error_samples : [],
       errors_by_table: rj?.progress?.errors_by_table ?? {},
+      dropped_columns_by_table: rj?.progress?.dropped_columns_by_table ?? {},
+      catalog_conflicts_by_table: rj?.progress?.catalog_conflicts_by_table ?? {},
+      id_map_counts: idMapCounts,
     },
     progress: { ...(rj?.progress ?? {}), step: success ? "concluído" : "falhou", percent: 100 },
   }).eq("id", restoreId);
@@ -291,6 +551,12 @@ async function handleFinalize(admin: any, body: any, userId: string, userEmail: 
 }
 
 // ───────── helpers ─────────
+function sameCols(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const sa = [...a].sort(), sb = [...b].sort();
+  return sa.every((v, i) => v === sb[i]);
+}
+
 async function topoOrder(tables: string[]): Promise<string[]> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_fk_pairs`, {
     method: "POST",
