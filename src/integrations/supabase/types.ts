@@ -197,6 +197,129 @@ export type Database = {
           },
         ]
       }
+      backup_audit: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          actor_name: string | null
+          backup_job_id: string | null
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          id: string
+          ip_address: string | null
+          payload: Json | null
+          restore_job_id: string | null
+          result: string | null
+          source_instance: string | null
+          target_instance: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_name?: string | null
+          backup_job_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          ip_address?: string | null
+          payload?: Json | null
+          restore_job_id?: string | null
+          result?: string | null
+          source_instance?: string | null
+          target_instance?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_name?: string | null
+          backup_job_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          ip_address?: string | null
+          payload?: Json | null
+          restore_job_id?: string | null
+          result?: string | null
+          source_instance?: string | null
+          target_instance?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      backup_jobs: {
+        Row: {
+          auth_user_count: number | null
+          checksum_sha256: string | null
+          created_at: string
+          created_by: string
+          created_by_email: string | null
+          duration_ms: number | null
+          error: string | null
+          file_size_bytes: number | null
+          finished_at: string | null
+          id: string
+          manifest: Json | null
+          progress: Json
+          reason: string | null
+          source_instance: string | null
+          started_at: string | null
+          status: string
+          storage_path: string | null
+          table_counts: Json | null
+          updated_at: string
+        }
+        Insert: {
+          auth_user_count?: number | null
+          checksum_sha256?: string | null
+          created_at?: string
+          created_by: string
+          created_by_email?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          file_size_bytes?: number | null
+          finished_at?: string | null
+          id?: string
+          manifest?: Json | null
+          progress?: Json
+          reason?: string | null
+          source_instance?: string | null
+          started_at?: string | null
+          status?: string
+          storage_path?: string | null
+          table_counts?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          auth_user_count?: number | null
+          checksum_sha256?: string | null
+          created_at?: string
+          created_by?: string
+          created_by_email?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          file_size_bytes?: number | null
+          finished_at?: string | null
+          id?: string
+          manifest?: Json | null
+          progress?: Json
+          reason?: string | null
+          source_instance?: string | null
+          started_at?: string | null
+          status?: string
+          storage_path?: string | null
+          table_counts?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bed_allocation_requests: {
         Row: {
           created_at: string
@@ -4191,6 +4314,80 @@ export type Database = {
             columns: ["state_id"]
             isOneToOne: false
             referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restore_jobs: {
+        Row: {
+          backup_job_id: string | null
+          conflict_strategy: string
+          conflicts: Json | null
+          created_at: string
+          created_by: string
+          created_by_email: string | null
+          dry_run: boolean
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          progress: Json
+          reason: string | null
+          report: Json | null
+          started_at: string | null
+          status: string
+          target_instance: string | null
+          updated_at: string
+          uploaded_file_path: string | null
+        }
+        Insert: {
+          backup_job_id?: string | null
+          conflict_strategy?: string
+          conflicts?: Json | null
+          created_at?: string
+          created_by: string
+          created_by_email?: string | null
+          dry_run?: boolean
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          progress?: Json
+          reason?: string | null
+          report?: Json | null
+          started_at?: string | null
+          status?: string
+          target_instance?: string | null
+          updated_at?: string
+          uploaded_file_path?: string | null
+        }
+        Update: {
+          backup_job_id?: string | null
+          conflict_strategy?: string
+          conflicts?: Json | null
+          created_at?: string
+          created_by?: string
+          created_by_email?: string | null
+          dry_run?: boolean
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          progress?: Json
+          reason?: string | null
+          report?: Json | null
+          started_at?: string | null
+          status?: string
+          target_instance?: string | null
+          updated_at?: string
+          uploaded_file_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restore_jobs_backup_job_id_fkey"
+            columns: ["backup_job_id"]
+            isOneToOne: false
+            referencedRelation: "backup_jobs"
             referencedColumns: ["id"]
           },
         ]
