@@ -257,26 +257,79 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
     }
   };
 
-  // ── Mobile: FAB flutuante + Sheet ──────────────────────────────────
+  // ── Vertical/reduzido (<lg): trilho lateral fino + Sheet ──────────
   if (isBelowLg && variant === "fixed" && patient?.name) {
-    // Portala o FAB para document.body: evita que `transform` de ancestrais
-    // (ex.: PageTransition/framer-motion) quebre o `position: fixed`.
-    const fab = typeof document !== "undefined"
+    // Portala o trilho para document.body: evita que `transform` de
+    // ancestrais (PageTransition/framer-motion) quebre o `position: fixed`.
+    const rail = typeof document !== "undefined"
       ? createPortal(
           <button
             type="button"
             onClick={() => setMobileSheetOpen(true)}
-            className="fixed bottom-20 right-4 z-50 flex flex-col items-center justify-center w-12 h-12 rounded-full shadow-lg bg-[hsl(217,72%,36%)] text-white transition-all active:scale-95 print:hidden"
-            aria-label="Ver dados do paciente"
+            aria-label="Abrir painel do paciente"
+            className={cn(
+              "group fixed top-[4.5rem] right-0 z-50 w-9 print:hidden",
+              "h-[calc(100dvh-6rem)]",
+              "flex flex-col items-center justify-center gap-3 py-4",
+              "rounded-l-xl border border-r-0 border-[hsl(217,30%,75%)]/50 dark:border-[hsl(217,30%,24%)]/50",
+              "bg-gradient-to-b from-[#0a1628]/5 via-[#0f2847]/10 to-[#1a3a5c]/5",
+              "dark:from-[#0a1628]/40 dark:via-[#0f2847]/50 dark:to-[#1a3a5c]/40",
+              "backdrop-blur-sm shadow-[-2px_0_10px_rgba(10,22,56,0.18)]",
+              "hover:bg-gradient-to-b hover:from-[#0a1628]/12 hover:via-[#0f2847]/18 hover:to-[#1a3a5c]/12",
+              "transition-colors duration-200 cursor-pointer overflow-hidden"
+            )}
           >
-            <User2 className="h-5 w-5" />
+            {/* Borda esquerda institucional */}
+            <span
+              aria-hidden
+              className="absolute left-0 top-0 bottom-0 w-[3px] pointer-events-none"
+              style={{
+                background: "linear-gradient(to bottom, #94a3b8 0%, #0f2847 40%, #1a3a5c 70%, #0a1628 100%)"
+              }}
+            />
+            <ChevronLeft className="h-3.5 w-3.5 text-[hsl(217,72%,42%)] group-hover:text-[hsl(217,72%,28%)] shrink-0" />
+            <div className={cn("h-2 w-2 rounded-full shrink-0", status.dot)} title={status.label} />
+            <div
+              className="flex-1 flex items-center justify-center"
+              style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
+            >
+              <div className="flex flex-col items-center gap-3">
+                {patient.bedNumber && (
+                  <span className="text-[10px] font-black tracking-[0.18em] text-[hsl(217,72%,30%)]">
+                    {patient.bedNumber}
+                  </span>
+                )}
+                <span className="text-[7px] font-bold tracking-[0.25em] uppercase text-foreground/50">
+                  {sector}
+                </span>
+                {patient.name && (
+                  <>
+                    <span className="w-3 h-px bg-border" />
+                    <span className="text-[8px] font-semibold tracking-wide text-foreground/70">
+                      {patient.name.split(' ').slice(0, 3).join(' ')}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+            {allergies.length > 0 && (
+              <span title={`Alergia: ${allergies.join(", ")}`} className="inline-flex shrink-0">
+                <ShieldAlert className="h-3 w-3 text-destructive" />
+              </span>
+            )}
+            <span
+              className="text-[6px] font-bold tracking-[0.2em] uppercase text-[hsl(217,72%,52%)]/70 shrink-0"
+              style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
+            >
+              ver
+            </span>
           </button>,
           document.body
         )
       : null;
     return (
       <>
-        {fab}
+        {rail}
         <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
           <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col gap-0 h-[100dvh]">
             <div className="flex-1 min-h-0 overflow-hidden">
