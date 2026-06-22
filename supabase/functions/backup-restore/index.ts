@@ -30,7 +30,7 @@ const BATCH = 500;
 // Tabelas-catálogo com chave natural conhecida. Só é aplicada se existir UNIQUE real no destino.
 const CATALOG_NATURAL_KEYS: Record<string, string[][]> = {
   hospital_units: [["name"]],
-  states: [["code"]],
+  states: [["name"], ["code"]],
   cid10_codes: [["code"]],
   medical_codes: [["code"]],
   medication_catalog: [["name"]],
@@ -290,7 +290,8 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
   const errorSamples: string[] = [];
   const droppedCols: Record<string, number> = {};
   const idMapDelta: Record<string, Record<string, string>> = {};
-  let catalogStats = { matched_existing: 0, inserted: 0, skipped_updates: 0 };
+  let catalogStats = { matched_existing: 0, inserted: 0, overwritten: 0 };
+  let bedNumberReassigned = 0;
 
   const schema = rj.progress?.schema ?? { cols_by_table: {}, unique_by_table: {} };
   const idMaps: Record<string, Record<string, string>> = rj.progress?.id_maps ?? {};
@@ -398,9 +399,23 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
             if (backupId != null && String(backupId) !== String(localId)) {
               (idMapDelta[table] ??= {})[String(backupId)] = String(localId);
             }
-            catalogStats.matched_existing++;
-            catalogStats.skipped_updates++;
-            processed++;
+            // Backup vence: UPDATE da linha local com os campos do backup (sem mexer no PK)
+            const updatePayload: Record<string, unknown> = { ...cleaned };
+            delete updatePayload[pkCol];
+            if (Object.keys(updatePayload).length > 0) {
+              const { error: updErr } = await admin.from(table).update(updatePayload).eq(pkCol, localId);
+              if (updErr) {
+                errors++;
+                if (errorSamples.length < 5) errorSamples.push(`${table} update: ${updErr.message}`);
+              } else {
+                catalogStats.matched_existing++;
+                catalogStats.overwritten++;
+                processed++;
+              }
+            } else {
+              catalogStats.matched_existing++;
+              processed++;
+            }
           } else {
             const { error: insErr } = await admin.from(table).insert(cleaned);
             if (insErr) {
@@ -412,11 +427,60 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
             }
           }
         }
+      } else if (table === "user_roles") {
+        // UNIQUE (user_id, role) — backup vence; ignora coluna id para não colidir em PK
+        for (let i = 0; i < rows.length; i += BATCH) {
+          const slice = rows.slice(i, i + BATCH).map((r) => {
+            const c = translateRow(cleanRow(r as Record<string, unknown>));
+            delete (c as any).id;
+            return c;
+          });
+          const { error } = await admin.from("user_roles").upsert(slice, { onConflict: "user_id,role" });
+          if (error) {
+            errors += slice.length;
+            if (errorSamples.length < 3) errorSamples.push(error.message);
+          } else {
+            processed += slice.length;
+          }
+        }
       } else {
         // Não-catálogo: filtro + tradução de FK + upsert por PK em batch
         const onConflict = pk.join(",");
         for (let i = 0; i < rows.length; i += BATCH) {
           const slice = rows.slice(i, i + BATCH).map((r) => translateRow(cleanRow(r as Record<string, unknown>)));
+
+          // patients: libera bed_number ocupado no destino por outros ids (backup vence em UNIQUE bed_number)
+          if (table === "patients") {
+            const pkCol = pk[0] ?? "id";
+            const beds = Array.from(new Set(
+              slice.map((r) => (r as any).bed_number).filter((v) => v != null && v !== "")
+            ));
+            const ids = slice.map((r) => (r as any)[pkCol]).filter((v) => v != null);
+            if (beds.length > 0) {
+              const { data: conflicting, error: selErr } = await admin
+                .from("patients")
+                .select(`${pkCol}, bed_number`)
+                .in("bed_number", beds);
+              if (!selErr && Array.isArray(conflicting) && conflicting.length > 0) {
+                const idSet = new Set(ids.map((v) => String(v)));
+                const toFree = conflicting
+                  .filter((r: any) => !idSet.has(String(r[pkCol])))
+                  .map((r: any) => r[pkCol]);
+                if (toFree.length > 0) {
+                  const { error: updErr } = await admin
+                    .from("patients")
+                    .update({ bed_number: null })
+                    .in(pkCol, toFree);
+                  if (updErr) {
+                    if (errorSamples.length < 3) errorSamples.push(`patients bed_number release: ${updErr.message}`);
+                  } else {
+                    bedNumberReassigned += toFree.length;
+                  }
+                }
+              }
+            }
+          }
+
           const { error } = await admin.from(table).upsert(slice, { onConflict });
           if (error) {
             errors += slice.length;
@@ -457,14 +521,14 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
   }
 
   // Merge catalog_conflicts_by_table
-  const prevCatalog: Record<string, { matched_existing: number; inserted: number; skipped_updates: number }> =
+  const prevCatalog: Record<string, { matched_existing: number; inserted: number; overwritten: number }> =
     rj.progress?.catalog_conflicts_by_table ?? {};
-  if (catalogStats.matched_existing || catalogStats.inserted || catalogStats.skipped_updates) {
-    const c = prevCatalog[table] ?? { matched_existing: 0, inserted: 0, skipped_updates: 0 };
+  if (catalogStats.matched_existing || catalogStats.inserted || catalogStats.overwritten) {
+    const c = prevCatalog[table] ?? { matched_existing: 0, inserted: 0, overwritten: 0 };
     prevCatalog[table] = {
       matched_existing: c.matched_existing + catalogStats.matched_existing,
       inserted: c.inserted + catalogStats.inserted,
-      skipped_updates: c.skipped_updates + catalogStats.skipped_updates,
+      overwritten: (c.overwritten ?? 0) + catalogStats.overwritten,
     };
   }
 
@@ -473,6 +537,9 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
   for (const [t, m] of Object.entries(idMapDelta)) {
     mergedIdMaps[t] = { ...(mergedIdMaps[t] ?? {}), ...m };
   }
+
+  // Merge bed_number_reassigned (acumulado entre steps de patients)
+  const prevBedReassigned: number = Number(rj.progress?.bed_number_reassigned ?? 0);
 
   const newProgress = {
     ...(rj.progress ?? {}),
@@ -489,6 +556,7 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
     dropped_columns_by_table: prevDropped,
     catalog_conflicts_by_table: prevCatalog,
     id_maps: mergedIdMaps,
+    bed_number_reassigned: prevBedReassigned + bedNumberReassigned,
   };
   await admin.from("restore_jobs").update({ progress: newProgress }).eq("id", restoreId);
 
@@ -529,6 +597,7 @@ async function handleFinalize(admin: any, body: any, userId: string, userEmail: 
       dropped_columns_by_table: rj?.progress?.dropped_columns_by_table ?? {},
       catalog_conflicts_by_table: rj?.progress?.catalog_conflicts_by_table ?? {},
       id_map_counts: idMapCounts,
+      bed_number_reassigned: Number(rj?.progress?.bed_number_reassigned ?? 0),
     },
     progress: { ...(rj?.progress ?? {}), step: success ? "concluído" : "falhou", percent: 100 },
   }).eq("id", restoreId);
