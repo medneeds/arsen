@@ -1,92 +1,76 @@
-# Plano — rodada 2 do `backup-restore`
+Escopo: somente `supabase/functions/backup-restore/index.ts`. Sem migration nova. Auditoria/manutenção intactas. Regra de produto mantida: **backup vence em conflito UNIQUE**.
 
-Escopo: somente `supabase/functions/backup-restore/index.ts`. Sem migration nova (as RPCs `get_public_table_columns` / `get_public_unique_constraints` já existem). Auditoria e manutenção ficam intactas.
+## Diagnóstico
 
-## Decisão de produto (nova)
+### Problema 1 — `min(uuid) does not exist` em `prescriptions.part-0000`
 
-**Em todo conflito UNIQUE entre backup e destino, o BACKUP VENCE.** Isso muda o comportamento atual do branch de catálogo, que hoje preserva a linha local e só mapeia o id.
+Não há `MIN()`/`MAX()` no nosso código TypeScript, nenhum trigger em `prescriptions` e nenhuma policy/função SQL que agregue UUID (verifiquei via `pg_trigger`, `pg_policies` e `pg_proc`). A origem é **PostgREST**: quando o payload de `upsert` contém **duas linhas com o mesmo valor na coluna de `onConflict`**, PostgREST gera internamente uma agregação por coluna para "achatar" as duplicatas em uma única linha antes do `INSERT ... ON CONFLICT`. Para colunas UUID (sem operador de ordenação total registrado), essa agregação dispara exatamente `function min(uuid) does not exist`.
 
-## Causa raiz #1 — `states` fora do tratamento de catálogo (efetivo)
+Por que só em `prescriptions`: é a tabela com `parent_id` (auto-FK de versionamento), então o backup costuma trazer várias linhas com o mesmo `id` reaparecendo entre partes ou a mesma linha exportada duas vezes por arquivamento. Em outras tabelas isso é raro o suficiente para não ter aparecido.
 
-Diagnóstico:
-- `states` já está em `CATALOG_NATURAL_KEYS`, **mas com `["code"]`**.
-- O erro real é `states_name_key` (UNIQUE em `name`), não em `code`. Como `get_public_unique_constraints` não devolve uma UNIQUE para `(code)`, `catalogStrategyByTable["states"]` cai em `null` → vira upsert por PK → colide em `states_name_key`.
-- `states` então não restaura, `id_maps.states` fica vazio, e toda FK `state_id` quebra (patient_registry e cascata).
+**Correção:** deduplicar o `slice` em memória **antes** de qualquer `upsert`, com Map chaveado pela tupla de `onConflict` (last-wins). Aplicado em todos os três ramos: catálogo (branch já é por-linha, ok), `user_roles` (chave `user_id,role`), e ramo genérico não-catálogo (chave = PK), e também no ramo especial de `patients` (chave = `id`). Também deduplicar por `bed_number` no slice de `patients` (last-wins) para evitar duas linhas do backup brigando pelo mesmo leito dentro do mesmo batch.
 
-Correção:
-- Trocar `states: [["code"]]` por `states: [["name"], ["code"]]` (ordem = prioridade). O matcher já escolhe o primeiro candidato cuja UNIQUE existe no destino — então pega `name` automaticamente, e segue tolerante se algum dia a UNIQUE migrar para `code`.
+### Problema 2 — `patients_bed_number_key` ainda viola
 
-Como o remapeamento chega nas filhas (confirmação pedida):
-- `FK_TRANSLATIONS` já inclui `state_id → states` e `hospital_unit_id → hospital_units` (linhas 44–45).
-- Em `handleStep`, `translateRow` (linha ~358) percorre cada coluna da row; se o nome está em `FK_TRANSLATIONS`, troca `row[col]` por `id_maps[<catalog>][backup_id]`.
-- `id_maps` é persistido em `progress.id_maps` e relido a cada step → tabelas-filha processadas **depois** do catálogo recebem a tradução. Mesma mecânica que já funciona para `hospital_units` (motivo de `hospital_unit_id` ter sumido dos erros). Basta `states` entrar no fluxo de catálogo para herdar o mesmo comportamento — sem código novo de propagação.
+A liberação atual roda por slice e cobre `bed_number` ocupado por **id diferente no destino**, mas falha em três cenários:
 
-## Mudança de semântica — "backup vence" no branch de catálogo
+1. **Duplicata no próprio slice do backup**: duas linhas do backup com mesmo `bed_number`. O upsert não tem chance — a UNIQUE estoura antes. Resolvido pela dedupe do Problema 1 + dedupe por `bed_number`.
+2. **Cross-slice no destino**: paciente do destino com bed `L05` pode não aparecer no slice atual mas aparecer num slice posterior. Mais robusto rodar a liberação **uma vez por arquivo** (sobre todos os `rows`), antes do laço de slices, em vez de por slice.
+3. **`.update().in()` silenciosamente bloqueado por RLS** se a service_role tiver gatilho `BEFORE UPDATE`. Vamos ler o `count` retornado e contabilizar; se vier 0 e havia conflitos, emite errorSample didático.
 
-Hoje (linhas 396–413): se `existing` é encontrado por chave natural, só popula `id_map` e **pula o update** (`skipped_updates++`).
+**Correção:**
+- Mover a liberação de `bed_number` para **antes** do laço `for (i ...)` em `patients`, usando o conjunto de beds extraído de **todos os `rows`** já traduzidos+dedupados.
+- Adicionar `count: 'exact'` no `update` para auditoria e log se mismatch.
+- Dedupe local por `bed_number` (last-wins) garante que o slice nunca leve dois ocupantes para o mesmo leito.
 
-Novo comportamento:
-1. `SELECT id FROM <tabela> WHERE <chave_natural>` (igual hoje).
-2. Se existe:
-   - `id_maps[t][backup_id] = local_id` (igual hoje, preserva FKs que já apontavam para o id local).
-   - **`UPDATE <tabela> SET <cleaned sem pk> WHERE id = local_id`** — backup sobrescreve campos não-chave do destino.
-   - Contador novo: `catalog_overwritten` (substitui `skipped_updates` no relatório).
-3. Se não existe: `INSERT` preservando id do backup (igual hoje).
+### Problema 3 — `hospital_units.state_id` órfão (efeito colateral do "backup vence")
 
-Riscos controlados: o `cleaned` já removeu colunas generated/identity-always e colunas inexistentes; o `UPDATE` exclui as colunas do PK (não realoca id) e não toca em FKs órfãs porque a tradução é feita só para tabelas-filha não-catálogo.
+Causa raiz no código: o ramo `isCatalog` (linhas 371-429) chama `cleanRow` mas **não** chama `translateRow`. Como `hospital_units` é catálogo, seu `state_id` segue com o id do backup e quebra a FK. Funcionou em `patients` etc. só porque o ramo não-catálogo (linha 450) chama `translateRow`.
 
-## Pendência #2 — `patients.bed_number` UNIQUE (backup vence)
+**Correção:** aplicar `translateRow(cleaned)` no ramo de catálogo, tanto no `updatePayload` quanto no `insert`. Como `FK_TRANSLATIONS` já contém `state_id → states` e `states` é processado **antes** de `hospital_units` pela ordem topológica, o `id_maps.states` já estará populado.
 
-Cenário: backup e destino têm pacientes diferentes ocupando o mesmo `bed_number`. Upsert por PK não resolve a UNIQUE secundária.
+### Cascata (confirmação)
 
-Estratégia (executada apenas para `patients`, em branch dedicado dentro de `handleStep`):
-1. Antes do upsert do slice, coletar `bed_numbers = slice.map(r => r.bed_number).filter(Boolean)`.
-2. `UPDATE patients SET bed_number = NULL WHERE bed_number = ANY(bed_numbers) AND id <> ANY(slice_ids)` — libera o leito nas linhas do destino que não pertencem ao backup. Isso não viola FK (`bed_number` é só string em `patients`; quem referencia leito o faz por `patient_id`, não por `bed_number`).
-3. Em seguida o `upsert` normal por PK roda como hoje; o paciente do backup assume o `bed_number`.
-4. Tracking: contador `bed_number_reassigned` no `progress` para auditoria.
+`prescriptions_encounter_id_fkey`, `prescriptions_parent_id_fkey`, `prescription_validations`, `discharge_documents`, `patient_movements_encounter_id_fkey`, `medical_record_edit_history`: todos dependem de `patients`/`patient_encounters`/`prescriptions` entrarem 100%. Resolvendo 1 (prescriptions entra) e 2 (patients entra), a cascata cai sozinha. Se sobrar erro residual nessas três, será motivo novo (UNIQUE própria) e tratamos no próximo round.
 
-Por que não usar `onConflict: "bed_number"`: o upsert do PostgREST aceita só uma `onConflict`; trocar PK por `bed_number` faria a row do backup atualizar o paciente local (mudando id), o que quebra todas as FKs filhas que apontam para o id do backup. A liberação prévia é mais segura.
+## Mudanças no arquivo
 
-## Pendência #3 — `user_roles` UNIQUE em `(user_id, role)`
+`supabase/functions/backup-restore/index.ts`:
 
-Hoje: upsert por PK `id` → colide em `user_roles_user_id_role_key`.
+1. **Helper `dedupeBy(rows, keyFn)`** — Map last-wins, retorna array. Adicionar perto de `cleanRow`/`translateRow`.
 
-Correção: caso especial em `handleStep` — se `table === "user_roles"`, usar `onConflict: "user_id,role"` e omitir `id` do slice (deixa o destino manter o `id` local, ou gerar novo). `ignoreDuplicates: false` mantém "backup vence" nos demais campos (não há outros — só `created_at`).
+2. **Ramo catálogo (linhas 371-429)**:
+   - `const cleaned = translateRow(cleanRow(raw))` (acrescenta `translateRow`).
+   - Sem outras mudanças estruturais.
 
-Generalização opcional: como `get_public_unique_constraints` já devolve as UNIQUEs, dá para escolher automaticamente o melhor `onConflict` por tabela. Mantenho fora deste round para não regredir tabelas hoje funcionando — só `user_roles` em allowlist.
+3. **Ramo `user_roles` (linha 432-445)**:
+   - Após montar o slice, `dedupeBy(slice, r => \`${r.user_id}::${r.role}\`)`.
 
-## Pendência #4 — cascata neta (`prescription_validations`, `discharge_documents`, `medical_record_edit_history`)
+4. **Ramo genérico não-catálogo (linha 446-491)** — reestruturar:
+   - **Antes do laço de slices**, montar `allRows = rows.map(r => translateRow(cleanRow(r)))` e `allRows = dedupeBy(allRows, r => pk.map(c => r[c]).join('::'))`.
+   - **Se `table === "patients"`**: rodar a liberação de `bed_number` **uma vez**, usando todos os `bed_number` distintos de `allRows`. Depois, dedupe extra por `bed_number` (last-wins) sobre `allRows`.
+   - Loop em `allRows` (não mais `rows`): `upsert(slice, { onConflict })`. Já dedupado → não dispara `min(uuid)`.
 
-Confirmo: são netos de `patient_registry`, que depende de `states`. Corrigindo `states` + cascata de `state_id` em `patient_registry`, `medical_records`, `prescriptions`, `patient_encounters` voltam, e os netos param de quebrar por FK. Se algum erro residual sobrar nesses três, será por causa **diferente** (provavelmente UNIQUE própria) e tratamos no próximo round com o relatório novo.
+5. **`bedNumberReassigned`**: contador acumulado igual hoje; report final inalterado.
 
-## Ordem de execução durante o restore (inalterada, só comportamento)
+6. **Novo contador `slice_dedupes_dropped`** opcional no `progress` para auditoria (quantas linhas duplicadas foram colapsadas) — útil para ver no relatório se o backup vinha realmente com duplicatas.
+
+## Ordem de execução (inalterada)
 
 ```text
-handlePlan
-  → schema discovery (já existe)
-  → injeta __auth_users__ (já existe)
-  → marca catalog (agora states entra também via name)
-
-handleStep __auth_users__   (1º)
-handleStep catálogos        (2º)  → backup vence: UPDATE em vez de skip
-handleStep tabelas filhas   (3º)  → tradução de FK (states_id agora populado)
-                                   → branch especial: patients (libera bed_number)
-                                   → branch especial: user_roles (onConflict user_id,role)
-handleFinalize              → report inclui catalog_overwritten, bed_number_reassigned
+handlePlan → topoOrder (states antes de hospital_units, hospital_units antes do resto)
+handleStep __auth_users__
+handleStep catálogos (states → hospital_units → ...)  [agora com translateRow]
+handleStep tabelas filhas                              [agora com dedupe por PK]
+  ↳ patients: liberação de bed_number 1x + dedupe por bed_number
+  ↳ user_roles: dedupe por (user_id, role)
+handleFinalize
 ```
-
-## Arquivos a tocar
-
-- `supabase/functions/backup-restore/index.ts`:
-  - `CATALOG_NATURAL_KEYS.states` → `[["name"], ["code"]]`.
-  - Branch `isCatalog` em `handleStep`: substituir skip por `UPDATE` (backup vence) + renomear contador.
-  - Branch não-catálogo em `handleStep`: detectar `table === "patients"` e fazer liberação prévia de `bed_number`; detectar `table === "user_roles"` e usar `onConflict: "user_id,role"` sem `id`.
-  - `handleFinalize`: adicionar `catalog_overwritten` e `bed_number_reassigned` ao report.
 
 ## O que ainda pode sobrar
 
-1. Outras UNIQUEs secundárias em tabelas não-catálogo (além de `patients.bed_number` e `user_roles`) — só aparecem no próximo relatório; padrão de allowlist por tabela já está pronto para estender.
-2. Catálogo cuja UNIQUE no destino é composta e não bate com nenhum candidato em `CATALOG_NATURAL_KEYS` — basta adicionar o candidato correto.
-3. `UPDATE` de catálogo (backup vence) pode tocar campos que o destino usa em outras integrações (ex: renomear `hospital_units.name`); é o efeito desejado pela decisão de produto, mas vale notar.
-4. Senhas continuam sem migrar; FKs para usuários ausentes em `auth/users.json` continuam órfãs.
-5. CHECK/trigger BEFORE INSERT novos no destino seguem fora de cobertura — rejeição válida.
+1. Outras UNIQUEs secundárias específicas (além de `patients.bed_number` e `user_roles(user_id,role)`) — só aparecem com o próximo relatório; padrão de allowlist por tabela já existe.
+2. `bed_number` liberado em uma linha do destino pode entrar em conflito com outra UNIQUE da mesma linha (raro). Tratável caso a caso.
+3. Catálogos com UNIQUE composta ainda não listada em `CATALOG_NATURAL_KEYS`.
+4. Senhas em `auth.users` continuam sem migrar; FKs para usuários inexistentes seguem órfãs (fora de escopo desta correção).
+5. CHECK/trigger BEFORE INSERT novos no destino — rejeição válida.
