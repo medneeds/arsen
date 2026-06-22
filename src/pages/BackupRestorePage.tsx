@@ -22,6 +22,39 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsSuperAdmin } from "@/hooks/useIsSuperAdmin";
 
+// Extrai mensagem específica do campo "error" do JSON retornado pela edge function
+// em respostas não-2xx. supabase.functions.invoke devolve FunctionsHttpError
+// com `.context` = Response — precisamos ler/parsear esse body manualmente.
+async function extractEdgeError(err: unknown, fnName: string): Promise<string> {
+  const fallback = err instanceof Error ? err.message : String(err);
+  try {
+    const ctx = (err as { context?: Response } | null)?.context;
+    if (!ctx) {
+      console.error(`[${fnName}] erro sem context:`, err);
+      return fallback;
+    }
+    const status = ctx.status;
+    let bodyText = "";
+    try {
+      const cloned = typeof ctx.clone === "function" ? ctx.clone() : null;
+      bodyText = cloned ? await cloned.text() : await ctx.text();
+    } catch { /* body já consumido */ }
+    console.error(`[${fnName}] HTTP ${status} — body:`, bodyText);
+    if (bodyText) {
+      try {
+        const parsed = JSON.parse(bodyText);
+        if (parsed && typeof parsed.error === "string" && parsed.error.trim()) return parsed.error;
+        if (parsed && typeof parsed.message === "string" && parsed.message.trim()) return parsed.message;
+      } catch { /* não-JSON */ }
+      return `HTTP ${status}: ${bodyText.slice(0, 300)}`;
+    }
+    return `HTTP ${status}: ${fallback}`;
+  } catch (parseErr) {
+    console.error(`[${fnName}] falha ao extrair erro:`, parseErr, err);
+    return fallback;
+  }
+}
+
 interface BackupJob {
   id: string;
   created_at: string;
