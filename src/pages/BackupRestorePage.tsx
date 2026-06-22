@@ -563,6 +563,150 @@ export default function BackupRestorePage() {
         <ShieldAlert className="w-3.5 h-3.5" />
         Módulo restrito a administradores. Todas as operações são auditadas em tempo real.
       </div>
+
+      {/* ── Dialog de Restauração ── */}
+      <Dialog open={restoreOpen} onOpenChange={(o) => { if (!restoreRunning) setRestoreOpen(o); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-rose-700">
+              <RotateCcw className="w-5 h-5" />
+              {restoreDryRun ? "Simulação de restauração" : "Restauração de backup"} — Etapa {restoreStep} de 3
+            </DialogTitle>
+            <DialogDescription>
+              Backup de {restoreTarget ? formatDate(restoreTarget.created_at) : "—"} · {restoreTarget ? formatBytes(restoreTarget.file_size_bytes) : "—"}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Etapa 1 — modo + dry-run + tabelas */}
+          {restoreStep === 1 && restoreTarget && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">Modo de restauração</Label>
+                <div className="flex gap-2 mt-1">
+                  <Button size="sm" variant={restoreMode === "full" ? "default" : "outline"} onClick={() => setRestoreMode("full")}>Completo (todas as tabelas)</Button>
+                  <Button size="sm" variant={restoreMode === "partial" ? "default" : "outline"} onClick={() => setRestoreMode("partial")}>Parcial (selecionar)</Button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 border rounded-md p-3 bg-blue-50">
+                <Checkbox id="dryrun" checked={restoreDryRun} onCheckedChange={(c) => setRestoreDryRun(!!c)} />
+                <Label htmlFor="dryrun" className="text-sm cursor-pointer flex items-center gap-2">
+                  <FlaskConical className="w-4 h-4 text-blue-600" />
+                  <strong>Simulação (dry-run)</strong> — baixa e valida os arquivos sem escrever no banco. <strong>Altamente recomendado</strong>.
+                </Label>
+              </div>
+
+              {restoreMode === "partial" && restoreTarget.table_counts && (
+                <div>
+                  <Label className="text-sm font-medium">Tabelas a restaurar</Label>
+                  <ScrollArea className="h-48 border rounded-md p-2 mt-1">
+                    <div className="grid grid-cols-2 gap-1">
+                      {Object.entries(restoreTarget.table_counts).sort().map(([t, n]) => (
+                        <label key={t} className="flex items-center gap-2 text-xs hover:bg-slate-50 px-1 rounded cursor-pointer">
+                          <Checkbox
+                            checked={restoreTables.has(t)}
+                            onCheckedChange={(c) => {
+                              const next = new Set(restoreTables);
+                              if (c) next.add(t); else next.delete(t);
+                              setRestoreTables(next);
+                            }}
+                          />
+                          <span className="font-mono">{t}</span>
+                          <span className="text-muted-foreground">({n.toLocaleString("pt-BR")})</span>
+                        </label>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                  <p className="text-xs text-muted-foreground mt-1">{restoreTables.size} tabela(s) selecionada(s)</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Etapa 2 — avisos */}
+          {restoreStep === 2 && (
+            <div className="space-y-3">
+              <Card className="border-rose-300 bg-rose-50">
+                <CardContent className="pt-4 text-sm text-rose-900 space-y-2">
+                  <p className="font-bold flex items-center gap-2"><AlertTriangle className="w-4 h-4" />O que vai acontecer:</p>
+                  <ul className="list-disc ml-5 space-y-1">
+                    {!restoreDryRun && <li>O sistema entrará em <strong>modo manutenção</strong> — usuários comuns ficam bloqueados até finalizar.</li>}
+                    {!restoreDryRun && <li>Linhas do backup serão <strong>UPSERT</strong> (insert ou overwrite) por chave primária. Linhas que existem só no destino <strong>não</strong> são apagadas.</li>}
+                    {!restoreDryRun && <li>Triggers, RLS e constraints ficam <strong>ativos</strong> durante a operação — falhas individuais são reportadas.</li>}
+                    <li>Senhas, MFA e identidades sociais <strong>não são restauradas</strong>.</li>
+                    <li>Usuários de auth (auth.users) <strong>não são tocados</strong> nesta versão.</li>
+                    {restoreDryRun && <li className="font-bold">Em dry-run, NENHUMA gravação ocorre. Apenas validação de manifest, parts e JSON.</li>}
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Etapa 3 — senha + confirmação */}
+          {restoreStep === 3 && (
+            <div className="space-y-3">
+              {restoreRunning && restoreProgress ? (
+                <div className="space-y-2">
+                  <Progress value={restoreProgress.percent} />
+                  <p className="text-sm font-medium">{restoreProgress.step}</p>
+                  <p className="text-xs text-muted-foreground">{restoreProgress.processed} linhas processadas · {restoreProgress.errors} erros</p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <Label htmlFor="rreason" className="text-sm">Motivo / justificativa (≥10 caracteres, será auditado)</Label>
+                    <Textarea id="rreason" value={restoreReason} onChange={(e) => setRestoreReason(e.target.value)} rows={2} maxLength={500} />
+                  </div>
+                  <div>
+                    <Label htmlFor="rpass" className="text-sm">Sua senha (reverificação)</Label>
+                    <Input id="rpass" type="password" value={restorePassword} onChange={(e) => setRestorePassword(e.target.value)} autoComplete="current-password" />
+                  </div>
+                  <div>
+                    <Label htmlFor="rconfirm" className="text-sm">
+                      Digite <code className="bg-rose-100 px-1 rounded">RESTAURAR AGORA</code> para confirmar
+                    </Label>
+                    <Input id="rconfirm" value={restoreConfirm} onChange={(e) => setRestoreConfirm(e.target.value.toUpperCase())} />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            {restoreStep > 1 && !restoreRunning && (
+              <Button variant="outline" onClick={() => setRestoreStep((s) => (s - 1) as 1 | 2 | 3)}>Voltar</Button>
+            )}
+            {restoreStep < 3 && (
+              <Button
+                onClick={() => setRestoreStep((s) => (s + 1) as 1 | 2 | 3)}
+                disabled={restoreStep === 1 && restoreMode === "partial" && restoreTables.size === 0}
+              >
+                Continuar
+              </Button>
+            )}
+            {restoreStep === 3 && (
+              <Button
+                variant="destructive"
+                onClick={runRestore}
+                disabled={
+                  restoreRunning ||
+                  restoreReason.trim().length < 10 ||
+                  !restorePassword ||
+                  restoreConfirm !== "RESTAURAR AGORA"
+                }
+              >
+                {restoreRunning ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Executando…</>
+                ) : restoreDryRun ? (
+                  <><FlaskConical className="w-4 h-4 mr-2" />Executar simulação</>
+                ) : (
+                  <><RotateCcw className="w-4 h-4 mr-2" />Confirmar restauração</>
+                )}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
