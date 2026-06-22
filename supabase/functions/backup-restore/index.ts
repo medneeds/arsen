@@ -292,6 +292,7 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
   const idMapDelta: Record<string, Record<string, string>> = {};
   let catalogStats = { matched_existing: 0, inserted: 0, overwritten: 0 };
   let bedNumberReassigned = 0;
+  let sliceDedupesDropped = 0;
 
   const schema = rj.progress?.schema ?? { cols_by_table: {}, unique_by_table: {} };
   const idMaps: Record<string, Record<string, string>> = rj.progress?.id_maps ?? {};
