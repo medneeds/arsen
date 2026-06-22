@@ -364,16 +364,25 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
       return row;
     };
 
+    // Dedupe last-wins por chave composta. Evita "function min(uuid) does not exist"
+    // que o PostgREST dispara ao agregar duplicatas no payload de upsert.
+    const dedupeBy = <T extends Record<string, unknown>>(arr: T[], keyFn: (r: T) => string): T[] => {
+      const m = new Map<string, T>();
+      for (const r of arr) m.set(keyFn(r), r);
+      return Array.from(m.values());
+    };
+
     if (rows.length > 0 && !rj.dry_run) {
       const pk = tEntry.pk ?? ["id"];
       const isCatalog = !!tEntry.is_catalog && Array.isArray(tEntry.catalog_natural_key) && tEntry.catalog_natural_key.length > 0;
 
       if (isCatalog) {
-        // Catálogo: resolve por chave natural, popula id_map, NÃO sobrescreve linha existente
+        // Catálogo: resolve por chave natural, popula id_map, backup vence (UPDATE).
+        // Aplica translateRow para que FKs (ex.: hospital_units.state_id) sejam remapeadas via id_maps.
         const naturalKey: string[] = tEntry.catalog_natural_key;
         const pkCol = pk[0] ?? "id";
         for (const raw of rows) {
-          const cleaned = cleanRow(raw as Record<string, unknown>);
+          const cleaned = translateRow(cleanRow(raw as Record<string, unknown>));
           const backupId = (raw as any)[pkCol];
           // monta lookup
           let q = admin.from(table).select(`${pkCol}`).limit(1);
@@ -429,12 +438,17 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
         }
       } else if (table === "user_roles") {
         // UNIQUE (user_id, role) — backup vence; ignora coluna id para não colidir em PK
-        for (let i = 0; i < rows.length; i += BATCH) {
-          const slice = rows.slice(i, i + BATCH).map((r) => {
-            const c = translateRow(cleanRow(r as Record<string, unknown>));
-            delete (c as any).id;
-            return c;
-          });
+        // Dedupe por (user_id, role) antes do upsert (last-wins) para não disparar min(uuid).
+        let allRows = rows.map((r) => {
+          const c = translateRow(cleanRow(r as Record<string, unknown>));
+          delete (c as any).id;
+          return c;
+        });
+        const beforeDedupe = allRows.length;
+        allRows = dedupeBy(allRows, (r) => `${String((r as any).user_id)}::${String((r as any).role)}`);
+        sliceDedupesDropped += beforeDedupe - allRows.length;
+        for (let i = 0; i < allRows.length; i += BATCH) {
+          const slice = allRows.slice(i, i + BATCH);
           const { error } = await admin.from("user_roles").upsert(slice, { onConflict: "user_id,role" });
           if (error) {
             errors += slice.length;
@@ -444,43 +458,70 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
           }
         }
       } else {
-        // Não-catálogo: filtro + tradução de FK + upsert por PK em batch
+        // Não-catálogo: filtro + tradução de FK + dedupe por PK + upsert em batch.
         const onConflict = pk.join(",");
-        for (let i = 0; i < rows.length; i += BATCH) {
-          const slice = rows.slice(i, i + BATCH).map((r) => translateRow(cleanRow(r as Record<string, unknown>)));
+        const pkCol = pk[0] ?? "id";
+        let allRows = rows.map((r) => translateRow(cleanRow(r as Record<string, unknown>)));
 
-          // patients: libera bed_number ocupado no destino por outros ids (backup vence em UNIQUE bed_number)
-          if (table === "patients") {
-            const pkCol = pk[0] ?? "id";
-            const beds = Array.from(new Set(
-              slice.map((r) => (r as any).bed_number).filter((v) => v != null && v !== "")
-            ));
-            const ids = slice.map((r) => (r as any)[pkCol]).filter((v) => v != null);
-            if (beds.length > 0) {
+        // Dedupe por PK (last-wins): blinda contra min(uuid) do PostgREST quando o payload
+        // tem duplicatas (típico em prescriptions por parent_id/versionamento).
+        const beforePkDedupe = allRows.length;
+        allRows = dedupeBy(allRows, (r) => pk.map((c) => String((r as any)[c])).join("::"));
+        sliceDedupesDropped += beforePkDedupe - allRows.length;
+
+        // patients: libera bed_number ocupado no destino por outros ids (backup vence)
+        // Roda UMA VEZ por arquivo, sobre o conjunto completo de beds do backup.
+        if (table === "patients") {
+          // Dedupe extra por bed_number (last-wins) para evitar duas linhas do backup
+          // brigando pelo mesmo leito dentro do mesmo batch.
+          const beds = Array.from(new Set(
+            allRows.map((r) => (r as any).bed_number).filter((v) => v != null && v !== "")
+          ));
+          const backupIds = new Set(allRows.map((r) => String((r as any)[pkCol])).filter((v) => v != null));
+          if (beds.length > 0) {
+            // Processa em chunks para não estourar URL length em .in()
+            const CHUNK = 500;
+            for (let i = 0; i < beds.length; i += CHUNK) {
+              const bedChunk = beds.slice(i, i + CHUNK);
               const { data: conflicting, error: selErr } = await admin
                 .from("patients")
                 .select(`${pkCol}, bed_number`)
-                .in("bed_number", beds);
-              if (!selErr && Array.isArray(conflicting) && conflicting.length > 0) {
-                const idSet = new Set(ids.map((v) => String(v)));
-                const toFree = conflicting
-                  .filter((r: any) => !idSet.has(String(r[pkCol])))
-                  .map((r: any) => r[pkCol]);
-                if (toFree.length > 0) {
-                  const { error: updErr } = await admin
-                    .from("patients")
-                    .update({ bed_number: null })
-                    .in(pkCol, toFree);
-                  if (updErr) {
-                    if (errorSamples.length < 3) errorSamples.push(`patients bed_number release: ${updErr.message}`);
-                  } else {
-                    bedNumberReassigned += toFree.length;
-                  }
+                .in("bed_number", bedChunk);
+              if (selErr) {
+                if (errorSamples.length < 3) errorSamples.push(`patients bed_number lookup: ${selErr.message}`);
+                continue;
+              }
+              if (!Array.isArray(conflicting) || conflicting.length === 0) continue;
+              const toFree = conflicting
+                .filter((r: any) => !backupIds.has(String(r[pkCol])))
+                .map((r: any) => r[pkCol]);
+              if (toFree.length === 0) continue;
+              const { error: updErr, count } = await admin
+                .from("patients")
+                .update({ bed_number: null }, { count: "exact" })
+                .in(pkCol, toFree);
+              if (updErr) {
+                if (errorSamples.length < 3) errorSamples.push(`patients bed_number release: ${updErr.message}`);
+              } else {
+                bedNumberReassigned += count ?? toFree.length;
+                if ((count ?? 0) === 0 && toFree.length > 0 && errorSamples.length < 3) {
+                  errorSamples.push(`patients bed_number release: 0 rows updated apesar de ${toFree.length} conflitos`);
                 }
               }
             }
           }
+          // Dedupe por bed_number dentro do payload do backup (last-wins).
+          // Preserva linhas sem bed_number (NULL) sem colapsá-las.
+          const beforeBedDedupe = allRows.length;
+          const withBed = allRows.filter((r) => (r as any).bed_number != null && (r as any).bed_number !== "");
+          const withoutBed = allRows.filter((r) => (r as any).bed_number == null || (r as any).bed_number === "");
+          const dedupedBed = dedupeBy(withBed, (r) => String((r as any).bed_number));
+          allRows = [...withoutBed, ...dedupedBed];
+          sliceDedupesDropped += beforeBedDedupe - allRows.length;
+        }
 
+        for (let i = 0; i < allRows.length; i += BATCH) {
+          const slice = allRows.slice(i, i + BATCH);
           const { error } = await admin.from(table).upsert(slice, { onConflict });
           if (error) {
             errors += slice.length;
