@@ -969,15 +969,30 @@ async function handleFinalize(admin: any, body: any, userId: string, userEmail: 
       if (entries.length === 0) continue;
       const parentIds = Array.from(new Set(entries.map(([, p]) => p)));
       const existing = new Set<string>();
-      const CHUNK = 500;
+      const lookupFailed = new Set<string>(); // parentIds em chunks cuja verificação falhou
+      const CHUNK = 100; // mesmo padrão do FK lookup do handleStep — evita estouro de URL do PostgREST
       for (let i = 0; i < parentIds.length; i += CHUNK) {
         const chunk = parentIds.slice(i, i + CHUNK);
-        const { data } = await admin.from(tbl).select("id").in("id", chunk);
+        const { data, error: selErr } = await admin.from(tbl).select("id").in("id", chunk);
+        if (selErr) {
+          console.error(
+            `[backup-restore] Pass B lookup falhou em ${tbl} chunk ${i}-${i + chunk.length}:`,
+            selErr.message,
+          );
+          // Fail-safe: NÃO dropa por falha de verificação. Marca como inconclusivo
+          // e deixa o UPDATE tentar — o FK do banco é a verdade final.
+          for (const pid of chunk) lookupFailed.add(String(pid));
+          continue;
+        }
         for (const r of (data ?? [])) existing.add(String((r as any).id));
       }
       // Atualiza em lotes pequenos (uma chamada por linha — simples e seguro)
       for (const [childId, parentId] of entries) {
-        if (!existing.has(String(parentId))) { parentIdDropped++; continue; }
+        const pidStr = String(parentId);
+        const verified = existing.has(pidStr);
+        const inconclusive = !verified && lookupFailed.has(pidStr);
+        // Só dropa quando temos CERTEZA: lookup funcionou E pai está ausente.
+        if (!verified && !inconclusive) { parentIdDropped++; continue; }
         const { error: uErr } = await admin.from(tbl).update({ parent_id: parentId }).eq("id", childId);
         if (uErr) parentIdDropped++; else parentIdRelinked++;
       }
