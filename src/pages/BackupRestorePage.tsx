@@ -899,6 +899,56 @@ export default function BackupRestorePage() {
                                   </ScrollArea>
                                 </div>
                               )}
+                              {nulledFkEntries.length > 0 && (
+                                <div>
+                                  <p className="text-[11px] font-semibold uppercase text-slate-500 mb-1">
+                                    Campos de FK anulados (linha preservada)
+                                  </p>
+                                  <div className="border rounded overflow-hidden">
+                                    <table className="w-full text-xs">
+                                      <thead className="bg-amber-50">
+                                        <tr>
+                                          <th className="text-left px-2 py-1 font-medium">Tabela.coluna</th>
+                                          <th className="text-right px-2 py-1 font-medium">Campos anulados</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {nulledFkEntries.map(([k, n]) => (
+                                          <tr key={k} className="border-t">
+                                            <td className="px-2 py-1 font-mono">{k}</td>
+                                            <td className="px-2 py-1 text-right font-semibold text-amber-700">{n}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              )}
+                              {noLinkTotal > 0 && (
+                                <div>
+                                  <p className="text-[11px] font-semibold uppercase text-slate-500 mb-1">
+                                    Linhas sem vínculo de paciente preservadas para revisão ({noLinkTotal})
+                                  </p>
+                                  <div className="border rounded overflow-hidden">
+                                    <table className="w-full text-xs">
+                                      <thead className="bg-slate-50">
+                                        <tr>
+                                          <th className="text-left px-2 py-1 font-medium">Tabela</th>
+                                          <th className="text-right px-2 py-1 font-medium">Linhas</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {noLinkEntries.map(([t, n]) => (
+                                          <tr key={t} className="border-t">
+                                            <td className="px-2 py-1 font-mono">{t}</td>
+                                            <td className="px-2 py-1 text-right font-semibold text-slate-700">{n}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </details>
                         )}
