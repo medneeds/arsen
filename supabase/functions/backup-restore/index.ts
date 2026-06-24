@@ -854,6 +854,18 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
     prevPendingFix[table] = { ...(prevPendingFix[table] ?? {}), ...pendingParentFixups };
   }
 
+  // Merge nulled_fk_counts ["<table>.<fkCol>"] = n
+  const prevNulledFk: Record<string, number> = rj.progress?.nulled_fk_counts ?? {};
+  for (const [k, n] of Object.entries(nulledFkCounts)) {
+    prevNulledFk[k] = (prevNulledFk[k] ?? 0) + n;
+  }
+
+  // Merge rows_without_patient_link_by_table[table] = n
+  const prevNoLinkBy: Record<string, number> = rj.progress?.rows_without_patient_link_by_table ?? {};
+  if (noPatientLinkRows > 0) {
+    prevNoLinkBy[table] = (prevNoLinkBy[table] ?? 0) + noPatientLinkRows;
+  }
+
   const newProgress = {
     ...(rj.progress ?? {}),
     step: `${table} (${doneParts}/${totalParts})`,
@@ -875,8 +887,13 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
     min_uuid_retries: Number(rj.progress?.min_uuid_retries ?? 0) + minUuidRetries,
     orphan_fk_dropped_by_table: prevOrphanFk,
     pending_parent_id_fixups: prevPendingFix,
+    nulled_fk_counts: prevNulledFk,
+    rows_without_patient_link_by_table: prevNoLinkBy,
+    rows_without_patient_link_total:
+      Number(rj.progress?.rows_without_patient_link_total ?? 0) + noPatientLinkRows,
   };
   await admin.from("restore_jobs").update({ progress: newProgress }).eq("id", restoreId);
+
 
   return json({
     rows_processed: processed, errors, error_samples: errorSamples,
