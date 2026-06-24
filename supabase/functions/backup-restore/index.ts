@@ -150,10 +150,11 @@ async function forceDeactivateMaintenance(admin: any) {
 // Normaliza o shape do array para upsert: todas as linhas com o MESMO conjunto
 // de chaves (preenchendo ausentes com null). Sem isso, PostgREST agrega para
 // uniformizar e dispara "function min(uuid) does not exist" em colunas UUID.
-function normalizeShape<T extends Record<string, unknown>>(rows: T[]): T[] {
-  if (rows.length <= 1) return rows;
+function normalizeShape<T extends Record<string, unknown>>(rows: T[], extraKeys?: Iterable<string>): T[] {
+  if (rows.length === 0 && !extraKeys) return rows;
   const keys = new Set<string>();
   for (const r of rows) for (const k of Object.keys(r)) keys.add(k);
+  if (extraKeys) for (const k of extraKeys) keys.add(k);
   return rows.map((r) => {
     const out: Record<string, unknown> = { ...r };
     for (const k of keys) if (!(k in out)) out[k] = null;
@@ -224,16 +225,18 @@ async function handlePlan(admin: any, body: any, userId: string, userEmail: stri
   const ordered = await topoOrder(targetTables);
   const pkMap = await fetchPks(ordered);
 
-  // Schema do destino (colunas + uniques) — uma única descoberta
+  // Schema do destino (colunas + nulabilidade + uniques) — uma única descoberta
   const cols_by_table: Record<string, { allowed: string[]; generated: string[]; identity: string[] }> = {};
+  const nullable_by_table: Record<string, Record<string, boolean>> = {};
   const unique_by_table: Record<string, Array<{ name: string; columns: string[] }>> = {};
   try {
     const { data: colsRows } = await admin.rpc("get_public_table_columns", { tables: ordered });
-    for (const r of (colsRows ?? []) as Array<{ table_name: string; column_name: string; is_generated: boolean; is_identity: boolean }>) {
+    for (const r of (colsRows ?? []) as Array<{ table_name: string; column_name: string; is_generated: boolean; is_identity: boolean; is_nullable: boolean }>) {
       const e = cols_by_table[r.table_name] ?? (cols_by_table[r.table_name] = { allowed: [], generated: [], identity: [] });
       e.allowed.push(r.column_name);
       if (r.is_generated) e.generated.push(r.column_name);
       if (r.is_identity) e.identity.push(r.column_name);
+      (nullable_by_table[r.table_name] ??= {})[r.column_name] = !!r.is_nullable;
     }
     const { data: uqRows } = await admin.rpc("get_public_unique_constraints", { tables: ordered });
     for (const r of (uqRows ?? []) as Array<{ table_name: string; constraint_name: string; columns: string[] }>) {
@@ -298,7 +301,7 @@ async function handlePlan(admin: any, body: any, userId: string, userEmail: stri
       step: "iniciando", percent: 0, plan,
       current_table: null, current_part: null,
       processed: 0, errors: 0,
-      schema: { cols_by_table, unique_by_table },
+      schema: { cols_by_table, nullable_by_table, unique_by_table },
       id_maps: {},
       dropped_columns_by_table: {},
       catalog_conflicts_by_table: {},
@@ -377,7 +380,8 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
   // parent_id pendings desta part (prescriptions); merge no progress, aplicado em finalize
   const pendingParentFixups: Record<string, string> = {};
 
-  const schema = rj.progress?.schema ?? { cols_by_table: {}, unique_by_table: {} };
+  const schema = rj.progress?.schema ?? { cols_by_table: {}, nullable_by_table: {}, unique_by_table: {} };
+  const nullableForTable: Record<string, boolean> = schema.nullable_by_table?.[table] ?? {};
   const idMaps: Record<string, Record<string, string>> = rj.progress?.id_maps ?? {};
 
   // ── Branch 1: recriar auth.users ──
@@ -610,26 +614,10 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
                      allRows.some((r) => (r as any)[col] != null && (r as any)[col] !== "")
         );
 
-        // Pré-carrega nulabilidade de TODAS as colunas FK em uso para esta tabela.
-        // Genérico: se a coluna for nullable no destino, anulamos; se for NOT NULL, dropa a linha.
-        const nullableMap: Record<string, boolean> = {};
-        if (fkColsApplicable.length > 0) {
-          const cols = fkColsApplicable.map(([c]) => c);
-          const { data: nullRows, error: nullErr } = await admin.rpc(
-            "get_public_columns_nullability",
-            { p_columns: cols },
-          );
-          if (nullErr) {
-            console.error(`[backup-restore] nullability lookup ${table}:`, nullErr.message);
-            if (errorSamples.length < 3) {
-              errorSamples.push(`nullability lookup ${table}: ${nullErr.message} (assumindo NOT NULL)`);
-            }
-          } else {
-            for (const r of (nullRows ?? []) as Array<{ table_name: string; column_name: string; is_nullable: boolean }>) {
-              if (r.table_name === table) nullableMap[r.column_name] = !!r.is_nullable;
-            }
-          }
-        }
+        // Nulabilidade pré-carregada na descoberta de schema (reusa RPC já cacheada
+        // get_public_table_columns). Sem nova chamada RPC aqui — evita o problema
+        // de schema-cache que afundava get_public_columns_nullability.
+        const nullableMap: Record<string, boolean> = nullableForTable;
 
         for (const [fkCol, parentTable] of fkColsApplicable) {
           if (parentTable === table) continue; // segurança contra auto-FK
@@ -757,20 +745,24 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
           }
         }
 
+        // Normalização GLOBAL: todas as linhas (e o row-fallback) compartilham o
+        // mesmo conjunto-união de chaves. Sem isso, PostgREST agrega min/max para
+        // uniformizar shape entre chamadas e dispara "function min(uuid) does not exist".
+        const normalizedRows = normalizeShape(allRows);
+        const shapeKeys = normalizedRows.length > 0 ? Object.keys(normalizedRows[0]) : [];
+
         // Upsert com fallback linha-a-linha em caso de min(uuid).
-        for (let i = 0; i < allRows.length; i += BATCH) {
-          // Normaliza shape: todas as linhas com mesmo conjunto de chaves.
-          // Evita que PostgREST agregue (min/max) para uniformizar e exploda
-          // em "function min(uuid) does not exist".
-          const slice = normalizeShape(allRows.slice(i, i + BATCH));
+        for (let i = 0; i < normalizedRows.length; i += BATCH) {
+          const slice = normalizedRows.slice(i, i + BATCH);
           const { error } = await admin.from(table).upsert(slice, { onConflict });
           if (error) {
             const msg = error.message ?? String(error);
             if (/min\(uuid\)/i.test(msg)) {
-              // Fallback: refaz linha-a-linha. Lento, mas isola e contabiliza.
+              // Fallback: refaz linha-a-linha mantendo o MESMO shape-união global.
               minUuidRetries++;
               for (const row of slice) {
-                const { error: e1 } = await admin.from(table).upsert([row], { onConflict });
+                const rowNormalized = normalizeShape([row], shapeKeys)[0];
+                const { error: e1 } = await admin.from(table).upsert([rowNormalized], { onConflict });
                 if (e1) {
                   errors++;
                   if (errorSamples.length < 3) errorSamples.push(`row-fallback ${table}: ${e1.message}`);

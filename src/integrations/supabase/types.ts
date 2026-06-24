@@ -5650,6 +5650,7 @@ export type Database = {
           column_name: string
           is_generated: boolean
           is_identity: boolean
+          is_nullable: boolean
           table_name: string
         }[]
       }
