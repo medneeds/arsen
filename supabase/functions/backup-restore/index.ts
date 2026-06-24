@@ -603,14 +603,37 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
           sliceDedupesDropped += beforeBedDedupe - allRows.length;
         }
 
-        // ── Filtro de FK órfã: drop linhas cujo pai não existe no destino ──
+        // ── Filtro de FK órfã: anula coluna se NULLABLE, senão dropa linha ──
         const allowedCols = new Set<string>(meta?.allowed ?? []);
         const fkColsApplicable = Object.entries(FK_PARENTS).filter(
           ([col]) => (allowedCols.size === 0 || allowedCols.has(col)) &&
                      allRows.some((r) => (r as any)[col] != null && (r as any)[col] !== "")
         );
+
+        // Pré-carrega nulabilidade de TODAS as colunas FK em uso para esta tabela.
+        // Genérico: se a coluna for nullable no destino, anulamos; se for NOT NULL, dropa a linha.
+        const nullableMap: Record<string, boolean> = {};
+        if (fkColsApplicable.length > 0) {
+          const cols = fkColsApplicable.map(([c]) => c);
+          const { data: nullRows, error: nullErr } = await admin.rpc(
+            "get_public_columns_nullability",
+            { p_columns: cols },
+          );
+          if (nullErr) {
+            console.error(`[backup-restore] nullability lookup ${table}:`, nullErr.message);
+            if (errorSamples.length < 3) {
+              errorSamples.push(`nullability lookup ${table}: ${nullErr.message} (assumindo NOT NULL)`);
+            }
+          } else {
+            for (const r of (nullRows ?? []) as Array<{ table_name: string; column_name: string; is_nullable: boolean }>) {
+              if (r.table_name === table) nullableMap[r.column_name] = !!r.is_nullable;
+            }
+          }
+        }
+
         for (const [fkCol, parentTable] of fkColsApplicable) {
           if (parentTable === table) continue; // segurança contra auto-FK
+          const isNullable = !!nullableMap[fkCol]; // default false (mais seguro)
           const vals = Array.from(new Set(
             allRows.map((r) => (r as any)[fkCol]).filter((v) => v != null && v !== "")
           ));
@@ -634,37 +657,92 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
             }
             for (const row of (data ?? [])) existing.add(String((row as any).id));
           }
-          // Fail-safe: se lookup falhou, dropa TODAS as linhas com FK não-nula
-          // nessa coluna (não enviamos órfãs presumidas para a upsert).
+
+          const fkKey = `${table}.${fkCol}`;
+
+          // Fail-safe: lookup falhou. Se a coluna for nullable, anula em todas as
+          // linhas que tinham valor (preserva a linha). Se for NOT NULL, dropa.
           if (!lookupOk) {
-            const before = allRows.length;
-            allRows = allRows.filter((r) => {
-              const v = (r as any)[fkCol];
-              return v == null || v === "";
-            });
-            const dropped = before - allRows.length;
-            if (dropped > 0) {
-              orphanFkDropped[fkCol] = (orphanFkDropped[fkCol] ?? 0) + dropped;
-              if (errorSamples.length < 3) {
-                errorSamples.push(`FK fail-safe ${table}.${fkCol}→${parentTable}: ${dropped} linha(s) dropada(s) (lookup falhou)`);
+            if (isNullable) {
+              let nulled = 0;
+              for (const r of allRows) {
+                const v = (r as any)[fkCol];
+                if (v != null && v !== "") {
+                  (r as any)[fkCol] = null;
+                  nulled++;
+                }
+              }
+              if (nulled > 0) {
+                nulledFkCounts[fkKey] = (nulledFkCounts[fkKey] ?? 0) + nulled;
+                if (errorSamples.length < 5) {
+                  errorSamples.push(`FK fail-safe ${table}.${fkCol}→${parentTable}: ${nulled} campo(s) anulado(s) (lookup falhou)`);
+                }
+              }
+            } else {
+              const before = allRows.length;
+              allRows = allRows.filter((r) => {
+                const v = (r as any)[fkCol];
+                return v == null || v === "";
+              });
+              const dropped = before - allRows.length;
+              if (dropped > 0) {
+                orphanFkDropped[fkCol] = (orphanFkDropped[fkCol] ?? 0) + dropped;
+                if (errorSamples.length < 5) {
+                  errorSamples.push(`FK fail-safe ${table}.${fkCol}→${parentTable} (NOT NULL): ${dropped} linha(s) dropada(s) (lookup falhou)`);
+                }
               }
             }
             continue;
           }
-          const before = allRows.length;
-          allRows = allRows.filter((r) => {
-            const v = (r as any)[fkCol];
-            if (v == null || v === "") return true;
-            return existing.has(String(v));
-          });
-          const dropped = before - allRows.length;
-          if (dropped > 0) {
-            orphanFkDropped[fkCol] = (orphanFkDropped[fkCol] ?? 0) + dropped;
-            if (errorSamples.length < 3) {
-              errorSamples.push(`FK órfã ${table}.${fkCol}→${parentTable}: ${dropped} linha(s) dropada(s)`);
+
+          // Caminho feliz: para cada linha com FK órfã, anula (se nullable) ou dropa.
+          if (isNullable) {
+            let nulled = 0;
+            for (const r of allRows) {
+              const v = (r as any)[fkCol];
+              if (v == null || v === "") continue;
+              if (!existing.has(String(v))) {
+                (r as any)[fkCol] = null;
+                nulled++;
+              }
+            }
+            if (nulled > 0) {
+              nulledFkCounts[fkKey] = (nulledFkCounts[fkKey] ?? 0) + nulled;
+              if (errorSamples.length < 5) {
+                errorSamples.push(`FK órfã ANULADA ${table}.${fkCol}→${parentTable}: ${nulled} campo(s)`);
+              }
+            }
+          } else {
+            const before = allRows.length;
+            allRows = allRows.filter((r) => {
+              const v = (r as any)[fkCol];
+              if (v == null || v === "") return true;
+              return existing.has(String(v));
+            });
+            const dropped = before - allRows.length;
+            if (dropped > 0) {
+              orphanFkDropped[fkCol] = (orphanFkDropped[fkCol] ?? 0) + dropped;
+              if (errorSamples.length < 5) {
+                errorSamples.push(`FK órfã DROPADA ${table}.${fkCol}→${parentTable} (NOT NULL): ${dropped} linha(s)`);
+              }
             }
           }
         }
+
+        // Conta linhas sem nenhum vínculo de paciente (patient_id + patient_registry_id + encounter_id todos null/ausentes).
+        // Regra de negócio: backup vence — linha permanece, só é contabilizada para revisão.
+        const linkCols = ["patient_id", "patient_registry_id", "encounter_id"];
+        const linkApplicable = linkCols.filter((c) => allowedCols.size === 0 || allowedCols.has(c));
+        if (linkApplicable.length > 0) {
+          for (const r of allRows) {
+            const hasAny = linkApplicable.some((c) => {
+              const v = (r as any)[c];
+              return v != null && v !== "";
+            });
+            if (!hasAny) noPatientLinkRows++;
+          }
+        }
+
 
         // ── Two-pass parent_id para prescriptions (auto-FK) ──
         // Pass A: envia parent_id=null e guarda mapa para reaplicar em finalize.
