@@ -1,89 +1,75 @@
-Escopo: `supabase/functions/backup-restore/index.ts` e `src/pages/BackupRestorePage.tsx`. Sem migration. Regra mantida: backup vence.
+## Objetivo
 
-## Diagnóstico (causas raiz reais)
+Mudar o filtro de FK órfã em `supabase/functions/backup-restore/index.ts` (ramo não-catálogo, linhas 602-663) para **preservar o máximo de linhas possível**: quando a coluna de FK órfã for nullable, anular só a coluna; quando for NOT NULL, manter o drop atual.
 
-### ROBUSTEZ 1 — manutenção presa
-O `handlePlan` ativa `system_maintenance_mode` e o `handleFinalize` desativa. Quando um `step` aborta no meio (timeout, erro HTTP no client, navegador fechado, Promise rejection no front), o `finalize` simplesmente nunca é chamado e a flag fica `is_active=true` para sempre. O `try/catch` no `serve()` só roda em exceção da própria função; perda de conexão do client não dispara nada server-side.
+Escopo restrito ao tratamento de FK órfã das tabelas clínicas filhas. **Não toca**: ramo catálogo (states/hospital_units/cid10_codes), `user_roles`, lógica de `patients` (bed_number), two-pass de `prescriptions.parent_id`, fail-safe de chunk=100, normalizeShape, fallback min(uuid), auditoria, manutenção. Sem migração SQL.
 
-Correção: criar `forceDeactivateMaintenance(admin)` (UPDATE puro com `is_active=false`, `started_at=null`, `started_by=null`, `reason=null`, `expected_end_at=null`) e chamá-la em **três pontos**:
-1. `try/finally` envolvendo o corpo completo do `serve()` — garante limpeza no fim de qualquer chamada cujo restore esteja `failed/completed` (idempotente: se o restore segue rodando, NÃO derruba).
-2. `handleFinalize` (já existe).
-3. **Nova action `"force_unlock"`** — exposta para o botão admin, exige `super_admin`, escreve em `backup_audit` (`MAINTENANCE_FORCE_OFF`) com `actor_id` e motivo opcional do body, e marca como `failed` qualquer `restore_jobs.status='running'` desse user (campo `error = "force_unlock by admin"`).
+## Mapa de impacto (colunas em `FK_PARENTS` × tabelas filhas)
 
-Como o `try/finally` decide quando limpar: ler `restore_jobs.status` ANTES de limpar; só limpa se status ∈ `{completed, failed}` OU se a action era `force_unlock`. Para `step`/`plan` em andamento (`status='running'`), não toca. Isso evita que o finally derrube manutenção no meio de um restore válido.
+Consultado via `information_schema.columns`.
 
-### ROBUSTEZ 2 — botão "Forçar saída do modo manutenção"
-Em `BackupRestorePage.tsx`, adicionar:
-- Indicador visual lendo `system_maintenance_mode.is_active` (já em uso pelo `MaintenanceModeBanner`).
-- Botão **destrutivo** "Forçar saída do modo manutenção" visível só se `isSuperAdmin && maintenanceActive`. Confirma via `AlertDialog` (texto "DESBLOQUEAR"), chama `supabase.functions.invoke("backup-restore", { body: { action: "force_unlock", reason } })`, recarrega lista de jobs e toast de sucesso.
+**NOT NULL — continuam sendo dropadas (não há como anular):**
+- `conduct_history.patient_id`
+- `patient_admission_date_history.patient_id`
+- `vital_signs.patient_id`
+- `patient_registry_edit_history.patient_registry_id`
 
-### DADOS 1 — `patient_encounters` falha em `patient_id_fkey`
-Verificado em `pg_constraint`:
-```
-patient_encounters.patient_id → patients(id)           -- preservado
-patient_encounters.registry_id → patient_registry(id)  -- preservado
-```
-Ordem topológica está correta (`patients` → `patient_encounters`). Patients entrou com 167/0. FK aponta para `patients(id)` literal (sem catálogo, sem remapeamento). **Não é ordem nem alvo de FK.**
+**NULLABLE — passam a ser anuladas (coluna vira NULL, linha preservada):**
+Todas as demais ocorrências de `patient_id`, `registry_id`, `patient_registry_id`, `encounter_id`, `medical_record_id` nas tabelas filhas — incluindo:
+- `clinical_evolutions` (3 colunas)
+- `exam_requests` (3)
+- `culture_results` (3)
+- `patient_movements` (3)
+- `discharge_documents` (3)
+- `admission_histories` (3)
+- `medical_record_edit_history` (3)
+- `round_sessions` (2)
+- `prescriptions` / `prescriptions_archive` (2 cada — não têm `patient_id`)
+- `bed_census`, `bed_allocation_requests`, `dhd_patients`, `locked_sector_cleanup_log`, `medical_records`, `patient_encounters` (registry_id, medical_record_id), `pre_admissions`, `prescription_affinity_audit`, `prescription_draft_deletion_audit`, `receituarios`, `regulation_requests`, `regulatory_guides`, `saps3_assessments`, `sepsis_protocols`
 
-Causa real: o filtro de FK órfã EXISTE (linhas 547-583) mas **não está dropando todas as órfãs**. Investigando o select:
+A nulabilidade não é hardcoded — vai ser consultada em runtime (ver "Detecção" abaixo) para ficar genérica a qualquer evolução de schema.
 
-```ts
-admin.from(parentTable).select("id").in("id", chunk) // CHUNK=500
-```
+## Mudanças no código (`backup-restore/index.ts`)
 
-PostgREST envia esse `in.()` como query string em GET. 500 UUIDs × 38 chars ≈ **19 KB de URL**, acima do default seguro do PostgREST/edge (16 KB típico) — a request retorna 414/silenciosamente trunca em alguns proxies, e o set `existing` fica incompleto. Linhas cujo pai REALMENTE existe ficam fora de `existing` e seriam dropadas (falso negativo); mas pior, em alguns chunks a query falha → `lookupOk=false` → `continue` PULA o filtro para essa coluna, e o slice inteiro vai para upsert sem filtro → 328 erros de FK.
+### 1. Cache de nulabilidade por (tabela, coluna)
+Helper `getColumnNullable(admin, table, column)` com cache em closure por execução. Implementação: uma única chamada inicial a `information_schema.columns` filtrando por `table_schema='public'` e `column_name IN (...FK_PARENTS keys)`, retornada via `supabase.from('information_schema.columns')` — se PostgREST não expuser, cai em chamadas pontuais via RPC `get_public_columns_nullability(p_table, p_columns text[])` já existente no projeto ou, em último caso, uma RPC nova que use SECURITY DEFINER. Decisão preferida: **pré-carregar uma única vez no início de cada `step` action**, montando `Map<"table.column", boolean>` — minimiza round-trips. (Se nenhuma RPC servir, criar `public.get_columns_nullable(p_columns text[])` retornando `setof (table_name, column_name, is_nullable)` — única migração possível; valido com o usuário antes.)
 
-Correção:
-1. Reduzir `CHUNK` do FK filter para **100** (≈ 3.8 KB de URL, seguro).
-2. Mudar o fallback de erro: se `selErr` ocorrer, **NÃO** pular o filtro — em vez disso, marcar a tabela como "filtro inconclusivo" e dropar **todas** as linhas com FK não-nula naquela coluna (fail-safe pela regra "backup vence só onde há integridade"). Loga em `orphanFkDropped[fkCol]` + sample.
-3. Acrescentar log `console.error` com o erro real do select para diagnóstico.
+### 2. Novos contadores no escopo do `step`
+- `nulledFkCounts: Record<string, number>` — chave `"<table>.<column>"`, conta linhas com coluna anulada por órfã ou por fail-safe.
+- `noPatientLinkRows: number` — linhas que, após anulações, ficaram com `patient_id`, `patient_registry_id` E `encounter_id` todos NULL/ausentes simultaneamente (linha ainda inserida, conforme regra "backup vence").
+- Manter `orphanFkDropped` apenas para drops verdadeiros (coluna NOT NULL ou fallback impossível).
 
-Bônus: incluir filtro para **`patient_encounters` nos próprios encounters do backup** — se um encounter referencia patient_id que ESTÁ no backup mas foi dedupado em patients (ex.: colisão de bed_number na dedupe), também vira órfão. O filtro genérico já cobre esse caso porque consulta o destino real após o patients ter sido carregado.
+### 3. Reescrita do loop FK órfã (linhas 602-663)
 
-### DADOS 2 — `min(uuid) does not exist` ainda vivo em prescriptions
-Investigação no caminho atual:
-- Dedupe por PK: feito (linha 496).
-- Drop sem PK: feito (linha 488).
-- Two-pass parent_id: feito (linha 587).
+Para cada `(fkCol, parentTable)` aplicável:
 
-**Causa restante**: PostgREST, ao receber um array de upsert com **shapes diferentes** entre linhas (uma linha tem `parent_id`, outra não tem a chave; uma tem `validated_by`, outra não), normaliza o conjunto de colunas internamente via agregados — para colunas UUID, dispara `min(uuid) does not exist`. Isto é independente da dedupe por PK; basta haver **duas linhas com keys-set distintos** no array enviado.
+a. Coleta `vals` e busca `existing` no destino com chunk 100 (igual hoje).
 
-Ocorre em prescriptions porque o backup pode conter rascunhos antigos sem campos novos (validated_by, parent_id, etc.) misturados com prescrições novas.
+b. **Caminho feliz (lookupOk):** para cada linha com `v` definido e `v ∉ existing`:
+   - Se `getColumnNullable(table, fkCol)` → setar `(r as any)[fkCol] = null`; incrementar `nulledFkCounts["<table>.<fkCol>"]`.
+   - Senão → remover a linha de `allRows`; incrementar `orphanFkDropped[fkCol]`.
 
-Correção: novo helper `normalizeShape(rows)` aplicado **antes de TODO upsert** no ramo não-catálogo:
-1. Calcula `keysUnion = união de Object.keys de todas as rows`.
-2. Para cada row, atribui `null` (não `undefined`) em cada chave de `keysUnion` ausente.
-3. Resultado: array uniforme — PostgREST não precisa agregar e o min(uuid) some.
+c. **Fail-safe (lookup falhou):** para cada linha com `v != null`:
+   - Se NULLABLE → setar `null`; somar em `nulledFkCounts` com sufixo `" (fail-safe)"` no sample, mas mesmo bucket no contador.
+   - Senão → drop, somar em `orphanFkDropped[fkCol]`.
 
-Combinado com o fallback linha-a-linha já existente (que segue ativo como rede de segurança), elimina o erro.
+d. **Pós-loop de TODAS as colunas FK:** varrer `allRows` uma vez e contar linhas onde `patient_id`, `patient_registry_id` e `encounter_id` estão todos null/ausentes → `noPatientLinkRows`. Linha NÃO é removida.
 
-Confirmação parent_id auto-FK: tratado em dois passes. Pass A escreve `parent_id=null` (já feito). Pass B em `handleFinalize` valida pai no destino antes de atualizar (já feito). Mantém.
+### 4. Reporting
+- Estender `step` response e o merge em `handleStep`/`handleFinalize` para incluir `nulled_fk_counts` e `rows_without_patient_link`.
+- `errorSamples` ganha amostras distintas: `"FK órfã NULLADA …"` vs `"FK órfã DROPADA (NOT NULL) …"` vs `"sem vínculo de paciente …"`.
+- `db_restore_audit.metadata` (ou campo equivalente já gravado em `finalize`) recebe os dois novos agregados.
 
-### Cascata
-Resolver DADOS 1 (filtro FK confiável) destrava:
-- `prescriptions` (4322): perde órfãs `patient_id`/`encounter_id`/`patient_registry_id`; entra o resto.
-- `clinical_evolutions` (3679), `exam_requests` (2955), `patient_movements`, `bed_census`, `saps3_assessments`, `discharge_documents`, `medical_records`, `admission_histories`, `internal_transfer_requests`, `prescription_validations`, `medical_record_edit_history`: idem.
+### 5. UI (`src/pages/BackupRestorePage.tsx`)
+Exibir, no painel de resultado do restore, dois blocos novos abaixo do que já mostra "FK órfãs dropadas":
+- "Campos de FK anulados" (tabela.coluna → contagem).
+- "Linhas sem vínculo de paciente preservadas para revisão" (contagem total).
 
-Estimativa: derruba ~90% dos 12k. Sobra: órfãs verdadeiras, regras de afinidade (triggers `enforce_*_affinity`), uniques compostas raras.
+Sem mudança em filtros, fluxo de jobs, manutenção ou auditoria existente.
 
-## Mudanças
+## O que NÃO muda
+- Catálogos, user_roles, two-pass parent_id, dedupe por PK, normalizeShape, fallback min(uuid), liberação de bed_number, fail-safe de chunk 100 (mantém chunk e o caminho de erro — só troca o que faz com a linha).
+- Schema do banco, exceto possivelmente uma RPC read-only nova para nulabilidade (só se nenhuma das alternativas existentes servir; valido antes).
 
-**`supabase/functions/backup-restore/index.ts`:**
-1. Helper `forceDeactivateMaintenance(admin)` no topo dos helpers.
-2. Wrap do corpo do `serve()` em `try/finally` que: lê status do restore (se `restore_id` está no body) e só desativa manutenção se status ∈ `{completed, failed}` OU action === `force_unlock`.
-3. Nova action `force_unlock`: super_admin obrigatório, marca restore_jobs.running do user como failed, chama `forceDeactivateMaintenance`, audita `MAINTENANCE_FORCE_OFF`.
-4. FK filter chunk 500 → 100 + fail-safe (drop tudo com FK não-nula em caso de selErr) + console.error.
-5. Helper `normalizeShape(rows)` e aplicação antes de cada `.upsert(slice, ...)` no ramo não-catálogo (inclui o ramo `user_roles`).
-
-**`src/pages/BackupRestorePage.tsx`:**
-1. Hook `useMaintenanceActive()` (`select is_active from system_maintenance_mode where id=1`, com realtime opcional ou refetch a cada 5s).
-2. Botão destrutivo "Forçar saída do modo manutenção" com `AlertDialog`, motivo opcional, exige super_admin. Invoca `backup-restore` com `action: "force_unlock"`.
-3. Toast + recarregamento de jobs e audit após sucesso.
-
-## Resposta direta ao usuário
-
-- **patient_encounters não era ordem nem alvo**: era o filtro de FK órfã estourando o URL do PostgREST com chunks de 500 UUIDs (~19 KB), causando falha no select → fallback ingênuo pulava o filtro → upsert recebia órfãs e falhava com `patient_id_fkey`. Reduzir o chunk para 100 + fail-safe resolve.
-- **min(uuid) restante em prescriptions**: era PostgREST agregando para uniformizar shape do array quando linhas tinham conjuntos de chaves diferentes. `normalizeShape` força keys idênticas (preenchendo com `null`) e elimina a agregação.
-- **try/finally do modo manutenção**: corpo do `serve()` envolto em finally que lê o status do restore antes de limpar — só desativa quando o job está em estado terminal (completed/failed) ou quando a action é a explícita `force_unlock`. Para restores ainda rodando entre chamadas, NÃO toca. O botão admin é o último recurso quando o client morre no meio.
-
-Auditoria existente: intocada. Apenas adiciona evento novo `MAINTENANCE_FORCE_OFF`.
+## Pergunta antes de aplicar
+Confirma a lista de 4 colunas NOT NULL acima (continuam sendo dropadas) e o uso de pré-carregamento de nulabilidade via `information_schema` (ou RPC nova se necessário)? Posso seguir?

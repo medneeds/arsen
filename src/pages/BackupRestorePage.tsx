@@ -810,10 +810,18 @@ export default function BackupRestorePage() {
                       (Array.isArray(r.progress?.error_samples) && r.progress.error_samples) || [];
                     const totalErrors = r.report?.errors ?? r.progress?.errors ?? 0;
                     const totalProcessed = r.report?.processed ?? r.progress?.processed ?? 0;
+                    const nulledFkCounts: Record<string, number> =
+                      r.report?.nulled_fk_counts ?? r.progress?.nulled_fk_counts ?? {};
+                    const nulledFkEntries = Object.entries(nulledFkCounts).sort(([, a], [, b]) => (b ?? 0) - (a ?? 0));
+                    const noLinkTotal: number =
+                      r.report?.rows_without_patient_link_total ?? r.progress?.rows_without_patient_link_total ?? 0;
+                    const noLinkByTable: Record<string, number> =
+                      r.report?.rows_without_patient_link_by_table ?? r.progress?.rows_without_patient_link_by_table ?? {};
+                    const noLinkEntries = Object.entries(noLinkByTable).sort(([, a], [, b]) => (b ?? 0) - (a ?? 0));
                     const tableRows = Object.entries(errorsByTable).sort(
                       ([, a], [, b]) => (b?.errors ?? 0) - (a?.errors ?? 0),
                     );
-                    const hasDetails = tableRows.length > 0 || errorSamples.length > 0;
+                    const hasDetails = tableRows.length > 0 || errorSamples.length > 0 || nulledFkEntries.length > 0 || noLinkTotal > 0;
 
                     return (
                       <div key={r.id} className="border rounded-md p-3 text-sm">
@@ -840,7 +848,7 @@ export default function BackupRestorePage() {
                         {hasDetails && (
                           <details className="mt-2 group">
                             <summary className="cursor-pointer text-xs font-medium text-slate-700 hover:text-slate-900 select-none">
-                              Ver detalhes ({tableRows.length} tabela{tableRows.length !== 1 ? "s" : ""} · {errorSamples.length} amostra{errorSamples.length !== 1 ? "s" : ""} de erro)
+                              Ver detalhes ({tableRows.length} tabela{tableRows.length !== 1 ? "s" : ""} · {errorSamples.length} amostra{errorSamples.length !== 1 ? "s" : ""} · {nulledFkEntries.length} FK anulada{nulledFkEntries.length !== 1 ? "s" : ""}{noLinkTotal > 0 ? ` · ${noLinkTotal} sem vínculo` : ""})
                             </summary>
                             <div className="mt-2 space-y-3">
                               {tableRows.length > 0 && (
@@ -889,6 +897,56 @@ export default function BackupRestorePage() {
                                       ))}
                                     </ul>
                                   </ScrollArea>
+                                </div>
+                              )}
+                              {nulledFkEntries.length > 0 && (
+                                <div>
+                                  <p className="text-[11px] font-semibold uppercase text-slate-500 mb-1">
+                                    Campos de FK anulados (linha preservada)
+                                  </p>
+                                  <div className="border rounded overflow-hidden">
+                                    <table className="w-full text-xs">
+                                      <thead className="bg-amber-50">
+                                        <tr>
+                                          <th className="text-left px-2 py-1 font-medium">Tabela.coluna</th>
+                                          <th className="text-right px-2 py-1 font-medium">Campos anulados</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {nulledFkEntries.map(([k, n]) => (
+                                          <tr key={k} className="border-t">
+                                            <td className="px-2 py-1 font-mono">{k}</td>
+                                            <td className="px-2 py-1 text-right font-semibold text-amber-700">{n}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              )}
+                              {noLinkTotal > 0 && (
+                                <div>
+                                  <p className="text-[11px] font-semibold uppercase text-slate-500 mb-1">
+                                    Linhas sem vínculo de paciente preservadas para revisão ({noLinkTotal})
+                                  </p>
+                                  <div className="border rounded overflow-hidden">
+                                    <table className="w-full text-xs">
+                                      <thead className="bg-slate-50">
+                                        <tr>
+                                          <th className="text-left px-2 py-1 font-medium">Tabela</th>
+                                          <th className="text-right px-2 py-1 font-medium">Linhas</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {noLinkEntries.map(([t, n]) => (
+                                          <tr key={t} className="border-t">
+                                            <td className="px-2 py-1 font-mono">{t}</td>
+                                            <td className="px-2 py-1 text-right font-semibold text-slate-700">{n}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
                                 </div>
                               )}
                             </div>
