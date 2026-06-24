@@ -767,7 +767,26 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
                 const { error: e1 } = await admin.from(table).upsert([rowNormalized], { onConflict });
                 if (e1) {
                   errors++;
-                  if (errorSamples.length < 3) errorSamples.push(`row-fallback ${table}: ${e1.message}`);
+                  if (errorSamples.length < 3) {
+                    // Diagnóstico temporário: dump do payload quando row-fallback ainda dispara min(uuid)
+                    if (/min\(uuid\)/i.test(e1.message ?? "")) {
+                      let dump = "";
+                      try {
+                        const full = JSON.stringify(rowNormalized);
+                        dump = full.length <= 4000
+                          ? ` payload=${full}`
+                          : ` types=${Object.entries(rowNormalized)
+                              .map(([k, v]) => `${k}:${v === null ? "null" : Array.isArray(v) ? `array[${v.length}]` : typeof v}`)
+                              .join(",")}`;
+                      } catch {
+                        dump = ` types=${Object.entries(rowNormalized)
+                          .map(([k, v]) => `${k}:${typeof v}`).join(",")}`;
+                      }
+                      errorSamples.push(`row-fallback ${table}: ${e1.message}${dump}`);
+                    } else {
+                      errorSamples.push(`row-fallback ${table}: ${e1.message}`);
+                    }
+                  }
                 } else {
                   processed++;
                 }
