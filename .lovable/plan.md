@@ -1,75 +1,44 @@
-## Objetivo
 
-Mudar o filtro de FK órfã em `supabase/functions/backup-restore/index.ts` (ramo não-catálogo, linhas 602-663) para **preservar o máximo de linhas possível**: quando a coluna de FK órfã for nullable, anular só a coluna; quando for NOT NULL, manter o drop atual.
+## Diagnóstico
 
-Escopo restrito ao tratamento de FK órfã das tabelas clínicas filhas. **Não toca**: ramo catálogo (states/hospital_units/cid10_codes), `user_roles`, lógica de `patients` (bed_number), two-pass de `prescriptions.parent_id`, fail-safe de chunk=100, normalizeShape, fallback min(uuid), auditoria, manutenção. Sem migração SQL.
+**BUG 1 — Nullability sempre cai no fallback "NOT NULL".**
+A RPC `get_public_columns_nullability` existe no banco, mas o PostgREST schema cache do projeto não conhece — todo `admin.rpc("get_public_columns_nullability", …)` falha com "Could not find the function … in the schema cache" e o código assume NOT NULL para tudo. Continua dropando linhas idênticas à versão anterior.
 
-## Mapa de impacto (colunas em `FK_PARENTS` × tabelas filhas)
+Por contraste, a RPC `get_public_table_columns` (usada na descoberta de schema em `handleStep`, linhas 230-244) funciona e está no cache. É o mesmo `information_schema.columns` por dentro — só faltou trazer `is_nullable`.
 
-Consultado via `information_schema.columns`.
+**BUG 2 — `min(uuid)` ainda no row-fallback de `prescriptions/part-0000`.**
+`normalizeShape()` (linhas 153-162) tem early-return `if (rows.length <= 1) return rows;`. No fallback linha-a-linha (linhas 770-780) o payload é `[row]` (1 elemento) — `normalizeShape` é no-op, e a linha retém apenas as chaves nativas do JSONL daquela linha (sem completar o conjunto-união da tabela). O retry mantém forma diferente do batch e PostgREST volta a agregar `min(uuid)`.
 
-**NOT NULL — continuam sendo dropadas (não há como anular):**
-- `conduct_history.patient_id`
-- `patient_admission_date_history.patient_id`
-- `vital_signs.patient_id`
-- `patient_registry_edit_history.patient_registry_id`
+## Mudanças
 
-**NULLABLE — passam a ser anuladas (coluna vira NULL, linha preservada):**
-Todas as demais ocorrências de `patient_id`, `registry_id`, `patient_registry_id`, `encounter_id`, `medical_record_id` nas tabelas filhas — incluindo:
-- `clinical_evolutions` (3 colunas)
-- `exam_requests` (3)
-- `culture_results` (3)
-- `patient_movements` (3)
-- `discharge_documents` (3)
-- `admission_histories` (3)
-- `medical_record_edit_history` (3)
-- `round_sessions` (2)
-- `prescriptions` / `prescriptions_archive` (2 cada — não têm `patient_id`)
-- `bed_census`, `bed_allocation_requests`, `dhd_patients`, `locked_sector_cleanup_log`, `medical_records`, `patient_encounters` (registry_id, medical_record_id), `pre_admissions`, `prescription_affinity_audit`, `prescription_draft_deletion_audit`, `receituarios`, `regulation_requests`, `regulatory_guides`, `saps3_assessments`, `sepsis_protocols`
+### 1. Migração — estender RPC já cacheada (sem criar função nova)
+- `DROP FUNCTION public.get_public_table_columns(text[])` (necessário porque mudamos o RETURNS TABLE).
+- `CREATE FUNCTION public.get_public_table_columns(tables text[]) RETURNS TABLE(table_name text, column_name text, is_generated boolean, is_identity boolean, is_nullable boolean)` — mesmo `SECURITY DEFINER`/`STABLE`/`search_path`, só adicionando `(c.is_nullable = 'YES')::boolean`.
+- `NOTIFY pgrst, 'reload schema';` ao final, para forçar o PostgREST a recarregar.
+- A `get_public_columns_nullability` permanece no banco (não removo agora — pode estar referenciada em audit/log; descontinuada de fato, sem mais chamada do código).
 
-A nulabilidade não é hardcoded — vai ser consultada em runtime (ver "Detecção" abaixo) para ficar genérica a qualquer evolução de schema.
+### 2. `supabase/functions/backup-restore/index.ts`
 
-## Mudanças no código (`backup-restore/index.ts`)
+**a. Descoberta de schema (linhas 227-244)** — popular um terceiro mapa:
+- Adicionar `const nullable_by_table: Record<string, Record<string, boolean>> = {};`
+- No loop sobre `colsRows`, gravar `nullable_by_table[r.table_name][r.column_name] = r.is_nullable`.
 
-### 1. Cache de nulabilidade por (tabela, coluna)
-Helper `getColumnNullable(admin, table, column)` com cache em closure por execução. Implementação: uma única chamada inicial a `information_schema.columns` filtrando por `table_schema='public'` e `column_name IN (...FK_PARENTS keys)`, retornada via `supabase.from('information_schema.columns')` — se PostgREST não expuser, cai em chamadas pontuais via RPC `get_public_columns_nullability(p_table, p_columns text[])` já existente no projeto ou, em último caso, uma RPC nova que use SECURITY DEFINER. Decisão preferida: **pré-carregar uma única vez no início de cada `step` action**, montando `Map<"table.column", boolean>` — minimiza round-trips. (Se nenhuma RPC servir, criar `public.get_columns_nullable(p_columns text[])` retornando `setof (table_name, column_name, is_nullable)` — única migração possível; valido com o usuário antes.)
+**b. Filtro de FK órfã (linhas 613-635)** — remover a chamada `admin.rpc("get_public_columns_nullability", …)` inteira. Construir `nullableMap` lendo direto de `nullable_by_table[table]`. Default seguro continua `false` (drop) se a chave não estiver no mapa — mas agora o mapa estará populado para 100% das colunas de todas as tabelas-alvo, então o default deixa de ser exercido na prática.
 
-### 2. Novos contadores no escopo do `step`
-- `nulledFkCounts: Record<string, number>` — chave `"<table>.<column>"`, conta linhas com coluna anulada por órfã ou por fail-safe.
-- `noPatientLinkRows: number` — linhas que, após anulações, ficaram com `patient_id`, `patient_registry_id` E `encounter_id` todos NULL/ausentes simultaneamente (linha ainda inserida, conforme regra "backup vence").
-- Manter `orphanFkDropped` apenas para drops verdadeiros (coluna NOT NULL ou fallback impossível).
+**c. `normalizeShape` (linhas 153-162)** — remover o early-return `if (rows.length <= 1) return rows;` (mantém a função correta também para 0/1 elemento — só aplica `{...r}` sem mudar nada quando há 1 chave única).
 
-### 3. Reescrita do loop FK órfã (linhas 602-663)
+**d. Upsert principal de não-catálogo (linhas 760-788)** — mover a normalização para FORA do loop de batches, aplicando-a uma vez sobre `allRows` completo (após o two-pass de `prescriptions.parent_id` zerar `parent_id`). Isso garante shape-união GLOBAL. Em seguida:
+- `slice = normalizedAllRows.slice(i, i + BATCH)` (sem re-normalize por slice).
+- No fallback linha-a-linha, `row` já carrega o shape-união. Como redundância defensiva, envolver em `normalizeShape` também não custa, mas o ganho real vem do shape global.
 
-Para cada `(fkCol, parentTable)` aplicável:
+### 3. Sem mudanças
+- Catálogo, `user_roles`, two-pass `parent_id`, `dedupeBy`, fallback `min(uuid)` em `user_roles` (linhas 525-543), liberação `bed_number`, auditoria, manutenção, lógica de auth.
+- UI (`BackupRestorePage.tsx`) — relatório já mostra `nulled_fk_counts` e `rows_without_patient_link`, vai começar a popular sozinho após a correção de schema cache.
 
-a. Coleta `vals` e busca `existing` no destino com chunk 100 (igual hoje).
+## Verificação esperada após aplicar
+1. Próxima execução de restore: log de descoberta NÃO terá mais "nullability lookup … Could not find the function …". O painel mostrará contagem real em "Campos de FK anulados" (clinical_evolutions.patient_id, exam_requests.encounter_id, etc.) e queda equivalente em "FK órfãs dropadas".
+2. `vital_signs.patient_id`, `conduct_history.patient_id`, `patient_admission_date_history.patient_id` continuam aparecendo em "dropadas" (são NOT NULL — comportamento correto).
+3. `errorSamples` de `prescriptions/part-0000` não conterá mais `row-fallback prescriptions: function min(uuid) does not exist`. `minUuidRetries` deve cair para 0 ou próximo disso.
 
-b. **Caminho feliz (lookupOk):** para cada linha com `v` definido e `v ∉ existing`:
-   - Se `getColumnNullable(table, fkCol)` → setar `(r as any)[fkCol] = null`; incrementar `nulledFkCounts["<table>.<fkCol>"]`.
-   - Senão → remover a linha de `allRows`; incrementar `orphanFkDropped[fkCol]`.
-
-c. **Fail-safe (lookup falhou):** para cada linha com `v != null`:
-   - Se NULLABLE → setar `null`; somar em `nulledFkCounts` com sufixo `" (fail-safe)"` no sample, mas mesmo bucket no contador.
-   - Senão → drop, somar em `orphanFkDropped[fkCol]`.
-
-d. **Pós-loop de TODAS as colunas FK:** varrer `allRows` uma vez e contar linhas onde `patient_id`, `patient_registry_id` e `encounter_id` estão todos null/ausentes → `noPatientLinkRows`. Linha NÃO é removida.
-
-### 4. Reporting
-- Estender `step` response e o merge em `handleStep`/`handleFinalize` para incluir `nulled_fk_counts` e `rows_without_patient_link`.
-- `errorSamples` ganha amostras distintas: `"FK órfã NULLADA …"` vs `"FK órfã DROPADA (NOT NULL) …"` vs `"sem vínculo de paciente …"`.
-- `db_restore_audit.metadata` (ou campo equivalente já gravado em `finalize`) recebe os dois novos agregados.
-
-### 5. UI (`src/pages/BackupRestorePage.tsx`)
-Exibir, no painel de resultado do restore, dois blocos novos abaixo do que já mostra "FK órfãs dropadas":
-- "Campos de FK anulados" (tabela.coluna → contagem).
-- "Linhas sem vínculo de paciente preservadas para revisão" (contagem total).
-
-Sem mudança em filtros, fluxo de jobs, manutenção ou auditoria existente.
-
-## O que NÃO muda
-- Catálogos, user_roles, two-pass parent_id, dedupe por PK, normalizeShape, fallback min(uuid), liberação de bed_number, fail-safe de chunk 100 (mantém chunk e o caminho de erro — só troca o que faz com a linha).
-- Schema do banco, exceto possivelmente uma RPC read-only nova para nulabilidade (só se nenhuma das alternativas existentes servir; valido antes).
-
-## Pergunta antes de aplicar
-Confirma a lista de 4 colunas NOT NULL acima (continuam sendo dropadas) e o uso de pré-carregamento de nulabilidade via `information_schema` (ou RPC nova se necessário)? Posso seguir?
+## Risco
+Baixo. Mudança de RPC é aditiva (nova coluna no RETURNS TABLE) e o único consumidor é o próprio edge function. `NOTIFY pgrst` é necessário porque a alteração do RETURNS muda a assinatura no cache. Remoção do early-return do `normalizeShape` é semanticamente idêntica para 0/1 elemento.
