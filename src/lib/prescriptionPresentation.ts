@@ -61,6 +61,18 @@ export function inferPresentationType(
   const n = norm(name);
 
   if (CONTINUOUS_BIC_NAMES.some(k => n.includes(k))) return 'iv_continuous';
+
+  // CASO ESPECIAL — FLUCONAZOL: existe em forma oral (cápsula 150mg / VO) E EV (bolsa).
+  // A inferência por nome não pode forçar 'iv_intermittent' se a apresentação selecionada
+  // for claramente oral. Outros antifúngicos/ATB do INTERMITTENT_IV_NAMES NÃO são afetados
+  // por esta exceção (correção será feita caso a caso após validação).
+  if (n.includes('fluconazol')) {
+    const isOralForm = /(comprimido|capsula|cap\.|dragea|sublingual|orodispersivel)/.test(p);
+    const isOralRoute = /(oral|\bvo\b|sublingual|enteral|sonda)/.test(r);
+    if (isOralForm || isOralRoute) return 'oral_solid';
+    return 'iv_intermittent';
+  }
+
   if (INTERMITTENT_IV_NAMES.some(k => n.includes(k))) return 'iv_intermittent';
 
   // Oral solids
