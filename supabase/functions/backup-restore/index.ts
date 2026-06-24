@@ -54,6 +54,8 @@ const FK_TRANSLATIONS: Record<string, string> = {
 // prescriptions) ficam de fora — tratadas via two-pass.
 const FK_PARENTS: Record<string, string> = {
   patient_id: "patients",
+  source_patient_id: "patients",            // internal_transfer_requests (NOT NULL, ON DELETE CASCADE)
+  completed_target_patient_id: "patients",  // internal_transfer_requests (NULLABLE, ON DELETE SET NULL)
   registry_id: "patient_registry",
   patient_registry_id: "patient_registry",
   encounter_id: "patient_encounters",
@@ -765,7 +767,26 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
                 const { error: e1 } = await admin.from(table).upsert([rowNormalized], { onConflict });
                 if (e1) {
                   errors++;
-                  if (errorSamples.length < 3) errorSamples.push(`row-fallback ${table}: ${e1.message}`);
+                  if (errorSamples.length < 3) {
+                    // Diagnóstico temporário: dump do payload quando row-fallback ainda dispara min(uuid)
+                    if (/min\(uuid\)/i.test(e1.message ?? "")) {
+                      let dump = "";
+                      try {
+                        const full = JSON.stringify(rowNormalized);
+                        dump = full.length <= 4000
+                          ? ` payload=${full}`
+                          : ` types=${Object.entries(rowNormalized)
+                              .map(([k, v]) => `${k}:${v === null ? "null" : Array.isArray(v) ? `array[${v.length}]` : typeof v}`)
+                              .join(",")}`;
+                      } catch {
+                        dump = ` types=${Object.entries(rowNormalized)
+                          .map(([k, v]) => `${k}:${typeof v}`).join(",")}`;
+                      }
+                      errorSamples.push(`row-fallback ${table}: ${e1.message}${dump}`);
+                    } else {
+                      errorSamples.push(`row-fallback ${table}: ${e1.message}`);
+                    }
+                  }
                 } else {
                   processed++;
                 }
