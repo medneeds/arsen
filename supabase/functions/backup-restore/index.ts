@@ -380,7 +380,8 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
   // parent_id pendings desta part (prescriptions); merge no progress, aplicado em finalize
   const pendingParentFixups: Record<string, string> = {};
 
-  const schema = rj.progress?.schema ?? { cols_by_table: {}, unique_by_table: {} };
+  const schema = rj.progress?.schema ?? { cols_by_table: {}, nullable_by_table: {}, unique_by_table: {} };
+  const nullableForTable: Record<string, boolean> = schema.nullable_by_table?.[table] ?? {};
   const idMaps: Record<string, Record<string, string>> = rj.progress?.id_maps ?? {};
 
   // ── Branch 1: recriar auth.users ──
