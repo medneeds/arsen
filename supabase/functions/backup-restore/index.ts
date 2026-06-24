@@ -745,20 +745,24 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
           }
         }
 
+        // Normalização GLOBAL: todas as linhas (e o row-fallback) compartilham o
+        // mesmo conjunto-união de chaves. Sem isso, PostgREST agrega min/max para
+        // uniformizar shape entre chamadas e dispara "function min(uuid) does not exist".
+        const normalizedRows = normalizeShape(allRows);
+        const shapeKeys = normalizedRows.length > 0 ? Object.keys(normalizedRows[0]) : [];
+
         // Upsert com fallback linha-a-linha em caso de min(uuid).
-        for (let i = 0; i < allRows.length; i += BATCH) {
-          // Normaliza shape: todas as linhas com mesmo conjunto de chaves.
-          // Evita que PostgREST agregue (min/max) para uniformizar e exploda
-          // em "function min(uuid) does not exist".
-          const slice = normalizeShape(allRows.slice(i, i + BATCH));
+        for (let i = 0; i < normalizedRows.length; i += BATCH) {
+          const slice = normalizedRows.slice(i, i + BATCH);
           const { error } = await admin.from(table).upsert(slice, { onConflict });
           if (error) {
             const msg = error.message ?? String(error);
             if (/min\(uuid\)/i.test(msg)) {
-              // Fallback: refaz linha-a-linha. Lento, mas isola e contabiliza.
+              // Fallback: refaz linha-a-linha mantendo o MESMO shape-união global.
               minUuidRetries++;
               for (const row of slice) {
-                const { error: e1 } = await admin.from(table).upsert([row], { onConflict });
+                const rowNormalized = normalizeShape([row], shapeKeys)[0];
+                const { error: e1 } = await admin.from(table).upsert([rowNormalized], { onConflict });
                 if (e1) {
                   errors++;
                   if (errorSamples.length < 3) errorSamples.push(`row-fallback ${table}: ${e1.message}`);
