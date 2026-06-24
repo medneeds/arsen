@@ -810,10 +810,18 @@ export default function BackupRestorePage() {
                       (Array.isArray(r.progress?.error_samples) && r.progress.error_samples) || [];
                     const totalErrors = r.report?.errors ?? r.progress?.errors ?? 0;
                     const totalProcessed = r.report?.processed ?? r.progress?.processed ?? 0;
+                    const nulledFkCounts: Record<string, number> =
+                      r.report?.nulled_fk_counts ?? r.progress?.nulled_fk_counts ?? {};
+                    const nulledFkEntries = Object.entries(nulledFkCounts).sort(([, a], [, b]) => (b ?? 0) - (a ?? 0));
+                    const noLinkTotal: number =
+                      r.report?.rows_without_patient_link_total ?? r.progress?.rows_without_patient_link_total ?? 0;
+                    const noLinkByTable: Record<string, number> =
+                      r.report?.rows_without_patient_link_by_table ?? r.progress?.rows_without_patient_link_by_table ?? {};
+                    const noLinkEntries = Object.entries(noLinkByTable).sort(([, a], [, b]) => (b ?? 0) - (a ?? 0));
                     const tableRows = Object.entries(errorsByTable).sort(
                       ([, a], [, b]) => (b?.errors ?? 0) - (a?.errors ?? 0),
                     );
-                    const hasDetails = tableRows.length > 0 || errorSamples.length > 0;
+                    const hasDetails = tableRows.length > 0 || errorSamples.length > 0 || nulledFkEntries.length > 0 || noLinkTotal > 0;
 
                     return (
                       <div key={r.id} className="border rounded-md p-3 text-sm">
