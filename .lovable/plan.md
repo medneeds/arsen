@@ -1,77 +1,70 @@
-## Objetivo
+## Diagnóstico confirmado
 
-Eliminar definitivamente o erro `function min(uuid) does not exist` no row-fallback de `backup-restore`, contornando o caminho merge-duplicates do PostgREST que dispara o bug quando uma linha tem múltiplas colunas uuid nulas simultaneamente (caso real: `prescriptions` com `parent_id`, `encounter_id`, `patient_registry_id`, `archived_from_patient_id`, `repointed_from_patient_id` todos null).
-
-## Mudança única em `supabase/functions/backup-restore/index.ts`
-
-Bloco do row-fallback (linhas ~765-790, dentro de `for (const row of slice)` no branch `if (/min\(uuid\)/i.test(msg))`).
-
-Substituir a chamada `admin.from(table).upsert([rowNormalized], { onConflict })` por um padrão check-then-branch usando a PK já conhecida (`pk: string[]`):
+`supabase/functions/backup-restore/index.ts` linhas 961-985 (Pass B do `handleFinalize`):
 
 ```ts
-for (const row of slice) {
-  const rowNormalized = normalizeShape([row], shapeKeys)[0];
-
-  // Contorna bug do PostgREST merge-duplicates com múltiplos uuid nulos:
-  // resolve INSERT vs UPDATE explicitamente via select pela PK.
-  const pkMatch = Object.fromEntries(
-    pk.map((c) => [c, (rowNormalized as any)[c]])
-  );
-  let e1: any = null;
-  try {
-    const { data: existingRow, error: selErr } = await admin
-      .from(table)
-      .select(pk.join(","))
-      .match(pkMatch)
-      .maybeSingle();
-    if (selErr) {
-      e1 = selErr;
-    } else if (existingRow) {
-      const updatePayload: Record<string, unknown> = { ...rowNormalized };
-      for (const c of pk) delete updatePayload[c];
-      ({ error: e1 } = await admin.from(table).update(updatePayload).match(pkMatch));
-    } else {
-      ({ error: e1 } = await admin.from(table).insert(rowNormalized));
-    }
-  } catch (ex) {
-    e1 = ex instanceof Error ? ex : new Error(String(ex));
-  }
-
-  if (e1) {
-    errors++;
-    if (errorSamples.length < 3) {
-      // mantém dump existente — se min(uuid) ainda aparecer aqui, é outra causa
-      if (/min\(uuid\)/i.test(e1.message ?? "")) {
-        // (bloco de dump preservado tal como está hoje)
-      } else {
-        errorSamples.push(`row-fallback ${table}: ${e1.message}`);
-      }
-    }
-  } else {
-    processed++;
-  }
+const CHUNK = 500;
+for (let i = 0; i < parentIds.length; i += CHUNK) {
+  const chunk = parentIds.slice(i, i + CHUNK);
+  const { data } = await admin.from(tbl).select("id").in("id", chunk);  // ← erro silenciado
+  for (const r of (data ?? [])) existing.add(String((r as any).id));
+}
+for (const [childId, parentId] of entries) {
+  if (!existing.has(String(parentId))) { parentIdDropped++; continue; }  // ← qualquer falha vira "dropped"
+  ...
 }
 ```
 
-Toda a lógica de diagnóstico (dump de payload em `errorSamples`) fica intacta — só passa a ser efetivamente "dead code" sob condições normais, o que é desejável (continua servindo como sentinela se algum dia o bug reaparecer por outra rota).
+Dois problemas, exatamente como diagnosticado:
+1. `CHUNK=500` UUIDs em `.in("id", chunk)` excede o limite de URL do PostgREST (~8KB). 500 × ~40 chars ≈ 20KB → request falha com 414/400.
+2. `const { data } = ...` ignora `error`. Quando falha, `data=null`, o `existing` set fica vazio, e **todos** os 1.872 vínculos caem no ramo `dropped`. Bate 1:1 com `relinked=0, dropped=1872`.
+
+## Correção (única, escopada ao bloco 972-983)
+
+```ts
+const existing = new Set<string>();
+const lookupFailed = new Set<string>();   // chunks onde a verificação falhou
+const CHUNK = 100;                         // mesmo padrão do handleStep
+for (let i = 0; i < parentIds.length; i += CHUNK) {
+  const chunk = parentIds.slice(i, i + CHUNK);
+  const { data, error: selErr } = await admin.from(tbl).select("id").in("id", chunk);
+  if (selErr) {
+    console.error(`[backup-restore] Pass B lookup falhou em ${tbl} chunk ${i}-${i+chunk.length}:`, selErr.message);
+    // Fail-safe: marca os parentIds deste chunk como "verificação inconclusiva"
+    // — NÃO dropa; deixa o UPDATE tentar e o FK do banco decidir.
+    for (const pid of chunk) lookupFailed.add(String(pid));
+    continue;
+  }
+  for (const r of (data ?? [])) existing.add(String((r as any).id));
+}
+
+for (const [childId, parentId] of entries) {
+  const pidStr = String(parentId);
+  const verified = existing.has(pidStr);
+  const inconclusive = !verified && lookupFailed.has(pidStr);
+  // Só dropa quando temos CERTEZA de que o pai não existe (lookup ok + ausente)
+  if (!verified && !inconclusive) { parentIdDropped++; continue; }
+  const { error: uErr } = await admin.from(tbl).update({ parent_id: parentId }).eq("id", childId);
+  if (uErr) parentIdDropped++; else parentIdRelinked++;
+}
+```
+
+Mudanças:
+- `CHUNK: 500 → 100`.
+- Captura `selErr` e loga.
+- Conjunto `lookupFailed` para chunks com erro: parentIds desses chunks tentam o UPDATE assim mesmo (FK do banco é a verdade final).
+- "Dropped" só conta quando o lookup funcionou E o pai realmente não está presente — ou quando o UPDATE retornou erro.
 
 ## Não muda
 
-- Caminho principal em lote (`admin.from(table).upsert(slice, { onConflict })`) — segue como está; só o fallback troca de estratégia.
-- `normalizeShape`, `nullable_by_table`, FK orphan handling, two-pass `parent_id`, catálogo, `user_roles`, auth, UI.
-- Nenhuma migração de banco.
+- Nada fora desse bloco (947-985).
+- Caminho principal de restore, `pending_parent_id_fixups`, ordem de tabelas, auditoria, UI — tudo intacto.
+- Sem migração de banco.
 
-## Resposta à pergunta sobre generalizar pro caminho principal
+## Validação após aplicar
 
-Recomendação: **manter só no fallback por agora.** Justificativa para incluir junto da resposta ao usuário:
+1. Re-rodar o restore do mesmo backup.
+2. Esperado no `report`: `parent_id_relinked` próximo de 1872; `parent_id_dropped` baixo (só órfãos genuínos, que vão aparecer também como erros de FK no UPDATE).
+3. Conferir nos logs da edge function: se houver `[backup-restore] Pass B lookup falhou`, investigar separadamente — mas o restore não terá mais perdido vínculos por causa disso.
 
-- O caminho principal em lote (`upsert(slice)`) processa centenas de linhas por chamada; trocar por select+insert/update viraria N+1 round-trips por lote — perda de performance significativa em restores grandes.
-- O bug `min(uuid)` no caminho principal já é mitigado de forma barata pela normalização global de shape (`normalizedRows = normalizeShape(allRows)`), que dá ao PostgREST um conjunto-união de chaves uniforme e elimina a maioria das ocorrências.
-- O fallback é, por contrato, o "último recurso" (raríssimo, ~3 linhas em milhares): aí o custo do N+1 é irrelevante e a robustez compensa.
-- Se no futuro o `min(uuid)` voltar a aparecer **em lote** para outra tabela com muitas colunas uuid nulas, a saída preferida é melhorar a normalização (ex: detectar colunas uuid 100% nulas no lote e dropá-las antes do upsert, deixando o default do banco assumir null) — não trocar o caminho principal por select+insert/update.
-
-## Verificação após aplicar
-
-1. Próximo restore: `prescriptions` deixa de produzir `errors=3 (min(uuid))`; as 3 linhas problemáticas entram via insert/update e o relatório fecha em 0 erros para esse part.
-2. `errorSamples` para `prescriptions` fica vazio (ou só registra erros genuínos de FK/constraint, não mais PostgREST interno).
-3. Comportamento das outras tabelas inalterado.
+Confirma para eu aplicar?
