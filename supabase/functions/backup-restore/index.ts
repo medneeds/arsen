@@ -614,26 +614,10 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
                      allRows.some((r) => (r as any)[col] != null && (r as any)[col] !== "")
         );
 
-        // Pré-carrega nulabilidade de TODAS as colunas FK em uso para esta tabela.
-        // Genérico: se a coluna for nullable no destino, anulamos; se for NOT NULL, dropa a linha.
-        const nullableMap: Record<string, boolean> = {};
-        if (fkColsApplicable.length > 0) {
-          const cols = fkColsApplicable.map(([c]) => c);
-          const { data: nullRows, error: nullErr } = await admin.rpc(
-            "get_public_columns_nullability",
-            { p_columns: cols },
-          );
-          if (nullErr) {
-            console.error(`[backup-restore] nullability lookup ${table}:`, nullErr.message);
-            if (errorSamples.length < 3) {
-              errorSamples.push(`nullability lookup ${table}: ${nullErr.message} (assumindo NOT NULL)`);
-            }
-          } else {
-            for (const r of (nullRows ?? []) as Array<{ table_name: string; column_name: string; is_nullable: boolean }>) {
-              if (r.table_name === table) nullableMap[r.column_name] = !!r.is_nullable;
-            }
-          }
-        }
+        // Nulabilidade pré-carregada na descoberta de schema (reusa RPC já cacheada
+        // get_public_table_columns). Sem nova chamada RPC aqui — evita o problema
+        // de schema-cache que afundava get_public_columns_nullability.
+        const nullableMap: Record<string, boolean> = nullableForTable;
 
         for (const [fkCol, parentTable] of fkColsApplicable) {
           if (parentTable === table) continue; // segurança contra auto-FK
