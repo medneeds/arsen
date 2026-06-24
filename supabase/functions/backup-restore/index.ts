@@ -301,7 +301,7 @@ async function handlePlan(admin: any, body: any, userId: string, userEmail: stri
       step: "iniciando", percent: 0, plan,
       current_table: null, current_part: null,
       processed: 0, errors: 0,
-      schema: { cols_by_table, unique_by_table },
+      schema: { cols_by_table, nullable_by_table, unique_by_table },
       id_maps: {},
       dropped_columns_by_table: {},
       catalog_conflicts_by_table: {},
