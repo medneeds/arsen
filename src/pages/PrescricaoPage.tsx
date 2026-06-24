@@ -5624,9 +5624,16 @@ const PrescricaoPage = () => {
     const inferredIV = !explicitlyOral && (inferredType === 'iv_continuous' || inferredType === 'iv_intermittent' || inferredType === 'iv_bolus');
     // Via efetiva: usa a cadastrada; só assume Intravenosa se ausente/ambígua E nome indica EV E não é oral.
     const routeIsAmbiguous = !med.defaultRoute || !med.defaultRoute.trim();
-    const effectiveRoute = !routeIsAmbiguous
-      ? med.defaultRoute
-      : (inferredIV ? 'Intravenosa' : med.defaultRoute);
+    // EXCEÇÃO ESCOPADA — FLUCONAZOL: se a apresentação selecionada é oral (cápsula/comprimido),
+    // o guard explicitlyOral PREVALECE mesmo quando defaultRoute='Intravenosa' veio herdado
+    // do medicationsDatabase.ts estático (que só conhece a Bolsa EV). Outros medicamentos com
+    // múltiplas apresentações NÃO são afetados — correção será feita caso a caso.
+    const _isFluconazol = /fluconazol/i.test(med.name || '');
+    const effectiveRoute = (_isFluconazol && explicitlyOral)
+      ? 'Oral'
+      : (!routeIsAmbiguous
+          ? med.defaultRoute
+          : (inferredIV ? 'Intravenosa' : med.defaultRoute));
     const isIV = isIVRoute(effectiveRoute) || inferredIV;
     const baseItem: PrescriptionItem = {
       id: crypto.randomUUID(),
