@@ -764,11 +764,37 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
               minUuidRetries++;
               for (const row of slice) {
                 const rowNormalized = normalizeShape([row], shapeKeys)[0];
-                const { error: e1 } = await admin.from(table).upsert([rowNormalized], { onConflict });
+
+                // Contorna bug do PostgREST merge-duplicates ("function min(uuid)
+                // does not exist") com múltiplas colunas uuid nulas: resolve
+                // INSERT vs UPDATE explicitamente via select pela PK.
+                const pkMatch: Record<string, unknown> = Object.fromEntries(
+                  pk.map((c) => [c, (rowNormalized as any)[c]]),
+                );
+                let e1: any = null;
+                try {
+                  const { data: existingRow, error: selErr } = await admin
+                    .from(table)
+                    .select(pk.join(","))
+                    .match(pkMatch)
+                    .maybeSingle();
+                  if (selErr) {
+                    e1 = selErr;
+                  } else if (existingRow) {
+                    const updatePayload: Record<string, unknown> = { ...rowNormalized };
+                    for (const c of pk) delete updatePayload[c];
+                    ({ error: e1 } = await admin.from(table).update(updatePayload).match(pkMatch));
+                  } else {
+                    ({ error: e1 } = await admin.from(table).insert(rowNormalized));
+                  }
+                } catch (ex) {
+                  e1 = ex instanceof Error ? ex : new Error(String(ex));
+                }
+
                 if (e1) {
                   errors++;
                   if (errorSamples.length < 3) {
-                    // Diagnóstico temporário: dump do payload quando row-fallback ainda dispara min(uuid)
+                    // Sentinela: se min(uuid) reaparecer por aqui, mantém o dump didático
                     if (/min\(uuid\)/i.test(e1.message ?? "")) {
                       let dump = "";
                       try {
