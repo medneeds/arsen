@@ -54,6 +54,8 @@ const FK_TRANSLATIONS: Record<string, string> = {
 // prescriptions) ficam de fora — tratadas via two-pass.
 const FK_PARENTS: Record<string, string> = {
   patient_id: "patients",
+  source_patient_id: "patients",            // internal_transfer_requests (NOT NULL, ON DELETE CASCADE)
+  completed_target_patient_id: "patients",  // internal_transfer_requests (NULLABLE, ON DELETE SET NULL)
   registry_id: "patient_registry",
   patient_registry_id: "patient_registry",
   encounter_id: "patient_encounters",
