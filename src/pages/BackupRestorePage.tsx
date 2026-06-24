@@ -848,7 +848,8 @@ export default function BackupRestorePage() {
                         {hasDetails && (
                           <details className="mt-2 group">
                             <summary className="cursor-pointer text-xs font-medium text-slate-700 hover:text-slate-900 select-none">
-                              Ver detalhes ({tableRows.length} tabela{tableRows.length !== 1 ? "s" : ""} · {errorSamples.length} amostra{errorSamples.length !== 1 ? "s" : ""} de erro)
+                              Ver detalhes ({tableRows.length} tabela{tableRows.length !== 1 ? "s" : ""} · {errorSamples.length} amostra{errorSamples.length !== 1 ? "s" : ""} · {nulledFkEntries.length} FK anulada{nulledFkEntries.length !== 1 ? "s" : ""}{noLinkTotal > 0 ? ` · ${noLinkTotal} sem vínculo` : ""})
+                            </summary>
                             </summary>
                             <div className="mt-2 space-y-3">
                               {tableRows.length > 0 && (
