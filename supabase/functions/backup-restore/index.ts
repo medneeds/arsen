@@ -899,6 +899,9 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
     rows_processed: processed, errors, error_samples: errorSamples,
     percent, done_parts: doneParts, total_parts: totalParts,
     dropped_columns: droppedCols, catalog_stats: catalogStats,
+    orphan_fk_dropped: orphanFkDropped,
+    nulled_fk_counts: nulledFkCounts,
+    rows_without_patient_link: noPatientLinkRows,
   });
 }
 
