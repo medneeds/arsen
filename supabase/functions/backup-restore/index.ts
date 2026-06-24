@@ -150,10 +150,11 @@ async function forceDeactivateMaintenance(admin: any) {
 // Normaliza o shape do array para upsert: todas as linhas com o MESMO conjunto
 // de chaves (preenchendo ausentes com null). Sem isso, PostgREST agrega para
 // uniformizar e dispara "function min(uuid) does not exist" em colunas UUID.
-function normalizeShape<T extends Record<string, unknown>>(rows: T[]): T[] {
-  if (rows.length <= 1) return rows;
+function normalizeShape<T extends Record<string, unknown>>(rows: T[], extraKeys?: Iterable<string>): T[] {
+  if (rows.length === 0 && !extraKeys) return rows;
   const keys = new Set<string>();
   for (const r of rows) for (const k of Object.keys(r)) keys.add(k);
+  if (extraKeys) for (const k of extraKeys) keys.add(k);
   return rows.map((r) => {
     const out: Record<string, unknown> = { ...r };
     for (const k of keys) if (!(k in out)) out[k] = null;
