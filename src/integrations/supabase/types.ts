@@ -5629,6 +5629,14 @@ export type Database = {
           summary: string
         }[]
       }
+      get_public_columns_nullability: {
+        Args: { p_columns: string[] }
+        Returns: {
+          column_name: string
+          is_nullable: boolean
+          table_name: string
+        }[]
+      }
       get_public_fk_pairs: {
         Args: never
         Returns: {
