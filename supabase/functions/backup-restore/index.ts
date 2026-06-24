@@ -368,8 +368,12 @@ async function handleStep(admin: any, body: any, _userId: string, _userEmail: st
   let sliceDedupesDropped = 0;
   let droppedNoPk = 0;
   let minUuidRetries = 0;
-  // orphanFkDropped[fkCol] = n (escopado a esta tabela/part; merge depois)
+  // orphanFkDropped[fkCol] = n — drops verdadeiros (coluna NOT NULL ou linha sem alternativa)
   const orphanFkDropped: Record<string, number> = {};
+  // nulledFkCounts["<table>.<fkCol>"] = n — coluna anulada (linha preservada)
+  const nulledFkCounts: Record<string, number> = {};
+  // linhas que ficaram sem nenhum vínculo de paciente após anulação (linha preservada)
+  let noPatientLinkRows = 0;
   // parent_id pendings desta part (prescriptions); merge no progress, aplicado em finalize
   const pendingParentFixups: Record<string, string> = {};
 
