@@ -225,16 +225,18 @@ async function handlePlan(admin: any, body: any, userId: string, userEmail: stri
   const ordered = await topoOrder(targetTables);
   const pkMap = await fetchPks(ordered);
 
-  // Schema do destino (colunas + uniques) — uma única descoberta
+  // Schema do destino (colunas + nulabilidade + uniques) — uma única descoberta
   const cols_by_table: Record<string, { allowed: string[]; generated: string[]; identity: string[] }> = {};
+  const nullable_by_table: Record<string, Record<string, boolean>> = {};
   const unique_by_table: Record<string, Array<{ name: string; columns: string[] }>> = {};
   try {
     const { data: colsRows } = await admin.rpc("get_public_table_columns", { tables: ordered });
-    for (const r of (colsRows ?? []) as Array<{ table_name: string; column_name: string; is_generated: boolean; is_identity: boolean }>) {
+    for (const r of (colsRows ?? []) as Array<{ table_name: string; column_name: string; is_generated: boolean; is_identity: boolean; is_nullable: boolean }>) {
       const e = cols_by_table[r.table_name] ?? (cols_by_table[r.table_name] = { allowed: [], generated: [], identity: [] });
       e.allowed.push(r.column_name);
       if (r.is_generated) e.generated.push(r.column_name);
       if (r.is_identity) e.identity.push(r.column_name);
+      (nullable_by_table[r.table_name] ??= {})[r.column_name] = !!r.is_nullable;
     }
     const { data: uqRows } = await admin.rpc("get_public_unique_constraints", { tables: ordered });
     for (const r of (uqRows ?? []) as Array<{ table_name: string; constraint_name: string; columns: string[] }>) {
