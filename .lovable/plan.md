@@ -1,70 +1,71 @@
-## Diagnóstico confirmado
+## Contexto
 
-`supabase/functions/backup-restore/index.ts` linhas 961-985 (Pass B do `handleFinalize`):
+Bug confirmado no Leito 5 UCI 1 (Joaci Garcia): o cockpit mostrou admissão concluída com a HDA de outro paciente. A linha-leito `patients.id` foi reusada por vários ocupantes; em `admission_histories` ficaram 3 linhas vivas (`archived_at IS NULL`) com `patient_registry_id` diferentes, todas apontando para o mesmo `patient_id`. As queries do cockpit filtram só por `patient_id` e pegam a linha legada mais recente.
 
-```ts
-const CHUNK = 500;
-for (let i = 0; i < parentIds.length; i += CHUNK) {
-  const chunk = parentIds.slice(i, i + CHUNK);
-  const { data } = await admin.from(tbl).select("id").in("id", chunk);  // ← erro silenciado
-  for (const r of (data ?? [])) existing.add(String((r as any).id));
-}
-for (const [childId, parentId] of entries) {
-  if (!existing.has(String(parentId))) { parentIdDropped++; continue; }  // ← qualquer falha vira "dropped"
-  ...
-}
+Mesma classe de bug das fases B.1/B.3 — só que `admission_histories` ficou de fora.
+
+## Escopo — só correção dirigida
+
+**Não toca**: fluxo de admissão (gravação), trigger `archive_bed_history` (já corrigido v2 em outra memória), schema, RLS, layout/UI, outros hooks/diálogos fora dos 3 listados, comportamento de outros pacientes.
+
+**Toca apenas** 3 pontos de LEITURA + 1 migration de limpeza de órfãos.
+
+## Frente 1 — Blindagem de leitura (3 arquivos)
+
+Critério único aplicado, igual à Fase B.1:
+```
+WHERE patient_id = <atual>
+  AND archived_at IS NULL
+  AND ( patient_registry_id = <registry_atual>  -- prioritário
+        OR patient_registry_id IS NULL )         -- fallback legado
+```
+Quando há registry ativo (>99% dos casos pós-Fase A), só a linha do ocupante atual aparece. Linhas legadas com registry de outro paciente ficam isoladas.
+
+### 1.1 `src/components/AdmissionConsultDialog.tsx` (linhas 156-163)
+Hoje: `.eq("patient_id", patient.id)` puro.
+Fix: adiciona `.is("archived_at", null)` e, quando `patient.patient_registry_id` existir, `.or("patient_registry_id.eq.<id>,patient_registry_id.is.null")`. Sem registry, mantém só `archived_at IS NULL` (degradação graciosa).
+
+### 1.2 `src/components/AdmissionHistoryDialog.tsx` (linhas 53-67)
+Hoje: usa `resolvedRegistryId` OU `patient_id`, sem `archived_at`.
+Fix: sempre `.is("archived_at", null)`; quando há registry, prioriza `patient_registry_id = registry`; sem registry, cai para `patient_id` + `archived_at IS NULL`. Sem mexer no `handleSave` (gravação continua igual — já carimba registry corretamente).
+
+### 1.3 `src/hooks/usePatientCid.ts` (linhas 47-81)
+Tentativa 1 hoje filtra por `patient_id` + `archived_at IS NULL` mas pega qualquer registry. Fix: quando o paciente tem registry conhecido (busca já feita na Tentativa 2 ou via prop), prioriza esse filtro; reordena para Tentativa 1 = `patient_registry_id` (precisão), Tentativa 2 = `patient_id` (legado sem carimbo). Mantém `archived_at IS NULL` em ambas. Zero mudança no `persist`.
+
+Nenhum contrato/tipo/UI alterado. Hooks retornam o mesmo shape.
+
+## Frente 2 — Migration de limpeza (1 migration SQL)
+
+Arquivar admission_histories órfãos legados que escaparam do trigger v2 — exatamente os 2 (ou mais) casos como Joaci/L05.
+
+Condição cirúrgica:
+```sql
+UPDATE public.admission_histories ah
+SET archived_at = now(),
+    archive_reason = 'cleanup_orphan_legacy_registry_mismatch',
+    archived_from_patient_id = ah.patient_id
+WHERE ah.archived_at IS NULL
+  AND ah.patient_registry_id IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM public.patients p
+    WHERE p.id = ah.patient_id
+      AND p.patient_registry_id IS NOT NULL
+      AND p.patient_registry_id <> ah.patient_registry_id
+  );
 ```
 
-Dois problemas, exatamente como diagnosticado:
-1. `CHUNK=500` UUIDs em `.in("id", chunk)` excede o limite de URL do PostgREST (~8KB). 500 × ~40 chars ≈ 20KB → request falha com 414/400.
-2. `const { data } = ...` ignora `error`. Quando falha, `data=null`, o `existing` set fica vazio, e **todos** os 1.872 vínculos caem no ramo `dropped`. Bate 1:1 com `relinked=0, dropped=1872`.
+Só arquiva quando: (a) registro tem registry carimbado, (b) a linha-leito tem registry carimbado, (c) os dois registries são diferentes — prova explícita de troca de ocupante. **Não arquiva** registros sem registry (legado puro) — esses continuam visíveis para o paciente atual via fallback.
 
-## Correção (única, escopada ao bloco 972-983)
+Adiciona linha em `audit_logs` com action `CLEANUP_ORPHAN_ADMISSION_HISTORIES` e count.
 
-```ts
-const existing = new Set<string>();
-const lookupFailed = new Set<string>();   // chunks onde a verificação falhou
-const CHUNK = 100;                         // mesmo padrão do handleStep
-for (let i = 0; i < parentIds.length; i += CHUNK) {
-  const chunk = parentIds.slice(i, i + CHUNK);
-  const { data, error: selErr } = await admin.from(tbl).select("id").in("id", chunk);
-  if (selErr) {
-    console.error(`[backup-restore] Pass B lookup falhou em ${tbl} chunk ${i}-${i+chunk.length}:`, selErr.message);
-    // Fail-safe: marca os parentIds deste chunk como "verificação inconclusiva"
-    // — NÃO dropa; deixa o UPDATE tentar e o FK do banco decidir.
-    for (const pid of chunk) lookupFailed.add(String(pid));
-    continue;
-  }
-  for (const r of (data ?? [])) existing.add(String((r as any).id));
-}
+## Validação pós-correção
 
-for (const [childId, parentId] of entries) {
-  const pidStr = String(parentId);
-  const verified = existing.has(pidStr);
-  const inconclusive = !verified && lookupFailed.has(pidStr);
-  // Só dropa quando temos CERTEZA de que o pai não existe (lookup ok + ausente)
-  if (!verified && !inconclusive) { parentIdDropped++; continue; }
-  const { error: uErr } = await admin.from(tbl).update({ parent_id: parentId }).eq("id", childId);
-  if (uErr) parentIdDropped++; else parentIdRelinked++;
-}
-```
+1. Banco: re-rodar a query do Joaci (`patient_id=ae421559…`, sem filtros) e ver os 2 órfãos com `archived_at` preenchido. A linha do Joaci (registry 65eec492) permanece viva.
+2. UI: abrir cockpit do Joaci → "Ver admissão" deve mostrar HDA dele (ou vazio se ele ainda não tem admissão gravada), nunca mais a do paciente PAF.
+3. Smoke negativo: pacientes em leitos que **nunca** foram reusados continuam vendo sua admissão (caminho registry funciona; fallback `patient_id IS NULL` cobre legados sem carimbo).
+4. Conferir que `usePatientCid` no header continua exibindo CID correto para Joaci.
 
-Mudanças:
-- `CHUNK: 500 → 100`.
-- Captura `selErr` e loga.
-- Conjunto `lookupFailed` para chunks com erro: parentIds desses chunks tentam o UPDATE assim mesmo (FK do banco é a verdade final).
-- "Dropped" só conta quando o lookup funcionou E o pai realmente não está presente — ou quando o UPDATE retornou erro.
+## Fora deste plano (proposta separada se você quiser)
 
-## Não muda
-
-- Nada fora desse bloco (947-985).
-- Caminho principal de restore, `pending_parent_id_fixups`, ordem de tabelas, auditoria, UI — tudo intacto.
-- Sem migração de banco.
-
-## Validação após aplicar
-
-1. Re-rodar o restore do mesmo backup.
-2. Esperado no `report`: `parent_id_relinked` próximo de 1872; `parent_id_dropped` baixo (só órfãos genuínos, que vão aparecer também como erros de FK no UPDATE).
-3. Conferir nos logs da edge function: se houver `[backup-restore] Pass B lookup falhou`, investigar separadamente — mas o restore não terá mais perdido vínculos por causa disso.
-
-Confirma para eu aplicar?
+- Estender o trigger `archive_bed_history` v2 para cobrir explicitamente `admission_histories` em `bed_occupant_swap` (hoje o gatilho está em `bed_deallocation_auto`, e reocupações via pré-admissão direta não passam por leito vago).
+- Fase B.4: carimbar `encounter_id` em `admission_histories` (coluna já existe) e migrar para o filtro `encounter_id.eq/IS NULL` igual às outras 5 tabelas, em vez do registry.

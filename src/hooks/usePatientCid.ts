@@ -44,40 +44,47 @@ export function usePatientCid(patientId: string | null) {
     }
     setLoading(true);
     try {
-      // Tentativa 1: buscar por patient_id (mais preciso)
-      const { data, error } = await supabase
-        .from("admission_histories")
-        .select("id, cid_primary, cid_secondary, patient_registry_id")
-        .eq("patient_id", safePatientId)
-        .eq("hospital_unit_id", currentHospital.id)
-        .is("archived_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
+      // Blindagem contra reuso de leito: prioriza patient_registry_id (precisão);
+      // fallback para patient_id cobre legados sem registry carimbado.
+      // Sempre archived_at IS NULL para ignorar históricos de ocupantes anteriores.
+      const { data: patRow } = await supabase
+        .from("patients")
+        .select("patient_registry_id")
+        .eq("id", safePatientId)
         .maybeSingle();
-      if (error && error.code !== "PGRST116") throw error;
+      const regId = (patRow as any)?.patient_registry_id ?? null;
 
-      let row = data as any;
+      let row: any = null;
 
-      // Tentativa 2: fallback por patient_registry_id (quando ficha
-      // foi criada sem patient_id direto — ex: fluxo de pré-admissão)
-      if (!row && safePatientId) {
-        const { data: patRow } = await supabase
-          .from("patients")
-          .select("patient_registry_id")
-          .eq("id", safePatientId)
+      // Tentativa 1: por registry (precisa)
+      if (regId) {
+        const { data: regRow, error: regErr } = await supabase
+          .from("admission_histories")
+          .select("id, cid_primary, cid_secondary, patient_registry_id")
+          .eq("patient_registry_id", regId)
+          .eq("hospital_unit_id", currentHospital.id)
+          .is("archived_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
           .maybeSingle();
-        const regId = (patRow as any)?.patient_registry_id;
-        if (regId) {
-          const { data: regRow } = await supabase
-            .from("admission_histories")
-            .select("id, cid_primary, cid_secondary")
-            .eq("patient_registry_id", regId)
-            .is("archived_at", null)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          row = regRow as any;
-        }
+        if (regErr && regErr.code !== "PGRST116") throw regErr;
+        row = regRow as any;
+      }
+
+      // Tentativa 2: fallback por patient_id (legado sem registry carimbado)
+      if (!row) {
+        const { data, error } = await supabase
+          .from("admission_histories")
+          .select("id, cid_primary, cid_secondary, patient_registry_id")
+          .eq("patient_id", safePatientId)
+          .eq("hospital_unit_id", currentHospital.id)
+          .is("archived_at", null)
+          .is("patient_registry_id", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (error && error.code !== "PGRST116") throw error;
+        row = data as any;
       }
 
       if (row) {
