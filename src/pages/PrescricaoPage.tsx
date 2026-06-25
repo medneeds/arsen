@@ -4387,6 +4387,11 @@ const PrescricaoPage = () => {
     return n.includes('hgt') || n.includes('glicemia capilar') || n.includes('controle glicemico') || n.includes('dextro');
   }, []);
   const hasInsulinSchemeCare = useCallback((list: PrescriptionItem[]) => {
+    // Considera tanto o item genérico de "Esquema de correção" (care) quanto
+    // qualquer item ativo já configurado pelo assistente de Insulinoterapia
+    // (com insulinPlan). Evita duplicidade no PDF (NPH Fixa + Regular Resgate).
+    const hasActivePlan = list.some(i => i.status === 'active' && (i as any).insulinPlan);
+    if (hasActivePlan) return true;
     return list.some(i => i.category === 'care' && /esquema.*correc.*insulin/i.test(i.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')));
   }, []);
   const [historyDate, setHistoryDate] = useState<Date | undefined>(undefined);
