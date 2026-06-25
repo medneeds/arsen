@@ -244,7 +244,14 @@ export const printEvolution = async (
     ? (evo.soap_data as any).pendenciasItems.filter(Boolean)
     : [];
   const pendenciasHtml = pendItems.length > 0
-    ? `<h2 class="nz-section">Programações e Pendências</h2><ul class="nz-list">${pendItems.map((p, i) => `<li>${i + 1}. ${p}</li>`).join('')}</ul>`
+    ? `<h2 class="nz-section">Programações e Pendências</h2><ul class="nz-list">${pendItems.map((p, i) => {
+        const m = /^\s*\[( |x|X)\]\s?/.exec(p);
+        const done = m ? m[1].toLowerCase() === "x" : false;
+        const text = m ? p.replace(/^\s*\[( |x|X)\]\s?/, "") : p;
+        const box = done ? "☑" : "☐";
+        const style = done ? 'style="text-decoration:line-through;color:#64748b"' : '';
+        return `<li ${style}>${i + 1}. ${box} ${text}</li>`;
+      }).join('')}</ul>`
     : '';
 
   let sectionsHtml = diagnosticsHtml + antecedentesHtml;
