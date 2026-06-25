@@ -31,7 +31,9 @@ export function useLatestRoundSession(patientId: string | null) {
     let query = supabase
       .from("round_sessions")
       .select("id, round_date, observations, created_at, updated_at")
-      .eq("patient_id", patientId);
+      .eq("patient_id", patientId)
+      // 🔒 Blindagem: nunca mostrar sessão arquivada (ocupante anterior do leito)
+      .is("archived_at", null);
     if (activeEncounterId) {
       query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
     }
