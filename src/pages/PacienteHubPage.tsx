@@ -155,7 +155,7 @@ export default function PacienteHubPage() {
     setStatusLoading(false);
   };
 
-  useEffect(() => { fetchStatus(); }, [ctx.patientId]);
+  useEffect(() => { fetchStatus(); }, [ctx.patientId, registryId]);
 
   // Cronômetro vivo
   useEffect(() => {
