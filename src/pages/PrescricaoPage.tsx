@@ -10298,6 +10298,10 @@ const PrescricaoPage = () => {
             <AlertDialogAction
               onClick={() => {
                 const schemeName = 'Esquema de correção de insulina (Regular SC conforme HGT)';
+                if (items.some(i => i.status === 'active' && (i as any).insulinPlan)) {
+                  toast.info('Já existe esquema de insulinoterapia ativo nesta prescrição');
+                  return;
+                }
                 if (items.some(i => i.name === schemeName)) {
                   toast.info('Esquema já está na prescrição');
                   return;
