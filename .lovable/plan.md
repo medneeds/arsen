@@ -1,71 +1,103 @@
-## Contexto
+## Entendimento
 
-Bug confirmado no Leito 5 UCI 1 (Joaci Garcia): o cockpit mostrou admissão concluída com a HDA de outro paciente. A linha-leito `patients.id` foi reusada por vários ocupantes; em `admission_histories` ficaram 3 linhas vivas (`archived_at IS NULL`) com `patient_registry_id` diferentes, todas apontando para o mesmo `patient_id`. As queries do cockpit filtram só por `patient_id` e pegam a linha legada mais recente.
+`patients.id` é a **linha do leito** (volátil, reutilizada entre ocupantes). Toda informação clínica precisa ser ancorada na **identidade permanente** do paciente (`patient_registry_id`) + **atendimento ativo** (`encounter_id`). Já existem proteções parciais (Fases A/B.1/B.3, `archive_patient_bed_data` v3, triggers `stamp_admission_*_identity`, `useActiveEncounterId`, `useResolvedRegistryId`, `resolvePatientHeader`), mas o caso Joaci provou que estão incompletas e não padronizadas.
 
-Mesma classe de bug das fases B.1/B.3 — só que `admission_histories` ficou de fora.
+**Diagnóstico atual (read-only confirmado no banco):**
+- 206 `clinical_evolutions` + 159 `exam_requests` vivos com `patient_registry_id` divergente do ocupante atual da linha-leito → órfãos de fato.
+- `archive_patient_bed_data` cobre 13 tabelas, mas trigger só dispara em `is_vacant TRUE` (transferência interna não passa por aí — protegida por Guard 3 que evita arquivar quando registry ainda tem encounter ativo, ok).
+- Stamp de identidade (`patient_registry_id` + `encounter_id`) só existe em `admission_histories` e `clinical_evolutions`. Faltam: `exam_requests`, `culture_results`, `conduct_history`, `discharge_documents`, `medical_records`, `vital_signs`, `round_sessions`, `prescriptions`, `prescription_validations`, `dispensations`.
+- `saps3_assessments` e `sepsis_protocols` não têm coluna `encounter_id`/`patient_registry_id` — fora desta entrega (escopo separado de Fase A).
+- Hooks de leitura: alguns ainda lêem por `patient_id` puro (sem fallback registry/encounter).
 
-## Escopo — só correção dirigida
+## Princípios (não negociáveis)
 
-**Não toca**: fluxo de admissão (gravação), trigger `archive_bed_history` (já corrigido v2 em outra memória), schema, RLS, layout/UI, outros hooks/diálogos fora dos 3 listados, comportamento de outros pacientes.
+1. **Não toca**: layout/UI, fluxos de movimentação (sinalização/transferência/alta), schemas `auth/storage/realtime/...`, RLS existentes, comportamento de inserts dos formulários.
+2. **Não apaga dado clínico** — apenas arquiva (`archived_at`).
+3. **Degradação graciosa**: quando `patient_registry_id` ainda não resolveu, queries caem para `patient_id` + `archived_at IS NULL` (não somem silenciosamente).
+4. **4 camadas independentes**: Banco (raiz) → Hooks de leitura → Limpeza dos órfãos atuais → Auditoria.
 
-**Toca apenas** 3 pontos de LEITURA + 1 migration de limpeza de órfãos.
+## Plano de execução (4 frentes, na ordem)
 
-## Frente 1 — Blindagem de leitura (3 arquivos)
+### Frente 1 — Banco: stamp universal + archive completo
 
-Critério único aplicado, igual à Fase B.1:
-```
-WHERE patient_id = <atual>
-  AND archived_at IS NULL
-  AND ( patient_registry_id = <registry_atual>  -- prioritário
-        OR patient_registry_id IS NULL )         -- fallback legado
-```
-Quando há registry ativo (>99% dos casos pós-Fase A), só a linha do ocupante atual aparece. Linhas legadas com registry de outro paciente ficam isoladas.
+**Migration A — Stamp genérico de identidade clínica**
+Função `stamp_clinical_identity()` (BEFORE INSERT/UPDATE), trigger aplicada nas tabelas que ainda não têm:
+- `exam_requests`, `culture_results`, `conduct_history`, `discharge_documents`, `medical_records`, `vital_signs`, `round_sessions`, `prescription_validations`, `dispensations`
 
-### 1.1 `src/components/AdmissionConsultDialog.tsx` (linhas 156-163)
-Hoje: `.eq("patient_id", patient.id)` puro.
-Fix: adiciona `.is("archived_at", null)` e, quando `patient.patient_registry_id` existir, `.or("patient_registry_id.eq.<id>,patient_registry_id.is.null")`. Sem registry, mantém só `archived_at IS NULL` (degradação graciosa).
+Comportamento:
+- Resolve `patient_registry_id` a partir de `patients.id` (se NULL).
+- Resolve `encounter_id` ativo (registry → patient fallback), igual `autofill_encounter_id`.
+- **Registry Guard**: se INSERT/UPDATE não arquivado, e o `patient_registry_id` divergir do registry atual do `patient_id`, corrige para o do ocupante atual (mesma lógica de `stamp_admission_identity`).
 
-### 1.2 `src/components/AdmissionHistoryDialog.tsx` (linhas 53-67)
-Hoje: usa `resolvedRegistryId` OU `patient_id`, sem `archived_at`.
-Fix: sempre `.is("archived_at", null)`; quando há registry, prioriza `patient_registry_id = registry`; sem registry, cai para `patient_id` + `archived_at IS NULL`. Sem mexer no `handleSave` (gravação continua igual — já carimba registry corretamente).
+`prescriptions` mantém comportamento atual (gravação via `patient_data->>'id'` já tem autofill encounter e carimbo de registry explícito no código).
 
-### 1.3 `src/hooks/usePatientCid.ts` (linhas 47-81)
-Tentativa 1 hoje filtra por `patient_id` + `archived_at IS NULL` mas pega qualquer registry. Fix: quando o paciente tem registry conhecido (busca já feita na Tentativa 2 ou via prop), prioriza esse filtro; reordena para Tentativa 1 = `patient_registry_id` (precisão), Tentativa 2 = `patient_id` (legado sem carimbo). Mantém `archived_at IS NULL` em ambas. Zero mudança no `persist`.
+**Migration B — Extensão de `archive_patient_bed_data`**
+Adiciona blocos para: `prescription_validations`, `dispensations`. (Demais já cobertas.)
 
-Nenhum contrato/tipo/UI alterado. Hooks retornam o mesmo shape.
+**Migration C — Re-arm do gatilho de troca silenciosa**
+Pequeno reforço: além de `is_vacant=true`, disparar `archive_patient_bed_data` quando `OLD.patient_registry_id IS NOT NULL AND NEW.patient_registry_id IS DISTINCT FROM OLD.patient_registry_id` E o `OLD.patient_registry_id` **não** tiver mais encounter ativo (= alta de fato, leito sendo recolocado para novo dono sem passar por vacate). Mantém todos os 3 guards atuais.
 
-## Frente 2 — Migration de limpeza (1 migration SQL)
+### Frente 2 — Limpeza cirúrgica dos órfãos atuais
 
-Arquivar admission_histories órfãos legados que escaparam do trigger v2 — exatamente os 2 (ou mais) casos como Joaci/L05.
+Migration D — para cada uma das 7 tabelas (`admission_histories`, `clinical_evolutions`, `exam_requests`, `culture_results`, `conduct_history`, `medical_records`, `discharge_documents`):
 
-Condição cirúrgica:
 ```sql
-UPDATE public.admission_histories ah
+UPDATE <tabela> t
 SET archived_at = now(),
-    archive_reason = 'cleanup_orphan_legacy_registry_mismatch',
-    archived_from_patient_id = ah.patient_id
-WHERE ah.archived_at IS NULL
-  AND ah.patient_registry_id IS NOT NULL
-  AND EXISTS (
-    SELECT 1 FROM public.patients p
-    WHERE p.id = ah.patient_id
-      AND p.patient_registry_id IS NOT NULL
-      AND p.patient_registry_id <> ah.patient_registry_id
-  );
+    archive_reason = 'cleanup_registry_mismatch_v1',
+    archived_from_patient_id = t.patient_id
+FROM patients p
+WHERE p.id = t.patient_id
+  AND t.archived_at IS NULL
+  AND t.patient_registry_id IS NOT NULL
+  AND p.patient_registry_id IS NOT NULL
+  AND p.patient_registry_id <> t.patient_registry_id;
 ```
 
-Só arquiva quando: (a) registro tem registry carimbado, (b) a linha-leito tem registry carimbado, (c) os dois registries são diferentes — prova explícita de troca de ocupante. **Não arquiva** registros sem registry (legado puro) — esses continuam visíveis para o paciente atual via fallback.
+Log único em `audit_logs` com a contagem total por tabela.
 
-Adiciona linha em `audit_logs` com action `CLEANUP_ORPHAN_ADMISSION_HISTORIES` e count.
+**Não arquiva** registros legados sem `patient_registry_id` carimbado — esses continuam acessíveis ao paciente atual via fallback.
 
-## Validação pós-correção
+### Frente 3 — Frontend: leitura registry-first padronizada
 
-1. Banco: re-rodar a query do Joaci (`patient_id=ae421559…`, sem filtros) e ver os 2 órfãos com `archived_at` preenchido. A linha do Joaci (registry 65eec492) permanece viva.
-2. UI: abrir cockpit do Joaci → "Ver admissão" deve mostrar HDA dele (ou vazio se ele ainda não tem admissão gravada), nunca mais a do paciente PAF.
-3. Smoke negativo: pacientes em leitos que **nunca** foram reusados continuam vendo sua admissão (caminho registry funciona; fallback `patient_id IS NULL` cobre legados sem carimbo).
-4. Conferir que `usePatientCid` no header continua exibindo CID correto para Joaci.
+Endurecer hooks de leitura que ainda não aplicam o padrão Fase B.1 (filtro composto registry + encounter + archived):
 
-## Fora deste plano (proposta separada se você quiser)
+- `src/hooks/useLatestVitalSigns.ts`
+- `src/hooks/useLatestRoundSession.ts`
+- `src/hooks/usePatientPendingItems.ts` (exam_requests/culture_results)
+- `src/hooks/usePatientDocuments.ts`
+- `src/hooks/usePatientDischargeDocs.ts`
+- `src/hooks/useConductHistory.ts` (já filtra encounter; adicionar registry-first como `useEvolutions`)
+- `src/components/AdmissionConsultDialog.tsx` (já corrigido; verificar paridade)
+- `src/components/AdmissionHistoryDialog.tsx` (idem)
 
-- Estender o trigger `archive_bed_history` v2 para cobrir explicitamente `admission_histories` em `bed_occupant_swap` (hoje o gatilho está em `bed_deallocation_auto`, e reocupações via pré-admissão direta não passam por leito vago).
-- Fase B.4: carimbar `encounter_id` em `admission_histories` (coluna já existe) e migrar para o filtro `encounter_id.eq/IS NULL` igual às outras 5 tabelas, em vez do registry.
+Padrão único (já adotado em `useEvolutions`):
+```ts
+if (registryId)
+  q.or(`patient_registry_id.eq.${registryId},and(patient_registry_id.is.null,patient_id.eq.${bed})`);
+else
+  q.eq("patient_id", bed);
+q.is("archived_at", null);
+q.or(`encounter_id.eq.${enc},encounter_id.is.null`); // quando coluna existe
+```
+
+Zero mudança em inserts, zero mudança em UI, queryKeys recebem `registryId` e `encounterId` para invalidar corretamente.
+
+### Frente 4 — Auditoria e memória
+
+- Memória nova: `mem://features/bed-vs-registry-blindage-v2` documentando as 4 camadas + checklist para qualquer nova tabela clínica futura.
+- Entrada em `audit_logs` para cada migration aplicada (já incluído nas funções).
+
+## Verificação pós-deploy
+
+1. Re-rodar a query de "leaks" — deve retornar 0 linhas em todas as tabelas.
+2. Smoke manual: criar paciente novo num leito anteriormente ocupado → cockpit limpo, sem evolução/exame/conduta do anterior.
+3. Smoke negativo: pacientes ativos continuam vendo seus próprios dados.
+4. Verificar `tsgo` — tipos preservados.
+
+## Fora desta entrega
+
+- Adicionar `encounter_id`/`patient_registry_id` em `saps3_assessments`, `sepsis_protocols`, `vital_signs` (vital_signs já tem encounter — ok), `notes_reminders`, `shift_handovers` (são tabelas com volume / schema diferente, exigem fase própria).
+- Mudanças em fluxos de alta/transferência/sinalização.
+- Mudanças em RLS/grants.
+- Refator de inserts.
