@@ -4387,6 +4387,11 @@ const PrescricaoPage = () => {
     return n.includes('hgt') || n.includes('glicemia capilar') || n.includes('controle glicemico') || n.includes('dextro');
   }, []);
   const hasInsulinSchemeCare = useCallback((list: PrescriptionItem[]) => {
+    // Considera tanto o item genérico de "Esquema de correção" (care) quanto
+    // qualquer item ativo já configurado pelo assistente de Insulinoterapia
+    // (com insulinPlan). Evita duplicidade no PDF (NPH Fixa + Regular Resgate).
+    const hasActivePlan = list.some(i => i.status === 'active' && (i as any).insulinPlan);
+    if (hasActivePlan) return true;
     return list.some(i => i.category === 'care' && /esquema.*correc.*insulin/i.test(i.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')));
   }, []);
   const [historyDate, setHistoryDate] = useState<Date | undefined>(undefined);
@@ -10168,8 +10173,21 @@ const PrescricaoPage = () => {
         existingPlan={editingInsulinItemId ? items.find(i => i.id === editingInsulinItemId)?.insulinPlan : undefined}
         onConfirm={(plan) => {
           const desc = describeInsulinPlan(plan);
+          // Remove o item genérico "Esquema de correção de insulina (Regular SC conforme HGT)"
+          // sempre que o médico confirma um plano no assistente — evita duplicidade no PDF
+          // (item NPH/Basal-Bolus correto + item genérico Regular Resgate).
+          const stripGenericScheme = (list: PrescriptionItem[]) => {
+            const isGeneric = (it: PrescriptionItem) =>
+              it.status === 'active'
+              && !(it as any).insulinPlan
+              && /esquema.*correc.*insulin/i.test(it.name.normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+            const removed = list.filter(isGeneric).length;
+            if (removed === 0) return list;
+            toast.info(`Esquema genérico de correção removido (${removed}) — substituído pelo plano configurado.`);
+            return list.filter(it => !isGeneric(it));
+          };
           if (editingInsulinItemId) {
-            setItems(prev => prev.map(it => it.id === editingInsulinItemId
+            setItems(prev => stripGenericScheme(prev).map(it => it.id === editingInsulinItemId
               ? { ...it, insulinPlan: plan, instructions: [desc.headline, ...desc.lines].join(' | ') }
               : it
             ));
@@ -10190,7 +10208,7 @@ const PrescricaoPage = () => {
               doubleCheck: true,
               flags: plan.scheme === 'iv_continuous' ? ['bi' as PrescriptionFlag] : baseItem.flags,
             };
-            setItems(prev => [...prev, grouped]);
+            setItems(prev => [...stripGenericScheme(prev), grouped]);
             toast.success(`✓ ${desc.headline}`, {
               description: 'ALTA VIGILÂNCIA · esquema completo gerado para enfermagem.',
               duration: 4000,
@@ -10280,6 +10298,10 @@ const PrescricaoPage = () => {
             <AlertDialogAction
               onClick={() => {
                 const schemeName = 'Esquema de correção de insulina (Regular SC conforme HGT)';
+                if (items.some(i => i.status === 'active' && (i as any).insulinPlan)) {
+                  toast.info('Já existe esquema de insulinoterapia ativo nesta prescrição');
+                  return;
+                }
                 if (items.some(i => i.name === schemeName)) {
                   toast.info('Esquema já está na prescrição');
                   return;
