@@ -38,6 +38,8 @@ interface ItemListEditorProps {
   numberColor?: string;
   /** Se true, habilita drag-and-drop (handle visível). Substitui os botões ▲▼. */
   draggable?: boolean;
+  /** Se true, mostra uma checkbox à direita de cada item (estado persistido no próprio texto via `[x] `). */
+  checkable?: boolean;
 }
 
 /**
