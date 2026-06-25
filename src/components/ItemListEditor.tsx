@@ -221,19 +221,48 @@ export function ItemListEditor({
       )}
 
       {/* Campo de texto */}
-      {readOnly ? (
-        <span className={cn("flex-1 text-xs text-foreground py-1", !item && "text-muted-foreground italic")}>
-          {item || "—"}
-        </span>
-      ) : (
-        <Input
-          ref={(el) => { inputRefs.current[i] = el; }}
-          value={item}
-          onChange={(e) => update(i, e.target.value)}
-          onKeyDown={(e) => handleKey(e, i)}
-          placeholder={placeholder}
-          className={cn("h-7 text-xs flex-1", inputClassName)}
-        />
+      {(() => {
+        const parsed = checkable ? parsePendency(item) : { done: false, text: item };
+        const displayText = parsed.text;
+        return readOnly ? (
+          <span
+            className={cn(
+              "flex-1 text-xs py-1",
+              !displayText && "text-muted-foreground italic",
+              parsed.done && "line-through text-muted-foreground"
+            )}
+          >
+            {displayText || "—"}
+          </span>
+        ) : (
+          <Input
+            ref={(el) => { inputRefs.current[i] = el; }}
+            value={displayText}
+            onChange={(e) => update(i, e.target.value)}
+            onKeyDown={(e) => handleKey(e, i)}
+            placeholder={placeholder}
+            className={cn(
+              "h-7 text-xs flex-1",
+              parsed.done && "line-through text-muted-foreground",
+              inputClassName
+            )}
+          />
+        );
+      })()}
+
+      {/* Checkbox de conclusão (à direita do descritivo) */}
+      {checkable && !readOnly && (
+        <label
+          className="flex items-center gap-1 shrink-0 text-[10px] text-muted-foreground cursor-pointer select-none px-1"
+          title="Marcar como concluído"
+        >
+          <Checkbox
+            checked={parsePendency(item).done}
+            onCheckedChange={(v) => toggleCheck(i, v === true)}
+            className="h-3.5 w-3.5"
+          />
+          <span className="hidden sm:inline">OK</span>
+        </label>
       )}
 
       {/* Botão remover */}
