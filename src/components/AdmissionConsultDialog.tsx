@@ -34,6 +34,7 @@ interface Props {
     bed: string;
     sector: string;
     age?: string | number;
+    patient_registry_id?: string | null;
   };
   onChanged?: () => void;
 }
@@ -110,7 +111,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
   const { currentHospital } = useHospital();
   const isUti = useMemo(() => UTI_SECTORS.includes(patient.sector), [patient.sector]);
   const identifiers = usePatientIdentifiers(patient.id, patient.name, currentHospital?.id || null);
-  const registryId = identifiers.registry?.id ?? null;
+  const registryId = identifiers.registry?.id ?? patient.patient_registry_id ?? null;
 
   const [loading, setLoading] = useState(true);
   const [d0, setD0] = useState<AdmissionRow | null>(null);
@@ -142,7 +143,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
       }
       const { data: evs } = await supabase
         .from("clinical_evolutions")
-        .select("id, status, validated_at, validated_by_name, created_at, created_by_name, soap_data, vital_signs, physical_exam, suspension_reason, suspended_at")
+        .select("id, status, validated_at, validated_by_name, created_at, created_by_name, soap_data, vital_signs, physical_exam, suspension_reason, suspended_at, encounter_id, hospital_unit_id, state_id")
         .eq("patient_registry_id", registryId)
         .eq("evolution_type", "admission")
         .is("archived_at", null)
