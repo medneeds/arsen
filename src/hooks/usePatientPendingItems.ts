@@ -47,6 +47,8 @@ export function usePatientPendingItems(
       .from("exam_requests")
       .select("id, category, status, items, created_at, patient_id, patient_name")
       .eq("hospital_unit_id", hospitalUnitId)
+      // 🔒 Blindagem: nunca mostrar requisição arquivada (ocupante anterior do leito)
+      .is("archived_at", null)
       .order("created_at", { ascending: false })
       .limit(20);
     if (patientId) examQuery = examQuery.eq("patient_id", patientId);
@@ -58,6 +60,8 @@ export function usePatientPendingItems(
       .from("culture_results")
       .select("id, culture_type, status, microorganism, created_at, patient_id, patient_name")
       .eq("hospital_unit_id", hospitalUnitId)
+      // 🔒 Blindagem: nunca mostrar cultura arquivada
+      .is("archived_at", null)
       .order("created_at", { ascending: false })
       .limit(20);
     if (patientId) culQuery = culQuery.eq("patient_id", patientId);
