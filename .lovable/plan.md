@@ -1,32 +1,73 @@
-## Diagnóstico
+## Objetivo
 
-A prescrição tem **dois itens distintos** de insulina coexistindo:
+Cadastrar a **Dapagliflozina 10 mg comprimido VO** no catálogo clínico como item "Extra-padronização" (fora da lista oficial HMDM 2026), com evidência farmacêutica preenchida para alimentar o `PosologySuggestionsBar` da prescrição.
 
-1. **Item NPH Fixa** (correto, criado via assistente de Insulinoterapia) — possui `insulinPlan.scheme = 'nph_fixed'` e imprime corretamente.
-2. **Item "Esquema de correção de insulina (Regular SC conforme HGT)"** — adicionado automaticamente pelo pop-up `insulinSchemePromptOpen` (linha 10282 de `PrescricaoPage.tsx`) quando o médico inclui o cuidado de HGT. Esse item é genérico (categoria `care`), **não tem `insulinPlan`**, traz `presentation: 'Insulina Regular 100 UI/mL'` e `instructions` com a tabela de resgate. É ele que aparece no corpo do PDF como "esquema de insulina regular de resgate".
+## Achados da investigação
 
-Hoje os dois fluxos são independentes: o assistente de insulinoterapia não sabe que existe um esquema genérico no `care`, e o pop-up não sabe que já existe um `insulinPlan` ativo. Resultado: duplicidade silenciosa no PDF.
+- `medication_catalog` não contém nenhum iSGLT2 hoje. Classe "Hipoglicemiante / Insulina" tem só: Glibenclamida, Glicazida, Metformina, Insulinas NPH/Regular.
+- Memory `pharmacy-hmdm-2026-catalog` define o padrão dos 222 itens importados (`notes='HMDM 2026'`). Para preservar a integridade dessa lista, novos cadastros fora dela devem ir com `notes='Extra-padronização'`.
+- O catálogo já é editável pela tela `/catalogo-medicamentos` (admin + farmácia), via memory `medication-catalog-inline-evidence-edit`.
 
-## Correção proposta (escopo cirúrgico — apenas frontend, sem mexer em DB nem em print)
+## O que será feito
 
-### 1. `PrescricaoPage.tsx` — assistente de Insulinoterapia (`onConfirm` do `InsulinTherapyDialog`, ~linha 10169)
-Ao aplicar **qualquer** `InsulinPlan` (novo ou editado), remover automaticamente o item genérico de "Esquema de correção de insulina (Regular SC conforme HGT)" caso esteja ativo, com toast informando a substituição. Critério de match: `name === 'Esquema de correção de insulina (Regular SC conforme HGT)'` **e** `status === 'active'` **e** ausência de `insulinPlan`.
+### 1. Insert em `medication_catalog` (1 linha)
 
-### 2. `PrescricaoPage.tsx` — pop-up de sugestão (`insulinSchemePromptOpen`, ~linha 4341 e 4390)
-Ampliar o predicado `hasInsulinSchemeCare(items)` (e o gate de abertura) para considerar **qualquer item com `insulinPlan` ativo** como já tendo esquema de correção. Assim, se já existe NPH Fixa/Basal-Bolus/EV/Sliding via assistente, o pop-up não dispara — evitando a criação do item genérico.
+| Campo | Valor |
+|---|---|
+| `generic_name` | Dapagliflozina |
+| `therapeutic_class` | Hipoglicemiante / Insulina |
+| `pharmacological_group` | Inibidor de SGLT2 |
+| `controlled` | false |
+| `high_alert` | false |
+| `requires_dilution` | false |
+| `notes` | Extra-padronização |
 
-### 3. `PrescricaoPage.tsx` — adição manual do genérico (`AlertDialogAction`, ~linha 10280)
-Reforço defensivo: antes do `setItems(prev => [...prev, ...])`, checar também se existe item com `insulinPlan` ativo. Se sim, exibir `toast.info('Já existe esquema de insulinoterapia ativo')` e não adicionar.
+ID determinístico fora da faixa HMDM (`00000000-0000-4000-8000-000000000001`–`222`) para evitar colisão — usar `gen_random_uuid()` direto.
 
-### O que NÃO será tocado
-- Camada de Dados / persistência (JSONB já correto).
-- `insulinTherapy.ts` / `describeInsulinPlan` (lógica de render está certa).
-- `printNormaZero.ts`, `PrintablePrescription`, `printExtraPrescription.ts` (impressão já reflete corretamente o que recebe).
-- Nenhum item clínico existente é apagado retroativamente — a remoção só ocorre quando o médico **confirma** um plano no assistente.
+### 2. Insert em `medication_presentations` (1 linha)
 
-## Resultado esperado
-- Médico adiciona HGT → opta por incluir esquema padrão → vira item genérico (como hoje).
-- Em seguida, abre o assistente e configura NPH Fixa → **o item genérico Regular sai automaticamente**, restando apenas o NPH no corpo do PDF.
-- Se já existir plano ativo (NPH/Basal-Bolus/EV), o pop-up nem aparece.
+| Campo | Valor |
+|---|---|
+| `form` | Comprimido |
+| `concentration` | 10 mg |
+| `unit` | mg |
+| `route` | VO |
+| `standard_dilution` | — (não se aplica, VO) |
+| `max_daily_dose` | 10 mg/dia |
+| `infusion_time` | — |
+| `iv_bolus` | false |
+| `pharmacy_suggestion_enabled` | true |
 
-Confirmar para aplicar?
+### 3. Observações clínicas (campo `instructions` do protocolo gerado)
+
+O `presentationToProtocol()` (em `useMedicationProtocols.ts`) já concatena `max_daily_dose` em `instructions`. Para incluir alertas de segurança (TFG, cetoacidose euglicêmica) sem alterar código, vou colocar tudo no campo `max_daily_dose` em formato texto:
+
+> `10 mg 1x/dia · Suspender se TFG<25 (DM2) / <20 (IC) · Alerta: risco de cetoacidose euglicêmica — suspender 3 dias antes de cirurgia/jejum`
+
+Assim a sugestão "Padrão (Comprimido)" aparece na barra de posologia ao adicionar Dapagliflozina, com a observação completa.
+
+## Camadas tocadas
+
+- **Dados**: `medication_catalog` (+1 linha), `medication_presentations` (+1 linha) via `supabase--insert`.
+- **Layout / Movimentação / Auditoria**: nenhuma mudança.
+
+## Camadas NÃO tocadas
+
+- Nenhum arquivo de código (`src/**`, `supabase/functions/**`).
+- Nenhuma migration de schema.
+- Demais itens do catálogo HMDM 2026 permanecem intactos.
+- `posologyProtocols.ts` manual não é alterado — sugestão sai do banco via cache do `useMedicationProtocols`.
+
+## Como o médico verá
+
+Ao digitar "dapa" na busca da Prescrição:
+1. Aparece "Dapagliflozina" como resultado.
+2. Ao adicionar, o `PosologySuggestionsBar` mostra chip **"Padrão (Comprimido)"** com dose máx. e alerta de TFG/cetoacidose.
+3. Posologia padrão sugerida: 1 cp VO 1x/dia (médico ajusta).
+
+## Próximos passos (não incluídos neste plano)
+
+Se aprovar, posso depois:
+- Cadastrar outros iSGLT2 (Empagliflozina, Canagliflozina) no mesmo padrão.
+- Cadastrar análogos GLP-1 (Liraglutida, Semaglutida, Dulaglutida).
+- Marcar o item como "uso restrito/compra externa" via novo campo (exige migration — pedirei aprovação separada).
