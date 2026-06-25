@@ -130,6 +130,8 @@ export function usePatientDocuments({
         .select("*")
         .eq("hospital_unit_id", hospitalUnitId)
         .eq("state_id", stateId)
+        // 🔒 Blindagem: nunca mostrar requisição arquivada (ocupante anterior do leito)
+        .is("archived_at", null)
         .order("created_at", { ascending: false })
         .limit(200);
       if (validId) examQuery = examQuery.eq("patient_id", validId);
@@ -142,6 +144,8 @@ export function usePatientDocuments({
         .select("*")
         .eq("hospital_unit_id", hospitalUnitId)
         .eq("state_id", stateId)
+        // 🔒 Blindagem: nunca mostrar cultura arquivada
+        .is("archived_at", null)
         .order("created_at", { ascending: false })
         .limit(100);
       if (validId) cultureQuery = cultureQuery.eq("patient_id", validId);
