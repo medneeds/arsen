@@ -432,7 +432,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         .select("id")
         .eq("registry_id", registryId)
         .eq("patient_id", patient.id)
-        .eq("status", "active")
+        .neq("status", "closed")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -465,6 +465,9 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
           .select("id")
           .eq("patient_id", admissionPayload.patient_id)
           .eq("patient_registry_id", admissionPayload.patient_registry_id)
+          .is("archived_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
           .maybeSingle();
         if (existing?.id) {
           const { error } = await supabase
