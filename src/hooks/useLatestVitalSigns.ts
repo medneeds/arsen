@@ -41,7 +41,9 @@ export function useLatestVitalSigns(patientId: string | null, patientName?: stri
       .select(
         "id, recorded_at, recorded_by_name, systolic_bp, diastolic_bp, heart_rate, respiratory_rate, spo2, temperature, news2_score, news2_risk, lactate, potassium",
       )
-      .eq("patient_id", patientId);
+      .eq("patient_id", patientId)
+      // 🔒 Blindagem: nunca mostrar dados arquivados (ocupante anterior do leito)
+      .is("archived_at", null);
     if (activeEncounterId) {
       query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
     }
@@ -49,25 +51,9 @@ export function useLatestVitalSigns(patientId: string | null, patientName?: stri
       .order("recorded_at", { ascending: false })
       .limit(1);
 
-    // 🔒 Fallback por nome: quando patient_id não retorna resultado
-    // (paciente recém-transferido antes do repoint async completar),
-    // tentamos por patientName + hospitalUnitId se disponível.
-    // Apenas para leitura — nunca usado para gravar.
-    if (!error && (!data || data.length === 0) && patientName) {
-      const { data: fallbackData } = await (supabase as any)
-        .from("vital_signs")
-        .select("id, recorded_at, recorded_by_name, systolic_bp, diastolic_bp, heart_rate, respiratory_rate, spo2, temperature, news2_score, news2_risk, lactate, potassium")
-        .eq("patient_name", patientName.trim())
-        .order("recorded_at", { ascending: false })
-        .limit(1);
-      if (fallbackData && fallbackData.length > 0) {
-        const r: any = fallbackData[0];
-        setVitals({ id: r.id, recordedAt: r.recorded_at, recordedByName: r.recorded_by_name, systolicBp: r.systolic_bp, diastolicBp: r.diastolic_bp, heartRate: r.heart_rate, respiratoryRate: r.respiratory_rate, spo2: r.spo2, temperature: r.temperature, news2Score: r.news2_score, news2Risk: r.news2_risk, lactate: r.lactate, potassium: r.potassium });
-        lastSeenIdRef.current = r.id;
-        setLoading(false);
-        return;
-      }
-    }
+    // ❌ Fallback por patient_name REMOVIDO — causava cross-contamination
+    // entre pacientes com nomes iguais/parecidos em unidades diferentes.
+    // Se patient_id não bate, a fonte da verdade é o stamp do trigger.
 
     if (!error && data && data.length > 0) {
       const r: any = data[0];
