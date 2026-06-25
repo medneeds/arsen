@@ -131,12 +131,21 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
     if (!patient.id) return;
     setLoading(true);
     try {
-      const { data: evs } = await supabase
+      // Blindagem contra reuso de leito: archived_at IS NULL e, quando há
+      // registry do ocupante atual, prioriza registry (fallback registry IS NULL
+      // para registros legados sem carimbo). Mesma estratégia da query de
+      // admission_histories logo abaixo.
+      const registryId = (patient as any).patient_registry_id ?? null;
+      let evQuery = supabase
         .from("clinical_evolutions")
         .select("id, status, validated_at, validated_by_name, created_at, created_by_name, soap_data, vital_signs, physical_exam, suspension_reason, suspended_at")
         .eq("patient_id", patient.id)
         .eq("evolution_type", "admission")
-        .order("created_at", { ascending: false });
+        .is("archived_at", null);
+      if (registryId) {
+        evQuery = evQuery.or(`patient_registry_id.eq.${registryId},patient_registry_id.is.null`);
+      }
+      const { data: evs } = await evQuery.order("created_at", { ascending: false });
 
       const list = (evs || []) as AdmissionRow[];
       // Pega a admissão raiz MAIS RECENTE (validada, sem parent_id) — blindagem contra
@@ -156,7 +165,6 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
       // Blindagem contra reuso de leito: filtra por archived_at IS NULL
       // e, quando disponível, prioriza o patient_registry_id do ocupante atual
       // (cai em registros sem registry — legados — para retrocompat).
-      const registryId = (patient as any).patient_registry_id ?? null;
       let ahQuery = supabase
         .from("admission_histories")
         .select("cid_primary, cid_secondary, clinical_history, initial_conduct")
