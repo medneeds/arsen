@@ -244,7 +244,14 @@ export const printEvolution = async (
     ? (evo.soap_data as any).pendenciasItems.filter(Boolean)
     : [];
   const pendenciasHtml = pendItems.length > 0
-    ? `<h2 class="nz-section">Programações e Pendências</h2><ul class="nz-list">${pendItems.map((p, i) => `<li>${i + 1}. ${p}</li>`).join('')}</ul>`
+    ? `<h2 class="nz-section">Programações e Pendências</h2><ul class="nz-list">${pendItems.map((p, i) => {
+        const m = /^\s*\[( |x|X)\]\s?/.exec(p);
+        const done = m ? m[1].toLowerCase() === "x" : false;
+        const text = m ? p.replace(/^\s*\[( |x|X)\]\s?/, "") : p;
+        const box = done ? "☑" : "☐";
+        const style = done ? 'style="text-decoration:line-through;color:#64748b"' : '';
+        return `<li ${style}>${i + 1}. ${box} ${text}</li>`;
+      }).join('')}</ul>`
     : '';
 
   let sectionsHtml = diagnosticsHtml + antecedentesHtml;
@@ -325,9 +332,14 @@ export const printEvolution = async (
         // Programações e Pendências (opcional)
         const pendArr: string[] = Array.isArray((s as any).pendenciasItems) ? (s as any).pendenciasItems.filter(Boolean) : [];
         if (pendArr.length === 0) return "";
-        const rows = pendArr.map((item, i) =>
-          `<tr><td style="width:18pt;padding:2pt 4pt;font-weight:700;color:#c2410c;vertical-align:top;font-size:8pt">${i+1}.</td><td style="padding:2pt 4pt;font-size:8.5pt;line-height:1.35">${escape(item)}</td></tr>`
-        ).join("");
+        const rows = pendArr.map((item, i) => {
+          const m = /^\s*\[( |x|X)\]\s?/.exec(item);
+          const done = m ? m[1].toLowerCase() === "x" : false;
+          const text = m ? item.replace(/^\s*\[( |x|X)\]\s?/, "") : item;
+          const box = done ? "☑" : "☐";
+          const textStyle = done ? "padding:2pt 4pt;font-size:8.5pt;line-height:1.35;text-decoration:line-through;color:#64748b" : "padding:2pt 4pt;font-size:8.5pt;line-height:1.35";
+          return `<tr><td style="width:18pt;padding:2pt 4pt;font-weight:700;color:#c2410c;vertical-align:top;font-size:8pt">${i+1}.</td><td style="width:14pt;padding:2pt 2pt;font-size:10pt;vertical-align:top">${box}</td><td style="${textStyle}">${escape(text)}</td></tr>`;
+        }).join("");
         return `<h2 class="nz-section">Programações e Pendências</h2><table style="width:100%;border-collapse:collapse;background:#fff7ed;border:1px solid #fed7aa;border-radius:3pt"><tbody>${rows}</tbody></table>`;
       })()}
     `;

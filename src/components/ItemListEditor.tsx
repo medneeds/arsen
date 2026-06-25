@@ -1,5 +1,7 @@
 import React, { useRef, KeyboardEvent, useMemo } from "react";
 import { Plus, Trash2, GripVertical, ChevronUp, ChevronDown } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { parsePendency, setPendencyDone } from "@/lib/pendencyMarker";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
@@ -36,6 +38,8 @@ interface ItemListEditorProps {
   numberColor?: string;
   /** Se true, habilita drag-and-drop (handle visível). Substitui os botões ▲▼. */
   draggable?: boolean;
+  /** Se true, mostra uma checkbox à direita de cada item (estado persistido no próprio texto via `[x] `). */
+  checkable?: boolean;
 }
 
 /**
@@ -56,6 +60,7 @@ export function ItemListEditor({
   numbered = false,
   numberColor = "text-primary",
   draggable = false,
+  checkable = false,
 }: ItemListEditorProps) {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -84,7 +89,18 @@ export function ItemListEditor({
 
   const update = (i: number, val: string) => {
     const next = [...items];
-    next[i] = val;
+    if (checkable) {
+      const { done } = parsePendency(items[i] ?? "");
+      next[i] = setPendencyDone(val, done);
+    } else {
+      next[i] = val;
+    }
+    onChange(next);
+  };
+
+  const toggleCheck = (i: number, done: boolean) => {
+    const next = [...items];
+    next[i] = setPendencyDone(items[i] ?? "", done);
     onChange(next);
   };
 
@@ -205,19 +221,48 @@ export function ItemListEditor({
       )}
 
       {/* Campo de texto */}
-      {readOnly ? (
-        <span className={cn("flex-1 text-xs text-foreground py-1", !item && "text-muted-foreground italic")}>
-          {item || "—"}
-        </span>
-      ) : (
-        <Input
-          ref={(el) => { inputRefs.current[i] = el; }}
-          value={item}
-          onChange={(e) => update(i, e.target.value)}
-          onKeyDown={(e) => handleKey(e, i)}
-          placeholder={placeholder}
-          className={cn("h-7 text-xs flex-1", inputClassName)}
-        />
+      {(() => {
+        const parsed = checkable ? parsePendency(item) : { done: false, text: item };
+        const displayText = parsed.text;
+        return readOnly ? (
+          <span
+            className={cn(
+              "flex-1 text-xs py-1",
+              !displayText && "text-muted-foreground italic",
+              parsed.done && "line-through text-muted-foreground"
+            )}
+          >
+            {displayText || "—"}
+          </span>
+        ) : (
+          <Input
+            ref={(el) => { inputRefs.current[i] = el; }}
+            value={displayText}
+            onChange={(e) => update(i, e.target.value)}
+            onKeyDown={(e) => handleKey(e, i)}
+            placeholder={placeholder}
+            className={cn(
+              "h-7 text-xs flex-1",
+              parsed.done && "line-through text-muted-foreground",
+              inputClassName
+            )}
+          />
+        );
+      })()}
+
+      {/* Checkbox de conclusão (à direita do descritivo) */}
+      {checkable && !readOnly && (
+        <label
+          className="flex items-center gap-1 shrink-0 text-[10px] text-muted-foreground cursor-pointer select-none px-1"
+          title="Marcar como concluído"
+        >
+          <Checkbox
+            checked={parsePendency(item).done}
+            onCheckedChange={(v) => toggleCheck(i, v === true)}
+            className="h-3.5 w-3.5"
+          />
+          <span className="hidden sm:inline">OK</span>
+        </label>
       )}
 
       {/* Botão remover */}
