@@ -1,5 +1,7 @@
 import React, { useRef, KeyboardEvent, useMemo } from "react";
 import { Plus, Trash2, GripVertical, ChevronUp, ChevronDown } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { parsePendency, setPendencyDone } from "@/lib/pendencyMarker";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
