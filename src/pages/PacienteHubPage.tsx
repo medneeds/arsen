@@ -69,8 +69,11 @@ export default function PacienteHubPage() {
 
   // Detecta rascunho local de admissão para o paciente atual
   useEffect(() => {
+    if (!registryId) {
+      setHasDraft(false);
+      return;
+    }
     const check = () => {
-      if (!registryId) { setHasDraft(false); return; }
       try {
         setHasDraft(!!localStorage.getItem(draftKeyForRegistry(registryId)));
       } catch { setHasDraft(false); }
