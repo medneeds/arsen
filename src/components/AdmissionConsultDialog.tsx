@@ -34,6 +34,7 @@ interface Props {
     bed: string;
     sector: string;
     age?: string | number;
+    patient_registry_id?: string | null;
   };
   onChanged?: () => void;
 }
@@ -110,6 +111,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
   const { currentHospital } = useHospital();
   const isUti = useMemo(() => UTI_SECTORS.includes(patient.sector), [patient.sector]);
   const identifiers = usePatientIdentifiers(patient.id, patient.name, currentHospital?.id || null);
+  const registryId = identifiers.registry?.id ?? patient.patient_registry_id ?? null;
 
   const [loading, setLoading] = useState(true);
   const [d0, setD0] = useState<AdmissionRow | null>(null);
@@ -131,21 +133,21 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
     if (!patient.id) return;
     setLoading(true);
     try {
-      // Blindagem contra reuso de leito: archived_at IS NULL e, quando há
-      // registry do ocupante atual, prioriza registry (fallback registry IS NULL
-      // para registros legados sem carimbo). Mesma estratégia da query de
-      // admission_histories logo abaixo.
-      const registryId = (patient as any).patient_registry_id ?? null;
-      let evQuery = supabase
-        .from("clinical_evolutions")
-        .select("id, status, validated_at, validated_by_name, created_at, created_by_name, soap_data, vital_signs, physical_exam, suspension_reason, suspended_at")
-        .eq("patient_id", patient.id)
-        .eq("evolution_type", "admission")
-        .is("archived_at", null);
-      if (registryId) {
-        evQuery = evQuery.or(`patient_registry_id.eq.${registryId},patient_registry_id.is.null`);
+      // Blindagem contra reuso de leito: leitura por prontuário permanente.
+      // Nunca usamos apenas patient_id aqui, pois essa linha de leito é reutilizada.
+      if (!registryId) {
+        setD0(null);
+        setAddenda([]);
+        setHistory(null);
+        return;
       }
-      const { data: evs } = await evQuery.order("created_at", { ascending: false });
+      const { data: evs } = await supabase
+        .from("clinical_evolutions")
+        .select("id, status, validated_at, validated_by_name, created_at, created_by_name, soap_data, vital_signs, physical_exam, suspension_reason, suspended_at, encounter_id, hospital_unit_id, state_id")
+        .eq("patient_registry_id", registryId)
+        .eq("evolution_type", "admission")
+        .is("archived_at", null)
+        .order("created_at", { ascending: false });
 
       const list = (evs || []) as AdmissionRow[];
       // Pega a admissão raiz MAIS RECENTE (validada, sem parent_id) — blindagem contra
@@ -162,18 +164,12 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
       setD0(root);
       setAddenda(adds);
 
-      // Blindagem contra reuso de leito: filtra por archived_at IS NULL
-      // e, quando disponível, prioriza o patient_registry_id do ocupante atual
-      // (cai em registros sem registry — legados — para retrocompat).
-      let ahQuery = supabase
+      // Blindagem contra reuso de leito: história admissional apenas do registry atual.
+      const { data: ah } = await supabase
         .from("admission_histories")
         .select("cid_primary, cid_secondary, clinical_history, initial_conduct")
-        .eq("patient_id", patient.id)
-        .is("archived_at", null);
-      if (registryId) {
-        ahQuery = ahQuery.or(`patient_registry_id.eq.${registryId},patient_registry_id.is.null`);
-      }
-      const { data: ah } = await ahQuery
+        .eq("patient_registry_id", registryId)
+        .is("archived_at", null)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -190,7 +186,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
     }
   };
 
-  useEffect(() => { if (open) fetchAll(); }, [open, patient.id]);
+  useEffect(() => { if (open) fetchAll(); }, [open, patient.id, registryId]);
 
   const isSuspended = d0?.status === "suspended";
 
@@ -257,6 +253,8 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
         patient_name: patient.name,
         patient_bed: patient.bed,
         patient_sector: patient.sector,
+        patient_registry_id: registryId,
+        encounter_id: (d0 as any).encounter_id ?? null,
         evolution_type: "admission",
         status: "validated",
         soap_data: { addendum: adendoText, parent_id: d0.id },

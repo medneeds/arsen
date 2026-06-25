@@ -29,8 +29,8 @@ import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 
 const UTI_SECTORS = ["red", "yellow", "outside", "uti_01", "uti_02", "uci_02"];
 
-/** Chave do rascunho local por paciente */
-const draftKeyFor = (patientId: string) => `admission_draft:v1:${patientId}`;
+/** Chave do rascunho local por prontuário — nunca por leito/linha reutilizável. */
+const draftKeyFor = (registryId: string) => `admission_draft:v2:${registryId}`;
 
 /** Label com sinalização forte de obrigatoriedade */
 const ReqLabel = ({ children, missing }: { children: React.ReactNode; missing?: boolean }) => (
@@ -161,6 +161,8 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   const { user } = useAuth();
   const isUti = useMemo(() => UTI_SECTORS.includes(patient.sector), [patient.sector]);
   const identifiers = usePatientIdentifiers(patient.id, patient.name, currentHospital?.id || null);
+  const registryId = identifiers.registry?.id ?? patient.patient_registry_id ?? null;
+  const draftKey = useMemo(() => registryId ? draftKeyFor(registryId) : null, [registryId]);
 
   // SAPS 3 acknowledgement (apenas UTI/UCI)
   const [sapsAck, setSapsAck] = useState(false);
@@ -208,12 +210,28 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
 
   const imc = useMemo(() => computeImc(weight, height), [weight, height]);
 
+  const resetForm = () => {
+    setHda(""); setAmp(""); setMuc(""); setAllergies(""); setWeight(""); setHeight("");
+    setPa(""); setFc(""); setFr(""); setSpo2(""); setTax(""); setDx("");
+    setPhysGeneral(""); setPhysCv(""); setPhysResp(""); setPhysAbd(""); setPhysExt(""); setPhysNeuro("");
+    setPlan(""); setCidPrimary(""); setCidSecondary(""); setDiagnosticHypotheses("");
+    setAdmissionReason(""); setOriginSector(""); setDevices(""); setCulturesAtb(""); setSpecialties("");
+    setNoPrediction(false);
+    setPredictionDate(toIsoDate(daysFromToday(5))); setPredictionDays("5");
+  };
+
   /* ───────── Rascunho automático (localStorage) ───────── */
   // Restaura ao abrir
   useEffect(() => {
     if (!open) return;
     try {
-      const raw = localStorage.getItem(draftKeyFor(patient.id));
+      if (!draftKey) {
+        resetForm();
+        setDraftSavedAt(null);
+        setDraftHydrated(true);
+        return;
+      }
+      const raw = localStorage.getItem(draftKey);
       if (raw) {
         const d = JSON.parse(raw);
         setHda(d.hda ?? ""); setAmp(d.amp ?? ""); setMuc(d.muc ?? "");
@@ -231,16 +249,19 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         setDevices(d.devices ?? ""); setCulturesAtb(d.culturesAtb ?? "");
         setSpecialties(d.specialties ?? "");
         if (d.savedAt) setDraftSavedAt(new Date(d.savedAt));
+      } else {
+        resetForm();
+        setDraftSavedAt(null);
       }
     } catch {}
     setDraftHydrated(true);
     return () => { setDraftHydrated(false); setAttempted(false); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, patient.id]);
+  }, [open, draftKey]);
 
   // Salva (debounced) a cada mudança
   useEffect(() => {
-    if (!open || !draftHydrated) return;
+    if (!open || !draftHydrated || !draftKey) return;
     const t = setTimeout(() => {
       try {
         const payload = {
@@ -254,14 +275,14 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         // só persiste se houver algum conteúdo
         const hasContent = Object.values(payload).some(v => typeof v === "string" && v.trim().length > 0);
         if (hasContent) {
-          localStorage.setItem(draftKeyFor(patient.id), JSON.stringify(payload));
+          localStorage.setItem(draftKey, JSON.stringify(payload));
           setDraftSavedAt(new Date());
         }
       } catch {}
     }, 600);
     return () => clearTimeout(t);
   }, [
-    open, draftHydrated, patient.id,
+    open, draftHydrated, draftKey,
     hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
     plan, cidPrimary, cidSecondary, diagnosticHypotheses,
@@ -270,15 +291,9 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   ]);
 
   const discardDraft = () => {
-    try { localStorage.removeItem(draftKeyFor(patient.id)); } catch {}
+    try { if (draftKey) localStorage.removeItem(draftKey); } catch {}
     setDraftSavedAt(null);
-    setHda(""); setAmp(""); setMuc(""); setAllergies(""); setWeight(""); setHeight("");
-    setPa(""); setFc(""); setFr(""); setSpo2(""); setTax(""); setDx("");
-    setPhysGeneral(""); setPhysCv(""); setPhysResp(""); setPhysAbd(""); setPhysExt("");
-    setPlan(""); setCidPrimary(""); setCidSecondary("");
-    setAdmissionReason(""); setOriginSector(""); setDevices(""); setCulturesAtb(""); setSpecialties("");
-    setNoPrediction(false);
-    setPredictionDate(toIsoDate(daysFromToday(5))); setPredictionDays("5");
+    resetForm();
     toast.success("Rascunho descartado");
   };
 
@@ -330,6 +345,10 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
 
   const handleSaveDraft = () => {
     try {
+      if (!draftKey) {
+        toast.error("Aguarde a identificação do prontuário antes de salvar o rascunho");
+        return;
+      }
       const payload = {
         hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
         physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
@@ -338,7 +357,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         admissionReason, originSector, devices, culturesAtb, specialties,
         savedAt: new Date().toISOString(),
       };
-      localStorage.setItem(draftKeyFor(patient.id), JSON.stringify(payload));
+      localStorage.setItem(draftKey, JSON.stringify(payload));
       setDraftSavedAt(new Date());
       toast.success("Rascunho salvo", {
         description: "Você pode prosseguir com evolução, prescrição, requisições e demais módulos.",
@@ -401,11 +420,23 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     const err = validate();
     if (err) { toast.error(err); return; }
     if (!currentHospital || !currentState || !user) { toast.error("Contexto não disponível"); return; }
+    if (!registryId) { toast.error("Prontuário não resolvido. Reabra o paciente e tente novamente."); return; }
 
     setSubmitting(true);
     try {
       const doctorName = user.user_metadata?.full_name || user.email || "Médico Assistente";
       const now = new Date().toISOString();
+
+      const { data: encounter } = await supabase
+        .from("patient_encounters")
+        .select("id")
+        .eq("registry_id", registryId)
+        .eq("patient_id", patient.id)
+        .neq("status", "closed")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const encounterId = (encounter as any)?.id ?? null;
 
       const admissionPayload = {
         clinical_history: hda,
@@ -419,7 +450,8 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         hospital_unit_id: currentHospital.id,
         state_id: currentState.id,
         patient_id: patient.id,
-        patient_registry_id: (patient as any).patient_registry_id ?? null,
+        patient_registry_id: registryId,
+        encounter_id: encounterId,
         created_by: user.id,
         updated_by: user.id,
       };
@@ -433,6 +465,9 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
           .select("id")
           .eq("patient_id", admissionPayload.patient_id)
           .eq("patient_registry_id", admissionPayload.patient_registry_id)
+          .is("archived_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
           .maybeSingle();
         if (existing?.id) {
           const { error } = await supabase
@@ -487,6 +522,8 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
           patient_name: patient.name,
           patient_bed: patient.bed,
           patient_sector: patient.sector,
+          patient_registry_id: registryId,
+          encounter_id: encounterId,
           soap_data: soapAdmission,
           vital_signs: { pa, fc, fr, temp: tax, spo2, glasgow: "", diurese: "", dor: "" },
           physical_exam: physicalExam,
@@ -543,7 +580,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
       await supabase.from("patients").update(baseUpdate as any).eq("id", patient.id);
 
       toast.success("ADMISSÃO HOSPITALAR REGISTRADA — paciente ADMITIDO (D0)");
-      try { localStorage.removeItem(draftKeyFor(patient.id)); } catch {}
+      try { if (draftKey) localStorage.removeItem(draftKey); } catch {}
       setDraftSavedAt(null);
       onOpenChange(false);
       onSuccess?.();

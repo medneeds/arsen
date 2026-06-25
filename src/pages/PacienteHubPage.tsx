@@ -34,6 +34,8 @@ const formatElapsed = (ms: number) => {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 };
 
+const draftKeyForRegistry = (registryId: string) => `admission_draft:v2:${registryId}`;
+
 export default function PacienteHubPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -50,6 +52,7 @@ export default function PacienteHubPage() {
   }), [params]);
 
   const identifiers = usePatientIdentifiers(ctx.patientId, ctx.patientName, currentHospital?.id || null);
+  const registryId = identifiers.registry?.id ?? null;
 
   // Usar status passado pela URL como valor inicial — evita flash de bloqueio
   const [admissionStatus, setAdmissionStatus] = useState<AdmissionStatus>(
@@ -66,20 +69,23 @@ export default function PacienteHubPage() {
 
   // Detecta rascunho local de admissão para o paciente atual
   useEffect(() => {
+    if (!registryId) {
+      setHasDraft(false);
+      return;
+    }
     const check = () => {
-      if (!ctx.patientId) { setHasDraft(false); return; }
       try {
-        setHasDraft(!!localStorage.getItem(`admission_draft:v1:${ctx.patientId}`));
+        setHasDraft(!!localStorage.getItem(draftKeyForRegistry(registryId)));
       } catch { setHasDraft(false); }
     };
     check();
     const onStorage = (e: StorageEvent) => {
-      if (e.key && e.key.includes(ctx.patientId)) check();
+      if (e.key === draftKeyForRegistry(registryId)) check();
     };
     window.addEventListener("storage", onStorage);
     const t = setInterval(check, 1500);
     return () => { window.removeEventListener("storage", onStorage); clearInterval(t); };
-  }, [ctx.patientId, admissionOpen]);
+  }, [registryId, admissionOpen]);
 
   const fetchStatus = async () => {
     if (!ctx.patientId) { setStatusLoading(false); return; }
@@ -99,22 +105,25 @@ export default function PacienteHubPage() {
     // foi de fato concluída — promove para 'admitido' na UI e cura o flag silenciosamente.
     // Mesmo padrão do self-heal de SAPS abaixo. Não toca movimentação nem layout.
     if (effectiveStatus === "pre_admitido") {
-      const { data: ah } = await supabase
-        .from("admission_histories")
-        .select("id, cid_primary, clinical_history")
-        .eq("patient_id", ctx.patientId)
-        .is("archived_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      const a: any = ah || null;
-      if (a && a.cid_primary && a.clinical_history && String(a.clinical_history).trim().length > 0) {
-        effectiveStatus = "admitido";
-        supabase
-          .from("patients")
-          .update({ admission_status: "admitido" } as any)
-          .eq("id", ctx.patientId)
-          .then(() => { /* self-heal silencioso */ });
+      const regId = identifiers.registry?.id;
+      if (regId) {
+        const { data: ah } = await supabase
+          .from("admission_histories")
+          .select("id, cid_primary, clinical_history")
+          .eq("patient_registry_id", regId)
+          .is("archived_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const a: any = ah || null;
+        if (a && a.cid_primary && a.clinical_history && String(a.clinical_history).trim().length > 0) {
+          effectiveStatus = "admitido";
+          supabase
+            .from("patients")
+            .update({ admission_status: "admitido" } as any)
+            .eq("id", ctx.patientId)
+            .then(() => { /* self-heal silencioso */ });
+        }
       }
     }
 
@@ -149,7 +158,7 @@ export default function PacienteHubPage() {
     setStatusLoading(false);
   };
 
-  useEffect(() => { fetchStatus(); }, [ctx.patientId]);
+  useEffect(() => { fetchStatus(); }, [ctx.patientId, registryId]);
 
   // Cronômetro vivo
   useEffect(() => {
@@ -228,19 +237,21 @@ export default function PacienteHubPage() {
   };
 
   const handlePrintAdmission = async () => {
-    if (!ctx.patientId) return;
+    if (!ctx.patientId || !registryId) return;
     const { data: ev } = await supabase
       .from("clinical_evolutions")
       .select("soap_data, vital_signs, physical_exam, validated_by_name, created_at")
-      .eq("patient_id", ctx.patientId)
+      .eq("patient_registry_id", registryId)
       .eq("evolution_type", "admission")
+      .is("archived_at", null)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     const { data: ah } = await supabase
       .from("admission_histories")
       .select("cid_primary, cid_secondary, clinical_history, initial_conduct")
-      .eq("patient_id", ctx.patientId)
+      .eq("patient_registry_id", registryId)
+      .is("archived_at", null)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -558,6 +569,7 @@ export default function PacienteHubPage() {
             bed: ctx.patientBed,
             sector: ctx.patientSector,
             age: ctx.patientAge,
+            patient_registry_id: identifiers.registry?.id ?? undefined,
           }}
           onChanged={fetchStatus}
         />
