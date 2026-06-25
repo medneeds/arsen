@@ -570,9 +570,10 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                 numbered
                 numberColor="text-purple-500"
                 showReorder={false}
+                draggable
               />
               <p className="text-[9px] text-muted-foreground">
-                Cada item é uma conduta ou ajuste terapêutico. Sincroniza com o mapa de leitos.
+                Arraste pelo ⋮⋮ para reordenar — a numeração e o PDF se ajustam automaticamente. Sincroniza com o mapa de leitos.
               </p>
 
               {/* Programações e Pendências — opcional, retraído */}
@@ -600,6 +601,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                       addLabel="+ Programação / Pendência"
                       showReorder={false}
                       numberColor="text-orange-500"
+                      draggable
                     />
                   </div>
                 )}
