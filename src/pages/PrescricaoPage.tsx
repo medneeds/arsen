@@ -10173,8 +10173,21 @@ const PrescricaoPage = () => {
         existingPlan={editingInsulinItemId ? items.find(i => i.id === editingInsulinItemId)?.insulinPlan : undefined}
         onConfirm={(plan) => {
           const desc = describeInsulinPlan(plan);
+          // Remove o item genérico "Esquema de correção de insulina (Regular SC conforme HGT)"
+          // sempre que o médico confirma um plano no assistente — evita duplicidade no PDF
+          // (item NPH/Basal-Bolus correto + item genérico Regular Resgate).
+          const stripGenericScheme = (list: PrescriptionItem[]) => {
+            const isGeneric = (it: PrescriptionItem) =>
+              it.status === 'active'
+              && !(it as any).insulinPlan
+              && /esquema.*correc.*insulin/i.test(it.name.normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+            const removed = list.filter(isGeneric).length;
+            if (removed === 0) return list;
+            toast.info(`Esquema genérico de correção removido (${removed}) — substituído pelo plano configurado.`);
+            return list.filter(it => !isGeneric(it));
+          };
           if (editingInsulinItemId) {
-            setItems(prev => prev.map(it => it.id === editingInsulinItemId
+            setItems(prev => stripGenericScheme(prev).map(it => it.id === editingInsulinItemId
               ? { ...it, insulinPlan: plan, instructions: [desc.headline, ...desc.lines].join(' | ') }
               : it
             ));
@@ -10195,7 +10208,7 @@ const PrescricaoPage = () => {
               doubleCheck: true,
               flags: plan.scheme === 'iv_continuous' ? ['bi' as PrescriptionFlag] : baseItem.flags,
             };
-            setItems(prev => [...prev, grouped]);
+            setItems(prev => [...stripGenericScheme(prev), grouped]);
             toast.success(`✓ ${desc.headline}`, {
               description: 'ALTA VIGILÂNCIA · esquema completo gerado para enfermagem.',
               duration: 4000,
