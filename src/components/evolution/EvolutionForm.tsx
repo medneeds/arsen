@@ -602,6 +602,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                       showReorder={false}
                       numberColor="text-orange-500"
                       draggable
+                      checkable
                     />
                   </div>
                 )}
