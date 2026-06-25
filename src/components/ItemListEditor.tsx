@@ -89,7 +89,18 @@ export function ItemListEditor({
 
   const update = (i: number, val: string) => {
     const next = [...items];
-    next[i] = val;
+    if (checkable) {
+      const { done } = parsePendency(items[i] ?? "");
+      next[i] = setPendencyDone(val, done);
+    } else {
+      next[i] = val;
+    }
+    onChange(next);
+  };
+
+  const toggleCheck = (i: number, done: boolean) => {
+    const next = [...items];
+    next[i] = setPendencyDone(items[i] ?? "", done);
     onChange(next);
   };
 
