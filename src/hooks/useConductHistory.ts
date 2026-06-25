@@ -47,6 +47,8 @@ export function useConductHistory(patientId: string) {
         .from("conduct_history")
         .select("*")
         .eq("patient_id", patientId)
+        // 🔒 Blindagem: nunca mostrar conduta arquivada (ocupante anterior do leito)
+        .is("archived_at", null)
         .order("created_at", { ascending: false })
         .limit(200);
 
