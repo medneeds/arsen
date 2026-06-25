@@ -995,9 +995,16 @@ const ReadOnlyView: React.FC<{
         <div>
           <strong className="text-orange-500 dark:text-orange-400">Programações e Pendências:</strong>
           <ol className="ml-4 mt-0.5 text-foreground/90 list-decimal space-y-0.5">
-            {pendenciasItems.filter(Boolean).map((p, i) => (
-              <li key={i}>{p}</li>
-            ))}
+            {pendenciasItems.filter(Boolean).map((p, i) => {
+              const m = /^\s*\[( |x|X)\]\s?/.exec(p);
+              const done = m ? m[1].toLowerCase() === "x" : false;
+              const text = m ? p.replace(/^\s*\[( |x|X)\]\s?/, "") : p;
+              return (
+                <li key={i} className={done ? "line-through text-muted-foreground" : undefined}>
+                  <span className="mr-1">{done ? "☑" : "☐"}</span>{text}
+                </li>
+              );
+            })}
           </ol>
         </div>
       )}
