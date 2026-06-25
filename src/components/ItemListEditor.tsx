@@ -60,6 +60,7 @@ export function ItemListEditor({
   numbered = false,
   numberColor = "text-primary",
   draggable = false,
+  checkable = false,
 }: ItemListEditorProps) {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
