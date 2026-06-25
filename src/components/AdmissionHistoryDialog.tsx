@@ -53,9 +53,13 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
   const fetchAdmissionHistory = async () => {
     setLoading(true);
     try {
+      // Blindagem contra reuso de leito: sempre archived_at IS NULL.
+      // Quando há registry conhecido, prioriza por registry (precisão);
+      // fallback por patient_id cobre legados sem registry carimbado.
       let query = supabase
         .from("admission_histories")
         .select("*")
+        .is("archived_at", null)
         .order("created_at", { ascending: false })
         .limit(1);
 
