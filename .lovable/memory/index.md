@@ -156,6 +156,7 @@
 - [Resolve Header MR Name Guard](mem://features/resolve-header-medical-record-name-guard) — Fallback 1c do resolvePatientHeader exige match NFD/upper entre patients.name e registry.full_name ao vincular por medical_record; impede vazamento de identidade no cabeçalho do PDF (bug L09 Luis Carlos x Marilene)
 - [FAQ Help Center](mem://features/faq-help-center) — Central /ajuda com 9 guias didáticos em slides (setas/dots/swipe/teclado), botão na sidebar acima do toggle de tema; FaqVisualBlock reproduz padrões reais (bedCard/menu/cockpit/dialog) sem screenshots estáticos
 - [Prescription Universal Auto-Load](mem://features/prescription/universal-auto-load) — Auto-load 2 etapas (rascunho do dia → última validada renovada do mesmo encounter); blindado por registry+encounter; sem autosave
+- [Admission Histories Registry-First Read](mem://features/admission-histories-registry-first-read) — AdmissionConsultDialog/AdmissionHistoryDialog/usePatientCid filtram por archived_at IS NULL + patient_registry_id atual (fallback patient_id sem registry); migration única arquivou órfãos com `cleanup_orphan_legacy_registry_mismatch` — fecha contaminação após reuso de leito (caso Joaci L05 UCI 1)
 
 
 - [Contextual Help Tour](mem://features/contextual-help-tour) — Botão "?" bottom-5 left-5 com overlay focused-tour escurecido em /prescricao, /evolucao e /requisicoes; conteúdo didático em src/lib/helpTours.ts, camada puramente de UI sem tocar dados/hooks/RLS
