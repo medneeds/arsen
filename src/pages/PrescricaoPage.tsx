@@ -4636,6 +4636,18 @@ const PrescricaoPage = () => {
       return missing;
     }
 
+    // ============= INSULINOTERAPIA (assistente) =============
+    // Quando o item carrega um `insulinPlan` completo (gerado pelo InsulinTherapyDialog),
+    // o plano já é a fonte de verdade clínica: concentração EV (ivConcentration),
+    // velocidade inicial, faixas de correção, HGT, conduta hipoglicemia — tudo já vai
+    // descrito em `instructions` e impresso pelo printExtraPrescription.
+    // Exigir diluente/volume/tempo estruturados aqui seria redundância e fonte de erro
+    // de digitação (médico já validou o plano no wizard).
+    if ((item as any).insulinPlan) {
+      return missing;
+    }
+
+
     // printOnly: item de impressão extra (orientações, dispositivos já em uso, observações).
     // Não exige posologia/via/dose — só o nome/descrição. Não vai para farmácia.
     if (item.printOnly) return [];
