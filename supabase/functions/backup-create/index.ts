@@ -39,6 +39,7 @@ type Part = { path: string; bytes: number };
 type State = {
   phase: "init" | "data" | "special" | "auth" | "manifest" | "done";
   tables?: string[];
+  specialTables?: string[];
   tableIdx?: number;
   pageFrom?: number;
   partN?: number;
@@ -60,6 +61,9 @@ type State = {
   since: string | null;                                // ISO-8601 ou null
   tableMeta?: Record<string, TableMeta>;                // por tabela pública
   tableFilterMode?: Record<string, FilterMode>;         // decisão efetiva
+  // ── seleção parcial de tabelas
+  selectedTables: string[] | null;                     // null = todas
+  includeAuthUsers: boolean;                           // default true
 };
 
 function isValidIsoTimestamp(s: unknown): s is string {
