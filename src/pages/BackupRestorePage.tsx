@@ -244,9 +244,29 @@ export default function BackupRestorePage() {
     setCreating(true);
     let backupId: string | null = null;
     try {
-      toast.info("Iniciando backup chunked…");
+      let sinceIso: string | null = null;
+      if (incremental) {
+        if (!sinceLocal) {
+          toast.error("Informe a data/hora de corte para o backup incremental.");
+          setCreating(false);
+          return;
+        }
+        const parsed = new Date(sinceLocal);
+        if (!Number.isFinite(parsed.getTime())) {
+          toast.error("Data de corte inválida.");
+          setCreating(false);
+          return;
+        }
+        sinceIso = parsed.toISOString();
+      }
+      toast.info(incremental ? `Iniciando backup incremental (desde ${sinceIso})…` : "Iniciando backup chunked…");
       const { data, error } = await supabase.functions.invoke("backup-create", {
-        body: { action: "start", reason: reason || "Backup manual", include_audit_logs: includeAudit },
+        body: {
+          action: "start",
+          reason: reason || (incremental ? "Backup incremental" : "Backup manual"),
+          include_audit_logs: includeAudit,
+          ...(sinceIso ? { since: sinceIso } : {}),
+        },
       });
       if (error) throw error;
       backupId = (data as any)?.backup_id;
