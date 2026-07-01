@@ -1392,6 +1392,25 @@ export default function BackupRestorePage() {
                     </Label>
                     <Input id="rconfirm" value={restoreConfirm} onChange={(e) => setRestoreConfirm(e.target.value.toUpperCase())} />
                   </div>
+                  {(() => {
+                    const isFullBackup =
+                      restoreMode === "full" &&
+                      !restoreTarget?.manifest?.incremental?.enabled;
+                    if (restoreDryRun || restoreMirror || !isFullBackup) return null;
+                    return (
+                      <div className="flex items-start gap-2 border-2 border-amber-500 bg-amber-50 rounded p-3">
+                        <Checkbox
+                          id="mergeack"
+                          checked={restoreMergeAck}
+                          onCheckedChange={(c) => setRestoreMergeAck(!!c)}
+                          className="mt-0.5"
+                        />
+                        <Label htmlFor="mergeack" className="text-sm cursor-pointer text-amber-900">
+                          Entendo que este restore é uma <strong>mesclagem</strong> (upsert por PK) e <strong>não substitui</strong> o estado atual do banco. Dados criados após o backup <strong>permanecerão</strong>.
+                        </Label>
+                      </div>
+                    );
+                  })()}
                 </>
               )}
             </div>
