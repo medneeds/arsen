@@ -315,14 +315,20 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
 
   // ───────────── SPECIAL: profiles/roles/units/etc paginados
   if (s.phase === "special") {
-    if (s.specialIdx! >= SPECIAL_TABLES.length) {
-      s.phase = "auth";
-      s.authPage = 1;
-      s.authPartN = 0;
+    const specials = s.specialTables ?? SPECIAL_TABLES;
+    if (s.specialIdx! >= specials.length) {
+      if (s.includeAuthUsers) {
+        s.phase = "auth";
+        s.authPage = 1;
+        s.authPartN = 0;
+        s.authTotal = 0;
+        return { step: "configurações concluídas", percent: 82, done: false };
+      }
+      s.phase = "manifest";
       s.authTotal = 0;
-      return { step: "configurações concluídas", percent: 82, done: false };
+      return { step: "configurações concluídas (auth pulado)", percent: 90, done: false };
     }
-    const table = SPECIAL_TABLES[s.specialIdx!];
+    const table = specials[s.specialIdx!];
     const from = s.specialPageFrom!;
     const to = from + PAGE_SIZE - 1;
     const { data, error } = await admin.from(table).select("*").range(from, to);
@@ -342,7 +348,7 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
     } else {
       s.specialPageFrom = from + PAGE_SIZE;
     }
-    return { step: `config: ${table}`, percent: 72 + Math.floor((s.specialIdx! / SPECIAL_TABLES.length) * 10), done: false };
+    return { step: `config: ${table}`, percent: 72 + Math.floor((s.specialIdx! / Math.max(specials.length, 1)) * 10), done: false };
   }
 
   // ───────────── AUTH: uma página por chamada
