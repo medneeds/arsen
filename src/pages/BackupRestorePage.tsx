@@ -893,6 +893,16 @@ export default function BackupRestorePage() {
                             INCR desde {j.manifest.incremental.since ? formatDate(j.manifest.incremental.since) : "?"}
                           </Badge>
                         )}
+                        {j.manifest?.partial?.enabled && (
+                          <Badge variant="outline" className="text-[10px] border-purple-400 text-purple-700">
+                            PARCIAL ({j.manifest.partial.selected_tables?.length ?? "?"} tab.)
+                          </Badge>
+                        )}
+                        {j.manifest?.partial && j.manifest.partial.include_auth_users === false && (
+                          <Badge variant="outline" className="text-[10px] border-rose-400 text-rose-700">
+                            SEM AUTH
+                          </Badge>
+                        )}
                         <span className="text-sm font-medium">{formatDate(j.created_at)}</span>
                         <span className="text-xs text-muted-foreground">por {j.created_by_email ?? "—"}</span>
                       </div>
