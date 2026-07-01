@@ -529,6 +529,7 @@ export default function BackupRestorePage() {
     setRestorePassword("");
     setRestoreConfirm("");
     setRestoreProgress(null);
+    setRestoreMergeAck(false);
     setRestoreOpen(true);
   }
 
