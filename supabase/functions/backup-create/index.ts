@@ -213,11 +213,32 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
       .filter((n) => !SPECIAL_SET.has(n))
       .filter((n) => s.includeAudit || n !== "audit_logs")
       .sort();
+
+    // Metadata timestamp por tabela (só relevante quando since != null,
+    // mas coletamos sempre para registrar no manifest).
+    const metaRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_tables_timestamp_cols`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify({}),
+    });
+    if (!metaRes.ok) throw new Error(`get_public_tables_timestamp_cols: ${metaRes.status}`);
+    const metaRows: { name: string; has_updated_at: boolean; has_created_at: boolean }[] = await metaRes.json();
+    s.tableMeta = {};
+    s.tableFilterMode = {};
+    for (const m of metaRows) {
+      s.tableMeta[m.name] = { has_updated_at: !!m.has_updated_at, has_created_at: !!m.has_created_at };
+      s.tableFilterMode[m.name] = pickFilterMode(m.name, s.tableMeta[m.name]);
+    }
+
     s.phase = "data";
     s.tableIdx = 0;
     s.pageFrom = 0;
     s.partN = 0;
-    return { step: "planejado", percent: 2, done: false };
+    return { step: s.since ? "planejado (incremental)" : "planejado", percent: 2, done: false };
   }
 
   // ───────────── DATA: uma página por chamada
@@ -233,7 +254,15 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
     const table = tables[s.tableIdx!];
     const from = s.pageFrom!;
     const to = from + PAGE_SIZE - 1;
-    const { data, error } = await admin.from(table).select("*").range(from, to);
+    let query = admin.from(table).select("*");
+    // Aplica corte incremental se solicitado; ordena pela coluna do filtro
+    // para paginação estável.
+    const mode = s.tableFilterMode?.[table] ?? "full";
+    query = applySinceFilter(query, table, s);
+    if (s.since && mode !== "full") {
+      query = query.order(mode, { ascending: true });
+    }
+    const { data, error } = await query.range(from, to);
     if (error) throw new Error(`dump ${table}: ${error.message}`);
     const rows = data ?? [];
     if (rows.length > 0) {
