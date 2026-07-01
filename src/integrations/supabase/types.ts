@@ -5654,6 +5654,14 @@ export type Database = {
           table_name: string
         }[]
       }
+      get_public_tables_timestamp_cols: {
+        Args: never
+        Returns: {
+          has_created_at: boolean
+          has_updated_at: boolean
+          name: string
+        }[]
+      }
       get_public_tables_with_pk: {
         Args: never
         Returns: {
