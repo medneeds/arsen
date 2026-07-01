@@ -166,12 +166,14 @@ export default function BackupRestorePage() {
   const [restoreStep, setRestoreStep] = useState<1 | 2 | 3>(1);
   const [restoreMode, setRestoreMode] = useState<"full" | "partial">("full");
   const [restoreDryRun, setRestoreDryRun] = useState(true);
+  const [restoreMirror, setRestoreMirror] = useState(false);
   const [restoreTables, setRestoreTables] = useState<Set<string>>(new Set());
   const [restoreReason, setRestoreReason] = useState("");
   const [restorePassword, setRestorePassword] = useState("");
   const [restoreConfirm, setRestoreConfirm] = useState("");
   const [restoreRunning, setRestoreRunning] = useState(false);
   const [restoreProgress, setRestoreProgress] = useState<{ percent: number; step: string; processed: number; errors: number } | null>(null);
+
 
   // ── Import state
   const [importing, setImporting] = useState(false);
