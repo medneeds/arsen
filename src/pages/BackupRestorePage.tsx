@@ -21,6 +21,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsSuperAdmin } from "@/hooks/useIsSuperAdmin";
+import { groupTablesByCategory } from "@/lib/backupTableCategories";
 
 // Extrai mensagem específica do campo "error" do JSON retornado pela edge function
 // em respostas não-2xx. supabase.functions.invoke devolve FunctionsHttpError
