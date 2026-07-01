@@ -1321,12 +1321,14 @@ export default function BackupRestorePage() {
                   <p className="font-bold flex items-center gap-2"><AlertTriangle className="w-4 h-4" />O que vai acontecer:</p>
                   <ul className="list-disc ml-5 space-y-1">
                     {!restoreDryRun && <li>O sistema entrará em <strong>modo manutenção</strong> — usuários comuns ficam bloqueados até finalizar.</li>}
-                    {!restoreDryRun && <li>Linhas do backup serão <strong>UPSERT</strong> (insert ou overwrite) por chave primária. Linhas que existem só no destino <strong>não</strong> são apagadas.</li>}
+                    {!restoreDryRun && restoreMirror && <li className="font-bold text-rose-700">MODO ESPELHO ATIVO: todas as linhas das tabelas do plano serão <strong>APAGADAS (TRUNCATE)</strong> antes da inserção. Linhas criadas após o backup <strong>serão perdidas</strong>.</li>}
+                    {!restoreDryRun && !restoreMirror && <li>Linhas do backup serão <strong>UPSERT</strong> (insert ou overwrite) por chave primária. Linhas que existem só no destino <strong>não</strong> são apagadas.</li>}
                     {!restoreDryRun && <li>Triggers, RLS e constraints ficam <strong>ativos</strong> durante a operação — falhas individuais são reportadas.</li>}
                     <li>Senhas, MFA e identidades sociais <strong>não são restauradas</strong>.</li>
                     <li>Usuários de auth (auth.users) <strong>não são tocados</strong> nesta versão.</li>
                     {restoreDryRun && <li className="font-bold">Em dry-run, NENHUMA gravação ocorre. Apenas validação de manifest, parts e JSON.</li>}
                   </ul>
+
                 </CardContent>
               </Card>
             </div>
