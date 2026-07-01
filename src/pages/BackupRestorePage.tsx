@@ -145,6 +145,13 @@ export default function BackupRestorePage() {
   const [incremental, setIncremental] = useState(false);
   const [sinceLocal, setSinceLocal] = useState(""); // datetime-local: "YYYY-MM-DDTHH:mm"
 
+  // ── Seleção parcial de tabelas
+  const [allTables, setAllTables] = useState<string[]>([]);
+  const [tablesLoading, setTablesLoading] = useState(false);
+  const [selectedTables, setSelectedTables] = useState<Set<string>>(new Set());
+  const [includeAuthUsers, setIncludeAuthUsers] = useState(true);
+  const [tableSearch, setTableSearch] = useState("");
+
   // ── Restore state
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [restoreTarget, setRestoreTarget] = useState<BackupJob | null>(null);
