@@ -755,6 +755,104 @@ export default function BackupRestorePage() {
                 )}
               </div>
 
+              {/* ── Escopo do backup: seleção parcial de tabelas ── */}
+              <div className="border rounded-md p-3 space-y-3 bg-muted/30">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <p className="text-sm font-medium">Escopo do backup</p>
+                    <p className="text-xs text-muted-foreground">
+                      {tablesLoading ? "Carregando tabelas…" : (
+                        allTables.length === 0 ? "Nenhuma tabela detectada." :
+                        selectedTables.size === allTables.length ? `Todas as ${allTables.length} tabelas serão incluídas.` :
+                        `${selectedTables.size} de ${allTables.length} tabela(s) selecionada(s) — backup PARCIAL.`
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button type="button" size="sm" variant="outline"
+                      disabled={creating || tablesLoading || allTables.length === 0}
+                      onClick={() => setSelectedTables(new Set(allTables))}>
+                      Marcar todas
+                    </Button>
+                    <Button type="button" size="sm" variant="outline"
+                      disabled={creating || tablesLoading || selectedTables.size === 0}
+                      onClick={() => setSelectedTables(new Set())}>
+                      Limpar
+                    </Button>
+                  </div>
+                </div>
+
+                <Input
+                  placeholder="Filtrar tabelas por nome…"
+                  value={tableSearch}
+                  onChange={(e) => setTableSearch(e.target.value)}
+                  disabled={creating || tablesLoading}
+                  className="max-w-sm"
+                />
+
+                <div className="max-h-72 overflow-auto border rounded bg-background">
+                  {tablesLoading ? (
+                    <div className="p-3 text-xs text-muted-foreground flex items-center gap-2">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Carregando…
+                    </div>
+                  ) : allTables.length === 0 ? (
+                    <div className="p-3 text-xs text-muted-foreground">Sem tabelas para exibir.</div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-1 p-2">
+                      {allTables
+                        .filter((t) => !tableSearch || t.toLowerCase().includes(tableSearch.toLowerCase()))
+                        .map((t) => {
+                          const checked = selectedTables.has(t);
+                          const isSpecial = SPECIAL_TABLES.has(t);
+                          return (
+                            <label key={t}
+                              className="flex items-center gap-2 text-xs px-2 py-1 rounded hover:bg-muted/60 cursor-pointer">
+                              <Checkbox
+                                checked={checked}
+                                disabled={creating}
+                                onCheckedChange={(c) => {
+                                  setSelectedTables((prev) => {
+                                    const next = new Set(prev);
+                                    if (c) next.add(t); else next.delete(t);
+                                    return next;
+                                  });
+                                }}
+                              />
+                              <span className="font-mono truncate flex-1" title={t}>{t}</span>
+                              {isSpecial && (
+                                <Badge variant="outline" className="text-[9px] h-4 px-1 border-slate-400 text-slate-600">
+                                  config
+                                </Badge>
+                              )}
+                            </label>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 pt-1 border-t">
+                  <Checkbox
+                    id="auth-users"
+                    checked={includeAuthUsers}
+                    onCheckedChange={(c) => setIncludeAuthUsers(!!c)}
+                    disabled={creating}
+                  />
+                  <Label htmlFor="auth-users" className="text-sm cursor-pointer">
+                    Incluir usuários <code>auth.users</code> (necessário para restaurar contas de acesso)
+                  </Label>
+                </div>
+
+                {(selectedTables.size !== allTables.length || !includeAuthUsers) && (
+                  <p className="text-xs text-amber-700">
+                    ⚠️ Backup PARCIAL: só restaurará as tabelas listadas
+                    {!includeAuthUsers ? " e NÃO recriará contas de usuário" : ""}. Combine com um backup completo para restauração total.
+                  </p>
+                )}
+              </div>
+
+
+
               <Button onClick={handleCreateBackup} disabled={creating || !!runningJob}>
                 {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Gerando backup…</> :
                   <><Database className="w-4 h-4 mr-2" />Criar Backup</>}
