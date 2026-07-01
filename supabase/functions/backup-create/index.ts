@@ -400,6 +400,12 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
         since: s.since,
         note: "Snapshot parcial: contém apenas linhas com updated_at/created_at > since (ou tabelas sem colunas de data, marcadas como full). Deleções após 'since' NÃO estão representadas — use full periódico.",
       } : { enabled: false },
+      partial: s.selectedTables ? {
+        enabled: true,
+        selected_tables: s.selectedTables,
+        include_auth_users: s.includeAuthUsers,
+        note: "Backup PARCIAL — contém apenas as tabelas listadas em selected_tables. Restauração só recompõe essas tabelas; combine com um backup completo se precisar de restauração total.",
+      } : { enabled: false, include_auth_users: s.includeAuthUsers },
       table_filter_mode: s.tableFilterMode ?? {},
       notes: [
         "Backup v3.0 — chunked. Use backup-download para gerar um ZIP único.",
@@ -407,6 +413,8 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
         "Hashes de senha NÃO são exportados; usuários restaurados recebem email de reset.",
         "MFA e identidades externas (Google/Apple) não são restauráveis via Admin API.",
         ...(s.since ? ["Backup INCREMENTAL — combine com um full anterior para restauração completa."] : []),
+        ...(s.selectedTables ? [`Backup PARCIAL — ${s.selectedTables.length} tabela(s) selecionada(s).`] : []),
+        ...(!s.includeAuthUsers ? ["Backup SEM auth.users — restauração não recria contas de acesso."] : []),
       ],
     };
     const manifestStr = JSON.stringify(manifest, null, 2);
