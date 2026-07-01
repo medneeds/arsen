@@ -236,6 +236,23 @@ export default function BackupRestorePage() {
     return () => clearInterval(interval);
   }, [allowed]);
 
+  // Pré-preenche a data de corte com o horário do último backup completo
+  // quando o modo incremental é ligado (se ainda estiver vazio).
+  useEffect(() => {
+    if (!incremental || sinceLocal) return;
+    const lastFull = jobs.find((j) =>
+      j.status === "completed" &&
+      !j.manifest?.incremental?.enabled
+    );
+    const ts = lastFull?.finished_at ?? lastFull?.created_at;
+    if (!ts) return;
+    const d = new Date(ts);
+    // datetime-local exige "YYYY-MM-DDTHH:mm" no fuso local
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const local = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    setSinceLocal(local);
+  }, [incremental, jobs, sinceLocal]);
+
 
   if (lA || lS) {
     return <div className="p-8 flex items-center gap-2 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Carregando permissões…</div>;
