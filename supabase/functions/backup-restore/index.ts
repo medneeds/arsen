@@ -331,7 +331,7 @@ async function handlePlan(admin: any, body: any, userId: string, userEmail: stri
   // Não roda em dry-run. Não toca em auth.users (fase separada).
   let mirrorTruncated: string[] = [];
   if (mirror && !dryRun && ordered.length > 0) {
-    const { error: trErr } = await admin.rpc("mirror_truncate_tables", { table_names: ordered });
+    const { error: trErr } = await admin.rpc("mirror_truncate_tables", { table_names: ordered, caller_user_id: userId });
     if (trErr) {
       // libera manutenção antes de abortar
       await admin.from("system_maintenance_mode").update({ is_active: false }).eq("id", 1);
