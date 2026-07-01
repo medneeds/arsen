@@ -326,10 +326,11 @@ export function AppSidebar({
       profiles: ["gestor"],
       items: [
         { name: "Gerenciamento de Usuários", link: "/user-management", profiles: ["gestor"] },
-        { name: "Backup & Restauração", link: "/admin/backup-restore", profiles: ["gestor"] },
       ],
     },
   ];
+
+  // (Backup & Restauração migrado para o Dev Console.)
 
   const allMenuItems = accessProfile === "gestor" ? gestorMenu : medicoMenu;
 
