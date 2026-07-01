@@ -240,11 +240,27 @@ export default function BackupRestorePage() {
     if (error) { console.warn(error); return; }
     setRestoreJobs((data as unknown as RestoreJob[]) ?? []);
   }
+  async function loadAllTables() {
+    setTablesLoading(true);
+    try {
+      const { data, error } = await supabase.rpc("get_public_tables_timestamp_cols" as any);
+      if (error) throw error;
+      const rows = (data as { name: string }[] | null) ?? [];
+      const names = rows.map((r) => r.name).sort();
+      setAllTables(names);
+      setSelectedTables(new Set(names)); // default: todas marcadas
+    } catch (e) {
+      console.warn("[loadAllTables]", e);
+      toast.error("Falha ao listar tabelas: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setTablesLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (!allowed) return;
     setLoading(true);
-    Promise.all([loadJobs(), loadAudit(), loadRestoreJobs(), loadMaintenance()]).finally(() => setLoading(false));
+    Promise.all([loadJobs(), loadAudit(), loadRestoreJobs(), loadMaintenance(), loadAllTables()]).finally(() => setLoading(false));
     const interval = setInterval(() => {
       loadJobs(); loadRestoreJobs(); loadMaintenance();
     }, 3000);
