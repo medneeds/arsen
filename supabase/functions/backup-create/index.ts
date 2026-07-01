@@ -234,10 +234,13 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
     });
     if (!tablesRes.ok) throw new Error(`get_public_tables_with_pk: ${tablesRes.status}`);
     const allTables: { name: string }[] = await tablesRes.json();
+    const sel = s.selectedTables;
     s.tables = allTables.map((t) => t.name)
       .filter((n) => !SPECIAL_SET.has(n))
       .filter((n) => s.includeAudit || n !== "audit_logs")
+      .filter((n) => !sel || sel.includes(n))
       .sort();
+    s.specialTables = SPECIAL_TABLES.filter((n) => !sel || sel.includes(n));
 
     // Metadata timestamp por tabela (só relevante quando since != null,
     // mas coletamos sempre para registrar no manifest).
@@ -263,7 +266,8 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
     s.tableIdx = 0;
     s.pageFrom = 0;
     s.partN = 0;
-    return { step: s.since ? "planejado (incremental)" : "planejado", percent: 2, done: false };
+    const initTag = [s.since ? "incremental" : null, sel ? `parcial ${sel.length}` : null].filter(Boolean).join(" • ");
+    return { step: initTag ? `planejado (${initTag})` : "planejado", percent: 2, done: false };
   }
 
   // ───────────── DATA: uma página por chamada
