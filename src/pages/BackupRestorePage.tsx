@@ -745,6 +745,11 @@ export default function BackupRestorePage() {
                     <div className="space-y-1 flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         {statusBadge(j.status)}
+                        {j.manifest?.incremental?.enabled && (
+                          <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700">
+                            INCR desde {j.manifest.incremental.since ? formatDate(j.manifest.incremental.since) : "?"}
+                          </Badge>
+                        )}
                         <span className="text-sm font-medium">{formatDate(j.created_at)}</span>
                         <span className="text-xs text-muted-foreground">por {j.created_by_email ?? "—"}</span>
                       </div>
