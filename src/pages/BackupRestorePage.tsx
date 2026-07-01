@@ -676,6 +676,40 @@ export default function BackupRestorePage() {
                   Incluir <code>audit_logs</code> (pode aumentar o arquivo em &gt;100 MB)
                 </Label>
               </div>
+
+              <div className="border rounded-md p-3 space-y-2 bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="incremental"
+                    checked={incremental}
+                    onCheckedChange={(c) => setIncremental(!!c)}
+                    disabled={creating}
+                  />
+                  <Label htmlFor="incremental" className="text-sm cursor-pointer font-medium">
+                    Backup incremental (só linhas alteradas desde a data de corte)
+                  </Label>
+                </div>
+                {incremental && (
+                  <div className="space-y-2 pl-6">
+                    <Label htmlFor="since" className="text-xs text-muted-foreground">
+                      Data/hora de corte (fuso local — usa <code>updated_at</code> quando disponível,
+                      senão <code>created_at</code>; tabelas sem essas colunas vêm completas)
+                    </Label>
+                    <Input
+                      id="since"
+                      type="datetime-local"
+                      value={sinceLocal}
+                      onChange={(e) => setSinceLocal(e.target.value)}
+                      disabled={creating}
+                      className="max-w-xs"
+                    />
+                    <p className="text-xs text-amber-700">
+                      ⚠️ Backups incrementais NÃO capturam deleções após a data de corte. Combine com um backup completo periódico.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <Button onClick={handleCreateBackup} disabled={creating || !!runningJob}>
                 {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Gerando backup…</> :
                   <><Database className="w-4 h-4 mr-2" />Criar Backup</>}
