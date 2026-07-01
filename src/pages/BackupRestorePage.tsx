@@ -1344,22 +1344,51 @@ export default function BackupRestorePage() {
               {restoreMode === "partial" && restoreTarget.table_counts && (
                 <div>
                   <Label className="text-sm font-medium">Tabelas a restaurar</Label>
-                  <ScrollArea className="h-48 border rounded-md p-2 mt-1">
-                    <div className="grid grid-cols-2 gap-1">
-                      {Object.entries(restoreTarget.table_counts).sort().map(([t, n]) => (
-                        <label key={t} className="flex items-center gap-2 text-xs hover:bg-slate-50 px-1 rounded cursor-pointer">
-                          <Checkbox
-                            checked={restoreTables.has(t)}
-                            onCheckedChange={(c) => {
-                              const next = new Set(restoreTables);
-                              if (c) next.add(t); else next.delete(t);
-                              setRestoreTables(next);
-                            }}
-                          />
-                          <span className="font-mono">{t}</span>
-                          <span className="text-muted-foreground">({n.toLocaleString("pt-BR")})</span>
-                        </label>
-                      ))}
+                  <ScrollArea className="h-72 border rounded-md p-2 mt-1">
+                    <div className="space-y-3">
+                      {groupTablesByCategory(Object.keys(restoreTarget.table_counts)).map((cat) => {
+                        const counts = restoreTarget.table_counts as Record<string, number>;
+                        const catSelected = cat.tables.filter((t) => restoreTables.has(t)).length;
+                        const allOn = catSelected === cat.tables.length;
+                        const someOn = catSelected > 0 && !allOn;
+                        return (
+                          <div key={cat.key} className="border rounded-md bg-muted/20">
+                            <div className="flex items-center justify-between gap-2 px-2 py-1.5 border-b bg-muted/40">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Checkbox
+                                  checked={allOn ? true : (someOn ? "indeterminate" as any : false)}
+                                  onCheckedChange={(c) => {
+                                    const next = new Set(restoreTables);
+                                    if (c) cat.tables.forEach((t) => next.add(t));
+                                    else cat.tables.forEach((t) => next.delete(t));
+                                    setRestoreTables(next);
+                                  }}
+                                />
+                                <span className="text-xs font-semibold truncate">{cat.label}</span>
+                                <Badge variant="outline" className="text-[9px] h-4 px-1">
+                                  {catSelected}/{cat.tables.length}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-1 p-2">
+                              {cat.tables.map((t) => (
+                                <label key={t} className="flex items-center gap-2 text-xs hover:bg-slate-50 px-1 rounded cursor-pointer">
+                                  <Checkbox
+                                    checked={restoreTables.has(t)}
+                                    onCheckedChange={(c) => {
+                                      const next = new Set(restoreTables);
+                                      if (c) next.add(t); else next.delete(t);
+                                      setRestoreTables(next);
+                                    }}
+                                  />
+                                  <span className="font-mono">{t}</span>
+                                  <span className="text-muted-foreground">({(counts[t] ?? 0).toLocaleString("pt-BR")})</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </ScrollArea>
                   <p className="text-xs text-muted-foreground mt-1">{restoreTables.size} tabela(s) selecionada(s)</p>
