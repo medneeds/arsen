@@ -522,6 +522,7 @@ export default function BackupRestorePage() {
     setRestoreStep(1);
     setRestoreMode("full");
     setRestoreDryRun(true);
+    setRestoreMirror(false);
     setRestoreTables(new Set(Object.keys(job.table_counts ?? {})));
     setRestoreReason("");
     setRestorePassword("");
@@ -536,7 +537,7 @@ export default function BackupRestorePage() {
     let restoreId: string | null = null;
     let plan: PlanItem[] = [];
     try {
-      toast.info(restoreDryRun ? "Iniciando simulação (dry-run)…" : "Iniciando restauração…");
+      toast.info(restoreDryRun ? "Iniciando simulação (dry-run)…" : (restoreMirror ? "Iniciando restauração em modo ESPELHO…" : "Iniciando restauração…"));
       const { data: planRes, error: planErr } = await supabase.functions.invoke("backup-restore", {
         body: {
           action: "plan",
@@ -544,10 +545,12 @@ export default function BackupRestorePage() {
           mode: restoreMode,
           tables: restoreMode === "partial" ? Array.from(restoreTables) : undefined,
           dry_run: restoreDryRun,
+          mirror: restoreMirror && !restoreDryRun,
           reason: restoreReason,
           password: restorePassword,
         },
       });
+
       if (planErr) throw new Error(await extractEdgeError(planErr, "backup-restore:plan"));
       restoreId = (planRes as any)?.restore_id;
       plan = (planRes as any)?.plan ?? [];
