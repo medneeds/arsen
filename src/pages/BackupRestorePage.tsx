@@ -166,12 +166,14 @@ export default function BackupRestorePage() {
   const [restoreStep, setRestoreStep] = useState<1 | 2 | 3>(1);
   const [restoreMode, setRestoreMode] = useState<"full" | "partial">("full");
   const [restoreDryRun, setRestoreDryRun] = useState(true);
+  const [restoreMirror, setRestoreMirror] = useState(false);
   const [restoreTables, setRestoreTables] = useState<Set<string>>(new Set());
   const [restoreReason, setRestoreReason] = useState("");
   const [restorePassword, setRestorePassword] = useState("");
   const [restoreConfirm, setRestoreConfirm] = useState("");
   const [restoreRunning, setRestoreRunning] = useState(false);
   const [restoreProgress, setRestoreProgress] = useState<{ percent: number; step: string; processed: number; errors: number } | null>(null);
+
 
   // ── Import state
   const [importing, setImporting] = useState(false);
@@ -520,6 +522,7 @@ export default function BackupRestorePage() {
     setRestoreStep(1);
     setRestoreMode("full");
     setRestoreDryRun(true);
+    setRestoreMirror(false);
     setRestoreTables(new Set(Object.keys(job.table_counts ?? {})));
     setRestoreReason("");
     setRestorePassword("");
@@ -534,7 +537,7 @@ export default function BackupRestorePage() {
     let restoreId: string | null = null;
     let plan: PlanItem[] = [];
     try {
-      toast.info(restoreDryRun ? "Iniciando simulação (dry-run)…" : "Iniciando restauração…");
+      toast.info(restoreDryRun ? "Iniciando simulação (dry-run)…" : (restoreMirror ? "Iniciando restauração em modo ESPELHO…" : "Iniciando restauração…"));
       const { data: planRes, error: planErr } = await supabase.functions.invoke("backup-restore", {
         body: {
           action: "plan",
@@ -542,10 +545,12 @@ export default function BackupRestorePage() {
           mode: restoreMode,
           tables: restoreMode === "partial" ? Array.from(restoreTables) : undefined,
           dry_run: restoreDryRun,
+          mirror: restoreMirror && !restoreDryRun,
           reason: restoreReason,
           password: restorePassword,
         },
       });
+
       if (planErr) throw new Error(await extractEdgeError(planErr, "backup-restore:plan"));
       restoreId = (planRes as any)?.restore_id;
       plan = (planRes as any)?.plan ?? [];
@@ -1254,12 +1259,32 @@ export default function BackupRestorePage() {
               </div>
 
               <div className="flex items-center gap-2 border rounded-md p-3 bg-blue-50">
-                <Checkbox id="dryrun" checked={restoreDryRun} onCheckedChange={(c) => setRestoreDryRun(!!c)} />
+                <Checkbox id="dryrun" checked={restoreDryRun} onCheckedChange={(c) => { setRestoreDryRun(!!c); if (c) setRestoreMirror(false); }} />
                 <Label htmlFor="dryrun" className="text-sm cursor-pointer flex items-center gap-2">
                   <FlaskConical className="w-4 h-4 text-blue-600" />
                   <strong>Simulação (dry-run)</strong> — baixa e valida os arquivos sem escrever no banco. <strong>Altamente recomendado</strong>.
                 </Label>
               </div>
+
+              <div className={`flex items-start gap-2 border rounded-md p-3 ${restoreMirror ? "bg-rose-100 border-rose-400" : "bg-rose-50 border-rose-300"} ${restoreDryRun ? "opacity-60" : ""}`}>
+                <Checkbox
+                  id="mirror"
+                  checked={restoreMirror}
+                  disabled={restoreDryRun}
+                  onCheckedChange={(c) => setRestoreMirror(!!c)}
+                  className="mt-0.5"
+                />
+                <Label htmlFor="mirror" className="text-sm cursor-pointer text-rose-900">
+                  <div className="flex items-center gap-2 font-bold">
+                    <AlertTriangle className="w-4 h-4" />Modo ESPELHO (destrutivo)
+                  </div>
+                  <p className="mt-1 font-normal">
+                    <strong>Apaga TODAS as linhas</strong> das tabelas do plano antes de inserir as do backup — o estado do banco fica <strong>idêntico</strong> ao do backup (linhas criadas depois do backup são perdidas). Sem esta opção, o restore é apenas UPSERT por PK (merge).
+                  </p>
+                  <p className="mt-1 text-xs">IDs originais preservados. Não afeta <code>auth.users</code>. Indisponível em dry-run.</p>
+                </Label>
+              </div>
+
 
               {restoreMode === "partial" && restoreTarget.table_counts && (
                 <div>
@@ -1296,12 +1321,14 @@ export default function BackupRestorePage() {
                   <p className="font-bold flex items-center gap-2"><AlertTriangle className="w-4 h-4" />O que vai acontecer:</p>
                   <ul className="list-disc ml-5 space-y-1">
                     {!restoreDryRun && <li>O sistema entrará em <strong>modo manutenção</strong> — usuários comuns ficam bloqueados até finalizar.</li>}
-                    {!restoreDryRun && <li>Linhas do backup serão <strong>UPSERT</strong> (insert ou overwrite) por chave primária. Linhas que existem só no destino <strong>não</strong> são apagadas.</li>}
+                    {!restoreDryRun && restoreMirror && <li className="font-bold text-rose-700">MODO ESPELHO ATIVO: todas as linhas das tabelas do plano serão <strong>APAGADAS (TRUNCATE)</strong> antes da inserção. Linhas criadas após o backup <strong>serão perdidas</strong>.</li>}
+                    {!restoreDryRun && !restoreMirror && <li>Linhas do backup serão <strong>UPSERT</strong> (insert ou overwrite) por chave primária. Linhas que existem só no destino <strong>não</strong> são apagadas.</li>}
                     {!restoreDryRun && <li>Triggers, RLS e constraints ficam <strong>ativos</strong> durante a operação — falhas individuais são reportadas.</li>}
                     <li>Senhas, MFA e identidades sociais <strong>não são restauradas</strong>.</li>
                     <li>Usuários de auth (auth.users) <strong>não são tocados</strong> nesta versão.</li>
                     {restoreDryRun && <li className="font-bold">Em dry-run, NENHUMA gravação ocorre. Apenas validação de manifest, parts e JSON.</li>}
                   </ul>
+
                 </CardContent>
               </Card>
             </div>

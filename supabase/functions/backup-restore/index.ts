@@ -169,9 +169,11 @@ async function handlePlan(admin: any, body: any, userId: string, userEmail: stri
   const backupId = String(body.backup_id ?? "");
   const mode = body.mode === "partial" ? "partial" : "full";
   const dryRun = !!body.dry_run;
+  const mirror = !!body.mirror;
   const reason = String(body.reason ?? "").trim();
   const password = String(body.password ?? "");
   const requested: string[] = Array.isArray(body.tables) ? body.tables : [];
+
 
   if (!backupId) return json({ error: "backup_id obrigatório" }, 400);
   if (!reason || reason.length < 10) return json({ error: "Motivo obrigatório (≥10 caracteres)" }, 400);
@@ -303,6 +305,8 @@ async function handlePlan(admin: any, body: any, userId: string, userEmail: stri
       step: "iniciando", percent: 0, plan,
       current_table: null, current_part: null,
       processed: 0, errors: 0,
+      mirror,
+      mirror_truncated_tables: [] as string[],
       schema: { cols_by_table, nullable_by_table, unique_by_table },
       id_maps: {},
       dropped_columns_by_table: {},
@@ -323,10 +327,36 @@ async function handlePlan(admin: any, body: any, userId: string, userEmail: stri
     if (mmErr) return json({ error: `manutenção: ${mmErr.message}` }, 500);
   }
 
+  // MODO ESPELHO: apaga todas as linhas das tabelas do plano antes do upsert.
+  // Não roda em dry-run. Não toca em auth.users (fase separada).
+  let mirrorTruncated: string[] = [];
+  if (mirror && !dryRun && ordered.length > 0) {
+    const { error: trErr } = await admin.rpc("mirror_truncate_tables", { table_names: ordered });
+    if (trErr) {
+      // libera manutenção antes de abortar
+      await admin.from("system_maintenance_mode").update({ is_active: false }).eq("id", 1);
+      await admin.from("restore_jobs").update({
+        status: "failed",
+        finished_at: new Date().toISOString(),
+        error_message: `mirror_truncate falhou: ${trErr.message}`,
+      }).eq("id", rj.id);
+      return json({ error: `Modo espelho falhou ao apagar tabelas: ${trErr.message}` }, 500);
+    }
+    mirrorTruncated = ordered;
+    await admin.from("restore_jobs").update({
+      progress: { ...rj.progress, mirror_truncated_tables: mirrorTruncated },
+    }).eq("id", rj.id);
+    await audit(admin, userId, userEmail, "BACKUP_RESTORE_MIRROR_TRUNCATE", {
+      restore_job_id: rj.id, backup_job_id: backupId,
+      payload: { tables: mirrorTruncated },
+    });
+  }
+
   await audit(admin, userId, userEmail, "BACKUP_RESTORE_START", {
     restore_job_id: rj.id, backup_job_id: backupId,
-    payload: { mode, dry_run: dryRun, tables: ordered, reason, has_auth_users: authUserParts.length > 0 },
+    payload: { mode, dry_run: dryRun, mirror, tables: ordered, has_auth_users: authUserParts.length > 0, reason },
   });
+
 
   return json({ restore_id: rj.id, dry_run: dryRun, plan });
 }
