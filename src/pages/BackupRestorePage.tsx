@@ -1259,12 +1259,32 @@ export default function BackupRestorePage() {
               </div>
 
               <div className="flex items-center gap-2 border rounded-md p-3 bg-blue-50">
-                <Checkbox id="dryrun" checked={restoreDryRun} onCheckedChange={(c) => setRestoreDryRun(!!c)} />
+                <Checkbox id="dryrun" checked={restoreDryRun} onCheckedChange={(c) => { setRestoreDryRun(!!c); if (c) setRestoreMirror(false); }} />
                 <Label htmlFor="dryrun" className="text-sm cursor-pointer flex items-center gap-2">
                   <FlaskConical className="w-4 h-4 text-blue-600" />
                   <strong>Simulação (dry-run)</strong> — baixa e valida os arquivos sem escrever no banco. <strong>Altamente recomendado</strong>.
                 </Label>
               </div>
+
+              <div className={`flex items-start gap-2 border rounded-md p-3 ${restoreMirror ? "bg-rose-100 border-rose-400" : "bg-rose-50 border-rose-300"} ${restoreDryRun ? "opacity-60" : ""}`}>
+                <Checkbox
+                  id="mirror"
+                  checked={restoreMirror}
+                  disabled={restoreDryRun}
+                  onCheckedChange={(c) => setRestoreMirror(!!c)}
+                  className="mt-0.5"
+                />
+                <Label htmlFor="mirror" className="text-sm cursor-pointer text-rose-900">
+                  <div className="flex items-center gap-2 font-bold">
+                    <AlertTriangle className="w-4 h-4" />Modo ESPELHO (destrutivo)
+                  </div>
+                  <p className="mt-1 font-normal">
+                    <strong>Apaga TODAS as linhas</strong> das tabelas do plano antes de inserir as do backup — o estado do banco fica <strong>idêntico</strong> ao do backup (linhas criadas depois do backup são perdidas). Sem esta opção, o restore é apenas UPSERT por PK (merge).
+                  </p>
+                  <p className="mt-1 text-xs">IDs originais preservados. Não afeta <code>auth.users</code>. Indisponível em dry-run.</p>
+                </Label>
+              </div>
+
 
               {restoreMode === "partial" && restoreTarget.table_counts && (
                 <div>
