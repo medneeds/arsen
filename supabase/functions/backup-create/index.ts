@@ -28,9 +28,13 @@ const PAGE_SIZE = 500;
 const SPECIAL_TABLES = [
   "profiles", "user_roles", "user_departments", "user_hospital_assignments",
   "institution_branding", "hospital_units", "states", "system_maintenance_mode",
+  // catálogo estático — sempre completo no incremental
+  "cid10_codes",
 ];
 const SPECIAL_SET = new Set(SPECIAL_TABLES);
 
+type FilterMode = "updated_at" | "created_at" | "full";
+type TableMeta = { has_updated_at: boolean; has_created_at: boolean };
 type Part = { path: string; bytes: number };
 type State = {
   phase: "init" | "data" | "special" | "auth" | "manifest" | "done";
@@ -52,7 +56,33 @@ type State = {
   userId: string;
   userEmail: string | null;
   startedAt: number;
+  // ── incremental
+  since: string | null;                                // ISO-8601 ou null
+  tableMeta?: Record<string, TableMeta>;                // por tabela pública
+  tableFilterMode?: Record<string, FilterMode>;         // decisão efetiva
 };
+
+function isValidIsoTimestamp(s: unknown): s is string {
+  if (typeof s !== "string" || !s.trim()) return false;
+  const t = Date.parse(s);
+  return Number.isFinite(t);
+}
+
+function pickFilterMode(table: string, meta: TableMeta | undefined): FilterMode {
+  if (SPECIAL_SET.has(table)) return "full";
+  if (!meta) return "full";
+  if (meta.has_updated_at) return "updated_at";
+  if (meta.has_created_at) return "created_at";
+  return "full";
+}
+
+function applySinceFilter<T>(query: T, table: string, s: State): T {
+  if (!s.since) return query;
+  const mode = s.tableFilterMode?.[table] ?? "full";
+  if (mode === "full") return query;
+  // supabase-js query builder
+  return (query as any).gt(mode, s.since) as T;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
