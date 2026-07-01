@@ -39,6 +39,7 @@ type Part = { path: string; bytes: number };
 type State = {
   phase: "init" | "data" | "special" | "auth" | "manifest" | "done";
   tables?: string[];
+  specialTables?: string[];
   tableIdx?: number;
   pageFrom?: number;
   partN?: number;
@@ -60,6 +61,9 @@ type State = {
   since: string | null;                                // ISO-8601 ou null
   tableMeta?: Record<string, TableMeta>;                // por tabela pública
   tableFilterMode?: Record<string, FilterMode>;         // decisão efetiva
+  // ── seleção parcial de tabelas
+  selectedTables: string[] | null;                     // null = todas
+  includeAuthUsers: boolean;                           // default true
 };
 
 function isValidIsoTimestamp(s: unknown): s is string {
@@ -131,6 +135,21 @@ async function handleStart(admin: any, body: any, userId: string, userEmail: str
     since = new Date(body.since).toISOString();
   }
 
+  // Parâmetros opcionais para seleção parcial de tabelas
+  let selectedTables: string[] | null = null;
+  if (Array.isArray(body.tables)) {
+    const cleaned = body.tables
+      .filter((n: unknown): n is string => typeof n === "string" && !!n.trim())
+      .map((n: string) => n.trim());
+    // dedup + sort para consistência
+    selectedTables = Array.from(new Set(cleaned)).sort();
+    if (selectedTables.length === 0) selectedTables = null;
+  }
+  const includeAuthUsers = body.include_auth_users === false ? false : true;
+  if (selectedTables && selectedTables.length === 0 && !includeAuthUsers) {
+    return json({ error: "Selecione pelo menos uma tabela ou marque 'Usuários (auth)'." }, 400);
+  }
+
   const initState: State = {
     phase: "init",
     tableCounts: {},
@@ -140,9 +159,15 @@ async function handleStart(admin: any, body: any, userId: string, userEmail: str
     userId, userEmail,
     startedAt,
     since,
+    selectedTables,
+    includeAuthUsers,
   };
 
-  const displayReason = since ? `[INCR desde ${since}] ${reason}` : reason;
+  const tags: string[] = [];
+  if (since) tags.push(`INCR desde ${since}`);
+  if (selectedTables) tags.push(`PARCIAL ${selectedTables.length} tabela(s)`);
+  if (!includeAuthUsers) tags.push("SEM AUTH");
+  const displayReason = tags.length ? `[${tags.join(" • ")}] ${reason}` : reason;
 
   const { data: jobRow, error: jobErr } = await admin.from("backup_jobs").insert({
     created_by: userId,
@@ -151,16 +176,16 @@ async function handleStart(admin: any, body: any, userId: string, userEmail: str
     started_at: new Date(startedAt).toISOString(),
     source_instance: SUPABASE_URL,
     reason: displayReason,
-    progress: { step: since ? "iniciando (incremental)" : "iniciando", percent: 0, state: initState },
+    progress: { step: tags.length ? `iniciando (${tags.join(" • ")})` : "iniciando", percent: 0, state: initState },
   }).select().single();
   if (jobErr || !jobRow) return json({ error: `Falha ao criar job: ${jobErr?.message}` }, 500);
 
   await audit(admin, userId, userEmail, "BACKUP_CREATE_START", {
     backup_job_id: jobRow.id,
-    payload: { reason, include_audit_logs: includeAudit, incremental: !!since, since },
+    payload: { reason, include_audit_logs: includeAudit, incremental: !!since, since, partial: !!selectedTables, selected_tables: selectedTables, include_auth_users: includeAuthUsers },
     ip, userAgent,
   });
-  return json({ backup_id: jobRow.id, status: "running", incremental: !!since, since }, 202);
+  return json({ backup_id: jobRow.id, status: "running", incremental: !!since, since, partial: !!selectedTables }, 202);
 }
 
 async function handleStep(admin: any, body: any, userId: string, userEmail: string | null) {
@@ -209,10 +234,13 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
     });
     if (!tablesRes.ok) throw new Error(`get_public_tables_with_pk: ${tablesRes.status}`);
     const allTables: { name: string }[] = await tablesRes.json();
+    const sel = s.selectedTables;
     s.tables = allTables.map((t) => t.name)
       .filter((n) => !SPECIAL_SET.has(n))
       .filter((n) => s.includeAudit || n !== "audit_logs")
+      .filter((n) => !sel || sel.includes(n))
       .sort();
+    s.specialTables = SPECIAL_TABLES.filter((n) => !sel || sel.includes(n));
 
     // Metadata timestamp por tabela (só relevante quando since != null,
     // mas coletamos sempre para registrar no manifest).
@@ -238,7 +266,8 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
     s.tableIdx = 0;
     s.pageFrom = 0;
     s.partN = 0;
-    return { step: s.since ? "planejado (incremental)" : "planejado", percent: 2, done: false };
+    const initTag = [s.since ? "incremental" : null, sel ? `parcial ${sel.length}` : null].filter(Boolean).join(" • ");
+    return { step: initTag ? `planejado (${initTag})` : "planejado", percent: 2, done: false };
   }
 
   // ───────────── DATA: uma página por chamada
@@ -286,14 +315,20 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
 
   // ───────────── SPECIAL: profiles/roles/units/etc paginados
   if (s.phase === "special") {
-    if (s.specialIdx! >= SPECIAL_TABLES.length) {
-      s.phase = "auth";
-      s.authPage = 1;
-      s.authPartN = 0;
+    const specials = s.specialTables ?? SPECIAL_TABLES;
+    if (s.specialIdx! >= specials.length) {
+      if (s.includeAuthUsers) {
+        s.phase = "auth";
+        s.authPage = 1;
+        s.authPartN = 0;
+        s.authTotal = 0;
+        return { step: "configurações concluídas", percent: 82, done: false };
+      }
+      s.phase = "manifest";
       s.authTotal = 0;
-      return { step: "configurações concluídas", percent: 82, done: false };
+      return { step: "configurações concluídas (auth pulado)", percent: 90, done: false };
     }
-    const table = SPECIAL_TABLES[s.specialIdx!];
+    const table = specials[s.specialIdx!];
     const from = s.specialPageFrom!;
     const to = from + PAGE_SIZE - 1;
     const { data, error } = await admin.from(table).select("*").range(from, to);
@@ -313,7 +348,7 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
     } else {
       s.specialPageFrom = from + PAGE_SIZE;
     }
-    return { step: `config: ${table}`, percent: 72 + Math.floor((s.specialIdx! / SPECIAL_TABLES.length) * 10), done: false };
+    return { step: `config: ${table}`, percent: 72 + Math.floor((s.specialIdx! / Math.max(specials.length, 1)) * 10), done: false };
   }
 
   // ───────────── AUTH: uma página por chamada
@@ -365,6 +400,12 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
         since: s.since,
         note: "Snapshot parcial: contém apenas linhas com updated_at/created_at > since (ou tabelas sem colunas de data, marcadas como full). Deleções após 'since' NÃO estão representadas — use full periódico.",
       } : { enabled: false },
+      partial: s.selectedTables ? {
+        enabled: true,
+        selected_tables: s.selectedTables,
+        include_auth_users: s.includeAuthUsers,
+        note: "Backup PARCIAL — contém apenas as tabelas listadas em selected_tables. Restauração só recompõe essas tabelas; combine com um backup completo se precisar de restauração total.",
+      } : { enabled: false, include_auth_users: s.includeAuthUsers },
       table_filter_mode: s.tableFilterMode ?? {},
       notes: [
         "Backup v3.0 — chunked. Use backup-download para gerar um ZIP único.",
@@ -372,6 +413,8 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
         "Hashes de senha NÃO são exportados; usuários restaurados recebem email de reset.",
         "MFA e identidades externas (Google/Apple) não são restauráveis via Admin API.",
         ...(s.since ? ["Backup INCREMENTAL — combine com um full anterior para restauração completa."] : []),
+        ...(s.selectedTables ? [`Backup PARCIAL — ${s.selectedTables.length} tabela(s) selecionada(s).`] : []),
+        ...(!s.includeAuthUsers ? ["Backup SEM auth.users — restauração não recria contas de acesso."] : []),
       ],
     };
     const manifestStr = JSON.stringify(manifest, null, 2);
