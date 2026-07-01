@@ -101,6 +101,14 @@ interface RestoreJob {
 
 type PlanItem = { table: string; pk: string[]; parts: { path: string }[]; rows_expected: number };
 
+// Mesmo array replicado no backend (supabase/functions/backup-create/index.ts).
+// Usado só para exibir badge "config" na UI.
+const SPECIAL_TABLES = new Set<string>([
+  "profiles", "user_roles", "user_departments", "user_hospital_assignments",
+  "institution_branding", "hospital_units", "states", "system_maintenance_mode",
+  "cid10_codes",
+]);
+
 function formatBytes(n: number | null) {
   if (!n || n < 0) return "—";
   const units = ["B", "KB", "MB", "GB"];
