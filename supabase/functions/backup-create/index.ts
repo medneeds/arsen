@@ -135,6 +135,21 @@ async function handleStart(admin: any, body: any, userId: string, userEmail: str
     since = new Date(body.since).toISOString();
   }
 
+  // Parâmetros opcionais para seleção parcial de tabelas
+  let selectedTables: string[] | null = null;
+  if (Array.isArray(body.tables)) {
+    const cleaned = body.tables
+      .filter((n: unknown): n is string => typeof n === "string" && !!n.trim())
+      .map((n: string) => n.trim());
+    // dedup + sort para consistência
+    selectedTables = Array.from(new Set(cleaned)).sort();
+    if (selectedTables.length === 0) selectedTables = null;
+  }
+  const includeAuthUsers = body.include_auth_users === false ? false : true;
+  if (selectedTables && selectedTables.length === 0 && !includeAuthUsers) {
+    return json({ error: "Selecione pelo menos uma tabela ou marque 'Usuários (auth)'." }, 400);
+  }
+
   const initState: State = {
     phase: "init",
     tableCounts: {},
@@ -144,9 +159,15 @@ async function handleStart(admin: any, body: any, userId: string, userEmail: str
     userId, userEmail,
     startedAt,
     since,
+    selectedTables,
+    includeAuthUsers,
   };
 
-  const displayReason = since ? `[INCR desde ${since}] ${reason}` : reason;
+  const tags: string[] = [];
+  if (since) tags.push(`INCR desde ${since}`);
+  if (selectedTables) tags.push(`PARCIAL ${selectedTables.length} tabela(s)`);
+  if (!includeAuthUsers) tags.push("SEM AUTH");
+  const displayReason = tags.length ? `[${tags.join(" • ")}] ${reason}` : reason;
 
   const { data: jobRow, error: jobErr } = await admin.from("backup_jobs").insert({
     created_by: userId,
@@ -155,16 +176,16 @@ async function handleStart(admin: any, body: any, userId: string, userEmail: str
     started_at: new Date(startedAt).toISOString(),
     source_instance: SUPABASE_URL,
     reason: displayReason,
-    progress: { step: since ? "iniciando (incremental)" : "iniciando", percent: 0, state: initState },
+    progress: { step: tags.length ? `iniciando (${tags.join(" • ")})` : "iniciando", percent: 0, state: initState },
   }).select().single();
   if (jobErr || !jobRow) return json({ error: `Falha ao criar job: ${jobErr?.message}` }, 500);
 
   await audit(admin, userId, userEmail, "BACKUP_CREATE_START", {
     backup_job_id: jobRow.id,
-    payload: { reason, include_audit_logs: includeAudit, incremental: !!since, since },
+    payload: { reason, include_audit_logs: includeAudit, incremental: !!since, since, partial: !!selectedTables, selected_tables: selectedTables, include_auth_users: includeAuthUsers },
     ip, userAgent,
   });
-  return json({ backup_id: jobRow.id, status: "running", incremental: !!since, since }, 202);
+  return json({ backup_id: jobRow.id, status: "running", incremental: !!since, since, partial: !!selectedTables }, 202);
 }
 
 async function handleStep(admin: any, body: any, userId: string, userEmail: string | null) {
