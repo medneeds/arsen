@@ -140,6 +140,8 @@ export default function BackupRestorePage() {
   const [creating, setCreating] = useState(false);
   const [includeAudit, setIncludeAudit] = useState(false);
   const [reason, setReason] = useState("");
+  const [incremental, setIncremental] = useState(false);
+  const [sinceLocal, setSinceLocal] = useState(""); // datetime-local: "YYYY-MM-DDTHH:mm"
 
   // ── Restore state
   const [restoreOpen, setRestoreOpen] = useState(false);
