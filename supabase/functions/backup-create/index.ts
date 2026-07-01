@@ -28,9 +28,13 @@ const PAGE_SIZE = 500;
 const SPECIAL_TABLES = [
   "profiles", "user_roles", "user_departments", "user_hospital_assignments",
   "institution_branding", "hospital_units", "states", "system_maintenance_mode",
+  // catálogo estático — sempre completo no incremental
+  "cid10_codes",
 ];
 const SPECIAL_SET = new Set(SPECIAL_TABLES);
 
+type FilterMode = "updated_at" | "created_at" | "full";
+type TableMeta = { has_updated_at: boolean; has_created_at: boolean };
 type Part = { path: string; bytes: number };
 type State = {
   phase: "init" | "data" | "special" | "auth" | "manifest" | "done";
@@ -52,7 +56,33 @@ type State = {
   userId: string;
   userEmail: string | null;
   startedAt: number;
+  // ── incremental
+  since: string | null;                                // ISO-8601 ou null
+  tableMeta?: Record<string, TableMeta>;                // por tabela pública
+  tableFilterMode?: Record<string, FilterMode>;         // decisão efetiva
 };
+
+function isValidIsoTimestamp(s: unknown): s is string {
+  if (typeof s !== "string" || !s.trim()) return false;
+  const t = Date.parse(s);
+  return Number.isFinite(t);
+}
+
+function pickFilterMode(table: string, meta: TableMeta | undefined): FilterMode {
+  if (SPECIAL_SET.has(table)) return "full";
+  if (!meta) return "full";
+  if (meta.has_updated_at) return "updated_at";
+  if (meta.has_created_at) return "created_at";
+  return "full";
+}
+
+function applySinceFilter<T>(query: T, table: string, s: State): T {
+  if (!s.since) return query;
+  const mode = s.tableFilterMode?.[table] ?? "full";
+  if (mode === "full") return query;
+  // supabase-js query builder
+  return (query as any).gt(mode, s.since) as T;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -92,6 +122,15 @@ async function handleStart(admin: any, body: any, userId: string, userEmail: str
   const userAgent = req.headers.get("user-agent") ?? null;
   const startedAt = Date.now();
 
+  // Parâmetro opcional para backup incremental
+  let since: string | null = null;
+  if (body.since !== undefined && body.since !== null && body.since !== "") {
+    if (!isValidIsoTimestamp(body.since)) {
+      return json({ error: "Parâmetro 'since' inválido: precisa ser ISO-8601 (ex.: 2026-06-29T13:47:46Z)." }, 400);
+    }
+    since = new Date(body.since).toISOString();
+  }
+
   const initState: State = {
     phase: "init",
     tableCounts: {},
@@ -100,7 +139,10 @@ async function handleStart(admin: any, body: any, userId: string, userEmail: str
     reason, includeAudit,
     userId, userEmail,
     startedAt,
+    since,
   };
+
+  const displayReason = since ? `[INCR desde ${since}] ${reason}` : reason;
 
   const { data: jobRow, error: jobErr } = await admin.from("backup_jobs").insert({
     created_by: userId,
@@ -108,15 +150,17 @@ async function handleStart(admin: any, body: any, userId: string, userEmail: str
     status: "running",
     started_at: new Date(startedAt).toISOString(),
     source_instance: SUPABASE_URL,
-    reason,
-    progress: { step: "iniciando", percent: 0, state: initState },
+    reason: displayReason,
+    progress: { step: since ? "iniciando (incremental)" : "iniciando", percent: 0, state: initState },
   }).select().single();
   if (jobErr || !jobRow) return json({ error: `Falha ao criar job: ${jobErr?.message}` }, 500);
 
   await audit(admin, userId, userEmail, "BACKUP_CREATE_START", {
-    backup_job_id: jobRow.id, payload: { reason, include_audit_logs: includeAudit }, ip, userAgent,
+    backup_job_id: jobRow.id,
+    payload: { reason, include_audit_logs: includeAudit, incremental: !!since, since },
+    ip, userAgent,
   });
-  return json({ backup_id: jobRow.id, status: "running" }, 202);
+  return json({ backup_id: jobRow.id, status: "running", incremental: !!since, since }, 202);
 }
 
 async function handleStep(admin: any, body: any, userId: string, userEmail: string | null) {
@@ -169,11 +213,32 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
       .filter((n) => !SPECIAL_SET.has(n))
       .filter((n) => s.includeAudit || n !== "audit_logs")
       .sort();
+
+    // Metadata timestamp por tabela (só relevante quando since != null,
+    // mas coletamos sempre para registrar no manifest).
+    const metaRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_tables_timestamp_cols`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify({}),
+    });
+    if (!metaRes.ok) throw new Error(`get_public_tables_timestamp_cols: ${metaRes.status}`);
+    const metaRows: { name: string; has_updated_at: boolean; has_created_at: boolean }[] = await metaRes.json();
+    s.tableMeta = {};
+    s.tableFilterMode = {};
+    for (const m of metaRows) {
+      s.tableMeta[m.name] = { has_updated_at: !!m.has_updated_at, has_created_at: !!m.has_created_at };
+      s.tableFilterMode[m.name] = pickFilterMode(m.name, s.tableMeta[m.name]);
+    }
+
     s.phase = "data";
     s.tableIdx = 0;
     s.pageFrom = 0;
     s.partN = 0;
-    return { step: "planejado", percent: 2, done: false };
+    return { step: s.since ? "planejado (incremental)" : "planejado", percent: 2, done: false };
   }
 
   // ───────────── DATA: uma página por chamada
@@ -189,7 +254,15 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
     const table = tables[s.tableIdx!];
     const from = s.pageFrom!;
     const to = from + PAGE_SIZE - 1;
-    const { data, error } = await admin.from(table).select("*").range(from, to);
+    let query = admin.from(table).select("*");
+    // Aplica corte incremental se solicitado; ordena pela coluna do filtro
+    // para paginação estável.
+    const mode = s.tableFilterMode?.[table] ?? "full";
+    query = applySinceFilter(query, table, s);
+    if (s.since && mode !== "full") {
+      query = query.order(mode, { ascending: true });
+    }
+    const { data, error } = await query.range(from, to);
     if (error) throw new Error(`dump ${table}: ${error.message}`);
     const rows = data ?? [];
     if (rows.length > 0) {
@@ -287,11 +360,18 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
       reason: s.reason,
       parts: s.parts,
       total_bytes: s.totalBytes,
+      incremental: s.since ? {
+        enabled: true,
+        since: s.since,
+        note: "Snapshot parcial: contém apenas linhas com updated_at/created_at > since (ou tabelas sem colunas de data, marcadas como full). Deleções após 'since' NÃO estão representadas — use full periódico.",
+      } : { enabled: false },
+      table_filter_mode: s.tableFilterMode ?? {},
       notes: [
         "Backup v3.0 — chunked. Use backup-download para gerar um ZIP único.",
         "DDL (schema) NÃO está incluso — a instância destino deve ter as mesmas migrations aplicadas.",
         "Hashes de senha NÃO são exportados; usuários restaurados recebem email de reset.",
         "MFA e identidades externas (Google/Apple) não são restauráveis via Admin API.",
+        ...(s.since ? ["Backup INCREMENTAL — combine com um full anterior para restauração completa."] : []),
       ],
     };
     const manifestStr = JSON.stringify(manifest, null, 2);

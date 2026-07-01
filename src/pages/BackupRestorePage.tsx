@@ -69,6 +69,8 @@ interface BackupJob {
   duration_ms: number | null;
   reason: string | null;
   error: string | null;
+  finished_at: string | null;
+  manifest: any | null;
 }
 
 interface BackupAudit {
@@ -140,6 +142,8 @@ export default function BackupRestorePage() {
   const [creating, setCreating] = useState(false);
   const [includeAudit, setIncludeAudit] = useState(false);
   const [reason, setReason] = useState("");
+  const [incremental, setIncremental] = useState(false);
+  const [sinceLocal, setSinceLocal] = useState(""); // datetime-local: "YYYY-MM-DDTHH:mm"
 
   // ── Restore state
   const [restoreOpen, setRestoreOpen] = useState(false);
@@ -232,6 +236,23 @@ export default function BackupRestorePage() {
     return () => clearInterval(interval);
   }, [allowed]);
 
+  // Pré-preenche a data de corte com o horário do último backup completo
+  // quando o modo incremental é ligado (se ainda estiver vazio).
+  useEffect(() => {
+    if (!incremental || sinceLocal) return;
+    const lastFull = jobs.find((j) =>
+      j.status === "completed" &&
+      !j.manifest?.incremental?.enabled
+    );
+    const ts = lastFull?.finished_at ?? lastFull?.created_at;
+    if (!ts) return;
+    const d = new Date(ts);
+    // datetime-local exige "YYYY-MM-DDTHH:mm" no fuso local
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const local = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    setSinceLocal(local);
+  }, [incremental, jobs, sinceLocal]);
+
 
   if (lA || lS) {
     return <div className="p-8 flex items-center gap-2 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Carregando permissões…</div>;
@@ -242,9 +263,29 @@ export default function BackupRestorePage() {
     setCreating(true);
     let backupId: string | null = null;
     try {
-      toast.info("Iniciando backup chunked…");
+      let sinceIso: string | null = null;
+      if (incremental) {
+        if (!sinceLocal) {
+          toast.error("Informe a data/hora de corte para o backup incremental.");
+          setCreating(false);
+          return;
+        }
+        const parsed = new Date(sinceLocal);
+        if (!Number.isFinite(parsed.getTime())) {
+          toast.error("Data de corte inválida.");
+          setCreating(false);
+          return;
+        }
+        sinceIso = parsed.toISOString();
+      }
+      toast.info(incremental ? `Iniciando backup incremental (desde ${sinceIso})…` : "Iniciando backup chunked…");
       const { data, error } = await supabase.functions.invoke("backup-create", {
-        body: { action: "start", reason: reason || "Backup manual", include_audit_logs: includeAudit },
+        body: {
+          action: "start",
+          reason: reason || (incremental ? "Backup incremental" : "Backup manual"),
+          include_audit_logs: includeAudit,
+          ...(sinceIso ? { since: sinceIso } : {}),
+        },
       });
       if (error) throw error;
       backupId = (data as any)?.backup_id;
@@ -635,6 +676,40 @@ export default function BackupRestorePage() {
                   Incluir <code>audit_logs</code> (pode aumentar o arquivo em &gt;100 MB)
                 </Label>
               </div>
+
+              <div className="border rounded-md p-3 space-y-2 bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="incremental"
+                    checked={incremental}
+                    onCheckedChange={(c) => setIncremental(!!c)}
+                    disabled={creating}
+                  />
+                  <Label htmlFor="incremental" className="text-sm cursor-pointer font-medium">
+                    Backup incremental (só linhas alteradas desde a data de corte)
+                  </Label>
+                </div>
+                {incremental && (
+                  <div className="space-y-2 pl-6">
+                    <Label htmlFor="since" className="text-xs text-muted-foreground">
+                      Data/hora de corte (fuso local — usa <code>updated_at</code> quando disponível,
+                      senão <code>created_at</code>; tabelas sem essas colunas vêm completas)
+                    </Label>
+                    <Input
+                      id="since"
+                      type="datetime-local"
+                      value={sinceLocal}
+                      onChange={(e) => setSinceLocal(e.target.value)}
+                      disabled={creating}
+                      className="max-w-xs"
+                    />
+                    <p className="text-xs text-amber-700">
+                      ⚠️ Backups incrementais NÃO capturam deleções após a data de corte. Combine com um backup completo periódico.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <Button onClick={handleCreateBackup} disabled={creating || !!runningJob}>
                 {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Gerando backup…</> :
                   <><Database className="w-4 h-4 mr-2" />Criar Backup</>}
@@ -670,6 +745,11 @@ export default function BackupRestorePage() {
                     <div className="space-y-1 flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         {statusBadge(j.status)}
+                        {j.manifest?.incremental?.enabled && (
+                          <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700">
+                            INCR desde {j.manifest.incremental.since ? formatDate(j.manifest.incremental.since) : "?"}
+                          </Badge>
+                        )}
                         <span className="text-sm font-medium">{formatDate(j.created_at)}</span>
                         <span className="text-xs text-muted-foreground">por {j.created_by_email ?? "—"}</span>
                       </div>
