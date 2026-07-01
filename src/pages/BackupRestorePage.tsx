@@ -173,6 +173,7 @@ export default function BackupRestorePage() {
   const [restoreConfirm, setRestoreConfirm] = useState("");
   const [restoreRunning, setRestoreRunning] = useState(false);
   const [restoreProgress, setRestoreProgress] = useState<{ percent: number; step: string; processed: number; errors: number } | null>(null);
+  const [restoreMergeAck, setRestoreMergeAck] = useState(false);
 
 
   // ── Import state
