@@ -122,6 +122,15 @@ async function handleStart(admin: any, body: any, userId: string, userEmail: str
   const userAgent = req.headers.get("user-agent") ?? null;
   const startedAt = Date.now();
 
+  // Parâmetro opcional para backup incremental
+  let since: string | null = null;
+  if (body.since !== undefined && body.since !== null && body.since !== "") {
+    if (!isValidIsoTimestamp(body.since)) {
+      return json({ error: "Parâmetro 'since' inválido: precisa ser ISO-8601 (ex.: 2026-06-29T13:47:46Z)." }, 400);
+    }
+    since = new Date(body.since).toISOString();
+  }
+
   const initState: State = {
     phase: "init",
     tableCounts: {},
@@ -130,7 +139,10 @@ async function handleStart(admin: any, body: any, userId: string, userEmail: str
     reason, includeAudit,
     userId, userEmail,
     startedAt,
+    since,
   };
+
+  const displayReason = since ? `[INCR desde ${since}] ${reason}` : reason;
 
   const { data: jobRow, error: jobErr } = await admin.from("backup_jobs").insert({
     created_by: userId,
@@ -138,15 +150,17 @@ async function handleStart(admin: any, body: any, userId: string, userEmail: str
     status: "running",
     started_at: new Date(startedAt).toISOString(),
     source_instance: SUPABASE_URL,
-    reason,
-    progress: { step: "iniciando", percent: 0, state: initState },
+    reason: displayReason,
+    progress: { step: since ? "iniciando (incremental)" : "iniciando", percent: 0, state: initState },
   }).select().single();
   if (jobErr || !jobRow) return json({ error: `Falha ao criar job: ${jobErr?.message}` }, 500);
 
   await audit(admin, userId, userEmail, "BACKUP_CREATE_START", {
-    backup_job_id: jobRow.id, payload: { reason, include_audit_logs: includeAudit }, ip, userAgent,
+    backup_job_id: jobRow.id,
+    payload: { reason, include_audit_logs: includeAudit, incremental: !!since, since },
+    ip, userAgent,
   });
-  return json({ backup_id: jobRow.id, status: "running" }, 202);
+  return json({ backup_id: jobRow.id, status: "running", incremental: !!since, since }, 202);
 }
 
 async function handleStep(admin: any, body: any, userId: string, userEmail: string | null) {
