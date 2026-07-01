@@ -309,13 +309,27 @@ export default function BackupRestorePage() {
         }
         sinceIso = parsed.toISOString();
       }
-      toast.info(incremental ? `Iniciando backup incremental (desde ${sinceIso})…` : "Iniciando backup chunked…");
+      // Seleção parcial: envia lista só quando NÃO for todas
+      const isAllSelected = allTables.length > 0 && selectedTables.size === allTables.length;
+      const partialList = isAllSelected ? null : Array.from(selectedTables);
+      if (partialList && partialList.length === 0 && !includeAuthUsers) {
+        toast.error("Selecione pelo menos uma tabela ou marque 'Usuários (auth)'.");
+        setCreating(false);
+        return;
+      }
+      const tags: string[] = [];
+      if (incremental) tags.push(`incremental desde ${sinceIso}`);
+      if (partialList) tags.push(`parcial (${partialList.length} tabela${partialList.length === 1 ? "" : "s"})`);
+      if (!includeAuthUsers) tags.push("sem auth");
+      toast.info(tags.length ? `Iniciando backup ${tags.join(" • ")}…` : "Iniciando backup chunked…");
       const { data, error } = await supabase.functions.invoke("backup-create", {
         body: {
           action: "start",
-          reason: reason || (incremental ? "Backup incremental" : "Backup manual"),
+          reason: reason || (incremental ? "Backup incremental" : partialList ? "Backup parcial" : "Backup manual"),
           include_audit_logs: includeAudit,
+          include_auth_users: includeAuthUsers,
           ...(sinceIso ? { since: sinceIso } : {}),
+          ...(partialList ? { tables: partialList } : {}),
         },
       });
       if (error) throw error;
