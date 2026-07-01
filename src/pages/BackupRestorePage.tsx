@@ -806,35 +806,66 @@ export default function BackupRestorePage() {
                   ) : allTables.length === 0 ? (
                     <div className="p-3 text-xs text-muted-foreground">Sem tabelas para exibir.</div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-1 p-2">
-                      {allTables
-                        .filter((t) => !tableSearch || t.toLowerCase().includes(tableSearch.toLowerCase()))
-                        .map((t) => {
-                          const checked = selectedTables.has(t);
-                          const isSpecial = SPECIAL_TABLES.has(t);
-                          return (
-                            <label key={t}
-                              className="flex items-center gap-2 text-xs px-2 py-1 rounded hover:bg-muted/60 cursor-pointer">
-                              <Checkbox
-                                checked={checked}
-                                disabled={creating}
-                                onCheckedChange={(c) => {
-                                  setSelectedTables((prev) => {
-                                    const next = new Set(prev);
-                                    if (c) next.add(t); else next.delete(t);
-                                    return next;
-                                  });
-                                }}
-                              />
-                              <span className="font-mono truncate flex-1" title={t}>{t}</span>
-                              {isSpecial && (
-                                <Badge variant="outline" className="text-[9px] h-4 px-1 border-slate-400 text-slate-600">
-                                  config
+                    <div className="p-2 space-y-3">
+                      {groupTablesByCategory(
+                        allTables.filter((t) => !tableSearch || t.toLowerCase().includes(tableSearch.toLowerCase()))
+                      ).map((cat) => {
+                        const catSelected = cat.tables.filter((t) => selectedTables.has(t)).length;
+                        const allOn = catSelected === cat.tables.length;
+                        const someOn = catSelected > 0 && !allOn;
+                        return (
+                          <div key={cat.key} className="border rounded-md bg-muted/20">
+                            <div className="flex items-center justify-between gap-2 px-2 py-1.5 border-b bg-muted/40">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Checkbox
+                                  checked={allOn ? true : (someOn ? "indeterminate" as any : false)}
+                                  disabled={creating}
+                                  onCheckedChange={(c) => {
+                                    setSelectedTables((prev) => {
+                                      const next = new Set(prev);
+                                      if (c) cat.tables.forEach((t) => next.add(t));
+                                      else cat.tables.forEach((t) => next.delete(t));
+                                      return next;
+                                    });
+                                  }}
+                                />
+                                <span className="text-xs font-semibold truncate">{cat.label}</span>
+                                <Badge variant="outline" className="text-[9px] h-4 px-1">
+                                  {catSelected}/{cat.tables.length}
                                 </Badge>
-                              )}
-                            </label>
-                          );
-                        })}
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-1 p-2">
+                              {cat.tables.map((t) => {
+                                const checked = selectedTables.has(t);
+                                const isSpecial = SPECIAL_TABLES.has(t);
+                                return (
+                                  <label key={t}
+                                    className="flex items-center gap-2 text-xs px-2 py-1 rounded hover:bg-muted/60 cursor-pointer">
+                                    <Checkbox
+                                      checked={checked}
+                                      disabled={creating}
+                                      onCheckedChange={(c) => {
+                                        setSelectedTables((prev) => {
+                                          const next = new Set(prev);
+                                          if (c) next.add(t); else next.delete(t);
+                                          return next;
+                                        });
+                                      }}
+                                    />
+                                    <span className="font-mono truncate flex-1" title={t}>{t}</span>
+                                    {isSpecial && (
+                                      <Badge variant="outline" className="text-[9px] h-4 px-1 border-slate-400 text-slate-600">
+                                        config
+                                      </Badge>
+                                    )}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
