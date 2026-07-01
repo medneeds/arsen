@@ -1352,6 +1352,16 @@ export default function BackupRestorePage() {
                     {restoreDryRun && <li className="font-bold">Em dry-run, NENHUMA gravação ocorre. Apenas validação de manifest, parts e JSON.</li>}
                   </ul>
 
+                  {!restoreDryRun && !restoreMirror && (
+                    <div className="mt-2 border-2 border-amber-500 bg-amber-100 rounded p-2 text-amber-900">
+                      <p className="font-bold flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" />Modo de mesclagem ativo
+                      </p>
+                      <p className="text-xs mt-1">
+                        Linhas criadas <strong>após</strong> este backup <strong>não serão removidas</strong>. O banco NÃO ficará idêntico ao snapshot. Se seu objetivo é restaurar o estado exato do backup, <strong>cancele e ative o Modo ESPELHO</strong> na Etapa 1.
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
