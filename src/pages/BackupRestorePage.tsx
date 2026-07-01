@@ -1436,7 +1436,8 @@ export default function BackupRestorePage() {
                   restoreRunning ||
                   restoreReason.trim().length < 10 ||
                   !restorePassword ||
-                  restoreConfirm !== "RESTAURAR AGORA"
+                  restoreConfirm !== "RESTAURAR AGORA" ||
+                  (!restoreDryRun && !restoreMirror && restoreMode === "full" && !restoreTarget?.manifest?.incremental?.enabled && !restoreMergeAck)
                 }
               >
                 {restoreRunning ? (
