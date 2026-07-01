@@ -69,6 +69,8 @@ interface BackupJob {
   duration_ms: number | null;
   reason: string | null;
   error: string | null;
+  finished_at: string | null;
+  manifest: any | null;
 }
 
 interface BackupAudit {
