@@ -138,7 +138,7 @@ function statusBadge(s: BackupJob["status"]) {
   return <Badge className={c.cls}><Icon className="w-3 h-3 mr-1" />{c.label}</Badge>;
 }
 
-export default function BackupRestorePage() {
+export function BackupRestoreTab() {
   const { isAdmin, loading: lA } = useIsAdmin();
   const { isSuperAdmin, loading: lS } = useIsSuperAdmin();
   const allowed = isAdmin || isSuperAdmin;
