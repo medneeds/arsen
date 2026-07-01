@@ -58,7 +58,7 @@ const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const AdminStatesPage = lazy(() => import("./pages/AdminStatesPage"));
 const AdminUnitsPage = lazy(() => import("./pages/AdminUnitsPage"));
 const AdminCoordinatorsPage = lazy(() => import("./pages/AdminCoordinatorsPage"));
-const BackupRestorePage = lazy(() => import("./pages/BackupRestorePage"));
+
 const TherapeuticTemplatesPage = lazy(() => import("./pages/TherapeuticTemplatesPage"));
 const RoundPage = lazy(() => import("./pages/RoundPage"));
 const RelatorioPage = lazy(() => import("./pages/RelatorioPage"));
