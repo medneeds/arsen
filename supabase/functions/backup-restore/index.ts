@@ -169,9 +169,11 @@ async function handlePlan(admin: any, body: any, userId: string, userEmail: stri
   const backupId = String(body.backup_id ?? "");
   const mode = body.mode === "partial" ? "partial" : "full";
   const dryRun = !!body.dry_run;
+  const mirror = !!body.mirror;
   const reason = String(body.reason ?? "").trim();
   const password = String(body.password ?? "");
   const requested: string[] = Array.isArray(body.tables) ? body.tables : [];
+
 
   if (!backupId) return json({ error: "backup_id obrigatório" }, 400);
   if (!reason || reason.length < 10) return json({ error: "Motivo obrigatório (≥10 caracteres)" }, 400);
