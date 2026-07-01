@@ -360,11 +360,18 @@ async function doOneStep(admin: any, jobId: string, s: State): Promise<{ step: s
       reason: s.reason,
       parts: s.parts,
       total_bytes: s.totalBytes,
+      incremental: s.since ? {
+        enabled: true,
+        since: s.since,
+        note: "Snapshot parcial: contém apenas linhas com updated_at/created_at > since (ou tabelas sem colunas de data, marcadas como full). Deleções após 'since' NÃO estão representadas — use full periódico.",
+      } : { enabled: false },
+      table_filter_mode: s.tableFilterMode ?? {},
       notes: [
         "Backup v3.0 — chunked. Use backup-download para gerar um ZIP único.",
         "DDL (schema) NÃO está incluso — a instância destino deve ter as mesmas migrations aplicadas.",
         "Hashes de senha NÃO são exportados; usuários restaurados recebem email de reset.",
         "MFA e identidades externas (Google/Apple) não são restauráveis via Admin API.",
+        ...(s.since ? ["Backup INCREMENTAL — combine com um full anterior para restauração completa."] : []),
       ],
     };
     const manifestStr = JSON.stringify(manifest, null, 2);
