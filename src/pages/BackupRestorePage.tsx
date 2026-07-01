@@ -173,6 +173,7 @@ export default function BackupRestorePage() {
   const [restoreConfirm, setRestoreConfirm] = useState("");
   const [restoreRunning, setRestoreRunning] = useState(false);
   const [restoreProgress, setRestoreProgress] = useState<{ percent: number; step: string; processed: number; errors: number } | null>(null);
+  const [restoreMergeAck, setRestoreMergeAck] = useState(false);
 
 
   // ── Import state
@@ -528,6 +529,7 @@ export default function BackupRestorePage() {
     setRestorePassword("");
     setRestoreConfirm("");
     setRestoreProgress(null);
+    setRestoreMergeAck(false);
     setRestoreOpen(true);
   }
 
@@ -1286,6 +1288,27 @@ export default function BackupRestorePage() {
               </div>
 
 
+              {(() => {
+                const isFullBackup =
+                  restoreMode === "full" &&
+                  !restoreTarget?.manifest?.incremental?.enabled;
+                if (restoreDryRun || restoreMirror || !isFullBackup) return null;
+                return (
+                  <div className="border-2 border-amber-400 bg-amber-50 rounded-md p-3 flex items-start gap-2">
+                    <AlertTriangle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-amber-900 space-y-1">
+                      <p className="font-bold">Atenção: este restore NÃO devolve o banco ao estado do backup.</p>
+                      <p>Sem o <strong>Modo ESPELHO</strong>, o restore apenas mescla (upsert por PK):</p>
+                      <ul className="list-disc ml-5 text-xs">
+                        <li>Registros do backup <strong>sobrescrevem</strong> os existentes com mesma chave.</li>
+                        <li>Registros criados <strong>depois</strong> do backup <strong>permanecem no banco</strong>.</li>
+                      </ul>
+                      <p className="text-xs">Para reproduzir exatamente o snapshot, marque <strong>"Modo ESPELHO (destrutivo)"</strong> acima.</p>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {restoreMode === "partial" && restoreTarget.table_counts && (
                 <div>
                   <Label className="text-sm font-medium">Tabelas a restaurar</Label>
@@ -1329,6 +1352,16 @@ export default function BackupRestorePage() {
                     {restoreDryRun && <li className="font-bold">Em dry-run, NENHUMA gravação ocorre. Apenas validação de manifest, parts e JSON.</li>}
                   </ul>
 
+                  {!restoreDryRun && !restoreMirror && (
+                    <div className="mt-2 border-2 border-amber-500 bg-amber-100 rounded p-2 text-amber-900">
+                      <p className="font-bold flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" />Modo de mesclagem ativo
+                      </p>
+                      <p className="text-xs mt-1">
+                        Linhas criadas <strong>após</strong> este backup <strong>não serão removidas</strong>. O banco NÃO ficará idêntico ao snapshot. Se seu objetivo é restaurar o estado exato do backup, <strong>cancele e ative o Modo ESPELHO</strong> na Etapa 1.
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -1359,6 +1392,25 @@ export default function BackupRestorePage() {
                     </Label>
                     <Input id="rconfirm" value={restoreConfirm} onChange={(e) => setRestoreConfirm(e.target.value.toUpperCase())} />
                   </div>
+                  {(() => {
+                    const isFullBackup =
+                      restoreMode === "full" &&
+                      !restoreTarget?.manifest?.incremental?.enabled;
+                    if (restoreDryRun || restoreMirror || !isFullBackup) return null;
+                    return (
+                      <div className="flex items-start gap-2 border-2 border-amber-500 bg-amber-50 rounded p-3">
+                        <Checkbox
+                          id="mergeack"
+                          checked={restoreMergeAck}
+                          onCheckedChange={(c) => setRestoreMergeAck(!!c)}
+                          className="mt-0.5"
+                        />
+                        <Label htmlFor="mergeack" className="text-sm cursor-pointer text-amber-900">
+                          Entendo que este restore é uma <strong>mesclagem</strong> (upsert por PK) e <strong>não substitui</strong> o estado atual do banco. Dados criados após o backup <strong>permanecerão</strong>.
+                        </Label>
+                      </div>
+                    );
+                  })()}
                 </>
               )}
             </div>
@@ -1384,7 +1436,8 @@ export default function BackupRestorePage() {
                   restoreRunning ||
                   restoreReason.trim().length < 10 ||
                   !restorePassword ||
-                  restoreConfirm !== "RESTAURAR AGORA"
+                  restoreConfirm !== "RESTAURAR AGORA" ||
+                  (!restoreDryRun && !restoreMirror && restoreMode === "full" && !restoreTarget?.manifest?.incremental?.enabled && !restoreMergeAck)
                 }
               >
                 {restoreRunning ? (
