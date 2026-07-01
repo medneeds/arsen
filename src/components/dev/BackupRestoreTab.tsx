@@ -291,7 +291,7 @@ export function BackupRestoreTab() {
   if (lA || lS) {
     return <div className="p-8 flex items-center gap-2 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Carregando permissões…</div>;
   }
-  if (!allowed) return <Navigate to="/" replace />;
+  if (!allowed) return null;
 
   async function handleCreateBackup() {
     setCreating(true);
