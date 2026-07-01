@@ -1288,6 +1288,27 @@ export default function BackupRestorePage() {
               </div>
 
 
+              {(() => {
+                const isFullBackup =
+                  restoreMode === "full" &&
+                  !restoreTarget?.manifest?.incremental?.enabled;
+                if (restoreDryRun || restoreMirror || !isFullBackup) return null;
+                return (
+                  <div className="border-2 border-amber-400 bg-amber-50 rounded-md p-3 flex items-start gap-2">
+                    <AlertTriangle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-amber-900 space-y-1">
+                      <p className="font-bold">Atenção: este restore NÃO devolve o banco ao estado do backup.</p>
+                      <p>Sem o <strong>Modo ESPELHO</strong>, o restore apenas mescla (upsert por PK):</p>
+                      <ul className="list-disc ml-5 text-xs">
+                        <li>Registros do backup <strong>sobrescrevem</strong> os existentes com mesma chave.</li>
+                        <li>Registros criados <strong>depois</strong> do backup <strong>permanecem no banco</strong>.</li>
+                      </ul>
+                      <p className="text-xs">Para reproduzir exatamente o snapshot, marque <strong>"Modo ESPELHO (destrutivo)"</strong> acima.</p>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {restoreMode === "partial" && restoreTarget.table_counts && (
                 <div>
                   <Label className="text-sm font-medium">Tabelas a restaurar</Label>
