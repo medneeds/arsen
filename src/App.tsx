@@ -93,6 +93,7 @@ const HistoricoPacientePage = lazy(() => import("./pages/HistoricoPacientePage")
 const ApresentacaoPage = lazy(() => import("./pages/ApresentacaoPage"));
 const IpAllowlistPage = lazy(() => import("./pages/admin/IpAllowlistPage"));
 const Relatorio1Page = lazy(() => import("./pages/Relatorio1Page"));
+const RelatorioJunhoPage = lazy(() => import("./pages/RelatorioJunhoPage"));
 const Apresentacao1Page = lazy(() => import("./pages/Apresentacao1Page"));
 
 // React Query: defaults conservadores para reduzir refetch agressivo
@@ -273,6 +274,7 @@ const App = () => {
               <Route path="/dev-console" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IpRestricted moduleKey="dev_console" moduleLabel="Console Dev"><DevConsolePage /></IpRestricted></MainLayout></ProtectedRoute>} />
               <Route path="/admin/ip-allowlist" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IpAllowlistPage /></MainLayout></ProtectedRoute>} />
               <Route path="/relatorio-1" element={<Relatorio1Page />} />
+              <Route path="/relatorio-junho" element={<RelatorioJunhoPage />} />
               <Route path="/apresentacao-1" element={<Apresentacao1Page />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
