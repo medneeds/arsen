@@ -93,6 +93,7 @@ const HistoricoPacientePage = lazy(() => import("./pages/HistoricoPacientePage")
 const ApresentacaoPage = lazy(() => import("./pages/ApresentacaoPage"));
 const IpAllowlistPage = lazy(() => import("./pages/admin/IpAllowlistPage"));
 const Relatorio1Page = lazy(() => import("./pages/Relatorio1Page"));
+const RelatorioJunhoPage = lazy(() => import("./pages/RelatorioJunhoPage"));
 const Apresentacao1Page = lazy(() => import("./pages/Apresentacao1Page"));
 
 // React Query: defaults conservadores para reduzir refetch agressivo
