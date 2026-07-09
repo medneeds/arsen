@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, RefreshCw, Search, ShieldAlert, ArrowRightLeft, RotateCcw, BedDouble, X, User, Info } from "lucide-react";
@@ -33,13 +34,16 @@ type Inspection = {
 };
 
 type PendingAction = {
-  kind: "cancel_transfer" | "reopen_encounter" | "release_orphan_bed";
+  kind: "cancel_transfer" | "reopen_encounter" | "release_orphan_bed" | "place_in_bed";
   action: string;
   params: Record<string, unknown>;
   plan: any;
   title: string;
   description: string;
+  requiresReason?: boolean;
 };
+
+type VacantBed = { id: string; bed_number: string | null; sector: string | null };
 
 const callOps = async (action: string, params: Record<string, unknown> = {}, confirm = false) => {
   const { data, error } = await supabase.functions.invoke("dev-console-ops", {
@@ -61,6 +65,11 @@ export function PatientOpsTab() {
   const [inspecting, setInspecting] = useState(false);
   const [pending, setPending] = useState<PendingAction | null>(null);
   const [executing, setExecuting] = useState(false);
+  const [reason, setReason] = useState("");
+  const [vacantQuery, setVacantQuery] = useState("");
+  const [vacantBeds, setVacantBeds] = useState<VacantBed[]>([]);
+  const [loadingVacant, setLoadingVacant] = useState(false);
+  const [selectedBedId, setSelectedBedId] = useState<string>("");
 
   const search = async (q?: string) => {
     setLoading(true);
@@ -91,6 +100,7 @@ export function PatientOpsTab() {
     params: Record<string, unknown>;
     title: string;
     description: string;
+    requiresReason?: boolean;
   }) => {
     try {
       const r = await callOps(opts.action, { ...opts.params, dryRun: true });
@@ -102,16 +112,33 @@ export function PatientOpsTab() {
 
   const execute = async () => {
     if (!pending) return;
+    if (pending.requiresReason && reason.trim().length < 10) {
+      toast.error("Motivo obrigatório (mínimo 10 caracteres)");
+      return;
+    }
     setExecuting(true);
     try {
-      await callOps(pending.action, { ...pending.params, dryRun: false }, true);
+      const extra = pending.requiresReason ? { reason: reason.trim() } : {};
+      await callOps(pending.action, { ...pending.params, ...extra, dryRun: false }, true);
       toast.success("Ação executada com sucesso");
       setPending(null);
+      setReason("");
+      setSelectedBedId("");
       if (selected) inspect(selected);
       search();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao executar");
     } finally { setExecuting(false); }
+  };
+
+  const loadVacantBeds = async (q?: string) => {
+    setLoadingVacant(true);
+    try {
+      const r = await callOps("list_vacant_beds", { query: q ?? vacantQuery, limit: 100 });
+      setVacantBeds(r.beds ?? []);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao listar leitos");
+    } finally { setLoadingVacant(false); }
   };
 
   const filtered = useMemo(() => rows, [rows]);
@@ -316,6 +343,65 @@ export function PatientOpsTab() {
                     )}
                   </section>
 
+                  {/* Colocar paciente em leito (paciente perdido / sem leito) */}
+                  <section>
+                    <h4 className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                      <BedDouble className="h-3 w-3" /> Colocar paciente em leito
+                    </h4>
+                    <p className="text-[11px] text-muted-foreground mb-1.5">
+                      Use quando o paciente ficou "perdido" (ex.: leito de origem foi zerado após transferência com erro). Copia os dados clínicos desta linha para um leito VAGO escolhido e migra o histórico (evoluções, prescrições, exames) via <code className="font-mono">repoint_patient_history</code>. O leito atual é arquivado e limpo.
+                    </p>
+                    <div className="flex gap-1.5 mb-1.5">
+                      <Input
+                        placeholder="Filtrar leitos vagos (setor / número)…"
+                        value={vacantQuery}
+                        onChange={(e) => setVacantQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && loadVacantBeds()}
+                        className="h-7 text-[11px]"
+                      />
+                      <Button size="sm" variant="outline" className="h-7" onClick={() => loadVacantBeds()} disabled={loadingVacant}>
+                        {loadingVacant ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
+                      </Button>
+                    </div>
+                    {vacantBeds.length > 0 && (
+                      <div className="rounded-md border border-border max-h-[140px] overflow-auto mb-1.5 divide-y divide-border">
+                        {vacantBeds.map((b) => (
+                          <button
+                            key={b.id}
+                            onClick={() => setSelectedBedId(b.id)}
+                            className={`w-full text-left px-2 py-1 text-[11px] hover:bg-muted/40 flex items-center gap-2 ${selectedBedId === b.id ? "bg-emerald-50 dark:bg-emerald-950/30" : ""}`}
+                          >
+                            <span className="font-mono w-14">{b.bed_number ?? "—"}</span>
+                            <span className="text-muted-foreground truncate flex-1">{b.sector ?? "—"}</span>
+                            {selectedBedId === b.id && <Badge variant="outline" className="text-[9px] border-emerald-500 text-emerald-700">selecionado</Badge>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {vacantBeds.length === 0 && !loadingVacant && (
+                      <p className="text-[10px] text-muted-foreground italic mb-1.5">Clique na lupa para listar leitos vagos.</p>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="h-7 text-[11px] gap-1 bg-emerald-600 hover:bg-emerald-700"
+                      disabled={!inspection.patient || !inspection.patient.name || !selectedBedId}
+                      onClick={() => {
+                        const bed = vacantBeds.find((b) => b.id === selectedBedId);
+                        preview({
+                          kind: "place_in_bed",
+                          action: "fix_place_patient_in_bed",
+                          params: { sourcePatientId: inspection.patient.id, targetPatientId: selectedBedId },
+                          title: "Colocar paciente em leito",
+                          description: `Move ${inspection.patient.name} para ${bed?.sector ?? "—"} · Leito ${bed?.bed_number ?? "—"}. Preserva histórico clínico e libera a linha de origem.`,
+                          requiresReason: true,
+                        });
+                      }}
+                    >
+                      <BedDouble className="h-3.5 w-3.5" /> Colocar em leito selecionado
+                    </Button>
+                  </section>
+
                   {/* Ação órfã */}
                   <section>
                     <h4 className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">Leito órfão</h4>
@@ -377,6 +463,18 @@ export function PatientOpsTab() {
                 <pre className="rounded-md bg-muted p-2 text-[10px] max-h-[280px] overflow-auto whitespace-pre-wrap">
                   {JSON.stringify(pending?.plan ?? {}, null, 2)}
                 </pre>
+                {pending?.requiresReason && (
+                  <div>
+                    <label className="text-[11px] font-medium block mb-1">Motivo / justificativa (mínimo 10 caracteres) *</label>
+                    <Textarea
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      placeholder="Ex.: Paciente perdido após transferência com erro no dia XX/XX — realocando manualmente conforme solicitação da coordenação…"
+                      className="text-[11px] min-h-[70px]"
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{reason.trim().length}/10</p>
+                  </div>
+                )}
                 <p className="text-[11px] text-amber-700 dark:text-amber-400">
                   A execução é auditada em <code className="font-mono">audit_logs</code> (action <code className="font-mono">DEV_FIX_TRANSFER</code>).
                 </p>

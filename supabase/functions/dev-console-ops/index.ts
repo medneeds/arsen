@@ -892,6 +892,85 @@ Deno.serve(async (req) => {
         return json({ ok: true, executed: true, plan });
       }
 
+      case "list_vacant_beds": {
+        const q = String(params.query ?? "").trim();
+        const limit = Math.min(Number(params.limit ?? 60), 200);
+        let query = withHospital(supa
+          .from("patients")
+          .select("id, bed_number, sector, is_vacant, updated_at"))
+          .eq("is_vacant", true)
+          .order("sector", { ascending: true })
+          .order("bed_number", { ascending: true })
+          .limit(limit);
+        if (q) {
+          query = query.or(`bed_number.ilike.%${q}%,sector.ilike.%${q}%`);
+        }
+        const { data, error } = await query;
+        if (error) return json({ error: error.message }, 500);
+        return json({ beds: data ?? [] });
+      }
+
+      case "fix_place_patient_in_bed": {
+        const sourcePatientId = String(params.sourcePatientId ?? "");
+        const targetPatientId = String(params.targetPatientId ?? "");
+        const reason = String(params.reason ?? "").trim();
+        const dryRun = Boolean(params.dryRun);
+        if (!sourcePatientId || !targetPatientId) return json({ error: "sourcePatientId e targetPatientId requeridos" }, 400);
+        if (sourcePatientId === targetPatientId) return json({ error: "Origem e destino iguais" }, 400);
+        if (!dryRun && !confirm) return json({ error: "Confirmation required", needsConfirm: true }, 400);
+        if (!dryRun && reason.length < 10) return json({ error: "Motivo requerido (mínimo 10 caracteres)" }, 400);
+
+        const { data: src } = await supa
+          .from("patients")
+          .select("id, name, bed_number, sector, is_vacant, admission_status, medical_record")
+          .eq("id", sourcePatientId)
+          .maybeSingle();
+        const { data: tgt } = await supa
+          .from("patients")
+          .select("id, name, bed_number, sector, is_vacant")
+          .eq("id", targetPatientId)
+          .maybeSingle();
+        if (!src) return json({ error: "Paciente de origem não encontrado" }, 404);
+        if (!tgt) return json({ error: "Leito de destino não encontrado" }, 404);
+        if (!tgt.is_vacant) return json({ error: `Leito destino ${tgt.bed_number ?? ""} ${tgt.sector ?? ""} não está vago` }, 400);
+        if (!src.name) return json({ error: "Paciente de origem sem dados (linha vazia)" }, 400);
+
+        const plan = {
+          source: { id: src.id, name: src.name, bed: src.bed_number, sector: src.sector, status: src.admission_status },
+          target: { id: tgt.id, bed: tgt.bed_number, sector: tgt.sector },
+          note: "Copia dados clínicos da origem para o leito destino, repoint do histórico (evoluções/prescrições/exames), arquiva e limpa a origem.",
+        };
+        if (dryRun) return json({ ok: true, dryRun: true, plan });
+
+        const { data: rpcData, error: rpcErr } = await (supa as any).rpc(
+          "execute_operational_relocation_atomic",
+          {
+            p_source_patient_id: sourcePatientId,
+            p_target_patient_id: targetPatientId,
+            p_reason: `[DEV_FIX_TRANSFER] ${reason}`,
+            p_hospital_unit_id: null,
+            p_state_id: null,
+            p_department: null,
+            p_created_by: userData.user.id,
+          },
+        );
+        if (rpcErr) return json({ error: `Falha no reposicionamento: ${rpcErr.message}` }, 500);
+
+        try {
+          await supa.from("audit_logs").insert({
+            action: "DEV_FIX_TRANSFER",
+            table_name: "patients",
+            user_email: userData.user.email ?? null,
+            user_role: "dev",
+            record_id: targetPatientId,
+            changed_fields: ["bed_placed"],
+            new_values: { step: "place_patient_in_bed", plan, reason, movement_id: (rpcData as any)?.movement_id ?? null },
+          });
+        } catch (e) { console.warn("[fix_place_patient_in_bed] audit failed", e); }
+
+        return json({ ok: true, executed: true, plan, movementId: (rpcData as any)?.movement_id ?? null });
+      }
+
       default:
         return json({ error: `Unknown action: ${action}` }, 400);
     }
