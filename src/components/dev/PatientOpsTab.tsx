@@ -462,6 +462,18 @@ export function PatientOpsTab() {
                 <pre className="rounded-md bg-muted p-2 text-[10px] max-h-[280px] overflow-auto whitespace-pre-wrap">
                   {JSON.stringify(pending?.plan ?? {}, null, 2)}
                 </pre>
+                {pending?.requiresReason && (
+                  <div>
+                    <label className="text-[11px] font-medium block mb-1">Motivo / justificativa (mínimo 10 caracteres) *</label>
+                    <Textarea
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      placeholder="Ex.: Paciente perdido após transferência com erro no dia XX/XX — realocando manualmente conforme solicitação da coordenação…"
+                      className="text-[11px] min-h-[70px]"
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{reason.trim().length}/10</p>
+                  </div>
+                )}
                 <p className="text-[11px] text-amber-700 dark:text-amber-400">
                   A execução é auditada em <code className="font-mono">audit_logs</code> (action <code className="font-mono">DEV_FIX_TRANSFER</code>).
                 </p>
