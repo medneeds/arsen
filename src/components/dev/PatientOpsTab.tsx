@@ -33,13 +33,16 @@ type Inspection = {
 };
 
 type PendingAction = {
-  kind: "cancel_transfer" | "reopen_encounter" | "release_orphan_bed";
+  kind: "cancel_transfer" | "reopen_encounter" | "release_orphan_bed" | "place_in_bed";
   action: string;
   params: Record<string, unknown>;
   plan: any;
   title: string;
   description: string;
+  requiresReason?: boolean;
 };
+
+type VacantBed = { id: string; bed_number: string | null; sector: string | null };
 
 const callOps = async (action: string, params: Record<string, unknown> = {}, confirm = false) => {
   const { data, error } = await supabase.functions.invoke("dev-console-ops", {
