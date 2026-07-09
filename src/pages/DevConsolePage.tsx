@@ -8,13 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Activity, Database, Users, AlertTriangle, Bot, Send, RefreshCw, ShieldAlert, Terminal, Sliders, ListChecks, ShieldCheck, GitMerge, Eraser, Archive, HardDrive } from "lucide-react";
+import { Loader2, Activity, Database, Users, AlertTriangle, Bot, Send, RefreshCw, ShieldAlert, Terminal, Sliders, ListChecks, ShieldCheck, GitMerge, Eraser, Archive, HardDrive, UserCog } from "lucide-react";
 import { CustomizationTab } from "@/components/dev/CustomizationTab";
 import { PendenciesTab } from "@/components/dev/PendenciesTab";
 import { MergesTab } from "@/components/dev/MergesTab";
 import { ClearSignalingTab } from "@/components/dev/ClearSignalingTab";
 import { ResidualHistoryTab } from "@/components/dev/ResidualHistoryTab";
 import { BackupRestoreTab } from "@/components/dev/BackupRestoreTab";
+import { PatientOpsTab } from "@/components/dev/PatientOpsTab";
 import IpAllowlistPage from "@/pages/admin/IpAllowlistPage";
 import { toast } from "sonner";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -95,6 +96,7 @@ export default function DevConsolePage() {
                 { v: "logs", icon: Database, label: "Logs" },
                 { v: "merges", icon: GitMerge, label: "Mesclagens" },
                 { v: "signaling", icon: Eraser, label: "Limpar Sinalizações" },
+                { v: "patient-ops", icon: UserCog, label: "Pacientes" },
                 { v: "residual", icon: Archive, label: "Histórico Residual" },
                 { v: "ai", icon: Bot, label: "Console IA" },
                 { v: "actions", icon: Users, label: "Ações" },
@@ -118,6 +120,7 @@ export default function DevConsolePage() {
           <TabsContent value="logs"><LogsTab /></TabsContent>
           <TabsContent value="merges"><MergesTab /></TabsContent>
           <TabsContent value="signaling"><ClearSignalingTab /></TabsContent>
+          <TabsContent value="patient-ops"><PatientOpsTab /></TabsContent>
           <TabsContent value="residual"><ResidualHistoryTab /></TabsContent>
           <TabsContent value="ai"><AiTab /></TabsContent>
           <TabsContent value="actions"><ActionsTab /></TabsContent>
