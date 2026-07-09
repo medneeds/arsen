@@ -64,6 +64,11 @@ export function PatientOpsTab() {
   const [inspecting, setInspecting] = useState(false);
   const [pending, setPending] = useState<PendingAction | null>(null);
   const [executing, setExecuting] = useState(false);
+  const [reason, setReason] = useState("");
+  const [vacantQuery, setVacantQuery] = useState("");
+  const [vacantBeds, setVacantBeds] = useState<VacantBed[]>([]);
+  const [loadingVacant, setLoadingVacant] = useState(false);
+  const [selectedBedId, setSelectedBedId] = useState<string>("");
 
   const search = async (q?: string) => {
     setLoading(true);
