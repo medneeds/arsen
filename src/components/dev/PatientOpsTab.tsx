@@ -99,6 +99,7 @@ export function PatientOpsTab() {
     params: Record<string, unknown>;
     title: string;
     description: string;
+    requiresReason?: boolean;
   }) => {
     try {
       const r = await callOps(opts.action, { ...opts.params, dryRun: true });
