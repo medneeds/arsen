@@ -110,16 +110,33 @@ export function PatientOpsTab() {
 
   const execute = async () => {
     if (!pending) return;
+    if (pending.requiresReason && reason.trim().length < 10) {
+      toast.error("Motivo obrigatório (mínimo 10 caracteres)");
+      return;
+    }
     setExecuting(true);
     try {
-      await callOps(pending.action, { ...pending.params, dryRun: false }, true);
+      const extra = pending.requiresReason ? { reason: reason.trim() } : {};
+      await callOps(pending.action, { ...pending.params, ...extra, dryRun: false }, true);
       toast.success("Ação executada com sucesso");
       setPending(null);
+      setReason("");
+      setSelectedBedId("");
       if (selected) inspect(selected);
       search();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao executar");
     } finally { setExecuting(false); }
+  };
+
+  const loadVacantBeds = async (q?: string) => {
+    setLoadingVacant(true);
+    try {
+      const r = await callOps("list_vacant_beds", { query: q ?? vacantQuery, limit: 100 });
+      setVacantBeds(r.beds ?? []);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao listar leitos");
+    } finally { setLoadingVacant(false); }
   };
 
   const filtered = useMemo(() => rows, [rows]);
