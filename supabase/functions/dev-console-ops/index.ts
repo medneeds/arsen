@@ -617,6 +617,281 @@ Deno.serve(async (req) => {
         });
       }
 
+      // ═══════════════════════════════════════════════════════════════
+      // PATIENT OPS — inspeção + correção de transferências travadas
+      // Escopo cirúrgico: só toca camadas movimentação/leito/transfer_request.
+      // NÃO toca prescriptions/evolutions/medical_records/exam_requests.
+      // ═══════════════════════════════════════════════════════════════
+
+      case "list_patients_for_dev": {
+        const q = String(params.query ?? "").trim();
+        const limit = Math.min(Number(params.limit ?? 30), 100);
+        let query = withHospital(supa
+          .from("patients")
+          .select("id, name, bed_number, sector, admission_status, is_vacant, updated_at, medical_record, patient_registry_id"))
+          .order("updated_at", { ascending: false })
+          .limit(limit);
+
+        if (q) {
+          query = query.or(
+            `name.ilike.%${q}%,bed_number.ilike.%${q}%,sector.ilike.%${q}%,medical_record.ilike.%${q}%`
+          );
+        } else {
+          query = query.eq("is_vacant", false);
+        }
+        const { data, error } = await query;
+        if (error) return json({ error: error.message }, 500);
+
+        const ids = (data ?? []).map((p) => p.id as string);
+        const pendingBySource: Record<string, boolean> = {};
+        if (ids.length > 0) {
+          const { data: pending } = await supa
+            .from("internal_transfer_requests")
+            .select("source_patient_id")
+            .in("source_patient_id", ids)
+            .eq("status", "pending");
+          for (const r of pending ?? []) pendingBySource[r.source_patient_id as string] = true;
+        }
+
+        return json({
+          patients: (data ?? []).map((p) => ({
+            ...p,
+            hasPendingTransfer: !!pendingBySource[p.id as string],
+          })),
+        });
+      }
+
+      case "inspect_patient": {
+        const pid = String(params.patientId ?? "");
+        if (!pid) return json({ error: "patientId requerido" }, 400);
+
+        const [{ data: patient }, { data: encounters }, { data: transfers }, { data: movs }, { data: docs }] =
+          await Promise.all([
+            supa.from("patients").select("*").eq("id", pid).maybeSingle(),
+            supa.from("patient_encounters")
+              .select("id, encounter_code, started_at, ended_at, admission_sector, discharge_type")
+              .eq("patient_id", pid)
+              .order("started_at", { ascending: false })
+              .limit(5),
+            supa.from("internal_transfer_requests")
+              .select("*")
+              .eq("source_patient_id", pid)
+              .order("signaled_at", { ascending: false })
+              .limit(5),
+            supa.from("patient_movements")
+              .select("id, movement_type, destination, patient_sector, patient_bed, release_status, released_at, created_at, notes")
+              .eq("patient_id", pid)
+              .order("created_at", { ascending: false })
+              .limit(10),
+            supa.from("discharge_documents")
+              .select("id, document_type, created_at, suspended_at")
+              .eq("patient_id", pid)
+              .order("created_at", { ascending: false })
+              .limit(10),
+          ]);
+
+        return json({
+          patient,
+          encounters: encounters ?? [],
+          transfers: transfers ?? [],
+          movements: movs ?? [],
+          documents: docs ?? [],
+        });
+      }
+
+      case "fix_transfer_cancel_pending": {
+        const requestId = String(params.requestId ?? "");
+        const dryRun = Boolean(params.dryRun);
+        if (!requestId) return json({ error: "requestId requerido" }, 400);
+        if (!dryRun && !confirm) return json({ error: "Confirmation required", needsConfirm: true }, 400);
+
+        const { data: req, error: rErr } = await supa
+          .from("internal_transfer_requests")
+          .select("*")
+          .eq("id", requestId)
+          .maybeSingle();
+        if (rErr) return json({ error: rErr.message }, 500);
+        if (!req) return json({ error: "Request não encontrado" }, 404);
+        if (req.status !== "pending") return json({ error: `Request já está com status ${req.status}` }, 400);
+
+        const snapshot: any = req.patient_snapshot ?? {};
+        const sourceId = req.source_patient_id as string;
+
+        const { data: sourcePatient } = await supa
+          .from("patients")
+          .select("id, is_vacant, name")
+          .eq("id", sourceId)
+          .maybeSingle();
+
+        const canRestore = sourcePatient?.is_vacant === true;
+        const plan = {
+          requestId,
+          sourcePatientId: sourceId,
+          sourceBed: req.source_bed,
+          sourceSector: req.source_sector,
+          targetSector: req.target_sector_label ?? req.target_sector_code,
+          patientName: req.patient_name,
+          willRestore: canRestore,
+          willCancelOnly: !canRestore,
+          currentSourceBedOccupied: sourcePatient && !sourcePatient.is_vacant,
+        };
+        if (dryRun) return json({ ok: true, dryRun: true, plan });
+
+        const nowIso = new Date().toISOString();
+        const { error: cancelErr } = await supa
+          .from("internal_transfer_requests")
+          .update({ status: "cancelled", cancelled_at: nowIso } as any)
+          .eq("id", requestId);
+        if (cancelErr) return json({ error: `Falha ao cancelar request: ${cancelErr.message}` }, 500);
+
+        if (canRestore) {
+          const restorePayload: any = {
+            name: snapshot.name ?? req.patient_name,
+            age: snapshot.age ?? null,
+            diagnoses: snapshot.diagnoses ?? null,
+            medical_history: snapshot.medicalHistory ?? snapshot.medical_history ?? null,
+            relevant_exams: snapshot.relevantExams ?? snapshot.relevant_exams ?? null,
+            pendencies: snapshot.pendencies ?? null,
+            schedule: snapshot.schedule ?? null,
+            admission_history: snapshot._admissionHistory ?? snapshot.admissionHistory ?? null,
+            admission_date: snapshot.admissionDate ?? snapshot.admission_date ?? null,
+            admitted_at: snapshot._admittedAt ?? null,
+            clinical_status: snapshot.clinicalStatus ?? snapshot.clinical_status ?? null,
+            admission_status: "admitido",
+            patient_registry_id: snapshot._registryId ?? snapshot.registryId ?? null,
+            medical_record: snapshot._medicalRecord ?? snapshot.medicalRecord ?? null,
+            is_vacant: false,
+            updated_at: nowIso,
+          };
+          const { error: restoreErr } = await supa
+            .from("patients")
+            .update(restorePayload)
+            .eq("id", sourceId);
+          if (restoreErr) return json({ error: `Cancelado, mas falhou restauração: ${restoreErr.message}` }, 500);
+        }
+
+        try {
+          await supa.from("audit_logs").insert({
+            action: "DEV_FIX_TRANSFER",
+            table_name: "internal_transfer_requests",
+            user_email: userData.user.email ?? null,
+            user_role: "dev",
+            record_id: requestId,
+            changed_fields: canRestore ? ["status", "source_bed_restored"] : ["status"],
+            new_values: { step: "cancel_pending_transfer", plan },
+          });
+        } catch (e) { console.warn("[fix_transfer_cancel_pending] audit failed", e); }
+
+        return json({ ok: true, executed: true, restored: canRestore, plan });
+      }
+
+      case "fix_transfer_reopen_encounter": {
+        const encounterId = String(params.encounterId ?? "");
+        const dryRun = Boolean(params.dryRun);
+        if (!encounterId) return json({ error: "encounterId requerido" }, 400);
+        if (!dryRun && !confirm) return json({ error: "Confirmation required", needsConfirm: true }, 400);
+
+        const { data: enc } = await supa
+          .from("patient_encounters")
+          .select("id, patient_id, encounter_code, started_at, ended_at, discharge_type")
+          .eq("id", encounterId)
+          .maybeSingle();
+        if (!enc) return json({ error: "Encounter não encontrado" }, 404);
+        if (!enc.ended_at) return json({ error: "Encounter já está aberto" }, 400);
+
+        const endedAt = new Date(enc.ended_at as string).getTime();
+        const ageHours = (Date.now() - endedAt) / 3_600_000;
+        if (ageHours > 24) return json({ error: `Encounter encerrado há ${ageHours.toFixed(1)}h — limite 24h para reabertura via Dev Console` }, 400);
+
+        const plan = {
+          encounterId, encounterCode: enc.encounter_code,
+          patientId: enc.patient_id, endedAt: enc.ended_at,
+          ageHours: Number(ageHours.toFixed(2)),
+        };
+        if (dryRun) return json({ ok: true, dryRun: true, plan });
+
+        const { error: updErr } = await supa
+          .from("patient_encounters")
+          .update({ ended_at: null, discharge_type: null } as any)
+          .eq("id", encounterId);
+        if (updErr) return json({ error: updErr.message }, 500);
+
+        try {
+          await supa.from("audit_logs").insert({
+            action: "DEV_FIX_TRANSFER",
+            table_name: "patient_encounters",
+            user_email: userData.user.email ?? null,
+            user_role: "dev",
+            record_id: encounterId,
+            changed_fields: ["ended_at", "discharge_type"],
+            new_values: { step: "reopen_encounter", plan },
+          });
+        } catch (e) { console.warn("[fix_transfer_reopen_encounter] audit failed", e); }
+
+        return json({ ok: true, executed: true, plan });
+      }
+
+      case "fix_transfer_release_orphan_bed": {
+        const patientId = String(params.patientId ?? "");
+        const dryRun = Boolean(params.dryRun);
+        if (!patientId) return json({ error: "patientId requerido" }, 400);
+        if (!dryRun && !confirm) return json({ error: "Confirmation required", needsConfirm: true }, 400);
+
+        const { data: p } = await supa
+          .from("patients")
+          .select("id, name, bed_number, sector, admission_status, is_vacant")
+          .eq("id", patientId)
+          .maybeSingle();
+        if (!p) return json({ error: "Paciente não encontrado" }, 404);
+
+        const plan = {
+          patientId, name: p.name, bed: p.bed_number, sector: p.sector,
+          currentStatus: p.admission_status, isVacant: p.is_vacant,
+        };
+        if (dryRun) return json({ ok: true, dryRun: true, plan });
+
+        try {
+          await supa.rpc("archive_patient_bed_data", { p_patient_id: patientId } as any);
+        } catch (e) {
+          console.warn("[fix_transfer_release_orphan_bed] archive_patient_bed_data falhou (não bloqueante)", e);
+        }
+
+        const { error: clearErr } = await supa
+          .from("patients")
+          .update({
+            name: "", age: null, diagnoses: null, medical_history: null,
+            relevant_exams: null, pendencies: null, schedule: null,
+            admission_history: null, admission_date: null,
+            highlighted_diagnoses: null, highlighted_medical_history: null,
+            highlighted_pendencies: null, highlighted_conducts: null,
+            uti_admission_date: null, uti_discharge_prediction: null,
+            uti_allergies: null, uti_admission_reason: null,
+            uti_current_status: null, uti_devices: null,
+            uti_cultures_antibiotics: null, uti_specialties: null,
+            uti_origin_sector: null, uti_daily_conducts: null,
+            clinical_status: null, psm_status: null,
+            admission_status: null, patient_registry_id: null,
+            medical_record: null, is_vacant: true,
+            updated_at: new Date().toISOString(),
+          } as any)
+          .eq("id", patientId);
+        if (clearErr) return json({ error: clearErr.message }, 500);
+
+        try {
+          await supa.from("audit_logs").insert({
+            action: "DEV_FIX_TRANSFER",
+            table_name: "patients",
+            user_email: userData.user.email ?? null,
+            user_role: "dev",
+            record_id: patientId,
+            changed_fields: ["bed_cleared", "archived"],
+            new_values: { step: "release_orphan_bed", plan },
+          });
+        } catch (e) { console.warn("[fix_transfer_release_orphan_bed] audit failed", e); }
+
+        return json({ ok: true, executed: true, plan });
+      }
+
       default:
         return json({ error: `Unknown action: ${action}` }, 400);
     }
