@@ -341,6 +341,65 @@ export function PatientOpsTab() {
                     )}
                   </section>
 
+                  {/* Colocar paciente em leito (paciente perdido / sem leito) */}
+                  <section>
+                    <h4 className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                      <BedDouble className="h-3 w-3" /> Colocar paciente em leito
+                    </h4>
+                    <p className="text-[11px] text-muted-foreground mb-1.5">
+                      Use quando o paciente ficou "perdido" (ex.: leito de origem foi zerado após transferência com erro). Copia os dados clínicos desta linha para um leito VAGO escolhido e migra o histórico (evoluções, prescrições, exames) via <code className="font-mono">repoint_patient_history</code>. O leito atual é arquivado e limpo.
+                    </p>
+                    <div className="flex gap-1.5 mb-1.5">
+                      <Input
+                        placeholder="Filtrar leitos vagos (setor / número)…"
+                        value={vacantQuery}
+                        onChange={(e) => setVacantQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && loadVacantBeds()}
+                        className="h-7 text-[11px]"
+                      />
+                      <Button size="sm" variant="outline" className="h-7" onClick={() => loadVacantBeds()} disabled={loadingVacant}>
+                        {loadingVacant ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
+                      </Button>
+                    </div>
+                    {vacantBeds.length > 0 && (
+                      <div className="rounded-md border border-border max-h-[140px] overflow-auto mb-1.5 divide-y divide-border">
+                        {vacantBeds.map((b) => (
+                          <button
+                            key={b.id}
+                            onClick={() => setSelectedBedId(b.id)}
+                            className={`w-full text-left px-2 py-1 text-[11px] hover:bg-muted/40 flex items-center gap-2 ${selectedBedId === b.id ? "bg-emerald-50 dark:bg-emerald-950/30" : ""}`}
+                          >
+                            <span className="font-mono w-14">{b.bed_number ?? "—"}</span>
+                            <span className="text-muted-foreground truncate flex-1">{b.sector ?? "—"}</span>
+                            {selectedBedId === b.id && <Badge variant="outline" className="text-[9px] border-emerald-500 text-emerald-700">selecionado</Badge>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {vacantBeds.length === 0 && !loadingVacant && (
+                      <p className="text-[10px] text-muted-foreground italic mb-1.5">Clique na lupa para listar leitos vagos.</p>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="h-7 text-[11px] gap-1 bg-emerald-600 hover:bg-emerald-700"
+                      disabled={!inspection.patient || !inspection.patient.name || !selectedBedId}
+                      onClick={() => {
+                        const bed = vacantBeds.find((b) => b.id === selectedBedId);
+                        preview({
+                          kind: "place_in_bed",
+                          action: "fix_place_patient_in_bed",
+                          params: { sourcePatientId: inspection.patient.id, targetPatientId: selectedBedId },
+                          title: "Colocar paciente em leito",
+                          description: `Move ${inspection.patient.name} para ${bed?.sector ?? "—"} · Leito ${bed?.bed_number ?? "—"}. Preserva histórico clínico e libera a linha de origem.`,
+                          requiresReason: true,
+                        });
+                      }}
+                    >
+                      <BedDouble className="h-3.5 w-3.5" /> Colocar em leito selecionado
+                    </Button>
+                  </section>
+
                   {/* Ação órfã */}
                   <section>
                     <h4 className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">Leito órfão</h4>
