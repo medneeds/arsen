@@ -7,6 +7,10 @@ import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -208,6 +212,18 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
   const [draftHydrated, setDraftHydrated] = useState(false);
 
+  // ── D0 persistido no banco nesta sessão? ──────────────────────────────
+  // CRÍTICO (correção de segurança de prontuário): a impressão NÃO pode gerar
+  // um documento D0 oficial sem que a admissão exista no banco. Antes desta
+  // trava, o médico conseguia imprimir a partir do formulário em memória sem
+  // nunca clicar em "Assinar e Admitir" — gerando papel assinado sem registro
+  // digital (documento fantasma). `isSaved` só vira true após handleSubmit
+  // persistir clinical_evolutions + admission_histories com sucesso.
+  const [isSaved, setIsSaved] = useState(false);
+
+  // Confirmação ao tentar fechar com conteúdo preenchido e admissão não salva
+  const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
+
   const imc = useMemo(() => computeImc(weight, height), [weight, height]);
 
   const resetForm = () => {
@@ -218,12 +234,15 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     setAdmissionReason(""); setOriginSector(""); setDevices(""); setCulturesAtb(""); setSpecialties("");
     setNoPrediction(false);
     setPredictionDate(toIsoDate(daysFromToday(5))); setPredictionDays("5");
+    setIsSaved(false);
   };
 
   /* ───────── Rascunho automático (localStorage) ───────── */
   // Restaura ao abrir
   useEffect(() => {
     if (!open) return;
+    // Toda vez que o dialog abre, a admissão ainda não foi salva NESTA sessão.
+    setIsSaved(false);
     try {
       if (!draftKey) {
         resetForm();
@@ -290,12 +309,33 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     admissionReason, originSector, devices, culturesAtb, specialties,
   ]);
 
+  // Qualquer edição depois de salvo invalida o "isSaved" (o que está impresso
+  // deixaria de refletir o banco). Só o conteúdo clínico conta.
+  useEffect(() => {
+    if (isSaved) setIsSaved(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
+    physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
+    plan, cidPrimary, cidSecondary, diagnosticHypotheses,
+    noPrediction, predictionDate, predictionDays,
+    admissionReason, originSector, devices, culturesAtb, specialties,
+  ]);
+
   const discardDraft = () => {
     try { if (draftKey) localStorage.removeItem(draftKey); } catch {}
     setDraftSavedAt(null);
     resetForm();
     toast.success("Rascunho descartado");
   };
+
+  // Há conteúdo clínico preenchido? (usado para decidir se avisamos ao sair)
+  const hasAnyContent = [
+    hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
+    physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
+    plan, cidPrimary, cidSecondary, diagnosticHypotheses,
+    admissionReason, originSector, devices, culturesAtb, specialties,
+  ].some(v => typeof v === "string" && v.trim().length > 0);
 
   // Sincronização dias -> data
   const handleDaysChange = (v: string) => {
@@ -410,9 +450,33 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     };
   };
 
-  const handlePrint = async () => {
+  // Impressão isolada. Só é chamada quando a admissão JÁ está persistida
+  // (após handleSubmit), garantindo que o papel reflete um registro real.
+  const doPrint = async () => {
     const payload = await buildPrintPayload();
     void printAdmissionNormaZero(payload);
+  };
+
+  // Handler do botão "Imprimir". Bloqueia impressão de admissão não salva —
+  // impede documento D0 fantasma (papel assinado sem registro no banco).
+  const handlePrint = async () => {
+    if (!isSaved) {
+      setAttempted(true);
+      const err = validate();
+      if (err) {
+        toast.error(err, {
+          description: "Preencha os campos obrigatórios e assine a admissão antes de imprimir.",
+        });
+        return;
+      }
+      toast.error("Assine e admita antes de imprimir", {
+        description:
+          "A impressão só é liberada após clicar em “Assinar e Admitir (D0)”. " +
+          "Isso garante que o documento impresso corresponda a um registro salvo no sistema.",
+      });
+      return;
+    }
+    await doPrint();
   };
 
   const handleSubmit = async () => {
@@ -579,9 +643,25 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
       }
       await supabase.from("patients").update(baseUpdate as any).eq("id", patient.id);
 
-      toast.success("ADMISSÃO HOSPITALAR REGISTRADA — paciente ADMITIDO (D0)");
+      // Admissão persistida com sucesso — agora a impressão é segura.
+      setIsSaved(true);
       try { if (draftKey) localStorage.removeItem(draftKey); } catch {}
       setDraftSavedAt(null);
+
+      // Imprime automaticamente após salvar: o fluxo natural do médico é
+      // "assinar → imprimir", e agora o papel sempre reflete um registro real.
+      // Se a impressão falhar, a admissão já está salva — o médico pode
+      // reimprimir pela consulta da admissão (AdmissionConsultDialog).
+      try {
+        await doPrint();
+        toast.success("ADMISSÃO REGISTRADA (D0) — documento enviado para impressão");
+      } catch (printErr) {
+        console.error("Falha ao imprimir após salvar:", printErr);
+        toast.success("ADMISSÃO REGISTRADA (D0)", {
+          description: "A admissão foi salva. Reimprima pela consulta da admissão, se necessário.",
+        });
+      }
+
       onOpenChange(false);
       onSuccess?.();
     } catch (e: any) {
@@ -591,8 +671,20 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     }
   };
 
+  // Intercepta o fechamento do dialog. Se há conteúdo clínico preenchido e a
+  // admissão ainda NÃO foi salva no banco, pede confirmação — evita que o
+  // médico saia achando que admitiu quando só imprimiu/rascunhou.
+  const requestClose = (next: boolean) => {
+    if (!next && hasAnyContent && !isSaved) {
+      setConfirmCloseOpen(true);
+      return;
+    }
+    onOpenChange(next);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={requestClose}>
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0 gap-0">
         {/* Cabeçalho elegante — identidade unificada */}
         <DialogHeader className="px-6 pt-5 pb-4 border-b bg-gradient-to-r from-emerald-900/10 via-card to-card dark:from-emerald-900/20 space-y-3">
@@ -639,6 +731,13 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
               <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-1 text-[11px] text-rose-700">
                 <AlertTriangle className="h-3 w-3" />
                 Faltam: <strong>{missingList.join(" • ")}</strong>
+              </span>
+            )}
+            {/* Aviso persistente: enquanto não assinar, a admissão NÃO existe no sistema */}
+            {!isSaved && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-300 px-2.5 py-1 text-[11px] text-amber-800">
+                <AlertTriangle className="h-3 w-3" />
+                Admissão <strong>ainda não registrada</strong> — clique em “Assinar e Admitir (D0)” para salvar e liberar a impressão
               </span>
             )}
           </div>
@@ -838,11 +937,19 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         </div>
 
         <DialogFooter className="px-6 py-4 border-t bg-muted/60 gap-2 sm:justify-between">
-          <Button variant="outline" onClick={handlePrint} disabled={submitting} className="gap-2">
+          <Button
+            variant="outline"
+            onClick={handlePrint}
+            disabled={submitting || !isSaved}
+            className="gap-2"
+            title={isSaved
+              ? "Imprimir o documento de admissão (Norma Zero)"
+              : "Disponível após assinar e admitir (D0). A impressão só é liberada quando a admissão estiver salva no sistema."}
+          >
             <Printer className="h-4 w-4" /> Imprimir Admissão (Norma Zero)
           </Button>
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>Cancelar</Button>
+            <Button variant="ghost" onClick={() => requestClose(false)} disabled={submitting}>Cancelar</Button>
             <Button
               variant="outline"
               onClick={handleSaveDraft}
@@ -865,5 +972,36 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
 
       </DialogContent>
     </Dialog>
+
+    {/* Confirmação ao sair com admissão preenchida mas NÃO salva no banco */}
+    <AlertDialog open={confirmCloseOpen} onOpenChange={setConfirmCloseOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2 text-amber-800">
+            <AlertTriangle className="h-5 w-5 text-amber-600" /> Admissão não registrada
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-sm space-y-2">
+            <span className="block">
+              Você preencheu a admissão mas <strong>ainda não a assinou</strong>. Se sair agora, ela
+              <strong> não ficará registrada no sistema</strong> — nenhum documento D0 será gerado no prontuário.
+            </span>
+            <span className="block text-xs text-muted-foreground">
+              O conteúdo permanece salvo como <strong>rascunho local</strong> neste navegador e pode ser retomado depois.
+              Para registrar a admissão de fato, volte e clique em “Assinar e Admitir (D0)”.
+            </span>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Voltar e assinar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => { setConfirmCloseOpen(false); onOpenChange(false); }}
+            className="bg-amber-600 hover:bg-amber-700 text-white"
+          >
+            Sair sem registrar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
