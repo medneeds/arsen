@@ -66,6 +66,7 @@ export function PatientOpsTab() {
   const [pending, setPending] = useState<PendingAction | null>(null);
   const [executing, setExecuting] = useState(false);
   const [reason, setReason] = useState("");
+  const [password, setPassword] = useState("");
   const [vacantQuery, setVacantQuery] = useState("");
   const [vacantBeds, setVacantBeds] = useState<VacantBed[]>([]);
   const [loadingVacant, setLoadingVacant] = useState(false);
