@@ -696,7 +696,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   return (
     <>
     <Dialog open={open} onOpenChange={requestClose}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-3xl max-h-[92vh] overflow-y-auto overflow-x-hidden p-0 gap-0">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[55rem] max-h-[92vh] overflow-y-auto overflow-x-hidden p-0 gap-0">
         {/* Cabeçalho elegante — identidade unificada */}
         <DialogHeader className="px-6 pt-5 pb-4 border-b bg-gradient-to-r from-emerald-900/10 via-card to-card dark:from-emerald-900/20 space-y-3">
           <DialogTitle className="flex items-center gap-2 uppercase text-foreground">
@@ -754,7 +754,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
           </div>
         </DialogHeader>
 
-        <div className="px-4 sm:px-6 py-5 min-w-0">
+        <div className="px-4 sm:px-6 py-5 min-w-0 overflow-x-hidden">
           <div className="w-full min-w-0 space-y-6">
 
             {/* ───── Anamnese ───── */}
@@ -945,7 +945,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
           </div>
         </div>
 
-        <DialogFooter className="px-4 sm:px-6 py-4 border-t bg-muted/60 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <DialogFooter className="px-4 sm:px-6 py-4 border-t bg-muted/60 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <Button
             variant="outline"
             onClick={handlePrint}
@@ -957,7 +957,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
           >
             <Printer className="h-4 w-4" /> Imprimir Admissão (Norma Zero)
           </Button>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full sm:w-auto sm:justify-end">
             <Button variant="ghost" onClick={() => requestClose(false)} disabled={submitting} className="w-full sm:w-auto order-last sm:order-none">Cancelar</Button>
             <Button
               variant="outline"
