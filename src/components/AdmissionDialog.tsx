@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CidSearchInput } from "@/components/CidSearchInput";
@@ -126,6 +125,18 @@ const formatBr = (iso: string) => {
   const [y, m, d] = iso.split("-");
   return `${d}/${m}/${y}`;
 };
+
+/* ───────── Group header (divisor de seção empilhada) ───────── */
+
+const GroupHeader = ({ step, title }: { step: number; title: string }) => (
+  <div className="flex items-center gap-3 pt-2 first:pt-0">
+    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white text-xs font-bold">
+      {step}
+    </span>
+    <h3 className="text-sm font-bold uppercase tracking-wide text-foreground whitespace-nowrap">{title}</h3>
+    <div className="h-px flex-1 bg-gradient-to-r from-emerald-500/40 to-transparent" />
+  </div>
+);
 
 /* ───────── Section card ───────── */
 
@@ -685,7 +696,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   return (
     <>
     <Dialog open={open} onOpenChange={requestClose}>
-      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0 gap-0">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-3xl max-h-[92vh] overflow-y-auto overflow-x-hidden p-0 gap-0">
         {/* Cabeçalho elegante — identidade unificada */}
         <DialogHeader className="px-6 pt-5 pb-4 border-b bg-gradient-to-r from-emerald-900/10 via-card to-card dark:from-emerald-900/20 space-y-3">
           <DialogTitle className="flex items-center gap-2 uppercase text-foreground">
@@ -743,26 +754,19 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
           </div>
         </DialogHeader>
 
-        <div className="px-6 py-5">
-          <Tabs defaultValue="anamnese" className="w-full">
-            <TabsList className="grid grid-cols-4 w-full bg-muted">
-              <TabsTrigger value="anamnese">Anamnese</TabsTrigger>
-              <TabsTrigger value="exame">Exame Físico</TabsTrigger>
-              <TabsTrigger value="plano">Plano / CID</TabsTrigger>
-              {isUti
-                ? <TabsTrigger value="uti">UTI</TabsTrigger>
-                : <TabsTrigger value="extras" disabled>—</TabsTrigger>}
-            </TabsList>
+        <div className="px-4 sm:px-6 py-5 min-w-0">
+          <div className="w-full min-w-0 space-y-6">
 
             {/* ───── Anamnese ───── */}
-            <TabsContent value="anamnese" className="space-y-4 mt-4">
+            <GroupHeader step={1} title="Anamnese" />
+            <div className="space-y-4">
               <Section icon={FileText} title="História clínica" tone="slate">
                 <div>
                   <ReqLabel missing={attempted && missing.hda}>HDA — História da Doença Atual</ReqLabel>
                   <Textarea value={hda} onChange={e => setHda(e.target.value)} rows={4}
                     placeholder="Paciente admitido com..." className={cn("mt-1", reqRing(attempted && missing.hda))} />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs">AMP — Antecedentes</Label>
                     <Textarea value={amp} onChange={e => setAmp(e.target.value)} rows={2} className="mt-1" />
@@ -780,7 +784,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
               </Section>
 
               <Section icon={Activity} title="Antropometria" hint="IMC calculado automaticamente" tone="blue">
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <Label className="text-xs">Peso (kg)</Label>
                     <Input value={weight} onChange={e => setWeight(e.target.value)} placeholder="Ex.: 72" className="mt-1" inputMode="decimal" />
@@ -809,7 +813,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
               </Section>
 
               <Section icon={HeartPulse} title="Sinais vitais admissionais" tone="emerald">
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <Input placeholder="PA mmHg" value={pa} onChange={e => setPa(e.target.value)} />
                   <Input placeholder="FC bpm" value={fc} onChange={e => setFc(e.target.value)} />
                   <Input placeholder="FR irpm" value={fr} onChange={e => setFr(e.target.value)} />
@@ -818,27 +822,29 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                   <Input placeholder="Dx mg/dL" value={dx} onChange={e => setDx(e.target.value)} />
                 </div>
               </Section>
-            </TabsContent>
+            </div>
 
             {/* ───── Exame Físico ───── */}
-            <TabsContent value="exame" className="space-y-4 mt-4">
+            <GroupHeader step={2} title="Exame Físico" />
+            <div className="space-y-4">
               <Section icon={Stethoscope} title="Exame físico segmentar" tone="slate">
                 <div>
                   <ReqLabel missing={attempted && missing.examGeneral}>Estado geral</ReqLabel>
                   <Textarea value={physGeneral} onChange={e => setPhysGeneral(e.target.value)} rows={2} className={cn("mt-1", reqRing(attempted && missing.examGeneral))} />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div><Label className="text-xs">Cardiovascular</Label><Textarea value={physCv} onChange={e => setPhysCv(e.target.value)} rows={2} className="mt-1" /></div>
                   <div><Label className="text-xs">Respiratório</Label><Textarea value={physResp} onChange={e => setPhysResp(e.target.value)} rows={2} className="mt-1" /></div>
                   <div><Label className="text-xs">Abdome</Label><Textarea value={physAbd} onChange={e => setPhysAbd(e.target.value)} rows={2} className="mt-1" /></div>
                   <div><Label className="text-xs">Extremidades</Label><Textarea value={physExt} onChange={e => setPhysExt(e.target.value)} rows={2} className="mt-1" /></div>
-                  <div className="col-span-2"><Label className="text-xs">Neurológico</Label><Textarea value={physNeuro} onChange={e => setPhysNeuro(e.target.value)} rows={2} className="mt-1" placeholder="Glasgow, pupilas, força, sensibilidade, reflexos, sinais focais..." /></div>
+                  <div className="sm:col-span-2"><Label className="text-xs">Neurológico</Label><Textarea value={physNeuro} onChange={e => setPhysNeuro(e.target.value)} rows={2} className="mt-1" placeholder="Glasgow, pupilas, força, sensibilidade, reflexos, sinais focais..." /></div>
                 </div>
               </Section>
-            </TabsContent>
+            </div>
 
             {/* ───── Plano / CID ───── */}
-            <TabsContent value="plano" className="space-y-4 mt-4">
+            <GroupHeader step={3} title="Plano / CID" />
+            <div className="space-y-4">
               <Section icon={Pill} title="Plano terapêutico" tone="slate">
                 <ReqLabel missing={attempted && missing.plan}>Conduta inicial</ReqLabel>
                 <Textarea value={plan} onChange={e => setPlan(e.target.value)} rows={5}
@@ -847,7 +853,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
               </Section>
 
               <Section icon={FileText} title="Diagnóstico (CID-10)" hint="Busca por código ou descrição" tone="blue">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <ReqLabel missing={attempted && missing.cidPrimary}>CID primário</ReqLabel>
                     <CidSearchInput value={cidPrimary} onChange={setCidPrimary}
@@ -875,7 +881,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
               </Section>
 
               <Section icon={CalendarDays} title="Previsão de alta" hint="Dias e data sincronizados" tone="amber">
-                <div className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
                   <div>
                     <Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" /> Dias de internação previstos</Label>
                     <Input
@@ -903,11 +909,13 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                   Resultado: <strong className="text-foreground">{dischargePredictionLabel}</strong>
                 </p>
               </Section>
-            </TabsContent>
+            </div>
 
             {/* ───── UTI ───── */}
             {isUti && (
-              <TabsContent value="uti" className="space-y-4 mt-4">
+              <>
+              <GroupHeader step={4} title="UTI / UCI" />
+              <div className="space-y-4">
                 <Section icon={AlertTriangle} title="Dados específicos da UTI" tone="amber">
                   <div><Label className="text-xs">Motivo de internação UTI</Label><Textarea value={admissionReason} onChange={e => setAdmissionReason(e.target.value)} rows={2} className="mt-1" /></div>
                   <div><Label className="text-xs">Origem (setor anterior)</Label><Input value={originSector} onChange={e => setOriginSector(e.target.value)} className="mt-1" /></div>
@@ -931,30 +939,31 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                     </span>
                   </label>
                 </Section>
-              </TabsContent>
+              </div>
+              </>
             )}
-          </Tabs>
+          </div>
         </div>
 
-        <DialogFooter className="px-6 py-4 border-t bg-muted/60 gap-2 sm:justify-between">
+        <DialogFooter className="px-4 sm:px-6 py-4 border-t bg-muted/60 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <Button
             variant="outline"
             onClick={handlePrint}
             disabled={submitting || !isSaved}
-            className="gap-2"
+            className="w-full sm:w-auto gap-2"
             title={isSaved
               ? "Imprimir o documento de admissão (Norma Zero)"
               : "Disponível após assinar e admitir (D0). A impressão só é liberada quando a admissão estiver salva no sistema."}
           >
             <Printer className="h-4 w-4" /> Imprimir Admissão (Norma Zero)
           </Button>
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => requestClose(false)} disabled={submitting}>Cancelar</Button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button variant="ghost" onClick={() => requestClose(false)} disabled={submitting} className="w-full sm:w-auto order-last sm:order-none">Cancelar</Button>
             <Button
               variant="outline"
               onClick={handleSaveDraft}
               disabled={submitting}
-              className="gap-2 border-amber-400 text-amber-700 hover:bg-amber-50 uppercase"
+              className="w-full sm:w-auto gap-2 border-amber-400 text-amber-700 hover:bg-amber-50 uppercase"
               title="Salva o rascunho e libera os módulos clínicos (evolução, prescrição, requisições, docs e histórico) para preenchimento posterior."
             >
               Salvar Rascunho
@@ -962,7 +971,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
             <Button
               onClick={handleSubmit}
               disabled={submitting || !canValidate}
-              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white uppercase"
+              className="w-full sm:w-auto gap-2 bg-emerald-600 hover:bg-emerald-700 text-white uppercase"
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardCheck className="h-4 w-4" />}
               Assinar e Admitir (D0)
