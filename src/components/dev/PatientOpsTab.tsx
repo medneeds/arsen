@@ -111,19 +111,52 @@ export function PatientOpsTab() {
     }
   };
 
+  const requiresPassword = pending?.kind === "place_in_bed";
+
   const execute = async () => {
     if (!pending) return;
     if (pending.requiresReason && reason.trim().length < 10) {
       toast.error("Motivo obrigatório (mínimo 10 caracteres)");
       return;
     }
+    if (requiresPassword && !password) {
+      toast.error("Confirme sua senha para realocar o paciente");
+      return;
+    }
     setExecuting(true);
     try {
-      const extra = pending.requiresReason ? { reason: reason.trim() } : {};
+      if (requiresPassword) {
+        const { data: verify, error: verifyErr } = await supabase.functions.invoke("verify-user-password", {
+          body: { password },
+        });
+        if (verifyErr) throw new Error(verifyErr.message);
+        if (!verify?.ok) {
+          toast.error(verify?.error === "invalid_password" ? "Senha incorreta" : "Não foi possível validar a senha");
+          setExecuting(false);
+          return;
+        }
+        // Grava log dedicado da confirmação por senha (independente do log da própria ação)
+        const { data: u } = await supabase.auth.getUser();
+        await supabase.from("audit_logs").insert({
+          user_id: u?.user?.id ?? null,
+          action: "DEV_REALLOCATE_PASSWORD_VERIFIED",
+          resource_type: "patient",
+          resource_id: (pending.params as any)?.sourcePatientId ?? null,
+          details: {
+            targetPatientId: (pending.params as any)?.targetPatientId ?? null,
+            reason: reason.trim(),
+            verifiedAt: new Date().toISOString(),
+          },
+        });
+      }
+      const extra: Record<string, unknown> = {};
+      if (pending.requiresReason) extra.reason = reason.trim();
+      if (requiresPassword) extra.password_verified = true;
       await callOps(pending.action, { ...pending.params, ...extra, dryRun: false }, true);
       toast.success("Ação executada com sucesso");
       setPending(null);
       setReason("");
+      setPassword("");
       setSelectedBedId("");
       if (selected) inspect(selected);
       search();
