@@ -135,19 +135,8 @@ export function PatientOpsTab() {
           setExecuting(false);
           return;
         }
-        // Grava log dedicado da confirmação por senha (independente do log da própria ação)
-        const { data: u } = await supabase.auth.getUser();
-        await supabase.from("audit_logs").insert({
-          user_id: u?.user?.id ?? null,
-          action: "DEV_REALLOCATE_PASSWORD_VERIFIED",
-          resource_type: "patient",
-          resource_id: (pending.params as any)?.sourcePatientId ?? null,
-          details: {
-            targetPatientId: (pending.params as any)?.targetPatientId ?? null,
-            reason: reason.trim(),
-            verifiedAt: new Date().toISOString(),
-          },
-        });
+        // Log dedicado da confirmação por senha vai junto no payload da ação
+        // (dev-console-ops grava audit_logs incluindo password_verified nos details).
       }
       const extra: Record<string, unknown> = {};
       if (pending.requiresReason) extra.reason = reason.trim();
