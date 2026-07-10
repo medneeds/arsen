@@ -66,6 +66,7 @@ export function PatientOpsTab() {
   const [pending, setPending] = useState<PendingAction | null>(null);
   const [executing, setExecuting] = useState(false);
   const [reason, setReason] = useState("");
+  const [password, setPassword] = useState("");
   const [vacantQuery, setVacantQuery] = useState("");
   const [vacantBeds, setVacantBeds] = useState<VacantBed[]>([]);
   const [loadingVacant, setLoadingVacant] = useState(false);
@@ -110,19 +111,41 @@ export function PatientOpsTab() {
     }
   };
 
+  const requiresPassword = pending?.kind === "place_in_bed";
+
   const execute = async () => {
     if (!pending) return;
     if (pending.requiresReason && reason.trim().length < 10) {
       toast.error("Motivo obrigatório (mínimo 10 caracteres)");
       return;
     }
+    if (requiresPassword && !password) {
+      toast.error("Confirme sua senha para realocar o paciente");
+      return;
+    }
     setExecuting(true);
     try {
-      const extra = pending.requiresReason ? { reason: reason.trim() } : {};
+      if (requiresPassword) {
+        const { data: verify, error: verifyErr } = await supabase.functions.invoke("verify-user-password", {
+          body: { password },
+        });
+        if (verifyErr) throw new Error(verifyErr.message);
+        if (!verify?.ok) {
+          toast.error(verify?.error === "invalid_password" ? "Senha incorreta" : "Não foi possível validar a senha");
+          setExecuting(false);
+          return;
+        }
+        // Log dedicado da confirmação por senha vai junto no payload da ação
+        // (dev-console-ops grava audit_logs incluindo password_verified nos details).
+      }
+      const extra: Record<string, unknown> = {};
+      if (pending.requiresReason) extra.reason = reason.trim();
+      if (requiresPassword) extra.password_verified = true;
       await callOps(pending.action, { ...pending.params, ...extra, dryRun: false }, true);
       toast.success("Ação executada com sucesso");
       setPending(null);
       setReason("");
+      setPassword("");
       setSelectedBedId("");
       if (selected) inspect(selected);
       search();
@@ -451,7 +474,7 @@ export function PatientOpsTab() {
       </div>
 
       {/* CONFIRMAÇÃO */}
-      <AlertDialog open={!!pending} onOpenChange={(o) => !o && !executing && setPending(null)}>
+      <AlertDialog open={!!pending} onOpenChange={(o) => { if (!o && !executing) { setPending(null); setPassword(""); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
@@ -473,6 +496,22 @@ export function PatientOpsTab() {
                       className="text-[11px] min-h-[70px]"
                     />
                     <p className="text-[10px] text-muted-foreground mt-0.5">{reason.trim().length}/10</p>
+                  </div>
+                )}
+                {requiresPassword && (
+                  <div>
+                    <label className="text-[11px] font-medium block mb-1">Confirme sua senha para realocar *</label>
+                    <Input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Sua senha de acesso"
+                      className="h-8 text-[11px]"
+                      autoComplete="current-password"
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      A senha é validada no servidor (não é armazenada) e o evento fica registrado em <code className="font-mono">audit_logs</code>.
+                    </p>
                   </div>
                 )}
                 <p className="text-[11px] text-amber-700 dark:text-amber-400">
