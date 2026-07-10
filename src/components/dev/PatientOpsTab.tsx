@@ -498,6 +498,22 @@ export function PatientOpsTab() {
                     <p className="text-[10px] text-muted-foreground mt-0.5">{reason.trim().length}/10</p>
                   </div>
                 )}
+                {requiresPassword && (
+                  <div>
+                    <label className="text-[11px] font-medium block mb-1">Confirme sua senha para realocar *</label>
+                    <Input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Sua senha de acesso"
+                      className="h-8 text-[11px]"
+                      autoComplete="current-password"
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      A senha é validada no servidor (não é armazenada) e o evento fica registrado em <code className="font-mono">audit_logs</code>.
+                    </p>
+                  </div>
+                )}
                 <p className="text-[11px] text-amber-700 dark:text-amber-400">
                   A execução é auditada em <code className="font-mono">audit_logs</code> (action <code className="font-mono">DEV_FIX_TRANSFER</code>).
                 </p>
