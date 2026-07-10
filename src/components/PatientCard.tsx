@@ -3436,17 +3436,27 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                                 ? 'Sem sinalização — abre orientação para sinalizar no Painel'
                                 : 'Desalocar leito — mantém o prontuário intacto';
                           const tone = isSignaled ? 'emerald' : 'amber';
+                          const isDisabled = !isSignaled && !isPostOutcome;
                           return (
                             <DropdownMenuItem
+                              disabled={isDisabled}
+                              onSelect={(e) => {
+                                if (isDisabled) { e.preventDefault(); return; }
+                              }}
                               onClick={(e) => {
                                 e.stopPropagation();
+                                if (isDisabled) return;
                                 setIsReleasePreAdmissionOpen(true);
                               }}
+                              title={isDisabled ? 'Sinalize a movimentação no Painel Clínico antes de desalocar o leito.' : undefined}
                               className={cn(
-                                "group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm",
-                                tone === 'emerald'
+                                "group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium border border-transparent transition-all duration-200",
+                                isDisabled
+                                  ? "cursor-not-allowed opacity-50"
+                                  : "cursor-pointer hover:translate-x-0.5 hover:shadow-sm",
+                                !isDisabled && (tone === 'emerald'
                                   ? "hover:border-emerald-300/60 dark:hover:border-emerald-700/60 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-transparent dark:hover:from-emerald-950/40 focus:bg-emerald-50 dark:focus:bg-emerald-950/40"
-                                  : "hover:border-amber-300/60 dark:hover:border-amber-700/60 hover:bg-gradient-to-r hover:from-amber-50 hover:to-transparent dark:hover:from-amber-950/40 focus:bg-amber-50 dark:focus:bg-amber-950/40"
+                                  : "hover:border-amber-300/60 dark:hover:border-amber-700/60 hover:bg-gradient-to-r hover:from-amber-50 hover:to-transparent dark:hover:from-amber-950/40 focus:bg-amber-50 dark:focus:bg-amber-950/40")
                               )}
                             >
                               <div className={cn(
