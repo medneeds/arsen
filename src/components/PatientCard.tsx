@@ -3433,8 +3433,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             : isSignaled
                               ? 'Conclui a sinalização feita no Painel Clínico'
                               : patient.admissionStatus === 'admitido'
-                                ? 'Sem sinalização — abre orientação para sinalizar no Painel'
-                                : 'Desalocar leito — mantém o prontuário intacto';
+                                ? 'Bloqueado — sinalize a movimentação no Painel Clínico'
+                                : 'Bloqueado — sinalize a movimentação no Painel Clínico';
                           const tone = isSignaled ? 'emerald' : 'amber';
                           const isDisabled = !isSignaled && !isPostOutcome;
                           return (
