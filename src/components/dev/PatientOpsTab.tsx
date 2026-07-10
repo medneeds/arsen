@@ -474,7 +474,7 @@ export function PatientOpsTab() {
       </div>
 
       {/* CONFIRMAÇÃO */}
-      <AlertDialog open={!!pending} onOpenChange={(o) => !o && !executing && setPending(null)}>
+      <AlertDialog open={!!pending} onOpenChange={(o) => { if (!o && !executing) { setPending(null); setPassword(""); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
