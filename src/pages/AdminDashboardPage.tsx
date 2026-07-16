@@ -45,13 +45,11 @@ import {
   Send,
   Clock,
   UserX,
-  FileUp,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MedicalRecordsList } from "@/components/MedicalRecordsList";
 import { ReceptionDailyDashboard } from "@/components/reception/ReceptionDailyDashboard";
 import { DuplicatePatientWarning } from "@/components/reception/DuplicatePatientWarning";
-import { PisImportDialog } from "@/components/PisImportDialog";
 import { ReceptionGlobalSearch } from "@/components/reception/ReceptionGlobalSearch";
 import { TriageExpressDialog, type TriageExpressPayload } from "@/components/reception/TriageExpressDialog";
 import { useReceptionPost } from "@/hooks/useReceptionPost";
@@ -203,26 +201,10 @@ const AdminDashboardPage = () => {
     ni_arrival_circumstance: "",
   });
   const [isRegistering, setIsRegistering] = useState(false);
-  const [pisDialogOpen, setPisDialogOpen] = useState(false);
   // Alta confiança de duplicata: nome + data de nascimento coincidem com registro existente.
   // Bloqueia o cadastro até o usuário decidir explicitamente (usar existente ou confirmar diferente).
   const [isHighConfidenceDuplicate, setIsHighConfidenceDuplicate] = useState(false);
 
-  const applyPisData = (data: any) => {
-    setRegisterForm(prev => ({
-      ...prev,
-      full_name: (data.patient_name || prev.full_name).toUpperCase(),
-      mother_name: (data.mother_name || prev.mother_name).toUpperCase(),
-      birth_date: data.birth_date || prev.birth_date,
-      sex: data.sex || prev.sex,
-      cpf: data.cpf || prev.cpf,
-      cns: data.cns || prev.cns,
-      phone: data.phone || prev.phone,
-      address: (data.address || prev.address).toUpperCase(),
-      neighborhood: (data.neighborhood || prev.neighborhood).toUpperCase(),
-      city: (data.city || prev.city).toUpperCase(),
-    }));
-  };
   const toggleUnidentified = (checked: boolean) => {
     setRegisterForm(prev => ({
       ...prev,
@@ -1092,25 +1074,6 @@ const AdminDashboardPage = () => {
               Cadastre um novo paciente no sistema. O número do prontuário será gerado automaticamente.
             </DialogDescription>
           </DialogHeader>
-
-          {/* Botão discreto: importar do sistema legado PIS via IA (PDF/imagem ou texto colado) */}
-          {!registerForm.is_unidentified && (
-            <div className="flex items-center justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setPisDialogOpen(true)}
-                className="h-7 px-2.5 text-[11px] gap-1.5 border-dashed text-muted-foreground hover:text-foreground"
-                title="Importar dados do sistema PIS — anexe PDF/imagem ou cole o texto"
-              >
-                <FileUp className="h-3 w-3" />
-                Importar do PIS
-              </Button>
-            </div>
-          )}
-
-          <PisImportDialog open={pisDialogOpen} onOpenChange={setPisDialogOpen} onExtracted={applyPisData} />
 
           {/* Detecção de duplicatas em tempo real (só quando NÃO é NI) */}
           {!registerForm.is_unidentified && (
