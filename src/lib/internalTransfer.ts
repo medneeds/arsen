@@ -260,7 +260,7 @@ export async function signalInternalTransfer(
     // no leito destino mesmo após o clear feito aqui.
     const { data: sourceDbRowSignal } = await supabase
       .from("patients")
-      .select("patient_registry_id, medical_record, admitted_at")
+      .select("*")
       .eq("id", source.id)
       .maybeSingle();
 
@@ -307,6 +307,12 @@ export async function signalInternalTransfer(
       // Preserva admission_history do setor de origem para o histórico
       // (visível em HistoricoPacientePage e no painel do paciente)
       _admissionHistory: (source as any).admissionHistory ?? null,
+      // Auditoria de preservação (16/07/2026): linha COMPLETA do banco no
+      // momento da sinalização — a etapa 2 restaura no destino os campos que
+      // o objeto Patient do front não mapeia (is_palliative,
+      // isolation_precautions, uti_weight_kg, internment_*, etc.), já que o
+      // leito de origem é zerado logo em seguida.
+      _dbRow: sourceDbRowSignal ?? null,
     };
     // Idempotência: verifica se já existe um request pendente para este paciente.
     // Cenário: sinalização anterior criou o request mas falhou ao zerar o leito.
@@ -587,6 +593,21 @@ export async function completeInternalTransfer(
       admitted_at:              needsNewAdmission ? null : sourceAdmittedAt,
       patient_registry_id:      sourceRegistryId,
       medical_record:           sourceMedicalRecord,
+      // Auditoria de preservação (16/07/2026): campos restaurados a partir da
+      // linha completa do banco capturada na etapa 1 (_dbRow), com fallback
+      // para os campos mapeados do objeto Patient quando existirem.
+      medical_responsibility:   (snapshot as any)._dbRow?.medical_responsibility
+                                  ?? (snapshot as any).medicalResponsibility ?? null,
+      internment_status:        (snapshot as any)._dbRow?.internment_status
+                                  ?? (snapshot as any).internmentStatus ?? null,
+      internment_notes:         (snapshot as any)._dbRow?.internment_notes
+                                  ?? (snapshot as any).internmentNotes ?? null,
+      uti_weight_kg:            (snapshot as any)._dbRow?.uti_weight_kg ?? null,
+      is_palliative:            (snapshot as any)._dbRow?.is_palliative ?? false,
+      isolation_precautions:    (snapshot as any)._dbRow?.isolation_precautions ?? null,
+      hospital_discharge_prediction: (snapshot as any)._dbRow?.hospital_discharge_prediction ?? null,
+      is_door_patient:          (snapshot as any)._dbRow?.is_door_patient
+                                  ?? (snapshot as any).isDoorPatient ?? false,
     };
 
     // Tenta RPC atômica: UPDATE dest + repoint + UPDATE request status — em uma transação.
@@ -660,6 +681,19 @@ export async function completeInternalTransfer(
         admitted_at: needsNewAdmission ? null : sourceAdmittedAt,
         patient_registry_id: sourceRegistryId,
         medical_record: sourceMedicalRecord,
+        // Auditoria de preservação (16/07/2026): mesmos campos da RPC atômica
+        medical_responsibility: (snapshot as any)._dbRow?.medical_responsibility
+          ?? (snapshot as any).medicalResponsibility ?? null,
+        internment_status: (snapshot as any)._dbRow?.internment_status
+          ?? (snapshot as any).internmentStatus ?? null,
+        internment_notes: (snapshot as any)._dbRow?.internment_notes
+          ?? (snapshot as any).internmentNotes ?? null,
+        uti_weight_kg: (snapshot as any)._dbRow?.uti_weight_kg ?? null,
+        is_palliative: (snapshot as any)._dbRow?.is_palliative ?? false,
+        isolation_precautions: (snapshot as any)._dbRow?.isolation_precautions ?? null,
+        hospital_discharge_prediction: (snapshot as any)._dbRow?.hospital_discharge_prediction ?? null,
+        is_door_patient: (snapshot as any)._dbRow?.is_door_patient
+          ?? (snapshot as any).isDoorPatient ?? false,
         is_vacant: false,
         updated_at: new Date().toISOString(),
       } as any)

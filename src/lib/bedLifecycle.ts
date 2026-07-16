@@ -286,6 +286,11 @@ export async function executeOperationalRelocation(
       highlighted_pendencies: (source as any).highlighted_pendencies ?? null,
       highlighted_conducts: (source as any).highlighted_conducts ?? null,
       medical_responsibility: (source as any).medical_responsibility ?? null,
+      // Auditoria de preservação (16/07/2026): campos que não eram copiados
+      is_palliative: (source as any).is_palliative ?? false,
+      isolation_precautions: (source as any).isolation_precautions ?? null,
+      hospital_discharge_prediction: (source as any).hospital_discharge_prediction ?? null,
+      is_door_patient: (source as any).is_door_patient ?? false,
       uti_admission_date: (source as any).uti_admission_date ?? null,
       uti_discharge_prediction: (source as any).uti_discharge_prediction ?? null,
       uti_allergies: (source as any).uti_allergies ?? null,
