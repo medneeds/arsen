@@ -11,8 +11,16 @@
 -- full_name_normalized em patient_registry, e portanto TODO insert de
 -- paciente (NI ou não) passa a falhar com esse erro.
 --
--- Corrige movendo a extensão para o schema "extensions" quando necessário,
--- sem alterar o código da função (idempotente / seguro rodar mais de uma vez).
+-- Diagnóstico em produção mostrou que a extensão unaccent nunca foi
+-- efetivamente criada (pg_extension sem nenhuma linha para 'unaccent'),
+-- apesar do CREATE EXTENSION IF NOT EXISTS na migration original — logo não
+-- há o que mover de schema, é preciso criá-la de fato.
+--
+-- Idempotente: se já existir em qualquer schema, o IF NOT EXISTS não faz nada;
+-- se existir fora de 'extensions', move para lá.
+
+CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;
 
 DO $$
 BEGIN
