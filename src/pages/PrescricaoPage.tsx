@@ -3297,6 +3297,9 @@ function ExtraPrescriptionDialog({
           infusionRate: i.infusionRate,
           volumeTotal: i.volumeTotal,
           concentration: i.concentration,
+          ivBolus: i.ivBolus,
+          reconstitutionSolvent: i.reconstitutionSolvent,
+          reconstitutionVolume: i.reconstitutionVolume,
           // Inalação
           inhalationMode: i.inhalationMode,
           nebDose: i.nebDose,

@@ -38,6 +38,8 @@ export interface ExtraPrintItem {
   infusionMode?: 'BIC' | 'gts';
   infusionRate?: string;
   volumeTotal?: string;
+  reconstitutionSolvent?: string;
+  reconstitutionVolume?: string;
   concentration?: string;
   // Inalação
   inhalationMode?: string;
@@ -167,6 +169,13 @@ function buildLine2(it: ExtraPrintItem): string {
   // Medicação / Hidratação / ATB / High Alert — campos explícitos, SEM frases automáticas
   // NOVA ORDEM (raciocínio do médico): DOSE · Dil. · Vol. · Via · Acesso · Intervalo · Modo · Tempo · Vazão
   const parts: string[] = [];
+
+  // 0. Reconstituição (liofilizados) — antes da dose, espelhando a prévia da
+  // tela. Sem isto, "Reconstituir: AD 10 mL →" aparecia na prévia e sumia no papel.
+  if (it.reconstitutionSolvent && it.reconstitutionVolume) {
+    const solvent = it.reconstitutionSolvent.replace(/\bABD\b/gi, 'AD');
+    parts.push(`Reconstituir: ${escape(solvent)} ${escape(it.reconstitutionVolume)} mL →`);
+  }
 
   // 1. Dose — mesma lógica da pré-visualização na tela (buildSolutoToken):
   // combina quantity+quantityUnit+dose. Antes usava só `it.dose` cru, e itens
