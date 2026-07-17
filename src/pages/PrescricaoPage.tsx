@@ -1498,8 +1498,16 @@ function NutritionFields({
               <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <NutFieldLabel>Quantidade:</NutFieldLabel>
+              <NutFieldLabel>Vol/dia:</NutFieldLabel>
               <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="1500" />
+              {scheduleMode === 'steps' && (() => {
+                const vd = parseFloat((item.nutVolDay || '').replace(',', '.'));
+                const st = parseInt(item.nutSteps || '', 10);
+                if (!isNaN(vd) && vd > 0 && st > 0) {
+                  return <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 whitespace-nowrap">≈ {Math.round(vd / st)} mL/etapa</span>;
+                }
+                return null;
+              })()}
               {ScheduleSwitch}
               {RateSwitch}
             </div>
@@ -1522,8 +1530,16 @@ function NutritionFields({
               <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <NutFieldLabel>Volume:</NutFieldLabel>
+              <NutFieldLabel>Vol/dia:</NutFieldLabel>
               <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="2000" />
+              {scheduleMode === 'steps' && (() => {
+                const vd = parseFloat((item.nutVolDay || '').replace(',', '.'));
+                const st = parseInt(item.nutSteps || '', 10);
+                if (!isNaN(vd) && vd > 0 && st > 0) {
+                  return <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 whitespace-nowrap">≈ {Math.round(vd / st)} mL/etapa</span>;
+                }
+                return null;
+              })()}
               {ScheduleSwitch}
               {RateSwitch}
             </div>
@@ -2193,6 +2209,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
 
       if (sub === 'diet_enteral' || sub === 'diet_oral') {
         if (item.nutVolDay) compactParts.push(`${item.nutVolDay} mL/dia`);
+        // Aprazamento visível também minimizado — sem isto, "300 mL/dia" em
+        // 2 etapas escondia a informação que explica a conta (bug 16/07/2026)
+        if (item.nutScheduleMode === 'steps' && item.nutSteps) {
+          compactParts.push(`${item.nutSteps} ${item.nutSteps === '1' ? 'etapa' : 'etapas'}/dia`);
+        } else if (item.dietInterval) {
+          compactParts.push(item.dietInterval);
+        }
         if (sub === 'diet_enteral' && item.infusionRate) compactParts.push(`${item.infusionRate} mL/h`);
         if (item.nutMode) compactParts.push(item.nutMode);
         if (item.nutFraction) compactParts.push(item.nutFraction);
