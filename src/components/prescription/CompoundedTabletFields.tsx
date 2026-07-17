@@ -1,30 +1,30 @@
 /**
  * CompoundedTabletFields
- * Builder de instrução para administração de comprimidos/cápsulas via sonda enteral
- * (SNG / SNE / GTT / Jejunostomia).
+ * Alerta de segurança para comprimidos/cápsulas administrados via sonda
+ * enteral (SNG / SNE / GTT / Jejunostomia).
  *
  * Aparece automaticamente quando:
  *   presentation = comprimido | cápsula | drágea
  *   E route = enteral | sng | sne | gtt | sonda | gastrostomia | jejunostomia
  *
- * Inclui:
- *   - Volume de água para diluição (mL)
- *   - Volume de lavagem pré e pós (mL)
- *   - Toggle "Diluir individualmente" (não misturar com outros medicamentos)
- *   - Observação adicional livre
- *   - Botão "Aplicar à instrução" → escreve em `instructions`
- *   - Alerta vermelho bloqueante quando o medicamento está na lista NÃO TRITURAR
- *     (ISMP-Brasil / RENAME).
+ * Enxugado em 16/07/2026 (pedido do gestor: "esse fluxo de detalhamento
+ * poluiu mais do que ajudou, deixar mais parecido com o modo oral"):
+ *   - Removidos os 3 campos numéricos (diluir/lavagem pré/pós), o toggle
+ *     "administrar separadamente" e o botão "Aplicar à instrução" — a
+ *     instrução no padrão ISMP-Brasil (ou a técnica específica do
+ *     medicamento, quando existe) é aplicada automaticamente ao campo
+ *     `instructions` assim que o item aparece, uma única vez, sem exigir
+ *     preenchimento manual. Igual ao fluxo oral: o médico só edita o texto
+ *     livre de "Observações adicionais" se quiser ajustar algo.
+ *   - Preservado o que é segurança do paciente, não burocracia: o alerta
+ *     vermelho bloqueante (NÃO TRITURAR sem técnica viável) e o resumo da
+ *     técnica específica (ex.: omeprazol — abrir cápsula e dispersar em
+ *     suco) continuam visíveis, agora em formato compacto e somente leitura.
  */
-import { useState, useMemo } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Pill, AlertTriangle, Droplets, Check } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { AlertTriangle, Pill } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { findNotCrushable } from "@/data/notCrushableMedications";
-import { toast } from "sonner";
 
 interface PrescriptionLikeItem {
   id: string;
@@ -39,183 +39,86 @@ interface Props {
   onUpdate: (id: string, field: 'instructions', value: string) => void;
 }
 
-export function CompoundedTabletFields({ item, onUpdate }: Props) {
-  const block = useMemo(() => findNotCrushable(item.name, item.presentation), [item.name, item.presentation]);
+// Defaults ISMP-Brasil: diluir em 20 mL de água, lavar sonda com 10 mL antes/depois.
+const DEFAULT_VOLUME = '20';
+const DEFAULT_PRE_FLUSH = '10';
+const DEFAULT_POST_FLUSH = '10';
 
-  // Quando o entry tem `technique`, NÃO é bloqueio absoluto — é técnica viável (âmbar).
+export function CompoundedTabletFields({ item, onUpdate }: Props) {
+  const block = findNotCrushable(item.name, item.presentation);
   const hasTechnique = !!block?.technique;
   const hardBlock = !!block && !hasTechnique;
 
-  // Defaults práticos: ISMP-Brasil sugere 20 mL para diluir e 10 mL para lavar antes/depois.
-  const [waterMl, setWaterMl] = useState<string>('20');
-  const [preFlushMl, setPreFlushMl] = useState<string>('10');
-  const [postFlushMl, setPostFlushMl] = useState<string>('10');
-  const [individual, setIndividual] = useState<boolean>(true);
-  const [extraNote, setExtraNote] = useState<string>('');
-
-  const buildInstruction = () => {
-    if (hardBlock) return null;
-
-    // Caminho 1: medicamento com técnica alternativa cadastrada (omeprazol etc.)
-    if (block?.technique) {
-      let text = block.technique.instructionTemplate
-        .replace('{volume}', waterMl || '20')
-        .replace('{preLav}', preFlushMl || '10')
-        .replace('{posLav}', postFlushMl || '10');
-      if (extraNote.trim()) text += ` ${extraNote.trim()}`;
-      return text;
+  // Aplica a instrução automaticamente UMA VEZ por item (quando o campo ainda
+  // está vazio) — não sobrescreve texto que o médico já tenha digitado/editado.
+  const autoFilledRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (hardBlock) return; // sem técnica viável — nada a auto-preencher, é bloqueio.
+    if (autoFilledRef.current === item.id) return;
+    if (item.instructions && item.instructions.trim()) {
+      autoFilledRef.current = item.id;
+      return;
     }
-
-    // Caminho 2: comprimido comum triturável
-    const parts: string[] = [];
-    parts.push(`Triturar e diluir em ${waterMl || '20'} mL de água destilada/filtrada`);
-    if (preFlushMl) parts.push(`lavar sonda com ${preFlushMl} mL de água ANTES`);
-    parts.push('administrar pela sonda');
-    if (postFlushMl) parts.push(`lavar sonda com ${postFlushMl} mL de água APÓS`);
-    if (individual) parts.push('NÃO misturar com outros medicamentos (administrar separadamente)');
-    if (extraNote.trim()) parts.push(extraNote.trim());
-    return parts.join('. ') + '.';
-  };
-
-  const handleApply = () => {
-    const text = buildInstruction();
-    if (!text) return;
+    const text = hasTechnique
+      ? block!.technique!.instructionTemplate
+          .replace('{volume}', DEFAULT_VOLUME)
+          .replace('{preLav}', DEFAULT_PRE_FLUSH)
+          .replace('{posLav}', DEFAULT_POST_FLUSH)
+      : `Triturar e diluir em ${DEFAULT_VOLUME} mL de água destilada/filtrada. `
+        + `Lavar sonda com ${DEFAULT_PRE_FLUSH} mL de água ANTES. Administrar pela sonda. `
+        + `Lavar sonda com ${DEFAULT_POST_FLUSH} mL de água APÓS. `
+        + `NÃO misturar com outros medicamentos (administrar separadamente).`;
+    autoFilledRef.current = item.id;
     onUpdate(item.id, 'instructions', text);
-    toast.success(hasTechnique ? 'Técnica específica aplicada à instrução' : 'Instrução de trituração aplicada');
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id]);
+
+  // Nem bloqueio nem técnica específica → nada a exibir (igual ao modo oral;
+  // a instrução já foi preenchida em segundo plano pelo efeito acima).
+  if (!hardBlock && !hasTechnique) return null;
 
   return (
     <div
       className={cn(
-        "rounded-md border p-2 space-y-2 mt-1",
+        "rounded-md border px-2 py-1.5 mt-1 text-[11px] leading-relaxed",
         hardBlock
           ? "bg-rose-50/80 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800 border-l-[3px] border-l-rose-500"
           : "bg-amber-50/60 dark:bg-amber-950/25 border-amber-300/70 dark:border-amber-800/50 border-l-[3px] border-l-amber-500"
       )}
     >
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 mb-0.5">
         <div
           className={cn(
-            "flex items-center justify-center h-5 w-5 rounded-md text-white shadow-sm",
-            hardBlock ? "bg-rose-600 shadow-rose-600/30" : "bg-amber-600 shadow-amber-600/30"
+            "flex items-center justify-center h-4 w-4 rounded text-white shrink-0",
+            hardBlock ? "bg-rose-600" : "bg-amber-600"
           )}
         >
-          {hardBlock ? <AlertTriangle className="h-3 w-3" /> : <Pill className="h-3 w-3" />}
+          {hardBlock ? <AlertTriangle className="h-2.5 w-2.5" /> : <Pill className="h-2.5 w-2.5" />}
         </div>
-        <span
-          className={cn(
-            "text-[10px] font-bold uppercase tracking-[0.08em]",
-            hardBlock ? "text-rose-800 dark:text-rose-200" : "text-amber-800 dark:text-amber-200"
-          )}
-        >
-          {hardBlock
-            ? 'NÃO TRITURAR — administração por sonda inviável'
-            : hasTechnique
-              ? 'NÃO TRITURAR — usar técnica específica'
-              : 'Comprimido por sonda — diluição'}
+        <span className={cn(
+          "text-[10px] font-bold uppercase tracking-[0.08em]",
+          hardBlock ? "text-rose-800 dark:text-rose-200" : "text-amber-800 dark:text-amber-200"
+        )}>
+          {hardBlock ? 'NÃO TRITURAR — administração por sonda inviável' : 'NÃO TRITURAR — técnica específica aplicada'}
         </span>
       </div>
 
       {hardBlock ? (
-        <div className="space-y-1 text-[11px] text-rose-900 dark:text-rose-100 leading-relaxed">
+        <div className="text-rose-900 dark:text-rose-100 space-y-0.5">
           <p><strong>Motivo:</strong> {block!.reason}</p>
-          {block!.alternative && (
-            <p><strong>Sugestão:</strong> {block!.alternative}</p>
-          )}
+          {block!.alternative && <p><strong>Sugestão:</strong> {block!.alternative}</p>}
           <p className="text-[10px] text-rose-700/80 dark:text-rose-300/80 italic">
             Considere trocar a apresentação ou a via antes de prescrever.
           </p>
         </div>
       ) : (
-        <>
-          {hasTechnique && (
-            <div className="space-y-1 text-[11px] text-amber-900 dark:text-amber-100 leading-relaxed bg-amber-100/50 dark:bg-amber-900/20 rounded p-1.5">
-              <p><strong>Técnica:</strong> {block!.technique!.label}</p>
-              <p className="text-[10px]"><strong>Motivo:</strong> {block!.reason}</p>
-              {block!.alternative && (
-                <p className="text-[10px]"><strong>Alternativa IV:</strong> {block!.alternative}</p>
-              )}
-            </div>
-          )}
-
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <Label className="text-[10px] text-amber-900/80 dark:text-amber-200/80">
-                {hasTechnique
-                  ? (block!.technique!.vehicle === 'suco_laranja' ? 'Suco (mL)'
-                    : block!.technique!.vehicle === 'suco_maca' ? 'Suco (mL)'
-                    : block!.technique!.vehicle === 'nacl_09' ? 'NaCl 0,9% (mL)'
-                    : 'Veículo (mL)')
-                  : 'Diluir em (mL)'}
-              </Label>
-              <Input
-                type="number"
-                min={5}
-                value={waterMl}
-                onChange={(e) => setWaterMl(e.target.value)}
-                className="h-7 text-xs"
-              />
-            </div>
-            <div>
-              <Label className="text-[10px] text-amber-900/80 dark:text-amber-200/80">Lavagem pré (mL)</Label>
-              <Input
-                type="number"
-                min={0}
-                value={preFlushMl}
-                onChange={(e) => setPreFlushMl(e.target.value)}
-                className="h-7 text-xs"
-              />
-            </div>
-            <div>
-              <Label className="text-[10px] text-amber-900/80 dark:text-amber-200/80">Lavagem pós (mL)</Label>
-              <Input
-                type="number"
-                min={0}
-                value={postFlushMl}
-                onChange={(e) => setPostFlushMl(e.target.value)}
-                className="h-7 text-xs"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            {!hasTechnique && (
-              <div className="flex items-center gap-2">
-                <Switch checked={individual} onCheckedChange={setIndividual} id={`indiv-${item.id}`} />
-                <Label htmlFor={`indiv-${item.id}`} className="text-[10px] text-amber-900/90 dark:text-amber-100/90 cursor-pointer">
-                  Administrar separadamente (não misturar com outras medicações)
-                </Label>
-              </div>
-            )}
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={handleApply}
-              className="h-7 text-[10px] gap-1 border-amber-400 text-amber-900 hover:bg-amber-100 dark:text-amber-100 dark:border-amber-700 dark:hover:bg-amber-900/40 ml-auto"
-            >
-              <Droplets className="h-3 w-3" />
-              {hasTechnique ? 'Aplicar técnica à instrução' : 'Aplicar à instrução'}
-            </Button>
-          </div>
-
-          <div>
-            <Label className="text-[10px] text-amber-900/80 dark:text-amber-200/80">Observação adicional</Label>
-            <Input
-              value={extraNote}
-              onChange={(e) => setExtraNote(e.target.value)}
-              placeholder="Ex.: ofertar com estômago vazio; pinçar sonda 30 min após"
-              className="h-7 text-xs"
-            />
-          </div>
-
-          <p className="text-[9px] text-amber-700/80 dark:text-amber-300/70 leading-snug flex items-start gap-1">
-            <Check className="h-2.5 w-2.5 mt-0.5 shrink-0" />
-            {hasTechnique
-              ? 'Após aplicar a técnica, a instrução fica registrada e libera a validação.'
-              : 'Padrão ISMP-Brasil: diluir em 20 mL de água, lavar sonda com 10 mL antes/depois, administrar separadamente.'}
+        <div className="text-amber-900 dark:text-amber-100 space-y-0.5">
+          <p><strong>Técnica:</strong> {block!.technique!.label}</p>
+          <p className="text-[10px]"><strong>Motivo:</strong> {block!.reason}</p>
+          <p className="text-[10px] text-amber-700/80 dark:text-amber-300/70">
+            Instrução aplicada automaticamente — ajuste em "Observações adicionais" se necessário.
           </p>
-        </>
+        </div>
       )}
     </div>
   );
