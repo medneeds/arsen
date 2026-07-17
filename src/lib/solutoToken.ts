@@ -135,14 +135,18 @@ export function buildSolutoToken(item: SolutoFields): string {
 
   // ══════════════════════════════════════════════════════════════════
   // CASO D — Dose TERAPÊUTICA com massa (mg, mcg, UI…)
-  //   D1. Prescrito em mL → "20 mL (200mg)" (volume prescrito + dose)
+  //   D1. Prescrito em mL → só o volume, igual ao CASO A (mg/g)
   //   D2. Prescrito em unidade → "1 AMP (500mcg)" (qty na frente)
   //   D3. Prescrito em massa igual à dose → dose sozinha
   // ══════════════════════════════════════════════════════════════════
   if (isMassDose) {
     if (isVolumeUnit && qtyStr) {
-      // Ex: 20 mL de Propofol 10mg/mL → "20 mL (200mg)"
-      return `${qtyStr} (${doseRaw})`;
+      // Padronizado com o CASO A (mg/g): ao prescrever em mL, o volume já É
+      // a informação relevante — anexar a dose por-unidade do catálogo
+      // ("4 mL (1g (2mL))") ficava redundante e, pior, podia informar massa
+      // ERRADA quando o mL prescrito não bate com o volume unitário do
+      // catálogo (4 mL prescritos ≠ 1g se a referência é "1g por 2mL").
+      return qtyStr;
     }
     if (isUnitUnit && qtyStr) {
       // Escala a dose com a quantidade — mesmo princípio já aplicado ao volume
