@@ -26,6 +26,15 @@ export interface MedicationEntry {
   highAlert?: boolean;
   aliases?: string[]; // Nomes alternativos para busca
   isStandard?: boolean; // Padronizado HMDM 2026 (catálogo institucional)
+  /**
+   * Quantidade padrão (nº de ampolas/frascos) ao adicionar o item, quando
+   * diferente de 1. Uso: quando `defaultDose` descreve o conteúdo de UMA
+   * unidade (ex.: "4mg (4mL)" = 1 ampola) mas o preparo padrão do serviço
+   * usa mais de uma (ex.: Noradrenalina BIC = 2 ampolas/8mg). Sem isto, o
+   * item nasceria com Qtd.=1 mostrando "1 AMP" para um volume que na
+   * verdade representa 2 ampolas — ver auditoria de 16/07/2026.
+   */
+  defaultQuantity?: string;
 }
 
 export const CATEGORY_CONFIG: Record<PrescriptionCategory, {
@@ -161,7 +170,7 @@ export const ANTIMICROBIAL_OPTIONS: MedicationEntry[] = [
 
 // ========== ALTA VIGILÂNCIA ==========
 export const HIGH_ALERT_OPTIONS: MedicationEntry[] = [
-  { id: 'ha1', name: 'Noradrenalina', presentation: '1mg/mL - Ampola 4mL', defaultDose: '8mL', defaultRoute: 'Intravenosa', defaultPosology: 'Contínuo', defaultSchedule: '-', instructions: 'Diluir 8mL em 92mL SG5%. Uso em bomba de infusão. Vesicante.', category: 'high_alert', highAlert: true },
+  { id: 'ha1', name: 'Noradrenalina', presentation: '1mg/mL - Ampola 4mL', defaultDose: '4mg (4mL)', defaultQuantity: '2', defaultRoute: 'Intravenosa', defaultPosology: 'Contínuo', defaultSchedule: '-', instructions: 'Diluir 8mL (2 ampolas) em 92mL SG5% — volume final 100mL. Uso em bomba de infusão. Vesicante.', category: 'high_alert', highAlert: true },
   { id: 'ha2', name: 'Dobutamina', presentation: '250mg - Ampola 20mL', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: 'Contínuo', defaultSchedule: '-', instructions: 'Diluir em 230mL de SG5%. Uso em bomba de infusão.', category: 'high_alert', highAlert: true },
   { id: 'ha3', name: 'Insulina Regular', presentation: '100UI/mL - Frasco', defaultDose: 'Conforme esquema', defaultRoute: 'Subcutânea', defaultPosology: '6/6h', defaultSchedule: '-', instructions: 'Conforme protocolo de controle glicêmico.', category: 'high_alert', highAlert: true },
   { id: 'ha4', name: 'Insulina NPH', presentation: '100UI/mL - Frasco', defaultDose: 'Conforme esquema', defaultRoute: 'Subcutânea', defaultPosology: '12/12h', defaultSchedule: '-', category: 'high_alert', highAlert: true },

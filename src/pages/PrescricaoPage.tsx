@@ -3173,16 +3173,21 @@ function ExtraPrescriptionDialog({
         // volumeTotal = volume do medicamento + volume do diluente.
         // Bug A3: inicializar volumeTotal igual ao diluentVolume descartava o volume
         // do medicamento (KCl 30 mL + SF 270 mL devia dar 300 mL, não 270).
+        // Padronização 16/07/2026: quando o catálogo define defaultQuantity > 1
+        // (ex.: Noradrenalina = 2 ampolas de 4mL), o volume do medicamento é
+        // por-unidade — precisa multiplicar pela quantidade real, senão o total
+        // sai menor que o volume de fato preparado.
         const dilVol = parseFloat(autoDefaults.diluentVolume || '') || 0;
         const doseStr = med.defaultDose || '';
+        const qtyForVolume = parseFloat((med.defaultQuantity || '1').replace(',', '.')) || 1;
         const mlMatch = doseStr.match(/^([\d.,]+)\s*mL/i) || doseStr.match(/([\d.,]+)\s*mL/i);
-        const medVol = mlMatch ? parseFloat(mlMatch[1].replace(',', '.')) || 0 : 0;
+        const medVol = mlMatch ? (parseFloat(mlMatch[1].replace(',', '.')) || 0) * qtyForVolume : 0;
         if (dilVol > 0 && medVol > 0) return String(Math.round(dilVol + medVol));
         if (dilVol > 0) return String(dilVol);
         if (medVol > 0) return String(medVol);
         return '';
       })(),
-      quantity: '1',
+      quantity: med.defaultQuantity || '1',
       quantityUnit: autoUnit,
       diluent: isIV ? autoDefaults.diluent : '',
       diluentVolume: isIV ? autoDefaults.diluentVolume : '',
@@ -5566,17 +5571,21 @@ const PrescricaoPage = () => {
       infusionMode: 'BIC',
       infusionTime: autoDefaults.infusionTime,
       infusionTimeUnit: (autoDefaults.infusionTimeUnit || 'min') as 'min' | 'h',
-      quantity: '1',
+      quantity: med.defaultQuantity || '1',
       quantityUnit: autoUnit,
       diluent: isIV ? autoDefaults.diluent : '',
       diluentVolume: isIV ? autoDefaults.diluentVolume : '',
       volumeTotal: (() => {
         // volumeTotal = volume do medicamento + volume do diluente.
         // Volume do medicamento: extraído da dose com regex segura (primeiro número antes de mL).
+        // Padronização 16/07/2026: quando o catálogo define defaultQuantity > 1
+        // (ex.: Noradrenalina = 2 ampolas de 4mL), o volume extraído da dose é
+        // por-unidade — multiplica pela quantidade real para não subestimar o total.
         const dilVol = parseFloat(autoDefaults.diluentVolume || '') || 0;
         const doseStr = med.defaultDose || '';
+        const qtyForVolume = parseFloat((med.defaultQuantity || '1').replace(',', '.')) || 1;
         const mlMatch = doseStr.match(/^([\d.,]+)\s*mL/i) || doseStr.match(/([\d.,]+)\s*mL/i);
-        const medVol = mlMatch ? parseFloat(mlMatch[1].replace(',', '.')) || 0 : 0;
+        const medVol = mlMatch ? (parseFloat(mlMatch[1].replace(',', '.')) || 0) * qtyForVolume : 0;
         if (dilVol > 0 && medVol > 0) return String(Math.round(dilVol + medVol));
         if (dilVol > 0) return String(dilVol);
         if (medVol > 0) return String(medVol);
