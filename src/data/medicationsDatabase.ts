@@ -458,6 +458,72 @@ export const MEDICATIONS_DATABASE: MedicationEntry[] = [
   { id: 'm75', name: 'Insulina Regular SOS Hipercalemia', presentation: '100UI/mL - Frasco', defaultDose: '10UI', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: '-', instructions: 'Com 50mL de Glicose 50%. Hipercalemia.', category: 'medication' },
 ];
 
+// ════════════════════════════════════════════════════════════════════════
+// CHECAGEM PREVENTIVA (dev-only) — mesma família do bug da Noradrenalina
+// ════════════════════════════════════════════════════════════════════════
+// Auditoria de 16/07/2026 encontrou medicações onde `defaultDose` descreve
+// o TOTAL de mais de uma unidade (ampola/frasco/bolsa) da `presentation`,
+// sem `defaultQuantity` — a UI então mostra "1 AMP (Xml)" afirmando,
+// incorretamente, que UMA unidade contém o volume/massa total (risco real:
+// subdosagem se alguém ler "1 AMP" e preparar só uma). Ex.: Noradrenalina
+// tinha presentation 'Ampola 4mL' + defaultDose '8mL' sem defaultQuantity.
+//
+// Esta função roda só em desenvolvimento (nunca em produção, nunca visível
+// ao usuário) e apenas AVISA no console — não bloqueia nada, não corrige
+// nada sozinha. O objetivo é pegar o próximo caso assim que alguém cadastrar
+// uma medicação nova, em vez de esperar um médico notar em produção.
+function toMg(amount: number, unit: string): number | null {
+  const u = unit.toLowerCase();
+  if (u === 'g') return amount * 1000;
+  if (u === 'mg') return amount;
+  if (u === 'mcg' || u === 'µg' || u === 'ug') return amount / 1000;
+  return null;
+}
+
+function auditMedicationQuantityConsistency(entries: MedicationEntry[]): void {
+  for (const med of entries) {
+    if (med.defaultQuantity) continue; // já declarado explicitamente — nada a checar
+    const { presentation: pres, defaultDose: dose, name } = med;
+    if (!pres || !dose) continue;
+
+    // Caso A: presentation menciona Ampola/Frasco/Bolsa + volume próprio
+    // (em qualquer ordem: "Ampola 4mL" ou "4mL - Ampola"), e defaultDose é
+    // um volume puro em mL maior que esse volume unitário.
+    const containerRx = /(Ampola|Frasco-ampola|Frasco|Bolsa)\D{0,3}(\d+(?:[.,]\d+)?)\s*mL|(\d+(?:[.,]\d+)?)\s*mL\D{0,3}(Ampola|Frasco-ampola|Frasco|Bolsa)/i;
+    const cm = pres.match(containerRx);
+    const unitVol = cm ? parseFloat((cm[2] ?? cm[3]).replace(',', '.')) : null;
+    const doseVolMatch = dose.match(/^\s*(\d+(?:[.,]\d+)?)\s*mL\s*$/i);
+    if (unitVol && doseVolMatch) {
+      const doseVol = parseFloat(doseVolMatch[1].replace(',', '.'));
+      if (doseVol > unitVol + 0.001) {
+        console.warn(
+          `[catálogo] "${name}": defaultDose ('${dose}') é ${(doseVol / unitVol).toFixed(2)}x o volume unitário da apresentação ('${pres}'). ` +
+          `Se isso representa mais de 1 unidade, declare defaultQuantity (e ajuste defaultDose para o valor POR unidade) — ver Noradrenalina como referência.`
+        );
+        continue;
+      }
+    }
+
+    // Caso B: presentation no formato "Xunidade/YmL" (ex.: "150mg/3mL"),
+    // onde X é a massa TOTAL contida no volume Y — e defaultDose pede mais
+    // massa (ou volume) do que essa unidade fornece.
+    const massRx = /(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug|g)\s*\/\s*(\d+(?:[.,]\d+)?)\s*mL/i;
+    const mm = pres.match(massRx);
+    if (mm) {
+      const unitMg = toMg(parseFloat(mm[1].replace(',', '.')), mm[2]);
+      const unitVolB = parseFloat(mm[3].replace(',', '.'));
+      const doseMassMatch = dose.match(/(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug|g)\b/i);
+      const doseMg = doseMassMatch ? toMg(parseFloat(doseMassMatch[1].replace(',', '.')), doseMassMatch[2]) : null;
+      if (unitMg && doseMg && doseMg > unitMg * 1.05) {
+        console.warn(
+          `[catálogo] "${name}": defaultDose ('${dose}') pede ${(doseMg / unitMg).toFixed(2)}x a massa de 1 unidade da apresentação ('${pres}', ${unitVolB}mL). ` +
+          `Declare defaultQuantity (e ajuste defaultDose para o valor POR unidade) — ver Noradrenalina como referência.`
+        );
+      }
+    }
+  }
+}
+
 // ========== TODOS OS ITENS POR CATEGORIA ==========
 export const ALL_ITEMS_BY_CATEGORY: Record<PrescriptionCategory, MedicationEntry[]> = {
   nutrition: DIET_OPTIONS,
@@ -471,6 +537,20 @@ export const ALL_ITEMS_BY_CATEGORY: Record<PrescriptionCategory, MedicationEntry
   care: CARE_OPTIONS,
   nonstandard: [],
 };
+
+// A checagem preventiva roda sobre TODOS os arrays de medicação do catálogo
+// estático — não só MEDICATIONS_DATABASE. O primeiro rascunho desta função
+// escaneava só esse array e não pegou Amiodarona/Glicose 50%/Ciprofloxacino,
+// que vivem em HIGH_ALERT_OPTIONS e ANTIMICROBIAL_OPTIONS.
+if (import.meta.env.DEV) {
+  auditMedicationQuantityConsistency([
+    ...MEDICATIONS_DATABASE,
+    ...ANTIMICROBIAL_OPTIONS,
+    ...HIGH_ALERT_OPTIONS,
+    ...SOLUTION_OPTIONS,
+    ...HEMOTHERAPY_OPTIONS,
+  ]);
+}
 
 // ========== RECOMENDAÇÕES (mantidas como estavam) ==========
 export const RECOMMENDATION_TEMPLATES: string[] = [
