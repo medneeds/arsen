@@ -39,6 +39,21 @@ export const QUANTITY_UNIT_SHORT: Record<string, string> = {
 
 export const quantityUnitShort = (u?: string) => (u && QUANTITY_UNIT_SHORT[u]) || u || '';
 
+// Variante com rótulo "Qtd.:" — usada nos pontos onde o soluto aparece como
+// segmento isolado (corpo da prescrição na tela, impressos diário e anexo).
+// O rótulo só entra quando o médico preencheu o campo Qtd (que é o que gera
+// o token); textos vindos apenas do campo dose (ex: "Bolus 150 mL") ficam
+// sem rótulo para não rotular como quantidade algo que não é.
+// A frase corrida do preparo ("Diluir X em Y...") continua usando
+// buildSolutoToken puro — rótulo ali quebraria a gramática.
+export function buildSolutoTokenLabeled(item: SolutoFields): string {
+  const s = buildSolutoToken(item);
+  if (!s) return s;
+  const qtyRaw = (item.quantity || '').trim();
+  const hasQty = !!qtyRaw && qtyRaw !== '0';
+  return hasQty ? `Qtd.: ${s}` : s;
+}
+
 // Compõe o token de dose combinando `dose` (texto livre, geralmente do preset
 // do wizard) e `quantity`+`quantityUnit` (campos editados inline pelo médico).
 export function buildSolutoToken(item: SolutoFields): string {

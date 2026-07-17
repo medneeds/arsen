@@ -277,7 +277,7 @@ const QUANTITY_UNITS = [
   'supositório', 'óvulo', 'bisnaga', 'frasco',
 ];
 
-import { QUANTITY_UNIT_SHORT, quantityUnitShort, buildSolutoToken } from "@/lib/solutoToken";
+import { QUANTITY_UNIT_SHORT, quantityUnitShort, buildSolutoToken, buildSolutoTokenLabeled } from "@/lib/solutoToken";
 
 // Compose dose token combining `dose` (texto livre, geralmente do preset do wizard)
 // e `quantity`+`quantityUnit` (campos editados inline pelo médico).
@@ -569,7 +569,7 @@ function buildLine2Tokens(item: PrescriptionItem): Array<{ text: string; isBadge
 
   // Rotas enteral/subcutânea: apenas dose | via | intervalo
   const isEnteralOrSC = /subcutânea|SC|oral|VO|sublingual|intramuscular|IM|retal|tópica|nasal|ocular|ótica/i.test(item.route || '');
-  const soluto = buildSolutoToken(item);
+  const soluto = buildSolutoTokenLabeled(item);
 
   if (isEnteralOrSC) {
     if (soluto) tokens.push({ text: soluto });
@@ -3613,7 +3613,7 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
         </div>
         {!isNutrition && (() => {
           // ── Linha única (NOVA ORDEM): DOSE · Dil. · Vol. · Via · Acesso · Intervalo · Modo · Infusão ──
-          const dose = buildSolutoToken(item);
+          const dose = buildSolutoTokenLabeled(item);
           const via   = item.route && item.route !== '-' ? item.route : null;
           const freq  = item.posology && item.posology !== '-' ? item.posology : null;
           const access = item.accessType && item.accessType !== '-' ? item.accessType : null;
@@ -10855,7 +10855,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   )}
                 </div>
                 {item.category !== 'nutrition' && (() => {
-                  const dose = buildSolutoToken(item);
+                  const dose = buildSolutoTokenLabeled(item);
                   const via  = item.route && item.route !== '-' ? abbrevRoute(item.route) : null;
                   const freq = item.posology && item.posology !== '-' ? item.posology : null;
                   const access = item.accessType && item.accessType !== '-' ? item.accessType : null;
