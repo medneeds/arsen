@@ -189,9 +189,9 @@ export const HIGH_ALERT_OPTIONS: MedicationEntry[] = [
   { id: 'ha11', name: 'Nitroglicerina', presentation: '50mg/10mL - Ampola', defaultDose: '50mg', defaultRoute: 'Intravenosa', defaultPosology: 'Contínuo', defaultSchedule: '-', instructions: 'Diluir em 240mL de SG5%. Bomba de infusão.', category: 'high_alert', highAlert: true },
   { id: 'ha12', name: 'Morfina', presentation: '10mg/mL - Ampola 1mL', defaultDose: '1-5mg', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: '-', instructions: 'Diluir 1mL em 9mL de SF0,9% (1mg/mL). Aplicar lentamente.', category: 'high_alert', highAlert: true },
   { id: 'ha13', name: 'Cetamina (Ketamina)', presentation: '50mg/mL - Frasco 10mL', defaultDose: '1-2mg/kg', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: '-', category: 'high_alert', highAlert: true },
-  { id: 'ha14', name: 'Amiodarona', presentation: '150mg/3mL - Ampola', defaultDose: '300mg', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: '-', instructions: 'Diluir em 100mL de SG5%.', category: 'high_alert', highAlert: true },
+  { id: 'ha14', name: 'Amiodarona', presentation: '150mg/3mL - Ampola', defaultDose: '150mg (3mL)', defaultQuantity: '2', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: '-', instructions: 'Diluir em 100mL de SG5%.', category: 'high_alert', highAlert: true },
   { id: 'ha15', name: 'Terlipressina', presentation: '1mg - Frasco-ampola', defaultDose: '1mg', defaultRoute: 'Intravenosa', defaultPosology: '6/6h', defaultSchedule: '06h', instructions: 'Diluir em 10mL de SF0,9%. Infundir em bolus lento.', category: 'high_alert', highAlert: true },
-  { id: 'ha16', name: 'Glicose 50%', presentation: '20mL - Ampola', defaultDose: '40mL', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: '-', instructions: 'Se glicemia menor que 70mg/dL.', category: 'high_alert', highAlert: true },
+  { id: 'ha16', name: 'Glicose 50%', presentation: '20mL - Ampola', defaultDose: '10g (20mL)', defaultQuantity: '2', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: '-', instructions: 'Se glicemia menor que 70mg/dL. Se ampola de 10mL (variante existente na farmácia), usar 4 ampolas para totalizar 40mL.', category: 'high_alert', highAlert: true },
 ];
 
 // ========== INALAÇÃO ==========
@@ -447,14 +447,14 @@ export const MEDICATIONS_DATABASE: MedicationEntry[] = [
 
   // ===== Outros =====
   { id: 'm56', name: 'Tiamina (Vitamina B1)', presentation: '100mg/mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: '08h', category: 'medication' },
-  { id: 'm57', name: 'Ácido Tranexâmico', presentation: '250mg/5mL - Ampola', defaultDose: '1g', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 10 min.', category: 'medication', aliases: ['Transamin'] },
+  { id: 'm57', name: 'Ácido Tranexâmico', presentation: '250mg/5mL - Ampola', defaultDose: '250mg (5mL)', defaultQuantity: '4', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 10 min.', category: 'medication', aliases: ['Transamin'] },
   { id: 'm58', name: 'Vitamina K (Fitomenadiona)', presentation: '10mg/mL - Ampola', defaultDose: '10mg', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: '08h', category: 'medication', aliases: ['Kanakion'] },
   { id: 'm59', name: 'Naloxona', presentation: '0,4mg/mL - Ampola', defaultDose: '0,4mg', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: '-', instructions: 'Antagonista opioide.', category: 'medication', aliases: ['Narcan'] },
   { id: 'm65', name: 'Flumazenil', presentation: '0,5mg/5mL - Ampola', defaultDose: '0,2mg', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: '-', instructions: 'Antagonista benzodiazepínico.', category: 'medication', aliases: ['Lanexat'] },
   { id: 'm66', name: 'Adenosina', presentation: '6mg/2mL - Ampola', defaultDose: '6mg', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: '-', instructions: 'Bolus rápido + flush 20mL SF0,9%.', category: 'medication' },
   { id: 'm67', name: 'Atropina', presentation: '0,25mg/mL - Ampola', defaultDose: '0,5-1mg', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: '-', category: 'medication' },
   { id: 'm68', name: 'Adrenalina (Epinefrina)', presentation: '1mg/mL - Ampola', defaultDose: '1mg', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: '-', instructions: 'PCR conforme ACLS.', category: 'medication', aliases: ['Epinefrina'] },
-  { id: 'm69', name: 'Gluconato de Cálcio para Hipercalemia', presentation: '10mL - Ampola', defaultDose: '20mL', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: '-', category: 'medication' },
+  { id: 'm69', name: 'Gluconato de Cálcio para Hipercalemia', presentation: '10mL - Ampola', defaultDose: '10mL', defaultQuantity: '2', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: '-', category: 'medication' },
   { id: 'm75', name: 'Insulina Regular SOS Hipercalemia', presentation: '100UI/mL - Frasco', defaultDose: '10UI', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: '-', instructions: 'Com 50mL de Glicose 50%. Hipercalemia.', category: 'medication' },
 ];
 
