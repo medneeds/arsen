@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Patient } from "@/types/patient";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
+import { isGhostBed } from "@/hooks/usePatients";
 import { cn } from "@/lib/utils";
 import { MovementConfirmDialog } from "@/components/MovementConfirmDialog";
 
@@ -99,7 +100,7 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
       if (error) {
         toast.error("Falha ao carregar leitos do setor");
       } else {
-        setSiblings((data ?? []).filter((p) => !!p.bed_number) as SiblingRow[]);
+        setSiblings((data ?? []).filter((p) => !!p.bed_number && !isGhostBed(p.bed_number)) as SiblingRow[]);
       }
       setLoading(false);
     })();

@@ -8,7 +8,15 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { isExtraBed } from "@/utils/bedNaming";
 
-const GHOST_PREFIXES = ['ARQ-', 'ARCHIVED-', '_GHOST_'];
+export const GHOST_PREFIXES = ['ARQ-', 'ARCHIVED-', '_GHOST_'];
+
+/** Leito residual/arquivado que nunca deve aparecer em listas ou mapas.
+ *  (A policy RLS "Ghost beds hidden from clients" já os esconde no banco;
+ *  este helper é defesa em profundidade para dados em cache.) */
+export const isGhostBed = (bedNumber?: string | null) => {
+  const bn = (bedNumber || '').toUpperCase();
+  return GHOST_PREFIXES.some(prefix => bn.startsWith(prefix));
+};
 
 export function usePatients(department?: Department, sector?: string) {
   const [patients, setPatients] = useState<Patient[]>([]);
