@@ -6,6 +6,7 @@
  * insulinoterapia agrupada com sub-linhas para enfermagem).
  */
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { buildSolutoToken } from "@/lib/solutoToken";
 import { describeInsulinPlan, type InsulinPlan } from "@/lib/insulinTherapy";
 
 
@@ -167,8 +168,11 @@ function buildLine2(it: ExtraPrintItem): string {
   // NOVA ORDEM (raciocínio do médico): DOSE · Dil. · Vol. · Via · Acesso · Intervalo · Modo · Tempo · Vazão
   const parts: string[] = [];
 
-  // 1. Dose
-  if (it.dose && it.dose !== '-') parts.push(escape(it.dose));
+  // 1. Dose — mesma lógica da pré-visualização na tela (buildSolutoToken):
+  // combina quantity+quantityUnit+dose. Antes usava só `it.dose` cru, e itens
+  // preenchidos via Qtd (ex: Midazolam 20 mL) perdiam o volume no impresso.
+  const soluto = buildSolutoToken({ quantity: it.quantity, quantityUnit: it.quantityUnit, dose: it.dose });
+  if (soluto) parts.push(escape(soluto));
 
   // 2. Diluente — logo após a dose (ou "Sem diluente" explícito)
   if (it.diluent && it.diluent !== '-' && it.diluent !== 'sem_diluente') {
