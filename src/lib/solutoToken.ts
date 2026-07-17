@@ -71,9 +71,15 @@ export function buildSolutoToken(item: SolutoFields): string {
   // 2. Volume puro em mL (ex: "10mL", "30 mL") — sem barras, sem massa
   const isPureMlVolume  = !isConcentration && /^\d+(?:[.,]\d+)?\s*m[lL]\b$/i.test(doseRaw);
 
-  // 3. Dose terapêutica com unidade de massa/atividade
+  // 3. Dose terapêutica com unidade de massa/atividade.
+  // Captura o NÚMERO + unidade (ex.: "1g", "500mg", "1 g") — funciona colado
+  // ou com espaço. Antes exigia \b antes da unidade, que nunca bate quando o
+  // número está colado (dígito e letra são ambos \w — sem fronteira entre
+  // eles), então doses como "1g (2mL)" escapavam da classificação e caíam
+  // no fallback genérico (CASO E), sem nunca escalar com a quantidade.
+  const doseAmountMatch = doseRaw.match(/(\d[\d.,]*)\s*(mg|mcg|µg|ug|g|ui|meq|mmol)\b/i);
   const isMassDose = !!doseRaw && !isConcentration && !isPureMlVolume &&
-    /(\bmg\b|\bmcg\b|µg|ug|\bg\b|\bui\b|u\/|unidades?|\bmeq\b|\bmmol\b|%)/i.test(doseRaw);
+    (!!doseAmountMatch || /(u\/|unidades?|%)/i.test(doseRaw));
 
   // ── Classificadores do campo quantityUnit ──────────────────────────
   const unitLower    = (item.quantityUnit || '').toLowerCase();
@@ -139,10 +145,38 @@ export function buildSolutoToken(item: SolutoFields): string {
       return `${qtyStr} (${doseRaw})`;
     }
     if (isUnitUnit && qtyStr) {
+      // Escala a dose com a quantidade — mesmo princípio já aplicado ao volume
+      // puro em mL (CASO C): "2 AMP (1g)" sem multiplicar sugeria a dose
+      // UNITÁRIA da ampola como se fosse o total, risco de subdosagem visual
+      // na leitura da enfermagem. Agora soma quando dá para calcular.
+      const qtyNum = parseFloat((item.quantity || '').replace(',', '.'));
+      if (qtyNum > 1 && doseAmountMatch) {
+        const perUnitAmount = parseFloat(doseAmountMatch[1].replace(',', '.'));
+        const massUnit = doseAmountMatch[2];
+        if (!isNaN(perUnitAmount) && perUnitAmount > 0) {
+          const totalMass = perUnitAmount * qtyNum;
+          const totalMassStr = Number.isInteger(totalMass) ? String(totalMass) : String(totalMass).replace('.', ',');
+          // Volume embutido na dose (ex.: "1g (2mL)") também escala, se houver.
+          const mlMatch = doseRaw.match(/(\d[\d.,]*)\s*m[lL]\b/i);
+          let totalVolPart = '';
+          if (mlMatch) {
+            const perUnitVol = parseFloat(mlMatch[1].replace(',', '.'));
+            if (!isNaN(perUnitVol) && perUnitVol > 0) {
+              const totalVol = perUnitVol * qtyNum;
+              const totalVolStr = Number.isInteger(totalVol) ? String(totalVol) : String(totalVol).replace('.', ',');
+              totalVolPart = ` / ${totalVolStr}mL`;
+            }
+          }
+          return `${qtyStr} (total ${totalMassStr}${massUnit}${totalVolPart})`;
+        }
+      }
       const norm = (s: string) => s.toLowerCase().replace(/\s+/g, '');
       const qtyInDose  = norm(doseRaw).includes(norm(qtyStr));
       const doseIsQty  = norm(qtyStr) === norm(doseRaw);
       if (!qtyInDose && !doseIsQty) {
+        // "1g (2mL)" já traz parênteses próprios — envolver de novo criava
+        // "1 AMP (1g (2mL))" (parênteses duplicados). Junta sem embrulhar.
+        if (/\(/.test(doseRaw)) return `${qtyStr} ${doseRaw}`;
         return `${qtyStr} (${doseRaw})`; // "1 AMP (500mcg)"
       }
     }
