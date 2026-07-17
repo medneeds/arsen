@@ -5562,6 +5562,23 @@ const PrescricaoPage = () => {
       accessType: '',
       concentration: '',
     };
+    // ── Sincronização wizard → item (16/07/2026) ─────────────────────────────
+    // O Assistente de Terapia Nutricional emite campos estruturados junto com
+    // a entry (NutritionStructured). Sem esta cópia, o item nascia só com o
+    // texto (dose/instructions) e o editor inline + resumo compacto + impressos
+    // mostravam a dieta vazia — "como se a configuração não persistisse".
+    {
+      const NUT_STRUCT_KEYS = [
+        'nutritionType', 'dietType', 'nutConsistency', 'dietInterval',
+        'nutScheduleMode', 'nutVolDay', 'nutMode', 'nutFraction',
+        'infusionRate', 'nutProgression', 'nutBedHead', 'nutZeroReason',
+        'nutWaterVolPerAdmin', 'nutWaterFreq',
+      ] as const;
+      for (const k of NUT_STRUCT_KEYS) {
+        const v = (med as unknown as Record<string, unknown>)[k];
+        if (v !== undefined && v !== null && v !== '') (baseItem as unknown as Record<string, unknown>)[k] = v;
+      }
+    }
     // Sprint B — perfil de infusão para EV (preenche apenas campos vazios)
     if (isIV) {
       const profile = getInfusionProfile(med.name);

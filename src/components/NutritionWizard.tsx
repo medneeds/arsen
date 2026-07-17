@@ -226,10 +226,34 @@ const ZERO_REASONS = [
 
 function uid() { return crypto.randomUUID(); }
 
+// Campos estruturados de nutrição que o wizard emite junto com cada entry.
+// Sincronização wizard → item (16/07/2026): antes o wizard emitia só texto
+// (defaultDose/instructions) e o item nascia com os campos estruturados
+// vazios — o editor inline, o resumo compacto e os impressos (que leem os
+// campos estruturados) mostravam a dieta "zerada", como se a configuração
+// do assistente não persistisse.
+export interface NutritionStructured {
+  nutritionType?: string;
+  dietType?: string;
+  nutConsistency?: string;
+  dietInterval?: string;
+  nutScheduleMode?: string;
+  nutVolDay?: string;
+  nutMode?: string;
+  nutFraction?: string;
+  infusionRate?: string;
+  nutProgression?: string;
+  nutBedHead?: string;
+  nutZeroReason?: string;
+  nutWaterVolPerAdmin?: string;
+  nutWaterFreq?: string;
+}
+export type NutritionWizardEntry = MedicationEntry & NutritionStructured;
+
 interface NutritionWizardProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onAdd: (entries: MedicationEntry[]) => void;
+  onAdd: (entries: NutritionWizardEntry[]) => void;
   patientWeight?: string;
 }
 
@@ -382,8 +406,23 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
     });
   };
 
-  const buildEntries = (): MedicationEntry[] => {
-    const entries: MedicationEntry[] = [];
+  const buildEntries = (): NutritionWizardEntry[] => {
+    const entries: NutritionWizardEntry[] = [];
+    // Tradução wizard → vocabulário do editor inline (NutritionFields)
+    const ENT_MODE_LABEL: Record<string, string> = {
+      continua: "Contínua BIC", ciclica: "Bomba ciclada",
+      intermitente: "Gravitacional intermitente", bolus: "Bolus",
+    };
+    const ENT_DIETTYPE: Record<string, string> = {
+      polim_padrao: "Polimérica padrão", polim_hiper: "Polimérica hipercalórica",
+      polim_fibras: "Polimérica padrão", oligom: "Oligomérica", elementar: "Oligomérica",
+      diabete: "Específica diabético", renal: "Específica renal",
+      hepato: "Específica hepatopata", imuno: "Imunomoduladora",
+    };
+    const ORAL_DIETTYPE: Record<string, string> = {
+      geral: "Geral", branda: "Branda", pastosa: "Pastosa", semiliq: "Pastosa",
+      liquida_c: "Líquida", liquida_r: "Líquida restrita", espess: "Líquida",
+    };
     const comorbStr = Array.from(comorbs)
       .map(k => COMORBIDITIES.find(c => c.key === k)?.label)
       .filter(Boolean)
@@ -398,6 +437,8 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
       const reason = ZERO_REASONS.find(r => r.key === zeroReason)?.label || "";
       entries.push({
         id: `nut-zero-${uid()}`,
+        nutritionType: "zero",
+        nutZeroReason: [reason, zeroSince ? `desde ${zeroSince}` : null].filter(Boolean).join(" — "),
         name: "Dieta zero (NPO)",
         presentation: "-",
         defaultDose: "-",
@@ -436,6 +477,10 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
       const isMixed = modalities.size > 1;
       entries.push({
         id: `nut-oral-${uid()}`,
+        nutritionType: "diet_oral",
+        dietType: ORAL_DIETTYPE[oralConsist],
+        nutConsistency: consist,
+        dietInterval: oralFraction,
         name: `${isMixed ? "Dieta mista — VO" : "Dieta via oral"} — ${consist}${profiles ? ` (${profiles})` : ""}`,
         presentation: "-",
         defaultDose: "-",
@@ -452,6 +497,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
       if (oralWaterFree) {
         entries.push({
           id: `nut-oral-h2o-${uid()}`,
+        nutritionType: "water",
           name: "Água oral livre",
           presentation: "-",
           defaultDose: "-",
@@ -475,6 +521,16 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
       const sysLabel = entSystem === "aberto" ? "Sistema aberto" : "Sistema fechado";
       entries.push({
         id: `nut-ent-${uid()}`,
+        nutritionType: "diet_enteral",
+        dietType: ENT_DIETTYPE[entFormula],
+        nutVolDay: entVolDay,
+        nutMode: ENT_MODE_LABEL[entMode],
+        infusionRate: entMode === "continua" ? entRate : undefined,
+        nutScheduleMode: "interval",
+        dietInterval: entMode === "continua" ? "Contínua" : undefined,
+        nutFraction: entMode !== "continua" ? `${entFractions}x` : undefined,
+        nutProgression: entProgression ? "Iniciar 20 mL/h; progredir +20 mL/h a cada 6-8h conforme tolerância" : undefined,
+        nutBedHead: "30-45",
         name: `${isMixed ? "Dieta mista — Enteral" : "Dieta enteral"} (${sysLabel}) — ${formula} via ${via}`,
         presentation: "-",
         defaultDose: dose,
@@ -497,6 +553,8 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
       if (waterFlush) {
         entries.push({
           id: `nut-ent-flush-${uid()}`,
+        nutritionType: "water",
+          nutWaterVolPerAdmin: "30 mL",
           name: "Água via sonda — flush de manutenção",
           presentation: "-",
           defaultDose: "30 mL",
@@ -511,6 +569,9 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
       if (waterScheduled) {
         entries.push({
           id: `nut-ent-water-${uid()}`,
+        nutritionType: "water",
+          nutWaterVolPerAdmin: `${waterVol} mL`,
+          nutWaterFreq: waterFreq,
           name: "Água via sonda — hidratação programada",
           presentation: "-",
           defaultDose: `${waterVol} mL`,
@@ -525,6 +586,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
       if (waterCorrection) {
         entries.push({
           id: `nut-ent-water-corr-${uid()}`,
+        nutritionType: "water",
           name: "Água via sonda — correção de distúrbio hidroeletrolítico",
           presentation: "-",
           defaultDose: `${waterCorrectionVol || "—"} mL/dia`,
@@ -544,6 +606,9 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
       const isMixed = modalities.size > 1;
       entries.push({
         id: `nut-par-${uid()}`,
+        nutritionType: "diet_parenteral",
+        nutVolDay: parVolume,
+        infusionRate: parRate || undefined,
         name: `${isMixed ? "Dieta mista — NPT" : "NPT"} ${parType === "central" ? "central" : "periférica"}`,
         presentation: "Bolsa NPT",
         defaultDose: `${parVolume} mL${parKcal ? ` (${parKcal} kcal)` : ""}`,
@@ -575,6 +640,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
       const viaLabel = ov.route === "enteral" ? `via ${enteralViaLabel || "sonda"}` : "VO";
       entries.push({
         id: `nut-prot-${key}-${uid()}`,
+        nutritionType: "supplement",
         name: `${def.label} — ${viaLabel}`,
         presentation: def.group === "sno" ? "Frasco/sachê pronto" : "Pó / sachê modular",
         defaultDose: ov.dose,
@@ -598,6 +664,9 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
       const isEnteralRoute = ["sng", "sne", "sog", "gtt", "jtt"].includes(waterOffer.route);
       entries.push({
         id: `nut-water-offer-${uid()}`,
+        nutritionType: "water",
+        nutWaterVolPerAdmin: `${waterOffer.volumePerOffering} mL`,
+        nutWaterFreq: waterOffer.fraction,
         name: buildWaterEntryName(waterOffer),
         presentation: WATER_TYPES.find(t => t.key === waterOffer.type)?.label || "Água",
         defaultDose: `${waterOffer.volumePerOffering} mL/oferta`,
