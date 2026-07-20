@@ -314,6 +314,10 @@ export function describeInsulinPlan(plan: InsulinPlan): { headline: string; line
     case 'nph_fixed': {
       headline = 'NPH Fixa';
       (plan.nphDoses ?? []).forEach(d => lines.push(formatDose(d)));
+      // Varredura 16/07/2026: NPH tem risco real de hipoglicemia (inclusive
+      // noturna) e nunca teve conduta impressa — mesmo padrão dos outros
+      // esquemas SC (basal_bolus, sliding), antes exclusivo deles.
+      lines.push(`HGT < 70 → ${plan.hypoglycemiaProtocol?.trim() || DEFAULT_HYPO_PROTOCOL}`);
       break;
     }
     case 'iv_continuous': {
@@ -326,6 +330,10 @@ export function describeInsulinPlan(plan: InsulinPlan): { headline: string; line
       if (plan.ivAdjustmentRule) lines.push(`Ajuste: ${plan.ivAdjustmentRule}`);
       if (plan.ivKMonitoring) lines.push('K+ sérico a cada 2-4h.');
       if (plan.ivTransitionRule) lines.push(plan.ivTransitionRule);
+      // Varredura 16/07/2026: a regra de ajuste do BIC trata queda de
+      // glicemia (ex.: "≤250 → SG5%"), mas nenhum protocolo tinha uma
+      // conduta EXPLÍCITA de resgate para HGT < 70 (parar bomba + glicose).
+      lines.push(`HGT < 70 → PARAR a bomba de insulina imediatamente. ${plan.hypoglycemiaProtocol?.trim() || DEFAULT_HYPO_PROTOCOL} Reavaliar antes de religar.`);
       break;
     }
   }

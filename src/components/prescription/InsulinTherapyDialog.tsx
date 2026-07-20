@@ -308,6 +308,30 @@ function validateStep2(plan: InsulinPlan): boolean {
 
 // ───────────────────────── Editores por esquema ─────────────────────────
 
+/**
+ * Conduta de hipoglicemia (HGT < 70 mg/dL) — totalmente editável pelo médico.
+ * Varredura de 16/07/2026: esse campo só existia dentro do SlidingEditor
+ * (reaproveitado por Basal-Bolus via correctionRows), deixando NPH Fixa e
+ * EV Contínua SEM nenhuma conduta de hipoglicemia documentada — nem no
+ * formulário, nem no impresso. Extraído para componente único, usado pelos
+ * 4 esquemas.
+ */
+function HypoglycemiaProtocolField({ plan, onChange }: { plan: InsulinPlan; onChange: (p: Partial<InsulinPlan>) => void }) {
+  return (
+    <div className="rounded-md border border-rose-300/70 bg-rose-50/60 dark:bg-rose-950/20 p-2 space-y-1">
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="text-[9px] px-1 bg-rose-100 text-rose-700 border-rose-300">HGT &lt; 70 mg/dL · HIPOGLICEMIA</Badge>
+      </div>
+      <Textarea
+        value={plan.hypoglycemiaProtocol ?? DEFAULT_HYPO_PROTOCOL}
+        onChange={e => onChange({ hypoglycemiaProtocol: e.target.value })}
+        placeholder={DEFAULT_HYPO_PROTOCOL}
+        className="text-[11px] min-h-[44px] bg-white dark:bg-slate-900 border-rose-200 dark:border-rose-900 focus-visible:ring-rose-400/50"
+      />
+    </div>
+  );
+}
+
 function BasalBolusEditor({ plan, onChange, onRecalc }: { plan: InsulinPlan; onChange: (p: Partial<InsulinPlan>) => void; onRecalc: () => void }) {
   return (
     <div className="space-y-3 rounded-lg border border-border/50 p-3 bg-card/40">
@@ -408,17 +432,7 @@ export function SlidingEditor({
       </div>
 
       {/* Linha fixa de hipoglicemia (HGT < 70) — totalmente editável */}
-      <div className="rounded-md border border-rose-300/70 bg-rose-50/60 dark:bg-rose-950/20 p-2 space-y-1">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-[9px] px-1 bg-rose-100 text-rose-700 border-rose-300">HGT &lt; 70 mg/dL · HIPOGLICEMIA</Badge>
-        </div>
-        <Textarea
-          value={plan.hypoglycemiaProtocol ?? DEFAULT_HYPO_PROTOCOL}
-          onChange={e => onChange({ hypoglycemiaProtocol: e.target.value })}
-          placeholder={DEFAULT_HYPO_PROTOCOL}
-          className="text-[11px] min-h-[44px] bg-white dark:bg-slate-900 border-rose-200 dark:border-rose-900 focus-visible:ring-rose-400/50"
-        />
-      </div>
+      <HypoglycemiaProtocolField plan={plan} onChange={onChange} />
 
       {/* Cabeçalho de colunas */}
       <div className="grid grid-cols-[80px_18px_80px_18px_64px_1fr_28px] items-center gap-1 text-[9px] uppercase tracking-wide text-muted-foreground px-1">
@@ -491,6 +505,7 @@ function NphFixedEditor({ plan, onChange, onRecalc }: { plan: InsulinPlan; onCha
         doses={plan.nphDoses ?? []}
         onChange={(doses) => onChange({ nphDoses: doses })}
       />
+      <HypoglycemiaProtocolField plan={plan} onChange={onChange} />
       <p className="text-[10px] text-muted-foreground">
         SBD: iniciar 0,2 U/kg/dia, ajustar conforme HGT pré-refeição. Considerar bedtime se hiperglicemia matinal.
       </p>
@@ -549,6 +564,7 @@ function IvContinuousEditor({
         <input type="checkbox" checked={!!plan.ivKMonitoring} onChange={e => onChange({ ivKMonitoring: e.target.checked })} />
         Monitorar K+ sérico a cada 2-4h (DKA / HHS)
       </label>
+      <HypoglycemiaProtocolField plan={plan} onChange={onChange} />
     </div>
   );
 }
