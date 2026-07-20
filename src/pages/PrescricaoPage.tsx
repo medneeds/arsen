@@ -5719,6 +5719,16 @@ const PrescricaoPage = () => {
       return n;
     });
 
+    // Sugestão de esquema de correção de insulina ao adicionar controle
+    // glicêmico (HGT/glicemia capilar). Centralizado aqui — não só no
+    // CareCatalogDialog — para disparar em QUALQUER caminho de adicionar o
+    // item (busca direta na barra de Cuidados, atalhos, etc.). Antes só
+    // funcionava vindo do modal dedicado de Cuidados; a via mais comum
+    // (busca/autocomplete direto) nunca disparava o popup.
+    if (med.category === 'care' && isGlycemicControlName(med.name) && !hasInsulinSchemeCare(items)) {
+      setInsulinSchemePromptOpen(true);
+    }
+
     if (isMAV && isControlled) {
       // ── MAV + Portaria 344 (opioides, midazolam, ketamina) ───────────
       toast.error(`✓ ADICIONADO — ${med.name}`, {
@@ -10148,10 +10158,10 @@ const PrescricaoPage = () => {
         open={careCatalogOpen}
         onOpenChange={setCareCatalogOpen}
         onAddItem={(entry) => {
+          // O disparo do popup de esquema de correção já é centralizado em
+          // addItem() — cobre este caminho junto com todos os outros
+          // (busca direta, atalhos, etc.), sem precisar repetir aqui.
           addItem(entry);
-          if (isGlycemicControlName(entry.name) && !hasInsulinSchemeCare(items)) {
-            setInsulinSchemePromptOpen(true);
-          }
         }}
         onAddBulk={(structured, extras, profile) => {
           const existingNames = new Set(items.filter(i => i.category === 'care').map(i => i.name));
@@ -10194,7 +10204,10 @@ const PrescricaoPage = () => {
       <AlertDialog open={insulinSchemePromptOpen} onOpenChange={setInsulinSchemePromptOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Incluir esquema de correção de insulina?</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Syringe className="h-4 w-4 text-primary" />
+              Incluir esquema de correção de insulina?
+            </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
                 <p>
@@ -10211,15 +10224,32 @@ const PrescricaoPage = () => {
                   351–400 → 10 UI SC + comunicar médico<br />
                   &gt;400 → chamar médico imediatamente
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  O esquema é incluído como item de <strong>Cuidados</strong>. Para ajustar (basal-bolus, BIC, peso),
-                  use o assistente de Insulinoterapia em Medicações.
-                </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Não, somente HGT</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
+            <AlertDialogCancel className="sm:mr-auto">Não, somente HGT</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => {
+                setInsulinSchemePromptOpen(false);
+                // Atalho direto pro assistente completo (basal-bolus, NPH,
+                // BIC, peso) — antes só era mencionado em texto, obrigando
+                // o médico a fechar o pop-up e procurar em Medicações.
+                setPendingInsulinMed({
+                  id: 'insulin-custom-from-hgt-prompt',
+                  name: 'Insulina',
+                  presentation: '100UI/mL - Frasco', defaultDose: 'Conforme esquema', defaultRoute: 'Subcutânea',
+                  defaultPosology: 'Conforme esquema', defaultSchedule: '-', category: 'high_alert', highAlert: true,
+                });
+                setEditingInsulinItemId(null);
+                setInsulinDialogOpen(true);
+              }}
+            >
+              <Syringe className="h-3.5 w-3.5" /> Configurar esquema personalizado
+            </Button>
             <AlertDialogAction
               onClick={() => {
                 const schemeName = 'Esquema de correção de insulina (Regular SC conforme HGT)';
@@ -10252,7 +10282,7 @@ const PrescricaoPage = () => {
                 toast.success('Esquema de correção adicionado aos Cuidados');
               }}
             >
-              Sim, incluir esquema
+              Sim, incluir esquema padrão
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
