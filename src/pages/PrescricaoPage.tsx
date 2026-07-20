@@ -4526,8 +4526,11 @@ const PrescricaoPage = () => {
     // ============= INSULINOTERAPIA (assistente) =============
     // Quando o item carrega um `insulinPlan` completo (gerado pelo InsulinTherapyDialog),
     // o plano já é a fonte de verdade clínica: concentração EV (ivConcentration),
-    // velocidade inicial, faixas de correção, HGT, conduta hipoglicemia — tudo já vai
-    // descrito em `instructions` e impresso pelo printExtraPrescription.
+    // velocidade inicial, faixas de correção, HGT, conduta hipoglicemia — tudo
+    // renderizado diretamente de `insulinPlan` por describeInsulinPlan em cada
+    // consumidor (tela, impresso normal, anexo). Não passa mais por `instructions`
+    // (antes serializava o plano ali, causando duplicação no impresso — corrigido
+    // em 16/07/2026).
     // Exigir diluente/volume/tempo estruturados aqui seria redundância e fonte de erro
     // de digitação (médico já validou o plano no wizard).
     if ((item as any).insulinPlan) {
@@ -6036,8 +6039,11 @@ const PrescricaoPage = () => {
         toast.error("Item validado", { description: "Suspenda o item para alterar o esquema de insulinoterapia." });
         return item;
       }
-      const desc = describeInsulinPlan(plan);
-      return { ...item, insulinPlan: plan, instructions: [desc.headline, ...desc.lines].join(' | ') };
+      // Não serializa mais o plano em `instructions` (causava duplicação no
+      // impresso — a fonte de verdade é `insulinPlan`, renderizado direto
+      // pelo describeInsulinPlan em cada consumidor). `instructions` fica
+      // livre para uma observação real do médico, se houver (plan.notes).
+      return { ...item, insulinPlan: plan };
     }));
   }, [isItemEditLocked]);
 
@@ -10108,7 +10114,7 @@ const PrescricaoPage = () => {
           };
           if (editingInsulinItemId) {
             setItems(prev => stripGenericScheme(prev).map(it => it.id === editingInsulinItemId
-              ? { ...it, insulinPlan: plan, instructions: [desc.headline, ...desc.lines].join(' | ') }
+              ? { ...it, insulinPlan: plan } // instructions não é mais usado p/ insulina — evita duplicação no impresso
               : it
             ));
             toast.success('Plano de insulinoterapia atualizado');
@@ -10121,8 +10127,7 @@ const PrescricaoPage = () => {
               route: plan.scheme === 'iv_continuous' ? 'Intravenosa' : 'Subcutânea',
               posology: plan.scheme === 'iv_continuous' ? 'BIC' : (plan.hgtFrequency ?? 'conforme esquema'),
               schedule: plan.scheme === 'iv_continuous' ? 'contínuo' : 'múltiplos horários',
-              instructions: [desc.headline, ...desc.lines].join(' | '),
-              insulinPlan: plan,
+              insulinPlan: plan, // instructions não é mais usado p/ insulina — evita duplicação no impresso
               highAlert: true,
               securityCategory: 'MAV',
               doubleCheck: true,
@@ -10963,9 +10968,6 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     {insulinDesc.lines.map((ln, i) => (
                       <div key={i} style={{ fontWeight: ln.startsWith('  •') ? 500 : 600, paddingLeft: ln.startsWith('  •') ? '6px' : 0 }}>{ln.replace(/^  •\s*/, '• ')}</div>
                     ))}
-                    {item.instructions && (
-                      <div style={{ marginTop: '2px', fontStyle: 'italic', color: '#475569' }}>— {item.instructions}</div>
-                    )}
                   </div>
                 )}
 
