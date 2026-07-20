@@ -4628,10 +4628,14 @@ const PrescricaoPage = () => {
     // ============= PADRÃO (medication / antimicrobial / high_alert / mav / port_344) =============
     const ptype = inferPresentationType(item.presentation, item.route, item.name);
 
-    // Tópicos / oftálmicos / retais — dose costuma ser instrucional ("aplicar fina camada")
+    // Tópicos / oftálmicos / retais
+    // Recomendações NÃO substitui mais posologia/via (campo livre é sempre
+    // opcional — pedido do gestor 16/07/2026: "digitar um ponto pra
+    // validar" era o sintoma de dose/via sendo aceitos via bypass no texto
+    // livre em vez de exigidos no campo certo).
     if (ptype === 'topical' || ptype === 'rectal') {
-      if (empty(item.posology) && !anyInstruction(item)) missing.push('posologia');
-      if (empty(item.route) && !anyInstruction(item)) missing.push('via');
+      if (empty(item.posology)) missing.push('posologia');
+      if (empty(item.route)) missing.push('via');
       return missing;
     }
 
@@ -4646,9 +4650,10 @@ const PrescricaoPage = () => {
     const hasQuantity = has(String((item as any).quantity ?? ''));
     const doseSatisfiedBySolidQty = isSolidOral && isOralLike && hasQuantity;
 
-    if (empty(item.dose) && !anyInstruction(item) && !doseSatisfiedBySolidQty) missing.push('dose');
-    if (empty(item.posology) && !anyInstruction(item)) missing.push('posologia');
-    if (empty(item.route) && !anyInstruction(item)) missing.push('via');
+    // Recomendações NÃO substitui mais dose/posologia/via — mesma correção.
+    if (empty(item.dose) && !doseSatisfiedBySolidQty) missing.push('dose');
+    if (empty(item.posology)) missing.push('posologia');
+    if (empty(item.route)) missing.push('via');
 
     // ----- Sólido oral (cp/cápsula/drágea/SL/orodispersível) por via oral/SL/enteral -----
     // Posologia é OBRIGATÓRIA — instrução livre NÃO substitui (risco de erro de farmácia/enfermagem).
