@@ -52,6 +52,7 @@ import { PatientMovementDialog } from "./PatientMovementDialog";
 import { Printer } from "lucide-react";
 import { PatientIdentityHeader } from "./PatientIdentityHeader";
 import { SuspendDischargeDialog } from "./SuspendDischargeDialog";
+import { CancelTransferSignalDialog } from "./CancelTransferSignalDialog";
 import { Ban } from "lucide-react";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 
@@ -1230,6 +1231,7 @@ function DischargeQuickActions({ patientId, patientName, admissionStatus, fallba
   const latestAlta = docs?.find((d) => d.document_type === "alta_hospitalar" || d.document_type === "alta_pedido");
   const latestObito = docs?.find((d) => d.document_type === "obito");
   const [suspendOpen, setSuspendOpen] = useState(false);
+  const [cancelTransferOpen, setCancelTransferOpen] = useState(false);
 
   // Sinalização de transferência (sem documento clínico — só status no patients)
   if (admissionStatus === "transferencia_interna_pendente" || admissionStatus === "transferencia_externa_pendente") {
@@ -1243,20 +1245,50 @@ function DischargeQuickActions({ patientId, patientName, admissionStatus, fallba
         <p className="text-[11px] leading-snug text-sky-900/80 dark:text-sky-100/80">
           A sinalização está ativa. A <strong>desalocação física</strong> do leito é feita no <strong>Mapa de Leitos</strong> (botão "Desalocar leito").
         </p>
-        <Button size="sm" variant="outline" className="w-full h-7 text-[11px] gap-1.5 border-sky-500/50 text-sky-700 dark:text-sky-300 hover:bg-sky-500/10"
-          onClick={fallback}>
-          <ArrowLeftRight className="h-3 w-3" /> Editar / cancelar sinalização
-        </Button>
+        <div className="grid grid-cols-2 gap-1.5">
+          <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1.5 border-sky-500/50 text-sky-700 dark:text-sky-300 hover:bg-sky-500/10"
+            onClick={fallback}>
+            <Pencil className="h-3 w-3" /> Alterar destino
+          </Button>
+          <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1.5 border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+            onClick={() => setCancelTransferOpen(true)}>
+            <Ban className="h-3 w-3" /> Cancelar sinalização
+          </Button>
+        </div>
+        <CancelTransferSignalDialog
+          open={cancelTransferOpen}
+          onOpenChange={setCancelTransferOpen}
+          patientId={patientId}
+          patientName={patientName}
+          transferKind={isInt ? "interna" : "externa"}
+        />
       </div>
     );
   }
 
   if (latestObito) {
     return (
-      <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10"
-        onClick={() => printDischargeDocument("obito", latestObito.content)}>
-        <Skull className="h-3.5 w-3.5" /> Ver relatório de óbito
-      </Button>
+      <>
+        <div className="grid grid-cols-2 gap-1.5 w-full">
+          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10"
+            onClick={() => printDischargeDocument("obito", latestObito.content)}>
+            <Skull className="h-3.5 w-3.5" /> Ver relatório de óbito
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5 border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+            onClick={() => setSuspendOpen(true)}>
+            <Ban className="h-3.5 w-3.5" /> Cancelar óbito
+          </Button>
+        </div>
+        <SuspendDischargeDialog
+          open={suspendOpen}
+          onOpenChange={setSuspendOpen}
+          docId={latestObito.id}
+          patientId={patientId}
+          patientName={patientName}
+          docTypeLabel="Relatório de óbito"
+          documentType="obito"
+        />
+      </>
     );
   }
   if (latestAlta) {
@@ -1287,6 +1319,7 @@ function DischargeQuickActions({ patientId, patientName, admissionStatus, fallba
           patientId={patientId}
           patientName={patientName}
           docTypeLabel={DISCHARGE_DOC_SHORT[latestAlta.document_type]}
+          documentType="alta"
         />
       </>
     );
