@@ -24,7 +24,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useHospital } from "@/contexts/HospitalContext";
-import { ArrowLeft, ArrowRight, FileText, Loader2, AlertTriangle, User, Bed, Stethoscope, MapPin, Info, ArrowRightLeft, Building2, ClipboardList, Eye, History } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, Loader2, AlertTriangle, User, Bed, Stethoscope, MapPin, Info, ArrowRightLeft, Building2, ClipboardList, Eye, History, CheckCircle2, RefreshCw, Unlock, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   MOVEMENT_CATEGORIES,
@@ -123,6 +123,15 @@ export function PatientMovementDialog({
   const [docComplete, setDocComplete] = useState(false);
   const [signerProfile, setSignerProfile] = useState<{ name: string; crm: string }>({ name: "", crm: "" });
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Pop-up didático pós-confirmação — pedido do gestor 16/07/2026: depois de
+  // sinalizar, o usuário precisa saber (de forma resumida e visual) que
+  // existe o fluxo de suspensão, que o Mapa de Leitos já mostra a marcação,
+  // que a cockpit já atualizou sozinha, e quando o leito fica liberado para
+  // desalocação. Persiste independente do reset do wizard (handleClose).
+  const [signaledInfo, setSignaledInfo] = useState<{
+    subtypeDef: SubtypeDef;
+    destinationLabel: string | null;
+  } | null>(null);
 
   const { toast } = useToast();
   const { currentState, currentHospital } = useHospital();
@@ -525,6 +534,14 @@ export function PatientMovementDialog({
 
       setConfirmOpen(false);
       onSuccess?.();
+      // Captura ANTES do handleClose() (que reseta subtype/destination) —
+      // o pop-up didático usa esses dados depois que o wizard já fechou.
+      setSignaledInfo({
+        subtypeDef,
+        destinationLabel: subtypeDef.needsDestination
+          ? (destination === "OUTRO" ? customDestination : sectorLabelFromCode(destination) || destination) || null
+          : null,
+      });
       handleClose();
     } catch (error: any) {
       console.error("Error creating movement:", error);
@@ -816,6 +833,7 @@ export function PatientMovementDialog({
   const HeaderIcon = subtypeDef?.icon ?? headerCat?.icon;
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
       <DialogContent className={cn("max-h-[92vh] overflow-y-auto", requiredDocType ? "sm:max-w-[760px]" : "sm:max-w-[520px]")}>
         <DialogHeader>
@@ -977,9 +995,71 @@ export function PatientMovementDialog({
               ? [{ label: "Médico responsável", reason: "informe o profissional responsável pela movimentação." }]
               : []),
           ]}
-          finalNote={<>Esta ação é <strong className="text-foreground">reversível apenas via auditoria administrativa</strong>. Confirme apenas se todos os dados estiverem corretos.</>}
+          finalNote={<>Se sinalizar por engano, dá pra <strong className="text-foreground">suspender essa sinalização</strong> depois, direto no Cockpit do paciente (com senha e motivo) — confira os dados antes de confirmar mesmo assim.</>}
         />
       )}
     </Dialog>
+
+    {/* Pop-up didático pós-confirmação — resume o que foi sinalizado e
+        explica os 4 pontos que o usuário precisa saber: existe fluxo de
+        suspensão, o Mapa de Leitos já mostra a marcação, a cockpit já
+        atualizou sozinha, e quando o leito libera para desalocação. */}
+    <Dialog open={!!signaledInfo} onOpenChange={(o) => { if (!o) setSignaledInfo(null); }}>
+      <DialogContent className="sm:max-w-md">
+        <div className="flex flex-col items-center text-center gap-2 pt-2 pb-1">
+          <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center">
+            <CheckCircle2 className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <div>
+            <p className="font-semibold text-base">
+              {signaledInfo?.subtypeDef.label} sinalizada
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {patient?.name}
+              {signaledInfo?.destinationLabel ? <> → <strong className="text-foreground">{signaledInfo.destinationLabel}</strong></> : null}
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-2 py-2">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5">
+            O que já aconteceu / o que fazer a partir daqui
+          </p>
+          <div className="rounded-md border bg-muted/30 divide-y">
+            <div className="flex items-start gap-2.5 p-2.5">
+              <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <p className="text-[12.5px] leading-snug">
+                O <strong>Mapa de Leitos</strong> já mostra a marcação desta sinalização no leito de {patient?.name?.split(" ")[0] || "paciente"}.
+              </p>
+            </div>
+            <div className="flex items-start gap-2.5 p-2.5">
+              <RefreshCw className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <p className="text-[12.5px] leading-snug">
+                O <strong>Cockpit do paciente</strong> já atualizou sozinho com o novo status — não precisa recarregar a página.
+              </p>
+            </div>
+            <div className="flex items-start gap-2.5 p-2.5">
+              <Unlock className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <p className="text-[12.5px] leading-snug">
+                O leito já pode ser <strong>desalocado no Mapa de Leitos</strong> (botão "Desalocar leito") assim que a saída física acontecer — a sinalização libera essa permissão.
+              </p>
+            </div>
+            <div className="flex items-start gap-2.5 p-2.5">
+              <Undo2 className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <p className="text-[12.5px] leading-snug">
+                Sinalizou por engano? Dá pra <strong>suspender</strong> essa sinalização a qualquer momento, direto no Cockpit do paciente (pede senha + motivo).
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button className="w-full" onClick={() => setSignaledInfo(null)}>
+            Entendi, fechar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

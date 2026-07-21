@@ -140,7 +140,7 @@ export function DischargeConfirmDialog({
               </Step>
             </ol>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground pt-1 border-t border-primary/20">
-              Esta ação é <strong className="text-foreground">reversível apenas via auditoria administrativa</strong>. Confirme apenas se todos os dados estiverem corretos.
+              Se sinalizar por engano, dá pra <strong className="text-foreground">suspender depois</strong>, direto no Cockpit do paciente (com senha e motivo) — confira os dados antes de confirmar mesmo assim.
             </p>
           </section>
         </div>
