@@ -425,18 +425,40 @@ export function PatientMovementDialog({
               throw new Error("Erro ao classificar a transferência. Tente novamente.");
             }
 
-            // Idempotência: verifica se já existe request pendente para este paciente
-            // COM O MESMO destino. Evita duplicata quando tentativa anterior falhou
-            // parcialmente. Se o destino for diferente, prossegue normalmente.
-            const { data: existingReq } = await (supabase as any)
+            // Idempotência: verifica se já existe QUALQUER request pendente
+            // para este paciente — antes só comparava com o MESMO destino
+            // (.eq("target_sector_code", sectorCode)), então re-sinalizar
+            // para um destino diferente criava uma SEGUNDA linha pendente
+            // em vez de substituir a primeira. Um paciente só pode ter uma
+            // sinalização de transferência interna pendente por vez —
+            // reforçado também por índice único no banco (migration
+            // 20260716230000).
+            const { data: existingReqs } = await (supabase as any)
               .from("internal_transfer_requests")
               .select("id, target_sector_code")
               .eq("source_patient_id", (patient as any).id)
               .eq("status", "pending")
-              .eq("target_sector_code", sectorCode)
-              .maybeSingle();
+              .order("created_at", { ascending: false })
+              .limit(1);
+            const existingReq = existingReqs?.[0] ?? null;
 
-            if (!existingReq?.id) {
+            const sameDestination = existingReq?.target_sector_code === sectorCode;
+
+            if (existingReq?.id && !sameDestination) {
+              // Destino mudou: substitui a sinalização anterior em vez de
+              // deixá-la órfã (a causa raiz do bug de duplicidade).
+              await (supabase as any)
+                .from("internal_transfer_requests")
+                .update({
+                  status: "cancelled",
+                  cancellation_reason: `Substituída por nova sinalização — destino alterado para ${sectorLabelFromCode(sectorCode) || sectorCode}.`,
+                  cancelled_at: new Date().toISOString(),
+                  cancelled_by: authUser?.id ?? null,
+                })
+                .eq("id", existingReq.id);
+            }
+
+            if (!existingReq?.id || !sameDestination) {
               // Criar apenas o registro de fila — SEM zerar o leito de origem
               const sourcePatientId = (patient as any).id;
               console.log("[PatientMovementDialog] INSERT internal_transfer_requests — source_patient_id:", sourcePatientId, "target:", sectorCode);
