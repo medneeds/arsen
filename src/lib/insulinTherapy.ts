@@ -339,7 +339,11 @@ export function describeInsulinPlan(plan: InsulinPlan): { headline: string; line
   }
 
   if (plan.notes) lines.push(`Obs: ${plan.notes}`);
-  if (plan.source) lines.push(`Fonte: ${plan.source}`);
+  // A fonte bibliográfica (SBD/ADA/AMIB) NÃO entra no descritivo — pedido do
+  // gestor 16/07/2026: é referência para quem MONTA o esquema, não instrução
+  // para quem EXECUTA à beira do leito. O campo plan.source continua no dado
+  // e é renderizado separadamente na etapa de revisão do InsulinTherapyDialog,
+  // onde a evidência é útil para a escolha.
   return { headline, lines };
 }
 
