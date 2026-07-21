@@ -2632,8 +2632,19 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 );
               })()}
 
-              {/* Row 2: Qtd → Forma → Diluente → Vol. dil → Via → Int. */}
+              {/* Row 2: Dose → Qtd → Forma → Diluente → Vol. dil → Via → Int. */}
               <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Dose:</span>
+                  <Input
+                    value={item.dose || ''}
+                    onChange={(e) => onUpdate(item.id, "dose", e.target.value)}
+                    placeholder="ex: 150mg (3mL)"
+                    title="Preenchido pelo catálogo quando disponível — editável sempre. Alguns medicamentos do catálogo oficial ainda não têm dose padrão cadastrada; preencha aqui."
+                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 px-1.5 focus-visible:ring-1 focus-visible:ring-primary"
+                    style={{ width: `${Math.max(6, (String(item.dose || '').length || 10) * 0.62 + 1.5)}ch`, minWidth: '7rem', maxWidth: '16rem' }}
+                  />
+                </div>
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Qtd:</span>
                   <Input
