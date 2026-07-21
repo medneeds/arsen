@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -118,6 +119,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const { namesHidden } = usePrivacy();
   const navigate = useNavigate();
   const { currentHospital } = useHospital();
+  const queryClient = useQueryClient();
   const [showFullId, setShowFullId] = useState(false);
   const [recordEditOpen, setRecordEditOpen] = useState(false);
   const [pinned, setPinned] = useState(false);
@@ -1219,6 +1221,15 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         movementType={null}
         isOpen={movementDialogOpen}
         onClose={() => setMovementDialogOpen(false)}
+        onSuccess={() => {
+          // Bug reportado 16/07/2026: a cockpit não atualizava sozinha após
+          // finalizar uma sinalização (óbito, alta, transferência) — o
+          // dialog já tinha esse callback pronto, mas nada aqui o chamava.
+          queryClient.invalidateQueries({ queryKey: ["discharge-docs"] });
+          queryClient.invalidateQueries({ queryKey: ["patients"] });
+          queryClient.invalidateQueries({ queryKey: ["patient-movements"] });
+          queryClient.invalidateQueries({ queryKey: ["internal-transfer-requests"] });
+        }}
       />
     </TooltipProvider>
   );
@@ -1252,7 +1263,7 @@ function DischargeQuickActions({ patientId, patientName, admissionStatus, fallba
           </Button>
           <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1.5 border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
             onClick={() => setCancelTransferOpen(true)}>
-            <Ban className="h-3 w-3" /> Cancelar sinalização
+            <Ban className="h-3 w-3" /> Suspender sinalização
           </Button>
         </div>
         <CancelTransferSignalDialog
@@ -1276,7 +1287,7 @@ function DischargeQuickActions({ patientId, patientName, admissionStatus, fallba
           </Button>
           <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5 border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
             onClick={() => setSuspendOpen(true)}>
-            <Ban className="h-3.5 w-3.5" /> Cancelar óbito
+            <Ban className="h-3.5 w-3.5" /> Suspender óbito
           </Button>
         </div>
         <SuspendDischargeDialog
