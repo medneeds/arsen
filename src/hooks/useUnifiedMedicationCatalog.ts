@@ -148,7 +148,13 @@ function rowsToEntries(
         id: `cat-${row.id}-${p.form ?? ""}-${p.concentration ?? ""}-${p.route ?? ""}`,
         name: row.generic_name,
         presentation: buildPresentationLabel(p),
-        defaultDose: "",
+        // Bug 16/07/2026: defaultDose vinha hardcoded como "" — o campo
+        // default_dose já era buscado do banco (PresentationRow) mas nunca
+        // usado. Qualquer medicação vinda do catálogo oficial (fonte de
+        // verdade, com prioridade sobre a base estática local — ver
+        // dedupeMerge abaixo) nascia sem dose, travando a validação da
+        // prescrição sem nenhuma forma de o médico perceber a causa.
+        defaultDose: p.default_dose ?? "",
         defaultRoute: p.route ?? "",
         defaultPosology: "",
         defaultSchedule: "",
