@@ -576,7 +576,10 @@ function buildLine2Tokens(item: PrescriptionItem): Array<{ text: string; isBadge
   // Diluente
   const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
   if (hasDiluent) {
-    const dilStr = item.diluentVolume ? `${item.diluent} ${item.diluentVolume} mL` : item.diluent!;
+    // Rótulo legível — antes usava item.diluent cru, mostrando "diluente_proprio"
+    // (o valor interno do <Select>) em vez de "Diluente próprio" na tela.
+    const dilLabelL2 = item.diluent === 'diluente_proprio' ? 'Diluente próprio' : item.diluent!;
+    const dilStr = item.diluentVolume ? `${dilLabelL2} ${item.diluentVolume} mL` : dilLabelL2;
     tokens.push({ text: `Diluente: ${dilStr}` });
   }
 
