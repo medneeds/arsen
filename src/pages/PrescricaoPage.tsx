@@ -7013,6 +7013,13 @@ const PrescricaoPage = () => {
       status: 'active' as const,
       suspensionReason: undefined,
       suspendedAt: undefined,
+      // Nova prescrição = nova validação. Os outros 3 fluxos de cópia
+      // (renovação automática de 05h, clonagem, template) já resetavam;
+      // a renovação manual era a única que herdava validated:true de ontem
+      // — o cutoff de plantão mitigava, mas a semântica deve ser idêntica.
+      // Unificado 21/07/2026 (auditoria de consistência).
+      validated: false,
+      validatedAt: undefined,
       // Extra items with scheduled times become routine items on renewal
       isExtra: false,
     }));
