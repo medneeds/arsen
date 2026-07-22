@@ -50,6 +50,7 @@ import {
   printDischargeDocument,
 } from "@/lib/dischargeDocuments";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { closeActiveEncounter } from "@/lib/resolveActiveEncounter";
 
 // Mapeamento: texto do destino de transferência interna → código de setor do banco
 const DESTINATION_TO_SECTOR_CODE: Record<string, string> = {
@@ -364,20 +365,17 @@ export function PatientMovementDialog({
             .eq("id", (patient as any).id);
           if (statusErr) throw statusErr;
 
-          // Encerra o encounter — alta médica e óbito são desfechos finais da internação.
-          // Regra de negócio: 1 internação = 1 atendimento até o desfecho final.
-          const { error: encAltaErr } = await supabase
-            .from("patient_encounters")
-            .update({
-              status: "closed",
-              discharge_date: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq("patient_id", (patient as any).id)
-            .neq("status", "closed");
-          if (encAltaErr) {
-            // Não bloqueia — documento e status já foram registrados com sucesso.
-            console.error("[PatientMovementDialog] falha ao encerrar encounter (alta/óbito):", encAltaErr);
+          // Encerra o encounter — alta médica e óbito são desfechos finais da
+          // internação. Regra de negócio: 1 internação = 1 atendimento até o
+          // desfecho. Fecha pelo encounter ATIVO resolvido via registry (não
+          // por patient_id/leito) — se o paciente foi transferido internamente
+          // antes da alta, o vínculo patient_id do encounter pode ter mudado e
+          // o fechamento por leito deixaria um encounter zumbi ABERTO, que a
+          // próxima readmissão misturaria. (Auditoria 22/07/2026.)
+          const closeRes = await closeActiveEncounter((patient as any).id);
+          if (!closeRes.ok) {
+            // Não bloqueia — documento e status já foram registrados.
+            console.error("[PatientMovementDialog] falha ao encerrar encounter (alta/óbito):", closeRes.error);
           }
         }
 
@@ -407,18 +405,12 @@ export function PatientMovementDialog({
         // Encerra encounter apenas para transferência EXTERNA — é desfecho final da internação.
         // Transferência INTERNA: encounter segue aberto (1 internação = 1 atendimento).
         if (subtypeDef.id === "TRANSFERENCIA_EXTERNA") {
-          const { error: encExtErr } = await supabase
-            .from("patient_encounters")
-            .update({
-              status: "closed",
-              discharge_date: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq("patient_id", (patient as any).id)
-            .neq("status", "closed");
-          if (encExtErr) {
+          // Fecha o encounter ativo via registry (não por leito) — mesma razão
+          // do fluxo de alta/óbito acima. (Auditoria 22/07/2026.)
+          const closeExtRes = await closeActiveEncounter((patient as any).id);
+          if (!closeExtRes.ok) {
             // Não bloqueia — sinalização de transferência já registrada.
-            console.error("[PatientMovementDialog] falha ao encerrar encounter (transf. externa):", encExtErr);
+            console.error("[PatientMovementDialog] falha ao encerrar encounter (transf. externa):", closeExtRes.error);
           }
         }
 

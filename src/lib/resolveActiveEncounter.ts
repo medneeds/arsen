@@ -40,3 +40,45 @@ export async function resolveActiveEncounterId(patientId: string | null | undefi
     return null;
   }
 }
+
+/**
+ * Fecha o encounter ATIVO de um paciente (alta/óbito/transferência externa) de
+ * forma correta: resolve o encounter pela regra canônica (registry-first) e
+ * fecha por id — NÃO por patient_id (linha-leito).
+ *
+ * Por quê (auditoria 22/07/2026): os fluxos de alta/óbito e transferência
+ * externa fechavam o encounter com `.eq("patient_id", linhaLeito)`. Se o
+ * paciente havia sido transferido internamente antes da alta, o repoint pode
+ * ter alterado o vínculo patient_id do encounter — e o UPDATE não o encontrava,
+ * deixando o encounter ABERTO. Um encounter zumbi aberto faz a próxima
+ * readmissão trata-lo como "ativo" e MISTURAR o histórico de dois atendimentos,
+ * violando a regra de negócio. Resolver por registry fecha o encounter certo.
+ *
+ * Retorna true se um encounter foi fechado (ou já estava), false em erro real.
+ */
+export async function closeActiveEncounter(
+  bedRowId: string | null | undefined,
+  dischargeDate?: string,
+): Promise<{ ok: boolean; closedId: string | null; error?: string }> {
+  if (!bedRowId) return { ok: true, closedId: null };
+  try {
+    const encounterId = await resolveActiveEncounterId(bedRowId);
+    if (!encounterId) {
+      // Sem encounter ativo — nada a fechar (não é erro).
+      return { ok: true, closedId: null };
+    }
+    const { error } = await supabase
+      .from("patient_encounters")
+      .update({
+        status: "closed",
+        discharge_date: dischargeDate ?? new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", encounterId)
+      .neq("status", "closed");
+    if (error) return { ok: false, closedId: null, error: error.message };
+    return { ok: true, closedId: encounterId };
+  } catch (e: any) {
+    return { ok: false, closedId: null, error: e?.message ?? "erro desconhecido" };
+  }
+}

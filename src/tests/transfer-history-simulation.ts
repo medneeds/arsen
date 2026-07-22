@@ -908,6 +908,43 @@ await test("C36 — Encounter já fechado: segundo fechamento não gera erro (ne
   assert(resultado[0].discharge_date === "2026-06-01T10:00:00Z", "discharge_date original deve ser preservado");
 });
 
+// Fecha o encounter resolvendo por registry (regra canônica), não por leito.
+// Cobre o PONTO CEGO dos testes C26-C28: encounter cujo patient_id divergiu do
+// leito após transferência interna (repoint mudou o vínculo). O fechamento por
+// patient_id/leito falharia (0 linhas → encounter zumbi aberto); o fechamento
+// por registry→id acerta. Auditoria 22/07/2026.
+function closeEncounterByRegistrySimulated(
+  encounters: MockEncounter[],
+  registryId: string,
+): MockEncounter[] {
+  const ativo = encounters
+    .filter(e => (e as any).registry_id === registryId && e.status !== "closed")
+    .sort((a, b) => (b.id > a.id ? 1 : -1))[0];
+  if (!ativo) return encounters;
+  return encounters.map(e =>
+    e.id === ativo.id ? { ...e, status: "closed", discharge_date: "2026-07-22T12:00:00Z" } : e,
+  );
+}
+
+await test("C36b — Alta fecha encounter por REGISTRY mesmo com patient_id divergente (ponto cego)", async () => {
+  const encounter = {
+    id: "enc-020",
+    patient_id: IDS.LEITO_L01,   // leito antigo (divergente do atual)
+    registry_id: "REG-PACIENTE-X",
+    status: "active",
+    discharge_date: null,
+  } as any;
+
+  // ❌ ANTIGO (fechar por leito atual, diferente de L01): não encontra → NÃO fecha
+  const antigo = applyEncounterUpdate([encounter], "leito-novo-L09", true);
+  assert(antigo[0].status === "active", "Fechamento por leito atual FALHA (encounter zumbi) — comprova o bug");
+
+  // ✅ NOVO (resolver por registry, fechar por id): fecha o encounter certo
+  const novo = closeEncounterByRegistrySimulated([encounter], "REG-PACIENTE-X");
+  assert(novo[0].status === "closed", "Fechamento por registry deve fechar o encounter certo");
+  assert(novo[0].discharge_date !== null, "discharge_date deve ser preenchido");
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // GRUPO 7 — AuthContext: fallback seguro de role (Crítico 1)
 // ─────────────────────────────────────────────────────────────────────────────
