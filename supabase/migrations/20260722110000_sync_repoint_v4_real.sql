@@ -10,7 +10,11 @@
 -- Notas da extração:
 --  • Blocos dhd_patients/pre_admissions existem na v4 mas FALHAM silencioso
 --    (EXCEPTION WHEN OTHERS THEN NULL — as colunas patient_id não existem).
---  • sepsis_protocols NÃO é repontada pela v4 (achado; correção → v5).
+--  • sepsis_protocols NÃO é repontada pela v4 — VERIFICADO 22/07/2026: é
+--    residual, não é bug. A tabela está fora do fluxo oficial (a página de
+--    sepse é calculadora client-side sem persistência; nenhum componente
+--    clínico, hook ou RPC lê/escreve a tabela — só labels administrativos).
+--    Linhas existentes são resíduo de versão anterior da feature.
 CREATE OR REPLACE FUNCTION public.repoint_patient_history(p_source_patient_id uuid, p_target_patient_id uuid, p_reason text DEFAULT 'INTERNAL_TRANSFER'::text)
  RETURNS jsonb
  LANGUAGE plpgsql
