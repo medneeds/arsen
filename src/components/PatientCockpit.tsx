@@ -553,7 +553,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               onClick={() => goPatient("/monitoramento")}
             >
               <Activity className="h-3.5 w-3.5" />
-              Sinais vitais
+              Monitoramento clínico
             </Button>
           </div>
           <DischargeQuickActions
