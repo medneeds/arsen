@@ -1,5 +1,6 @@
 // @ts-ignore - React module/types are resolved by the app build environment
 import { useEffect, useState } from "react";
+import { ADMISSION_STATUS } from "@/lib/admissionStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { Patient } from "@/types/patient";
 import { useToast } from "@/hooks/use-toast";
@@ -133,7 +134,7 @@ export function usePatients(department?: Department, sector?: string) {
         isVacant: (p as any).is_vacant ?? false,
         // Leito vago NUNCA carrega admission_status (evita "admitido fantasma" pós-alta/óbito).
         // Sem fallback para 'admitido' quando admission_status é NULL: null significa que o
-        // status não foi registrado — é diferente de "admitido". O fallback anterior causava
+        // status não foi registrado — é diferente de 'admitido'. O fallback anterior causava
         // bloqueio duro indevido em leitos com status residual nulo (ex.: pós-alta com flag não gravado).
         admissionStatus: (p as any).is_vacant
           ? undefined
@@ -170,7 +171,7 @@ export function usePatients(department?: Department, sector?: string) {
       console.error('Error fetching patients:', error);
       toast({
         title: "Erro ao carregar pacientes",
-        description: "Não foi possível carregar os dados dos pacientes.",
+        description: `Não foi possível carregar os dados dos pacientes.${error instanceof Error && error.message ? ` Motivo: ${error.message}` : ''}`,
         variant: "destructive",
       });
     } finally {
@@ -241,7 +242,7 @@ export function usePatients(department?: Department, sector?: string) {
       if (updates.clinicalStatus !== undefined) dbUpdates.clinical_status = updates.clinicalStatus;
       if (updates.isVacant !== undefined) dbUpdates.is_vacant = updates.isVacant;
 
-      console.log('Updating patient:', patientId, 'with data:', dbUpdates);
+      console.log('Updating patient:', patientId); // dados clínicos NÃO são logados (LGPD — auditoria 22/07/2026)
 
       const { error } = await supabase
         .from('patients')
@@ -266,7 +267,7 @@ export function usePatients(department?: Department, sector?: string) {
       console.error('Error updating patient:', error);
       toast({
         title: "Erro ao atualizar",
-        description: "Não foi possível salvar as alterações.",
+        description: `Não foi possível salvar as alterações.${error instanceof Error && error.message ? ` Motivo: ${error.message}` : ''}`,
         variant: "destructive",
       });
       throw error;
@@ -391,7 +392,7 @@ export function usePatients(department?: Department, sector?: string) {
       console.error('Error creating patient:', error);
       toast({
         title: "Erro ao criar leito",
-        description: "Não foi possível adicionar o leito.",
+        description: `Não foi possível adicionar o leito.${error instanceof Error && error.message ? ` Motivo: ${error.message}` : ''}`,
         variant: "destructive",
       });
       throw error;
@@ -418,7 +419,7 @@ export function usePatients(department?: Department, sector?: string) {
         : false;
 
       if (isExtra) {
-        console.log('Hard-deleting extra bed row:', patientId, target?.bedNumber);
+        console.log('Hard-deleting extra bed row:', patientId);
 
         // Blindagem: leito extra órfão (marcado como ocupado mas sem nome,
         // sem registro de paciente, sem prontuário e sem encounters vinculados)
@@ -453,10 +454,56 @@ export function usePatients(department?: Department, sector?: string) {
           if ((encCount ?? 0) > 0) {
             throw new Error('Leito extra ocupado deve ser desalocado antes da exclusão.');
           }
-          console.log('Leito extra órfão detectado — prosseguindo com exclusão direta.');
         }
 
         const archivedBedNumber = `ARCHIVED-EXTRA-${target.sector}-${Date.now()}`;
+
+        // ═══ PRESERVAÇÃO DE HISTÓRICO (auditoria 22/07/2026, achado #1) ═══
+        // DELETE em patients dispara ON DELETE CASCADE em vital_signs,
+        // patient_encounters, round_sessions, conduct_history, culture_results,
+        // admission_histories e bed_allocation_requests. Um leito extra que já
+        // teve paciente com ALTA mantém o patient_id vinculado a esse histórico
+        // (alta não reponta — não há destino), então o DELETE apagaria os
+        // sinais vitais, o atendimento e as culturas daquele internamento.
+        // Regra: existindo QUALQUER encounter vinculado, o leito é ARQUIVADO
+        // (bed_number ARCHIVED-*, escondido do mapa pela policy) — nunca
+        // deletado. DELETE real só para leito extra sem histórico algum.
+        if (!looksOrphan) {
+          const { count: histCount, error: histErr } = await supabase
+            .from('patient_encounters')
+            .select('id', { count: 'exact', head: true })
+            .eq('patient_id', patientId);
+          if (histErr) {
+            console.error('[deletePatient] falha ao checar histórico do leito extra:', histErr);
+            throw histErr;
+          }
+          if ((histCount ?? 0) > 0) {
+            const { error: archErr } = await supabase
+              .from('patients')
+              .update({
+                bed_number: archivedBedNumber,
+                is_vacant: true,
+                name: '',
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', patientId)
+              .eq('is_vacant', true);
+            if (archErr) {
+              console.error('[deletePatient] falha ao arquivar leito extra com histórico:', archErr);
+              throw archErr;
+            }
+            if (options.updateLocalState) {
+              setPatients(prev => prev.filter(p => p.id !== patientId));
+            }
+            if (options.showToast) {
+              toast({
+                title: "Leito extra removido",
+                description: `${target?.bedNumber ?? 'Leito'} foi removido do setor. O histórico clínico do atendimento foi preservado.`,
+              });
+            }
+            return;
+          }
+        }
 
         // DELETE por ID — sem filtro de prefixo no bed_number para cobrir EXTRA*,
         // _GHOST_* e ARCHIVED-* (prefixos de versões anteriores do fallback).
@@ -505,11 +552,11 @@ export function usePatients(department?: Department, sector?: string) {
         return;
       }
 
-      console.log('Vacating bed (clearing patient data) for:', patientId);
+      console.log('Vacating bed for:', patientId);
 
       // 🔒 ARQUIVAR todos os dados clínicos ANTES de liberar o leito
       // Garante que o próximo paciente nesse leito não veja dados do anterior.
-      console.log('Archiving clinical data before vacate for patient:', patientId);
+      console.log('Archiving clinical data before vacate:', patientId);
       const { data: archiveResult, error: archiveError } = await supabase
         .rpc('archive_patient_bed_data', {
           p_patient_id: patientId,
@@ -526,7 +573,7 @@ export function usePatients(department?: Department, sector?: string) {
         }
         throw new Error(`Falha ao arquivar dados clínicos: ${archiveError.message}`);
       }
-      console.log('Archive result:', archiveResult);
+      console.log('Archive done for:', patientId); // resultado completo não é logado (LGPD)
 
       const vacantPayload = {
         name: '',
@@ -593,7 +640,7 @@ export function usePatients(department?: Department, sector?: string) {
       if (options.showToast) {
         toast({
           title: "Erro ao excluir",
-          description: "Não foi possível excluir o leito.",
+          description: `Não foi possível excluir o leito.${error instanceof Error && error.message ? ` Motivo: ${error.message}` : ''}`,
           variant: "destructive",
         });
       }
@@ -634,11 +681,11 @@ export function usePatients(department?: Department, sector?: string) {
 
       const currentStatus = (full as any)?.admission_status;
       const isPostDischargeRelease =
-        currentStatus === 'alta_dada'
-        || currentStatus === 'obito'
-        || currentStatus === 'transferencia_interna_pendente'
-        || currentStatus === 'transferencia_externa_pendente';
-      const isExceptionalRelease = currentStatus === 'admitido';
+        currentStatus === ADMISSION_STATUS.DISCHARGE_GIVEN
+        || currentStatus === ADMISSION_STATUS.DEATH
+        || currentStatus === ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING
+        || currentStatus === ADMISSION_STATUS.EXTERNAL_TRANSFER_PENDING;
+      const isExceptionalRelease = currentStatus === ADMISSION_STATUS.ADMITTED;
 
       // 1) Audita a ação
       const reasonLabel = opts.reason || 'Liberação de pré-admissão';
@@ -650,9 +697,9 @@ export function usePatients(department?: Department, sector?: string) {
           : 'LIBERAÇÃO PRÉ-ADMISSÃO';
       const destinationLabel = isExceptionalRelease
         ? 'PRONTUÁRIO PRESERVADO — LEITO LIBERADO SEM ALTA FORMAL'
-        : currentStatus === 'transferencia_interna_pendente'
+        : currentStatus === ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING
           ? 'TRANSFERÊNCIA INTERNA SINALIZADA — LEITO DE ORIGEM LIBERADO'
-        : currentStatus === 'transferencia_externa_pendente'
+        : currentStatus === ADMISSION_STATUS.EXTERNAL_TRANSFER_PENDING
           ? 'TRANSFERÊNCIA EXTERNA SINALIZADA — LEITO LIBERADO'
         : 'PRONTUÁRIO PRESERVADO — LEITO LIBERADO';
       const { error: movementError } = await supabase.from('patient_movements').insert({

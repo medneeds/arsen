@@ -1337,7 +1337,7 @@ export default function AltaDesfechoPage() {
               <p className="text-xs text-muted-foreground truncate">
                 {hasPatient
                   ? `${patientName}${patientBed ? ` • Leito ${patientBed}` : ""}${patientSector ? ` • ${patientSector.toUpperCase()}` : ""}`
-                  : "Selecione um paciente pelo cockpit ou painel clínico"}
+                  : "Selecione um paciente pelo Painel do Paciente ou painel clínico"}
               </p>
             </div>
           </div>

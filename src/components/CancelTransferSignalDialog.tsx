@@ -56,6 +56,7 @@ export function CancelTransferSignalDialog({
   };
 
   const handleConfirmed = async () => {
+    if (submitting) return; // guard de reentrada — duplo clique/Enter antes do re-render (auditoria 22/07/2026)
     setSubmitting(true);
     try {
       const { error } = await (supabase.rpc as any)("cancel_transfer_signal", {

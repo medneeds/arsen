@@ -477,7 +477,7 @@ const slides: Slide[] = [
               </span>
             </div>
             <div className="mt-4 grid grid-cols-4 gap-2 text-[10px] font-semibold uppercase tracking-wider">
-              {["Resumo", "Prescrição", "Evolução", "Exames", "Cuidados", "Documentos", "Histórico", "Cockpit"].map(
+              {["Resumo", "Prescrição", "Evolução", "Exames", "Cuidados", "Documentos", "Histórico", "Painel do Paciente"].map(
                 (t, i) => (
                   <div
                     key={t}

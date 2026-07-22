@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { ADMISSION_STATUS } from "@/lib/admissionStatus";
 import type { TransferClassification } from "@/lib/sectorComplexity";
 import { useNavigate } from "react-router-dom";
 import { Patient } from "@/types/patient";
@@ -355,7 +356,7 @@ export function PatientMovementDialog({
         if (docErr) throw docErr;
 
         // Marca o paciente como alta/óbito (mantém no leito até liberação física)
-        const newAdmissionStatus = requiredDocType === "obito" ? "obito" : "alta_dada";
+        const newAdmissionStatus = requiredDocType === "obito" ? ADMISSION_STATUS.DEATH : ADMISSION_STATUS.DISCHARGE_GIVEN;
         if ((patient as any).id) {
           const { error: statusErr } = await supabase
             .from("patients")
@@ -395,8 +396,8 @@ export function PatientMovementDialog({
       ) {
         const newAdmissionStatus =
           subtypeDef.id === "TRANSFERENCIA_INTERNA"
-            ? "transferencia_interna_pendente"
-            : "transferencia_externa_pendente";
+            ? ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING
+            : ADMISSION_STATUS.EXTERNAL_TRANSFER_PENDING;
         const { error: trErr } = await supabase
           .from("patients")
           .update({ admission_status: newAdmissionStatus, updated_at: new Date().toISOString() })
@@ -514,11 +515,11 @@ export function PatientMovementDialog({
                 const detail = `[${reqErr.code}] ${reqErr.message}${reqErr.details ? ` — ${reqErr.details}` : ''}`;
                 console.error("[PatientMovementDialog] falha ao criar internal_transfer_requests:", detail, reqErr);
                 // Reverte o admission_status para 'admitido' — sem request na fila,
-                // o estado "transferencia_interna_pendente" seria inconsistente.
+                // o estado 'transferencia_interna_pendente' seria inconsistente.
                 try {
                   await supabase
                     .from("patients")
-                    .update({ admission_status: "admitido", updated_at: new Date().toISOString() })
+                    .update({ admission_status: ADMISSION_STATUS.ADMITTED, updated_at: new Date().toISOString() })
                     .eq("id", sourcePatientId);
                 } catch (revertErr) {
                   console.error("[PatientMovementDialog] falha ao reverter status do paciente:", revertErr);
@@ -541,7 +542,7 @@ export function PatientMovementDialog({
       ) {
         const { error: evErr } = await supabase
           .from("patients")
-          .update({ admission_status: "alta_dada", updated_at: new Date().toISOString() })
+          .update({ admission_status: ADMISSION_STATUS.DISCHARGE_GIVEN, updated_at: new Date().toISOString() })
           .eq("id", (patient as any).id);
         if (evErr) throw evErr;
       }

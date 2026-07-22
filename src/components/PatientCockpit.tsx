@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { ADMISSION_STATUS } from "@/lib/admissionStatus";
 import { useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -224,7 +225,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
       >
         <User2 className="h-10 w-10 text-muted-foreground/40 mb-3" />
         <p className="text-sm text-muted-foreground">
-          Selecione um paciente para visualizar o cockpit clínico.
+          Selecione um paciente para visualizar o Painel do Paciente.
         </p>
       </aside>
     );
@@ -1240,13 +1241,13 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
 function DischargeQuickActions({ patientId, patientName, admissionStatus, fallback }: { patientId: string; patientName: string; admissionStatus?: string; fallback: () => void }) {
   const { data: docs } = usePatientDischargeDocs(patientId, patientName);
   const latestAlta = docs?.find((d) => d.document_type === "alta_hospitalar" || d.document_type === "alta_pedido");
-  const latestObito = docs?.find((d) => d.document_type === "obito");
+  const latestObito = docs?.find((d) => d.document_type === ADMISSION_STATUS.DEATH);
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [cancelTransferOpen, setCancelTransferOpen] = useState(false);
 
   // Sinalização de transferência (sem documento clínico — só status no patients)
-  if (admissionStatus === "transferencia_interna_pendente" || admissionStatus === "transferencia_externa_pendente") {
-    const isInt = admissionStatus === "transferencia_interna_pendente";
+  if (admissionStatus === ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING || admissionStatus === ADMISSION_STATUS.EXTERNAL_TRANSFER_PENDING) {
+    const isInt = admissionStatus === ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING;
     return (
       <div className="w-full rounded-md border border-sky-500/40 bg-sky-50 dark:bg-sky-950/30 p-2 space-y-1.5">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-sky-800 dark:text-sky-200">
@@ -1282,7 +1283,7 @@ function DischargeQuickActions({ patientId, patientName, admissionStatus, fallba
       <>
         <div className="grid grid-cols-2 gap-1.5 w-full">
           <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10"
-            onClick={() => printDischargeDocument("obito", latestObito.content)}>
+            onClick={() => printDischargeDocument(ADMISSION_STATUS.DEATH, latestObito.content)}>
             <Skull className="h-3.5 w-3.5" /> Ver relatório de óbito
           </Button>
           <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5 border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"

@@ -46,7 +46,7 @@ const atividade = [
 
 const ativos = [
   { titulo: "Mapa de Pacientes", desc: "Implantado em UTI 1, UTI 2, UCI 1, UCI 2, UCC e Enfermaria de Transição. 79 leitos em operação." },
-  { titulo: "Painel Clínico", desc: "Prescrição estruturada, evolução SOAP, exames, cuidados e cockpit unificado nos 6 setores ativos." },
+  { titulo: "Painel Clínico", desc: "Prescrição estruturada, evolução SOAP, exames, cuidados e Painel do Paciente unificado nos 6 setores ativos." },
   { titulo: "Gestão executiva", desc: "Painel do Gestor com visão irrestrita dos setores ativos e 6 relatórios executivos plugáveis." },
   { titulo: "Alta, óbito e documentos", desc: "Sumários de alta, declaração de óbito, suspender alta com motivo+senha e ficha de atendimento consolidada em PDF." },
   { titulo: "Autenticação e perfis", desc: "Login por usuário/CPF/e-mail, reset por e-mail, ProfileChooser multi-perfil e aprovação de cadastros pelo gestor." },
@@ -72,7 +72,7 @@ const correcoes = [
   { tema: "Edição sensível auditada", desc: "Data de admissão, número de prontuário e identidade do paciente com tabelas imutáveis de histórico, motivo obrigatório e confirmação tipada (\"CONFIRMO\")." },
   { tema: "Arquivamento de rascunhos órfãos", desc: "Rotina pg_cron a cada 30 minutos move rascunhos com mais de 24h, sem assinatura e fora do dia clínico para tabela de arquivo — sem perda de dado." },
   { tema: "Cadeado em setores sem implantação", desc: "UE, Anexo Vascular, CC, Neuro e Clínica Cirúrgica bloqueados com cleanup automático em 24h, preservando todo o prontuário." },
-  { tema: "Suspender alta sem perder o documento", desc: "Botão dedicado no cockpit com motivo ≥10 caracteres e confirmação por senha. O documento original permanece auditável." },
+  { tema: "Suspender alta sem perder o documento", desc: "Botão dedicado no Painel do Paciente com motivo ≥10 caracteres e confirmação por senha. O documento original permanece auditável." },
   { tema: "Transferência interna unificada", desc: "Mesmo número de atendimento preservado, escalada crítica UTI/UCI 2 dispara SAPS 3 pendente automático após a alocação." },
   { tema: "Suporte 24×7 durante a Semana 1", desc: "Equipe técnica de plantão acompanhando turno a turno, dando retaguarda a médicos, farmácia, enfermagem e NIR no preenchimento e nas dúvidas operacionais." },
   { tema: "Sincronizações estruturais de banco", desc: "Repointing cirúrgico de encounters desalinhados por reuso de leito. View patient_timeline e auditoria em 15 tabelas garantindo histórico longitudinal íntegro." },
@@ -82,7 +82,7 @@ const blindagens = [
   { titulo: "Nenhum dado clínico é apagado", desc: "Toda baixa é arquivamento — o registro permanece auditável para sempre." },
   { titulo: "Edição sensível exige motivo + \"CONFIRMO\"", desc: "Data de admissão, prontuário, identidade e alta passam por confirmação tipada com trilha de auditoria." },
   { titulo: "RLS ativa em todas as tabelas", desc: "Cada perfil enxerga apenas o que lhe cabe — admin, gestor, médico, farmácia, enfermagem, recepção, NIR, qualidade." },
-  { titulo: "Encounter_id por leito", desc: "Reuso de leito não vaza dados do ocupante anterior. Filtro defensivo em 6 hooks do cockpit (Fase B.3)." },
+  { titulo: "Encounter_id por leito", desc: "Reuso de leito não vaza dados do ocupante anterior. Filtro defensivo em 6 hooks do Painel do Paciente (Fase B.3)." },
 ];
 
 const desafios = [

@@ -24,7 +24,7 @@ interface Props {
   patientId?: string | null;
   docTypeLabel: string;
   /**
-   * 'obito' exige motivo mais longo (mínimo 20 caracteres, vs. 10 para alta)
+   * "obito" exige motivo mais longo (mínimo 20 caracteres, vs. 10 para alta)
    * e copy própria — mesma trilha de auditoria, barra de confirmação mais
    * alta dada a gravidade médico-legal da suspensão de um óbito.
    */
@@ -62,6 +62,7 @@ export function SuspendDischargeDialog({
   };
 
   const handleConfirmed = async () => {
+    if (submitting) return; // guard de reentrada — duplo clique/Enter antes do re-render (auditoria 22/07/2026)
     setSubmitting(true);
     try {
       const { error } = await supabase.rpc("suspend_discharge_document", {
