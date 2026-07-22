@@ -536,15 +536,26 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               Histórico
             </Button>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full h-8 text-xs gap-1.5"
-            onClick={() => setDocDialogOpen(true)}
-          >
-            <FileSignature className="h-3.5 w-3.5" />
-            Emitir documentos médicos
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => setDocDialogOpen(true)}
+            >
+              <FileSignature className="h-3.5 w-3.5" />
+              Emitir documentos
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => goPatient("/monitoramento")}
+            >
+              <Activity className="h-3.5 w-3.5" />
+              Sinais vitais
+            </Button>
+          </div>
           <DischargeQuickActions
             patientId={patient.id}
             patientName={patient.name}
@@ -777,25 +788,6 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               </div>
             </div>
             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-          </button>
-        )}
-
-        {/* Sem vitais ainda: acesso para registrar o PRIMEIRO sinal vital.
-            Antes o bloco de vitais so aparecia com dados existentes ({vitals &&}),
-            deixando o painel sem NENHUM caminho para o primeiro registro — critico
-            para a equipe multidisciplinar. (22/07/2026.) */}
-        {!vitals && (
-          <button
-            onClick={() => goPatient("/monitoramento")}
-            className="mx-3 mt-1 mb-1 flex items-center justify-between gap-2 rounded-md border border-dashed border-border bg-muted/20 hover:bg-muted/50 transition px-2.5 py-1.5 text-left"
-          >
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <Activity className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <span className="text-[11px] font-medium text-muted-foreground">
-                Registrar sinais vitais
-              </span>
-            </div>
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
           </button>
         )}
 
