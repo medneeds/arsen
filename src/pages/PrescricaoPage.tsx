@@ -595,118 +595,13 @@ function buildLine2Tokens(item: PrescriptionItem): Array<{ text: string; isBadge
 // reconstituição (ver relatório de implantação §7). Mecânica pronta; lista pendente.
 const RECONSTITUTION_AUTOFILL_ENABLED = false;
 
-function buildPrepDescription(item: PrescriptionItem): string {
-  // Mantido para compatibilidade com outros módulos (tela, não-PDF)
-  if (item.category === 'inhalation') {
-    return assembleInhalationInstruction(item as any);
-  }
-  const parts: string[] = [];
-  if (item.reconstitutionSolvent && item.reconstitutionVolume) {
-    const qtyFA = (item.quantity && item.quantity.trim() && item.quantity.trim() !== '0') ? item.quantity.trim() : '1';
-    parts.push(`Reconstituir ${qtyFA} frasco-ampola com ${item.reconstitutionVolume} mL de ${item.reconstitutionSolvent}.`);
-  }
-  const soluto = buildSolutoToken(item);
-  const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
-  if (hasDiluent) {
-    const dilStr = item.diluentVolume ? `${item.diluentVolume} mL de ${item.diluent}` : item.diluent!;
-    if (soluto) parts.push(`Diluir ${soluto} em ${dilStr}.`);
-    else parts.push(`Diluir em ${dilStr}.`);
-    const volTotalNum = parseFloat((item.volumeTotal || '').replace(',', '.'));
-    const volDilNum = parseFloat((item.diluentVolume || '').replace(',', '.'));
-    const hasDistinctTotal = item.volumeTotal && (volTotalNum > 0) &&
-      (!item.diluentVolume || !volDilNum || volTotalNum !== volDilNum);
-    if (hasDistinctTotal) parts.push(`Volume final: ${item.volumeTotal} mL.`);
-  } else if (soluto) {
-    parts.push(`${soluto}.`);
-  }
-  if (item.route && item.route !== '-') parts.push(`${routeShort(item.route)}.`);
-  if (item.ivBolus) {
-    parts.push('EV em bolus.');
-  } else if (item.infusionTime || item.infusionRate) {
-    const unit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
-    const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
-    if (item.infusionTime && item.infusionRate) {
-      parts.push(`Correr em ${item.infusionTime}${unit} (${item.infusionRate} ${modeLabel}).`);
-    } else if (item.infusionTime) {
-      parts.push(`Correr em ${item.infusionTime}${unit}.`);
-    } else if (item.infusionRate) {
-      parts.push(`Velocidade ${item.infusionRate} ${modeLabel}.`);
-    }
-  }
-  if (item.posology && item.posology !== '-') {
-    parts.push(`${item.posology}.`);
-  } else {
-    const pres = (item.presentation || '').toLowerCase();
-    const isOralSolid = /(comprimido|c[aá]psula|cap\.?\b|dr[aá]gea|sublingual|orodisper)/.test(pres);
-    if (isOralSolid) parts.push('⚠ POSOLOGIA NÃO INFORMADA.');
-  }
-  return parts.join(' ');
-}
+// buildPrepDescription e buildInlinePrepLine (formatos antigos de preparo em
+// prosa/inline) foram REMOVIDAS em 21/07/2026: eram código morto (nenhum call
+// site — o único uso restante era um bloco {false && ...} marcado DEPRECATED)
+// e tinham lógica de preparo divergente da fonte única (escondiam volume==
+// diluente, rótulos diferentes). Toda renderização de preparo usa agora
+// buildPrepSegments (src/lib/solutoToken.ts) — tela compacta, impresso e extra.
 
-/**
- * buildInlinePrepLine — formato novo para PDF da prescrição.
- * Dose em destaque + diluição + infusão em linha única com separador |
- * Remove mcg/kg/min (dado médico, não operacional para enfermagem).
- * "Diluente" abreviado para "Dil."
- */
-function buildInlinePrepLine(item: PrescriptionItem): string {
-  if (item.category === 'inhalation') return assembleInhalationInstruction(item as any);
-  if (item.category === 'nutrition') return '';
-
-  const segs: string[] = [];
-
-  // Reconstituição (pó liofilizado)
-  if (item.reconstitutionSolvent && item.reconstitutionVolume) {
-    const qtyFA = item.quantity?.trim() && item.quantity.trim() !== '0' ? item.quantity.trim() : '1';
-    segs.push(`Reconstituir ${qtyFA} FA em ${item.reconstitutionVolume}mL ${item.reconstitutionSolvent}`);
-  }
-
-  // Dil.: SF0,9% 96mL  —  ou "Sem diluente" quando o médico marca explicitamente
-  const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
-  if (hasDiluent) {
-    const dilLabel = item.diluent === 'diluente_proprio' ? 'Diluente próprio' : item.diluent;
-    const dilPart = item.diluentVolume
-      ? `Dil.: ${dilLabel} ${item.diluentVolume}mL`
-      : `Dil.: ${dilLabel}`;
-    segs.push(dilPart);
-  } else if (item.diluent === 'sem_diluente') {
-    // Exibe explicitamente quando o médico declarou que não há diluição (ponto 6).
-    segs.push('Sem diluente');
-  }
-
-  // Vol.: 100mL (só quando diferente do diluente)
-  if (item.volumeTotal) {
-    const volTotalNum = parseFloat(item.volumeTotal.replace(',', '.'));
-    const volDilNum = parseFloat((item.diluentVolume || '').replace(',', '.'));
-    if (volTotalNum > 0 && (!volDilNum || volTotalNum !== volDilNum)) {
-      segs.push(`Vol.: ${item.volumeTotal}mL`);
-    }
-  }
-
-  // Tipo de infusão — regra unificada via isContinuousInfusion (fonte única de verdade).
-  if (item.ivBolus) {
-    segs.push('Bolus');
-  } else if (isContinuousInfusion(item)) {
-    segs.push('BIC');
-  }
-
-  // Correr em / Vazão — em mL/h ou gts/min (SEM mcg/kg/min)
-  if (!item.ivBolus && (item.infusionTime || item.infusionRate)) {
-    const unit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
-    const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
-    if (item.infusionTime && item.infusionRate) {
-      segs.push(`Correr em: ${item.infusionTime}${unit}  |  Vazão: ${item.infusionRate} ${modeLabel}`);
-    } else if (item.infusionTime) {
-      segs.push(`Correr em: ${item.infusionTime}${unit}`);
-    } else if (item.infusionRate) {
-      segs.push(`Vazão: ${item.infusionRate} ${modeLabel}`);
-    }
-  } else if (isContinuousInfusion(item) && !item.infusionRate && !item.infusionTime) {
-    segs.push('Vazão: conforme protocolo');
-  }
-
-  return segs.join('  |  ');
-}
 
 /**
  * Separa o preparo em duas partes para a NOVA ORDEM do PDF (dose → diluente → … ):
@@ -2150,7 +2045,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
     } else {
       if (item.dose && item.dose !== '-') compactParts.push(composeDoseLabel(item));
       if (item.diluent && item.diluent !== 'sem_diluente') {
-        let dil = `diluir em ${item.diluent}`;
+        // Rótulo legível — mesmo mapeamento da fonte única (evita "diluir em
+        // diluente_proprio" cru na tela).
+        const dilLabelHydr = item.diluent === 'diluente_proprio' ? 'Diluente próprio' : item.diluent;
+        let dil = `diluir em ${dilLabelHydr}`;
         if (item.diluentVolume) dil += ` ${item.diluentVolume}mL`;
         compactParts.push(dil);
       }
@@ -10862,7 +10760,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
 
         const renderItemRow = (item: PrescriptionItem, displayIndex: number, rowBg: string) => {
           const isInhalation = item.category === 'inhalation';
-          const hasIvPreparo = !isInhalation && (item.diluent || item.diluentVolume || item.accessType || item.infusionTime || item.infusionRate || item.volumeTotal || item.concentration || item.reconstitutionVolume || item.reconstitutionSolvent);
+          // (hasIvPreparo removido em 21/07/2026 junto com o bloco de preparo
+          // legado que era seu único consumidor.)
           const inhalationLine = isInhalation ? assembleInhalationInstruction(item as any) : '';
           const insulinDesc = item.insulinPlan ? describeInsulinPlan(item.insulinPlan) : null;
 
@@ -10993,23 +10892,9 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                 )}
 
                 {/* Preparo IV (medicação / hidratação) */}
-                {false && hasIvPreparo && !insulinDesc && ( /* DEPRECATED: substituído por buildInlinePrepLine */
-                  <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0c4a6e', fontWeight: 500 }}>
-                    {[
-                      item.reconstitutionVolume && item.reconstitutionSolvent ? `Reconstituir em ${item.reconstitutionVolume}mL de ${item.reconstitutionSolvent}` : null,
-                      item.diluent && item.diluent !== '-' && item.diluent !== 'sem_diluente' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : item.diluent === 'sem_diluente' ? 'Sem diluição' : null,
-                      item.accessType && item.accessType !== '-' ? abbrevRoute(item.accessType) : null,
-                      item.volumeTotal ? `Vol total: ${item.volumeTotal}mL` : null,
-                      item.infusionTime ? `Correr em ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
-                      item.infusionRate ? `${item.infusionRate} ${item.infusionMode === 'gts' ? 'gts/min' : 'mL/h'}` : null,
-                      item.concentration ? `Conc: ${item.concentration}` : null,
-                    ].filter(Boolean).join(' · ')}
-                    {item.instructions && (
-                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> — {item.instructions}</span>
-
-                    )}
-                  </div>
-                )}
+                {/* Bloco de preparo IV legado (DEPRECATED, {false && ...})
+                    removido em 21/07/2026 — a linha de preparo do impresso é
+                    montada por buildPrepSegments (fonte única) logo acima. */}
 
                 {/* Linha de acompanhamento ATB (sítio + dia de terapia + janela) */}
                 {item.category === 'antimicrobial' && (item.atbInfectionSite || item.atbStartDate) && (
