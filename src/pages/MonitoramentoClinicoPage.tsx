@@ -251,8 +251,34 @@ export default function MonitoramentoClinicoPage() {
     const toNum = (v: string) => v ? Number(v) : null;
     const { score, risk } = computedNEWS2;
 
+    // Resolve o encounter ATIVO do paciente para carimbar o registro. Sem isto
+    // o vital_signs entrava SEMPRE com encounter_id = NULL — e como os hooks
+    // clínicos toleram "encounter_id IS NULL" (dado legado), um leito reusado
+    // exibia os sinais vitais do ocupante anterior. Carimbar na origem fecha o
+    // vazamento na raiz. (Auditoria de sincronização 22/07/2026.)
+    // Lógica canônica (mesma do useActiveEncounterId): registry ⊕ patient_id.
+    let encounterId: string | null = null;
+    {
+      const { data: pRow } = await supabase
+        .from("patients").select("patient_registry_id")
+        .eq("id", selectedPatientId).maybeSingle();
+      const registryId = pRow?.patient_registry_id ?? null;
+      let encQuery = supabase
+        .from("patient_encounters").select("id")
+        .neq("status", "closed")
+        .order("admission_date", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(1);
+      encQuery = registryId
+        ? encQuery.eq("registry_id", registryId)
+        : encQuery.eq("patient_id", selectedPatientId);
+      const { data: encRow } = await encQuery.maybeSingle();
+      encounterId = encRow?.id ?? null;
+    }
+
     const { error } = await supabase.from("vital_signs").insert({
       patient_id: selectedPatientId,
+      encounter_id: encounterId,
       hospital_unit_id: selectedUnit,
       state_id: selectedState,
       recorded_by: user?.id,
