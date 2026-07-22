@@ -470,6 +470,28 @@ const AdminDashboardPage = () => {
     try {
       const stateId = localStorage.getItem("selected_state_id");
 
+      // 0) GUARDA anti-duplicação (auditoria 22/07/2026): impede criar um 2º
+      //    encounter ativo para um prontuário que já tem atendimento aberto.
+      //    O PatientSearchActionsDialog já tinha esse gate; este fluxo (recepção)
+      //    não tinha — dois encounters abertos no mesmo registry deixam o
+      //    useActiveEncounterId ambíguo e criam órfãos. Regra: 1 atendimento
+      //    aberto por prontuário.
+      {
+        const { data: openEnc } = await supabase
+          .from("patient_encounters")
+          .select("id, encounter_code")
+          .eq("registry_id", selectedPatient.id)
+          .in("status", ["active", "pending"])
+          .limit(1)
+          .maybeSingle();
+        if (openEnc) {
+          toast.error("Este paciente já tem um atendimento em aberto", {
+            description: `Atendimento ${(openEnc as any).encounter_code ?? ""} — finalize-o (alta/óbito) antes de criar um novo.`,
+          });
+          return;
+        }
+      }
+
       // 1) Cria o atendimento (encounter) — vincula ao prontuário oficial e
       //    pré-gera o código de atendimento via generate_encounter_code_v2 (12 dígitos sequencial)
       let preGeneratedCode: string | null = null;
