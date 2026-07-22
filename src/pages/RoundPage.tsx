@@ -73,6 +73,7 @@ const STATUS_BADGE_COLORS: Record<string, string> = {
 
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { SectionLoader } from "@/components/SectionLoader";
+import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
 const getSectorLabel = (sector: string): string => getSectorDisplayLabel(sector) || sector;
 
 export default function RoundPage() {
@@ -243,6 +244,9 @@ export default function RoundPage() {
           .from("round_sessions")
           .insert({
             patient_id: isManual ? null : selectedPatient.id,
+            // encounter_id carimbado na origem (helper único) — fecha vazamento
+            // por reuso de leito. Manual não tem encounter. Auditoria 22/07/2026.
+            encounter_id: isManual ? null : await resolveActiveEncounterId(selectedPatient.id),
             patient_name: selectedPatient.name,
             patient_age: selectedPatient.age,
             patient_sector: isManual ? selectedPatient.sector : getSectorLabel(selectedPatient.sector),
