@@ -780,6 +780,25 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           </button>
         )}
 
+        {/* Sem vitais ainda: acesso para registrar o PRIMEIRO sinal vital.
+            Antes o bloco de vitais so aparecia com dados existentes ({vitals &&}),
+            deixando o painel sem NENHUM caminho para o primeiro registro — critico
+            para a equipe multidisciplinar. (22/07/2026.) */}
+        {!vitals && (
+          <button
+            onClick={() => goPatient("/monitoramento")}
+            className="mx-3 mt-1 mb-1 flex items-center justify-between gap-2 rounded-md border border-dashed border-border bg-muted/20 hover:bg-muted/50 transition px-2.5 py-1.5 text-left"
+          >
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <Activity className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-[11px] font-medium text-muted-foreground">
+                Registrar sinais vitais
+              </span>
+            </div>
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          </button>
+        )}
+
         {/* ===== ZONA 3.8: ROUND MULTIPROFISSIONAL (realtime) ===== */}
         {round ? (
           <div className="mx-3 mt-1 mb-1 flex items-stretch gap-1 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition overflow-hidden">
