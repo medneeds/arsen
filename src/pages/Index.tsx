@@ -262,7 +262,6 @@ const Index = () => {
   });
   const [newChecklistItem, setNewChecklistItem] = useState("");
   const [isOutsideSectionOpen, setIsOutsideSectionOpen] = useState(false);
-  const [isNotesSectionOpen, setIsNotesSectionOpen] = useState(false);
   const [printingSector, setPrintingSector] = useState<string | null>(null);
   const [printMode, setPrintMode] = useState<'compact' | 'detailed' | null>(null);
   const [printingPatientId, setPrintingPatientId] = useState<string | null>(null);
