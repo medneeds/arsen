@@ -15,8 +15,6 @@ type DischargeStatus =
 interface DischargeStatusRibbonProps {
   status: DischargeStatus;
   className?: string;
-  /** @deprecated A desalocação é feita SOMENTE pelo menu Movimentações. */
-  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 /**

@@ -18,15 +18,3 @@ export const ADMISSION_STATUS = {
 } as const;
 
 export type AdmissionStatus = typeof ADMISSION_STATUS[keyof typeof ADMISSION_STATUS];
-
-/** Status que representam sinalização pendente (tarja no mapa/painel). */
-export const PENDING_TRANSFER_STATUSES: AdmissionStatus[] = [
-  ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING,
-  ADMISSION_STATUS.EXTERNAL_TRANSFER_PENDING,
-];
-
-/** Status de desfecho final (encerram o atendimento). */
-export const FINAL_OUTCOME_STATUSES: AdmissionStatus[] = [
-  ADMISSION_STATUS.DISCHARGE_GIVEN,
-  ADMISSION_STATUS.DEATH,
-];

@@ -15,9 +15,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import {
-  Activity, Heart, Thermometer, Wind, Droplets, Brain,
+  Activity, Heart, Droplets,
   Plus, TrendingUp, AlertTriangle, Clock, Search, Stethoscope,
-  TestTubes, Save, BarChart3
+  TestTubes, Save
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
