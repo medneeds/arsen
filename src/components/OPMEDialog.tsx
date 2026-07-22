@@ -29,6 +29,7 @@ import { resolvePatientHeader, resolveCurrentBedSector } from "@/lib/resolvePati
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
+import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -142,9 +143,13 @@ export function OPMEDialog({
         medico_responsavel: doctorName,
         medico_crm: doctorCRM,
       };
+      // encounter ativo carimbado (helper canônico via registry) — o documento
+      // pertence ao ATENDIMENTO, não ao leito. Auditoria 22/07/2026.
+      const encounterId = await resolveActiveEncounterId(patientId);
       const { error } = await supabase.from("discharge_documents").insert({
         document_type: "opme",
         patient_id: asUuidOrNull(patientId),
+        encounter_id: encounterId,
         patient_name: resolvedName,
         patient_bed: resolvedBed || null,
         patient_sector: resolvedSector || null,

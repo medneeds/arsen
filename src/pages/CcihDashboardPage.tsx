@@ -28,6 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
+import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
 
 const SECTORS = ["red", "yellow", "blue", "outside", "ucc"] as const;
 
@@ -320,10 +321,14 @@ const CcihDashboardPage = () => {
         .single();
       const uploaderName = profileRes.data?.full_name || user?.email || "CCIH";
 
+      // encounter ativo carimbado (helper canônico via registry) — resultado de
+      // cultura pertence ao atendimento, não ao leito. Auditoria 22/07/2026.
+      const encounterId = await resolveActiveEncounterId(selectedPatient.id);
       const { error } = await supabase
         .from("culture_results")
         .insert({
           patient_id: selectedPatient.id,
+          encounter_id: encounterId,
           patient_name: selectedPatient.name,
           patient_sector: selectedPatient.sector,
           patient_bed: selectedPatient.bed_number,

@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { formatDateBR } from "@/utils/dateUtils";
+import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -192,9 +193,13 @@ export function CVCChecklistDialog({
         auditor: { nome: auditorNome, crm: auditorCRM },
         metricas: { total: BUNDLE_STEPS.length, sim: simCount, sim_lembrado: lembradoCount, nao: naoCount, pct_adesao: pctAdesao },
       };
+      // encounter ativo carimbado (helper canônico via registry) — o documento
+      // pertence ao ATENDIMENTO, não ao leito. Auditoria 22/07/2026.
+      const encounterId = await resolveActiveEncounterId(patientId);
       const { error } = await supabase.from("discharge_documents").insert({
         document_type: "cvc_checklist",
         patient_id: asUuidOrNull(patientId),
+        encounter_id: encounterId,
         patient_name: resolvedName,
         patient_bed: resolvedBed || null,
         patient_sector: resolvedSector || null,

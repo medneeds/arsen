@@ -34,6 +34,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { asUuidOrNull } from "@/lib/utils";
+import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
 
 interface Props {
   open: boolean;
@@ -198,9 +199,11 @@ export function SatRequestDialog({
     setSubmitting(true);
     try {
       const validId = asUuidOrNull(patientId);
+      const encounterId = await resolveActiveEncounterId(patientId);
       const payload: any = {
         category: "sat",
         patient_id: validId,
+        encounter_id: encounterId,
         patient_name: patientName,
         patient_bed: patientBed || null,
         patient_sector: patientSector || null,

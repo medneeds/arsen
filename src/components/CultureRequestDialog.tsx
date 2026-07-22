@@ -31,6 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { asUuidOrNull } from "@/lib/utils";
 import { SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
 import { usePatientLive } from "@/hooks/usePatientLive";
+import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { toast } from "sonner";
 import {
@@ -228,9 +229,13 @@ export function CultureRequestDialog({
       return null;
     }
     try {
+      // encounter ativo carimbado na origem (helper canônico via registry) —
+      // isola a requisição no atendimento atual, não no leito. Auditoria 22/07.
+      const encounterId = await resolveActiveEncounterId(patientId);
       const payload: any = {
         category: "cultura",
         patient_id: asUuidOrNull(patientId),
+        encounter_id: encounterId,
         patient_name: data.patient_name,
         patient_bed: data.patient_bed || null,
         patient_sector: data.patient_sector || null,
