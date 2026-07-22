@@ -558,30 +558,25 @@ function buildLine2Tokens(item: PrescriptionItem): Array<{ text: string; isBadge
   }
 
   // Liofilizado — reconstituição antes da diluição
-  if (item.reconstitutionSolvent && item.reconstitutionVolume) {
-    const solvent = item.reconstitutionSolvent.replace(/\bABD\b/gi, 'AD');
-    tokens.push({ text: `Reconstituir: ${solvent} ${item.reconstitutionVolume} mL →` });
-  }
+  // Preparo (reconstituição, diluente, volume, tempo, vazão) vem de
+  // buildPrepSegments — MESMA função do impresso (unificado 21/07/2026), para
+  // tela compacta e papel mostrarem o mesmo detalhamento, incluindo o cálculo
+  // de vazão e o "Vol.:" sempre visível. Antes a tela tinha lógica própria que
+  // divergia (rótulo "Vol. final", escondia volume==diluente, sem "conforme
+  // protocolo"). A dose e a via/intervalo continuam sendo montadas aqui, entre
+  // o head e o tail, no estilo de tokens da tela.
+  const { head, tail } = buildPrepSegments(item);
+  const reconSeg = head.find((h) => h.startsWith('Reconstituir'));
+  const headNoRecon = head.filter((h) => !h.startsWith('Reconstituir'));
+
+  // Reconstituição (antes da dose)
+  if (reconSeg) tokens.push({ text: reconSeg });
 
   // Dose
   if (soluto) tokens.push({ text: soluto });
 
-  // Diluente
-  const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
-  if (hasDiluent) {
-    // Rótulo legível — antes usava item.diluent cru, mostrando "diluente_proprio"
-    // (o valor interno do <Select>) em vez de "Diluente próprio" na tela.
-    const dilLabelL2 = item.diluent === 'diluente_proprio' ? 'Diluente próprio' : item.diluent!;
-    const dilStr = item.diluentVolume ? `${dilLabelL2} ${item.diluentVolume} mL` : dilLabelL2;
-    tokens.push({ text: `Diluente: ${dilStr}` });
-  }
-
-  // Volume final (quando distinto do diluente)
-  const volTotalNum = parseFloat((item.volumeTotal || '').replace(',', '.'));
-  const volDilNum = parseFloat((item.diluentVolume || '').replace(',', '.'));
-  if (item.volumeTotal && volTotalNum > 0 && (!item.diluentVolume || !volDilNum || volTotalNum !== volDilNum)) {
-    tokens.push({ text: `Vol. final: ${item.volumeTotal} mL` });
-  }
+  // Diluente + Volume (restante do head)
+  headNoRecon.forEach((h) => tokens.push({ text: h }));
 
   // Via
   if (item.route && item.route !== '-') tokens.push({ text: routeShort(item.route) });
@@ -589,41 +584,8 @@ function buildLine2Tokens(item: PrescriptionItem): Array<{ text: string; isBadge
   // Intervalo
   if (item.posology && item.posology !== '-') tokens.push({ text: item.posology });
 
-  // Tempo de infusão
-  if (item.infusionTime) {
-    const unit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
-    tokens.push({ text: `${item.infusionTime} ${unit}` });
-  }
-
-  // Vazão — infusionRate digitado pelo médico tem prioridade sobre cálculo automático
-  if (item.ivBolus) {
-    tokens.push({ text: 'Bolus' });
-  } else if (item.infusionRate) {
-    // Valor digitado manualmente pelo médico → usar diretamente
-    const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
-    tokens.push({ text: `Vazão: ${item.infusionRate} ${modeLabel}` });
-  } else if (item.volumeTotal && item.infusionTime) {
-    // Nenhuma vazão digitada → calcular a partir de volume + tempo
-    const vol = parseFloat((item.volumeTotal || '').replace(',', '.'));
-    const timeRaw = parseFloat((item.infusionTime || '').replace(',', '.'));
-    const timeMin = item.infusionTimeUnit === 'h' ? timeRaw * 60 : timeRaw;
-    if (vol > 0 && timeMin > 0) {
-      const mlh = (vol / (timeMin / 60)).toFixed(1).replace(/\.0$/, '');
-      if (item.infusionMode === 'gts') {
-        const gtsRaw = (vol * 20) / timeMin;
-        const gts = roundGtsToHospital(gtsRaw);
-        tokens.push({ text: `Vazão: ${mlh} mL/h · ${gts} gts/min` });
-      } else {
-        tokens.push({ text: `Vazão: ${mlh} mL/h` });
-      }
-    }
-  }
-
-  // Badge BIC — regra unificada via isContinuousInfusion (fonte única de verdade).
-  // Bolus EV é mutuamente exclusivo (isContinuousInfusion já retorna false p/ bolus).
-  if (isContinuousInfusion(item)) {
-    tokens.push({ text: 'BIC', isBadge: true });
-  }
+  // Modo (BIC/Bolus) + Tempo + Vazão (tail) — "BIC" vira badge na tela.
+  tail.forEach((t) => tokens.push(t === 'BIC' ? { text: 'BIC', isBadge: true } : { text: t }));
 
   return tokens;
 }

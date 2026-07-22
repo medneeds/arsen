@@ -303,10 +303,38 @@ export function buildPrepSegments(item: PrepFields): { head: string[]; tail: str
     const unit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
     const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
     if (item.infusionTime) tail.push(`Correr em: ${item.infusionTime}${unit}`);
-    if (item.infusionRate) tail.push(`Vazão: ${item.infusionRate} ${modeLabel}`);
+    if (item.infusionRate) {
+      // Vazão digitada pelo médico tem prioridade.
+      tail.push(`Vazão: ${item.infusionRate} ${modeLabel}`);
+    } else if (item.volumeTotal && item.infusionTime) {
+      // Sem vazão digitada mas com volume + tempo → CALCULA (mL/h, e gts/min
+      // quando modo gotejamento). Antes esse cálculo só existia na tela
+      // compacta; unificado no impresso em 21/07/2026 para tela e papel
+      // mostrarem a mesma programação de bomba (confere a enfermagem).
+      const vol = parseFloat((item.volumeTotal || '').replace(',', '.'));
+      const timeRaw = parseFloat((item.infusionTime || '').replace(',', '.'));
+      const timeMin = item.infusionTimeUnit === 'h' ? timeRaw * 60 : timeRaw;
+      if (vol > 0 && timeMin > 0) {
+        const mlh = (vol / (timeMin / 60)).toFixed(1).replace(/\.0$/, '');
+        if (item.infusionMode === 'gts') {
+          const gts = roundGtsToHospitalShared((vol * 20) / timeMin);
+          tail.push(`Vazão: ${mlh} mL/h · ${gts} gts/min`);
+        } else {
+          tail.push(`Vazão: ${mlh} mL/h`);
+        }
+      }
+    }
   } else if (isContinuousInfusionShared(item) && !item.infusionRate && !item.infusionTime) {
     tail.push('Vazão: conforme protocolo');
   }
 
   return { head, tail };
+}
+
+// Arredondamento de gts/min para padrões de equipo macro (20 gts/mL).
+// Replicado de PrescricaoPage para o cálculo de vazão compartilhado acima.
+function roundGtsToHospitalShared(gts: number): number {
+  if (gts <= 0) return 0;
+  if (gts < 5) return Math.round(gts);
+  return Math.round(gts / 7) * 7 || 7;
 }
