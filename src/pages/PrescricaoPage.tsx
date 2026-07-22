@@ -2570,14 +2570,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 );
               })()}
 
-              {/* Row 2: Qtd → Forma → Diluente → Vol. dil → Via → Int.
-                  Campo "Dose:" separado REMOVIDO em 21/07/2026 (pedido do
-                  gestor): Qtd + Forma JÁ expressam a dose (ex.: "500 mg",
-                  "10 mL", "1 CP"), então o campo Dose era redundante e criava
-                  fricção (dupla digitação + risco de divergência Qtd≠Dose).
-                  item.dose segue preenchido nos bastidores pelo catálogo e
-                  alimenta o impresso via buildSolutoToken (combina qty+dose),
-                  mas não é mais um campo editável separado na tela. */}
+              {/* Row 2: Qtd → Forma → [Dose opcional] → Diluente → Vol. dil → Via → Int.
+                  Campo "Dose:" separado deixou de ser fixo/obrigatório em
+                  21/07/2026 (pedido do gestor): Qtd + Forma JÁ expressam a dose
+                  quando prescrito em mg/mL. O campo Dose só reaparece — discreto
+                  e OPCIONAL — quando prescrito em unidade (AMP/FA/CP), onde
+                  "2 AMP" sozinho não diz a massa de cada unidade. Nunca bloqueia
+                  validação; item.dose alimenta o impresso via buildSolutoToken. */}
               <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Qtd:</span>
@@ -2623,6 +2622,34 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Dose — campo OPCIONAL e discreto. Só aparece quando prescrito
+                    em UNIDADE (AMP/FA/CP/gota...), onde "2 AMP" sozinho não diz
+                    a massa/volume de cada unidade. Fica escondido quando
+                    prescrito em mg/mL (a Qtd já É a dose). Nunca bloqueia
+                    validação — estilo "apagado" sinaliza que é só um detalhe
+                    opcional se o médico quiser explicitar a dose no impresso.
+                    (21/07/2026 — pedido do gestor.) */}
+                {(() => {
+                  const unit = (item.quantityUnit || '').toLowerCase();
+                  const prescritoEmMassaOuVolume = /^(mg|mcg|µg|ug|g|ui|ml)$/i.test(unit);
+                  // Neste ramo do render a categoria já é medicação/ATB/high_alert/
+                  // reposição/hemoterapia/não-padrão (care/nutrition/inhalation
+                  // têm layout próprio). Só condicionamos por massa/volume.
+                  if (prescritoEmMassaOuVolume) return null;
+                  return (
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal shrink-0">Dose:</span>
+                      <Input
+                        value={item.dose || ''}
+                        onChange={(e) => onUpdate(item.id, "dose", e.target.value)}
+                        placeholder="opcional — ex: 500mg"
+                        title="Opcional. Detalhe a dose por unidade (ex.: '500mg' para '1 AMP') se quiser que apareça no impresso. Não é obrigatório — a Qtd já libera a validação."
+                        className="h-6 text-[11px] bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-700/50 px-1.5 text-slate-500 dark:text-slate-400 placeholder:text-slate-300 dark:placeholder:text-slate-600 focus-visible:ring-1 focus-visible:ring-primary focus-visible:text-foreground"
+                        style={{ width: `${Math.max(5, (String(item.dose || '').length || 12) * 0.6 + 1.5)}ch`, minWidth: '6.5rem', maxWidth: '14rem' }}
+                      />
+                    </div>
+                  );
+                })()}
                 {renderDiluent && <>
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Diluente:</span>
