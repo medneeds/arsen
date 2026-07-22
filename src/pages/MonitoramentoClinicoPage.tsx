@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -15,8 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import {
-  Activity, Heart, Droplets,
-  Plus, TrendingUp, AlertTriangle, Clock, Search, Stethoscope,
+  Heart, Droplets,
+  Plus, TrendingUp, AlertTriangle, Clock, Stethoscope,
   TestTubes, Save
 } from "lucide-react";
 import {
@@ -160,11 +161,10 @@ export default function MonitoramentoClinicoPage() {
   const selectedUnit = currentHospital?.id;
   const selectedState = currentState?.id;
   const [patients, setPatients] = useState<PatientOption[]>([]);
-  const urlParams = new URLSearchParams(window.location.search);
-  const [selectedPatientId, setSelectedPatientId] = useState<string>(urlParams.get("patientId") || "");
+  const [searchParams] = useSearchParams();
+  const selectedPatientId = searchParams.get("patientId") || "";
   const [records, setRecords] = useState<VitalRecord[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("registro");
   const [hoursRange, setHoursRange] = useState(24);
 
@@ -318,10 +318,6 @@ export default function MonitoramentoClinicoPage() {
     });
   };
 
-  const filteredPatients = patients.filter(p =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.bed_number.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   // ── Chart data ──
   const chartData = useMemo(() => {
@@ -351,17 +347,19 @@ export default function MonitoramentoClinicoPage() {
 
   return (
     <PageTransition>
+      <ClinicalHeader moduleLabel="Monitoramento Clínico" />
       <div className="space-y-4 p-4 md:p-6">
-        {/* Header */}
+        {/* Barra de acao do modulo: janela de tempo + NEWS2 do paciente selecionado */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <Activity className="h-5 w-5 text-primary" />
-              Monitoramento clínico
-            </h1>
-            <p className="text-sm text-muted-foreground">Sinais vitais, NEWS2, gasometria e curvas laboratoriais</p>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Sinais vitais, NEWS2, gasometria e curvas laboratoriais
+          </p>
           <div className="flex items-center gap-2">
+            {selectedPatient && latestRecord?.news2_risk && (
+              <Badge className={riskLabels[latestRecord.news2_risk]?.className || ""}>
+                NEWS2: {latestRecord.news2_score} — {riskLabels[latestRecord.news2_risk]?.label}
+              </Badge>
+            )}
             <Select value={String(hoursRange)} onValueChange={v => setHoursRange(Number(v))}>
               <SelectTrigger className="w-32">
                 <SelectValue />
@@ -377,40 +375,6 @@ export default function MonitoramentoClinicoPage() {
             </Select>
           </div>
         </div>
-
-        {/* Patient selector */}
-        <Card>
-          <CardContent className="pt-4 pb-3">
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar paciente..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Selecione o paciente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredPatients.map(p => (
-                    <SelectItem key={p.id} value={p.id} className="patient-id">
-                      <span className="font-medium">{p.bed_number}</span> — {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedPatient && latestRecord?.news2_risk && (
-                <Badge className={riskLabels[latestRecord.news2_risk]?.className || ""}>
-                  NEWS2: {latestRecord.news2_score} — {riskLabels[latestRecord.news2_risk]?.label}
-                </Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
 
         {!selectedPatientId ? (
           <Card>
