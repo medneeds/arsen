@@ -77,6 +77,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
+import { useNavigate } from "react-router-dom";
 
 type ColorVariant = 'blue' | 'yellow' | 'red' | 'green';
 
@@ -730,6 +731,7 @@ export function UtiPatientCard({
   // Movement dialog states
   const [movementType, setMovementType] = useState<"ALTA" | "ÓBITO" | "TRANSFERÊNCIA" | null>(null);
   const [isMovementDialogOpen, setIsMovementDialogOpen] = useState(false);
+  const navigate = useNavigate();
   const [isReallocationDialogOpen, setIsReallocationDialogOpen] = useState(false);
   const [isSignalTransferOpen, setIsSignalTransferOpen] = useState(false);
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
@@ -1197,6 +1199,24 @@ export function UtiPatientCard({
                           Movimentação
                         </span>
                       </div>
+
+                      {/* MONITORAMENTO DE SINAIS (acesso direto — antes indisponivel na UTI) */}
+                      <DropdownMenuItem
+                        onClick={() => navigate(`/monitoramento?patientId=${patient.id}`)}
+                        className="group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-teal-300/60 dark:hover:border-teal-700/60 hover:bg-gradient-to-r hover:from-teal-50 hover:to-transparent dark:hover:from-teal-950/40 transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm"
+                      >
+                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-teal-100 dark:bg-teal-950/60 group-hover/item:bg-teal-200 dark:group-hover/item:bg-teal-900/80 transition-colors">
+                          <Activity className="h-3.5 w-3.5 text-teal-700 dark:text-teal-300" />
+                        </div>
+                        <div className="flex flex-col items-start min-w-0">
+                          <span className="text-teal-800 dark:text-teal-200 leading-tight">
+                            Monitoramento de sinais
+                          </span>
+                          <span className="text-[10px] font-normal text-muted-foreground leading-tight">
+                            Registrar e acompanhar sinais vitais
+                          </span>
+                        </div>
+                      </DropdownMenuItem>
 
                       {/* REMANEJAR LEITO (mesmo setor) */}
                       <DropdownMenuItem
