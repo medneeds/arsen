@@ -2,12 +2,16 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
+import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
 import type { ReceituarioData } from "@/lib/receituario";
 import { toast } from "sonner";
 
 /**
  * Hook para criar, ler, atualizar e listar receituários de um paciente.
- * Busca por patient_id (quando disponível) ou por patient_name.
+ * Busca por patient_registry_id (vínculo estável — segue o paciente entre
+ * leitos) com fallback para patient_id/patient_name. Antes buscava só por
+ * patient_id (linha-leito): após uma transferência interna, o receituário
+ * ficava invisível no leito novo. Auditoria 22/07/2026.
  */
 export function useReceituario(
   patientId?: string | null,
@@ -15,6 +19,7 @@ export function useReceituario(
 ) {
   const { user } = useAuth();
   const { currentHospital } = useHospital();
+  const { registryId: resolvedRegistryId } = useResolvedRegistryId(patientId || null);
   const [receituarios, setReceituarios] = useState<ReceituarioData[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -27,7 +32,10 @@ export function useReceituario(
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (patientId) {
+      if (resolvedRegistryId && patientId) {
+        // Vínculo estável OU leito legado (registry NULL): cobre os dois.
+        q = q.or(`patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${patientId})`);
+      } else if (patientId) {
         q = q.eq("patient_id", patientId);
       } else if (patientName) {
         q = q.ilike("patient_name", `%${patientName}%`);
@@ -41,7 +49,7 @@ export function useReceituario(
     } finally {
       setLoading(false);
     }
-  }, [patientId, patientName]);
+  }, [patientId, patientName, resolvedRegistryId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
