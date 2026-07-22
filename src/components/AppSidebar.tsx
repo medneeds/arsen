@@ -117,11 +117,7 @@ function ThemeToggleInline() {
 }
 
 
-export function AppSidebar({ 
-  onOpenHandover
-}: { 
-  onOpenHandover?: () => void;
-}) {
+export function AppSidebar() {
   const { open, setOpen, openMobile, setOpenMobile, state } = useSidebar();
   const navigate = useNavigate();
   const { signOut, user, role } = useAuth();
@@ -540,8 +536,12 @@ export function AppSidebar({
         return;
       }
       
-      if (item.action === 'openHandover' && onOpenHandover) {
-        onOpenHandover();
+      if (item.action === 'openHandover') {
+        // Corrigido (22/07/2026): antes chamava onOpenHandover() → setIsHandoverOpen
+        // no App, cujo valor NUNCA era lido (estado morto — o botão não fazia nada).
+        // Há uma página /handovers funcional; navega para ela, igual aos demais
+        // itens de action (ex.: openSepsisProtocol).
+        navigate('/handovers');
         if (isMobile) {
           setOpenMobile(false);
         }

@@ -39,7 +39,6 @@ import { useDepartment, DEPARTMENTS, Department } from "@/contexts/DepartmentCon
 import { supabase } from "@/integrations/supabase/client";
 import { usePrivacy } from "@/contexts/PrivacyContext";
 import { getNextBedNumber } from "@/utils/bedNaming";
-import { RegisterHandoverDialog } from "@/components/RegisterHandoverDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import NotesTabOptimized from "@/components/resources/NotesTabOptimized";
 import { Textarea } from "@/components/ui/textarea";
@@ -275,7 +274,6 @@ const Index = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedPatients, setSelectedPatients] = useState<Set<string>>(new Set());
   const [isDeleteSelectedDialogOpen, setIsDeleteSelectedDialogOpen] = useState(false);
-  const [handoverDialogOpen, setHandoverDialogOpen] = useState(false);
   const [allocationDialogOpen, setAllocationDialogOpen] = useState(false);
   const [allocationTargetSector, setAllocationTargetSector] = useState<"Cuidados Especiais" | "Observação Amarela" | "Observação Azul">("Cuidados Especiais");
   const [utiAllocationDialogOpen, setUtiAllocationDialogOpen] = useState(false);
@@ -886,7 +884,7 @@ const Index = () => {
   }
 
   return (
-    <MainLayout onOpenHandover={() => setHandoverDialogOpen(true)}>
+    <MainLayout>
         {/* Print-only layout - Hidden on screen, visible only when printing */}
         {printMode && (
           <div className="print-layout-container">
@@ -1157,12 +1155,6 @@ const Index = () => {
           </footer>
         </div>
 
-      {/* Register Handover Dialog */}
-      <RegisterHandoverDialog
-        open={handoverDialogOpen}
-        onOpenChange={setHandoverDialogOpen}
-        patients={patients}
-      />
 
       {/* Shift Reminder Dialog */}
       <ShiftReminderDialog />

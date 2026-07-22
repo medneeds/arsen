@@ -14,10 +14,9 @@ import { cn } from "@/lib/utils";
 
 interface MainLayoutProps {
   children: ReactNode;
-  onOpenHandover?: () => void;
 }
 
-export function MainLayout({ children, onOpenHandover }: MainLayoutProps) {
+export function MainLayout({ children }: MainLayoutProps) {
   useUserPresence();
   const [showShortcuts, setShowShortcuts] = useState(false);
   const isGestor = useIsGestor();
@@ -43,7 +42,7 @@ export function MainLayout({ children, onOpenHandover }: MainLayoutProps) {
   return (
     <SidebarProvider defaultOpen={false}>
       <div className={cn("min-h-screen flex w-full bg-background relative", isGestor && "gestor-readonly-root")}>
-        <AppSidebar onOpenHandover={onOpenHandover} />
+        <AppSidebar />
         
         <div className="flex-1 flex flex-col w-full">
           <main className="flex-1 overflow-auto">

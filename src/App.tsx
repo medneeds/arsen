@@ -180,7 +180,6 @@ function DocumentosPageWrapper() {
 }
 
 const App = () => {
-  const [isHandoverOpen, setIsHandoverOpen] = useState(false);
 
   useEffect(() => {
     startIdlePrefetch();
@@ -208,71 +207,71 @@ const App = () => {
               <Route path="/pre-cadastro" element={<PreCadastroPage />} />
               <Route path="/" element={<ProtectedRoute><ProfileHomeRedirect /></ProtectedRoute>} />
               <Route path="/mapa" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/painel-clinico" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><PainelClinicoPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/paciente" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><PacienteHubPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/resources" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><ResourcesPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/codigos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MedicalCodesPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/handovers" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><HandoversPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/versions" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><VersionsPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/painel-clinico" element={<ProtectedRoute><MainLayout><PainelClinicoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/paciente" element={<ProtectedRoute><MainLayout><PacienteHubPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/resources" element={<ProtectedRoute><MainLayout><ResourcesPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/codigos" element={<ProtectedRoute><MainLayout><MedicalCodesPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/handovers" element={<ProtectedRoute><MainLayout><HandoversPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/versions" element={<ProtectedRoute><MainLayout><VersionsPage /></MainLayout></ProtectedRoute>} />
               <Route path="/documents" element={<ProtectedRoute><MainLayout><DocumentsPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/sepsis-protocol" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><SepsisProtocolPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/protocolos-uti" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><ProtocolosUtiPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/documents/controle-glicemico" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><ControleGlicemicoPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/documents/cuidados-paliativos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><CuidadosPaliativosPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/documents/fluxo-paliativacao" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><FluxoPaliativacaoPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/documents/tomografias" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><TomografiasPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/documents/hemoderivados" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><HemoderivadosPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/documents/regulacoes" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RegulacoesPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/documents/priorizacao-cirurgica" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><PriorizacaoCirurgicaPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/documents/apac" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoImagensPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/movements" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MovementsPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/ia" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IAPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/internment-history" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><InternmentHistoryPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DashboardPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/dhd" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DhdDashboardPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/dhd/cadastro" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DhdRegistrationPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/dhd/historico" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DhdHistoryPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/sepsis-protocol" element={<ProtectedRoute><MainLayout><SepsisProtocolPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/protocolos-uti" element={<ProtectedRoute><MainLayout><ProtocolosUtiPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents/controle-glicemico" element={<ProtectedRoute><MainLayout><ControleGlicemicoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents/cuidados-paliativos" element={<ProtectedRoute><MainLayout><CuidadosPaliativosPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents/fluxo-paliativacao" element={<ProtectedRoute><MainLayout><FluxoPaliativacaoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents/tomografias" element={<ProtectedRoute><MainLayout><TomografiasPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents/hemoderivados" element={<ProtectedRoute><MainLayout><HemoderivadosPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents/regulacoes" element={<ProtectedRoute><MainLayout><RegulacoesPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents/priorizacao-cirurgica" element={<ProtectedRoute><MainLayout><PriorizacaoCirurgicaPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents/apac" element={<ProtectedRoute><MainLayout><RequisicaoImagensPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/movements" element={<ProtectedRoute><MainLayout><MovementsPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/ia" element={<ProtectedRoute><MainLayout><IAPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/internment-history" element={<ProtectedRoute><MainLayout><InternmentHistoryPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><MainLayout><DashboardPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/dhd" element={<ProtectedRoute><MainLayout><DhdDashboardPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/dhd/cadastro" element={<ProtectedRoute><MainLayout><DhdRegistrationPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/dhd/historico" element={<ProtectedRoute><MainLayout><DhdHistoryPage /></MainLayout></ProtectedRoute>} />
               <Route path="/audit-logs" element={<ProtectedRoute><AuditLogsPage /></ProtectedRoute>} />
               <Route path="/user-management" element={<ProtectedRoute><UserManagementPage /></ProtectedRoute>} />
-              <Route path="/meu-perfil" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MeuPerfilPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/ajuda" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><AjudaPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/mesclar-prontuarios" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MergeRegistriesPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/meu-perfil" element={<ProtectedRoute><MainLayout><MeuPerfilPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/ajuda" element={<ProtectedRoute><MainLayout><AjudaPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/mesclar-prontuarios" element={<ProtectedRoute><MainLayout><MergeRegistriesPage /></MainLayout></ProtectedRoute>} />
               <Route path="/privacy" element={<ProtectedRoute><PrivacyPage /></ProtectedRoute>} />
               <Route path="/admin/states" element={<ProtectedRoute><AdminStatesPage /></ProtectedRoute>} />
               <Route path="/admin/units" element={<ProtectedRoute><AdminUnitsPage /></ProtectedRoute>} />
               <Route path="/admin/coordinators" element={<ProtectedRoute><AdminCoordinatorsPage /></ProtectedRoute>} />
 
-              <Route path="/therapeutic-templates" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><TherapeuticTemplatesPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/round" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RoundPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/relatorio" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RelatorioPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/requisicoes" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoPageWrapper /></MainLayout></ProtectedRoute>} />
-              <Route path="/requisicao/laboratorio" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/requisicao/imagens" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/requisicao/parecer" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/monitoramento" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MonitoramentoClinicoPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/documentos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DocumentosPageWrapper /></MainLayout></ProtectedRoute>} />
-              <Route path="/prescricao" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><PrescricaoPageWrapper /></MainLayout></ProtectedRoute>} />
-              <Route path="/evolucao" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><EvolucaoPageWrapper /></MainLayout></ProtectedRoute>} />
-              <Route path="/movimentacoes" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MovimentacoesPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/catalogo-medicamentos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MedicationCatalogPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/therapeutic-templates" element={<ProtectedRoute><MainLayout><TherapeuticTemplatesPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/round" element={<ProtectedRoute><MainLayout><RoundPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/relatorio" element={<ProtectedRoute><MainLayout><RelatorioPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/requisicoes" element={<ProtectedRoute><MainLayout><RequisicaoPageWrapper /></MainLayout></ProtectedRoute>} />
+              <Route path="/requisicao/laboratorio" element={<ProtectedRoute><MainLayout><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/requisicao/imagens" element={<ProtectedRoute><MainLayout><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/requisicao/parecer" element={<ProtectedRoute><MainLayout><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/monitoramento" element={<ProtectedRoute><MainLayout><MonitoramentoClinicoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documentos" element={<ProtectedRoute><MainLayout><DocumentosPageWrapper /></MainLayout></ProtectedRoute>} />
+              <Route path="/prescricao" element={<ProtectedRoute><MainLayout><PrescricaoPageWrapper /></MainLayout></ProtectedRoute>} />
+              <Route path="/evolucao" element={<ProtectedRoute><MainLayout><EvolucaoPageWrapper /></MainLayout></ProtectedRoute>} />
+              <Route path="/movimentacoes" element={<ProtectedRoute><MainLayout><MovimentacoesPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/catalogo-medicamentos" element={<ProtectedRoute><MainLayout><MedicationCatalogPage /></MainLayout></ProtectedRoute>} />
               <Route path="/painel-gestor" element={<ProtectedRoute><IpRestricted moduleKey="gestor" moduleLabel="Painel Gestor"><GestorPanelPage /></IpRestricted></ProtectedRoute>} />
-              <Route path="/validacao-farmaceutica" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IpRestricted moduleKey="validacao_farmaceutica" moduleLabel="Validação Farmacêutica"><ValidacaoFarmaceuticaPage /></IpRestricted></MainLayout></ProtectedRoute>} />
-              <Route path="/setor-imagem" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><SetorImagemPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/setor-laboratorio" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><SetorLaboratorioPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/saps3" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><Saps3Page /></MainLayout></ProtectedRoute>} />
-              <Route path="/ccih" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><CcihDashboardPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/nir" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IpRestricted moduleKey="nir" moduleLabel="NIR / Regulação"><NirDashboardPage /></IpRestricted></MainLayout></ProtectedRoute>} />
+              <Route path="/validacao-farmaceutica" element={<ProtectedRoute><MainLayout><IpRestricted moduleKey="validacao_farmaceutica" moduleLabel="Validação Farmacêutica"><ValidacaoFarmaceuticaPage /></IpRestricted></MainLayout></ProtectedRoute>} />
+              <Route path="/setor-imagem" element={<ProtectedRoute><MainLayout><SetorImagemPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/setor-laboratorio" element={<ProtectedRoute><MainLayout><SetorLaboratorioPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/saps3" element={<ProtectedRoute><MainLayout><Saps3Page /></MainLayout></ProtectedRoute>} />
+              <Route path="/ccih" element={<ProtectedRoute><MainLayout><CcihDashboardPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/nir" element={<ProtectedRoute><MainLayout><IpRestricted moduleKey="nir" moduleLabel="NIR / Regulação"><NirDashboardPage /></IpRestricted></MainLayout></ProtectedRoute>} />
               <Route path="/recepcao" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
               <Route path="/triagem-fila" element={<ProtectedRoute><TriageQueuePage /></ProtectedRoute>} />
               <Route path="/triagem-tv" element={<ProtectedRoute><TriageQueueTVPage /></ProtectedRoute>} />
-              <Route path="/alta-desfecho" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><AltaDesfechoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/alta-desfecho" element={<ProtectedRoute><MainLayout><AltaDesfechoPage /></MainLayout></ProtectedRoute>} />
               <Route path="/emergencia" element={<ProtectedRoute><EmergenciaSectorPage /></ProtectedRoute>} />
               <Route path="/ue-vertical" element={<ProtectedRoute><UeVerticalPage /></ProtectedRoute>} />
               <Route path="/ue-horizontal" element={<ProtectedRoute><UeHorizontalPage /></ProtectedRoute>} />
-              <Route path="/ficha-atendimento" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><FichaAtendimentoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/ficha-atendimento" element={<ProtectedRoute><MainLayout><FichaAtendimentoPage /></MainLayout></ProtectedRoute>} />
               <Route path="/historico-paciente" element={<ProtectedRoute><HistoricoPageWrapper /></ProtectedRoute>} />
-              <Route path="/dev-console" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IpRestricted moduleKey="dev_console" moduleLabel="Console Dev"><DevConsolePage /></IpRestricted></MainLayout></ProtectedRoute>} />
-              <Route path="/admin/ip-allowlist" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IpAllowlistPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/dev-console" element={<ProtectedRoute><MainLayout><IpRestricted moduleKey="dev_console" moduleLabel="Console Dev"><DevConsolePage /></IpRestricted></MainLayout></ProtectedRoute>} />
+              <Route path="/admin/ip-allowlist" element={<ProtectedRoute><MainLayout><IpAllowlistPage /></MainLayout></ProtectedRoute>} />
               <Route path="/relatorio-1" element={<Relatorio1Page />} />
               <Route path="/relatorio-junho" element={<RelatorioJunhoPage />} />
               <Route path="/apresentacao-1" element={<Apresentacao1Page />} />
