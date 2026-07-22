@@ -5624,6 +5624,35 @@ const PrescricaoPage = () => {
       const profile = getInfusionProfile(med.name);
       if (profile) Object.assign(baseItem, applyInfusionProfileDefaults(baseItem, profile));
     }
+
+    // Evidência clínica (getEvidenceSuggestion): aplica automaticamente os
+    // campos ESTRUTURAIS que a validação exige (via, posologia, diluente,
+    // volume, tempo/vazão de infusão), preenchendo só o que está vazio.
+    // Motivo (pedido do gestor 21/07/2026): antes esses campos só eram
+    // preenchidos ao clicar no botão "Sugerir", então itens de BIC/EV contínuo
+    // (Noradrenalina, Fentanil, etc.) SÓ validavam depois desse clique — uma
+    // dependência oculta, igual à que o campo de Recomendações causava. O
+    // botão continua disponível como atalho para reaplicar, mas não é mais
+    // pré-requisito para validar.
+    // NÃO auto-preenche `dose`: as doses de evidência são faixas terapêuticas
+    // (ex.: "0,05–0,5 mcg/kg/min", "2–4 mg"), que o médico precisa converter
+    // numa dose única — auto-inseri-las como dose prescrita seria incorreto.
+    // A dose fica a cargo do campo "Dose:" editável (o botão Sugerir ainda a
+    // oferece explicitamente, com a fonte).
+    {
+      const ev = getEvidenceSuggestion(med.name);
+      if (ev) {
+        const isEmptyField = (v?: string) => !v || !v.trim() || v.trim() === '-';
+        if (ev.defaultRoute && isEmptyField(baseItem.route)) baseItem.route = ev.defaultRoute;
+        if (ev.defaultPosology && isEmptyField(baseItem.posology)) baseItem.posology = ev.defaultPosology;
+        if (ev.diluent && isEmptyField(baseItem.diluent)) baseItem.diluent = ev.diluent;
+        if (ev.volumeTotal && isEmptyField(baseItem.volumeTotal)) baseItem.volumeTotal = ev.volumeTotal;
+        if (ev.infusionTime && isEmptyField(baseItem.infusionTime)) {
+          baseItem.infusionTime = ev.infusionTime;
+          if (ev.infusionTimeUnit) baseItem.infusionTimeUnit = ev.infusionTimeUnit as 'min' | 'h';
+        }
+      }
+    }
     // Bolsa pronta / pré-misturada (ex.: Linezolida 600mg/300mL Bolsa, Metronidazol bolsa,
     // Ciprofloxacino bolsa) — NÃO diluir. Sobrescreve qualquer diluente sugerido pelo
     // perfil ATB genérico, evitando confusão na farmácia/enfermagem.
