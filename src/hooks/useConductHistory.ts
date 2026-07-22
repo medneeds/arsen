@@ -84,6 +84,10 @@ export function useConductHistory(patientId: string) {
 
       const { error } = await supabase.from("conduct_history").insert({
         patient_id: patientId,
+        // encounter_id carimbado na origem — o hook já resolve activeEncounterId
+        // para o filtro de leitura; gravá-lo aqui fecha o vazamento por reuso de
+        // leito (dado novo deixa de ser NULL). Auditoria 22/07/2026.
+        encounter_id: activeEncounterId ?? null,
         field_name: fieldName,
         old_value: oldValue,
         new_value: newValue,
