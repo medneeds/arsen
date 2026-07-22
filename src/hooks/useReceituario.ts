@@ -27,21 +27,32 @@ export function useReceituario(
     if (!patientId && !patientName) return;
     setLoading(true);
     try {
-      let q = supabase
-        .from("receituarios")
-        .select("*")
-        .order("created_at", { ascending: false });
+      // Busca primária por patient_id (coluna garantida). O vínculo por
+      // patient_registry_id (segue o paciente entre leitos) é aplicado só se a
+      // coluna existir no banco — senão cai para patient_id sem quebrar.
+      // Migration 20260722150000 adiciona a coluna; enquanto não aplicada, o
+      // fallback mantém a tela funcionando. (Correção 22/07/2026.)
+      const runQuery = async (useRegistry: boolean) => {
+        let q = supabase
+          .from("receituarios")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (useRegistry && resolvedRegistryId && patientId) {
+          q = q.or(`patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${patientId})`);
+        } else if (patientId) {
+          q = q.eq("patient_id", patientId);
+        } else if (patientName) {
+          q = q.ilike("patient_name", `%${patientName}%`);
+        }
+        return q;
+      };
 
-      if (resolvedRegistryId && patientId) {
-        // Vínculo estável OU leito legado (registry NULL): cobre os dois.
-        q = q.or(`patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${patientId})`);
-      } else if (patientId) {
-        q = q.eq("patient_id", patientId);
-      } else if (patientName) {
-        q = q.ilike("patient_name", `%${patientName}%`);
+      let { data, error } = await runQuery(true);
+      // 42703 = undefined_column → a coluna patient_registry_id ainda não existe
+      // neste banco. Refaz a busca só por patient_id, sem erro para o usuário.
+      if (error && (error.code === "42703" || /patient_registry_id.*does not exist/i.test(error.message))) {
+        ({ data, error } = await runQuery(false));
       }
-
-      const { data, error } = await q;
       if (error) throw error;
       setReceituarios((data ?? []) as unknown as ReceituarioData[]);
     } catch (err: any) {
