@@ -277,7 +277,7 @@ const QUANTITY_UNITS = [
   'supositório', 'óvulo', 'bisnaga', 'frasco',
 ];
 
-import { QUANTITY_UNIT_SHORT, quantityUnitShort, buildSolutoToken, buildSolutoTokenLabeled } from "@/lib/solutoToken";
+import { QUANTITY_UNIT_SHORT, quantityUnitShort, buildSolutoToken, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared } from "@/lib/solutoToken";
 
 // Compose dose token combining `dose` (texto livre, geralmente do preset do wizard)
 // e `quantity`+`quantityUnit` (campos editados inline pelo médico).
@@ -535,19 +535,12 @@ function getPresetsForPosology(posology: string): typeof SCHEDULE_PRESETS[string
 // antes divergiam: o corpo olhava diluente, o PDF olhava posologia — o mesmo item
 // podia mostrar "BIC" num e não no outro (marcação residual/inconsistente).
 // Bolus EV é mutuamente exclusivo e tem precedência (tratado em quem chama).
-function isContinuousInfusion(item: PrescriptionItem): boolean {
-  if ((item as any).ivBolus) return false;
-  // BIC/infusão contínua é conceito EXCLUSIVO de via intravenosa.
-  // Sem esse gate, itens enterais (SNE: Domperidona/Simeticona), orais,
-  // retais (clister glicerinado) ou SC que tenham diluente herdavam BIC.
-  if (!isIVRoute(item.route || '')) return false;
-  const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
-  return (
-    /cont[ií]nu/i.test(item.posology || '') ||
-    item.infusionMode === 'BIC' ||
-    (!item.infusionMode && hasDiluent)
-  );
-}
+// isContinuousInfusion e buildPrepSegments foram movidas para
+// src/lib/solutoToken.ts (isContinuousInfusionShared / buildPrepSegments) em
+// 21/07/2026, para que o impresso principal e o da Prescrição Extra usem
+// EXATAMENTE a mesma lógica de detalhamento de preparo/infusão. Reexporto
+// isContinuousInfusion aqui com o nome antigo para não quebrar chamadas locais.
+const isContinuousInfusion = isContinuousInfusionShared;
 
 // Tokens estruturados para Line 2 do novo padrão de prescrição
 function buildLine2Tokens(item: PrescriptionItem): Array<{ text: string; isBadge?: boolean }> {
@@ -759,65 +752,10 @@ function buildInlinePrepLine(item: PrescriptionItem): string {
  *   tail = [Modo (BIC/Bolus), Correr em, Vazão]         → vem DEPOIS de via/intervalo
  * Preserva integralmente os mesmos campos de buildInlinePrepLine — só reordena.
  */
-function buildPrepSegments(item: PrescriptionItem): { head: string[]; tail: string[] } {
-  const head: string[] = [];
-  const tail: string[] = [];
+// buildPrepSegments movida para src/lib/solutoToken.ts (ver nota acima em
+// isContinuousInfusion). Importada no topo do arquivo. Mantida a mesma
+// assinatura { head, tail } para não alterar os call sites.
 
-  if (item.category === 'inhalation' || item.category === 'nutrition') {
-    return { head, tail };
-  }
-
-  // ── HEAD ──────────────────────────────────────────────────────────────────
-  // Reconstituição (pó liofilizado) — antes do diluente
-  if (item.reconstitutionSolvent && item.reconstitutionVolume) {
-    const qtyFA = item.quantity?.trim() && item.quantity.trim() !== '0' ? item.quantity.trim() : '1';
-    head.push(`Reconstituir ${qtyFA} FA em ${item.reconstitutionVolume}mL ${item.reconstitutionSolvent}`);
-  }
-
-  // Diluente — ou "Sem diluente" explícito
-  const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
-  if (hasDiluent) {
-    const dilLabel = item.diluent === 'diluente_proprio' ? 'Diluente próprio' : item.diluent;
-    head.push(item.diluentVolume ? `Dil.: ${dilLabel} ${item.diluentVolume}mL` : `Dil.: ${dilLabel}`);
-  } else if (item.diluent === 'sem_diluente') {
-    head.push('Sem diluente');
-  }
-
-  // Volume total (só quando difere do volume do diluente)
-  if (item.volumeTotal) {
-    const volTotalNum = parseFloat(item.volumeTotal.replace(',', '.'));
-    const volDilNum = parseFloat((item.diluentVolume || '').replace(',', '.'));
-    if (volTotalNum > 0 && (!volDilNum || volTotalNum !== volDilNum)) {
-      head.push(`Vol.: ${item.volumeTotal}mL`);
-    }
-  }
-
-  // ── TAIL ──────────────────────────────────────────────────────────────────
-  // Modo de infusão — regra unificada via isContinuousInfusion (fonte única de verdade).
-  if (item.ivBolus) {
-    tail.push('Bolus');
-  } else if (isContinuousInfusion(item)) {
-    tail.push('BIC');
-  }
-
-  // Correr em / Vazão — mL/h ou gts/min (SEM mcg/kg/min)
-  if (!item.ivBolus && (item.infusionTime || item.infusionRate)) {
-    const unit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
-    const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
-    if (item.infusionTime && item.infusionRate) {
-      tail.push(`Correr em: ${item.infusionTime}${unit}`);
-      tail.push(`Vazão: ${item.infusionRate} ${modeLabel}`);
-    } else if (item.infusionTime) {
-      tail.push(`Correr em: ${item.infusionTime}${unit}`);
-    } else if (item.infusionRate) {
-      tail.push(`Vazão: ${item.infusionRate} ${modeLabel}`);
-    }
-  } else if (isContinuousInfusion(item) && !item.infusionRate && !item.infusionTime) {
-    tail.push('Vazão: conforme protocolo');
-  }
-
-  return { head, tail };
-}
 
 interface PatientHeader {
   name: string;

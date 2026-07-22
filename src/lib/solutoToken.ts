@@ -201,3 +201,112 @@ export function buildSolutoToken(item: SolutoFields): string {
   // ══════════════════════════════════════════════════════════════════
   return qtyStr || doseRaw;
 }
+
+// ════════════════════════════════════════════════════════════════════════
+// PREP SEGMENTS — fonte única do detalhamento de preparo/infusão no impresso
+// ════════════════════════════════════════════════════════════════════════
+// Unificado em 21/07/2026 (pedido do gestor: impresso principal e extra devem
+// ter o MESMO detalhamento). Antes, PrescricaoPage.buildPrepSegments e a
+// montagem inline de printExtraPrescription divergiam em 4 pontos:
+//   1. espaçamento de unidade ("250mL" vs "250 mL")
+//   2. volume total omitido na principal quando == diluente (esconde dado de
+//      segurança em BIC — agora SEMPRE mostra)
+//   3. formato de reconstituição ("1 FA em 10mL AD" vs "AD 10 mL →")
+//   4. inferência de BIC (extra não inferia; agora ambos inferem)
+// Unificado pelo comportamento mais COMPLETO/SEGURO clinicamente.
+
+export interface PrepFields {
+  category?: string;
+  route?: string;
+  diluent?: string;
+  diluentVolume?: string;
+  volumeTotal?: string;
+  quantity?: string;
+  accessType?: string;
+  concentration?: string;
+  posology?: string;
+  infusionMode?: string;
+  infusionTime?: string;
+  infusionTimeUnit?: string;
+  infusionRate?: string;
+  ivBolus?: boolean;
+  reconstitutionSolvent?: string;
+  reconstitutionVolume?: string;
+}
+
+const isIVRouteShared = (route?: string): boolean => {
+  const n = (route || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return /(intravenosa|endovenosa|\bev\b|\biv\b)/.test(n);
+};
+
+export function isContinuousInfusionShared(item: PrepFields): boolean {
+  if (item.ivBolus) return false;
+  if (!isIVRouteShared(item.route || '')) return false;
+  const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
+  return (
+    /cont[ií]nu/i.test(item.posology || '') ||
+    item.infusionMode === 'BIC' ||
+    (!item.infusionMode && hasDiluent)
+  );
+}
+
+/**
+ * Monta os segmentos de preparo/infusão do item para o impresso.
+ * head = reconstituição, diluente, volume (vêm ANTES da via na linha).
+ * tail = modo (BIC/Bolus), tempo, vazão (vêm DEPOIS da posologia).
+ * Usado por AMBOS os impressos (principal e extra) — fonte única.
+ */
+export function buildPrepSegments(item: PrepFields): { head: string[]; tail: string[] } {
+  const head: string[] = [];
+  const tail: string[] = [];
+
+  if (item.category === 'inhalation' || item.category === 'nutrition') {
+    return { head, tail };
+  }
+
+  // ── HEAD ──
+  // Reconstituição (pó liofilizado) — formato unificado: preserva o nº de FA
+  // (dado real de preparo, vinha da principal) no layout da extra (com seta).
+  if (item.reconstitutionSolvent && item.reconstitutionVolume) {
+    const solvent = item.reconstitutionSolvent.replace(/\bABD\b/gi, 'AD');
+    const qtyFA = item.quantity?.trim() && item.quantity.trim() !== '0' ? item.quantity.trim() : '1';
+    head.push(`Reconstituir: ${qtyFA} FA em ${solvent} ${item.reconstitutionVolume} mL →`);
+  }
+
+  // Diluente — ou "Sem diluente" explícito
+  const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
+  if (hasDiluent) {
+    const dilLabel = item.diluent === 'diluente_proprio' ? 'Diluente próprio' : item.diluent;
+    head.push(item.diluentVolume ? `Dil.: ${dilLabel} ${item.diluentVolume} mL` : `Dil.: ${dilLabel}`);
+  } else if (item.diluent === 'sem_diluente') {
+    head.push('Sem diluente');
+  }
+
+  // Volume total — SEMPRE mostra quando preenchido (dado de segurança em BIC:
+  // define concentração e confere a vazão). Não esconde mais por "redundância".
+  if (item.volumeTotal) {
+    const volTotalNum = parseFloat(item.volumeTotal.replace(',', '.'));
+    if (volTotalNum > 0) head.push(`Vol.: ${item.volumeTotal} mL`);
+  }
+
+  // ── TAIL ──
+  const isIV = isIVRouteShared(item.route || '');
+  // Modo de infusão — Bolus/BIC só fazem sentido em via intravenosa.
+  if (item.ivBolus && isIV) {
+    tail.push('Bolus');
+  } else if (isContinuousInfusionShared(item)) {
+    tail.push('BIC');
+  }
+
+  // Tempo / Vazão — mL/h ou gts/min
+  if (!item.ivBolus && (item.infusionTime || item.infusionRate)) {
+    const unit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
+    const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
+    if (item.infusionTime) tail.push(`Correr em: ${item.infusionTime}${unit}`);
+    if (item.infusionRate) tail.push(`Vazão: ${item.infusionRate} ${modeLabel}`);
+  } else if (isContinuousInfusionShared(item) && !item.infusionRate && !item.infusionTime) {
+    tail.push('Vazão: conforme protocolo');
+  }
+
+  return { head, tail };
+}

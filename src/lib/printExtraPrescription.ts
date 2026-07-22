@@ -6,7 +6,7 @@
  * insulinoterapia agrupada com sub-linhas para enfermagem).
  */
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
-import { buildSolutoTokenLabeled } from "@/lib/solutoToken";
+import { buildSolutoTokenLabeled, buildPrepSegments } from "@/lib/solutoToken";
 import { describeInsulinPlan, type InsulinPlan } from "@/lib/insulinTherapy";
 
 
@@ -168,60 +168,50 @@ function buildLine2(it: ExtraPrintItem): string {
 
   // Medicação / Hidratação / ATB / High Alert — campos explícitos, SEM frases automáticas
   // NOVA ORDEM (raciocínio do médico): DOSE · Dil. · Vol. · Via · Acesso · Intervalo · Modo · Tempo · Vazão
+  // Detalhamento de preparo/infusão (reconstituição, diluente, volume, modo,
+  // tempo, vazão) vem de buildPrepSegments — MESMA função do impresso
+  // principal (unificado 21/07/2026, ver src/lib/solutoToken.ts). A extra só
+  // intercala dose/via/acesso/posologia entre head e tail, e escapa o HTML.
   const parts: string[] = [];
+  const { head, tail } = buildPrepSegments({
+    category: it.category,
+    route: it.route,
+    diluent: it.diluent,
+    diluentVolume: it.diluentVolume,
+    volumeTotal: it.volumeTotal,
+    quantity: it.quantity,
+    accessType: it.accessType,
+    posology: it.posology,
+    infusionMode: it.infusionMode,
+    infusionTime: it.infusionTime,
+    infusionTimeUnit: it.infusionTimeUnit,
+    infusionRate: it.infusionRate,
+    ivBolus: it.ivBolus,
+    reconstitutionSolvent: it.reconstitutionSolvent,
+    reconstitutionVolume: it.reconstitutionVolume,
+  });
 
-  // 0. Reconstituição (liofilizados) — antes da dose, espelhando a prévia da
-  // tela. Sem isto, "Reconstituir: AD 10 mL →" aparecia na prévia e sumia no papel.
-  if (it.reconstitutionSolvent && it.reconstitutionVolume) {
-    const solvent = it.reconstitutionSolvent.replace(/\bABD\b/gi, 'AD');
-    parts.push(`Reconstituir: ${escape(solvent)} ${escape(it.reconstitutionVolume)} mL →`);
-  }
+  // head começa com a reconstituição (quando houver) — ela vem ANTES da dose.
+  const reconSeg = head.find((h) => h.startsWith('Reconstituir'));
+  const headNoRecon = head.filter((h) => !h.startsWith('Reconstituir'));
+  if (reconSeg) parts.push(escape(reconSeg));
 
-  // 1. Dose — mesma lógica da pré-visualização na tela (buildSolutoToken):
-  // combina quantity+quantityUnit+dose. Antes usava só `it.dose` cru, e itens
-  // preenchidos via Qtd (ex: Midazolam 20 mL) perdiam o volume no impresso.
+  // Dose — combina quantity+quantityUnit+dose (buildSolutoTokenLabeled).
   const soluto = buildSolutoTokenLabeled({ quantity: it.quantity, quantityUnit: it.quantityUnit, dose: it.dose });
   if (soluto) parts.push(escape(soluto));
 
-  // 2. Diluente — logo após a dose (ou "Sem diluente" explícito)
-  if (it.diluent && it.diluent !== '-' && it.diluent !== 'sem_diluente') {
-    const dilLabel = it.diluent === 'diluente_proprio' ? 'Diluente próprio' : escape(it.diluent);
-    parts.push(`Dil.: ${dilLabel}${it.diluentVolume ? ` ${escape(it.diluentVolume)} mL` : ''}`);
-  } else if (it.diluent === 'sem_diluente') {
-    parts.push('Sem diluente');
-  }
+  // Diluente + Volume (restante do head, após a dose)
+  headNoRecon.forEach((h) => parts.push(escape(h)));
 
-  // 3. Volume total
-  if (it.volumeTotal) parts.push(`Vol.: ${escape(it.volumeTotal)} mL`);
-
-  // 4. Via
+  // Via
   if (it.route && it.route !== '-') parts.push(escape(it.route));
-
-  // 5. Acesso (só quando preenchido)
+  // Acesso (só quando preenchido)
   if (it.accessType && it.accessType !== '-') parts.push(escape(it.accessType));
-
-  // 6. Intervalo / posologia
+  // Intervalo / posologia
   if (it.posology && it.posology !== '-') parts.push(escape(it.posology));
 
-  // 7. Modo (BIC/Bolus) — só faz sentido para via intravenosa.
-  // Sem esse gate, itens enterais/orais/retais/SC com diluente herdavam "BIC"
-  // (ex.: Domperidona/Simeticona via SNE, clister glicerinado).
-  const routeNorm = (it.route || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const isIV = /(intravenosa|endovenosa|\bev\b|\biv\b)/.test(routeNorm);
-  if (it.ivBolus && isIV) parts.push('Bolus');
-  else if (it.infusionMode === 'BIC' && isIV) parts.push('BIC');
-
-  // 8. Tempo de infusão (não em bolus)
-  if (!it.ivBolus && it.infusionTime) {
-    const unit = it.infusionTimeUnit === 'h' ? 'h' : 'min';
-    parts.push(`Correr em: ${escape(it.infusionTime)}${unit}`);
-  }
-
-  // 9. Vazão (não em bolus)
-  if (!it.ivBolus && it.infusionRate) {
-    const rateUnit = it.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
-    parts.push(`Vazão: ${escape(it.infusionRate)} ${rateUnit}`);
-  }
+  // Modo (BIC/Bolus) + Tempo + Vazão — restante do tail.
+  tail.forEach((t) => parts.push(escape(t)));
 
   if (!parts.length) return '';
   return `<div style="font-size:8pt;color:#444;line-height:1.4;margin-top:2pt">${parts.join(` ${SEP} `)}</div>`;
