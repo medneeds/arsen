@@ -7,6 +7,8 @@
  */
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 import { buildSolutoTokenLabeled, buildPrepSegments } from "@/lib/solutoToken";
+import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydration";
+import { assembleInhalationInstruction } from "@/lib/inhalationInstruction";
 import { describeInsulinPlan, type InsulinPlan } from "@/lib/insulinTherapy";
 
 
@@ -131,36 +133,42 @@ function buildLine2(it: ExtraPrintItem): string {
 
   const isInhalation = it.category === 'inhalation';
   const isNutrition = it.category === 'nutrition';
+  const isHydration = it.category === 'hydration';
 
   if (isInhalation) {
+    // Fonte única (assembleInhalationInstruction) — MESMA frase clínica da
+    // tela e do impresso principal. A lógica própria anterior era empobrecida:
+    // ignorava nebDose/nebDoseUnit, a diluição da nebulização
+    // (diluent+diluentVolume), stageDuration, inhalationInterface, puffs,
+    // continuousDuration e inhalationOrientation — um item configurado no
+    // wizard saía completo no impresso principal e capenga no anexo extra.
+    const phrase = assembleInhalationInstruction(it as any);
     const parts = [
-      it.dose && it.dose !== '-' ? escape(it.dose) : null,
-      it.route && it.route !== '-' ? escape(it.route) : null,
+      phrase ? escape(phrase) : null,
       it.posology && it.posology !== '-' ? escape(it.posology) : null,
-      it.inhalationMode ? escape(it.inhalationMode) : null,
-      it.oxygenFlow ? `O₂ ${escape(it.oxygenFlow)}` : null,
-      it.spacer ? 'c/ espaçador' : null,
-      it.gargle ? 'gargarejo após' : null,
     ].filter(Boolean);
     if (!parts.length) return '';
     return `<div style="font-size:8pt;color:#444;line-height:1.4;margin-top:2pt">${parts.join(` ${SEP} `)}</div>`;
   }
 
   if (isNutrition) {
-    const scheduleText = it.nutScheduleMode === 'steps'
-      ? (it.nutSteps ? `${it.nutSteps} etapa(s)/dia` : null)
-      : (it.dietInterval ? `Intervalo: ${escape(it.dietInterval)}` : null);
-    const rateUnit = it.nutRateMode === 'gtt' ? 'gts/min' : 'mL/h';
+    // Fonte única (buildNutritionParts) — mesmos campos e rótulos da tela
+    // compacta e do impresso principal. A lógica própria anterior tinha só 9
+    // campos (faltavam nutFraction, nutNightPause, nutComposition,
+    // nutMonitoring, nutResidualCheck, nutWaterVolPerAdmin, nutWaterFreq,
+    // nutConsistency e nutProgression) e rótulos divergentes.
+    const parts = buildNutritionParts(it).map(escape);
+    if (!parts.length) return '';
+    return `<div style="font-size:8pt;color:#444;line-height:1.4;margin-top:2pt">${parts.join(` ${SEP} `)}</div>`;
+  }
+
+  if (isHydration) {
+    // Fonte única (buildHydrationLine) — fases + vazão + total/24h (balanço
+    // hídrico), mesma frase da tela compacta e do impresso principal.
+    const line = buildHydrationLine(it);
     const parts = [
-      it.dietType ? escape(it.dietType) : null,
-      it.dietProfile ? `Perfil: ${escape(it.dietProfile)}` : null,
-      it.nutVolDay ? `Vol/dia: ${escape(it.nutVolDay)} mL` : null,
-      it.nutMode ? escape(it.nutMode) : null,
-      scheduleText,
-      it.infusionRate ? `Vazão: ${escape(it.infusionRate)} ${rateUnit}` : null,
-      it.nutAccess ? `Acesso: ${escape(it.nutAccess)}` : null,
-      it.nutBedHead ? `Cab: ${escape(it.nutBedHead)}°` : null,
-      it.nutZeroReason ? `Jejum: ${escape(it.nutZeroReason)}` : null,
+      line ? escape(line) : null,
+      it.route && it.route !== '-' ? escape(it.route) : null,
     ].filter(Boolean);
     if (!parts.length) return '';
     return `<div style="font-size:8pt;color:#444;line-height:1.4;margin-top:2pt">${parts.join(` ${SEP} `)}</div>`;

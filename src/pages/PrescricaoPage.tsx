@@ -278,6 +278,7 @@ const QUANTITY_UNITS = [
 ];
 
 import { QUANTITY_UNIT_SHORT, quantityUnitShort, buildSolutoToken, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared } from "@/lib/solutoToken";
+import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydration";
 
 // Compose dose token combining `dose` (texto livre, geralmente do preset do wizard)
 // e `quantity`+`quantityUnit` (campos editados inline pelo médico).
@@ -1990,57 +1991,16 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         supplement: 'Suplementação',
       };
       compactParts.push(subLabel[sub]);
-
-      if (sub === 'diet_enteral' || sub === 'diet_oral') {
-        if (item.nutVolDay) compactParts.push(`${item.nutVolDay} mL/dia`);
-        // Aprazamento visível também minimizado — sem isto, "300 mL/dia" em
-        // 2 etapas escondia a informação que explica a conta (bug 16/07/2026)
-        if (item.nutScheduleMode === 'steps' && item.nutSteps) {
-          compactParts.push(`${item.nutSteps} ${item.nutSteps === '1' ? 'etapa' : 'etapas'}/dia`);
-        } else if (item.dietInterval) {
-          compactParts.push(item.dietInterval);
-        }
-        if (sub === 'diet_enteral' && item.infusionRate) compactParts.push(`${item.infusionRate} mL/h`);
-        if (item.nutMode) compactParts.push(item.nutMode);
-        if (item.nutFraction) compactParts.push(item.nutFraction);
-        if (item.nutNightPause) compactParts.push(`pausa ${item.nutNightPause}`);
-        if (item.nutBedHead) compactParts.push(`cab ${item.nutBedHead}`);
-        if (sub === 'diet_oral' && item.nutConsistency) {
-          // Mostra só o nome da consistência, sem o sufixo IDDSI
-          compactParts.push(item.nutConsistency.replace(/\s*\(IDDSI[^)]*\)/i, ''));
-        }
-      } else if (sub === 'water') {
-        if (item.nutWaterVolPerAdmin) compactParts.push(`${item.nutWaterVolPerAdmin}/adm`);
-        if (item.nutWaterFreq) compactParts.push(item.nutWaterFreq);
-        if (item.nutVolDay) compactParts.push(`meta ${item.nutVolDay} mL/24h`);
-      } else if (sub === 'npt') {
-        if (item.volumeTotal) compactParts.push(`vol ${item.volumeTotal} mL`);
-        if (item.infusionRate) compactParts.push(`${item.infusionRate} mL/h`);
-        if (item.infusionTime) {
-          const u = item.infusionTimeUnit === 'h' ? 'h' : 'min';
-          compactParts.push(`correr em ${item.infusionTime}${u}`);
-        }
-        if (item.nutAccess) compactParts.push(item.nutAccess);
-      } else if (sub === 'zero') {
-        if (item.nutZeroReason) compactParts.push(item.nutZeroReason);
-      }
+      // Detalhamento via fonte única (buildNutritionParts) — MESMOS campos e
+      // rótulos da tela, do impresso principal e do impresso extra
+      // (unificação 21/07/2026; antes eram 4 lógicas divergentes, e a
+      // consistência IDDSI não saía em nenhum impresso).
+      buildNutritionParts({ ...item, nutritionType: sub }).forEach(p => compactParts.push(p));
     } else if (isHydration) {
-      // Frase única, em corrida, orientada à enfermagem
-      const phases = intervalToPhases(item.posology);
-      const interval = item.posology || '24/24h';
-      const vol = parseFloat(item.volumeTotal || '0') || 0;
-      const total24 = vol * phases;
-      const tVal = item.infusionTime || '';
-      const tUnitH = item.infusionTimeUnit === 'h' ? 'h' : 'min';
-      const rateLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
-      const rate = item.infusionRate ? `${item.infusionRate} ${rateLabel}` : '';
-      const phrase = [
-        vol ? `${vol}mL/fase` : '',
-        `${phases} fase${phases > 1 ? 's' : ''} (${interval})`,
-        tVal ? `correr em ${tVal}${tUnitH}` : '',
-        rate ? `(${rate})` : '',
-        total24 ? `· total ${total24}mL/24h` : '',
-      ].filter(Boolean).join(' · ');
+      // Frase única, em corrida, orientada à enfermagem — fonte única
+      // (buildHydrationLine): mesma frase nos dois impressos, com fases,
+      // vazão e total/24h (balanço hídrico).
+      const phrase = buildHydrationLine(item);
       if (phrase) compactParts.push(phrase);
     } else {
       if (item.dose && item.dose !== '-') compactParts.push(composeDoseLabel(item));
@@ -3406,188 +3366,12 @@ function parseScheduleSlots(schedule: string): string[] {
     .filter(s => /^\d{1,2}h?$/.test(s) || /^\d{1,2}:\d{2}$/.test(s));
 }
 
-// --- Print-only Item Row (dynamic schedule slots) ---
-function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }) {
-  const isNutrition = item.category === 'nutrition';
-  const hasPreparo = !isNutrition && (item.diluent || item.diluentVolume || item.accessType || item.infusionTime || item.reconstitutionVolume || item.reconstitutionSolvent);
-  const slots = parseScheduleSlots(item.schedule);
-  const isEven = index % 2 === 0;
-  const rowBg = isEven ? '#ffffff' : '#f8fafc';
-
-  // Nutrição — espelha tela compacta (alinhado com printExtraPrescription)
-  let nutritionLine: string | null = null;
-  if (isNutrition && !item.nutManual) {
-    const scheduleText = item.nutScheduleMode === 'steps'
-      ? (item.nutSteps ? `${item.nutSteps} ${item.nutSteps === '1' ? 'etapa/dia' : 'etapas/dia'}` : null)
-      : (item.dietInterval ? `Intervalo: ${item.dietInterval}` : null);
-    const rateUnit = item.nutRateMode === 'gtt' ? 'gts/min' : 'mL/h';
-    const parts = [
-      item.dietType || null,
-      item.dietProfile ? `Perfil: ${item.dietProfile}` : null,
-      item.nutConsistency ? item.nutConsistency.replace(/\s*\(IDDSI[^)]*\)/i, '') : null,
-      scheduleText,
-      item.nutVolDay ? `Vol/dia: ${item.nutVolDay} mL` : null,
-      item.nutMode || null,
-      item.infusionRate ? `Correr em: ${item.infusionRate} ${rateUnit}` : null,
-      item.nutFraction ? `Frac: ${item.nutFraction}` : null,
-      item.nutProgression ? `Progressão: ${item.nutProgression}` : null,
-      item.nutNightPause ? `Pausa noturna: ${item.nutNightPause}` : null,
-      item.nutBedHead ? `Cabeceira: ${item.nutBedHead}°` : null,
-      item.nutAccess ? `Acesso: ${item.nutAccess}` : null,
-      item.nutComposition || null,
-      item.nutMonitoring ? `Monit: ${item.nutMonitoring}` : null,
-      item.nutResidualCheck ? `Resíduo: ${item.nutResidualCheck}` : null,
-      item.nutWaterVolPerAdmin ? `Vol/adm: ${item.nutWaterVolPerAdmin} mL` : null,
-      item.nutWaterFreq ? `Freq: ${item.nutWaterFreq}` : null,
-      item.nutZeroReason ? `Motivo jejum: ${item.nutZeroReason}` : null,
-    ].filter(Boolean);
-    nutritionLine = parts.length ? parts.join(' · ') : null;
-  }
-
-  return (
-    <tr style={{ pageBreakInside: 'avoid' }} className={isEven ? '' : 'print-row-alt'}>
-      {/* Nº — pill style */}
-      <td style={{ width: '26px', borderBottom: '0.5px solid #e2e8f0', borderLeft: '0.5px solid #e2e8f0', padding: '3px 0', textAlign: 'center', verticalAlign: 'top', backgroundColor: rowBg }}>
-        <div style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: '#0f172a', color: '#fff', fontSize: '7pt', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', lineHeight: 1 }} className="print-num-pill">
-          {index + 1}
-        </div>
-      </td>
-      {/* Descrição do item */}
-      <td style={{ borderBottom: '0.5px solid #e2e8f0', padding: '3px 8px', verticalAlign: 'top', backgroundColor: rowBg }}>
-        <div style={{ fontSize: '8pt', lineHeight: '1.4', color: '#0f172a' }}>
-          <span style={{ fontWeight: 800, letterSpacing: '-0.1px' }}>{item.name}</span>
-          {item.presentation && item.presentation !== '-' && (
-            <span style={{ fontWeight: 400, color: '#64748b', fontSize: '7.5pt', textTransform: 'none' }}> ({formatPresentation(item.presentation)})</span>
-          )}
-        </div>
-        {!isNutrition && (() => {
-          // ── Linha única (NOVA ORDEM): DOSE · Dil. · Vol. · Via · Acesso · Intervalo · Modo · Infusão ──
-          const dose = buildSolutoTokenLabeled(item);
-          const via   = item.route && item.route !== '-' ? item.route : null;
-          const freq  = item.posology && item.posology !== '-' ? item.posology : null;
-          const access = item.accessType && item.accessType !== '-' ? item.accessType : null;
-          const { head, tail } = buildPrepSegments(item);
-          const hasPrep = (head.length + tail.length) > 0;
-          type Seg = { text: string; strong?: boolean; dil?: boolean };
-          const bodySegs: Seg[] = [];
-          head.forEach(h => bodySegs.push({ text: h, dil: h.startsWith('Dil.') || h === 'Sem diluente' }));
-          if (via)  bodySegs.push({ text: via, strong: true });
-          if (access) bodySegs.push({ text: access });
-          if (freq) bodySegs.push({ text: freq, strong: true });
-          tail.forEach(t => bodySegs.push({ text: t }));
-          return (
-            <div style={{ marginTop: '1px' }}>
-              <div style={{ fontSize: '7.5pt', color: '#0f172a', lineHeight: '1.4', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0 3px' }}>
-                {/* DOSE — destaque visual */}
-                {dose && (
-                  <span style={{ fontWeight: 800, fontSize: '8pt', color: '#0f172a', letterSpacing: '-0.1px', backgroundColor: '#f1f5f9', padding: '0 4px', borderRadius: '3px', border: '0.5px solid #cbd5e1' }}>
-                    {dose}
-                  </span>
-                )}
-                {bodySegs.map((seg, i) => (
-                  <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                    <span style={{ color: '#94a3b8', fontWeight: 300 }}>·</span>
-                    <span style={{
-                      fontWeight: seg.dil ? 700 : (seg.strong ? 600 : 400),
-                      color: seg.dil ? '#0f172a' : (seg.strong ? '#334155' : '#475569'),
-                      fontSize: seg.dil ? '7.5pt' : '7pt',
-                    }}>{seg.text}</span>
-                  </span>
-                ))}
-                {/* Chips */}
-                {item.flags.length > 0 && (
-                  <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '2px', color: '#fff', backgroundColor: '#0f172a', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
-                )}
-                {item.isExtra && (
-                  <span style={{ fontSize: '6pt', fontWeight: 700, color: '#ea580c', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fed7aa', letterSpacing: '0.3px' }}>EXTRA</span>
-                )}
-                {item.status === 'suspended' && (
-                  <span style={{ fontSize: '6.5pt', fontWeight: 700, color: '#fff', backgroundColor: '#dc2626', padding: '0.5px 4px', borderRadius: '2px' }}>SUSPENSO</span>
-                )}
-              </div>
-              {/* Recomendação livre do médico (preservada, opcional) */}
-              {hasPrep && item.instructions && (
-                <div style={{ fontSize: '7pt', fontStyle: 'italic', color: '#64748b', lineHeight: '1.3', marginTop: '1px' }}>— {item.instructions}</div>
-              )}
-              {/* Observações / instruções de preparo quando NÃO há campos estruturados (fallback) */}
-              {!hasPrep && item.instructions && !isNutrition && (
-                <div style={{
-                  fontSize: '7pt',
-                  color: item.ivBolus ? '#334155' : '#1e293b',
-                  lineHeight: '1.3',
-                  marginTop: '2px',
-                  fontWeight: item.ivBolus ? 400 : 500,
-                  fontStyle: 'normal',
-                  borderLeft: item.ivBolus ? 'none' : '2px solid #e2e8f0',
-                  paddingLeft: item.ivBolus ? 0 : '5px',
-                }}>
-                  {item.instructions}
-                </div>
-              )}
-            </div>
-          );
-        })()}
-        {isNutrition && nutritionLine && (
-          <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: '1.3', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #16a34a', fontWeight: 500 }}>
-            {nutritionLine}
-          </div>
-        )}
-        {isNutrition && item.nutManual && item.instructions && (
-          <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: '1.3', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #16a34a', fontWeight: 500 }}>
-            {item.instructions}
-          </div>
-        )}
-        {isNutrition && !item.nutManual && item.instructions && (
-          <div style={{ fontSize: '6.5pt', color: '#475569', lineHeight: '1.2', marginTop: '1px', paddingLeft: '10px', fontStyle: 'italic' }}>
-            Obs.: {item.instructions}
-          </div>
-        )}
-        {item.instructions && !hasPreparo && !isNutrition && (() => {
-          // Guard: if already rendered inline (no prep path), skip to avoid duplication.
-          const prepCheck = buildPrepSegments(item);
-          if ((prepCheck.head.length + prepCheck.tail.length) === 0) return null; // already shown above
-          return (
-            <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: '1.2', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #cbd5e1' }}>
-              {item.instructions}
-            </div>
-          );
-        })()}
-      </td>
-      {/* Aprazamento manual — preenchido pela enfermagem */}
-      <td style={{
-        width: '220px',
-        borderBottom: '0.5px solid #e2e8f0', borderRight: '0.5px solid #e2e8f0',
-        verticalAlign: 'top', backgroundColor: '#fff', padding: '4px 6px',
-      }}>
-        <div style={{ minHeight: '36px' }} />
-      </td>
-    </tr>
-  );
-}
-
-function PrintSimpleRow({ item, index }: { item: PrescriptionItem; index: number }) {
-  const isEven = index % 2 === 0;
-  const rowBg = isEven ? '#ffffff' : '#f8fafc';
-  return (
-    <tr style={{ pageBreakInside: 'avoid' }} className={isEven ? '' : 'print-row-alt'}>
-      <td style={{ width: '26px', borderBottom: '0.5px solid #e2e8f0', borderLeft: '0.5px solid #e2e8f0', padding: '3px 0', textAlign: 'center', verticalAlign: 'top', backgroundColor: rowBg }}>
-        <div style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: '#0f172a', color: '#fff', fontSize: '7pt', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', lineHeight: 1 }} className="print-num-pill">
-          {index + 1}
-        </div>
-      </td>
-      <td colSpan={2} style={{ borderBottom: '0.5px solid #e2e8f0', padding: '3px 8px', verticalAlign: 'top', backgroundColor: rowBg }}>
-        <div style={{ fontSize: '8pt', lineHeight: '1.4', color: '#0f172a' }}>
-          <span style={{ fontWeight: 800 }}>{item.name}</span>
-          {item.dose && item.dose !== '-' ? <span style={{ color: '#334155', fontWeight: 500 }}> — {item.dose}</span> : ''}
-          {item.posology && item.posology !== '-' ? <span style={{ color: '#64748b', fontWeight: 500 }}> — {item.posology}</span> : ''}
-        </div>
-      </td>
-      <td style={{ width: '28px', borderBottom: '0.5px solid #e2e8f0', borderRight: '0.5px solid #e2e8f0', textAlign: 'center', verticalAlign: 'middle', backgroundColor: rowBg }}>
-        <div style={{ width: '12px', height: '12px', border: '1.5px solid #94a3b8', borderRadius: '3px', margin: '0 auto' }} />
-      </td>
-    </tr>
-  );
-}
+// PrintItemRow e PrintSimpleRow (componentes de impressao alternativos)
+// REMOVIDOS em 21/07/2026: codigo morto (nenhum uso). PrintItemRow continha
+// a lista mais completa de campos de nutricao (unica com nutProgression e
+// nutConsistency) e serviu de referencia para o superconjunto da fonte unica
+// buildNutritionParts (src/lib/nutritionHydration.ts), usada agora pela tela
+// compacta, impresso principal e impresso extra.
 
 function BatchActionBar({
   selectedCount,
@@ -10797,17 +10581,27 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   )}
                 </div>
                 {item.category !== 'nutrition' && (() => {
-                  const dose = buildSolutoTokenLabeled(item);
+                  const isHydr = item.category === 'hydration';
+                  // Hidratação: frase única da fonte única (buildHydrationLine)
+                  // — mesma da tela compacta, com fases, vazão e TOTAL/24h
+                  // (balanço hídrico), que o impresso não mostrava. A dose
+                  // genérica e os prep segments não se aplicam (o soro É o
+                  // item; volume/fase e vazão já estão na frase).
+                  const dose = isHydr ? '' : buildSolutoTokenLabeled(item);
                   const via  = item.route && item.route !== '-' ? abbrevRoute(item.route) : null;
-                  const freq = item.posology && item.posology !== '-' ? item.posology : null;
+                  const freq = !isHydr && item.posology && item.posology !== '-' ? item.posology : null;
                   const access = item.accessType && item.accessType !== '-' ? item.accessType : null;
-                  const { head, tail } = buildPrepSegments(item);
+                  const { head, tail } = isHydr ? { head: [] as string[], tail: [] as string[] } : buildPrepSegments(item);
                   const slots = parseScheduleSlots(item.schedule || '');
                   const hasPrep = (head.length + tail.length) > 0;
                   // NOVA ORDEM (raciocínio do médico): DOSE · Dil. · Vol. · Via · Acesso · Intervalo · Modo · Infusão
                   // Segmentos do corpo da linha, na ordem definida. Cada um vira um "·"-separado.
                   type Seg = { text: string; strong?: boolean; dil?: boolean };
                   const bodySegs: Seg[] = [];
+                  if (isHydr) {
+                    const line = buildHydrationLine(item);
+                    if (line) bodySegs.push({ text: line, strong: true });
+                  }
                   head.forEach(h => bodySegs.push({ text: h, dil: h.startsWith('Dil.') || h === 'Sem diluente' }));
                   if (via)  bodySegs.push({ text: via, strong: true });
                   if (access) bodySegs.push({ text: access });
@@ -10909,29 +10703,12 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
 
                 {/* Nutrição: campos específicos */}
                 {item.category === 'nutrition' && !item.nutManual && (() => {
-                  const scheduleText = item.nutScheduleMode === 'steps'
-                    ? (item.nutSteps ? `${item.nutSteps} ${item.nutSteps === '1' ? 'etapa/dia' : 'etapas/dia'}` : null)
-                    : (item.dietInterval ? `Intervalo: ${item.dietInterval}` : null);
-                  const rateUnit = item.nutRateMode === 'gtt' ? 'gts/min' : 'mL/h';
-                  const rateText = item.infusionRate ? `Correr em: ${item.infusionRate} ${rateUnit}` : null;
-                  const parts = [
-                    item.dietType || null,
-                    item.dietProfile ? `Perfil: ${item.dietProfile}` : null,
-                    item.nutVolDay ? `Vol: ${item.nutVolDay} mL` : null,
-                    scheduleText,
-                    rateText,
-                    item.nutMode || null,
-                    item.nutFraction ? `Frac: ${item.nutFraction}` : null,
-                    item.nutNightPause ? `Pausa noturna: ${item.nutNightPause}` : null,
-                    item.nutBedHead ? `Cabeceira: ${item.nutBedHead}°` : null,
-                    item.nutAccess ? `Acesso: ${abbrevRoute(item.nutAccess)}` : null,
-                    item.nutComposition || null,
-                    item.nutMonitoring ? `Monit: ${item.nutMonitoring}` : null,
-                    item.nutResidualCheck ? `Resíduo: ${item.nutResidualCheck}` : null,
-                    item.nutWaterVolPerAdmin ? `Vol/adm: ${item.nutWaterVolPerAdmin} mL` : (item.nutritionType === 'water' && item.dose && item.dose !== '-' ? `Vol/adm: ${item.dose}` : null),
-                    item.nutWaterFreq || (item.nutritionType === 'water' && item.posology && item.posology !== '-' ? `Freq: ${item.posology}` : null),
-                    item.nutZeroReason ? `Motivo jejum: ${item.nutZeroReason}` : null,
-                  ].filter(Boolean);
+                  // Fonte única (buildNutritionParts) — mesmos campos e rótulos
+                  // da tela compacta e do impresso extra. Recupera dois campos
+                  // que este impresso NÃO mostrava: nutConsistency (textura
+                  // IDDSI — segurança de disfagia; era configurada e visível na
+                  // tela mas nunca saía no papel) e nutProgression.
+                  const parts = buildNutritionParts(item);
                   if (parts.length === 0 && !item.instructions) return null;
                   return (
                     <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #16a34a', fontWeight: 500 }}>

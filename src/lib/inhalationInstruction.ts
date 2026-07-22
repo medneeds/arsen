@@ -59,7 +59,13 @@ export function assembleInhalationInstruction(item: InhalationItemFields): strin
     tail.push('nebulizar');
     if (item.oxygenFlow) tail.push(`com fluxo de O₂/Ar ${item.oxygenFlow} L/min`);
     if (item.stageDuration) tail.push(`por ${item.stageDuration} min`);
-    if (item.inhalationInterface) tail.push(`via ${INHALATION_INTERFACE_LABEL[item.inhalationInterface].toLowerCase()}`);
+    if (item.inhalationInterface) {
+      // Guard: dado legado ou string fora do catálogo não pode derrubar o
+      // render (TypeError em .toLowerCase de undefined). Fallback: usa o
+      // valor cru. (Blindado 21/07/2026 — bug latente achado em simulação.)
+      const ifaceLabel = INHALATION_INTERFACE_LABEL[item.inhalationInterface] ?? String(item.inhalationInterface);
+      tail.push(`via ${ifaceLabel.toLowerCase()}`);
+    }
     if (item.posology) tail.push(`— ${item.posology}`);
     parts.push(tail.join(' '));
   }
@@ -76,7 +82,13 @@ export function assembleInhalationInstruction(item: InhalationItemFields): strin
     if (header) parts.push(header);
     const tail: string[] = ['nebulização contínua'];
     if (item.oxygenFlow) tail.push(`fluxo O₂/Ar ${item.oxygenFlow} L/min`);
-    if (item.inhalationInterface) tail.push(`via ${INHALATION_INTERFACE_LABEL[item.inhalationInterface].toLowerCase()}`);
+    if (item.inhalationInterface) {
+      // Guard: dado legado ou string fora do catálogo não pode derrubar o
+      // render (TypeError em .toLowerCase de undefined). Fallback: usa o
+      // valor cru. (Blindado 21/07/2026 — bug latente achado em simulação.)
+      const ifaceLabel = INHALATION_INTERFACE_LABEL[item.inhalationInterface] ?? String(item.inhalationInterface);
+      tail.push(`via ${ifaceLabel.toLowerCase()}`);
+    }
     if (item.continuousDuration) tail.push(`por ${item.continuousDuration} h`);
     parts.push(tail.join(', '));
   }
