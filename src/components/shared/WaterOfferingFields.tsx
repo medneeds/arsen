@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Droplet, AlertTriangle } from "lucide-react";
+import { parseDecimalBR } from "@/lib/solutoToken";
 
 /**
  * Catálogo de tipos de água ofertáveis no hospital.
@@ -77,7 +78,7 @@ export const DEFAULT_WATER_STATE: WaterOfferingState = {
 
 /** Calcula volume total estimado em 24h a partir do fracionamento. */
 export function computeWaterTotal24h(state: WaterOfferingState): number | null {
-  const vol = parseFloat(state.volumePerOffering) || 0;
+  const vol = parseDecimalBR(state.volumePerOffering) || 0;
   if (!vol) return null;
   const f = state.fraction;
   // Fracionamentos com periodicidade conhecida em horas
@@ -97,7 +98,7 @@ export function computeWaterTotal24h(state: WaterOfferingState): number | null {
 /** Constrói o nome curto da prescrição: "Água filtrada · 100mL VO 4/4h". */
 export function buildWaterEntryName(state: WaterOfferingState): string {
   const type = WATER_TYPES.find(t => t.key === state.type)?.label ?? "Água";
-  const vol = parseFloat(state.volumePerOffering) || 0;
+  const vol = parseDecimalBR(state.volumePerOffering) || 0;
   const route = WATER_ROUTES.find(r => r.key === state.route)?.label ?? "";
   return `${type} — ${vol > 0 ? `${vol}mL · ` : ""}${route} · ${state.fraction}`;
 }

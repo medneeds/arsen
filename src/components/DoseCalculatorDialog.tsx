@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Calculator, Info } from "lucide-react";
+import { parseDecimalBR } from "@/lib/solutoToken";
 import {
   WEIGHT_BASED_DOSES,
   type WeightBasedDose,
@@ -66,7 +67,7 @@ export function DoseCalculatorDialog({
   // Inicialização ao abrir
   useEffect(() => {
     if (!open) return;
-    setWeight(initialWeight ? String(parseFloat(initialWeight) || "") : "");
+    setWeight(initialWeight ? String(parseDecimalBR(initialWeight) || "") : "");
     setHeight(initialHeight || "");
     if (initialMedication) {
       const found = findWeightBasedDose(initialMedication);
@@ -83,11 +84,11 @@ export function DoseCalculatorDialog({
     }
   }, [ref]);
 
-  const weightKg = parseFloat(weight) || 0;
-  const heightCm = parseFloat(height) || 0;
-  const dose = parseFloat(doseValue) || 0;
+  const weightKg = parseDecimalBR(weight) || 0;
+  const heightCm = parseDecimalBR(height) || 0;
+  const dose = parseDecimalBR(doseValue) || 0;
   const freq = parseInt(frequency) || ref?.defaultFrequency || 1;
-  const conc = parseFloat(concentration) || 0;
+  const conc = parseDecimalBR(concentration) || 0;
 
   const bsa = calculateBSA(weightKg, heightCm);
 

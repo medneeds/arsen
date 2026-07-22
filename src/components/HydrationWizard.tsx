@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import type { MedicationEntry } from "@/data/medicationsDatabase";
 import { useWizardItemQueue } from "@/hooks/useWizardItemQueue";
 import { WizardItemQueue } from "@/components/shared/WizardItemQueue";
+import { parseDecimalBR } from "@/lib/solutoToken";
 import {
   WaterOfferingFields,
   DEFAULT_WATER_STATE,
@@ -75,8 +76,8 @@ type HydrationSnapshot = IvSnapshot | EnteralSnapshot;
 function ivSnapshotToEntry(s: IvSnapshot): MedicationEntry {
   const sel = SOLUTIONS.find(x => x.key === s.solution)!;
   const interval = PHASE_OPTIONS.find(p => p.phases === s.phases)?.interval ?? "—";
-  const tempoMin = (parseFloat(s.phaseTimeValue) || 0) * (s.phaseTimeUnit === "h" ? 60 : 1);
-  const vol = parseFloat(s.volumePhase) || 0;
+  const tempoMin = (parseDecimalBR(s.phaseTimeValue) || 0) * (s.phaseTimeUnit === "h" ? 60 : 1);
+  const vol = parseDecimalBR(s.volumePhase) || 0;
   const mlh = tempoMin > 0 ? vol / (tempoMin / 60) : 0;
   const gttMin = tempoMin > 0 ? (vol * DRIP_FACTOR) / tempoMin : 0;
   const dripStr = s.dripUnit === "mL/h" ? `${mlh.toFixed(0)} mL/h` : `${gttMin.toFixed(0)} gtt/min`;
@@ -109,7 +110,7 @@ function enteralSnapshotToEntry(s: EnteralSnapshot): MedicationEntry {
     id: `hyd-ent-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     name,
     presentation: "Oferta hídrica",
-    defaultDose: `${parseFloat(s.water.volumePerOffering) || 0}mL`,
+    defaultDose: `${parseDecimalBR(s.water.volumePerOffering) || 0}mL`,
     defaultRoute: route,
     defaultPosology: s.water.fraction,
     defaultSchedule: s.water.fraction,
@@ -159,8 +160,8 @@ export function HydrationWizard({
 
   const sel = SOLUTIONS.find(s => s.key === solution)!;
   const interval = PHASE_OPTIONS.find(p => p.phases === phases)?.interval ?? "—";
-  const tempoMin = (parseFloat(phaseTimeValue) || 0) * (phaseTimeUnit === "h" ? 60 : 1);
-  const vol = parseFloat(volumePhase) || 0;
+  const tempoMin = (parseDecimalBR(phaseTimeValue) || 0) * (phaseTimeUnit === "h" ? 60 : 1);
+  const vol = parseDecimalBR(volumePhase) || 0;
   const mlh = tempoMin > 0 ? vol / (tempoMin / 60) : 0;
   const gttMin = tempoMin > 0 ? (vol * DRIP_FACTOR) / tempoMin : 0;
   const dripValue = dripUnit === "mL/h" ? mlh : gttMin;
