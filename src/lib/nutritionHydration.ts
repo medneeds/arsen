@@ -124,7 +124,11 @@ export function buildHydrationLine(f: HydrationLineFields): string {
   const phases = intervalToPhases(f.posology);
   const interval = f.posology || '24/24h';
   const vol = parseFloat((f.volumeTotal || '0').replace(',', '.')) || 0;
-  const total24 = vol * phases;
+  // phases=0 → posologia contínua/condicional (Contínuo, S/N, ACM): não há
+  // "fases" nem total/24h multiplicável — omite ambos em vez de mostrar
+  // "0 fases" (sem sentido clínico) e "total 0mL/24h".
+  const hasPhases = phases >= 1;
+  const total24 = hasPhases ? vol * phases : 0;
   const tVal = f.infusionTime || '';
   const tUnit = f.infusionTimeUnit === 'h' ? 'h' : 'min';
   const rateLabel = f.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
@@ -144,8 +148,8 @@ export function buildHydrationLine(f: HydrationLineFields): string {
     }
   }
   return [
-    vol ? `${vol}mL/fase` : '',
-    `${phases} fase${phases > 1 ? 's' : ''} (${interval})`,
+    vol ? (hasPhases ? `${vol}mL/fase` : `${vol}mL`) : '',
+    hasPhases ? `${phases} fase${phases > 1 ? 's' : ''} (${interval})` : (f.posology || ''),
     tVal ? `correr em ${tVal}${tUnit}` : '',
     rate ? `(${rate})` : '',
     total24 ? `total ${total24}mL/24h` : '',

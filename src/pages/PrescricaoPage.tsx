@@ -277,7 +277,7 @@ const QUANTITY_UNITS = [
   'supositório', 'óvulo', 'bisnaga', 'frasco',
 ];
 
-import { QUANTITY_UNIT_SHORT, quantityUnitShort, buildSolutoToken, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital } from "@/lib/solutoToken";
+import { QUANTITY_UNIT_SHORT, quantityUnitShort, buildSolutoToken, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital, parseDecimalBR, isIVRoute } from "@/lib/solutoToken";
 import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydration";
 import { buildAtbDayLine, buildAtbLineParts } from "@/lib/atbLine";
 
@@ -349,8 +349,8 @@ function rotateSchedule(schedule: string): string {
 
 // Calculate infusion rate — timeStr is raw value, timeUnit is 'min' or 'h'
 function calcInfusionRate(volumeStr: string, timeStr: string, mode: 'BIC' | 'gts', timeUnit: 'min' | 'h' = 'min'): string {
-  const volume = parseFloat(volumeStr);
-  const rawTime = parseFloat(timeStr);
+  const volume = parseDecimalBR(volumeStr);
+  const rawTime = parseDecimalBR(timeStr);
   if (!volume || !rawTime || rawTime <= 0) return '';
   const timeInMin = timeUnit === 'h' ? rawTime * 60 : rawTime;
   if (mode === 'BIC') {
@@ -394,8 +394,8 @@ function calcVolumeTotal(item: PrescriptionItem): string {
 
 // Calc infusion time from rate: time = volume / rate
 function calcTimeFromRate(volumeTotal: string, rate: string, mode: 'BIC' | 'gts', timeUnit: 'min' | 'h'): string {
-  const vol = parseFloat(volumeTotal);
-  const r = parseFloat(rate);
+  const vol = parseDecimalBR(volumeTotal);
+  const r = parseDecimalBR(rate);
   if (!vol || !r || r <= 0) return '';
   let timeInMin: number;
   if (mode === 'BIC') {
@@ -414,8 +414,8 @@ function calcTimeFromRate(volumeTotal: string, rate: string, mode: 'BIC' | 'gts'
 
 // Calc rate value (numeric) from volume and time
 function calcRateFromTime(volumeTotal: string, infusionTime: string, mode: 'BIC' | 'gts', timeUnit: 'min' | 'h'): string {
-  const vol = parseFloat(volumeTotal);
-  const rawTime = parseFloat(infusionTime);
+  const vol = parseDecimalBR(volumeTotal);
+  const rawTime = parseDecimalBR(infusionTime);
   if (!vol || !rawTime || rawTime <= 0) return '';
   const timeInMin = timeUnit === 'h' ? rawTime * 60 : rawTime;
   if (mode === 'BIC') {
@@ -434,7 +434,7 @@ function calcConcentration(item: PrescriptionItem): string {
   let doseVal = parseFloat(doseMatch[1].replace(',', '.'));
   const doseUnit = doseMatch[2].toLowerCase();
   if (doseUnit === 'g') doseVal *= 1000; // convert to mg
-  const volTotal = parseFloat(item.volumeTotal || '');
+  const volTotal = parseDecimalBR(item.volumeTotal || '');
   if (!doseVal || !volTotal || volTotal <= 0) return '';
   const conc = doseVal / volTotal;
   if (doseUnit === 'meq') return `${conc.toFixed(2)} mEq/mL`;
@@ -443,10 +443,8 @@ function calcConcentration(item: PrescriptionItem): string {
   return `${conc.toFixed(2)} mg/mL`;
 }
 
-function isIVRoute(route: string): boolean {
-  const r = (route || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  return /(intravenosa|endovenosa|\bev\b|\biv\b)/.test(r);
-}
+// isIVRoute: agora importada de @/lib/solutoToken (regex idêntico — mais uma
+// duplicação eliminada na auditoria de 21/07/2026).
 
 function posologyToIntervals(posology: string): number {
   // Fase 2: delega à lista canônica compartilhada (inclui 48/48h, 72/72h).
@@ -597,6 +595,57 @@ function buildLine2Tokens(item: PrescriptionItem): Array<{ text: string; isBadge
 // aplicava a MESMA lista — ligar aqui elimina a assimetria em que o mesmo
 // medicamento entrava COM reconstituição via Guia e SEM via catálogo direto.
 const RECONSTITUTION_AUTOFILL_ENABLED = true;
+
+/**
+ * Autofills clínicos para itens IV — FONTE ÚNICA dos 4 blocos (perfil de
+ * infusão, evidência estrutural, bolsa-pronta, reconstituição). Preenche
+ * apenas campos vazios; a ordem importa (bolsa-pronta sobrescreve diluente
+ * sugerido; reconstituição respeita o que já foi preenchido). Chamada por
+ * createItem E applyQuickTemplate para que todo caminho de entrada produza
+ * o mesmo item.
+ */
+function applyIvClinicalAutofills(baseItem: PrescriptionItem, medName: string, presentation: string | undefined, isIV: boolean): void {
+  // 1) Perfil de infusão (Sprint B) — preenche apenas campos vazios
+  if (isIV) {
+    const profile = getInfusionProfile(medName);
+    if (profile) Object.assign(baseItem, applyInfusionProfileDefaults(baseItem, profile));
+  }
+  // 2) Evidência clínica — campos ESTRUTURAIS (nunca a dose: faixas terapêuticas)
+  {
+    const ev = getEvidenceSuggestion(medName);
+    if (ev) {
+      const isEmptyField = (v?: string) => !v || !v.trim() || v.trim() === '-';
+      if (ev.defaultRoute && isEmptyField(baseItem.route)) baseItem.route = ev.defaultRoute;
+      if (ev.defaultPosology && isEmptyField(baseItem.posology)) baseItem.posology = ev.defaultPosology;
+      if (ev.diluent && isEmptyField(baseItem.diluent)) baseItem.diluent = ev.diluent;
+      if (ev.volumeTotal && isEmptyField(baseItem.volumeTotal)) baseItem.volumeTotal = ev.volumeTotal;
+      if (ev.infusionTime && isEmptyField(baseItem.infusionTime)) {
+        baseItem.infusionTime = ev.infusionTime;
+        if (ev.infusionTimeUnit) baseItem.infusionTimeUnit = ev.infusionTimeUnit as 'min' | 'h';
+      }
+    }
+  }
+  // 3) Bolsa pronta / pré-misturada — NÃO diluir (sobrescreve sugestão genérica)
+  if (isIV && /(\bbolsa\b|\bbag\b|pr[eé].?mistur|solu[çc][aã]o pronta|ready.?to.?use|RTU)/i.test(presentation || '')) {
+    baseItem.diluent = 'sem_diluente';
+    baseItem.diluentVolume = '';
+  }
+  // 4) Reconstituição (lista curada com fontes) — sugestão editável, só vazios
+  if (RECONSTITUTION_AUTOFILL_ENABLED && isIV && !baseItem.reconstitutionSolvent) {
+    const recon = getReconstitutionDefault(medName);
+    if (recon.required) {
+      baseItem.reconstitutionSolvent = recon.solvent || 'AD';
+      baseItem.reconstitutionVolume = recon.volumeMl || '';
+    }
+    const isEmptyF = (v?: string) => !v || !v.trim() || v.trim() === '-';
+    if (recon.finalDiluent && isEmptyF(baseItem.diluent)) baseItem.diluent = recon.finalDiluent;
+    if (recon.finalVolumeMl && isEmptyF(baseItem.diluentVolume)) baseItem.diluentVolume = recon.finalVolumeMl;
+    if (recon.infusionTimeMin && isEmptyF(baseItem.infusionTime)) {
+      baseItem.infusionTime = recon.infusionTimeMin;
+      baseItem.infusionTimeUnit = 'min';
+    }
+  }
+}
 
 // buildPrepDescription e buildInlinePrepLine (formatos antigos de preparo em
 // prosa/inline) foram REMOVIDAS em 21/07/2026: eram código morto (nenhum call
@@ -1047,7 +1096,7 @@ function NutritionFields({
   const isBolusMode = item.nutMode === 'Bolus' || item.nutMode === 'Gravitacional intermitente';
   const setVolDay = (v: string) => {
     onUpdate(item.id, 'nutVolDay', v);
-    const n = parseFloat(v);
+    const n = parseDecimalBR(v);
     if (isContinuousMode && !isNaN(n) && n > 0) {
       const rate = Math.round(n / 24);
       onUpdate(item.id, 'infusionRate', String(rate));
@@ -1055,7 +1104,7 @@ function NutritionFields({
   };
   const setRate = (v: string) => {
     onUpdate(item.id, 'infusionRate', v);
-    const n = parseFloat(v);
+    const n = parseDecimalBR(v);
     if (isContinuousMode && !isNaN(n) && n > 0) {
       onUpdate(item.id, 'nutVolDay', String(n * 24));
     }
@@ -1067,7 +1116,7 @@ function NutritionFields({
     return m ? parseInt(m[1], 10) : 0;
   })();
   const bolusVolPerAdm = (() => {
-    const v = parseFloat(item.nutVolDay || '');
+    const v = parseDecimalBR(item.nutVolDay || '');
     if (!isNaN(v) && bolusFractionN > 0) return Math.round(v / bolusFractionN);
     return null;
   })();
@@ -1442,8 +1491,8 @@ function HydrationFields({
 
   const phases = intervalToPhases(item.posology);
   const interval = item.posology || '24/24h';
-  const volPhase = parseFloat(item.volumeTotal || '0') || 0;
-  const tValue = parseFloat(item.infusionTime || '0') || 0;
+  const volPhase = parseDecimalBR(item.volumeTotal || '0') || 0;
+  const tValue = parseDecimalBR(item.infusionTime || '0') || 0;
   const tUnit: 'h' | 'min' = (item.infusionTimeUnit as 'h' | 'min') || 'h';
   const tempoMin = tValue * (tUnit === 'h' ? 60 : 1);
   const mlh = tempoMin > 0 ? volPhase / (tempoMin / 60) : 0;
@@ -2466,7 +2515,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     // tem sentido) ou quando o diluente está sendo removido — evita
                     // sobrescrever valor editado manualmente pelo usuário ao apenas
                     // selecionar o tipo de diluente sem informar o volume.
-                    const hasDilVol = parseFloat(item.diluentVolume || '') > 0;
+                    const hasDilVol = parseDecimalBR(item.diluentVolume || '') > 0;
                     if (v === 'sem_diluente' || hasDilVol) {
                       const autoVol = calcVolumeTotal(tempItem);
                       if (autoVol) {
@@ -2701,7 +2750,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </div>
                 {item.volumeTotal && item.posology && item.posology !== 'Contínuo' && item.posology !== 'Dose única' && (
                   <span className="text-[10px] text-muted-foreground ml-auto">
-                    {posologyToIntervals(item.posology)}x/dia · {(parseFloat(item.volumeTotal || '0') * posologyToIntervals(item.posology)).toFixed(0)}mL/24h
+                    {posologyToIntervals(item.posology)}x/dia · {((parseDecimalBR(item.volumeTotal || '0') || 0) * posologyToIntervals(item.posology)).toFixed(0)}mL/24h
                   </span>
                 )}
                 {item.posology === 'Contínuo' && item.volumeTotal && (
@@ -2944,7 +2993,7 @@ function ExtraPrescriptionDialog({
         // (ex.: Noradrenalina = 2 ampolas de 4mL), o volume do medicamento é
         // por-unidade — precisa multiplicar pela quantidade real, senão o total
         // sai menor que o volume de fato preparado.
-        const dilVol = parseFloat(autoDefaults.diluentVolume || '') || 0;
+        const dilVol = parseDecimalBR(autoDefaults.diluentVolume || '') || 0;
         const doseStr = med.defaultDose || '';
         const qtyForVolume = parseFloat((med.defaultQuantity || '1').replace(',', '.')) || 1;
         const mlMatch = doseStr.match(/^([\d.,]+)\s*mL/i) || doseStr.match(/([\d.,]+)\s*mL/i);
@@ -5186,7 +5235,7 @@ const PrescricaoPage = () => {
         // Padronização 16/07/2026: quando o catálogo define defaultQuantity > 1
         // (ex.: Noradrenalina = 2 ampolas de 4mL), o volume extraído da dose é
         // por-unidade — multiplica pela quantidade real para não subestimar o total.
-        const dilVol = parseFloat(autoDefaults.diluentVolume || '') || 0;
+        const dilVol = parseDecimalBR(autoDefaults.diluentVolume || '') || 0;
         const doseStr = med.defaultDose || '';
         const qtyForVolume = parseFloat((med.defaultQuantity || '1').replace(',', '.')) || 1;
         const mlMatch = doseStr.match(/^([\d.,]+)\s*mL/i) || doseStr.match(/([\d.,]+)\s*mL/i);
@@ -5216,73 +5265,12 @@ const PrescricaoPage = () => {
         if (v !== undefined && v !== null && v !== '') (baseItem as unknown as Record<string, unknown>)[k] = v;
       }
     }
-    // Sprint B — perfil de infusão para EV (preenche apenas campos vazios)
-    if (isIV) {
-      const profile = getInfusionProfile(med.name);
-      if (profile) Object.assign(baseItem, applyInfusionProfileDefaults(baseItem, profile));
-    }
-
-    // Evidência clínica (getEvidenceSuggestion): aplica automaticamente os
-    // campos ESTRUTURAIS que a validação exige (via, posologia, diluente,
-    // volume, tempo/vazão de infusão), preenchendo só o que está vazio.
-    // Motivo (pedido do gestor 21/07/2026): antes esses campos só eram
-    // preenchidos ao clicar no botão "Sugerir", então itens de BIC/EV contínuo
-    // (Noradrenalina, Fentanil, etc.) SÓ validavam depois desse clique — uma
-    // dependência oculta, igual à que o campo de Recomendações causava. O
-    // botão continua disponível como atalho para reaplicar, mas não é mais
-    // pré-requisito para validar.
-    // NÃO auto-preenche `dose`: as doses de evidência são faixas terapêuticas
-    // (ex.: "0,05–0,5 mcg/kg/min", "2–4 mg"), que o médico precisa converter
-    // numa dose única — auto-inseri-las como dose prescrita seria incorreto.
-    // A dose fica a cargo dos campos Qtd + Forma (o botão Sugerir ainda
-    // oferece a referência explicitamente, com a fonte).
-    {
-      const ev = getEvidenceSuggestion(med.name);
-      if (ev) {
-        const isEmptyField = (v?: string) => !v || !v.trim() || v.trim() === '-';
-        if (ev.defaultRoute && isEmptyField(baseItem.route)) baseItem.route = ev.defaultRoute;
-        if (ev.defaultPosology && isEmptyField(baseItem.posology)) baseItem.posology = ev.defaultPosology;
-        if (ev.diluent && isEmptyField(baseItem.diluent)) baseItem.diluent = ev.diluent;
-        if (ev.volumeTotal && isEmptyField(baseItem.volumeTotal)) baseItem.volumeTotal = ev.volumeTotal;
-        if (ev.infusionTime && isEmptyField(baseItem.infusionTime)) {
-          baseItem.infusionTime = ev.infusionTime;
-          if (ev.infusionTimeUnit) baseItem.infusionTimeUnit = ev.infusionTimeUnit as 'min' | 'h';
-        }
-      }
-    }
-    // Bolsa pronta / pré-misturada (ex.: Linezolida 600mg/300mL Bolsa, Metronidazol bolsa,
-    // Ciprofloxacino bolsa) — NÃO diluir. Sobrescreve qualquer diluente sugerido pelo
-    // perfil ATB genérico, evitando confusão na farmácia/enfermagem.
-    if (isIV && /(\bbolsa\b|\bbag\b|pr[eé].?mistur|solu[çc][aã]o pronta|ready.?to.?use|RTU)/i.test(med.presentation || '')) {
-      baseItem.diluent = 'sem_diluente';
-      baseItem.diluentVolume = '';
-      // volumeTotal continua como o volume da bolsa (já vem preenchido) p/ cálculo de vazão
-    }
-    // ── Reconstituição (pó liofilizado) — Correção C ──────────────────────────
-    // Mecânica de sinalização POR NOME de medicação (não volume por dose).
-    // A gravação automática só ocorre quando RECONSTITUTION_AUTOFILL_ENABLED = true,
-    // que será ligado APÓS a auditoria farmacêutica validar a lista-fonte.
-    // Até lá, a mecânica está pronta mas inerte — zero risco de instrução não-validada.
-    if (RECONSTITUTION_AUTOFILL_ENABLED && isIV && !baseItem.reconstitutionSolvent) {
-      const recon = getReconstitutionDefault(med.name);
-      if (recon.required) {
-        // Sinaliza reconstituição; solvente/volume entram como SUGESTÃO editável.
-        baseItem.reconstitutionSolvent = recon.solvent || 'AD';
-        baseItem.reconstitutionVolume = recon.volumeMl || '';
-      }
-      // Diluição FINAL + tempo de infusão da mesma lista curada — aplica
-      // independente de required (medicações líquidas também têm diluição
-      // final padronizada), sempre só em campo vazio. O gate de diluent vazio
-      // preserva o override de bolsa-pronta (que grava 'sem_diluente' antes)
-      // e qualquer sugestão de evidência já aplicada.
-      const isEmptyF = (v?: string) => !v || !v.trim() || v.trim() === '-';
-      if (recon.finalDiluent && isEmptyF(baseItem.diluent)) baseItem.diluent = recon.finalDiluent;
-      if (recon.finalVolumeMl && isEmptyF(baseItem.diluentVolume)) baseItem.diluentVolume = recon.finalVolumeMl;
-      if (recon.infusionTimeMin && isEmptyF(baseItem.infusionTime)) {
-        baseItem.infusionTime = recon.infusionTimeMin;
-        baseItem.infusionTimeUnit = 'min';
-      }
-    }
+    // Autofills clínicos IV — FONTE ÚNICA (applyIvClinicalAutofills, definida
+    // no nível do módulo). Extraída em 21/07/2026: o import de template
+    // (applyQuickTemplate) montava itens sem passar por estes autofills —
+    // a Ceftriaxona entrava COM reconstituição estruturada pelo catálogo e
+    // CRUA pelo template. Agora ambos os caminhos chamam a mesma função.
+    applyIvClinicalAutofills(baseItem, med.name, med.presentation, isIV);
     // Autofill inhalation defaults from catalog
     if (med.category === 'inhalation') {
       const preset = getInhalationDefaults(med.name);
@@ -6698,7 +6686,20 @@ const PrescricaoPage = () => {
       infusionTime: it.infusionTime,
       quantity: it.quantity,
       quantityUnit: it.quantityUnit,
+      // Campos que o template pode ter salvo ([key:string]: any) e o clone
+      // descartava — item de template perdia preparo IV completo (21/07/2026).
+      volumeTotal: it.volumeTotal,
+      infusionTimeUnit: it.infusionTimeUnit,
+      infusionMode: it.infusionMode,
+      infusionRate: it.infusionRate,
+      ivBolus: it.ivBolus,
+      accessType: it.accessType,
+      reconstitutionSolvent: it.reconstitutionSolvent,
+      reconstitutionVolume: it.reconstitutionVolume,
     }));
+    // MESMOS autofills clínicos do catálogo (fonte única) — antes o template
+    // pulava evidência/bolsa/reconstituição, gerando itens crus.
+    cloned.forEach(ci => applyIvClinicalAutofills(ci, ci.name, ci.presentation, isIVRoute(ci.route)));
     setItems((prev) => [...prev, ...cloned]);
     bumpQuickTemplateUse(tpl.id);
     toast.success(`Template aplicado: ${tpl.name}`, {

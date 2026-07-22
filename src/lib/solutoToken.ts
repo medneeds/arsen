@@ -234,14 +234,14 @@ export interface PrepFields {
   reconstitutionVolume?: string;
 }
 
-const isIVRouteShared = (route?: string): boolean => {
+export const isIVRoute = (route?: string): boolean => {
   const n = (route || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   return /(intravenosa|endovenosa|\bev\b|\biv\b)/.test(n);
 };
 
 export function isContinuousInfusionShared(item: PrepFields): boolean {
   if (item.ivBolus) return false;
-  if (!isIVRouteShared(item.route || '')) return false;
+  if (!isIVRoute(item.route || '')) return false;
   const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
   return (
     /cont[ií]nu/i.test(item.posology || '') ||
@@ -290,7 +290,7 @@ export function buildPrepSegments(item: PrepFields): { head: string[]; tail: str
   }
 
   // ── TAIL ──
-  const isIV = isIVRouteShared(item.route || '');
+  const isIV = isIVRoute(item.route || '');
   // Modo de infusão — Bolus/BIC só fazem sentido em via intravenosa.
   if (item.ivBolus && isIV) {
     tail.push('Bolus');
@@ -338,6 +338,18 @@ export function buildPrepSegments(item: PrepFields): { head: string[]; tail: str
 // mostrando um número diferente do de medicação para o mesmo volume/tempo
 // (ex.: 500 mL em 2 h → hidratação "83", medicação "84").
 export const DRIP_FACTOR_MACRO = 20; // macrogotas/mL (equipo macro padrão)
+
+/**
+ * parseFloat tolerante à vírgula decimal brasileira. parseFloat("2,5") = 2
+ * (TRUNCA silenciosamente na vírgula) — em cálculo clínico isso transforma
+ * 2,5 h em 2 h sem nenhum erro. Fonte única para todo parse de campo
+ * numérico digitável (volume, tempo, vazão, peso). Retorna NaN p/ vazio.
+ */
+export function parseDecimalBR(v?: string | number | null): number {
+  if (typeof v === 'number') return v;
+  if (!v) return NaN;
+  return parseFloat(String(v).trim().replace(',', '.'));
+}
 
 /** Arredonda gts/min para valores práticos de equipo macro (múltiplos de 7). */
 export function roundGtsToHospital(gts: number): number {
