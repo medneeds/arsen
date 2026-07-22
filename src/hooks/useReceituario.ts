@@ -5,6 +5,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
 import type { ReceituarioData } from "@/lib/receituario";
 import { toast } from "sonner";
+import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
 
 /**
  * Hook para criar, ler, atualizar e listar receituários de um paciente.
@@ -71,7 +72,7 @@ export function useReceituario(
         toast.error("Selecione a unidade hospitalar antes de salvar o receituário");
         return null;
       }
-      const payload = {
+      const payload: Record<string, any> = {
         type: data.type,
         hospital_unit_id: currentHospital.id,
         patient_id: data.patient_id ?? null,
@@ -84,12 +85,25 @@ export function useReceituario(
         signed_by_crm: data.signed_by_crm ?? null,
         created_by: user?.id ?? null,
       };
+      // Carimba o vínculo estável (segue o paciente entre leitos) — igual às
+      // demais tabelas clínicas. Só inclui se resolvido; a coluna existe no
+      // banco a partir da migration 20260722150000. (22/07/2026.)
+      if (resolvedRegistryId) payload.patient_registry_id = resolvedRegistryId;
+      if (data.patient_id) {
+        const encId = await resolveActiveEncounterId(data.patient_id);
+        if (encId) payload.encounter_id = encId;
+      }
 
-      const { data: row, error } = await supabase
-        .from("receituarios")
-        .insert(payload)
-        .select("id")
-        .single();
+      const insertReceituario = async (p: Record<string, any>) =>
+        supabase.from("receituarios").insert(p as any).select("id").single();
+
+      let { data: row, error } = await insertReceituario(payload);
+      // Se a coluna registry/encounter ainda não existe neste banco (42703),
+      // remove os campos novos e reinsere — o save nunca falha por isso.
+      if (error && (error.code === "42703" || /patient_registry_id|encounter_id/i.test(error.message))) {
+        const { patient_registry_id, encounter_id, ...legacy } = payload;
+        ({ data: row, error } = await insertReceituario(legacy));
+      }
 
       if (error) throw error;
       toast.success("Receituário salvo");
