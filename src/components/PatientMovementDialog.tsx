@@ -305,6 +305,26 @@ export function PatientMovementDialog({
         if (!docPayload) {
           throw new Error("Documento de alta/óbito não foi preenchido. Recarregue a página e tente novamente.");
         }
+
+        // Captura o encounter ativo ANTES de fechá-lo. usePatientDischargeDocs
+        // filtra por encounter_id quando há um ativo — se o documento nascer
+        // sem esse vínculo, a tarja de alta/óbito no cockpit nunca aparece
+        // (bug reportado: "saída não atualiza a cockpit"). A transferência não
+        // sofria disso porque a tarja dela lê admission_status direto, não uma
+        // query filtrada por encounter.
+        let activeEncounterId: string | null = null;
+        if ((patient as any).id) {
+          const { data: encRow } = await supabase
+            .from("patient_encounters")
+            .select("id")
+            .eq("patient_id", (patient as any).id)
+            .neq("status", "closed")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          activeEncounterId = encRow?.id ?? null;
+        }
+
         const finalDoc: DischargeDocPayload = {
           ...docPayload,
           patient_name: patient.name,
@@ -321,6 +341,7 @@ export function PatientMovementDialog({
           patient_bed: patient.bedNumber,
           patient_sector: patient.sector,
           movement_id: movRow?.id ?? null,
+          encounter_id: activeEncounterId, // vincula ao encounter p/ a tarja do cockpit aparecer
           content: finalDoc as any,
           signed_by: user?.id,
           signed_by_name: finalDoc.signed_by_name || null,
