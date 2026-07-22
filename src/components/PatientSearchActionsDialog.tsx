@@ -297,26 +297,30 @@ export function PatientSearchActionsDialog({
         if (paErr) throw paErr;
         preAdmissionId = (pa as any).id ?? null;
 
-        // 4A) Cria o encounter vinculado à pré-admissão
-        const { data: enc, error: encErr } = await supabase
-          .from("patient_encounters")
-          .insert({
-            patient_name: patient.full_name,
-            registry_id: patient.id,
-            medical_record_id: medicalRecordId,
-            encounter_code: preGeneratedCode || undefined,
-            hospital_unit_id: hospitalUnitId,
-            state_id: stateId,
-            department,
-            destination_sector: selectedSector.label || null,
-            status: "active",
-            triage_status: "encaminhado",
-            created_by: user?.id,
-            // Vincula ao pre_admission_id para rastreabilidade
-            pre_admission_id: preAdmissionId,
-          } as any)
-          .select()
-          .single();
+        // 4A) Cria o encounter vinculado à pré-admissão.
+        // pre_admission_id é opcional (rastreabilidade). Em bancos onde a coluna
+        // ainda não existe, o insert é refeito sem ela — a readmissão nunca
+        // quebra por causa disso. (Correção 22/07/2026.)
+        const encBasePayload: Record<string, any> = {
+          patient_name: patient.full_name,
+          registry_id: patient.id,
+          medical_record_id: medicalRecordId,
+          encounter_code: preGeneratedCode || undefined,
+          hospital_unit_id: hospitalUnitId,
+          state_id: stateId,
+          department,
+          destination_sector: selectedSector.label || null,
+          status: "active",
+          triage_status: "encaminhado",
+          created_by: user?.id,
+        };
+        const insertEncounter = (extra: Record<string, any>) =>
+          supabase.from("patient_encounters").insert({ ...encBasePayload, ...extra } as any).select().single();
+
+        let { data: enc, error: encErr } = await insertEncounter({ pre_admission_id: preAdmissionId });
+        if (encErr && (encErr.code === "42703" || encErr.code === "PGRST204" || /pre_admission_id/i.test(encErr.message))) {
+          ({ data: enc, error: encErr } = await insertEncounter({}));
+        }
 
         if (encErr) throw encErr;
         encounterCode = (enc as any).encounter_code as string;
