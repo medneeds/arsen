@@ -2570,19 +2570,15 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 );
               })()}
 
-              {/* Row 2: Dose → Qtd → Forma → Diluente → Vol. dil → Via → Int. */}
+              {/* Row 2: Qtd → Forma → Diluente → Vol. dil → Via → Int.
+                  Campo "Dose:" separado REMOVIDO em 21/07/2026 (pedido do
+                  gestor): Qtd + Forma JÁ expressam a dose (ex.: "500 mg",
+                  "10 mL", "1 CP"), então o campo Dose era redundante e criava
+                  fricção (dupla digitação + risco de divergência Qtd≠Dose).
+                  item.dose segue preenchido nos bastidores pelo catálogo e
+                  alimenta o impresso via buildSolutoToken (combina qty+dose),
+                  mas não é mais um campo editável separado na tela. */}
               <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Dose:</span>
-                  <Input
-                    value={item.dose || ''}
-                    onChange={(e) => onUpdate(item.id, "dose", e.target.value)}
-                    placeholder="ex: 150mg (3mL)"
-                    title="Preenchido pelo catálogo quando disponível — editável sempre. Alguns medicamentos do catálogo oficial ainda não têm dose padrão cadastrada; preencha aqui."
-                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 px-1.5 focus-visible:ring-1 focus-visible:ring-primary"
-                    style={{ width: `${Math.max(6, (String(item.dose || '').length || 10) * 0.62 + 1.5)}ch`, minWidth: '7rem', maxWidth: '16rem' }}
-                  />
-                </div>
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Qtd:</span>
                   <Input
@@ -4592,18 +4588,20 @@ const PrescricaoPage = () => {
     }
 
     // Núcleo comum: dose + posologia + via
-    // Sólido oral (cp/cápsula/drágea/SL/orodispersível) por VO/SL/enteral:
-    // aceita `quantity` (ex.: "1 comprimido") como equivalente clínico de dose,
-    // pois a concentração já vem na apresentação ("100 MG — Comprimido").
+    // Como o campo "Dose:" separado foi removido da tela (21/07/2026), a dose
+    // passa a ser expressa por Qtd + Forma (ex.: "500 mg", "10 mL", "1 CP").
+    // Portanto: Qtd preenchido satisfaz o requisito de dose para QUALQUER item
+    // — antes essa equivalência existia só para sólido oral. item.dose ainda
+    // pode vir do catálogo (alimenta o impresso), mas não é mais exigível na
+    // tela, já que não há como editá-lo isoladamente.
     const presLower = (item.presentation || '').toLowerCase();
     const routeLower = (item.route || '').toLowerCase();
     const isSolidOral = /(comprimido|c[aá]psula|cap\.|dr[áa]gea|sublingual|orodispers)/i.test(presLower);
     const isOralLike = /(\boral\b|\bvo\b|sublingual|sng|sne|enteral|gastrostomia|jejunostomia)/i.test(routeLower);
     const hasQuantity = has(String((item as any).quantity ?? ''));
-    const doseSatisfiedBySolidQty = isSolidOral && isOralLike && hasQuantity;
 
-    // Recomendações NÃO substitui mais dose/posologia/via — mesma correção.
-    if (empty(item.dose) && !doseSatisfiedBySolidQty) missing.push('dose');
+    // Dose satisfeita por Qtd (qualquer item) OU por dose vinda do catálogo.
+    if (empty(item.dose) && !hasQuantity) missing.push('dose');
     if (empty(item.posology)) missing.push('posologia');
     if (empty(item.route)) missing.push('via');
 
@@ -5575,8 +5573,8 @@ const PrescricaoPage = () => {
     // NÃO auto-preenche `dose`: as doses de evidência são faixas terapêuticas
     // (ex.: "0,05–0,5 mcg/kg/min", "2–4 mg"), que o médico precisa converter
     // numa dose única — auto-inseri-las como dose prescrita seria incorreto.
-    // A dose fica a cargo do campo "Dose:" editável (o botão Sugerir ainda a
-    // oferece explicitamente, com a fonte).
+    // A dose fica a cargo dos campos Qtd + Forma (o botão Sugerir ainda
+    // oferece a referência explicitamente, com a fonte).
     {
       const ev = getEvidenceSuggestion(med.name);
       if (ev) {
