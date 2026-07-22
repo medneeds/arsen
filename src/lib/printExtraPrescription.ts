@@ -9,6 +9,7 @@ import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/prin
 import { buildSolutoTokenLabeled, buildPrepSegments } from "@/lib/solutoToken";
 import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydration";
 import { assembleInhalationInstruction } from "@/lib/inhalationInstruction";
+import { buildAtbLineParts } from "@/lib/atbLine";
 import { describeInsulinPlan, type InsulinPlan } from "@/lib/insulinTherapy";
 
 
@@ -80,6 +81,10 @@ export interface ExtraPrintItem {
   nutManual?: boolean;
   // Insulinoterapia
   insulinPlan?: InsulinPlan;
+  // Guia ATB
+  atbStartDate?: string;
+  atbPlannedDays?: string;
+  atbInfectionSite?: string;
   // IV
   ivBolus?: boolean;
 }
@@ -220,6 +225,13 @@ function buildLine2(it: ExtraPrintItem): string {
 
   // Modo (BIC/Bolus) + Tempo + Vazão — restante do tail.
   tail.forEach((t) => parts.push(escape(t)));
+
+  // Guia ATB (sítio + dia de terapia) — fonte única buildAtbLineParts. O
+  // impresso principal já mostrava; o anexo extra NÃO (um ATB avulso perdia
+  // o D-dia e o sítio no papel). Unificado 21/07/2026.
+  if (it.category === 'antimicrobial') {
+    buildAtbLineParts(it).forEach((p) => parts.push(escape(p)));
+  }
 
   if (!parts.length) return '';
   return `<div style="font-size:8pt;color:#444;line-height:1.4;margin-top:2pt">${parts.join(` ${SEP} `)}</div>`;

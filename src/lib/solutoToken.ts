@@ -317,7 +317,7 @@ export function buildPrepSegments(item: PrepFields): { head: string[]; tail: str
       if (vol > 0 && timeMin > 0) {
         const mlh = (vol / (timeMin / 60)).toFixed(1).replace(/\.0$/, '');
         if (item.infusionMode === 'gts') {
-          const gts = roundGtsToHospitalShared((vol * 20) / timeMin);
+          const gts = roundGtsToHospitalShared((vol * DRIP_FACTOR_MACRO) / timeMin);
           tail.push(`Vazão: ${mlh} mL/h · ${gts} gts/min`);
         } else {
           tail.push(`Vazão: ${mlh} mL/h`);
@@ -331,10 +331,18 @@ export function buildPrepSegments(item: PrepFields): { head: string[]; tail: str
   return { head, tail };
 }
 
-// Arredondamento de gts/min para padrões de equipo macro (20 gts/mL).
-// Replicado de PrescricaoPage para o cálculo de vazão compartilhado acima.
-function roundGtsToHospitalShared(gts: number): number {
+// ── Gotejamento — FONTE ÚNICA (fator + arredondamento) ─────────────────────
+// Unificado 21/07/2026 (auditoria do gestor): o fator 20 gts/mL estava
+// hardcoded em 5+ lugares e o arredondamento hospitalar existia DUPLICADO
+// (PrescricaoPage + aqui) — e a hidratação calculava gotas SEM arredondar,
+// mostrando um número diferente do de medicação para o mesmo volume/tempo
+// (ex.: 500 mL em 2 h → hidratação "83", medicação "84").
+export const DRIP_FACTOR_MACRO = 20; // macrogotas/mL (equipo macro padrão)
+
+/** Arredonda gts/min para valores práticos de equipo macro (múltiplos de 7). */
+export function roundGtsToHospital(gts: number): number {
   if (gts <= 0) return 0;
   if (gts < 5) return Math.round(gts);
   return Math.round(gts / 7) * 7 || 7;
 }
+const roundGtsToHospitalShared = roundGtsToHospital;

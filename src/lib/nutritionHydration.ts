@@ -26,6 +26,7 @@
 // buildHydrationLine unifica — mesma frase nas 3 superfícies.
 
 import { intervalToPhases } from '@/lib/prescriptionIntervals';
+import { DRIP_FACTOR_MACRO, roundGtsToHospital } from '@/lib/solutoToken';
 
 export interface NutritionPrintFields {
   nutritionType?: string;     // diet_enteral | diet_oral | diet_parenteral | water | npt | zero | supplement
@@ -131,7 +132,16 @@ export function buildHydrationLine(f: HydrationLineFields): string {
   if (!rate && vol > 0 && tVal) {
     const tRaw = parseFloat(tVal.replace(',', '.'));
     const tMin = f.infusionTimeUnit === 'h' ? tRaw * 60 : tRaw;
-    if (tMin > 0) rate = `${(vol / (tMin / 60)).toFixed(1).replace(/\.0$/, '')} mL/h`;
+    if (tMin > 0) {
+      const mlh = `${(vol / (tMin / 60)).toFixed(1).replace(/\.0$/, '')} mL/h`;
+      // Modo gotejamento: calcula gts com o MESMO fator e arredondamento da
+      // medicação IV (fonte única solutoToken) e mostra ambos, como
+      // buildPrepSegments faz — antes o fallback mostrava só mL/h mesmo em
+      // modo gts (unidade incoerente com o rótulo do modo).
+      rate = f.infusionMode === 'gts'
+        ? `${mlh} · ${roundGtsToHospital((vol * DRIP_FACTOR_MACRO) / tMin)} gts/min`
+        : mlh;
+    }
   }
   return [
     vol ? `${vol}mL/fase` : '',

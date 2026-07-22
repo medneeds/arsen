@@ -277,8 +277,9 @@ const QUANTITY_UNITS = [
   'supositório', 'óvulo', 'bisnaga', 'frasco',
 ];
 
-import { QUANTITY_UNIT_SHORT, quantityUnitShort, buildSolutoToken, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared } from "@/lib/solutoToken";
+import { QUANTITY_UNIT_SHORT, quantityUnitShort, buildSolutoToken, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital } from "@/lib/solutoToken";
 import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydration";
+import { buildAtbDayLine, buildAtbLineParts } from "@/lib/atbLine";
 
 // Compose dose token combining `dose` (texto livre, geralmente do preset do wizard)
 // e `quantity`+`quantityUnit` (campos editados inline pelo médico).
@@ -343,14 +344,8 @@ function rotateSchedule(schedule: string): string {
   return rotated.join(', ');
 }
 
-// Round gts/min to practical hospital values (multiples of 7: 7, 14, 21, 28, 35, 42...)
-function roundGtsToHospital(gts: number): number {
-  if (gts <= 0) return 0;
-  // For very slow rates, round to nearest integer
-  if (gts < 5) return Math.round(gts);
-  // Round to nearest 7 (standard equipo macro 20gts/mL patterns)
-  return Math.round(gts / 7) * 7 || 7;
-}
+// roundGtsToHospital: agora importado de @/lib/solutoToken (fonte única —
+// era duplicado aqui e lá; unificado 21/07/2026).
 
 // Calculate infusion rate — timeStr is raw value, timeUnit is 'min' or 'h'
 function calcInfusionRate(volumeStr: string, timeStr: string, mode: 'BIC' | 'gts', timeUnit: 'min' | 'h' = 'min'): string {
@@ -362,7 +357,7 @@ function calcInfusionRate(volumeStr: string, timeStr: string, mode: 'BIC' | 'gts
     const mlPerHour = (volume / timeInMin) * 60;
     return `${mlPerHour.toFixed(1)} mL/h`;
   } else {
-    const rawGts = (volume * 20) / timeInMin;
+    const rawGts = (volume * DRIP_FACTOR_MACRO) / timeInMin;
     const rounded = roundGtsToHospital(rawGts);
     return `${rounded} gts/min`;
   }
@@ -408,7 +403,7 @@ function calcTimeFromRate(volumeTotal: string, rate: string, mode: 'BIC' | 'gts'
     timeInMin = (vol / r) * 60;
   } else {
     // rate is gts/min → vol in drops = vol * 20, time = drops / rate
-    timeInMin = (vol * 20) / r;
+    timeInMin = (vol * DRIP_FACTOR_MACRO) / r;
   }
   if (timeUnit === 'h') {
     const hours = timeInMin / 60;
@@ -427,7 +422,7 @@ function calcRateFromTime(volumeTotal: string, infusionTime: string, mode: 'BIC'
     const mlPerHour = (vol / timeInMin) * 60;
     return mlPerHour % 1 === 0 ? String(mlPerHour) : mlPerHour.toFixed(1);
   } else {
-    const rawGts = (vol * 20) / timeInMin;
+    const rawGts = (vol * DRIP_FACTOR_MACRO) / timeInMin;
     return String(roundGtsToHospital(rawGts));
   }
 }
@@ -592,9 +587,16 @@ function buildLine2Tokens(item: PrescriptionItem): Array<{ text: string; isBadge
 }
 
 // ── Controle de ativação da reconstituição automática (Correção C) ──────────────
-// FALSE até a auditoria farmacêutica validar a lista de medicamentos que exigem
-// reconstituição (ver relatório de implantação §7). Mecânica pronta; lista pendente.
-const RECONSTITUTION_AUTOFILL_ENABLED = false;
+// LIGADO em 21/07/2026 a pedido do gestor: "reconstituições e sua ligação
+// automática ao fluxo, sem depender do campo de recomendações". Fundamentos:
+// (1) a lista-fonte (RECONSTITUTION em ivMedicationFlags.ts) é curada e cita a
+// fonte por entrada (ANVISA/ASHP/IDSA/Sanford); (2) os valores entram como
+// SUGESTÃO EDITÁVEL — só preenchem campos vazios; (3) o feedback à farmácia
+// (auditReconstitution.ts) já registra aceite/edição de cada sugestão, então
+// sugestões consistentemente editadas viram novos defaults; (4) o Guia ATB já
+// aplicava a MESMA lista — ligar aqui elimina a assimetria em que o mesmo
+// medicamento entrava COM reconstituição via Guia e SEM via catálogo direto.
+const RECONSTITUTION_AUTOFILL_ENABLED = true;
 
 // buildPrepDescription e buildInlinePrepLine (formatos antigos de preparo em
 // prosa/inline) foram REMOVIDAS em 21/07/2026: eram código morto (nenhum call
@@ -987,27 +989,8 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
 });
 
 // Compute ATB day text dynamically (D{n} — DD/MM/AAAA (início … previsão …))
-function buildAtbDayLine(item: PrescriptionItem): string | null {
-  if (!item.atbStartDate) return null;
-  const start = new Date(item.atbStartDate + 'T00:00:00');
-  if (isNaN(start.getTime())) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const startMid = new Date(start);
-  startMid.setHours(0, 0, 0, 0);
-  const dayN = Math.max(1, Math.floor((today.getTime() - startMid.getTime()) / 86400000) + 1);
-  const days = parseInt(item.atbPlannedDays || '', 10);
-  const fmt = (d: Date) => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-  let endStr = '—';
-  let suffix = '';
-  if (Number.isFinite(days) && days > 0) {
-    const end = new Date(startMid);
-    end.setDate(end.getDate() + days - 1);
-    endStr = fmt(end);
-    suffix = `/${days}`;
-  }
-  return `D${dayN}${suffix} — ${fmt(today)} (início ${fmt(startMid)}, previsão ${endStr})`;
-}
+// buildAtbDayLine: movida para @/lib/atbLine (fonte única — o impresso extra
+// não mostrava a linha ATB; unificado 21/07/2026).
 
 
 // --- Nutrition fields (specific structured controls per nutrition subtype) ---
@@ -1439,7 +1422,7 @@ const HYDRATION_PHASE_OPTIONS: Array<{ phases: number; interval: string }> = [
   { phases: 12, interval: '2/2h' },
   { phases: 24, interval: '1/1h' },
 ];
-const HYDRATION_DRIP_FACTOR = 20; // macrogotas/mL
+const HYDRATION_DRIP_FACTOR = DRIP_FACTOR_MACRO; // macrogotas/mL — fonte única (solutoToken)
 
 function intervalToPhases(interval?: string): number {
   const m = HYDRATION_PHASE_OPTIONS.find(o => o.interval === interval);
@@ -1464,7 +1447,10 @@ function HydrationFields({
   const tUnit: 'h' | 'min' = (item.infusionTimeUnit as 'h' | 'min') || 'h';
   const tempoMin = tValue * (tUnit === 'h' ? 60 : 1);
   const mlh = tempoMin > 0 ? volPhase / (tempoMin / 60) : 0;
-  const gtt = tempoMin > 0 ? (volPhase * HYDRATION_DRIP_FACTOR) / tempoMin : 0;
+  // gts arredondado com a MESMA regra da medicação IV (roundGtsToHospital) —
+  // antes a hidratação mostrava/sincronizava o valor cru (ex.: 83) enquanto a
+  // medicação mostrava o arredondado (84) para o mesmo volume/tempo.
+  const gtt = tempoMin > 0 ? roundGtsToHospital((volPhase * HYDRATION_DRIP_FACTOR) / tempoMin) : 0;
   const dripMode: 'BIC' | 'gts' = (item.infusionMode as 'BIC' | 'gts') || 'BIC';
   const dripVal = dripMode === 'BIC' ? mlh : gtt;
   const volTotal24 = volPhase * phases;
@@ -3144,6 +3130,10 @@ function ExtraPrescriptionDialog({
           nutProgression: i.nutProgression,
           nutConsistency: i.nutConsistency,
           nutManual: i.nutManual,
+          // Guia ATB (sítio + dia de terapia) — sync anexo ↔ impresso principal
+          atbStartDate: i.atbStartDate,
+          atbPlannedDays: i.atbPlannedDays,
+          atbInfectionSite: i.atbInfectionSite,
           // Insulinoterapia
           insulinPlan: i.insulinPlan,
         })),
@@ -5279,6 +5269,18 @@ const PrescricaoPage = () => {
         // Sinaliza reconstituição; solvente/volume entram como SUGESTÃO editável.
         baseItem.reconstitutionSolvent = recon.solvent || 'AD';
         baseItem.reconstitutionVolume = recon.volumeMl || '';
+      }
+      // Diluição FINAL + tempo de infusão da mesma lista curada — aplica
+      // independente de required (medicações líquidas também têm diluição
+      // final padronizada), sempre só em campo vazio. O gate de diluent vazio
+      // preserva o override de bolsa-pronta (que grava 'sem_diluente' antes)
+      // e qualquer sugestão de evidência já aplicada.
+      const isEmptyF = (v?: string) => !v || !v.trim() || v.trim() === '-';
+      if (recon.finalDiluent && isEmptyF(baseItem.diluent)) baseItem.diluent = recon.finalDiluent;
+      if (recon.finalVolumeMl && isEmptyF(baseItem.diluentVolume)) baseItem.diluentVolume = recon.finalVolumeMl;
+      if (recon.infusionTimeMin && isEmptyF(baseItem.infusionTime)) {
+        baseItem.infusionTime = recon.infusionTimeMin;
+        baseItem.infusionTimeUnit = 'min';
       }
     }
     // Autofill inhalation defaults from catalog
@@ -10694,10 +10696,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                 {item.category === 'antimicrobial' && (item.atbInfectionSite || item.atbStartDate) && (
                   <div style={{ fontSize: '6.5pt', color: '#5b21b6', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #7c3aed', fontWeight: 600, backgroundColor: '#faf5ff', padding: '2px 6px 2px 8px', borderRadius: '0 2px 2px 0' }}>
                     <span style={{ fontSize: '5.5pt', fontWeight: 800, color: '#fff', backgroundColor: '#7c3aed', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px', marginRight: '4px' }}>ATB</span>
-                    {[
-                      item.atbInfectionSite ? `Sítio: ${item.atbInfectionSite}` : null,
-                      buildAtbDayLine(item),
-                    ].filter(Boolean).join(' · ')}
+                    {buildAtbLineParts(item).join(' · ')}
                   </div>
                 )}
 
