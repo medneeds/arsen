@@ -14,6 +14,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { History, FilePlus, BedDouble, ChevronRight, User, Lock, AlertTriangle, MapPin, Loader2, Skull } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import {
   MovementConfirmDialog,
   type MovementSummaryItem,
@@ -83,8 +84,11 @@ export function PatientSearchActionsDialog({
   const navigate = useNavigate();
   const { role } = useAuth();
 
-  // Perfis que podem forçar abertura mesmo com atendimento ativo
-  const canForce = role === "admin" || (role as string) === "gestor" || (role as string) === "desenvolvedor";
+  // Perfis que podem forçar abertura mesmo com atendimento ativo.
+  // APENAS gestor e admin (22/07/2026, decisão do gestor): medico comum NAO
+  // pode executar este fluxo em nenhuma hipotese. O perfil 'desenvolvedor' foi
+  // removido desta lista — acesso de dev nao e justificativa clinica.
+  const canForce = (role as string) === "admin" || (role as string) === "gestor";
 
   const [step, setStep] = useState<Step>("actions");
   const [signalPreAdmission, setSignalPreAdmission] = useState(true);
@@ -97,6 +101,7 @@ export function PatientSearchActionsDialog({
   const [activeEncounterInfo, setActiveEncounterInfo] = useState<ActiveEncounterInfo | null>(null);
   const [forceJustification, setForceJustification] = useState("");
   const [isForcing, setIsForcing] = useState(false);
+  const [askForcePassword, setAskForcePassword] = useState(false);
 
   // Reset interno quando reabre
   const reset = () => {
@@ -109,6 +114,33 @@ export function PatientSearchActionsDialog({
   };
 
   // (auto-check moved below the checkActiveEncounter declaration to avoid TDZ)
+
+  /**
+   * Executado SOMENTE apos a confirmacao de senha (PasswordConfirmDialog).
+   * Registra a auditoria da abertura forcada e libera o fluxo de criacao.
+   * Exigencia do gestor (22/07/2026): forcar atendimento sobre um atendimento
+   * ativo requer perfil gestor/admin + justificativa + SENHA.
+   */
+  const handleForceConfirmed = async () => {
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      await supabase.from("patient_movements").insert({
+        patient_name: patient!.full_name,
+        movement_type: "ABERTURA FORCADA DE ATENDIMENTO — GESTOR/ADMIN",
+        destination: "Novo atendimento forcado sobre atendimento ativo",
+        notes: `Atendimento ativo: #${activeEncounterInfo?.encounterCode ?? "—"} | Justificativa: ${forceJustification.trim()} | Confirmado com senha`,
+        created_by: authUser?.id ?? null,
+        hospital_unit_id: hospitalUnitId,
+        state_id: stateId,
+        department,
+      } as any);
+    } catch (e) {
+      console.warn("Falha ao registrar auditoria de abertura forcada:", e);
+    }
+    setAskForcePassword(false);
+    setIsForcing(false);
+    setStep("preadmit_question");
+  };
 
   /**
    * Verifica se o paciente já tem atendimento ativo antes de prosseguir.
@@ -583,26 +615,7 @@ export function PatientSearchActionsDialog({
                         size="sm"
                         className="w-full"
                         disabled={forceJustification.trim().length < 20}
-                        onClick={async () => {
-                          // Registrar auditoria antes de prosseguir
-                          try {
-                            const { data: { user: authUser } } = await supabase.auth.getUser();
-                            await supabase.from("patient_movements").insert({
-                              patient_name: patient!.full_name,
-                              movement_type: "ABERTURA FORÇADA DE ATENDIMENTO — GESTOR/ADMIN",
-                              destination: "Novo atendimento forçado sobre atendimento ativo",
-                              notes: `Atendimento ativo: #${activeEncounterInfo!.encounterCode ?? "—"} | Justificativa: ${forceJustification.trim()}`,
-                              created_by: authUser?.id ?? null,
-                              hospital_unit_id: hospitalUnitId,
-                              state_id: stateId,
-                              department,
-                            } as any);
-                          } catch (e) {
-                            console.warn("Falha ao registrar auditoria de força:", e);
-                          }
-                          setStep("preadmit_question");
-                          setIsForcing(false);
-                        }}
+                        onClick={() => setAskForcePassword(true)}
                       >
                         Confirmar abertura forçada
                       </Button>
@@ -703,6 +716,16 @@ export function PatientSearchActionsDialog({
             ? <>A alocação coloca o paciente no leito e gera o <b>número de atendimento imutável</b>. A admissão médica é feita pelo médico ao avaliar o paciente no leito.</>
             : <>O código de atendimento é <b>imutável</b> após a emissão e ficará vinculado ao prontuário do paciente.</>
         }
+      />
+
+      {/* Confirmacao por SENHA para abertura forcada — so gestor/admin chegam aqui */}
+      <PasswordConfirmDialog
+        open={askForcePassword}
+        onOpenChange={(o) => setAskForcePassword(o)}
+        title="Confirmar abertura forçada de atendimento"
+        description={`Ação restrita a gestor/admin. Digite sua senha para abrir um NOVO atendimento para ${patient?.full_name ?? "este paciente"} mesmo havendo um atendimento ativo. A justificativa e sua identidade serão registradas em auditoria.`}
+        actionLabel="Confirmar abertura forçada"
+        onConfirmed={handleForceConfirmed}
       />
     </>
   );
