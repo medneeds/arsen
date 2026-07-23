@@ -6610,9 +6610,13 @@ const PrescricaoPage = () => {
         setRepeatSelectedIds(new Set());
         return;
       }
-      const sourceItems = (previous.items as unknown as PrescriptionItem[]).filter(
-        i => i.status === 'active' && !i.isExtra
-      );
+      // Normaliza marcações legadas ANTES de oferecer para repetir: sem isso,
+      // um item antigo entraria com as flags sn/acm/ag, que a tela não exibe
+      // mais (saíram do PRESCRIPTION_FLAGS) mas o impresso ainda imprimiria no
+      // chip — o médico veria uma coisa na tela e outra no papel. (22/07/2026.)
+      const sourceItems = (previous.items as unknown as PrescriptionItem[])
+        .map(normalizeLegacyIntervalFlags)
+        .filter(i => i.status === 'active' && !i.isExtra);
       setRepeatSourceItems(sourceItems);
       setRepeatSourceMeta({
         date: format(new Date(previous.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR }),
