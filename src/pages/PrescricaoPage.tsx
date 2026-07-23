@@ -304,6 +304,40 @@ import { buildAtbDayLine, buildAtbLineParts } from "@/lib/atbLine";
 // nenhum para ser preenchido, e a única saída era escrever nas Observações,
 // obrigando o médico a usar um campo que deveria ser livre. (22/07/2026.)
 
+// ── Dose que na verdade é QUANTIDADE ────────────────────────────────────────
+// O guia de ATB grava só `dose` (texto livre). Quando esse texto e apenas uma
+// contagem de forma farmaceutica ("2 comprimido", "1 FA"), ele e QUANTIDADE, e
+// deve ir para quantity+quantityUnit — senao a linha sai "2 comprimido" sem o
+// rotulo "Qtd.:", ao contrario dos itens criados pelos fluxos normais.
+//
+// CONSERVADOR de proposito: exige que a dose INTEIRA seja "<numero> <forma
+// contavel>". "500mg", "1 g (2mL)" e "15-30mL" NAO casam — massa e volume sao
+// dose, nao quantidade, e rotula-los como Qtd. seria errado. (23/07/2026.)
+const COUNTABLE_UNIT_ALIASES: Record<string, string> = {
+  comprimido: 'comprimido', comprimidos: 'comprimido', comp: 'comprimido', comps: 'comprimido', cp: 'comprimido', cps: 'comprimido',
+  cápsula: 'cápsula', cápsulas: 'cápsula', capsula: 'cápsula', capsulas: 'cápsula', cap: 'cápsula', caps: 'cápsula', 'cáp': 'cápsula', 'cáps': 'cápsula',
+  ampola: 'ampola', ampolas: 'ampola', amp: 'ampola', amps: 'ampola',
+  'frasco-ampola': 'frasco-ampola', 'frascos-ampola': 'frasco-ampola', fa: 'frasco-ampola',
+  frasco: 'frasco', frascos: 'frasco', fr: 'frasco',
+  gota: 'gota', gotas: 'gota', gts: 'gota',
+  sachê: 'sachê', sachês: 'sachê', sache: 'sachê', saches: 'sachê',
+  envelope: 'envelope', envelopes: 'envelope',
+  bolsa: 'bolsa', bolsas: 'bolsa',
+  adesivo: 'adesivo', adesivos: 'adesivo',
+  supositório: 'supositório', supositórios: 'supositório',
+  óvulo: 'óvulo', óvulos: 'óvulo',
+  bisnaga: 'bisnaga', bisnagas: 'bisnaga',
+  unidade: 'unidade', unidades: 'unidade', un: 'unidade',
+};
+
+function parseCountableDose(dose?: string): { quantity: string; unit: string } | null {
+  const d = (dose || '').trim().replace(/\.$/, '');
+  const m = d.match(/^(\d+(?:[.,]\d+)?)\s*([A-Za-zÀ-ÿ-]+)$/);
+  if (!m) return null;
+  const unit = COUNTABLE_UNIT_ALIASES[m[2].toLowerCase()];
+  return unit ? { quantity: m[1], unit } : null;
+}
+
 function isOralSolidViaEnteral(item: { presentation?: string; route?: string }): boolean {
   const presentation = (item.presentation || '').toLowerCase();
   const route = (item.route || '').toLowerCase();
@@ -5617,6 +5651,16 @@ const PrescricaoPage = () => {
             highAlert: false,
             status: 'active' as const,
           };
+      // Alinha a Qtd. com os demais fluxos: se a dose do guia for apenas uma
+      // contagem ("2 comprimido"), move para quantity+quantityUnit e limpa a
+      // dose, evitando texto duplicado na linha. (23/07/2026.)
+      const parsedQty = parseCountableDose(base.dose);
+      if (parsedQty && !(base.quantity || '').trim()) {
+        base.quantity = parsedQty.quantity;
+        base.quantityUnit = parsedQty.unit;
+        base.dose = '';
+      }
+
       base.atbStartDate = entry.startDate || format(new Date(), 'yyyy-MM-dd');
       base.atbPlannedDays = entry.plannedDuration || '';
       base.atbInfectionSite = entry.infectionSite || '';
