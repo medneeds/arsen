@@ -4076,6 +4076,26 @@ const PrescricaoPage = () => {
   // tirar o resto da seção do modo compacto. (22/07/2026.)
   const [autoExpandItemId, setAutoExpandItemId] = useState<string | null>(null);
 
+  /**
+   * Foco padrão do item recém-adicionado, para QUALQUER caminho de adição:
+   * abre só ele expandido (sem tirar a seção do modo compacto), rola até ele e
+   * destaca. Extraído do addItem em 22/07/2026 porque os demais caminhos
+   * (nutrição, atalhos, esquema de insulina) ainda expandiam a CATEGORIA
+   * inteira e não direcionavam para o item novo.
+   */
+  const focusNewItem = useCallback((itemId: string, ringClass: string = 'ring-primary') => {
+    setAutoExpandItemId(itemId);
+    setTimeout(() => {
+      const el = document.getElementById(`prescription-item-${itemId}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('ring-4', ringClass, 'ring-offset-2', 'animate-pulse');
+      setTimeout(() => {
+        el.classList.remove('ring-4', ringClass, 'ring-offset-2', 'animate-pulse');
+      }, 2200);
+    }, 80);
+  }, []);
+
   const [dispensationDialogOpen, setDispensationDialogOpen] = useState(false);
   const [dispensations, setDispensations] = useState<Array<{ id: string; dispensation_code: string; dispensed_at: string; dispensed_by_name: string | null }>>([]);
   const [dispensationSlip, setDispensationSlip] = useState<{ code: string; items: PrescriptionItem[]; patientName: string; bed: string; date: string } | null>(null);
@@ -5422,29 +5442,12 @@ const PrescricaoPage = () => {
     const docLabel = newItem.controlledDoc;
 
     // Helper: destaca visualmente o card recém-adicionado (scroll + ring pulsante)
-    const highlightNewItem = (ringClass: string) => {
-      setTimeout(() => {
-        const el = document.getElementById(`prescription-item-${newItem.id}`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          el.classList.add('ring-4', ringClass, 'ring-offset-2', 'animate-pulse');
-          setTimeout(() => {
-            el.classList.remove('ring-4', ringClass, 'ring-offset-2', 'animate-pulse');
-          }, 2200);
-        }
-      }, 80);
-    };
-
-    // Abre APENAS o item recém-adicionado, já expandido para preenchimento.
-    // ANTES expandia a CATEGORIA inteira (setExpandedCategories), o que tirava
-    // todos os itens daquela seção do modo compacto sem necessidade e ainda
-    // deixava o novo item perdido no meio da lista. (Correção 22/07/2026.)
-    setAutoExpandItemId(newItem.id);
-
-    // Rola até o item novo e destaca — a cor do anel sinaliza a criticidade.
-    // ANTES só os ramos MAV/controlado chamavam highlightNewItem, entao a
-    // medicacao COMUM (caso mais frequente) nunca era direcionada na tela.
-    highlightNewItem(isMAV ? 'ring-red-400' : isControlled ? 'ring-amber-400' : 'ring-primary');
+    // Abre APENAS o item recém-adicionado, já expandido, rola até ele e
+    // destaca (a cor do anel sinaliza a criticidade). Usa o helper único
+    // focusNewItem — ANTES esta função tinha uma cópia local do destaque, e
+    // expandia a CATEGORIA inteira, tirando todos os itens daquela seção do
+    // modo compacto sem necessidade. (Correção 22/07/2026.)
+    focusNewItem(newItem.id, isMAV ? 'ring-red-400' : isControlled ? 'ring-amber-400' : 'ring-primary');
 
     // Sugestão de esquema de correção de insulina ao adicionar controle
     // glicêmico (HGT/glicemia capilar). Centralizado aqui — não só no
@@ -8942,14 +8945,9 @@ const PrescricaoPage = () => {
                 setNutritionManualRecs("");
                 setNutritionManualType('diet_oral');
                 setActiveTab('nutrition');
-                setExpandedCategories(prev => {
-                  const n = new Set(prev);
-                  n.add('nutrition');
-                  return n;
-                });
-                setTimeout(() => {
-                  document.getElementById(`prescription-item-${newItem.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 80);
+                // Abre só o item novo e direciona até ele — antes expandia a
+                // seção de nutrição inteira sem necessidade. (22/07/2026.)
+                focusNewItem(newItem.id);
                 toast.success('Conduta nutricional adicionada');
               }}
             >
@@ -8995,14 +8993,8 @@ const PrescricaoPage = () => {
                   if ((m as any).route) it.route = (m as any).route;
                   setItems(prev => [...prev, it]);
                   setNutritionGuidedOpen(false);
-                  setExpandedCategories(prev => {
-                    const n = new Set(prev);
-                    n.add('nutrition');
-                    return n;
-                  });
-                  setTimeout(() => {
-                    document.getElementById(`prescription-item-${it.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }, 80);
+                  // Abre só o item novo e direciona até ele. (22/07/2026.)
+                  focusNewItem(it.id);
                 }}
                 className="text-left rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition p-3 flex flex-col gap-1"
               >
@@ -9888,7 +9880,9 @@ const PrescricaoPage = () => {
               description: 'ALTA VIGILÂNCIA · esquema completo gerado para enfermagem.',
               duration: 4000,
             });
-            setExpandedCategories(prev => { const n = new Set(prev); n.add('high_alert'); return n; });
+            // Abre só o esquema recém-criado, com anel de alta vigilância —
+            // antes expandia toda a seção de alta vigilância. (22/07/2026.)
+            focusNewItem(grouped.id, 'ring-red-400');
           }
         }}
       />
