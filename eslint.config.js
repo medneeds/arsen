@@ -3,7 +3,6 @@ import globals from "globals";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
-import unusedImports from "eslint-plugin-unused-imports";
 
 export default tseslint.config(
   { ignores: ["dist"] },
@@ -17,17 +16,18 @@ export default tseslint.config(
     plugins: {
       "react-hooks": reactHooks,
       "react-refresh": reactRefresh,
-      "unused-imports": unusedImports,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
-      // Imports nao usados: limpos em 22/07/2026 (364 removidos). Regra ligada
-      // para impedir que a divida volte a acumular. Cobre APENAS imports —
-      // variaveis locais seguem sob no-unused-vars: off (remocao automatica
-      // delas e arriscada: quebra desestruturacao).
-      "unused-imports/no-unused-imports": "error",
+      // NOTA (23/07/2026): a regra unused-imports/no-unused-imports foi
+      // REMOVIDA daqui porque a devDependency que a fornece dessincronizava o
+      // bun.lock — o deploy roda "bun install --frozen-lockfile" e abortava.
+      // Os 364 imports ja removidos continuam removidos; falta so a trava
+      // automatica. Para reativar: rodar "bun add -d eslint-plugin-unused-imports"
+      // (num ambiente com acesso ao registry do projeto, que atualiza bun.lock)
+      // e devolver o plugin + a regra aqui.
     },
   },
 );
