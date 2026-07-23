@@ -983,7 +983,7 @@ export function AntimicrobialGuideDialog({
                           { v: 'próprio diluente', l: 'Próprio diluente do fabricante' },
                         ];
                         const DILUENT_OPTS = [
-                          { v: 'Sem diluente', l: 'Sem diluente' },
+                          { v: 'sem_diluente', l: 'Sem diluente' },
                           { v: 'Diluente próprio', l: 'Diluente próprio' },
                           { v: 'SF 0,9%', l: 'SF 0,9%' },
                           { v: 'SG 5%', l: 'SG 5%' },

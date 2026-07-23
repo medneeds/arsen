@@ -215,6 +215,17 @@ export function buildSolutoToken(item: SolutoFields): string {
 //   4. inferência de BIC (extra não inferia; agora ambos inferem)
 // Unificado pelo comportamento mais COMPLETO/SEGURO clinicamente.
 
+/**
+ * "Sem diluente" — aceita a CHAVE canônica ('sem_diluente') e o RÓTULO
+ * ('Sem diluente'). O AntimicrobialGuideDialog gravava o rótulo como valor,
+ * enquanto o formulário principal grava a chave; a comparação estrita deixava
+ * passar itens do guia de ATB, que saíam como "diluir em Sem diluente" na tela
+ * e "Dil.: Sem diluente" no impresso. (Correção 23/07/2026.)
+ */
+export function isNoDiluent(v?: string | null): boolean {
+  return (v ?? '').trim().toLowerCase().replace(/\s+/g, '_') === 'sem_diluente';
+}
+
 /** Volume padrão de diluição para administração por sonda (mL de água). */
 export const ENTERAL_DILUTION_DEFAULT_ML = '20';
 
@@ -247,7 +258,7 @@ export const isIVRoute = (route?: string): boolean => {
 export function isContinuousInfusionShared(item: PrepFields): boolean {
   if (item.ivBolus) return false;
   if (!isIVRoute(item.route || '')) return false;
-  const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
+  const hasDiluent = !!(item.diluent && !isNoDiluent(item.diluent) && item.diluent !== '-');
   return (
     /cont[ií]nu/i.test(item.posology || '') ||
     item.infusionMode === 'BIC' ||
@@ -295,11 +306,11 @@ export function buildPrepSegments(item: PrepFields): { head: string[]; tail: str
   }
 
   // Diluente — ou "Sem diluente" explícito
-  const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
+  const hasDiluent = !!(item.diluent && !isNoDiluent(item.diluent) && item.diluent !== '-');
   if (hasDiluent) {
     const dilLabel = item.diluent === 'diluente_proprio' ? 'Diluente próprio' : item.diluent;
     head.push(item.diluentVolume ? `Dil.: ${dilLabel} ${item.diluentVolume} mL` : `Dil.: ${dilLabel}`);
-  } else if (item.diluent === 'sem_diluente') {
+  } else if (isNoDiluent(item.diluent)) {
     head.push('Sem diluente');
   }
 

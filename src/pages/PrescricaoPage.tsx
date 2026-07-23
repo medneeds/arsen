@@ -281,6 +281,7 @@ const QUANTITY_UNITS = [
 ];
 
 import {
+  isNoDiluent,
   ENTERAL_DILUTION_DEFAULT_ML, quantityUnitShort, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital, parseDecimalBR, isIVRoute } from "@/lib/solutoToken";
 import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydration";
 import { buildAtbDayLine, buildAtbLineParts } from "@/lib/atbLine";
@@ -415,7 +416,7 @@ function calcVolumeTotal(item: PrescriptionItem): string {
     }
   }
   // With diluent: medication volume + diluent volume
-  if (item.diluent && item.diluent !== 'sem_diluente' && dilVol > 0) {
+  if (item.diluent && !isNoDiluent(item.diluent) && dilVol > 0) {
     return String(Math.round(dilVol + medVol));
   }
   // Without diluent: use medication volume directly
@@ -2138,7 +2139,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
       // (Correção 22/07/2026.)
       const doseLabel = composeDoseLabel(item);
       if (doseLabel) compactParts.push(doseLabel);
-      if (item.diluent && item.diluent !== 'sem_diluente') {
+      if (item.diluent && !isNoDiluent(item.diluent)) {
         // Rótulo legível — mesmo mapeamento da fonte única (evita "diluir em
         // diluente_proprio" cru na tela).
         const dilLabelHydr = item.diluent === 'diluente_proprio' ? 'Diluente próprio' : item.diluent;
@@ -2615,7 +2616,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     </SelectContent>
                   </Select>
                 </div>
-                {item.diluent && item.diluent !== 'sem_diluente' && (
+                {item.diluent && !isNoDiluent(item.diluent) && (
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Vol. dil:</span>
                   <Input value={item.diluentVolume || ''} onChange={(e) => {
@@ -4444,7 +4445,7 @@ const PrescricaoPage = () => {
     if (ptype === 'iv_intermittent') {
       if (empty(item.diluent)) missing.push('diluente');
       const hasAnyVolumeIVI = has(item.diluentVolume) || has(item.volumeTotal);
-      if (item.diluent && item.diluent !== 'sem_diluente' && !hasAnyVolumeIVI) {
+      if (item.diluent && !isNoDiluent(item.diluent) && !hasAnyVolumeIVI) {
         missing.push('volume de diluição');
       }
       // Bolus EV: remove a obrigatoriedade de tempo/vazão (administração direta)
