@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FlaskConical, Sparkles, BookOpen, Check } from "lucide-react";
+import { FlaskConical, Sparkles, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MedicationEntry } from "@/data/medicationsDatabase";
 import { useWizardItemQueue } from "@/hooks/useWizardItemQueue";
@@ -623,9 +623,6 @@ export function ReplacementWizard({
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-foreground">{s.title}</p>
                         <p className="text-[11px] text-muted-foreground italic leading-snug mt-0.5">{s.rationale}</p>
-                        <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
-                          <BookOpen className="h-2.5 w-2.5" /> <span>Embasamento: {s.source}</span>
-                        </p>
                         <div className="mt-1.5 space-y-0.5 border-t border-border/40 pt-1.5">
                           {s.items.map((it, i) => (
                             <div key={i} className="text-[11px]">

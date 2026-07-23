@@ -273,14 +273,6 @@ export function InsulinTherapyDialog({
                 </p>
               </div>
             )}
-            {/* Fonte como rodapé do assistente — evidência ajuda na ESCOLHA do
-                esquema, mas não é impressa na prescrição (só ruído para quem
-                executa à beira do leito). */}
-            {plan.source && (
-              <p className="mt-3 pt-2 border-t border-primary/20 text-[10px] text-muted-foreground">
-                Referência: {plan.source}
-              </p>
-            )}
           </div>
         )}
 
