@@ -291,7 +291,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
     const c = form.cpf.replace(/\D/g, "");
     if (c.length !== 11) return;
     if (!isValidCPF(c)) {
-      toast({ title: "CPF inválido", description: "Verifique os dígitos digitados.", variant: "destructive" });
+      toast({ title: "CPF inválido", description: "Verifique os dígitos. Se o paciente não tiver CPF, deixe o campo em branco.", variant: "destructive" });
       return;
     }
     const { data, error } = await (supabase.rpc as any)("check_patient_duplicate", { p_cpf: c, p_cns: null });
@@ -383,7 +383,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
         return;
       }
       if (form.cpf && !isValidCPF(form.cpf)) {
-        toast({ title: "CPF inválido", description: "Verifique os dígitos.", variant: "destructive" });
+        toast({ title: "CPF inválido", description: "Verifique os dígitos. Se o paciente não tiver CPF, deixe o campo em branco.", variant: "destructive" });
         return;
       }
       if (duplicateMatch) {
@@ -736,14 +736,23 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs">CPF</Label>
+                  <Label className="text-xs">
+                    CPF <span className="text-muted-foreground font-normal">(opcional)</span>
+                  </Label>
                   <Input
                     value={form.cpf}
                     onChange={e => { updateField("cpf", formatCPF(e.target.value)); setDuplicateMatch(null); }}
                     onBlur={checkDuplicateCPF}
-                    placeholder="000.000.000-00"
+                    /* ANTES o placeholder era "000.000.000-00" — parecia um valor a
+                       preencher, e houve caso real de digitarem o proprio placeholder
+                       (CPF invalido: digitos repetidos) e de usarem o CPF do
+                       PROFISSIONAL para destravar o cadastro. (23/07/2026.) */
+                    placeholder="Deixe em branco se não tiver"
                     inputMode="numeric"
                   />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Paciente sem documento: deixe vazio. Não preencha com dados de terceiros.
+                  </p>
                   {duplicateMatch && (
                     <p className="text-[11px] text-destructive mt-1 flex items-center gap-1">
                       <ShieldAlert className="h-3 w-3" /> CPF já existe: {duplicateMatch.full_name}
