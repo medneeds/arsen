@@ -2280,37 +2280,22 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 if (ev.volumeTotal && isEmpty(item.volumeTotal)) onUpdate(item.id, 'volumeTotal', ev.volumeTotal);
                 if (ev.infusionTime && isEmpty(item.infusionTime)) onUpdate(item.id, 'infusionTime', ev.infusionTime);
                 if (ev.infusionTimeUnit) onUpdate(item.id, 'infusionTimeUnit', ev.infusionTimeUnit);
-                toast.success('Sugestão aplicada', { description: `Fonte: ${ev.source}` });
+                toast.success('Sugestão aplicada');
               };
+              // Bulário (tooltip com o detalhamento) e o rótulo da FONTE foram
+              // removidos a pedido do gestor (22/07/2026) — poluíam a linha ao
+              // lado da apresentação. Fica só o botão "Sugerir", que no futuro
+              // receberá as opções de prescrição.
               return (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/50 border border-border/50 dark:bg-muted/20">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="text-[10px] text-muted-foreground font-medium px-0.5 cursor-help uppercase tracking-wide">{ev.source}</span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs text-xs">
-                      <div className="space-y-1">
-                        {ev.defaultDose && <div><b>Dose:</b> {ev.defaultDose}</div>}
-                        {ev.defaultRoute && <div><b>Via:</b> {ev.defaultRoute}</div>}
-                        {ev.defaultPosology && <div><b>Posologia:</b> {ev.defaultPosology}</div>}
-                        {ev.diluent && <div><b>Diluente:</b> {ev.diluent}</div>}
-                        {ev.volumeTotal && <div><b>Vol total:</b> {ev.volumeTotal} mL</div>}
-                        {ev.infusionTime && <div><b>Tempo:</b> {ev.infusionTime}{ev.infusionTimeUnit || 'min'}</div>}
-                        {ev.notes && <div className="text-muted-foreground">{ev.notes}</div>}
-                        <div className="text-muted-foreground italic pt-1">Fonte: {ev.source}</div>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={(e) => { e.stopPropagation(); apply(); }}
-                    className="h-5 px-2 text-[10px] rounded border-border/60 text-foreground/80 hover:bg-muted hover:text-foreground"
-                  >
-                    Sugerir
-                  </Button>
-                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => { e.stopPropagation(); apply(); }}
+                  className="h-5 px-2 text-[10px] rounded border border-border/60 text-foreground/80 hover:bg-muted hover:text-foreground"
+                >
+                  Sugerir
+                </Button>
               );
             })()}
             {item.isExtra && (
@@ -2384,22 +2369,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             const ptype = inferPresentationType(item.presentation, item.route, item.name);
             const renderInfusion = showInfusionBlock(ptype);
             const renderDiluent = showDiluentRow(ptype);
-            const evidence = getEvidenceSuggestion(item.name);
-            const applyEvidence = () => {
-              if (!evidence) return;
-              const isEmpty = (v?: string) => !v || !v.trim() || v.trim() === '-';
-              if (evidence.defaultDose && isEmpty(item.dose)) onUpdate(item.id, 'dose', evidence.defaultDose);
-              if (evidence.defaultRoute && isEmpty(item.route)) onUpdate(item.id, 'route', evidence.defaultRoute);
-              if (evidence.defaultPosology && isEmpty(item.posology)) onUpdate(item.id, 'posology', evidence.defaultPosology);
-              if (evidence.diluent && isEmpty(item.diluent)) onUpdate(item.id, 'diluent', evidence.diluent);
-              if (evidence.volumeTotal && isEmpty(item.volumeTotal)) onUpdate(item.id, 'volumeTotal', evidence.volumeTotal);
-              if (evidence.infusionTime && isEmpty(item.infusionTime)) onUpdate(item.id, 'infusionTime', evidence.infusionTime);
-              if (evidence.infusionTimeUnit) onUpdate(item.id, 'infusionTimeUnit', evidence.infusionTimeUnit);
-              toast.success('Sugestão aplicada', { description: `Fonte: ${evidence.source}` });
-            };
             return (
             <>
-              {/* Bulário movido para o header (próximo ao nome da medicação) */}
               {/* ===== Container integrado: 3 linhas de edição com fundo único ===== */}
               <div className={cn(getCategoryContainerClass(item.category), getCategoryFieldAccent(item.category).descendantOverrides, "space-y-2", item.category === 'antimicrobial' && "atb-themed")}>
               {/* ATB Header — campos regulatórios editáveis inline (início, duração, sítio) */}
