@@ -106,7 +106,7 @@ export function UserAuditHistoryPanel() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchAudit(); /* eslint-disable-next-line */ }, [page, actionFilter]);
+  useEffect(() => { fetchAudit();   }, [page, actionFilter]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return rows;

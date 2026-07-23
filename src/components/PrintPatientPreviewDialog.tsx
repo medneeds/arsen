@@ -1,6 +1,6 @@
 import { Patient } from "@/types/patient";
 import { Button } from "@/components/ui/button";
-import { Printer, X, Download } from "lucide-react";
+import { X, Download } from "lucide-react";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
 import { useRef } from "react";
 import { whitelabel, getConfidentialityFooter } from "@/config/whitelabel";

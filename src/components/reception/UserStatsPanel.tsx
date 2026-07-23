@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import {
   Trophy, Footprints, Ambulance, Timer, Zap, FileWarning,
-  CircleDot, Activity, BarChart3, Clock,
+  CircleDot, BarChart3, Clock,
 } from "lucide-react";
 import type { ReceptionPoint } from "@/hooks/useReceptionPost";
 import { RECEPTION_POINT_SHORT } from "@/hooks/useReceptionPost";

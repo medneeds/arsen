@@ -13,40 +13,26 @@ import { PrintPatientPreviewDialog } from "@/components/PrintPatientPreviewDialo
 import { PrintMapPreviewDialog } from "@/components/PrintMapPreviewDialog";
 import { PrintUtiPreviewDialog } from "@/components/PrintUtiPreviewDialog";
 import { RoundSectorPrintDialog } from "@/components/RoundSectorPrintDialog";
-import { LoadingScreen } from "@/components/LoadingScreen";
 import { PageLoader } from "@/components/PageLoader";
 import { usePageReady } from "@/hooks/usePageReady";
 import { MainLayout } from "@/components/MainLayout";
 import { ShiftReminderDialog } from "@/components/ShiftReminderDialog";
-import { Patient, SectorType } from "@/types/patient";
-import { Activity, Users, Clock, Printer, Eye, EyeOff, ClipboardList, LogOut, CheckSquare, Trash2, Plus, StickyNote, Edit, List, X, FileText, ChevronDown, ChevronRight, GripVertical, ClipboardCheck, MoreVertical, Building2, RefreshCw, Maximize2, Minimize2, ArrowLeftRight, LayoutDashboard } from "lucide-react";
-import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
-import { SectorSelector } from "@/components/SectorSelector";
+import { Patient } from "@/types/patient";
+import { Printer, Eye, EyeOff, CheckSquare, Trash2, GripVertical, ClipboardCheck, RefreshCw, Maximize2, Minimize2 } from "lucide-react";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
 import { whitelabel } from "@/config/whitelabel";
-import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { NotificationCenter } from "@/components/NotificationCenter";
 import { GlobalSearchDialog } from "@/components/GlobalSearchDialog";
-import { BedAllocationNotifications } from "@/components/BedAllocationNotifications";
-import { DoorPatientNotifications } from "@/components/DoorPatientNotifications";
 import { RequestNewAllocationDialog } from "@/components/RequestNewAllocationDialog";
 import { RequestUtiAllocationDialog } from "@/components/RequestUtiAllocationDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { useDepartment, DEPARTMENTS, Department } from "@/contexts/DepartmentContext";
+import { useDepartment } from "@/contexts/DepartmentContext";
 import { supabase } from "@/integrations/supabase/client";
 import { usePrivacy } from "@/contexts/PrivacyContext";
 import { getNextBedNumber } from "@/utils/bedNaming";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import NotesTabOptimized from "@/components/resources/NotesTabOptimized";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { useSidebar } from "@/components/ui/sidebar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,28 +43,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+
+
 import { usePatients } from "@/hooks/usePatients";
 import { useDischargeAlert } from "@/hooks/useDischargeAlert";
 import { usePatientVersions } from "@/hooks/usePatientVersions";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import {
-  DndContext,
-  closestCenter,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -87,10 +60,8 @@ import {
 } from '@dnd-kit/core';
 import {
   arrayMove,
-  SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
-  verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 

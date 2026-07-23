@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import {
   Send, Sparkles, Loader2, Copy, Check, FileText, X,
   SeparatorVertical, Clock, AlertTriangle, Stethoscope,
-  Minimize2, CaseUpper, CaseSensitive, Paperclip, Trash2, Eraser,
+  Minimize2, CaseUpper, CaseSensitive, Paperclip, Eraser,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";

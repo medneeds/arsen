@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, KeyboardEvent } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Bed, Send, ChevronDown, User, Stethoscope, FileText, Plus, X, MapPin, ClipboardList, Eye, Clock, AlertTriangle } from "lucide-react";
 import { MovementConfirmDialog } from "@/components/MovementConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Patient } from "@/types/patient";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface RequestUtiAllocationDialogProps {

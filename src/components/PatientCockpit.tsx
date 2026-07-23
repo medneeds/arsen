@@ -8,7 +8,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Patient } from "@/types/patient";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { sanitizeRichHtml } from "@/components/ui/rich-text-editor";
@@ -16,8 +15,8 @@ import { ScrollText } from "lucide-react";
 import { ReceituarioForm } from "./ReceituarioForm";
 import { useReceituario } from "@/hooks/useReceituario";
 import {
-  Activity, AlertTriangle, ArrowRight, BedDouble, ChevronDown, ChevronLeft, ChevronRight,
-  ClipboardList, Copy, Droplet, FileText, FlaskConical, Heart, IdCard, LogOut, NotebookPen, Pill, Plus, Route,
+  Activity, AlertTriangle, ArrowRight, BedDouble, ChevronLeft, ChevronRight,
+  ClipboardList, Copy, Droplet, FileText, FlaskConical, Heart, NotebookPen, Pill, Route,
   ShieldAlert, Stethoscope, Syringe, TestTubes, TrendingUp, User2, Users
 } from "lucide-react";
 import { calcDIH } from "@/lib/dihCalc";

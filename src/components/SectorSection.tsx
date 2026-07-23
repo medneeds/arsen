@@ -1,11 +1,10 @@
 import { Patient, SectorType } from "@/types/patient";
-import { SECTOR_BED_CONFIG, regularBedCount, sectorCapacity } from "@/utils/bedNaming";
+import { regularBedCount, sectorCapacity } from "@/utils/bedNaming";
 import { PatientCard } from "./PatientCard";
-import { Activity, Printer, Plus, ChevronDown, GripVertical } from "lucide-react";
+import { Printer, Plus, ChevronDown, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptySectorState } from "@/components/EmptySectorState";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
 import {
   DndContext,
@@ -23,7 +22,7 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities'; // kept for type compatibility
+// kept for type compatibility
 
 interface SectorSectionProps {
   sector: SectorType;

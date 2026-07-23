@@ -1,20 +1,17 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { SectionLoader } from "@/components/SectionLoader";
 
 
 import { PatientCockpit } from "@/components/PatientCockpit";
-import { SapsPendingAlert } from "@/components/SapsPendingAlert";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import arsenLogo from "@/assets/arsen-logo.png";
 import { NormaZeroPrintHeader, generatePrintDocCode } from "@/components/NormaZeroPrintHeader";
 import {
   NotebookPen, Plus, Loader2, AlertTriangle, ChevronDown, Sun, Moon, Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
@@ -37,8 +34,6 @@ import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
 import { DiagnosticsPanel } from "@/components/evolution/DiagnosticsPanel";
 import type { Patient } from "@/types/patient";
 import { getEffectiveAdmissionDate } from "@/lib/dihCalc";
-import { parseDiagnosesText, diagnosesArrayToText } from "@/lib/diagnosesText";
-import { supabase } from "@/integrations/supabase/client";
 
 interface PatientHeader {
   name: string;

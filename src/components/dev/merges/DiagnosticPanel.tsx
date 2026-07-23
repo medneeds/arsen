@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Loader2, Play, AlertTriangle, Layers } from "lucide-react";
 import { toast } from "sonner";
-import { HOSPITAL_SECTOR_GROUPS, sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { HOSPITAL_SECTOR_GROUPS } from "@/lib/hospitalSectors";
 import { DuplicateGroupCard, type ScanGroup } from "./DuplicateGroupCard";
 import { BulkMergeReviewDialog, type BulkPair } from "./BulkMergeReviewDialog";
 

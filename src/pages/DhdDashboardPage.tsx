@@ -6,10 +6,9 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Calendar, Filter } from "lucide-react";
+import { Plus, Search, Calendar } from "lucide-react";
 import { toast } from "sonner";
-import { format, parseISO, differenceInDays } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { parseISO, differenceInDays } from "date-fns";
 import { DhdPatientCard } from "@/components/dhd/DhdPatientCard";
 import { DhdCompletionDialog } from "@/components/dhd/DhdCompletionDialog";
 

@@ -18,7 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Stethoscope, Printer, FilePlus2, Ban, ShieldAlert, Loader2,
   CheckCircle2, FileText, HeartPulse, Pill, AlertTriangle, ClipboardList,
-  Activity, CalendarDays, ShieldCheck, History,
+  Activity, ShieldCheck, History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";

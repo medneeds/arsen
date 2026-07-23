@@ -2,9 +2,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { format, startOfDay, endOfDay, isWithinInterval, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  ScanLine, Search, Clock, CheckCircle2, XCircle, Eye, Loader2,
-  Filter, RefreshCw, ImageIcon, Zap, MonitorSpeaker, Heart,
-  Bone, Baby, AlertTriangle, FileText, CalendarIcon, Printer,
+  ScanLine, Search, Clock, CheckCircle2, XCircle, Eye, Loader2, RefreshCw, ImageIcon, Zap, MonitorSpeaker, Heart,
+  Bone, AlertTriangle, FileText, CalendarIcon, Printer,
 } from "lucide-react";
 import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
@@ -13,13 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
@@ -29,7 +25,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
-import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { printRequisitionGuide } from "@/components/PrintableRequisitionGuide";
 
 const getSectorLabel = getSectorDisplayLabel;

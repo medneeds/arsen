@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { 
   Building2, ArrowLeftRight, Globe, BedDouble, ClipboardPlus, 
-  Repeat, LogOut, Lock, FileText, BarChart3, 
-  Clock, CheckCircle2, XCircle, Search, RefreshCw, AlertTriangle, Sparkles, Activity, Move, X
+  Repeat, LogOut, Lock, FileText, BarChart3, Search, RefreshCw, AlertTriangle, Sparkles, Activity, Move, X
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useBedCensusActions } from "@/hooks/useBedCensusActions";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { cn } from "@/lib/utils";

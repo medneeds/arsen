@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { AlertTriangle, ShieldAlert, Pill, Layers, Check } from "lucide-react";
+import { AlertTriangle, ShieldAlert, Layers, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,

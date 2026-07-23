@@ -14,10 +14,9 @@ import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow, startOfDay, startOfMonth, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  Activity, BedDouble, Clock, FileText, Users, AlertTriangle,
-  PhoneOutgoing, RefreshCw, ArrowRight, Loader2, ListTodo, History,
-  CheckCircle2, XCircle, UserPlus, Play, FileWarning, UserX,
-  Footprints, Ambulance, Trophy, Timer, UserCheck, Printer, MoreVertical,
+  Activity, BedDouble, Clock, FileText, Users, AlertTriangle, RefreshCw, ArrowRight, ListTodo, History,
+  CheckCircle2, UserPlus, Play, FileWarning, UserX,
+  Footprints, Ambulance, Trophy, UserCheck, Printer, MoreVertical,
   CalendarRange, Siren, Volume2,
 } from "lucide-react";
 import { toast } from "sonner";

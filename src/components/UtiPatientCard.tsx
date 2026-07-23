@@ -17,16 +17,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useState, useRef, useEffect, useMemo, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Edit, ChevronDown, ChevronRight, MoreVertical, Check, X, Plus, GripVertical, Trash2, AlertTriangle, Stethoscope, ClipboardList, ClipboardCheck, Clock, FileText, FolderOpen, Pill, Activity, Heart, User, Star, Printer, TrendingUp, Skull, ArrowRightLeft, ArrowLeftRight, BedDouble, DoorOpen, UserPlus, Shuffle, UserMinus } from "lucide-react";
+import { Edit, ChevronDown, ChevronRight, Check, X, Plus, GripVertical, Trash2, AlertTriangle, Stethoscope, ClipboardList, FileText, FolderOpen, Pill, Activity, Star, ArrowLeftRight, DoorOpen, Shuffle, UserMinus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { BedReleasePreAdmissionDialog } from "./BedReleasePreAdmissionDialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
+
 
 // Clinical status options with refined colors - only critical ones are vibrant
 const CLINICAL_STATUS_OPTIONS = [
@@ -43,7 +38,6 @@ const CLINICAL_STATUS_OPTIONS = [
 import { cn } from "@/lib/utils";
 import { EditPatientDialog } from "./EditPatientDialog";
 import { PatientMovementDialog } from "./PatientMovementDialog";
-import { UtiReallocationDialog } from "./UtiReallocationDialog";
 import { SignalInternalTransferDialog } from "./SignalInternalTransferDialog";
 import { BedReallocationDialog } from "./BedReallocationDialog";
 import { PatientRegistrationDialog } from "./PatientRegistrationDialog";
@@ -54,7 +48,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";

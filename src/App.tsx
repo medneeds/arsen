@@ -7,7 +7,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/MainLayout";
 import { IpRestricted } from "@/components/IpRestricted";
 import { PrivacyProvider } from "@/contexts/PrivacyContext";
-import { lazy, Suspense, useState, useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { FloatingThemeToggle } from "@/components/FloatingThemeToggle";
 import { PageLoader } from "@/components/PageLoader";
 import { startIdlePrefetch } from "@/lib/prefetchRoutes";

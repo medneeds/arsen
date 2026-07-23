@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import {
-  Search, RefreshCw, Clock, Activity, Stethoscope,
+  Search, RefreshCw, Clock, Stethoscope,
   FileText, FlaskConical, ImageIcon, MessageSquare, Zap,
-  ArrowRight, BedDouble, ArrowDown, User, DoorOpen,
+  ArrowRight, BedDouble, ArrowDown, User,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";

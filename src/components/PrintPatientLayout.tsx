@@ -1,6 +1,5 @@
 import { Patient } from "@/types/patient";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
-import { ClipboardList } from "lucide-react";
 import { whitelabel, getConfidentialityFooter } from "@/config/whitelabel";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 

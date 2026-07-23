@@ -4,14 +4,13 @@ import { ptBR } from "date-fns/locale";
 import {
   Microscope, Search, Clock, CheckCircle2, Upload, RefreshCw,
   AlertTriangle, User, BedDouble, Plus, FileText, Loader2, Eye,
-  Pill, History, FlaskConical, CalendarDays, Info, ChevronRight,
+  Pill, FlaskConical, CalendarDays, Info, ChevronRight,
   Stethoscope, Activity, TestTubes, ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
@@ -26,7 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
-import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
 

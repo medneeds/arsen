@@ -5,8 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { ChevronDown, ChevronUp, Clock, Calendar, Edit, Trash2, Copy, ArrowRightLeft, ArrowLeftRight, Printer, Check, X, GripVertical, MoreVertical, Maximize2, TrendingUp, Heart, Skull, Sparkles, Star, FileText, Pencil, Plus, CheckCircle2, BedDouble, Settings, Zap, AlertCircle, CircleCheck, Activity, Shuffle, FileEdit, AlertTriangle, Utensils, MessageSquare, XCircle, ClipboardList, ClipboardCheck, Eye, TestTubes, UserMinus } from "lucide-react";
+import { ChevronDown, ChevronUp, Clock, Calendar, Edit, Trash2, Copy, ArrowLeftRight, Check, X, GripVertical, Maximize2, TrendingUp, Sparkles, Star, FileText, CheckCircle2, BedDouble, Settings, Zap, CircleCheck, Shuffle, AlertTriangle, Utensils, MessageSquare, XCircle, ClipboardList, ClipboardCheck, Eye, TestTubes, UserMinus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { EditPatientDialog } from "./EditPatientDialog";
@@ -37,12 +36,10 @@ import { ConductHistoryDialog } from "./ConductHistoryDialog";
 import { AdmissionHistoryDialog } from "./AdmissionHistoryDialog";
 import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
 import { BedReallocationDialog } from "./BedReallocationDialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import {
   DndContext,
@@ -65,8 +62,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {

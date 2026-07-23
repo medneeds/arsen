@@ -16,7 +16,6 @@ import {
   requiresNewAdmission,
   requiresSaps,
   getSectorComplexityLevel,
-  classificationLabel,
   type TransferClassification,
 } from "../lib/sectorComplexity.ts";
 

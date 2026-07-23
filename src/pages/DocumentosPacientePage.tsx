@@ -18,7 +18,6 @@ import { MedicalDocumentDialog } from "@/components/MedicalDocumentDialog";
 import {
   PatientDocumentsPanel,
 } from "@/components/PatientDocumentsPanel";
-import { SectionLoader } from "@/components/SectionLoader";
 import {
   usePatientDocuments,
   type DocumentType,

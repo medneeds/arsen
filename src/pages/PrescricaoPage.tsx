@@ -6,7 +6,6 @@ import { ClinicalHeader } from "@/components/ClinicalHeader";
 import ReactMarkdown from "react-markdown";
 import { format, addDays, isAfter, setHours, setMinutes, setSeconds, startOfDay } from "date-fns";
 import arsenLogo from "@/assets/arsen-logo.png";
-import socorraoLogo from "@/assets/socorrao1-logo.png";
 import { NormaZeroPrintHeader, NormaZeroPrintFooter, generatePrintDocCode } from "@/components/NormaZeroPrintHeader";
 import { ptBR } from "date-fns/locale";
 import {
@@ -14,7 +13,7 @@ import {
   Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe, History,
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText, FlaskConical,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
-  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, Heart, List, AlignJustify, ChevronUp, Wand2, BedDouble,
+  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, List, AlignJustify, ChevronUp, Wand2, BedDouble,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -24,7 +23,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -81,7 +79,6 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  ALL_ITEMS_BY_CATEGORY,
   CATEGORY_CONFIG,
   PRESCRIPTION_FLAGS,
   ROUTES,
@@ -96,11 +93,9 @@ import {
 } from "@/data/medicationsDatabase";
 import {
   inferPresentationType,
-  getRequiredFields,
   showInfusionBlock,
   showDiluentRow,
   getEvidenceSuggestion,
-  type PresentationType,
 } from "@/lib/prescriptionPresentation";
 import { findRegulatoryInfo } from "@/data/mavPort344Catalog";
 import { InhalationFields } from "@/components/prescription/InhalationFields";
@@ -141,12 +136,11 @@ import { runClinicalAlertChecks, type ClinicalAlert } from "@/lib/clinicalAlertC
 import { Star, Calculator, Sparkles, Pencil } from "lucide-react";
 import { getProtocolsFor, type PosologyProtocol } from "@/lib/posologyProtocols";
 import { PosologySuggestionsBar } from "@/components/PosologySuggestionsBar";
-import { PharmacySuggestionDialog, PharmacyFilledBadge } from "@/components/PharmacySuggestionDialog";
+import { PharmacySuggestionDialog } from "@/components/PharmacySuggestionDialog";
 import type { PharmacySuggestion } from "@/components/PharmacySuggestionDialog";
 import { useMedicationProtocols } from "@/hooks/useMedicationProtocols";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { AllergiesChipInput } from "@/components/AllergiesChipInput";
-import { SapsPendingAlert } from "@/components/SapsPendingAlert";
 import { NutritionWizard } from "@/components/NutritionWizard";
 import { HydrationWizard } from "@/components/HydrationWizard";
 import { ReplacementWizard } from "@/components/ReplacementWizard";
@@ -276,7 +270,7 @@ const QUANTITY_UNITS = [
   'supositório', 'óvulo', 'bisnaga', 'frasco',
 ];
 
-import { QUANTITY_UNIT_SHORT, quantityUnitShort, buildSolutoToken, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital, parseDecimalBR, isIVRoute } from "@/lib/solutoToken";
+import { quantityUnitShort, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital, parseDecimalBR, isIVRoute } from "@/lib/solutoToken";
 import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydration";
 import { buildAtbDayLine, buildAtbLineParts } from "@/lib/atbLine";
 

@@ -17,8 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
-  BedDouble, Shield, Thermometer, Heart, Brain, Wind,
-  AlertTriangle, Loader2, User, Calendar, Activity, Droplets, CalendarIcon
+  BedDouble, Brain,
+  AlertTriangle, Loader2, Calendar, Activity, CalendarIcon
 } from "lucide-react";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";

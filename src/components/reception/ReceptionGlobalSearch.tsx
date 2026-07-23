@@ -6,7 +6,7 @@ import {
   CommandItem, CommandList, CommandSeparator,
 } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
-import { User, FileText, Hash, Loader2, Activity, Phone } from "lucide-react";
+import { User, Hash, Loader2, Activity } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 

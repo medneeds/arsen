@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 
 import { PatientCockpit } from "@/components/PatientCockpit";
-import { SapsPendingAlert } from "@/components/SapsPendingAlert";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -11,7 +10,7 @@ import {
   TestTubes, ScanLine, UserCheck, Plus, Search, Clock, CheckCircle2,
   Heart, Activity, Navigation2,
   XCircle, FileText, AlertTriangle, Loader2, Send, Trash2,
-  ChevronDown, ChevronUp, Filter, Eye, ClipboardList, Package, Zap, TrendingUp,
+  ChevronDown, ChevronUp, Eye, ClipboardList, Package, TrendingUp,
   CalendarIcon, Printer, RotateCcw, FileCheck, Microscope, Droplet, Syringe,
   ShieldAlert, ChevronRight,
 } from "lucide-react";
@@ -31,7 +30,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor, richHtmlToPlainText, sanitizeRichHtml } from "@/components/ui/rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
@@ -40,11 +38,11 @@ import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
-import { printRequisitionGuide, PrintableRequisitionGuide } from "@/components/PrintableRequisitionGuide";
+import { PrintableRequisitionGuide } from "@/components/PrintableRequisitionGuide";
 import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
 import { openPrintWindow } from "@/lib/printNormaZero";
 import { useHospital } from "@/contexts/HospitalContext";
-import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
 const getSectorLabel = getSectorDisplayLabel;
 

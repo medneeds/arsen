@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  ArrowLeft, Search, Filter, Download, Clock, User as UserIcon,
+  ArrowLeft, Search, Filter, Clock, User as UserIcon,
   Stethoscope, Pill, FlaskConical, Activity, BedDouble, FileText,
   Microscope, Truck, ClipboardEdit, Hospital, Loader2, Printer,
   HeartPulse, Users, FileCheck
@@ -20,12 +20,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { SectionLoader } from "@/components/SectionLoader";

@@ -6,7 +6,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { MoreVertical, Printer, Copy, RotateCw, Activity, Loader2 } from "lucide-react";
+import { MoreVertical, Printer, Copy, RotateCw, Loader2 } from "lucide-react";
 import { printWristband } from "./PatientWristband";
 
 interface PatientRow {

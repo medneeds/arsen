@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
-import { FileBarChart, Download, Search, Filter, Table2, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
+import { FileBarChart, Download, Search, Table2, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { REPORT_DEFINITIONS, REPORT_CATEGORIES, ReportCategory, ReportDefinition } from "@/data/reportDefinitions";

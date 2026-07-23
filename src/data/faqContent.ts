@@ -6,7 +6,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutGrid,
-  ClipboardList,
   ArrowLeftRight,
   LogOut,
   Building2,

@@ -10,12 +10,10 @@ import { useDepartment } from "@/contexts/DepartmentContext";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
 import { 
   ClipboardList, 
-  Clock, 
   Users, 
   Bed, 
   ChevronDown, 
   Trash2,
-  LogOut,
   Loader2,
   Calendar
 } from "lucide-react";

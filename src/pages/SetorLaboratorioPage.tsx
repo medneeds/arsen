@@ -25,8 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { useHospital } from "@/contexts/HospitalContext";
-import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
-import { printRequisitionGuide } from "@/components/PrintableRequisitionGuide";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
 
 const getSectorLabel = getSectorDisplayLabel;

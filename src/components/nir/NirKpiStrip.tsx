@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
   BedDouble, Activity, Lock, Clock, AlertTriangle, LogOut,
-  RefreshCw, TrendingUp, Stethoscope,
+  RefreshCw, TrendingUp,
 } from "lucide-react";
 import type { NirMetrics } from "@/hooks/useNirMetrics";
 

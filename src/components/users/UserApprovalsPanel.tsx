@@ -39,7 +39,6 @@ import {
   Search,
   RefreshCw,
   History,
-  Eye,
   Mail,
   Phone,
   Stethoscope,

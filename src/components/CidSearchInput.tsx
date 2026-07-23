@@ -33,7 +33,7 @@ function loadCatalog(): Promise<CidCode[]> {
     let from = 0;
     // paginate to bypass 1000-row default limit
     // (the table currently has ~255 rows but this is future-proof)
-    // eslint-disable-next-line no-constant-condition
+     
     while (true) {
       const { data, error } = await supabase
         .from("cid10_codes")

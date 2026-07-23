@@ -36,7 +36,6 @@ import {
   History,
   LogIn,
   LogOut,
-  Bell,
 } from "lucide-react";
 
 interface AuditLogEntry {

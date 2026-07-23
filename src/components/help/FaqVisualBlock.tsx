@@ -4,7 +4,7 @@
  * (card de leito, menu de movimentação, abas do cockpit, etc.) sem depender
  * de screenshots estáticos — assim continua refletindo o design tokens atual.
  */
-import { ArrowLeftRight, LogOut, MoreHorizontal, FileSignature } from "lucide-react";
+import { ArrowLeftRight, LogOut, FileSignature } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FaqVisual } from "@/data/faqContent";
 

@@ -1,4 +1,3 @@
-import { Loader2 } from "lucide-react";
 import socorraoIcon from "@/assets/socorrao-cross-logo.png";
 
 interface SectionLoaderProps {

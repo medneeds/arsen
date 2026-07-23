@@ -1,5 +1,4 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -9,8 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Activity, ChevronRight, Clock, Droplet, FileCheck, FileText,
-  FlaskConical, Microscope, NotebookPen, Plus, Printer, Radar,
+  Activity, Clock, Droplet, FileCheck, FileText, Microscope, NotebookPen, Plus, Printer,
   ScanLine, Stethoscope, Syringe, TestTubes,
 } from "lucide-react";
 import { cn } from "@/lib/utils";

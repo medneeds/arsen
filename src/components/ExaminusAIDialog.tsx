@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, Loader2, Check, X, Plus, RefreshCw, AlertTriangle, Filter } from "lucide-react";
+import { Sparkles, Loader2, X, Plus, RefreshCw, AlertTriangle, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 

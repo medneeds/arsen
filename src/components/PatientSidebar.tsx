@@ -4,10 +4,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import {
-  X, BedDouble, Calendar, Clock, Activity, FileText, Stethoscope,
-  AlertTriangle, ClipboardList, Pill, TrendingUp, Heart, User, TestTubes
+import { BedDouble, Calendar, Clock, Activity, FileText, Stethoscope,
+  AlertTriangle, ClipboardList, Pill, TrendingUp, Heart, User
 } from "lucide-react";
 import { differenceInDays, differenceInHours, parseISO, isValid } from "date-fns";
 import { formatAgeDisplay } from "@/utils/ageDisplay";

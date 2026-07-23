@@ -27,7 +27,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Patient } from "@/types/patient";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 
 interface RequestNewAllocationDialogProps {
   open: boolean;

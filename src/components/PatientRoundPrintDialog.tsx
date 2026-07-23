@@ -9,8 +9,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { printRoundDocument, type RoundPrintItem } from "@/lib/printRound";
-import { ROUND_SECTIONS, type RoundStatus } from "@/data/roundChecklistSchema";
-import { toast } from "sonner";
+import { type RoundStatus } from "@/data/roundChecklistSchema";
 import { cn } from "@/lib/utils";
 
 interface SessionRow {

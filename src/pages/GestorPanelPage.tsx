@@ -1,25 +1,21 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-import { getSectorDisplayLabel, isExtraBed, sectorCapacity } from "@/utils/bedNaming";
-import { format, subDays, startOfDay, differenceInHours, formatDistanceToNow, addDays } from "date-fns";
+import { useState, useEffect } from "react";
+import { getSectorDisplayLabel, sectorCapacity } from "@/utils/bedNaming";
+import { format, subDays, startOfDay, formatDistanceToNow, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment, DEPARTMENT_TO_SECTOR } from "@/contexts/DepartmentContext";
 import {
-  Bed, Activity, AlertTriangle, Users, Clock,
-  Pill, BarChart3, ArrowUpDown, HeartPulse,
+  Bed, Activity, AlertTriangle, Users, Clock, BarChart3, ArrowUpDown, HeartPulse,
   RefreshCw, Download, TrendingUp, TrendingDown, FileText,
   ShieldCheck, Loader2, LayoutGrid, Filter, Check, Building2,
   Hourglass, ArrowRight, Heart, Skull, LogOut, HelpCircle, Minus,
   Repeat, Trophy, Stethoscope, FlaskConical, Navigation,
 } from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { GestorNotificationCenter } from "@/components/gestor/GestorNotificationCenter";
 import { KpiDrillDownDialog, type DrillDownRow } from "@/components/gestor/KpiDrillDownDialog";
@@ -29,14 +25,13 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend, Area, AreaChart,
+  ResponsiveContainer, PieChart, Pie, Cell, Legend, Area, AreaChart,
 } from "recharts";
 
 // ── Types ──

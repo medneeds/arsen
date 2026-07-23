@@ -4,7 +4,6 @@ import { ChevronDown, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
-import { SECTOR_DISPLAY as SECTOR_LABELS } from "@/contexts/DepartmentContext";
 import {
   DropdownMenu,
   DropdownMenuContent,

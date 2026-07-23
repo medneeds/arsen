@@ -7,12 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
-  Shield, AlertTriangle, Heart, Activity, Droplets, Check,
+  Shield, AlertTriangle, Heart, Activity,
   Info, ChevronRight, RotateCw, FileText, CheckCircle2, Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";

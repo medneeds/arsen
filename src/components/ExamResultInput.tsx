@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { FileText, ImageIcon, Upload, X, Loader2, File, Eye } from "lucide-react";
+import { FileText, ImageIcon, X, Loader2, File, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
