@@ -1622,6 +1622,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   onTogglePrintOnly,
   isSimple,
   isCompact,
+  autoExpand,
   selected,
   onToggleSelect,
   onDuplicate,
@@ -1645,6 +1646,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   onTogglePrintOnly?: (id: string) => void;
   isSimple?: boolean;
   isCompact?: boolean;
+  /** Abre este item já expandido (usado no item recém-adicionado). */
+  autoExpand?: boolean;
   selected: boolean;
   onToggleSelect: (id: string) => void;
   onDuplicate: (id: string) => void;
@@ -1662,6 +1665,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   previousInhalationItem?: { id: string; name: string };
 }) {
   const [individualExpanded, setIndividualExpanded] = useState(false);
+  // Item recém-adicionado nasce expandido, pronto para preenchimento.
+  useEffect(() => { if (autoExpand) setIndividualExpanded(true); }, [autoExpand]);
   const {
     attributes,
     listeners,
@@ -4067,6 +4072,9 @@ const PrescricaoPage = () => {
   const [itemAssistantTargetId, setItemAssistantTargetId] = useState<string | null>(null);
   const [compactView, setCompactView] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<PrescriptionCategory>>(new Set());
+  // Item recém-adicionado: abre expandido para preenchimento imediato, sem
+  // tirar o resto da seção do modo compacto. (22/07/2026.)
+  const [autoExpandItemId, setAutoExpandItemId] = useState<string | null>(null);
 
   const [dispensationDialogOpen, setDispensationDialogOpen] = useState(false);
   const [dispensations, setDispensations] = useState<Array<{ id: string; dispensation_code: string; dispensed_at: string; dispensed_by_name: string | null }>>([]);
@@ -5427,12 +5435,16 @@ const PrescricaoPage = () => {
       }, 80);
     };
 
-    // Sempre garante a categoria expandida no painel
-    setExpandedCategories(prev => {
-      const n = new Set(prev);
-      n.add(med.category);
-      return n;
-    });
+    // Abre APENAS o item recém-adicionado, já expandido para preenchimento.
+    // ANTES expandia a CATEGORIA inteira (setExpandedCategories), o que tirava
+    // todos os itens daquela seção do modo compacto sem necessidade e ainda
+    // deixava o novo item perdido no meio da lista. (Correção 22/07/2026.)
+    setAutoExpandItemId(newItem.id);
+
+    // Rola até o item novo e destaca — a cor do anel sinaliza a criticidade.
+    // ANTES só os ramos MAV/controlado chamavam highlightNewItem, entao a
+    // medicacao COMUM (caso mais frequente) nunca era direcionada na tela.
+    highlightNewItem(isMAV ? 'ring-red-400' : isControlled ? 'ring-amber-400' : 'ring-primary');
 
     // Sugestão de esquema de correção de insulina ao adicionar controle
     // glicêmico (HGT/glicemia capilar). Centralizado aqui — não só no
@@ -5452,7 +5464,6 @@ const PrescricaoPage = () => {
           : `ALTA VIGILÂNCIA + CONTROLADO (${newItem.controlledList ?? '344'}). ${docLabel ?? 'Receita controlada'} será gerada na impressão. Aplicando modelo MAV...`,
         duration: 5000,
       });
-      highlightNewItem('ring-red-400');
       // Auto-abre o guia MAV apenas no caminho da categoria MAV
       // (não dispara quando a medicação é selecionada via "Todas")
       if (!fromGlobalSearch) {
@@ -5467,7 +5478,6 @@ const PrescricaoPage = () => {
         duration: 4500,
         style: { background: 'hsl(0 84% 60%)', color: 'white' },
       });
-      highlightNewItem('ring-red-400');
       if (!fromGlobalSearch) {
         setTimeout(() => setHighAlertGuideOpen(true), 1100);
       }
@@ -5477,7 +5487,6 @@ const PrescricaoPage = () => {
         description: `CONTROLADO Lista ${newItem.controlledList ?? '344'} — ${docLabel ?? 'Receita controlada'} será gerada automaticamente ao imprimir.`,
         duration: 4500,
       });
-      highlightNewItem('ring-amber-400');
     } else if (isPsychotropicMedication(med.name)) {
       // Fallback (medicação psicotrópica não mapeada no seed regulatório)
       toast.info(`Psicotrópico identificado: ${med.name}`, {
@@ -8509,6 +8518,7 @@ const PrescricaoPage = () => {
                             onTogglePrintOnly={togglePrintOnly}
                             isSimple={simple}
                             isCompact={compactView && !expandedCategories.has(cat)}
+                            autoExpand={item.id === autoExpandItemId}
                             selected={selectedIds.has(item.id)}
                             onToggleSelect={toggleSelect}
                             onDuplicate={duplicateItem}
