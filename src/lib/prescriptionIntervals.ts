@@ -49,11 +49,58 @@ export const PRESCRIPTION_INTERVALS: PrescriptionInterval[] = [
   // ── Contínuo / dose única ──────────────────────────────────────────────────
   { value: 'Contínuo', label: 'Contínuo (BIC)', phases: 0, group: 'continuo' },
   { value: 'Única',    label: 'Dose única',     phases: 1, group: 'continuo' },
+  // "Agora" (antiga flag AG): dose pontual imediata. NÃO renova na virada de
+  // plantão — a lógica de renovação lê este valor. (Unificação 22/07/2026.)
+  { value: 'Agora',    label: 'Agora (dose imediata)', phases: 1, group: 'continuo' },
 
   // ── Condicionais ───────────────────────────────────────────────────────────
   { value: 'S/N', label: 'S/N (se necessário)', phases: 0, group: 'condicional' },
   { value: 'ACM', label: 'ACM (a critério médico)', phases: 0, group: 'condicional' },
 ];
+
+// ── Modificador condicional S/N ─────────────────────────────────────────────
+// Unificação 22/07/2026 (decisão do gestor): as marcações SN/ACM/AG saíram das
+// flags e passaram a viver no campo INTERVALO — a informação mora num lugar só.
+//
+// Regra clínica confirmada pelo gestor:
+//  • "S/N" COMBINA com intervalo fixo — "6/6h S/N" = até de 6/6h, se necessário
+//    (prescrição clássica de analgesia). Por isso é um SUFIXO, não um valor
+//    que substitui o intervalo.
+//  • "ACM" é EXCLUSIVO — a critério médico não admite intervalo fixo nem
+//    modificador; ao selecioná-lo, o campo de intervalo trava.
+
+/** Sufixo canônico do modificador condicional. */
+export const PRN_SUFFIX = 'S/N';
+
+/** O intervalo carrega o modificador "se necessário"? (isolado ou como sufixo) */
+export function hasPRN(posology?: string | null): boolean {
+  const v = (posology || '').trim().toUpperCase();
+  return v === 'S/N' || /\sS\/N$/.test(v);
+}
+
+/** Intervalo base, sem o modificador — "6/6h S/N" → "6/6h"; "S/N" → "". */
+export function stripPRN(posology?: string | null): string {
+  const v = (posology || '').trim();
+  if (v.toUpperCase() === 'S/N') return '';
+  return v.replace(/\s*S\/N\s*$/i, '').trim();
+}
+
+/** Liga/desliga o modificador preservando o intervalo base. */
+export function withPRN(posology: string | null | undefined, on: boolean): string {
+  const base = stripPRN(posology);
+  if (!on) return base || '-';
+  return base ? `${base} ${PRN_SUFFIX}` : PRN_SUFFIX;
+}
+
+/** ACM é exclusivo: trava o intervalo (não aceita esquema fixo nem S/N). */
+export function isExclusiveInterval(posology?: string | null): boolean {
+  return (posology || '').trim().toUpperCase() === 'ACM';
+}
+
+/** Dose imediata ("Agora") — não renova na virada de plantão. */
+export function isNowInterval(posology?: string | null): boolean {
+  return (posology || '').trim().toUpperCase() === 'AGORA';
+}
 
 /** Lista achatada de valores — útil para validações estritas. */
 export const PRESCRIPTION_INTERVAL_VALUES: readonly string[] =
@@ -85,3 +132,35 @@ export const INTERVAL_GROUPS: Array<{
   { key: 'continuo',    title: 'Contínuo / única',   items: PRESCRIPTION_INTERVALS.filter(i => i.group === 'continuo') },
   { key: 'condicional', title: 'Condicional',         items: PRESCRIPTION_INTERVALS.filter(i => i.group === 'condicional') },
 ];
+
+/**
+ * Compatibilidade com prescrições gravadas ANTES da unificação (22/07/2026).
+ *
+ * Itens antigos carregam as marcações como flags ('sn' | 'acm' | 'ag'). Esta
+ * função dobra cada uma no campo INTERVALO equivalente e remove a flag legada,
+ * para que nada se perca ao abrir uma prescrição antiga. É IDEMPOTENTE: itens
+ * já normalizados passam intactos.
+ *
+ * Precedência: ACM é exclusivo e vence os demais. "Agora" só preenche o
+ * intervalo quando ele está vazio (não sobrescreve um esquema já prescrito).
+ */
+export function normalizeLegacyIntervalFlags<
+  T extends { posology?: string; flags?: readonly string[] }
+>(item: T): T {
+  const flags = item.flags ?? [];
+  const hasLegacy = flags.some(f => f === 'sn' || f === 'acm' || f === 'ag');
+  if (!hasLegacy) return item;
+
+  const rest = flags.filter(f => f !== 'sn' && f !== 'acm' && f !== 'ag');
+  let posology = (item.posology ?? '').trim();
+  if (posology === '-') posology = '';
+
+  if (flags.includes('acm')) {
+    posology = 'ACM'; // exclusivo — descarta intervalo e modificador
+  } else {
+    if (flags.includes('ag') && !posology) posology = 'Agora';
+    if (flags.includes('sn')) posology = withPRN(posology, true);
+  }
+
+  return { ...item, posology: posology || '-', flags: rest } as T;
+}

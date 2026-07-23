@@ -43,7 +43,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
-import { PRESCRIPTION_INTERVALS, intervalToPhases as canonicalIntervalToPhases } from "@/lib/prescriptionIntervals";
+import {
+  PRESCRIPTION_INTERVALS,
+  intervalToPhases as canonicalIntervalToPhases,
+  hasPRN,
+  withPRN,
+  stripPRN,
+  isExclusiveInterval,
+  isNowInterval,
+  normalizeLegacyIntervalFlags,
+} from "@/lib/prescriptionIntervals";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageLoader } from "@/components/PageLoader";
@@ -1831,32 +1840,88 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             </PopoverTrigger>
             <PopoverContent className="w-64 p-3" align="end">
               <p className="text-[11px] font-semibold text-muted-foreground mb-2">Aprazamento</p>
-              <div className="grid grid-cols-3 gap-1.5">
-                {PRESCRIPTION_INTERVALS.map(p => p.value).map(opt => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => onUpdate(item.id, 'posology', opt)}
-                    className={cn(
-                      "text-[10px] px-2 py-1 rounded-md border transition-colors",
-                      item.posology === opt
-                        ? "border-primary bg-primary/10 text-primary font-semibold"
-                        : "border-border/50 hover:border-primary/40 hover:bg-muted"
-                    )}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-2.5">
-                <label className="text-[10px] font-medium text-muted-foreground">Personalizado</label>
-                <Input
-                  value={item.posology === '-' ? '' : item.posology}
-                  onChange={(e) => onUpdate(item.id, 'posology', e.target.value || '-')}
-                  placeholder="Ex.: Antes das refeições"
-                  className="h-7 text-xs mt-1"
-                />
-              </div>
+              {(() => {
+                // Unificação 22/07/2026: as marcações SN/ACM/AG saíram das flags
+                // e vivem aqui. Regras confirmadas pelo gestor:
+                //  • S/N é MODIFICADOR — combina com intervalo fixo ("6/6h S/N").
+                //  • ACM é EXCLUSIVO — trava o intervalo (não aceita esquema fixo
+                //    nem modificador).
+                const acmLocked = isExclusiveInterval(item.posology);
+                const base = stripPRN(item.posology);
+                const prnOn = hasPRN(item.posology);
+                const pickInterval = (opt: string) => {
+                  if (opt === 'ACM') { onUpdate(item.id, 'posology', acmLocked ? '-' : 'ACM'); return; }
+                  if (opt === 'S/N') { onUpdate(item.id, 'posology', withPRN('', !prnOn || !!base)); return; }
+                  // Demais intervalos preservam o modificador S/N já ativo.
+                  onUpdate(item.id, 'posology', base === opt && !prnOn ? '-' : withPRN(opt, prnOn));
+                };
+                return (
+                  <>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {PRESCRIPTION_INTERVALS.map(p => p.value)
+                        .filter(opt => opt !== 'S/N')
+                        .map(opt => {
+                          const isAcm = opt === 'ACM';
+                          const selected = isAcm ? acmLocked : (!acmLocked && base === opt);
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              // ACM sempre clicável (para poder desmarcar); os demais
+                              // travam enquanto ACM estiver ativo.
+                              disabled={acmLocked && !isAcm}
+                              onClick={() => pickInterval(opt)}
+                              className={cn(
+                                "text-[10px] px-2 py-1 rounded-md border transition-colors",
+                                selected
+                                  ? "border-primary bg-primary/10 text-primary font-semibold"
+                                  : "border-border/50 hover:border-primary/40 hover:bg-muted",
+                                acmLocked && !isAcm && "opacity-40 cursor-not-allowed hover:border-border/50 hover:bg-transparent"
+                              )}
+                            >
+                              {opt}
+                            </button>
+                          );
+                        })}
+                    </div>
+
+                    {/* Modificador condicional — soma-se ao intervalo escolhido */}
+                    <div className="mt-2.5 flex items-center justify-between gap-2 rounded-md border border-border/50 px-2 py-1.5">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-medium text-foreground">S/N</p>
+                        <p className="text-[9px] text-muted-foreground leading-tight">
+                          {acmLocked ? 'Indisponível com ACM' : 'Se necessário — combina com o intervalo'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={acmLocked}
+                        onClick={() => onUpdate(item.id, 'posology', withPRN(item.posology, !prnOn))}
+                        className={cn(
+                          "text-[10px] px-2 py-1 rounded-md border transition-colors shrink-0",
+                          prnOn
+                            ? "border-amber-400 bg-amber-500/15 text-amber-700 font-semibold"
+                            : "border-border/50 hover:border-amber-400/60 hover:bg-muted",
+                          acmLocked && "opacity-40 cursor-not-allowed"
+                        )}
+                      >
+                        {prnOn ? 'Ativo' : 'Ativar'}
+                      </button>
+                    </div>
+
+                    <div className="mt-2.5">
+                      <label className="text-[10px] font-medium text-muted-foreground">Personalizado</label>
+                      <Input
+                        value={item.posology === '-' ? '' : item.posology}
+                        disabled={acmLocked}
+                        onChange={(e) => onUpdate(item.id, 'posology', e.target.value || '-')}
+                        placeholder="Ex.: Antes das refeições"
+                        className="h-7 text-xs mt-1"
+                      />
+                    </div>
+                  </>
+                );
+              })()}
             </PopoverContent>
           </Popover>
         ) : (
@@ -2976,12 +3041,14 @@ function ExtraPrescriptionDialog({
       presentation: med.presentation,
       dose: med.defaultDose,
       route: med.defaultRoute,
-      posology: med.defaultPosology,
+      // Extra nasce como "Agora" (dose pontual). Isso era a flag 'ag' até
+      // 22/07/2026 — agora é INTERVALO, quando o catálogo não traz posologia.
+      posology: med.defaultPosology && med.defaultPosology !== '-' ? med.defaultPosology : 'Agora',
       schedule: '',
       instructions: "", // Recomendação sempre em branco — preenchimento exclusivo do médico
 
       category: med.category,
-      flags: ['ag' as PrescriptionFlag], // Default to "Agora"
+      flags: [],
       highAlert: med.highAlert || false,
       status: 'active',
       isExtra: true,
@@ -3026,8 +3093,8 @@ function ExtraPrescriptionDialog({
       id: crypto.randomUUID(),
       name: freeText.trim(),
       presentation: '-', dose: '-', route: '-',
-      posology: '-', schedule: '-', instructions: '',
-      category: 'medication', flags: ['ag' as PrescriptionFlag],
+      posology: 'Agora', schedule: '-', instructions: '',
+      category: 'medication', flags: [],
       highAlert: false, status: 'active', isExtra: true,
     }]);
     setFreeText("");
@@ -3092,7 +3159,7 @@ function ExtraPrescriptionDialog({
     handleClose();
   };
 
-  const agoraCount = extraItems.filter(i => i.flags.includes('ag' as PrescriptionFlag)).length;
+  const agoraCount = extraItems.filter(i => isNowInterval(i.posology) || (i.flags as readonly string[]).includes('ag')).length;
   const scheduledCount = extraItems.length - agoraCount;
 
   const handlePrintIsolated = async () => {
@@ -4699,7 +4766,7 @@ const PrescricaoPage = () => {
       if (!raw) { draftRestoreAttemptedRef.current = true; return; }
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed?.items) && parsed.items.length > 0) {
-        setItems(parsed.items as PrescriptionItem[]);
+        setItems((parsed.items as PrescriptionItem[]).map(normalizeLegacyIntervalFlags));
         toast.info("Rascunho local restaurado", {
           description: "Itens não validados foram recuperados deste paciente.",
         });
@@ -5677,15 +5744,10 @@ const PrescricaoPage = () => {
         return item;
       }
       const next = { ...item, [field]: value } as PrescriptionItem;
-      // Sync posology ↔ flags sn/acm para evitar duplicidade no PDF
-      // (dropdown de aprazamento grava em posology; FlagToggle grava em flags).
-      if (field === 'posology') {
-        const upper = String(value || '').trim().toUpperCase();
-        let flags = next.flags;
-        if (upper === 'S/N') flags = flags.filter(f => f !== 'sn' && f !== 'acm');
-        else if (upper === 'ACM') flags = flags.filter(f => f !== 'acm' && f !== 'sn');
-        next.flags = flags;
-      }
+      // NOTA (22/07/2026): aqui existia um remendo que sincronizava
+      // posology ↔ flags 'sn'/'acm' só para a mesma informação não sair
+      // duplicada no impresso. Com a unificação dessas marcações no campo
+      // INTERVALO, a duplicidade deixou de ser possível e o remendo caiu.
       return next;
     }));
   }, [isItemEditLocked]);
@@ -5729,14 +5791,6 @@ const PrescricaoPage = () => {
         ? [...item.flags, flag]
         : item.flags.filter(f => f !== flag);
       const next = { ...item, flags } as PrescriptionItem;
-      // Sync flags sn/acm → posology: se ativar sn/acm e posology já carrega o mesmo
-      // rótulo (vindo do dropdown de aprazamento), limpa o posology para não duplicar.
-      if (willEnable && (flag === 'sn' || flag === 'acm')) {
-        const posUpper = String(item.posology || '').trim().toUpperCase();
-        if ((flag === 'sn' && posUpper === 'S/N') || (flag === 'acm' && posUpper === 'ACM')) {
-          next.posology = '';
-        }
-      }
       return next;
     }));
   }, [isItemEditLocked]);
@@ -6315,7 +6369,7 @@ const PrescricaoPage = () => {
         //    loadPrescriptionRef (preserva validated=true, assinatura, etc.)
         //  • Cruzou 05h → cópia com needsShiftRevalidation=true (amarelas)
         const loadValidatedPrescription = async (row: { id: string; items: unknown; created_at: string }) => {
-          const sourceItems = Array.isArray(row.items) ? row.items as unknown as PrescriptionItem[] : [];
+          const sourceItems = (Array.isArray(row.items) ? row.items as unknown as PrescriptionItem[] : []).map(normalizeLegacyIntervalFlags);
           if (sourceItems.length === 0) return false;
           const crossedShift = hasCrossedShiftBoundary(row.created_at);
 
@@ -6457,7 +6511,9 @@ const PrescricaoPage = () => {
           bed: prev.bed || snapshot.bed,
           unit: prev.unit || snapshot.unit,
         }));
-        setItems(data.items as unknown as PrescriptionItem[]);
+        // Normaliza marcações legadas (flags sn/acm/ag → campo intervalo)
+        // ao abrir prescrições gravadas antes da unificação de 22/07/2026.
+        setItems((data.items as unknown as PrescriptionItem[]).map(normalizeLegacyIntervalFlags));
         setDigitalSignature(data.digital_signature as unknown as DigitalSignature | null);
         setCurrentPrescriptionId(data.id);
         setSelectedIds(new Set());
@@ -7008,9 +7064,11 @@ const PrescricaoPage = () => {
   const confirmRenewal = useCallback(async (includeSuspended: boolean) => {
     const sourceItems = (includeSuspended ? items : items.filter(i => i.status === 'active'))
       // Itens NÃO renovam para o dia seguinte:
-      //  • "Agora" (AG) — dose única / pontual
+      //  • "Agora" — dose única / pontual. Passou a ser INTERVALO (era a flag
+      //    'ag' até 22/07/2026); a checagem lê o campo posology, com fallback
+      //    para a flag legada em prescrições antigas ainda não normalizadas.
       //  • "Carro de Parada" (CP) — emergência, não faz parte da rotina diária
-      .filter(i => !i.flags.includes('ag') && !i.flags.includes('cp'));
+      .filter(i => !isNowInterval(i.posology) && !(i.flags as readonly string[]).includes('ag') && !i.flags.includes('cp'));
     const renewedItems: PrescriptionItem[] = sourceItems.map(item => ({
       ...item,
       id: crypto.randomUUID(),
@@ -9556,7 +9614,7 @@ const PrescricaoPage = () => {
         sectorLabel={`Prescrição Médica — ${patient.unit || 'Anexo Extra'}`}
         onAddItems={(newItems) => {
           setItems(prev => [...prev, ...newItems]);
-          const agoraCount = newItems.filter(i => i.flags.includes('ag' as PrescriptionFlag)).length;
+          const agoraCount = newItems.filter(i => isNowInterval(i.posology) || (i.flags as readonly string[]).includes('ag')).length;
           const scheduledCount = newItems.length - agoraCount;
           toast.success(`${newItems.length} item(ns) extra adicionado(s)`, {
             description: agoraCount > 0

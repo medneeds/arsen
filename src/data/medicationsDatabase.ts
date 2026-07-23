@@ -59,13 +59,29 @@ export const CATEGORY_CONFIG: Record<PrescriptionCategory, {
   nonstandard:   { label: 'Não Padrão',        icon: 'FileText',       color: 'text-[hsl(217,25%,42%)]', bgColor: 'bg-[hsl(217,25%,50%)]/10' },
 };
 
+// Marcações de item da prescrição.
+// Unificação 22/07/2026 (decisão do gestor): SN, ACM e AG SAÍRAM daqui e
+// passaram a viver no campo INTERVALO — eram ruído comunicativo, duplicavam a
+// posologia (SN ↔ SOS/S-N, ACM ↔ ACM) e exigiam um remendo de sincronização
+// para não sair repetido no impresso.
+// Permanecem apenas as marcações que NÃO são tempo:
+//  • BI — equipamento (bomba de infusão)
+//  • CP — proveniência (carro de parada)
 export const PRESCRIPTION_FLAGS = [
   { key: 'bi',  label: 'BI',  fullLabel: 'Bomba de Infusão',    color: 'bg-blue-500/20 text-blue-700 border-blue-300' },
-  { key: 'sn',  label: 'SN',  fullLabel: 'Se Necessário',       color: 'bg-yellow-500/20 text-yellow-700 border-yellow-300' },
-  { key: 'acm', label: 'ACM', fullLabel: 'A Critério Médico',   color: 'bg-purple-500/20 text-purple-700 border-purple-300' },
   { key: 'cp',  label: 'CP',  fullLabel: 'Carro de Parada',      color: 'bg-teal-500/20 text-teal-700 border-teal-300' },
-  { key: 'ag',  label: 'AG',  fullLabel: 'Agora',      color: 'bg-red-500/20 text-red-700 border-red-300' },
 ] as const;
+
+/**
+ * Compatibilidade: prescrições gravadas ANTES da unificação carregam as flags
+ * 'sn' | 'acm' | 'ag'. Este mapa converte cada uma no valor de intervalo
+ * equivalente, para que nenhuma marcação se perca ao abrir um item antigo.
+ */
+export const LEGACY_FLAG_TO_INTERVAL: Record<string, string> = {
+  sn:  'S/N',
+  acm: 'ACM',
+  ag:  'Agora',
+};
 
 export type PrescriptionFlag = typeof PRESCRIPTION_FLAGS[number]['key'];
 
