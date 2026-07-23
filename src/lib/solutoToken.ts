@@ -218,6 +218,8 @@ export function buildSolutoToken(item: SolutoFields): string {
 export interface PrepFields {
   category?: string;
   route?: string;
+  presentation?: string;
+  enteralDilutionVolume?: string;
   diluent?: string;
   diluentVolume?: string;
   volumeTotal?: string;
@@ -271,6 +273,18 @@ export function buildPrepSegments(item: PrepFields): { head: string[]; tail: str
     const solvent = item.reconstitutionSolvent.replace(/\bABD\b/gi, 'AD');
     const qtyFA = item.quantity?.trim() && item.quantity.trim() !== '0' ? item.quantity.trim() : '1';
     head.push(`Reconstituir: ${qtyFA} FA em ${solvent} ${item.reconstitutionVolume} mL →`);
+  }
+
+  // Diluição para sonda — comprimido/cápsula por via enteral precisa ser
+  // triturado e diluído (ISMP). Instrução essencial para a enfermagem, então
+  // sai na tela compacta E no impresso pela mesma fonte. (22/07/2026.)
+  const presLower = (item.presentation || '').toLowerCase();
+  const routeLower = (item.route || '').toLowerCase();
+  const isOralSolidEnteral =
+    /(comprimido|capsula|cap\.|drágea|dragea)/.test(presLower)
+    && /(\bsng\b|\bsne\b|enteral|nasoenter|nasogastr|orogastr|gastrostomia|jejunostomia|\bgtt\b|sonda)/.test(routeLower);
+  if (isOralSolidEnteral && item.enteralDilutionVolume?.trim()) {
+    head.push(`Triturar e diluir em ${item.enteralDilutionVolume.trim()} mL de água`);
   }
 
   // Diluente — ou "Sem diluente" explícito

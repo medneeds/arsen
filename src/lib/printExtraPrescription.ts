@@ -23,6 +23,7 @@ export interface ExtraPrintItem {
   schedule?: string;
   instructions?: string;
   flags?: readonly string[];
+  enteralDilutionVolume?: string;
   highAlert?: boolean;
   category?: string;
   // Regulatório
@@ -189,6 +190,8 @@ function buildLine2(it: ExtraPrintItem): string {
   const { head, tail } = buildPrepSegments({
     category: it.category,
     route: it.route,
+    presentation: it.presentation,
+    enteralDilutionVolume: it.enteralDilutionVolume,
     diluent: it.diluent,
     diluentVolume: it.diluentVolume,
     volumeTotal: it.volumeTotal,

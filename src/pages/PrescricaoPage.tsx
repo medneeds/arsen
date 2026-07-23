@@ -198,6 +198,7 @@ interface PrescriptionItem {
   action?: string;            // Fazer/Retirar
   diluent?: string;           // Diluente (SF0,9%, SG5%, AD, etc.)
   diluentVolume?: string;     // Volume do diluente (mL)
+  enteralDilutionVolume?: string; // Volume de diluição p/ sonda (mL) — comprimido/cápsula triturado
   accessType?: string;        // Acesso (Periférico, Central, etc.)
   infusionTime?: string;      // Correr em (valor numérico)
   infusionTimeUnit?: 'min' | 'h'; // Unidade do tempo de infusão
@@ -294,6 +295,22 @@ import { buildAtbDayLine, buildAtbLineParts } from "@/lib/atbLine";
 // quantidade > 1, não tinha o rótulo "Qtd.:", ordem invertida
 // ("dose (qty)" em vez de "qty (dose)"), e nem o caso "limpo" de mg/g
 // funcionava. Delega para a fonte única — mesma correção em todo lugar.
+// ── Diluição para sonda ─────────────────────────────────────────────────────
+// Comprimido/cápsula administrado por sonda precisa ser triturado e diluído
+// (recomendação ISMP). Esta é a regra ÚNICA, usada tanto pela VALIDAÇÃO quanto
+// pelo campo na tela — antes a validação exigia um volume que não tinha campo
+// nenhum para ser preenchido, e a única saída era escrever nas Observações,
+// obrigando o médico a usar um campo que deveria ser livre. (22/07/2026.)
+export const ENTERAL_DILUTION_DEFAULT_ML = '20';
+
+function isOralSolidViaEnteral(item: { presentation?: string; route?: string }): boolean {
+  const presentation = (item.presentation || '').toLowerCase();
+  const route = (item.route || '').toLowerCase();
+  const isOralSolid = /(comprimido|capsula|cap\.|drágea|dragea)/.test(presentation);
+  const isEnteralRoute = /(\bsng\b|\bsne\b|enteral|nasoenter|nasogastr|orogastr|gastrostomia|jejunostomia|\bgtt\b|sonda)/.test(route);
+  return isOralSolid && isEnteralRoute;
+}
+
 function composeDoseLabel(item: { dose?: string; quantity?: string; quantityUnit?: string }): string {
   return buildSolutoTokenLabeled(item);
 }
@@ -1667,6 +1684,18 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   const [individualExpanded, setIndividualExpanded] = useState(false);
   // Item recém-adicionado nasce expandido, pronto para preenchimento.
   useEffect(() => { if (autoExpand) setIndividualExpanded(true); }, [autoExpand]);
+  // Comprimido/cápsula por sonda: sugere o volume de diluição padrão assim
+  // que a combinação apresentação+via passa a valer, sem sobrescrever o que
+  // o médico já tiver digitado.
+  useEffect(() => {
+    // Não toca em item já validado: preencher aqui marcaria como alterada uma
+    // prescrição que o médico já assinou.
+    if (item.validated) return;
+    if (isOralSolidViaEnteral(item) && !(item.enteralDilutionVolume ?? '').trim()) {
+      onUpdate(item.id, 'enteralDilutionVolume', ENTERAL_DILUTION_DEFAULT_ML);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.presentation, item.route, item.validated]);
   const {
     attributes,
     listeners,
@@ -2629,6 +2658,25 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     <SelectContent className="max-h-72">{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
+
+                {/* Diluição para sonda — aparece só em comprimido/cápsula por
+                    via enteral. Nasce com o volume padrão preenchido: o médico
+                    só ajusta se quiser, e a validação deixa de exigir que ele
+                    escreva nas Observações. (22/07/2026.) */}
+                {isOralSolidViaEnteral(item) && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap">Diluição:</span>
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      value={item.enteralDilutionVolume ?? ''}
+                      onChange={(e) => onUpdate(item.id, 'enteralDilutionVolume', e.target.value)}
+                      placeholder={ENTERAL_DILUTION_DEFAULT_ML}
+                      className="h-6 w-14 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 font-semibold text-center focus:ring-1 focus:ring-primary"
+                    />
+                    <span className="text-[10px] text-muted-foreground">mL de água</span>
+                  </div>
+                )}
               </div>
 
               {renderInfusion && (
@@ -3168,6 +3216,7 @@ function ExtraPrescriptionDialog({
           schedule: i.schedule,
           instructions: i.instructions,
           flags: i.flags,
+          enteralDilutionVolume: i.enteralDilutionVolume,
           highAlert: i.highAlert,
           category: i.category,
           // Regulatório
@@ -4423,10 +4472,8 @@ const PrescricaoPage = () => {
 
     // ----- Comprimido por sonda enteral -----
     const route = (item.route || '').toLowerCase();
-    const presentation = (item.presentation || '').toLowerCase();
-    const isOralSolid = /(comprimido|capsula|cap\.|drágea|dragea)/.test(presentation);
-    const isEnteralRoute = /(\bsng\b|\bsne\b|enteral|nasoenter|nasogastr|orogastr|gastrostomia|jejunostomia|\bgtt\b|sonda)/.test(route);
-    if (isOralSolid && isEnteralRoute) {
+    // Mesma regra usada pelo campo "Diluição" na tela (fonte única).
+    if (isOralSolidViaEnteral(item)) {
       const isCrushable = (item as any).crushable !== false; // false explícito = bloqueado por catálogo ISMP
       if (!isCrushable) {
         missing.push('item NÃO triturável — trocar apresentação');
