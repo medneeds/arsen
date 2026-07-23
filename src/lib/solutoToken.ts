@@ -215,6 +215,9 @@ export function buildSolutoToken(item: SolutoFields): string {
 //   4. inferência de BIC (extra não inferia; agora ambos inferem)
 // Unificado pelo comportamento mais COMPLETO/SEGURO clinicamente.
 
+/** Volume padrão de diluição para administração por sonda (mL de água). */
+export const ENTERAL_DILUTION_DEFAULT_ML = '20';
+
 export interface PrepFields {
   category?: string;
   route?: string;
@@ -281,10 +284,14 @@ export function buildPrepSegments(item: PrepFields): { head: string[]; tail: str
   const presLower = (item.presentation || '').toLowerCase();
   const routeLower = (item.route || '').toLowerCase();
   const isOralSolidEnteral =
-    /(comprimido|capsula|cap\.|drágea|dragea)/.test(presLower)
+    /(comprimido|c[áa]psula|c[áa]ps\\b|cap\\.|dr[áa]gea|dragea)/.test(presLower)
     && /(\bsng\b|\bsne\b|enteral|nasoenter|nasogastr|orogastr|gastrostomia|jejunostomia|\bgtt\b|sonda)/.test(routeLower);
-  if (isOralSolidEnteral && item.enteralDilutionVolume?.trim()) {
-    head.push(`Triturar e diluir em ${item.enteralDilutionVolume.trim()} mL de água`);
+  if (isOralSolidEnteral) {
+    // Campo vazio significa "usar o padrão" — o valor nunca e escrito no item
+    // (auto-preenchimento causava loop com o autosave do rascunho). A instrução
+    // sai igual na tela compacta e no impresso.
+    const dilMl = (item.enteralDilutionVolume || '').trim() || ENTERAL_DILUTION_DEFAULT_ML;
+    head.push(`Triturar e diluir em ${dilMl} mL de água`);
   }
 
   // Diluente — ou "Sem diluente" explícito

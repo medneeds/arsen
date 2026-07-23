@@ -280,7 +280,8 @@ const QUANTITY_UNITS = [
   'supositório', 'óvulo', 'bisnaga', 'frasco',
 ];
 
-import { quantityUnitShort, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital, parseDecimalBR, isIVRoute } from "@/lib/solutoToken";
+import {
+  ENTERAL_DILUTION_DEFAULT_ML, quantityUnitShort, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital, parseDecimalBR, isIVRoute } from "@/lib/solutoToken";
 import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydration";
 import { buildAtbDayLine, buildAtbLineParts } from "@/lib/atbLine";
 
@@ -301,12 +302,14 @@ import { buildAtbDayLine, buildAtbLineParts } from "@/lib/atbLine";
 // pelo campo na tela — antes a validação exigia um volume que não tinha campo
 // nenhum para ser preenchido, e a única saída era escrever nas Observações,
 // obrigando o médico a usar um campo que deveria ser livre. (22/07/2026.)
-export const ENTERAL_DILUTION_DEFAULT_ML = '20';
 
 function isOralSolidViaEnteral(item: { presentation?: string; route?: string }): boolean {
   const presentation = (item.presentation || '').toLowerCase();
   const route = (item.route || '').toLowerCase();
-  const isOralSolid = /(comprimido|capsula|cap\.|drágea|dragea)/.test(presentation);
+  // Acento importa: o catálogo escreve 'cápsula'/'cáps', e o regex antigo só
+  // tinha 'capsula' — cápsula NUNCA era detectada, então a regra de segurança
+  // não valia para ela. (Correção 23/07/2026.)
+  const isOralSolid = /(comprimido|c[áa]psula|c[áa]ps\\b|cap\\.|dr[áa]gea|dragea)/.test(presentation);
   const isEnteralRoute = /(\bsng\b|\bsne\b|enteral|nasoenter|nasogastr|orogastr|gastrostomia|jejunostomia|\bgtt\b|sonda)/.test(route);
   return isOralSolid && isEnteralRoute;
 }
@@ -1693,18 +1696,6 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   const [individualExpanded, setIndividualExpanded] = useState(false);
   // Item recém-adicionado nasce expandido, pronto para preenchimento.
   useEffect(() => { if (autoExpand) setIndividualExpanded(true); }, [autoExpand]);
-  // Comprimido/cápsula por sonda: sugere o volume de diluição padrão assim
-  // que a combinação apresentação+via passa a valer, sem sobrescrever o que
-  // o médico já tiver digitado.
-  useEffect(() => {
-    // Não toca em item já validado: preencher aqui marcaria como alterada uma
-    // prescrição que o médico já assinou.
-    if (item.validated) return;
-    if (isOralSolidViaEnteral(item) && !(item.enteralDilutionVolume ?? '').trim()) {
-      onUpdate(item.id, 'enteralDilutionVolume', ENTERAL_DILUTION_DEFAULT_ML);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [item.presentation, item.route, item.validated]);
   const {
     attributes,
     listeners,
@@ -4486,15 +4477,12 @@ const PrescricaoPage = () => {
       const isCrushable = (item as any).crushable !== false; // false explícito = bloqueado por catálogo ISMP
       if (!isCrushable) {
         missing.push('item NÃO triturável — trocar apresentação');
-      } else {
-        // Aceita volume de diluição em QUALQUER campo equivalente OU instrução textual
-        const hasDilVol = has((item as any).enteralDilutionVolume)
-          || has(item.diluentVolume)
-          || has(item.volumeTotal);
-        if (!hasDilVol && !anyInstruction(item)) {
-          missing.push('volume de diluição enteral');
-        }
       }
+      // A diluição NÃO bloqueia mais a validação: o volume tem padrão implícito
+      // (effectiveEnteralDilution), então sempre existe um valor — explícito no
+      // campo ou o padrão — e ele sai no impresso como "Triturar e diluir em
+      // X mL de água". Antes exigia um campo que sequer tinha UI, forçando o
+      // médico a escrever nas Observações. (23/07/2026.)
     }
 
     // ----- Controlado Port. 344 — só bloqueia para LISTAS DE ALTA RESTRIÇÃO (A1/A2/A3/B1/B2)
