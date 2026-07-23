@@ -3538,6 +3538,17 @@ function RenewalDialog({
 }
 
 // --- Parse schedule string into time slots ---
+// PREDISPOSIÇÃO (23/07/2026, decisão do gestor): este helper fica RESERVADO
+// para o futuro campo editável de APRAZAMENTO, a ser construído quando a
+// equipe multidisciplinar (enfermagem) entrar no fluxo e definir os horários
+// em conjunto com a prescrição médica.
+//
+// Hoje NÃO há campo na UI para definir horário, e o valor que existia em
+// item.schedule vinha do catálogo/legado — apareciam horários que o médico
+// nunca configurou (ex.: "06h" na Dipirona, "08h" na Metoclopramida) e que ele
+// sequer podia corrigir. Por isso a exibição foi REMOVIDA de todos os pontos.
+// Não construir o campo agora: o desenho (quem apraza, como recalcula na
+// virada de plantão, o que acontece na suspensão) ainda precisa ser estudado.
 function parseScheduleSlots(schedule: string): string[] {
   if (!schedule || schedule === '-') return [];
   return schedule
@@ -8779,7 +8790,7 @@ const PrescricaoPage = () => {
                         )}
                       </td>
                       <td className="py-1.5 pr-2 uppercase text-[10px]">{it.route || '—'}</td>
-                      <td className="py-1.5 pr-2 text-[10px]">{it.posology || it.schedule || '—'}</td>
+                      <td className="py-1.5 pr-2 text-[10px]">{it.posology || '—'}</td>
                       <td className="py-1.5 pr-2 text-center">
                         {it.validated ? (
                           <Badge className="text-[9px] h-4 px-1 bg-emerald-600 hover:bg-emerald-600">VAL</Badge>
@@ -10761,7 +10772,6 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   const freq = !isHydr && item.posology && item.posology !== '-' ? item.posology : null;
                   const access = item.accessType && item.accessType !== '-' ? item.accessType : null;
                   const { head, tail } = isHydr ? { head: [] as string[], tail: [] as string[] } : buildPrepSegments(item);
-                  const slots = parseScheduleSlots(item.schedule || '');
                   const hasPrep = (head.length + tail.length) > 0;
                   // NOVA ORDEM (raciocínio do médico): DOSE · Dil. · Vol. · Via · Acesso · Intervalo · Modo · Infusão
                   // Segmentos do corpo da linha, na ordem definida. Cada um vira um "·"-separado.
@@ -10793,9 +10803,6 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                             }}>{seg.text}</span>
                           </span>
                         ))}
-                        {slots.length > 0 && (
-                          <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '4px', color: '#0c4a6e', backgroundColor: '#e0f2fe', padding: '0.5px 5px', borderRadius: '8px', letterSpacing: '0.2px' }}>⏱ {slots.join(' · ')}</span>
-                        )}
                         {item.flags.length > 0 && (
                           <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '2px', color: '#fff', backgroundColor: '#0f172a', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
                         )}

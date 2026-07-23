@@ -285,7 +285,7 @@ export async function printExtraPrescription(opts: ExtraPrintOptions) {
             ${it.insulinPlan ? '' : (it.instructions ? `<div style="font-size:8pt;font-style:italic;color:#444;line-height:1.4;margin-top:2pt">Recomendações: ${escape(it.instructions)}</div>` : '')}
           </td>
           <td style="border:0.5pt solid #cbd5e1;width:170pt;vertical-align:top;background:#fff;padding:4pt 6pt">
-            <div style="font-size:6.5pt;color:#94a3b8;font-weight:700;letter-spacing:0.3pt;text-transform:uppercase;margin-bottom:2pt">Aprazamento ${it.schedule ? `· ${escape(it.schedule)}` : ''}</div>
+            <div style="font-size:6.5pt;color:#94a3b8;font-weight:700;letter-spacing:0.3pt;text-transform:uppercase;margin-bottom:2pt">Aprazamento</div>
             <div style="min-height:32pt"></div>
           </td>
         </tr>`;
