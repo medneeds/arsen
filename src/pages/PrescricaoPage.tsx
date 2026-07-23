@@ -2031,7 +2031,14 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
       const phrase = buildHydrationLine(item);
       if (phrase) compactParts.push(phrase);
     } else {
-      if (item.dose && item.dose !== '-') compactParts.push(composeDoseLabel(item));
+      // Dose / Qtd+Forma — fonte única (buildSolutoTokenLabeled).
+      // ANTES exigia item.dose preenchido, o que escondia a QUANTIDADE nas
+      // medicações prescritas só por Qtd+Forma — justamente o caso típico das
+      // NÃO-endovenosas ("2 CP", "1 ampola"). O campo Dose é opcional desde
+      // 21/07/2026, então a linha compacta ficava sem a informação central.
+      // (Correção 22/07/2026.)
+      const doseLabel = composeDoseLabel(item);
+      if (doseLabel) compactParts.push(doseLabel);
       if (item.diluent && item.diluent !== 'sem_diluente') {
         // Rótulo legível — mesmo mapeamento da fonte única (evita "diluir em
         // diluente_proprio" cru na tela).
@@ -2041,7 +2048,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         compactParts.push(dil);
       }
       if (item.volumeTotal) compactParts.push(`vol ${item.volumeTotal}mL`);
-      if (item.ivBolus) {
+      // Bolus só faz sentido em via intravenosa — mesma regra do
+      // buildPrepSegments (impresso). Antes a tela rotulava "EV em bolus"
+      // sem checar a via, podendo marcar bolus em medicação não-EV.
+      if (item.ivBolus && isIVRoute(item.route || '')) {
         compactParts.push('EV em bolus');
       } else if (item.infusionTime) {
         const tUnit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
