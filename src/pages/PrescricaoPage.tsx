@@ -321,7 +321,16 @@ function detectQuantityUnit(presentation: string, dose: string): string {
   const d = dose.toLowerCase();
   if (p.includes('ampola') && !p.includes('frasco')) return 'ampola';
   if (p.includes('frasco-ampola') || p.includes('frasco ampola')) return 'frasco-ampola';
-  if (p.includes('frasco') && !p.includes('ampola')) return 'frasco';
+  if (p.includes('frasco') && !p.includes('ampola')) {
+    // Frasco de LÍQUIDO: a quantidade prescrita é o volume (ou UI), não o
+    // número de frascos. Sem isto, a Lactulose (667mg/mL - Frasco, dose
+    // 15-30 mL) saía como "Qtd.: 15 FR" — quinze frascos — na tela e no
+    // impresso. Risco clínico direto. (Correção 22/07/2026.)
+    if (p.includes('ui') || d.includes('ui')) return 'UI';        // insulinas
+    if (d.includes('gota') || d.includes('gts')) return 'gota';
+    if (/mg\/ml/.test(p) || d.includes('ml')) return 'mL';
+    return 'frasco';
+  }
   if (p.includes('comprimido') || p.includes('comp')) return 'comprimido';
   if (p.includes('cápsula')) return 'cápsula';
   if (p.includes('bolsa')) return 'bolsa';
