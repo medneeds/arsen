@@ -2210,7 +2210,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
     }
     // Route + posology inline (skip posology for hydration since interval já está na frase)
     const routePosology: string[] = [];
-    if (item.route && item.route !== '-' && !isInhalation && !isNutrition) routePosology.push(item.route);
+    // Via ABREVIADA na tela, como no impresso: o rotulo completo repetia a
+    // informacao — "Enteral (SNE/SNG)" ja diz sonda no proprio nome e depois
+    // repete entre parenteses. abbrevRoute devolve "SNE". (23/07/2026.)
+    if (item.route && item.route !== '-' && !isInhalation && !isNutrition) routePosology.push(abbrevRoute(item.route));
     if (!isHydration && !isInhalation && !isNutrition && item.posology && item.posology !== '-') routePosology.push(item.posology);
 
 
@@ -5674,6 +5677,19 @@ const PrescricaoPage = () => {
       base.atbInfectionSite = entry.infectionSite || '';
 
       // Migração Guia ATM → corpo da prescrição (NÃO sobrescrever campos já preenchidos)
+      // RECONSTITUIÇÃO (solvente + volume do frasco-ampola) — o guia grava em
+      // reconSolvent/reconVolume, mas o item e o buildPrepSegments leem
+      // reconstitutionSolvent/reconstitutionVolume. Sem este mapeamento a
+      // reconstituicao escolhida pelo medico era DESCARTADA e nunca saia na
+      // tela nem no impresso. (Correção 23/07/2026, reportado pelo gestor.)
+      const reconSolv = (entry.reconSolvent || '').trim();
+      if (reconSolv && !base.reconstitutionSolvent) {
+        base.reconstitutionSolvent = reconSolv;
+      }
+      const reconVol = (entry.reconVolume || '').trim();
+      if (reconVol && !base.reconstitutionVolume) {
+        base.reconstitutionVolume = reconVol;
+      }
       // Diluente final + volume final → item.diluent / item.diluentVolume
       const finalDil = (entry.reconFinalDiluent || '').trim();
       if (finalDil && !base.diluent) {
