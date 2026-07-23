@@ -1926,12 +1926,16 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 };
                 return (
                   <>
+                    {/* S/N segue na lista: no teste com o time, quem procurava a
+                        opcao entre os intervalos nao a encontrava, porque ela
+                        existia apenas como toggle abaixo. Aqui ela liga/desliga o
+                        modificador, preservando o intervalo escolhido. (23/07/2026.) */}
                     <div className="grid grid-cols-3 gap-1.5">
                       {PRESCRIPTION_INTERVALS.map(p => p.value)
-                        .filter(opt => opt !== 'S/N')
                         .map(opt => {
                           const isAcm = opt === 'ACM';
-                          const selected = isAcm ? acmLocked : (!acmLocked && base === opt);
+                          const isPrn = opt === 'S/N';
+                          const selected = isAcm ? acmLocked : isPrn ? prnOn : (!acmLocked && base === opt);
                           return (
                             <button
                               key={opt}
@@ -1939,12 +1943,16 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                               // ACM sempre clicável (para poder desmarcar); os demais
                               // travam enquanto ACM estiver ativo.
                               disabled={acmLocked && !isAcm}
-                              onClick={() => pickInterval(opt)}
+                              onClick={() => isPrn
+                                ? onUpdate(item.id, 'posology', withPRN(item.posology, !prnOn))
+                                : pickInterval(opt)}
                               className={cn(
                                 "text-[10px] px-2 py-1 rounded-md border transition-colors",
-                                selected
-                                  ? "border-primary bg-primary/10 text-primary font-semibold"
-                                  : "border-border/50 hover:border-primary/40 hover:bg-muted",
+                                selected && isPrn
+                                  ? "border-amber-400 bg-amber-500/15 text-amber-700 font-semibold"
+                                  : selected
+                                    ? "border-primary bg-primary/10 text-primary font-semibold"
+                                    : "border-border/50 hover:border-primary/40 hover:bg-muted",
                                 acmLocked && !isAcm && "opacity-40 cursor-not-allowed hover:border-border/50 hover:bg-transparent"
                               )}
                             >
@@ -7140,11 +7148,17 @@ const PrescricaoPage = () => {
   const confirmRenewal = useCallback(async (includeSuspended: boolean) => {
     const sourceItems = (includeSuspended ? items : items.filter(i => i.status === 'active'))
       // Itens NÃO renovam para o dia seguinte:
-      //  • "Agora" — dose única / pontual. Passou a ser INTERVALO (era a flag
-      //    'ag' até 22/07/2026); a checagem lê o campo posology, com fallback
-      //    para a flag legada em prescrições antigas ainda não normalizadas.
+      //  • EXTRA — dose pontual, por definição não faz parte da rotina diária.
+      //    Até 22/07/2026 isso vinha "de brinde" porque todo extra nascia com a
+      //    flag 'ag'. Com a unificação (SN/ACM/AG viraram INTERVALO), o extra
+      //    passou a herdar a posologia do catálogo (ex.: 6/6h) e deixou de ser
+      //    filtrado — uma dose extra seria replicada como item FIXO no plantão
+      //    seguinte, sem o médico ter prescrito. Agora a exclusão é pela
+      //    NATUREZA do item (isExtra), não pelo texto da posologia. (23/07/2026.)
+      //  • "Agora" — dose única / pontual (era a flag 'ag'); lê o intervalo, com
+      //    fallback para a flag legada em prescrições antigas não normalizadas.
       //  • "Carro de Parada" (CP) — emergência, não faz parte da rotina diária
-      .filter(i => !isNowInterval(i.posology) && !(i.flags as readonly string[]).includes('ag') && !i.flags.includes('cp'));
+      .filter(i => !i.isExtra && !isNowInterval(i.posology) && !(i.flags as readonly string[]).includes('ag') && !i.flags.includes('cp'));
     const renewedItems: PrescriptionItem[] = sourceItems.map(item => ({
       ...item,
       id: crypto.randomUUID(),
