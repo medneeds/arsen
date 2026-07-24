@@ -15,6 +15,8 @@ import { toast } from "@/hooks/use-toast";
 import { History, FilePlus, BedDouble, ChevronRight, User, Lock, AlertTriangle, MapPin, Loader2, Skull } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
+import { closeActiveEncounter } from "@/lib/resolveActiveEncounter";
+import { ADMISSION_STATUS } from "@/lib/admissionStatus";
 import {
   MovementConfirmDialog,
   type MovementSummaryItem,
@@ -56,6 +58,8 @@ type Step = "actions" | "checking" | "blocked" | "preadmit_question" | "confirm"
 /** Dados de um atendimento ativo encontrado no banco */
 interface ActiveEncounterInfo {
   encounterId: string;
+  /** id da linha-LEITO (patients.id) do atendimento ativo — usado na correção. */
+  bedRowId: string | null;
   encounterCode: string | null;
   status: string;
   bedNumber: string | null;
@@ -102,6 +106,7 @@ export function PatientSearchActionsDialog({
   const [forceJustification, setForceJustification] = useState("");
   const [isForcing, setIsForcing] = useState(false);
   const [askForcePassword, setAskForcePassword] = useState(false);
+  const [forceAcknowledged, setForceAcknowledged] = useState(false);
 
   // Reset interno quando reabre
   const reset = () => {
@@ -122,13 +127,38 @@ export function PatientSearchActionsDialog({
    * ativo requer perfil gestor/admin + justificativa + SENHA.
    */
   const handleForceConfirmed = async () => {
+    // CORREÇÃO, não duplicação (23/07/2026, decisão do gestor após o teste que
+    // encontrou o mesmo paciente em dois leitos): forçar ENCERRA o atendimento
+    // anterior e abre o novo. Antes abria um atendimento PARALELO, violando a
+    // regra "1 atendimento aberto por prontuário" — justamente o que blindamos
+    // no front e no banco — e deixando o paciente ocupando dois leitos.
+    let correctionNote = "";
+    try {
+      const closeRes = await closeActiveEncounter(patient!.id);
+      correctionNote = closeRes?.closedId
+        ? ` | Atendimento anterior ENCERRADO por correção`
+        : ` | Nenhum atendimento anterior encontrado para encerrar`;
+      // Sinaliza o leito anterior para desalocação pelo menu Movimentações — a
+      // liberação em si é passo separado por design do sistema (o leito só vaga
+      // quando o nome é limpo na desalocação).
+      if (activeEncounterInfo?.bedRowId) {
+        await (supabase as any)
+          .from("patients")
+          .update({ admission_status: ADMISSION_STATUS.DISCHARGE_GIVEN, updated_at: new Date().toISOString() })
+          .eq("id", activeEncounterInfo.bedRowId);
+      }
+    } catch (e) {
+      console.warn("Falha ao encerrar atendimento anterior na abertura forcada:", e);
+      correctionNote = " | FALHA ao encerrar o atendimento anterior";
+    }
+
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       await supabase.from("patient_movements").insert({
         patient_name: patient!.full_name,
         movement_type: "ABERTURA FORCADA DE ATENDIMENTO — GESTOR/ADMIN",
         destination: "Novo atendimento forcado sobre atendimento ativo",
-        notes: `Atendimento ativo: #${activeEncounterInfo?.encounterCode ?? "—"} | Justificativa: ${forceJustification.trim()} | Confirmado com senha`,
+        notes: `Atendimento ativo: #${activeEncounterInfo?.encounterCode ?? "—"} (leito ${activeEncounterInfo?.bedNumber ?? "—"})${correctionNote} | Justificativa: ${forceJustification.trim()} | Confirmado com senha e ciencia do gestor`,
         created_by: authUser?.id ?? null,
         hospital_unit_id: hospitalUnitId,
         state_id: stateId,
@@ -139,6 +169,7 @@ export function PatientSearchActionsDialog({
     }
     setAskForcePassword(false);
     setIsForcing(false);
+    setForceAcknowledged(false);
     setStep("preadmit_question");
   };
 
@@ -171,7 +202,7 @@ export function PatientSearchActionsDialog({
       // 2. Buscar leito físico vinculado
       const { data: bedData } = await (supabase as any)
         .from("patients")
-        .select("bed_number, sector, admission_status")
+        .select("id, bed_number, sector, admission_status")
         .eq("patient_registry_id", patient.id)
         .eq("is_vacant", false)
         .maybeSingle();
@@ -191,6 +222,7 @@ export function PatientSearchActionsDialog({
 
       setActiveEncounterInfo({
         encounterId: (encData as any).id,
+        bedRowId: (bedData as any)?.id ?? null,
         encounterCode: (encData as any).encounter_code ?? null,
         status: (encData as any).status,
         bedNumber: (bedData as any)?.bed_number ?? null,
@@ -610,14 +642,57 @@ export function PatientSearchActionsDialog({
                         onChange={e => setForceJustification(e.target.value)}
                         className="text-xs min-h-[72px]"
                       />
+                      {/* Popup esclarecedor + declaração de ciência (23/07/2026,
+                          pedido do gestor): a ação NÃO cria um atendimento
+                          paralelo — ela ENCERRA o anterior. O gestor precisa
+                          declarar ciência disso antes de chegar na senha. */}
+                      <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2.5 space-y-1.5">
+                        <p className="text-[11px] font-semibold text-destructive">
+                          O que esta ação faz
+                        </p>
+                        <ul className="text-[10px] text-foreground/80 space-y-1 list-disc pl-3.5">
+                          <li>
+                            <b>Encerra</b> o atendimento atual
+                            {activeEncounterInfo?.encounterCode ? ` #${activeEncounterInfo.encounterCode}` : ""}
+                            {activeEncounterInfo?.bedNumber ? ` (leito ${activeEncounterInfo.bedNumber})` : ""} — ele deixa
+                            de ser o atendimento ativo do paciente.
+                          </li>
+                          <li>
+                            O leito anterior fica <b>sinalizado para desalocação</b>, a ser concluída
+                            pelo menu Movimentações.
+                          </li>
+                          <li>
+                            Abre um <b>novo atendimento</b>. O histórico clínico do anterior é
+                            preservado e continua acessível pelo Histórico — mas <b>não migra</b> para
+                            o novo.
+                          </li>
+                          <li>
+                            Sua identidade, a justificativa e o atendimento encerrado ficam
+                            <b> registrados em auditoria</b>.
+                          </li>
+                        </ul>
+                        <label className="flex items-start gap-2 pt-1 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={forceAcknowledged}
+                            onChange={(e) => setForceAcknowledged(e.target.checked)}
+                            className="mt-0.5 h-3 w-3 shrink-0 accent-destructive cursor-pointer"
+                          />
+                          <span className="text-[10px] text-foreground leading-snug">
+                            Declaro estar ciente de que o atendimento atual será encerrado e assumo a
+                            responsabilidade por esta correção.
+                          </span>
+                        </label>
+                      </div>
+
                       <Button
                         variant="destructive"
                         size="sm"
                         className="w-full"
-                        disabled={forceJustification.trim().length < 20}
+                        disabled={forceJustification.trim().length < 20 || !forceAcknowledged}
                         onClick={() => setAskForcePassword(true)}
                       >
-                        Confirmar abertura forçada
+                        Encerrar atendimento atual e abrir novo
                       </Button>
                     </div>
                   )}
@@ -722,9 +797,9 @@ export function PatientSearchActionsDialog({
       <PasswordConfirmDialog
         open={askForcePassword}
         onOpenChange={(o) => setAskForcePassword(o)}
-        title="Confirmar abertura forçada de atendimento"
-        description={`Ação restrita a gestor/admin. Digite sua senha para abrir um NOVO atendimento para ${patient?.full_name ?? "este paciente"} mesmo havendo um atendimento ativo. A justificativa e sua identidade serão registradas em auditoria.`}
-        actionLabel="Confirmar abertura forçada"
+        title="Encerrar atendimento atual e abrir novo"
+        description={`Ação restrita a gestor/admin. Digite sua senha para ENCERRAR o atendimento ativo${activeEncounterInfo?.encounterCode ? ` #${activeEncounterInfo.encounterCode}` : ""} de ${patient?.full_name ?? "este paciente"} e abrir um novo em seu lugar. O leito anterior ficará sinalizado para desalocação. A justificativa, sua identidade e o atendimento encerrado serão registrados em auditoria.`}
+        actionLabel="Encerrar e abrir novo"
         onConfirmed={handleForceConfirmed}
       />
     </>
