@@ -197,36 +197,55 @@ export default function MonitoramentoClinicoPage() {
   }, [selectedUnit, selectedState]);
 
   // Load vital records
+  //
+  // Busca pelo ATENDIMENTO, não pelo leito. Reportado pelos testes (item 4.6):
+  // após transferência interna os sinais vitais sumiam da tela. O dado estava
+  // correto no banco (o insert carimba encounter_id), mas a LEITURA filtrava
+  // por patient_id — que é a linha-LEITO, e muda na transferência. Mesmo padrão
+  // já aplicado no useReceituario. Fallback por patient_id cobre registros
+  // legados sem encounter_id e o caso de não haver atendimento ativo (alta).
+  // (Correção 23/07/2026.)
   useEffect(() => {
     if (!selectedPatientId) { setRecords([]); return; }
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+
     const load = async () => {
       setLoading(true);
       const since = subHours(new Date(), hoursRange).toISOString();
-      const { data } = await supabase
+      const encId = await resolveActiveEncounterId(selectedPatientId);
+      if (cancelled) return;
+
+      let q = supabase
         .from("vital_signs")
         .select("*")
-        .eq("patient_id", selectedPatientId)
         .gte("recorded_at", since)
         .order("recorded_at", { ascending: true });
+      q = encId
+        ? q.or(`encounter_id.eq.${encId},and(encounter_id.is.null,patient_id.eq.${selectedPatientId})`)
+        : q.eq("patient_id", selectedPatientId);
+
+      const { data } = await q;
+      if (cancelled) return;
       if (data) setRecords(data as unknown as VitalRecord[]);
       setLoading(false);
+
+      // Realtime segue o mesmo critério da busca.
+      channel = supabase
+        .channel(`vitals-${encId ?? selectedPatientId}`)
+        .on("postgres_changes", {
+          event: "INSERT",
+          schema: "public",
+          table: "vital_signs",
+          filter: encId ? `encounter_id=eq.${encId}` : `patient_id=eq.${selectedPatientId}`,
+        }, (payload) => {
+          setRecords(prev => [...prev, payload.new as unknown as VitalRecord]);
+        })
+        .subscribe();
     };
     load();
 
-    // Realtime subscription
-    const channel = supabase
-      .channel(`vitals-${selectedPatientId}`)
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "vital_signs",
-        filter: `patient_id=eq.${selectedPatientId}`,
-      }, (payload) => {
-        setRecords(prev => [...prev, payload.new as unknown as VitalRecord]);
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    return () => { cancelled = true; if (channel) supabase.removeChannel(channel); };
   }, [selectedPatientId, hoursRange]);
 
   const selectedPatient = patients.find(p => p.id === selectedPatientId);
