@@ -15,10 +15,16 @@ export interface DeviceCatalogItem {
    */
   detailLabel?: string;
   /**
-   * Sugestões de subtipo. A lista é ABERTA — renderizada como <datalist>, o
-   * profissional pode escolher uma sugestão ou digitar um valor próprio.
+   * Sugestões de subtipo, oferecidas num select. A lista é ABERTA: há sempre
+   * a opção "Outro (digitar)" para um tipo fora do catálogo.
    */
   detailOptions?: string[];
+  /**
+   * Dispositivo que o paciente pode ter em mais de uma unidade ao mesmo tempo
+   * (ex.: dois drenos). Quando true, o checkbox vira apenas o INTERRUPTOR e
+   * cada unidade vira uma linha própria, uniforme, com tipo + data + lixeira.
+   */
+  multiple?: boolean;
 }
 
 export const DEVICES_CATALOG: DeviceCatalogItem[] = [
@@ -36,6 +42,7 @@ export const DEVICES_CATALOG: DeviceCatalogItem[] = [
     // Sem `hint`: o subtipo agora e declarado no proprio campo detailLabel/
     // detailOptions. Manter "(Torácico / abdominal)" ao lado do rotulo fazia
     // parecer valor ja preenchido, competindo com o campo descritivo.
+    multiple: true,
     detailLabel: "Tipo de dreno",
     detailOptions: [
       "Torácico (selo d'água)",
@@ -53,37 +60,6 @@ export const DEVICES_CATALOG: DeviceCatalogItem[] = [
   },
 ];
 
-/** Normaliza p/ comparação: sem acento, minúsculo, sem espaço nas pontas. */
-function normalizeLabel(s: string): string {
-  return s
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
-
-/**
- * Dado um rótulo digitado livremente num dispositivo customizado, devolve o
- * item de catálogo cujas sugestões de subtipo se aplicam.
- *
- * Existe porque o catálogo tem UM checkbox por dispositivo, mas o paciente
- * pode ter mais de um do mesmo tipo — dois drenos, por exemplo. O segundo é
- * cadastrado como customizado, e sem isto ele ficaria sem campo de tipo e sem
- * sugestão nenhuma, enquanto o primeiro tem os dois.
- *
- * Casa por inclusão sobre o texto normalizado, então "Dreno", "dreno 2",
- * "Dreno torácico E" e "DRENO DE TÓRAX" todos encontram o item `dreno`.
- */
-export function suggestDetailForLabel(
-  label: string
-): DeviceCatalogItem | undefined {
-  const n = normalizeLabel(label);
-  if (!n) return undefined;
-  return DEVICES_CATALOG.find(
-    (c) => c.detailOptions && c.detailOptions.length > 0 && n.includes(normalizeLabel(c.label))
-  );
-}
-
 export interface EvolutionDevice {
   /** ID do catálogo OU UUID livre quando custom. */
   id: string;
@@ -91,6 +67,13 @@ export interface EvolutionDevice {
   /** ISO ou BR DD/MM/AAAA. */
   insertedAt: string;
   custom?: boolean;
+  /**
+   * Para dispositivos `multiple`, aponta o item de catálogo desta unidade.
+   * O `id` passa a identificar a INSTÂNCIA (um dreno específico), não o tipo.
+   * Ausente em registros antigos e em dispositivos de unidade única — ver
+   * deviceCatalogId(), que cobre os dois casos.
+   */
+  catalogId?: string;
   /**
    * Subtipo do dispositivo — ex.: tipo de dreno (torácico, DVE, Penrose...).
    * Texto livre, opcional. Persistido dentro de soap_data (JSONB), portanto
@@ -109,6 +92,29 @@ export function formatDeviceLabel(
   const detail = d.detail?.trim();
   return detail ? `${d.label} — ${detail}` : d.label;
 }
+
+/**
+ * Item de catálogo ao qual o dispositivo pertence, ou undefined se for
+ * customizado/desconhecido.
+ *
+ * RETROCOMPATIBILIDADE: antes de dreno virar `multiple`, a instância única era
+ * gravada com `id` igual ao id do catálogo e sem `catalogId`. Evoluções
+ * salvas naquele formato continuam sendo reconhecidas aqui — é por isso que
+ * a leitura nunca deve comparar `d.id` com o id do catálogo diretamente.
+ */
+export function deviceCatalogId(d: EvolutionDevice): string | undefined {
+  if (d.catalogId) return d.catalogId;
+  if (d.custom) return undefined;
+  return DEVICES_CATALOG.some((c) => c.id === d.id) ? d.id : undefined;
+}
+
+/** Gera id único para uma nova unidade de dispositivo múltiplo. */
+export function makeDeviceInstanceId(catalogId: string): string {
+  return `${catalogId}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+/** Rótulo da opção de texto livre no select de subtipo. */
+export const DETAIL_OTHER_LABEL = "Outro (digitar)";
 
 /** Limiares institucionais para alerta visual de tempo de permanência. */
 export const DEVICE_ALERT_AMBER_DAYS = 7;
