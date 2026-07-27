@@ -64,6 +64,7 @@ import { NewPrescriptionChoiceDialog } from "@/components/NewPrescriptionChoiceD
 import { ExtraPrescriptionChooserDialog } from "@/components/ExtraPrescriptionChooserDialog";
 import { printExtraPrescription } from "@/lib/printExtraPrescription";
 import { PostValidationPrintDialog } from "@/components/PostValidationPrintDialog";
+import { buildPrescriptionPrintOptions } from "@/lib/prescriptionPrintOptions";
 import { abbrevPresentation, abbrevRoute } from "@/lib/printAbbreviations";
 import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
@@ -7094,26 +7095,34 @@ const PrescricaoPage = () => {
     setPrintGuidesOpen(true);
   };
 
-  const executePrintSelection = () => {
+  /**
+   * `sel` explícito existe para a etapa pós-validação, que tem as próprias
+   * caixas: setState é assíncrono, então ler o estado aqui logo após marcá-lo
+   * pegaria o valor antigo. Sem argumento, cai no estado (diálogo de guias).
+   */
+  const executePrintSelection = (sel?: { prescription: boolean; atm: boolean; psy: boolean }) => {
     setPrintGuidesOpen(false);
+    const querPrescricao = sel ? sel.prescription : printPrescription;
+    const querAtm = sel ? sel.atm : printGuideAtm;
+    const querPsy = sel ? sel.psy : printGuidePsy;
     const openPsy = () => { setPsychotropicFormMode('print_direct'); setPsychotropicFormOpen(true); };
     const afterPrintHandler = () => {
       window.removeEventListener('afterprint', afterPrintHandler);
-      if (printGuideAtm) setTimeout(() => setAntimicrobialGuideOpen(true), 200);
-      if (printGuidePsy) setTimeout(openPsy, printGuideAtm ? 1000 : 200);
+      if (querAtm) setTimeout(() => setAntimicrobialGuideOpen(true), 200);
+      if (querPsy) setTimeout(openPsy, querAtm ? 1000 : 200);
     };
-    if (printPrescription) {
+    if (querPrescricao) {
       window.addEventListener('afterprint', afterPrintHandler);
       // Fallback caso o navegador não dispare afterprint
       setTimeout(() => {
         window.removeEventListener('afterprint', afterPrintHandler);
-        if (printGuideAtm && !antimicrobialGuideOpen) setAntimicrobialGuideOpen(true);
-        if (printGuidePsy && !psychotropicFormOpen) openPsy();
+        if (querAtm && !antimicrobialGuideOpen) setAntimicrobialGuideOpen(true);
+        if (querPsy && !psychotropicFormOpen) openPsy();
       }, 2500);
       doPrintPrescription();
     } else {
-      if (printGuideAtm) setTimeout(() => setAntimicrobialGuideOpen(true), 200);
-      if (printGuidePsy) setTimeout(openPsy, printGuideAtm ? 1000 : 200);
+      if (querAtm) setTimeout(() => setAntimicrobialGuideOpen(true), 200);
+      if (querPsy) setTimeout(openPsy, querAtm ? 1000 : 200);
     }
   };
 
@@ -9883,36 +9892,50 @@ const PrescricaoPage = () => {
               Esta prescrição contém itens com guias regulatórias associadas. Selecione o que deseja imprimir.
             </DialogDescription>
           </DialogHeader>
+          {/* Renderizado a partir de buildPrescriptionPrintOptions — o MESMO
+              catálogo que a etapa pós-validação usa. Antes os três rótulos
+              existiam duplicados aqui em JSX: mudar um e esquecer o outro faria
+              os dois diálogos descreverem a mesma escolha de formas
+              diferentes. */}
           <div className="space-y-3 py-2">
-            <label className="flex items-start gap-2.5 p-2.5 rounded-md border border-border hover:bg-muted/30 cursor-pointer">
-              <Checkbox checked={printPrescription} onCheckedChange={(v) => setPrintPrescription(!!v)} className="mt-0.5" />
-              <div className="text-xs">
-                <div className="font-semibold">Prescrição médica</div>
-                <div className="text-muted-foreground">Documento principal validado.</div>
-              </div>
-            </label>
-            {hasActiveAtb && (
-              <label className="flex items-start gap-2.5 p-2.5 rounded-md border border-[hsl(217,55%,82%)] dark:border-[hsl(217,55%,30%)]/40 bg-[hsl(217,55%,96%)]/60 dark:bg-[hsl(217,55%,16%)]/15 hover:bg-[hsl(217,55%,94%)]/80 cursor-pointer">
-                <Checkbox checked={printGuideAtm} onCheckedChange={(v) => setPrintGuideAtm(!!v)} className="mt-0.5" />
-                <div className="text-xs">
-                  <div className="font-semibold text-[hsl(217,72%,32%)] dark:text-[hsl(217,55%,78%)]">Guia de Antimicrobianos (CCIH / Norma Zero)</div>
-                  <div className="text-muted-foreground">Abre a Guia ATM com seus antibióticos.</div>
-                </div>
-              </label>
-            )}
-            {hasActivePsy && (
-              <label className="flex items-start gap-2.5 p-2.5 rounded-md border border-[hsl(217,55%,82%)] dark:border-[hsl(217,55%,30%)]/40 bg-[hsl(217,55%,96%)]/60 dark:bg-[hsl(217,55%,16%)]/15 hover:bg-[hsl(217,55%,94%)]/80 cursor-pointer">
-                <Checkbox checked={printGuidePsy} onCheckedChange={(v) => setPrintGuidePsy(!!v)} className="mt-0.5" />
-                <div className="text-xs">
-                  <div className="font-semibold text-[hsl(217,72%,32%)] dark:text-[hsl(217,55%,78%)]">Guia de Psicotrópicos (Portaria 344)</div>
-                  <div className="text-muted-foreground">Abre a Guia de psicotrópicos para impressão.</div>
-                </div>
-              </label>
-            )}
+            {(buildPrescriptionPrintOptions(hasActiveAtb, hasActivePsy) ?? []).map((opt) => {
+              const regulatoria = opt.id !== "prescricao";
+              const marcado =
+                opt.id === "prescricao" ? printPrescription
+                : opt.id === "atm" ? printGuideAtm
+                : printGuidePsy;
+              const alternar = (v: boolean) => {
+                if (opt.id === "prescricao") setPrintPrescription(v);
+                else if (opt.id === "atm") setPrintGuideAtm(v);
+                else setPrintGuidePsy(v);
+              };
+              return (
+                <label
+                  key={opt.id}
+                  className={cn(
+                    "flex items-start gap-2.5 p-2.5 rounded-md border cursor-pointer",
+                    regulatoria
+                      ? "border-[hsl(217,55%,82%)] dark:border-[hsl(217,55%,30%)]/40 bg-[hsl(217,55%,96%)]/60 dark:bg-[hsl(217,55%,16%)]/15 hover:bg-[hsl(217,55%,94%)]/80"
+                      : "border-border hover:bg-muted/30",
+                  )}
+                >
+                  <Checkbox checked={marcado} onCheckedChange={(v) => alternar(!!v)} className="mt-0.5" />
+                  <div className="text-xs">
+                    <div className={cn(
+                      "font-semibold",
+                      regulatoria && "text-[hsl(217,72%,32%)] dark:text-[hsl(217,55%,78%)]",
+                    )}>
+                      {opt.label}
+                    </div>
+                    <div className="text-muted-foreground">{opt.description}</div>
+                  </div>
+                </label>
+              );
+            })}
           </div>
           <DialogFooter className="gap-2">
             <Button variant="ghost" size="sm" onClick={() => setPrintGuidesOpen(false)}>Cancelar</Button>
-            <Button size="sm" onClick={executePrintSelection} className="gap-1.5" disabled={!printPrescription && !printGuideAtm && !printGuidePsy}>
+            <Button size="sm" onClick={() => executePrintSelection()} className="gap-1.5" disabled={!printPrescription && !printGuideAtm && !printGuidePsy}>
               <Printer className="h-3.5 w-3.5" /> Imprimir selecionados
             </Button>
           </DialogFooter>
@@ -10592,8 +10615,23 @@ const PrescricaoPage = () => {
         onOpenChange={(v) => { if (!v) setJustValidatedPrescription(null); }}
         documentLabel="Prescrição"
         validatedAt={justValidatedPrescription}
-        note="Sairão junto as guias regulatórias aplicáveis (ATM / Psicotrópicos)."
-        onPrint={() => handlePrint()}
+        // Mesmas opções do diálogo do botão de impressora. Guia regulatória
+        // NUNCA vem marcada: quem decide o que sai é o usuário, e a etapa não
+        // pode prometer que "sai junto".
+        options={buildPrescriptionPrintOptions(hasActiveAtb, hasActivePsy)}
+        onPrint={(sel) => {
+          const psy = sel.includes('psy');
+          // Mesmo bloqueio do fluxo do botão: psicotrópico sem tipo de
+          // notificação definido não pode gerar guia.
+          if (psy && controlledWithoutType.length > 0) {
+            toast.error("Defina o tipo de notificação dos medicamentos controlados antes de imprimir", {
+              description: controlledWithoutType.map(i => i.name).join(', '),
+            });
+            return;
+          }
+          if (!hasActiveAtb && !hasActivePsy) { doPrintPrescription(); return; }
+          executePrintSelection({ prescription: sel.includes('prescricao'), atm: sel.includes('atm'), psy });
+        }}
       />
 
       <PreValidationAlertDialog
