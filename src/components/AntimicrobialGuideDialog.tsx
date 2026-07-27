@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { getReconstitutionDefault, hasReconstitutionSuggestion } from "@/lib/ivMedicationFlags";
 import { logReconstitutionFeedback } from "@/lib/auditReconstitution";
-import { INTERVAL_GROUPS, PRESCRIPTION_INTERVAL_VALUES } from "@/lib/prescriptionIntervals";
+import { ANTIMICROBIAL_INTERVAL_GROUPS, ANTIMICROBIAL_INTERVAL_VALUES } from "@/lib/prescriptionIntervals";
 import { DOSE_UNITS, parseDoseLegacy, formatDose } from "@/lib/doseUnits";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -882,7 +882,7 @@ export function AntimicrobialGuideDialog({
                           <SelectValue placeholder="Selecionar..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {INTERVAL_GROUPS.map(g => (
+                          {ANTIMICROBIAL_INTERVAL_GROUPS.map(g => (
                             <React.Fragment key={g.key}>
                               <div className="text-[9px] uppercase tracking-wider text-muted-foreground px-2 pt-1.5 pb-0.5">{g.title}</div>
                               {g.items.map(i => (
@@ -891,7 +891,7 @@ export function AntimicrobialGuideDialog({
                             </React.Fragment>
                           ))}
                           {/* Compatibilidade: se o valor atual não está na lista canônica, mostra para preservar */}
-                          {entry.posology && !PRESCRIPTION_INTERVAL_VALUES.includes(entry.posology) && (
+                          {entry.posology && !ANTIMICROBIAL_INTERVAL_VALUES.includes(entry.posology) && (
                             <SelectItem value={entry.posology} className="text-xs italic">
                               {entry.posology} (legado)
                             </SelectItem>

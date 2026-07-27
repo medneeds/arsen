@@ -133,6 +133,57 @@ export const INTERVAL_GROUPS: Array<{
   { key: 'condicional', title: 'Condicional',         items: PRESCRIPTION_INTERVALS.filter(i => i.group === 'condicional') },
 ];
 
+// ── Recorte antimicrobiano ──────────────────────────────────────────────────
+/**
+ * Intervalos que NÃO existem em esquema antimicrobiano.
+ *
+ * 1/1h, 2/2h e 3/3h são aritmeticamente coerentes (24x, 12x e 8x/dia) e
+ * legítimos em outros contextos — MONITORIZAÇÃO usa 1/1h o tempo todo (sinais
+ * vitais, diurese horária, balanço hídrico), e hidratação venosa em 24 fases
+ * também. Por isso continuam na lista geral.
+ *
+ * Para antimicrobiano, porém, não existem: o esquema mais frequente em uso
+ * clínico é 4/4h (penicilina G cristalina, oxacilina). Oferecê-los no guia ATB
+ * é convite a erro de prescrição — e num item em que o erro tem custo alto,
+ * entre toxicidade e indução de resistência.
+ *
+ * Também ficam de fora S/N e ACM. Antimicrobiano não se prescreve "se
+ * necessário" nem "a critério médico": esquema em aberto é exatamente o que o
+ * controle de antimicrobianos existe para impedir — sem intervalo fixo não há
+ * dose-alvo, não há previsão de término e o aprazamento não tem o que calcular.
+ * (Confirmado pelo gestor em 27/07/2026.)
+ *
+ * Isto NÃO afeta o modificador S/N da prescrição geral: lá ele funciona como
+ * SUFIXO ("6/6h S/N", analgesia clássica) via withPRN/hasPRN, mecanismo que o
+ * guia ATB não usa — ele tem apenas o Select simples.
+ *
+ * O recorte vive AQUI, junto da lista canônica, e não no componente: manter a
+ * regra ao lado do dado evita a "regra espalhada" que já custou caro neste
+ * projeto.
+ */
+const NON_ANTIMICROBIAL_INTERVALS: ReadonlySet<string> = new Set([
+  '1/1h', '2/2h', '3/3h',   // intra-dia curto demais p/ antimicrobiano
+  'S/N', 'ACM',             // esquema em aberto — vedado em antimicrobiano
+]);
+
+/** Intervalos aplicáveis a antimicrobianos. */
+export const ANTIMICROBIAL_INTERVALS: PrescriptionInterval[] =
+  PRESCRIPTION_INTERVALS.filter(i => !NON_ANTIMICROBIAL_INTERVALS.has(i.value));
+
+/**
+ * Valores válidos para antimicrobiano. Usado pelo guia ATB para decidir se a
+ * posologia gravada é "legado" — um registro antigo com 1/1h continua visível
+ * e editável, marcado como legado, em vez de sumir do campo.
+ */
+export const ANTIMICROBIAL_INTERVAL_VALUES: readonly string[] =
+  ANTIMICROBIAL_INTERVALS.map(i => i.value);
+
+/** Agrupamento para o <Select> do guia ATB. Grupo que esvazia é omitido. */
+export const ANTIMICROBIAL_INTERVAL_GROUPS: typeof INTERVAL_GROUPS =
+  INTERVAL_GROUPS
+    .map(g => ({ ...g, items: g.items.filter(i => !NON_ANTIMICROBIAL_INTERVALS.has(i.value)) }))
+    .filter(g => g.items.length > 0);
+
 /**
  * Compatibilidade com prescrições gravadas ANTES da unificação (22/07/2026).
  *
