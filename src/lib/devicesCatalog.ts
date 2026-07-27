@@ -33,7 +33,9 @@ export const DEVICES_CATALOG: DeviceCatalogItem[] = [
   {
     id: "dreno",
     label: "Dreno",
-    hint: "Torácico / abdominal",
+    // Sem `hint`: o subtipo agora e declarado no proprio campo detailLabel/
+    // detailOptions. Manter "(Torácico / abdominal)" ao lado do rotulo fazia
+    // parecer valor ja preenchido, competindo com o campo descritivo.
     detailLabel: "Tipo de dreno",
     detailOptions: [
       "Torácico (selo d'água)",
