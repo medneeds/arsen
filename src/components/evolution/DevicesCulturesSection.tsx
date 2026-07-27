@@ -482,7 +482,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
             variant="outline"
             size="sm"
             className="h-7 gap-1.5 text-[11px]"
-            onClick={addCustom}
+            onClick={() => addCustom()}
           >
             <Plus className="h-3 w-3" /> Adicionar outro
           </Button>
