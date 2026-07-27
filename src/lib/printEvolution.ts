@@ -11,6 +11,8 @@ import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/prin
 import { supabase } from "@/integrations/supabase/client";
 import { toRichHtml, richHtmlToPlainText } from "@/components/ui/rich-text-editor";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
+import { formatDeviceLabel, deviceAlertTone } from "@/lib/devicesCatalog";
+import { calcDIH, parseAdmissionDate } from "@/lib/dihCalc";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
 
 /** Renderiza HTML rico (sanitizado) preservando formatação dos campos editáveis. */
@@ -304,6 +306,46 @@ export const printEvolution = async (
           ? `<h2 class="nz-section">Sinais Vitais</h2><div style="padding:5pt 7pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8pt">${vitalsRow}</div>`
           : ""
       }
+      ${(() => {
+        // ── Dispositivos invasivos — compacto, linha corrida ─────────────
+        // A seção só existe se houver dispositivo com rótulo utilizável, e
+        // cada item mostra APENAS o que está preenchido: sem data não sai
+        // data, sem data não há Dn. Nada de campo vazio ocupando papel.
+        //
+        // Fonte do rótulo é formatDeviceLabel(), a MESMA da tela — inclui o
+        // subtipo quando houver ("Dreno — Torácico"). Regra num lugar só.
+        //
+        // Defesa: registro gravado entre 1d9a8b20 e ab9f580a pode ter `label`
+        // como objeto de evento (regressão do onClick). Item sem rótulo string
+        // é descartado em vez de imprimir "[object Object]" no prontuário.
+        const soapExtras = s as { devices?: unknown };
+        const devs: unknown[] = Array.isArray(soapExtras.devices) ? soapExtras.devices : [];
+        const itens = devs.map((raw) => {
+          const d = raw as { label?: unknown; detail?: unknown; insertedAt?: unknown };
+          const rotuloBase = typeof d?.label === "string" ? d.label.trim() : "";
+          if (!rotuloBase) return "";
+          const subtipo = typeof d?.detail === "string" ? d.detail : undefined;
+          const rotulo = formatDeviceLabel({ label: rotuloBase, detail: subtipo });
+
+          const inserido = typeof d?.insertedAt === "string" ? d.insertedAt.trim() : "";
+          const dt = parseAdmissionDate(inserido);
+          const dataTxt = dt ? format(dt, "dd/MM", { locale: ptBR }) : "";
+          const dias = inserido ? calcDIH(inserido) : null;
+          const tom = deviceAlertTone(dias);
+          const cor = tom === "red" ? "#b91c1c" : tom === "amber" ? "#b45309" : "#047857";
+
+          return `<span style="white-space:nowrap">${escape(rotulo)}`
+            + (dataTxt ? ` <span style="color:#64748b">${escape(dataTxt)}</span>` : "")
+            + (dias !== null ? ` <strong style="color:${cor}">D${dias}</strong>` : "")
+            + `</span>`;
+        }).filter(Boolean);
+
+        if (itens.length === 0) return "";
+        return `<h2 class="nz-section">Dispositivos Invasivos</h2>`
+          + `<div style="padding:5pt 7pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8pt;line-height:1.6">`
+          + itens.join(` <span style="color:#cbd5e1">&middot;</span> `)
+          + `</div>`;
+      })()}
       <h2 class="nz-section">Evolução</h2>
       <div class="nz-rich" style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8.5pt;line-height:1.35">
         ${evolucaoOut}
