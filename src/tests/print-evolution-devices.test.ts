@@ -13,7 +13,9 @@
  * Requisitos do gestor: COMPACTO, sem ocupar muito espaço, e a seção só
  * aparece se houver conteúdo — campo vazio não ocupa papel.
  *
- * Este teste cobre a REGRA de montagem da linha (a mesma lógica do impresso),
+ * Culturas (culturesHtml) sofria do mesmo esquecimento e entrou junto.
+ *
+ * Este teste cobre a REGRA de montagem (a mesma lógica do impresso),
  * já que printEvolution depende de Supabase e window e não roda sob tsx.
  *
  * Dados fictícios | Zero impacto em produção.
@@ -123,6 +125,42 @@ console.log("\n=== Vários dispositivos numa linha só (compacto) ===");
   check("4 dispositivos viram 4 itens", itens.length === 4, `${itens.length}`);
   check("os dois drenos aparecem com subtipos distintos", itens[1] !== itens[2], itens.join(" | "));
   check("SVD sem data aparece só com rótulo", itens[3] === "SVD", itens[3]);
+}
+
+console.log("\n=== Culturas: só sai se houver conteúdo real ===");
+console.log("     (rich text vazio guarda '<p></p>' — truthy, mas sem conteúdo)");
+{
+  /**
+   * Espelha a regra do impresso para culturesHtml.
+   *
+   * Não dá para chamar a função real aqui: richHtmlToPlainText usa
+   * document.createElement e DOMPurify.sanitize, e o tsx roda sem DOM.
+   * Shimar os dois seria construir um navegador falso — mais frágil que o
+   * espelho. O que este teste garante é a REGRA (rich text sem conteúdo não
+   * gera seção); a implementação real é a mesma usada pela tela, que já
+   * roda em produção há tempo.
+   */
+  const temCulturas = (raw: unknown): boolean => {
+    if (typeof raw !== "string") return false;
+    const semTags = raw
+      .replace(/<[^>]*>/g, "")
+      .replace(/&nbsp;/g, " ")
+      .trim();
+    return semTags.length > 0;
+  };
+
+  check("undefined -> sem seção", !temCulturas(undefined));
+  check("string vazia -> sem seção", !temCulturas(""));
+  check("só espaços -> sem seção", !temCulturas("   "));
+  check("parágrafo vazio '<p></p>' -> sem seção", !temCulturas("<p></p>"));
+  check("parágrafo com &nbsp; -> sem seção", !temCulturas("<p>&nbsp;</p>"));
+  check("objeto (dado corrompido) -> sem seção", !temCulturas({ foo: 1 }));
+
+  check("texto simples -> COM seção", temCulturas("Hemocultura 22/07: negativa"));
+  check(
+    "rich text com conteúdo -> COM seção",
+    temCulturas("<p>Urocultura: <strong>E. coli</strong> multissensível</p>"),
+  );
 }
 
 console.log(`\n───────────────────────────────────────────`);

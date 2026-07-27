@@ -346,6 +346,22 @@ export const printEvolution = async (
           + itens.join(` <span style="color:#cbd5e1">&middot;</span> `)
           + `</div>`;
       })()}
+      ${(() => {
+        // ── Culturas — mesma regra dos dispositivos: só sai se houver ─────
+        // culturesHtml é irmão de devices dentro do soap_data e sofria do
+        // mesmo esquecimento: existia na tela e em nenhum impresso.
+        //
+        // A checagem usa richHtmlToPlainText porque o campo é rich text — um
+        // editor "vazio" costuma guardar "<p></p>", que é truthy como string
+        // mas não tem conteúdo algum. Testar a string crua imprimiria um
+        // cabeçalho seguido de nada.
+        const culturas = (s as { culturesHtml?: unknown }).culturesHtml;
+        if (typeof culturas !== "string") return "";
+        const html = toRichHtml(culturas);
+        if (!richHtmlToPlainText(html).trim()) return "";
+        return `<h2 class="nz-section">Culturas</h2>`
+          + `<div class="nz-rich" style="padding:5pt 7pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8pt;line-height:1.35">${html}</div>`;
+      })()}
       <h2 class="nz-section">Evolução</h2>
       <div class="nz-rich" style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8.5pt;line-height:1.35">
         ${evolucaoOut}
