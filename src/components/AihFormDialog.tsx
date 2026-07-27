@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { asUuidOrNull } from "@/lib/utils";
+import { registrarSolicitacao } from "@/lib/registrarSolicitacao";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -251,51 +252,64 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
     toast.info("Formulário limpo");
   };
 
-  // Registra o rastro da solicitação de regulação no histórico do paciente.
-  // Só para origin="regulacao" — internação tem outro fluxo. Não bloqueia a impressão.
-  const registerRegulacaoTrace = async () => {
+  // Registra a solicitação de regulação no histórico do paciente.
+  // Só para origin="regulacao" — internação tem outro fluxo.
+  //
+  // ANTES era "rastro" e falhava em silêncio (só console.error). O resultado
+  // prático era um histórico furado sem ninguém saber que estava furado.
+  // Agora BLOQUEIA: solicitação que não gravou não aconteceu, e a impressão
+  // não pode sugerir o contrário.
+  const registrarRegulacao = async (): Promise<boolean> => {
+    if (origin !== "regulacao") return true; // fora deste fluxo, nada a registrar
+    const validPid = asUuidOrNull(patientId);
+    if (!validPid || !user?.id || !currentHospital?.id || !currentState?.id) {
+      toast.error("Não foi possível registrar a solicitação", {
+        description: "Paciente sem vínculo válido ou sessão incompleta.",
+      });
+      return false;
+    }
+    const tipoLabel = regulacaoType === "transferencia" ? "Transferência"
+      : regulacaoType === "vaga" ? "Vaga de maior complexidade"
+      : regulacaoType === "externo" ? "Procedimento/Exame externo"
+      : "Regulação";
+    const requesterName = (() => {
+      const nm = (doctorName || "").trim() || user.email?.split("@")[0] || "Médico";
+      const crm = (doctorCRM || "").trim();
+      return crm ? `${nm} — CRM ${crm}` : nm;
+    })();
+    const procLabel = procedureDescription
+      ? (procedureCode ? `${procedureDescription} (${procedureCode})` : procedureDescription)
+      : tipoLabel;
     try {
-      if (origin !== "regulacao") return;
-      const validPid = asUuidOrNull(patientId);
-      if (!validPid || !user?.id || !currentHospital?.id || !currentState?.id) return;
-      const tipoLabel = regulacaoType === "transferencia" ? "Transferência"
-        : regulacaoType === "vaga" ? "Vaga de maior complexidade"
-        : regulacaoType === "externo" ? "Procedimento/Exame externo"
-        : "Regulação";
-      const requesterName = (() => {
-        const nm = (doctorName || "").trim() || user.email?.split("@")[0] || "Médico";
-        const crm = (doctorCRM || "").trim();
-        return crm ? `${nm} — CRM ${crm}` : nm;
-      })();
-      const procLabel = procedureDescription
-        ? (procedureCode ? `${procedureDescription} (${procedureCode})` : procedureDescription)
-        : tipoLabel;
-      const payload: any = {
-        category: "regulacao",
-        patient_id: validPid,
-        patient_name: aihPatientName.trim(),
+      await registrarSolicitacao({
+        category: "regulacao", // taxonomia preservada — lida por useNirMetrics e pelos filtros
+        patientId: validPid,
+        patientName: aihPatientName,
         items: [{ name: `${tipoLabel} — ${procLabel}` }],
-        clinical_indication: diagnosisInitial?.trim() || null,
+        clinicalIndication: diagnosisInitial,
         priority: caraterInternacao === "urgencia" ? "urgente" : "rotina",
         notes: `[REGULAÇÃO — ${tipoLabel}] AIH gerada`,
-        requested_by: user.id,
-        requested_by_name: requesterName,
-        hospital_unit_id: currentHospital.id,
-        state_id: currentState.id,
-        status: "pending", // Solicitado → desfecho (Regulado/Transferido/Negado) atualizado depois
-      };
-      const { error } = await (supabase as any).from("exam_requests").insert(payload);
-      if (error) console.error("[Regulação] Falha ao registrar rastro:", error);
+        requestedBy: user.id,
+        requestedByName: requesterName,
+        hospitalUnitId: currentHospital.id,
+        stateId: currentState.id,
+      });
+      return true;
     } catch (err) {
-      console.error("[Regulação] Erro ao registrar rastro:", err);
+      toast.error("Falha ao registrar a solicitação", {
+        description: err instanceof Error ? err.message : "Erro desconhecido. A AIH não foi impressa.",
+      });
+      return false;
     }
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!aihPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
     if (!procedureCode) { toast.error("Selecione um procedimento"); return; }
-    // Registra rastro de regulação (não-bloqueante) e imprime.
-    void registerRegulacaoTrace();
+    // Grava PRIMEIRO. Se falhar, nada é impresso — imprimir uma AIH que não
+    // ficou registrada produz papel sem contrapartida no sistema.
+    const ok = await registrarRegulacao();
+    if (!ok) return;
     window.print();
   };
 

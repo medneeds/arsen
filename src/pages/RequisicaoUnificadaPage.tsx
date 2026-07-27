@@ -41,6 +41,7 @@ import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { PrintableRequisitionGuide } from "@/components/PrintableRequisitionGuide";
 import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
 import { openPrintWindow } from "@/lib/printNormaZero";
+import { registrarSolicitacao } from "@/lib/registrarSolicitacao";
 import { useHospital } from "@/contexts/HospitalContext";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
@@ -689,19 +690,22 @@ const RequisicaoUnificadaPage = () => {
         notesContent = (notesContent ? notesContent + "\n\n" : "") + extraBlock;
       }
 
-      const payload = {
+      // Mesmo helper das fichas APAC e AIH — um ponto único de gravação.
+      // Esta ficha já bloqueava corretamente; o ganho aqui é não haver três
+      // montagens diferentes do mesmo payload, que foi como as outras duas
+      // acabaram divergindo (AIH nem gravava leito e setor).
+      await registrarSolicitacao({
         category: activeCategory,
-        // Somente persiste vínculo quando o ID for UUID real (evita mocks "uti2-01")
-        patient_id: asUuidOrNull(formPatientId),
-        patient_name: formPatientName.trim(),
-        patient_bed: formPatientBed.trim() || null,
-        patient_sector: formPatientSector.trim() || null,
+        patientId: formPatientId,
+        patientName: formPatientName,
+        patientBed: formPatientBed,
+        patientSector: formPatientSector,
         items: formSelectedItems.map(name => ({ name })),
-        clinical_indication: (activeCategory === "parecer" ? sanitizeRichHtml(formIndication) : formIndication.trim()) || null,
+        clinicalIndication: activeCategory === "parecer" ? sanitizeRichHtml(formIndication) : formIndication,
         priority: formPriority,
-        notes: notesContent || null,
-        requested_by: user.id,
-        requested_by_name: (() => {
+        notes: notesContent,
+        requestedBy: user.id,
+        requestedByName: (() => {
           const name = (doctor.fullName || "").trim()
             || (user.user_metadata?.full_name as string | undefined)?.trim()
             || user.user_metadata?.username
@@ -710,18 +714,9 @@ const RequisicaoUnificadaPage = () => {
           const crm = (doctor.crm || "").trim();
           return crm ? `${name} — CRM ${crm}` : name;
         })(),
-        hospital_unit_id: unitId,
-        state_id: stateId,
-        status: "pending",
-      };
-
-      console.log("[Requisicoes] Inserindo exam_request:", payload);
-
-      const { error } = await supabase.from("exam_requests").insert(payload as any);
-      if (error) {
-        console.error("[Requisicoes] Erro Supabase:", error);
-        throw error;
-      }
+        hospitalUnitId: unitId,
+        stateId: stateId,
+      });
       toast.success(`${CATEGORIES[activeCategory].shortLabel}: ${formSelectedItems.length} item(ns) solicitado(s)`);
       // Preserva paciente selecionado para encadear novas solicitações sem reabrir o picker.
       resetRequestFields();
@@ -2348,52 +2343,51 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     toast.info("Formulário limpo");
   };
 
-  // Registra o rastro da solicitação de procedimento no histórico do paciente.
-  // Complementar ao laudo — NUNCA bloqueia a impressão se o insert falhar.
-  const registerProcedureTrace = async () => {
+  // Registra a solicitação de procedimento no histórico do paciente.
+  //
+  // ANTES era "rastro": chamado com `void` DEPOIS de imprimir, e uma falha só
+  // gerava toast. Ou seja, o laudo saía impresso e podia não existir no
+  // sistema. Agora BLOQUEIA — gravar é o objetivo do ato, não efeito colateral.
+  const registrarProcedimento = async (): Promise<boolean> => {
+    if (!user?.id || !currentHospital?.id || !currentState?.id) {
+      toast.error("Não foi possível registrar a solicitação", {
+        description: "Contexto de unidade ou usuário ausente.",
+      });
+      return false;
+    }
+    const requesterName = (() => {
+      const nm = (doctorName || "").trim() || user.email?.split("@")[0] || "Médico";
+      const crm = (doctorCRM || "").trim();
+      return crm ? `${nm} — CRM ${crm}` : nm;
+    })();
     try {
-      // Requisitos mínimos para registrar o rastro na unidade.
-      if (!user?.id || !currentHospital?.id || !currentState?.id) {
-        toast.warning("Laudo impresso, mas não foi possível registrar em 'Solicitados' (contexto de unidade/usuário ausente)");
-        return;
-      }
-      const validPid = asUuidOrNull(patientId);
-      const requesterName = (() => {
-        const nm = (doctorName || "").trim() || user.email?.split("@")[0] || "Médico";
-        const crm = (doctorCRM || "").trim();
-        return crm ? `${nm} — CRM ${crm}` : nm;
-      })();
-      const payload = {
-        category: "procedimento",
-        patient_id: validPid,                              // FK → patients.id (pode ser null p/ paciente avulso)
-        patient_registry_id: patientRegistryId ?? null,    // FK → patient_registry.id (permanente)
-        patient_name: apacPatientName.trim(),
-        patient_bed: (patientBed || "").trim() || null,
-        patient_sector: (patientSector || "").trim() || null,
+      await registrarSolicitacao({
+        category: "procedimento", // taxonomia preservada
+        patientId,
+        patientRegistryId: patientRegistryId ?? null,
+        patientName: apacPatientName,
+        patientBed,
+        patientSector,
         items: selectedProcedures.map(p => ({ name: p.code ? `${p.name} (${p.code})` : p.name })),
-        clinical_indication: null, // laudo APAC já contempla o procedimento no corpo
+        clinicalIndication: null, // o laudo APAC já contempla o procedimento no corpo
         priority: "rotina",
         notes: "[PROCEDIMENTO — Laudo APAC gerado]",
-        requested_by: user.id,
-        requested_by_name: requesterName,
-        hospital_unit_id: currentHospital.id,
-        state_id: currentState.id,
-        status: "pending",
-      };
-      const { error } = await (supabase as any).from("exam_requests").insert(payload);
-      if (error) {
-        console.error("[Procedimento] Falha ao registrar rastro:", error);
-        toast.error("Falha ao registrar laudo em 'Solicitados': " + (error.message || "erro desconhecido"));
-      } else {
-        onProcedureRegistered?.();
-      }
-    } catch (err: any) {
-      console.error("[Procedimento] Erro ao registrar rastro:", err);
-      toast.error("Erro ao registrar laudo em 'Solicitados'");
+        requestedBy: user.id,
+        requestedByName: requesterName,
+        hospitalUnitId: currentHospital.id,
+        stateId: currentState.id,
+      });
+      onProcedureRegistered?.();
+      return true;
+    } catch (err) {
+      toast.error("Falha ao registrar a solicitação", {
+        description: err instanceof Error ? err.message : "Erro desconhecido. O laudo não foi impresso.",
+      });
+      return false;
     }
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (selectedProcedures.length === 0) { toast.error("Adicione ao menos um procedimento"); return; }
     if (!apacPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
     const hasAih = selectedProcedures.some(p => p.instrumento === "AIH");
@@ -2428,9 +2422,12 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       doctor: { name: doctorName, cpf: doctorCPF, crm: doctorCRM },
       today: todayFormatted,
     });
+    // Grava PRIMEIRO. Se falhar, nada é impresso — laudo no papel sem
+    // contrapartida no sistema é o furo de rastreabilidade que este trabalho
+    // veio fechar.
+    const ok = await registrarProcedimento();
+    if (!ok) return;
     openPrintWindow(html, "Preparando Laudo APAC…");
-    // Registra o rastro (não-bloqueante) após disparar a impressão.
-    void registerProcedureTrace();
   };
 
 
