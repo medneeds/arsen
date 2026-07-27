@@ -66,12 +66,28 @@ export interface NutritionPrintFields {
  * impresso extra, garantindo que o médico veja o MESMO item em qualquer
  * superfície. Campos vazios são omitidos.
  */
+/**
+ * Tipos em que vazão/tempo de infusão NÃO têm sentido clínico: água e dieta
+ * oral vão de copo ou seringa, suplemento é tomado, jejum não infunde nada.
+ * Gotejamento é grandeza de infusão contínua — sinalizá-lo aqui é ruído que
+ * confunde a equipe (e "Correr em: 30 gts/min" numa água oral é erro visível
+ * no impresso).
+ *
+ * Só filtra tipos EXPLICITAMENTE não-infusionais: item legado sem
+ * nutritionType mantém o comportamento anterior, para não esconder dado que
+ * alguém preencheu de propósito.
+ */
+const NON_INFUSION_TYPES = new Set(['diet_oral', 'water', 'supplement', 'zero']);
+
 export function buildNutritionParts(f: NutritionPrintFields): string[] {
   const scheduleText = f.nutScheduleMode === 'steps'
     ? (f.nutSteps ? `${f.nutSteps} ${f.nutSteps === '1' ? 'etapa/dia' : 'etapas/dia'}` : null)
     : (f.dietInterval ? `Intervalo: ${f.dietInterval}` : null);
   const rateUnit = f.nutRateMode === 'gtt' ? 'gts/min' : 'mL/h';
   const tUnit = f.infusionTimeUnit === 'h' ? 'h' : 'min';
+  // Campos de infusão residuais (ex.: item criado como enteral e depois
+  // trocado para água) não devem vazar para tipos que não infundem.
+  const isInfusion = !NON_INFUSION_TYPES.has(f.nutritionType ?? '');
 
   const parts: Array<string | null> = [
     f.dietType || null,
@@ -82,10 +98,10 @@ export function buildNutritionParts(f: NutritionPrintFields): string[] {
     f.nutComposition || null,
     f.nutVolDay ? `Vol/dia: ${f.nutVolDay} mL` : null,
     scheduleText,
-    f.infusionRate ? `Correr em: ${f.infusionRate} ${rateUnit}` : null,
+    isInfusion && f.infusionRate ? `Correr em: ${f.infusionRate} ${rateUnit}` : null,
     // NPT: volume do frasco + tempo de infusão
-    f.volumeTotal ? `Vol: ${f.volumeTotal} mL` : null,
-    f.infusionTime ? `Tempo: ${f.infusionTime}${tUnit}` : null,
+    isInfusion && f.volumeTotal ? `Vol: ${f.volumeTotal} mL` : null,
+    isInfusion && f.infusionTime ? `Tempo: ${f.infusionTime}${tUnit}` : null,
     f.nutMode || null,
     f.nutFraction ? `Fração: ${f.nutFraction}` : null,
     f.nutProgression ? `Progressão: ${f.nutProgression}` : null,
