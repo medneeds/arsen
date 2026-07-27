@@ -63,6 +63,7 @@ import { PrescriptionDiffDialog } from "@/components/PrescriptionDiffDialog";
 import { NewPrescriptionChoiceDialog } from "@/components/NewPrescriptionChoiceDialog";
 import { ExtraPrescriptionChooserDialog } from "@/components/ExtraPrescriptionChooserDialog";
 import { printExtraPrescription } from "@/lib/printExtraPrescription";
+import { PostValidationPrintDialog } from "@/components/PostValidationPrintDialog";
 import { abbrevPresentation, abbrevRoute } from "@/lib/printAbbreviations";
 import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
@@ -4594,6 +4595,8 @@ const PrescricaoPage = () => {
   // novas validações nesse intervalo dispensam nova digitação de senha.
   const VALIDATION_SESSION_MS = 20 * 60 * 1000; // 20 minutos
   const [validationSessionExpiresAt, setValidationSessionExpiresAt] = useState<number | null>(null);
+  // Etapa pós-validação (só na validação TOTAL — por item seria intrusivo)
+  const [justValidatedPrescription, setJustValidatedPrescription] = useState<Date | null>(null);
   const [sessionTick, setSessionTick] = useState(0); // força re-render para countdown
 
   // Tick a cada 30s enquanto a sessão estiver ativa (suficiente p/ countdown em min)
@@ -4921,6 +4924,7 @@ const PrescricaoPage = () => {
             ? "Snapshot do dia anterior preservado no histórico."
             : "Todos os itens ativos foram validados e registrados." }
       );
+      setJustValidatedPrescription(new Date());
     } else {
       toast.success(isRevalidationPostCutoff ? "Item revalidado (nova versão)" : "Item validado");
     }
@@ -10583,6 +10587,15 @@ const PrescricaoPage = () => {
       />
 
       {/* Pre-Validation Clinical Alerts (alergia, interação grave, duplicidade) */}
+      <PostValidationPrintDialog
+        open={!!justValidatedPrescription}
+        onOpenChange={(v) => { if (!v) setJustValidatedPrescription(null); }}
+        documentLabel="Prescrição"
+        validatedAt={justValidatedPrescription}
+        note="Sairão junto as guias regulatórias aplicáveis (ATM / Psicotrópicos)."
+        onPrint={() => handlePrint()}
+      />
+
       <PreValidationAlertDialog
         open={alertDialogOpen}
         alerts={pendingAlerts}

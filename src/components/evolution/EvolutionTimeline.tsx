@@ -6,6 +6,7 @@ import {
   Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X, Star, Zap, Printer, CheckCircle2,
 } from "lucide-react";
 import { printEvolution } from "@/lib/printEvolution";
+import { PostValidationPrintDialog } from "@/components/PostValidationPrintDialog";
 import { resolvePatientHeader } from "@/lib/resolvePatientHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
@@ -77,7 +78,6 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
   const [validateDialogId, setValidateDialogId] = useState<string | null>(null);
   const [justValidatedEvo, setJustValidatedEvo] = useState<EvolutionRecord | null>(null);
-  const printPromptTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Filters
   const [filterStatus, setFilterStatus] = useState<"all" | "draft" | "validated" | "suspended">("all");
@@ -176,8 +176,6 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
       const evo = evolutions.find(e => e.id === validatedId);
       if (evo) {
         setJustValidatedEvo(evo);
-        if (printPromptTimerRef.current) clearTimeout(printPromptTimerRef.current);
-        printPromptTimerRef.current = setTimeout(() => setJustValidatedEvo(null), 30_000);
       }
     }
   };
@@ -395,31 +393,15 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
           </div>
         )}
 
-        {/* Banner pós-validação */}
-        {justValidatedEvo && (
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/8 dark:bg-emerald-500/10">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span className="text-xs font-medium text-emerald-800 dark:text-emerald-300 flex-1">
-              Evolução validada com sucesso
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 gap-1.5 text-xs border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"
-              onClick={() => { handlePrintEvolution(justValidatedEvo); setJustValidatedEvo(null); }}
-            >
-              <Printer className="h-3.5 w-3.5" /> Imprimir Evolução
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs text-muted-foreground"
-              onClick={() => setJustValidatedEvo(null)}
-            >
-              Fechar
-            </Button>
-          </div>
-        )}
+        {/* Etapa pós-validação — explícita, sem expirar sozinha */}
+        <PostValidationPrintDialog
+          open={!!justValidatedEvo}
+          onOpenChange={(v) => { if (!v) setJustValidatedEvo(null); }}
+          documentLabel="Evolução"
+          validatedByName={justValidatedEvo?.validated_by_name ?? null}
+          validatedAt={justValidatedEvo?.validated_at ?? null}
+          onPrint={() => { if (justValidatedEvo) handlePrintEvolution(justValidatedEvo); }}
+        />
 
         {filteredEvolutions.length === 0 && (
           <div className="rounded-lg border border-dashed border-border p-6 text-center">
