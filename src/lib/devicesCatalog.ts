@@ -53,6 +53,37 @@ export const DEVICES_CATALOG: DeviceCatalogItem[] = [
   },
 ];
 
+/** Normaliza p/ comparação: sem acento, minúsculo, sem espaço nas pontas. */
+function normalizeLabel(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+/**
+ * Dado um rótulo digitado livremente num dispositivo customizado, devolve o
+ * item de catálogo cujas sugestões de subtipo se aplicam.
+ *
+ * Existe porque o catálogo tem UM checkbox por dispositivo, mas o paciente
+ * pode ter mais de um do mesmo tipo — dois drenos, por exemplo. O segundo é
+ * cadastrado como customizado, e sem isto ele ficaria sem campo de tipo e sem
+ * sugestão nenhuma, enquanto o primeiro tem os dois.
+ *
+ * Casa por inclusão sobre o texto normalizado, então "Dreno", "dreno 2",
+ * "Dreno torácico E" e "DRENO DE TÓRAX" todos encontram o item `dreno`.
+ */
+export function suggestDetailForLabel(
+  label: string
+): DeviceCatalogItem | undefined {
+  const n = normalizeLabel(label);
+  if (!n) return undefined;
+  return DEVICES_CATALOG.find(
+    (c) => c.detailOptions && c.detailOptions.length > 0 && n.includes(normalizeLabel(c.label))
+  );
+}
+
 export interface EvolutionDevice {
   /** ID do catálogo OU UUID livre quando custom. */
   id: string;

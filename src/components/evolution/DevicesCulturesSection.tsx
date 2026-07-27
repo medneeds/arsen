@@ -13,6 +13,7 @@ import {
   DEVICES_CATALOG,
   type EvolutionDevice,
   deviceAlertTone,
+  suggestDetailForLabel,
 } from "@/lib/devicesCatalog";
 import { calcDIH } from "@/lib/dihCalc";
 
@@ -90,9 +91,9 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
     onDevicesChange(devices.filter((d) => !(d.id === id && d.custom)));
   };
 
-  const addCustom = () => {
+  const addCustom = (initialLabel = "") => {
     const id = `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-    onDevicesChange([...devices, { id, label: "", insertedAt: "", custom: true }]);
+    onDevicesChange([...devices, { id, label: initialLabel, insertedAt: "", custom: true }]);
   };
 
   const cvcActive = catalogIndex.get("cvc");
@@ -205,6 +206,23 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                       </div>
                     )}
 
+                    {/* Atalho p/ paciente com mais de um do mesmo dispositivo
+                        (ex.: dois drenos). O catálogo tem 1 checkbox por
+                        dispositivo, então o segundo entra como customizado —
+                        este botão já o cria com o rótulo certo e o campo de
+                        tipo pronto, em vez de exigir digitar "Dreno" na mão. */}
+                    {item.detailOptions && item.detailOptions.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => addCustom(item.label)}
+                        className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded border border-border bg-muted/40 text-muted-foreground text-[9px] font-semibold hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap"
+                        title={`Adicionar outro ${item.label.toLowerCase()}`}
+                      >
+                        <Plus className="h-3 w-3" />
+                        Outro
+                      </button>
+                    )}
+
                     {/* Checklist de inserção — aparece quando CVC está ativo */}
                     {item.id === "cvc" && (
                       <button
@@ -278,6 +296,30 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                     D{days}
                   </Badge>
                 )}
+                {/* Subtipo do customizado — inferido do rótulo digitado, para
+                    que o segundo dreno tenha as MESMAS sugestões do primeiro.
+                    Casa "Dreno", "dreno 2", "dreno torácico E" etc. */}
+                {(() => {
+                  const sug = suggestDetailForLabel(d.label);
+                  if (!sug?.detailOptions?.length) return null;
+                  return (
+                    <div className="flex items-center gap-1.5 basis-full sm:basis-auto sm:min-w-[200px] sm:max-w-[260px]">
+                      <Input
+                        value={d.detail ?? ""}
+                        onChange={(e) => setDetail(d.id, true, e.target.value)}
+                        placeholder={sug.detailLabel ?? "Tipo"}
+                        list={`dev-detail-custom-${d.id}`}
+                        aria-label={sug.detailLabel ?? `Tipo de ${d.label}`}
+                        className="h-7 text-xs"
+                      />
+                      <datalist id={`dev-detail-custom-${d.id}`}>
+                        {sug.detailOptions.map((opt) => (
+                          <option key={opt} value={opt} />
+                        ))}
+                      </datalist>
+                    </div>
+                  );
+                })()}
                 <Button
                   variant="ghost"
                   size="icon"
