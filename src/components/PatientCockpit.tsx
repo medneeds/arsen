@@ -20,7 +20,7 @@ import {
   ShieldAlert, Stethoscope, Syringe, TestTubes, TrendingUp, User2, Users
 } from "lucide-react";
 import { calcDIH } from "@/lib/dihCalc";
-import { deviceAlertTone, DEVICES_CATALOG } from "@/lib/devicesCatalog";
+import { deviceAlertTone, formatDeviceLabel, DEVICES_CATALOG } from "@/lib/devicesCatalog";
 import { differenceInDays, parseISO, isValid, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -626,7 +626,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                             className="flex items-center justify-between gap-2 text-[11px] py-0.5"
                           >
                             <div className="flex flex-col min-w-0 flex-1">
-                              <span className="truncate font-medium text-foreground leading-tight">{d.label || "—"}</span>
+                              <span className="truncate font-medium text-foreground leading-tight">{formatDeviceLabel(d) || "—"}</span>
                               {(catalogHint || insertedBR) && (
                                 <span className="text-[9px] text-muted-foreground truncate leading-tight">
                                   {catalogHint}

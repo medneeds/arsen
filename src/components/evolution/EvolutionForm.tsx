@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { FieldTemplates } from "@/components/FieldTemplates";
 import { useHospital } from "@/contexts/HospitalContext";
 import { DevicesCulturesSection } from "@/components/evolution/DevicesCulturesSection";
-import { deviceAlertTone, type EvolutionDevice } from "@/lib/devicesCatalog";
+import { deviceAlertTone, formatDeviceLabel, type EvolutionDevice } from "@/lib/devicesCatalog";
 import { printEvolution } from "@/lib/printEvolution";
 import { resolvePatientHeader } from "@/lib/resolvePatientHeader";
 import { supabase } from "@/integrations/supabase/client";
@@ -917,7 +917,7 @@ const ReadOnlyView: React.FC<{
                   : "text-emerald-600 dark:text-emerald-400";
               return (
                 <li key={`${d.id}-${i}`}>
-                  <span className="font-medium">{d.label}</span>
+                  <span className="font-medium">{formatDeviceLabel(d)}</span>
                   {d.insertedAt && <span className="text-muted-foreground"> — inserido em {fmtBR(d.insertedAt)}</span>}
                   {days !== null && <span className={cn("ml-1", toneCls)}>(D{days})</span>}
                 </li>

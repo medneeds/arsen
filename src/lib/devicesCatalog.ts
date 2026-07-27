@@ -9,6 +9,16 @@ export interface DeviceCatalogItem {
   label: string;
   /** Hint curto exibido no formulário (opcional). */
   hint?: string;
+  /**
+   * Rótulo do campo de qualificação, quando o dispositivo admite subtipo.
+   * A presença deste campo é o que faz o input de subtipo aparecer no formulário.
+   */
+  detailLabel?: string;
+  /**
+   * Sugestões de subtipo. A lista é ABERTA — renderizada como <datalist>, o
+   * profissional pode escolher uma sugestão ou digitar um valor próprio.
+   */
+  detailOptions?: string[];
 }
 
 export const DEVICES_CATALOG: DeviceCatalogItem[] = [
@@ -20,7 +30,25 @@ export const DEVICES_CATALOG: DeviceCatalogItem[] = [
   { id: "iot", label: "IOT", hint: "Intubação Orotraqueal" },
   { id: "tqt", label: "TQT", hint: "Traqueostomia" },
   { id: "pai", label: "PAI", hint: "Pressão Arterial Invasiva" },
-  { id: "dreno", label: "Dreno", hint: "Torácico / abdominal" },
+  {
+    id: "dreno",
+    label: "Dreno",
+    hint: "Torácico / abdominal",
+    detailLabel: "Tipo de dreno",
+    detailOptions: [
+      "Torácico (selo d'água)",
+      "Mediastinal",
+      "Ventricular externo (DVE)",
+      "Subgaleal / subdural",
+      "Abdominal / cavitário",
+      "Penrose (laminar)",
+      "Tubulolaminar",
+      "Portovac / Hemovac (aspirativo)",
+      "Kehr (biliar, tubo em T)",
+      "Nefrostomia",
+      "Pigtail",
+    ],
+  },
 ];
 
 export interface EvolutionDevice {
@@ -30,6 +58,23 @@ export interface EvolutionDevice {
   /** ISO ou BR DD/MM/AAAA. */
   insertedAt: string;
   custom?: boolean;
+  /**
+   * Subtipo do dispositivo — ex.: tipo de dreno (torácico, DVE, Penrose...).
+   * Texto livre, opcional. Persistido dentro de soap_data (JSONB), portanto
+   * não exige migration: registros antigos simplesmente não têm a chave.
+   */
+  detail?: string;
+}
+
+/**
+ * Rótulo de exibição do dispositivo, incluindo o subtipo quando houver.
+ * Ex.: "Dreno (Torácico (selo d'água))" -> "Dreno — Torácico (selo d'água)".
+ */
+export function formatDeviceLabel(
+  d: Pick<EvolutionDevice, "label" | "detail">
+): string {
+  const detail = d.detail?.trim();
+  return detail ? `${d.label} — ${detail}` : d.label;
 }
 
 /** Limiares institucionais para alerta visual de tempo de permanência. */

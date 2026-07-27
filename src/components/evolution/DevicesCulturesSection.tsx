@@ -74,6 +74,14 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
     );
   };
 
+  const setDetail = (id: string, custom: boolean, value: string) => {
+    onDevicesChange(
+      devices.map((d) =>
+        d.id === id && !!d.custom === custom ? { ...d, detail: value } : d
+      )
+    );
+  };
+
   const updateCustomLabel = (id: string, label: string) => {
     onDevicesChange(devices.map((d) => (d.id === id && d.custom ? { ...d, label } : d)));
   };
@@ -178,6 +186,25 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                         D{days}
                       </Badge>
                     )}
+                    {/* Subtipo — aparece p/ dispositivos que declaram detailOptions (ex.: Dreno) */}
+                    {item.detailOptions && item.detailOptions.length > 0 && (
+                      <div className="flex items-center gap-1.5 basis-full sm:basis-auto sm:min-w-[200px] sm:max-w-[260px]">
+                        <Input
+                          value={active!.detail ?? ""}
+                          onChange={(e) => setDetail(item.id, false, e.target.value)}
+                          placeholder={item.detailLabel ?? "Tipo"}
+                          list={`dev-detail-${item.id}`}
+                          aria-label={item.detailLabel ?? `Tipo de ${item.label}`}
+                          className="h-7 text-xs"
+                        />
+                        <datalist id={`dev-detail-${item.id}`}>
+                          {item.detailOptions.map((opt) => (
+                            <option key={opt} value={opt} />
+                          ))}
+                        </datalist>
+                      </div>
+                    )}
+
                     {/* Checklist de inserção — aparece quando CVC está ativo */}
                     {item.id === "cvc" && (
                       <button
