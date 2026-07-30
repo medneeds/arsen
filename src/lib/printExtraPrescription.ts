@@ -95,10 +95,28 @@ export interface ExtraPrintPatient {
   bed?: string;
   unit?: string;
   age?: string;
+  birthDate?: string;
   record?: string;
   weight?: string;
   allergies?: string;
 }
+
+const formatBirthDate = (value?: string | null): string => {
+  if (!value) return "";
+  const raw = String(value).trim();
+  const isoDate = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoDate) {
+    const [, y, m, d] = isoDate;
+    const year = Number(y);
+    if (year >= 1850 && year <= new Date().getFullYear()) return `${d}/${m}/${y}`;
+    return raw;
+  }
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return raw;
+  const parsedYear = parsed.getFullYear();
+  if (parsedYear < 1850 || parsedYear > new Date().getFullYear()) return raw;
+  return parsed.toLocaleDateString("pt-BR");
+};
 
 export interface ExtraPrintOptions {
   patient: ExtraPrintPatient;
@@ -308,14 +326,18 @@ export async function printExtraPrescription(opts: ExtraPrintOptions) {
       <tr>
         <th>Idade</th>
         <td>${escape(patient.age) || "—"}</td>
-        <th>Peso</th>
-        <td>${escape(patient.weight) || "—"}</td>
+        <th>Data de Nascimento</th>
+        <td>${escape(formatBirthDate(patient.birthDate)) || "—"}</td>
       </tr>
       <tr>
+        <th>Peso</th>
+        <td>${escape(patient.weight) || "—"}</td>
         <th>Prontuário</th>
         <td>${escape(patient.record) || "—"}</td>
+      </tr>
+      <tr>
         <th>Alergias</th>
-        <td style="${patient.allergies ? "color:#b91c1c;font-weight:600" : ""}">${escape(patient.allergies) || "Nega"}</td>
+        <td colspan="3" style="${patient.allergies ? "color:#b91c1c;font-weight:600" : ""}">${escape(patient.allergies) || "Nega"}</td>
       </tr>
       <tr>
         <th>Vínculo</th>

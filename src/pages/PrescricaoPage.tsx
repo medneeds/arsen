@@ -3250,6 +3250,7 @@ function ExtraPrescriptionDialog({
           bed: patient.bed,
           unit: patient.unit,
           age: patient.age,
+          birthDate: patient.birthDate,
           record: patient.record,
           weight: patient.weight,
           allergies: patient.allergies,
