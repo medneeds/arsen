@@ -183,6 +183,7 @@ export const ANTIMICROBIAL_OPTIONS: MedicationEntry[] = [
   { id: 'atm14', name: 'Linezolida', presentation: '600mg/300mL - Bolsa', defaultDose: '600mg', defaultRoute: 'Intravenosa', defaultPosology: '12/12h', defaultSchedule: '08h', instructions: 'Infundir em 30-120 min.', category: 'antimicrobial' },
   
   { id: 'atm16', name: 'Teicoplanina', presentation: '400mg - Frasco-ampola', defaultDose: '400mg', defaultRoute: 'Intravenosa', defaultPosology: '12/12h', defaultSchedule: '08h', instructions: 'Dose de ataque: 400mg 12/12h (3 doses). Manutenção: 400mg 24/24h. Diluir em 100mL de SF0,9%. Infundir em 30 min.', category: 'antimicrobial', aliases: ['Targocid'] },
+  { id: 'atm16b', name: 'Teicoplanina', presentation: '200mg - Frasco-ampola', defaultDose: '200mg', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: '08h', instructions: 'Apresentação para ajuste de dose: paciente de baixo peso (6mg/kg) ou disfunção renal. Ataque em dose plena antes de reduzir. Diluir em 100mL de SF0,9%. Infundir em 30 min.', category: 'antimicrobial', aliases: ['Targocid'] },
 ];
 
 // ========== ALTA VIGILÂNCIA ==========
@@ -385,7 +386,7 @@ export const MEDICATIONS_DATABASE: MedicationEntry[] = [
   { id: 'm25m', name: 'Isossorbida (Dinitrato) Sublingual', presentation: '5mg comprimido', defaultDose: '1 comp', defaultRoute: 'Sublingual', defaultPosology: 'SOS', defaultSchedule: '-', category: 'medication', aliases: ['Isordil'] },
 
   // ===== Anticoagulantes =====
-  { id: 'm25b', name: 'Enoxaparina (Clexane)', presentation: '20mg/0,2mL - Seringa', defaultDose: '20mg', defaultRoute: 'Subcutânea', defaultPosology: '24/24h', defaultSchedule: '-', instructions: 'Profilaxia TEV pacientes de baixo peso.', category: 'medication', aliases: ['Clexane', 'Enoxa'] },
+  { id: 'm26b', name: 'Enoxaparina (Clexane)', presentation: '20mg/0,2mL - Seringa', defaultDose: '20mg', defaultRoute: 'Subcutânea', defaultPosology: '24/24h', defaultSchedule: '-', instructions: 'Profilaxia TEV pacientes de baixo peso.', category: 'medication', aliases: ['Clexane', 'Enoxa'] },
   { id: 'm26', name: 'Enoxaparina (Clexane)', presentation: '40mg/0,4mL - Seringa', defaultDose: '40mg', defaultRoute: 'Subcutânea', defaultPosology: '24/24h', defaultSchedule: '-', instructions: 'Profilaxia TEV.', category: 'medication', aliases: ['Clexane', 'Enoxa'] },
   { id: 'm27', name: 'Enoxaparina (Clexane)', presentation: '60mg/0,6mL - Seringa', defaultDose: '60mg', defaultRoute: 'Subcutânea', defaultPosology: '12/12h', defaultSchedule: '-', category: 'medication', aliases: ['Clexane'] },
   { id: 'm27b', name: 'Enoxaparina (Clexane)', presentation: '80mg/0,8mL - Seringa', defaultDose: '80mg', defaultRoute: 'Subcutânea', defaultPosology: '12/12h', defaultSchedule: '-', category: 'medication', aliases: ['Clexane'] },
@@ -559,7 +560,11 @@ export const ALL_ITEMS_BY_CATEGORY: Record<PrescriptionCategory, MedicationEntry
 // estático — não só MEDICATIONS_DATABASE. O primeiro rascunho desta função
 // escaneava só esse array e não pegou Amiodarona/Glicose 50%/Ciprofloxacino,
 // que vivem em HIGH_ALERT_OPTIONS e ANTIMICROBIAL_OPTIONS.
-if (import.meta.env.DEV) {
+// `?.` porque import.meta.env só existe sob o Vite. Sem isso, importar este
+// módulo fora do bundler (ex.: os testes rodados via tsx) estoura em
+// "Cannot read properties of undefined (reading 'DEV')" — e o catálogo ficava
+// impossível de testar, justamente o arquivo onde um erro vira dose errada.
+if (import.meta.env?.DEV) {
   auditMedicationQuantityConsistency([
     ...MEDICATIONS_DATABASE,
     ...ANTIMICROBIAL_OPTIONS,
