@@ -7247,6 +7247,19 @@ const PrescricaoPage = () => {
   });
 
   const doPrintPrescription = async () => {
+    // 🔒 Norma Zero — bloqueia impressão se nascimento/sexo estiverem ausentes
+    // no cabeçalho, para pacientes já identificados (não aplica a "NI-...",
+    // onde a ausência desses campos é esperada até a identificação).
+    // Motivo: registryFull carrega de forma assíncrona; se o usuário imprimir
+    // antes desse fetch terminar, o PDF sai com "—" mesmo com o dado correto
+    // já salvo no banco — bug já observado em produção (UTI 2 L09/L10 e outros).
+    const isUnidentifiedPatient = (patient.name || "").trim().toUpperCase().startsWith("NI-");
+    if (!isUnidentifiedPatient && (!patient.birthDate || !patient.sex)) {
+      toast.error("Impressão bloqueada — dados de identificação incompletos (Norma Zero)", {
+        description: `Faltando: ${[!patient.birthDate && "data de nascimento", !patient.sex && "sexo"].filter(Boolean).join(" e ")}. Aguarde o carregamento completo do prontuário ou recarregue a página antes de imprimir.`,
+      });
+      return;
+    }
     // Garante snapshot persistido ANTES da impressão (assinatura, validações, etc.)
     // FIX bug "PDF em branco": persistItems falhando silenciosamente abortava o print
     // sem o usuário entender; agora avisamos e seguimos imprimindo o snapshot em memória
@@ -7289,6 +7302,14 @@ const PrescricaoPage = () => {
   // Bypassa o fluxo de guias regulatórias (ATM/Psy) porque é uma reimpressão parcial.
   const printSelectedItems = useCallback(() => {
     if (selectedIds.size === 0) return;
+    // 🔒 Norma Zero — mesma trava do print completo (ver doPrintPrescription)
+    const isUnidentifiedPatient = (patient.name || "").trim().toUpperCase().startsWith("NI-");
+    if (!isUnidentifiedPatient && (!patient.birthDate || !patient.sex)) {
+      toast.error("Impressão bloqueada — dados de identificação incompletos (Norma Zero)", {
+        description: `Faltando: ${[!patient.birthDate && "data de nascimento", !patient.sex && "sexo"].filter(Boolean).join(" e ")}. Aguarde o carregamento completo do prontuário ou recarregue a página antes de imprimir.`,
+      });
+      return;
+    }
     // Só faz sentido imprimir itens validados — bloqueia pendentes para evitar
     // impressão de prescrição não validada por engano.
     const selectedList = items.filter(i => selectedIds.has(i.id));
