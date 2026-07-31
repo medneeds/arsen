@@ -7,7 +7,8 @@ import { SectionLoader } from "@/components/SectionLoader";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { NormaZeroPrintHeader, generatePrintDocCode } from "@/components/NormaZeroPrintHeader";
+import arsenLogo from "@/assets/arsen-logo.png";
+import { NormaZeroPrintHeader, generatePrintDocCode, getNormaZeroMissingFields, NormaZeroBlockedDocument } from "@/components/NormaZeroPrintHeader";
 import {
   NotebookPen, Plus, Loader2, AlertTriangle, ChevronDown, Sun, Moon, Zap,
 } from "lucide-react";
@@ -690,6 +691,18 @@ const EvolucaoPage = () => {
             if (!d) return '—';
             try { return format(new Date(d + 'T12:00:00'), 'dd/MM/yyyy'); } catch { return d; }
           };
+
+          // 🔒 Norma Zero — bloqueia a geração do layout impresso se a
+          // identificação do paciente estiver incompleta.
+          const missingFields = getNormaZeroMissingFields({
+            name: patient.name,
+            birthDate: patient.birthDate,
+            sex: patient.sex,
+            record: patient.record,
+          });
+          if (missingFields.length > 0) {
+            return <NormaZeroBlockedDocument missingFields={missingFields} width="186mm" />;
+          }
 
           return (
             <>

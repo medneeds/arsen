@@ -323,3 +323,51 @@ export function generatePrintDocCode(prefix: string = "DOC"): string {
   const t = `${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
   return `${prefix}-${d}-${t}`;
 }
+
+/**
+ * 🔒 Norma Zero — validação compartilhada de identificação mínima do paciente.
+ * Usar em TODO componente Printable* antes de renderizar o documento real:
+ * se retornar campos faltando, renderizar <NormaZeroBlockedDocument> no lugar
+ * do conteúdo clínico, em vez de deixar o documento sair incompleto.
+ *
+ * Pacientes ainda não identificados (nome começa com "NI-") são isentos —
+ * para eles a ausência desses campos é esperada até a identificação.
+ */
+export function getNormaZeroMissingFields(patient: {
+  name?: string | null;
+  birthDate?: string | null;
+  sex?: string | null;
+  record?: string | null;
+}): string[] {
+  const isUnidentified = (patient.name || "").trim().toUpperCase().startsWith("NI-");
+  if (isUnidentified) return [];
+  return [
+    !patient.name?.trim() && "nome completo",
+    !patient.birthDate && "data de nascimento",
+    !patient.sex && "sexo",
+    !patient.record?.trim() && "número de prontuário",
+  ].filter(Boolean) as string[];
+}
+
+/** Página de bloqueio exibida no lugar do documento clínico quando a
+ *  identificação do paciente está incompleta (ver getNormaZeroMissingFields). */
+export function NormaZeroBlockedDocument({ missingFields, width = "182mm" }: { missingFields: string[]; width?: string }) {
+  return (
+    <div style={{ fontFamily: '"Helvetica Neue", "Segoe UI", "Inter", Arial, sans-serif', width, margin: "0 auto", padding: "24mm 12mm", textAlign: "center" }}>
+      <div style={{ border: "2px solid #b91c1c", borderRadius: "8px", padding: "16mm 10mm", color: "#7f1d1d", background: "#fef2f2" }}>
+        <div style={{ fontSize: "13pt", fontWeight: 800, marginBottom: "6mm" }}>
+          DOCUMENTO BLOQUEADO — IDENTIFICAÇÃO INCOMPLETA (NORMA ZERO)
+        </div>
+        <div style={{ fontSize: "9pt", marginBottom: "4mm" }}>
+          Este documento não pode ser gerado porque os seguintes campos obrigatórios de identificação do paciente estão ausentes:
+        </div>
+        <div style={{ fontSize: "10pt", fontWeight: 700 }}>
+          {missingFields.join(" · ")}
+        </div>
+        <div style={{ fontSize: "8pt", marginTop: "6mm", color: "#991b1b" }}>
+          Atualize a ficha cadastral do paciente ou aguarde o carregamento completo do prontuário antes de tentar imprimir novamente.
+        </div>
+      </div>
+    </div>
+  );
+}
