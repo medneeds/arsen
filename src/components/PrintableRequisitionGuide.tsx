@@ -98,6 +98,8 @@ import {
 import {
   NormaZeroPrintHeader,
   NormaZeroPrintFooter,
+  getNormaZeroMissingFields,
+  NormaZeroBlockedDocument,
 } from "@/components/NormaZeroPrintHeader";
 import {
   PrintableCultureRequest,
@@ -256,6 +258,20 @@ export function PrintableRequisitionGuide({
     if ((request as any).patient_encounter_code) setResolvedEncounter((request as any).patient_encounter_code);
     return () => { alive = false; };
   }, [request.patient_birth_date, (request as any).patient_medical_record, (request as any).patient_encounter_code, request.patient_registry_id, request.patient_id]);
+
+  // 🔒 Norma Zero — bloqueia a geração do documento se identificação estiver
+  // incompleta. Este layout não exibe "sexo" no cabeçalho, então esse campo
+  // é excluído da checagem (a validação de sexo fica a cargo dos documentos
+  // que de fato o exibem, como a Prescrição).
+  const missingFields = getNormaZeroMissingFields({
+    name: request.patient_name,
+    birthDate: resolvedBirth,
+    sex: "N/A", // não exibido neste layout — não bloqueia por esse campo
+    record: resolvedRecord,
+  });
+  if (missingFields.length > 0) {
+    return <NormaZeroBlockedDocument missingFields={missingFields} />;
+  }
 
   // Roteamento: se a requisição é predominantemente de cultura microbiológica,
   // usa o layout hospitalar dedicado (estrutura tabular tipo formulário).

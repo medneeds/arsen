@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { whitelabel, getInstitutionalHeaderLines } from "@/config/whitelabel";
 import socorraoCross from "@/assets/socorrao-cross-logo.png";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { getNormaZeroMissingFields, NormaZeroBlockedDocument } from "@/components/NormaZeroPrintHeader";
 
 interface Encounter {
   id: string;
@@ -582,6 +583,18 @@ function PrintableFicha({
       <div style={{ flex: 1, backgroundColor: colors.blue }} />
     </div>
   );
+
+  // 🔒 Norma Zero — bloqueia a geração da Ficha de Atendimento se a
+  // identificação do paciente estiver incompleta.
+  const missingFields = getNormaZeroMissingFields({
+    name: patient.name,
+    birthDate: patient.birthDate,
+    sex: patient.sex,
+    record: patient.record,
+  });
+  if (missingFields.length > 0) {
+    return <NormaZeroBlockedDocument missingFields={missingFields} />;
+  }
 
   return (
     <div

@@ -22,6 +22,8 @@ import {
 import {
   NormaZeroPrintHeader,
   NormaZeroPrintFooter,
+  getNormaZeroMissingFields,
+  NormaZeroBlockedDocument,
 } from "@/components/NormaZeroPrintHeader";
 import { whitelabel } from "@/config/whitelabel";
 
@@ -232,6 +234,18 @@ export function PrintableCultureRequest({
 
   const age = ageInYears(request.patient_birth_date);
   const isMinor = age !== null && age < 18;
+
+  // 🔒 Norma Zero — bloqueia a geração se identificação estiver incompleta.
+  // Layout não exibe "sexo", então esse campo é excluído da checagem.
+  const missingFields = getNormaZeroMissingFields({
+    name: request.patient_name,
+    birthDate: request.patient_birth_date,
+    sex: "N/A",
+    record: request.patient_record,
+  });
+  if (missingFields.length > 0) {
+    return <NormaZeroBlockedDocument missingFields={missingFields} />;
+  }
 
   return (
     <div

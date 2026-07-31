@@ -10690,6 +10690,39 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
 
   const docCode = generatePrintDocCode("PRESC");
 
+  // 🔒 Norma Zero — condiciona a GERAÇÃO DO HTML (não só o clique de imprimir)
+  // ao preenchimento completo dos dados de identificação do prontuário.
+  // Cobre qualquer caminho que monte este componente (não só doPrintPrescription/
+  // printSelectedItems), incluindo re-renders futuros ou outros pontos de entrada.
+  const isUnidentifiedPatient = (patient.name || "").trim().toUpperCase().startsWith("NI-");
+  const missingFields = isUnidentifiedPatient ? [] : [
+    !patient.name?.trim() && "nome completo",
+    !patient.birthDate && "data de nascimento",
+    !patient.sex && "sexo",
+    !patient.record?.trim() && "número de prontuário",
+  ].filter(Boolean) as string[];
+
+  if (missingFields.length > 0) {
+    return (
+      <div style={{ fontFamily: '"Helvetica Neue", "Segoe UI", "Inter", Arial, sans-serif', width: '186mm', margin: '0 auto', padding: '24mm 12mm', textAlign: 'center' }}>
+        <div style={{ border: '2px solid #b91c1c', borderRadius: '8px', padding: '16mm 10mm', color: '#7f1d1d', background: '#fef2f2' }}>
+          <div style={{ fontSize: '13pt', fontWeight: 800, marginBottom: '6mm' }}>
+            DOCUMENTO BLOQUEADO — IDENTIFICAÇÃO INCOMPLETA (NORMA ZERO)
+          </div>
+          <div style={{ fontSize: '9pt', marginBottom: '4mm' }}>
+            Este documento não pode ser gerado porque os seguintes campos obrigatórios de identificação do paciente estão ausentes:
+          </div>
+          <div style={{ fontSize: '10pt', fontWeight: 700 }}>
+            {missingFields.join(' · ')}
+          </div>
+          <div style={{ fontSize: '8pt', marginTop: '6mm', color: '#991b1b' }}>
+            Atualize a ficha cadastral do paciente ou aguarde o carregamento completo do prontuário antes de tentar imprimir novamente.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Linha de identificação discreta do paciente (repetida no rodapé de TODAS as páginas)
   const footerPatientLine = [
     patient.name || null,
