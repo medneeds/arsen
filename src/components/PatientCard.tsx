@@ -3881,14 +3881,19 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel className="dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                if (onDelete) {
-                  const deletedPatient = { ...patient };
-                  setIsDeleting(true);
-                  
-                  // Wait for animation to complete before actually deleting
-                  setTimeout(() => {
-                    onDelete(patient.id);
+              disabled={isDeleting}
+              onClick={async () => {
+                if (!onDelete) return;
+                const deletedPatient = { ...patient };
+                setIsDeleting(true);
+
+                // Wait for animation to complete before actually deleting
+                setTimeout(async () => {
+                  try {
+                    await onDelete(patient.id);
+                    // 🔒 Antes: este toast de sucesso disparava incondicionalmente,
+                    // mesmo quando onDelete falhava (não era aguardado) — o usuário
+                    // via "Paciente excluído" mesmo quando a exclusão não ocorreu.
                     toastHook({
                       title: "Paciente excluído",
                       description: `Leito ${patient.bedNumber} - ${patient.name} foi removido.`,
@@ -3903,8 +3908,16 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         </Button>
                       ) : undefined,
                     });
-                  }, 300);
-                }
+                  } catch (err: any) {
+                    console.error("[PatientCard] falha ao excluir leito/paciente:", err);
+                    setIsDeleting(false); // desfaz a animação de saída — a exclusão não ocorreu
+                    toastHook({
+                      title: "Não foi possível excluir",
+                      description: err?.message || "Erro inesperado. Tente novamente ou avise o suporte.",
+                      variant: "destructive",
+                    });
+                  }
+                }, 300);
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 dark:bg-red-600 dark:text-white dark:hover:bg-red-700 font-semibold shadow-lg"
             >
