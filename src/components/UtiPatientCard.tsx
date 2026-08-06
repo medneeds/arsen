@@ -731,6 +731,7 @@ export function UtiPatientCard({
   const [isRoundPrintDialogOpen, setIsRoundPrintDialogOpen] = useState(false);
   const [isReleasePreAdmissionOpen, setIsReleasePreAdmissionOpen] = useState(false);
   const [isDeleteExtraOpen, setIsDeleteExtraOpen] = useState(false);
+  const [isDeletingExtra, setIsDeletingExtra] = useState(false);
   const movementTriggerRef = useRef<HTMLButtonElement>(null);
   const { toast } = useToast();
   const isExtra = isExtraBed(patient.bedNumber);
@@ -1518,17 +1519,37 @@ export function UtiPatientCard({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeletingExtra}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
+              disabled={isDeletingExtra}
               onClick={async () => {
-                if (onDelete) {
-                  await onDelete(patient.id);
+                setIsDeletingExtra(true);
+                try {
+                  if (onDelete) {
+                    await onDelete(patient.id);
+                  }
+                  setIsDeleteExtraOpen(false);
+                  toast({
+                    title: "Leito extra excluído",
+                    description: `${patient.bedNumber} foi removido do setor.`,
+                  });
+                } catch (err: any) {
+                  // 🔒 Antes: erro aqui travava a tela sem aviso (diálogo não
+                  // fechava, nenhum feedback) — parecia "não dá pra excluir"
+                  // mesmo quando o motivo era claro (ex: leito ocupado).
+                  console.error("[UtiPatientCard] falha ao excluir leito extra:", err);
+                  toast({
+                    title: "Não foi possível excluir o leito",
+                    description: err?.message || "Erro inesperado. Tente novamente ou avise o suporte.",
+                    variant: "destructive",
+                  });
+                } finally {
+                  setIsDeletingExtra(false);
                 }
-                setIsDeleteExtraOpen(false);
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Excluir leito
+              {isDeletingExtra ? "Excluindo…" : "Excluir leito"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
