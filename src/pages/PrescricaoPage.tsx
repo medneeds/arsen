@@ -6501,7 +6501,13 @@ const PrescricaoPage = () => {
           }
 
           // ── DIA SEGUINTE (cruzou 05h): cópia com renovação pendente ──
-          const renewedItems: PrescriptionItem[] = sourceItems.map((it) => ({
+          // BUGFIX (05/08/2026): itens com status 'suspended' (qualquer categoria —
+          // medicação, dieta, inalatório, reposição, ATB) NÃO podem ser renovados como
+          // ativos. Antes, o .map() abaixo forçava status: 'active' incondicionalmente,
+          // ressuscitando itens que o médico/farmácia haviam suspenso no dia anterior.
+          // Mesmo filtro do caminho manual "Repetir prescrição anterior" (openRepeatDialog).
+          const renewableItems = sourceItems.filter((it) => it.status === 'active' && !it.isExtra);
+          const renewedItems: PrescriptionItem[] = renewableItems.map((it) => ({
             ...it,
             id: crypto.randomUUID(),
             validated: false,
@@ -6784,6 +6790,10 @@ const PrescricaoPage = () => {
     const cloned: PrescriptionItem[] = [];
     for (const it of source.items) {
       if (!it?.name) { skipped++; continue; }
+      // BUGFIX (05/08/2026): mesmo problema do caminho de renovação automática de
+      // plantão — sem este filtro, um item suspenso (qualquer categoria) na versão
+      // restaurada era somado de volta como ativo no rascunho atual.
+      if (it.status !== 'active') { skipped++; continue; }
       if (currentSigs.has(sig(it))) { skipped++; continue; }
       currentSigs.add(sig(it));
       cloned.push({
