@@ -255,6 +255,17 @@ export const isIVRoute = (route?: string): boolean => {
   return /(intravenosa|endovenosa|\bev\b|\biv\b)/.test(n);
 };
 
+/**
+ * Rotas de administração oral/não-infusional — sem bomba, sem gotejamento,
+ * sem tempo de infusão. Usado para suprimir campos de infusão em itens de
+ * hidratação VO (água filtrada, soro oral) e medicamentos orais.
+ * "livre demanda" também é não-infusional por definição.
+ */
+export const isOralLikeRoute = (route?: string): boolean => {
+  const n = (route || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return /(oral|\bvo\b|livre.?demanda|sublingual|bucal)/.test(n);
+};
+
 export function isContinuousInfusionShared(item: PrepFields): boolean {
   if (item.ivBolus) return false;
   if (!isIVRoute(item.route || '')) return false;

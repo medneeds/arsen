@@ -284,7 +284,7 @@ const QUANTITY_UNITS = [
 
 import {
   isNoDiluent,
-  ENTERAL_DILUTION_DEFAULT_ML, quantityUnitShort, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital, parseDecimalBR, isIVRoute } from "@/lib/solutoToken";
+  ENTERAL_DILUTION_DEFAULT_ML, quantityUnitShort, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital, parseDecimalBR, isIVRoute, isOralLikeRoute } from "@/lib/solutoToken";
 import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydration";
 import { buildAtbDayLine, buildAtbLineParts } from "@/lib/atbLine";
 
@@ -1602,6 +1602,12 @@ function HydrationFields({
     if (opt) onUpdate(item.id, 'posology', opt.interval);
   };
 
+  // BUGFIX (07/08/2026): vias orais (VO, livre demanda) não têm tempo de
+  // infusão nem gotejamento — são ingeridas, não infundidas. Ocultar esses
+  // campos evita o alerta permanente "PENDENTE — preencha: tempo ou vazão"
+  // e remove informação clinicamente errada no impresso (ex: gts/min em água VO).
+  const isOral = isOralLikeRoute(item.route);
+
   return (
     <div className="space-y-1.5">
       <div className="relative flex items-center gap-x-3 gap-y-2 flex-wrap rounded-md p-2 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/50 border-l-[3px] border-l-blue-500/70 dark:border-l-blue-400/70">
@@ -1627,33 +1633,37 @@ function HydrationFields({
           </SelectContent>
         </Select>
 
-        <NutFieldLabel>Tempo / fase:</NutFieldLabel>
-        <Input
-          type="number"
-          value={item.infusionTime || ''}
-          onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)}
-          className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-14 text-center focus-visible:ring-1 focus-visible:ring-blue-400"
-          placeholder="—"
-        />
-        <Select value={tUnit} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
-          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="h" className="text-xs">h</SelectItem>
-            <SelectItem value="min" className="text-xs">min</SelectItem>
-          </SelectContent>
-        </Select>
+        {!isOral && (
+          <>
+            <NutFieldLabel>Tempo / fase:</NutFieldLabel>
+            <Input
+              type="number"
+              value={item.infusionTime || ''}
+              onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)}
+              className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-14 text-center focus-visible:ring-1 focus-visible:ring-blue-400"
+              placeholder="—"
+            />
+            <Select value={tUnit} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
+              <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="h" className="text-xs">h</SelectItem>
+                <SelectItem value="min" className="text-xs">min</SelectItem>
+              </SelectContent>
+            </Select>
 
-        <NutFieldLabel>Gotejamento:</NutFieldLabel>
-        <div className="h-6 px-2 flex items-center rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-[11px] font-semibold w-16 justify-center">
-          {isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '—'}
-        </div>
-        <Select value={dripMode} onValueChange={(v) => onUpdate(item.id, 'infusionMode', v)}>
-          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="BIC" className="text-xs">mL/h</SelectItem>
-            <SelectItem value="gts" className="text-xs">gts/min</SelectItem>
-          </SelectContent>
-        </Select>
+            <NutFieldLabel>Gotejamento:</NutFieldLabel>
+            <div className="h-6 px-2 flex items-center rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-[11px] font-semibold w-16 justify-center">
+              {isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '—'}
+            </div>
+            <Select value={dripMode} onValueChange={(v) => onUpdate(item.id, 'infusionMode', v)}>
+              <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="BIC" className="text-xs">mL/h</SelectItem>
+                <SelectItem value="gts" className="text-xs">gts/min</SelectItem>
+              </SelectContent>
+            </Select>
+          </>
+        )}
 
         <NutFieldLabel>Via:</NutFieldLabel>
         <Select value={item.route || 'EV'} onValueChange={(v) => onUpdate(item.id, 'route', v)}>
@@ -4513,7 +4523,9 @@ const PrescricaoPage = () => {
     if (item.category === 'hydration') {
       if (empty(item.volumeTotal)) missing.push('volume');
       if (empty(item.posology)) missing.push('fases / intervalo');
-      if (empty(item.infusionTime) && empty(item.infusionRate)) {
+      // Via oral (VO, livre demanda) não tem infusão: tempo/vazão não são
+      // obrigatórios e o alerta "tempo ou vazão" não deve aparecer.
+      if (!isOralLikeRoute(item.route) && empty(item.infusionTime) && empty(item.infusionRate)) {
         missing.push('tempo ou vazão');
       }
       return missing;
