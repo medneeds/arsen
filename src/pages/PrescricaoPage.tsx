@@ -10272,59 +10272,35 @@ const PrescricaoPage = () => {
 
       {/* Pop-up: sugerir incluir esquema padrão de correção de insulina ao adicionar controle glicêmico */}
       <AlertDialog open={insulinSchemePromptOpen} onOpenChange={setInsulinSchemePromptOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Syringe className="h-4 w-4 text-primary" />
+        <AlertDialogContent className="max-w-sm w-[calc(100vw-2rem)] p-4">
+          <AlertDialogHeader className="space-y-1.5">
+            <AlertDialogTitle className="flex items-center gap-2 text-sm">
+              <Syringe className="h-4 w-4 text-primary shrink-0" />
               Incluir esquema de correção de insulina?
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-2 text-sm">
-                <p>
-                  Você adicionou um controle glicêmico nos cuidados. Deseja incluir também o
-                  <strong> esquema padrão de correção de insulina</strong> (Insulina Regular SC conforme HGT)?
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground leading-snug">
+                  Insulina Regular SC conforme HGT — esquema padrão:
                 </p>
-                <div className="rounded-md border bg-muted/40 p-2 font-mono text-xs leading-relaxed">
-                  &lt;70 mg/dL → SG 50% 40 mL EV + reavaliar em 15 min<br />
-                  70–149 → não administrar<br />
-                  150–200 → 2 UI SC<br />
-                  201–250 → 4 UI SC<br />
-                  251–300 → 6 UI SC<br />
-                  301–350 → 8 UI SC<br />
-                  351–400 → 10 UI SC + comunicar médico<br />
-                  &gt;400 → chamar médico imediatamente
+                <div className="rounded-md border bg-muted/40 px-2 py-1.5 font-mono text-[10px] leading-5 space-y-0">
+                  <div className="flex justify-between gap-2"><span className="text-destructive font-semibold">&lt;70 mg/dL</span><span>SG 50% 40 mL EV + reavaliar 15 min</span></div>
+                  <div className="flex justify-between gap-2"><span className="text-muted-foreground">70–149</span><span>não administrar</span></div>
+                  <div className="flex justify-between gap-2"><span>150–200</span><span>2 UI SC</span></div>
+                  <div className="flex justify-between gap-2"><span>201–250</span><span>4 UI SC</span></div>
+                  <div className="flex justify-between gap-2"><span>251–300</span><span>6 UI SC</span></div>
+                  <div className="flex justify-between gap-2"><span>301–350</span><span>8 UI SC</span></div>
+                  <div className="flex justify-between gap-2"><span>351–400</span><span>10 UI SC + comunicar médico</span></div>
+                  <div className="flex justify-between gap-2"><span className="text-destructive font-semibold">&gt;400</span><span>chamar médico imediatamente</span></div>
                 </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
-            <AlertDialogCancel className="sm:mr-auto">Não, somente HGT</AlertDialogCancel>
-            <Button
-              type="button"
-              variant="outline"
-              className="gap-1.5"
-              onClick={() => {
-                setInsulinSchemePromptOpen(false);
-                // Atalho direto pro assistente completo (basal-bolus, NPH,
-                // BIC, peso) — antes só era mencionado em texto, obrigando
-                // o médico a fechar o pop-up e procurar em Medicações.
-                setPendingInsulinMed({
-                  id: 'insulin-custom-from-hgt-prompt',
-                  name: 'Insulina',
-                  presentation: '100UI/mL - Frasco', defaultDose: 'Conforme esquema', defaultRoute: 'Subcutânea',
-                  defaultPosology: 'Conforme esquema', defaultSchedule: '-', category: 'high_alert', highAlert: true,
-                });
-                setEditingInsulinItemId(null);
-                setInsulinDialogOpen(true);
-              }}
-            >
-              <Syringe className="h-3.5 w-3.5" /> Configurar esquema personalizado
-            </Button>
+          <div className="flex flex-col gap-2 mt-3">
             <AlertDialogAction
+              className="w-full"
               onClick={() => {
                 const schemeName = 'Esquema de correção de insulina (Regular SC conforme HGT)';
-                // Removida guarda de insulinPlan ativo (07/08/2026): a decisão
-                // de incluir o esquema de correção é do médico, não do sistema.
                 if (items.some(i => i.name === schemeName && i.status === 'active')) {
                   toast.info('Esquema já está na prescrição');
                   return;
@@ -10350,9 +10326,30 @@ const PrescricaoPage = () => {
                 toast.success('Esquema de correção adicionado aos Cuidados');
               }}
             >
-              Sim, incluir esquema padrão
+              <Syringe className="h-3.5 w-3.5 mr-1.5" /> Sim, adicionar aos Cuidados
             </AlertDialogAction>
-          </AlertDialogFooter>
+            <div className="flex gap-2">
+              <AlertDialogCancel className="flex-1 h-8 text-xs">Não, somente HGT</AlertDialogCancel>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 h-8 text-xs gap-1"
+                onClick={() => {
+                  setInsulinSchemePromptOpen(false);
+                  setPendingInsulinMed({
+                    id: 'insulin-custom-from-hgt-prompt',
+                    name: 'Insulina',
+                    presentation: '100UI/mL - Frasco', defaultDose: 'Conforme esquema', defaultRoute: 'Subcutânea',
+                    defaultPosology: 'Conforme esquema', defaultSchedule: '-', category: 'high_alert', highAlert: true,
+                  });
+                  setEditingInsulinItemId(null);
+                  setInsulinDialogOpen(true);
+                }}
+              >
+                <Syringe className="h-3 w-3" /> Editar esquema
+              </Button>
+            </div>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
 
