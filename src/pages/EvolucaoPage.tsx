@@ -685,6 +685,17 @@ const EvolucaoPage = () => {
 
           const cellSt: React.CSSProperties = { border: '0.5px solid #94a3b8', padding: '3px 6px', fontSize: '7.5pt', lineHeight: 1.3, verticalAlign: 'top' };
           const labelSt: React.CSSProperties = { ...cellSt, fontWeight: 700, fontSize: '6.5pt', backgroundColor: '#f1f5f9', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.3px' };
+          // BUGFIX (07/08/2026): mesma correção de PrescricaoPage.tsx — a lógica
+          // antiga (`startsWith('m') ? 'Masculino' : 'Feminino'`) assumia Feminino
+          // por padrão pra qualquer valor que não começasse por 'm' (cadastro com
+          // sexo "Outro", dado legado malformado). Checagem agora é explícita.
+          const formatSexLabel = (sex?: string | null): string => {
+            if (!sex) return '—';
+            const v = sex.trim().toUpperCase();
+            if (v === 'M' || v === 'MASCULINO') return 'Masculino';
+            if (v === 'F' || v === 'FEMININO') return 'Feminino';
+            return sex.trim();
+          };
 
           const fmt = (d?: string) => {
             if (!d) return '—';
@@ -739,7 +750,7 @@ const EvolucaoPage = () => {
                   {/* Linha 4: Sexo / Peso — linha compacta complementar */}
                   <tr>
                     <td style={labelSt}>Sexo</td>
-                    <td style={cellSt}>{patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'Masculino' : 'Feminino') : '—'}</td>
+                    <td style={cellSt}>{formatSexLabel(patient.sex)}</td>
                     <td style={labelSt}>Peso</td>
                     <td style={cellSt}>{patient.weight ? `${patient.weight} kg` : '—'}</td>
                     <td colSpan={4} style={{ ...cellSt, color: '#64748b', fontSize: '7pt', fontStyle: 'italic' }}>

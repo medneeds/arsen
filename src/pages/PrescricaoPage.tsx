@@ -5091,6 +5091,7 @@ const PrescricaoPage = () => {
     prontuario: registryProntuario,
     atendimento: registryAtendimento,
     registry: registryFull,
+    loading: identifiersLoading,
   } = usePatientIdentifiers(
     urlPatientIdForRecord,
     patient.name || null,
@@ -5188,53 +5189,62 @@ const PrescricaoPage = () => {
   // em leitos onde o registry ainda não foi vinculado). Garante que o
   // cabeçalho exiba idade, data de admissão hospitalar e admissão UTI em
   // todos os setores (UTI, UCI, UCC, Enf. Transição, Vascular, Neuro etc).
+  // Sinal de prontidão deste fetch — usado pelo gate de impressão (ver
+  // `patientHeaderReady` mais abaixo). Não é um campo do paciente: é só
+  // "esta busca específica já terminou de rodar?", true por padrão quando
+  // não há paciente carregado (nada a esperar).
+  const [fallbackDataReady, setFallbackDataReady] = useState(true);
   useEffect(() => {
-    if (!urlPatientIdForRecord) return;
+    if (!urlPatientIdForRecord) { setFallbackDataReady(true); return; }
     let cancelled = false;
+    setFallbackDataReady(false);
     (async () => {
       const { data } = await supabase
         .from('patients')
         .select('age, admission_date, uti_admission_date, uti_allergies')
         .eq('id', urlPatientIdForRecord)
         .maybeSingle();
-      if (cancelled || !data) return;
-      setPatient(prev => {
-        const next = { ...prev };
-        let changed = false;
-        // Idade: se ausente, calcula de birthDate ou usa patients.age.
-        if (!prev.age || !prev.age.trim()) {
-          if (prev.birthDate) {
-            try {
-              const bd = new Date(prev.birthDate + 'T12:00:00');
-              const now = new Date();
-              let years = now.getFullYear() - bd.getFullYear();
-              const m = now.getMonth() - bd.getMonth();
-              if (m < 0 || (m === 0 && now.getDate() < bd.getDate())) years--;
-              if (years > 0 && years < 130) {
-                next.age = years === 1 ? '1 ano' : `${years} anos`;
-                changed = true;
-              }
-            } catch { /* ignore */ }
+      if (cancelled) return;
+      if (data) {
+        setPatient(prev => {
+          const next = { ...prev };
+          let changed = false;
+          // Idade: se ausente, calcula de birthDate ou usa patients.age.
+          if (!prev.age || !prev.age.trim()) {
+            if (prev.birthDate) {
+              try {
+                const bd = new Date(prev.birthDate + 'T12:00:00');
+                const now = new Date();
+                let years = now.getFullYear() - bd.getFullYear();
+                const m = now.getMonth() - bd.getMonth();
+                if (m < 0 || (m === 0 && now.getDate() < bd.getDate())) years--;
+                if (years > 0 && years < 130) {
+                  next.age = years === 1 ? '1 ano' : `${years} anos`;
+                  changed = true;
+                }
+              } catch { /* ignore */ }
+            }
+            if (!next.age && data.age) {
+              next.age = data.age;
+              changed = true;
+            }
           }
-          if (!next.age && data.age) {
-            next.age = data.age;
+          if ((!prev.admissionDate || !prev.admissionDate.trim()) && data.admission_date) {
+            next.admissionDate = String(data.admission_date).slice(0, 10);
             changed = true;
           }
-        }
-        if ((!prev.admissionDate || !prev.admissionDate.trim()) && data.admission_date) {
-          next.admissionDate = String(data.admission_date).slice(0, 10);
-          changed = true;
-        }
-        if ((!prev.utiAdmissionDate || !prev.utiAdmissionDate.trim()) && data.uti_admission_date) {
-          next.utiAdmissionDate = String(data.uti_admission_date).slice(0, 10);
-          changed = true;
-        }
-        if ((!prev.allergies || !prev.allergies.trim()) && data.uti_allergies) {
-          next.allergies = data.uti_allergies;
-          changed = true;
-        }
-        return changed ? next : prev;
-      });
+          if ((!prev.utiAdmissionDate || !prev.utiAdmissionDate.trim()) && data.uti_admission_date) {
+            next.utiAdmissionDate = String(data.uti_admission_date).slice(0, 10);
+            changed = true;
+          }
+          if ((!prev.allergies || !prev.allergies.trim()) && data.uti_allergies) {
+            next.allergies = data.uti_allergies;
+            changed = true;
+          }
+          return changed ? next : prev;
+        });
+      }
+      setFallbackDataReady(true);
     })();
     return () => { cancelled = true; };
   }, [urlPatientIdForRecord, registryFull?.birthDate, patient.birthDate]);
@@ -7014,7 +7024,49 @@ const PrescricaoPage = () => {
     return !cat.notification_type;
   });
 
+  // ⚠️  BUGFIX (07/08/2026): gate de prontidão do cabeçalho impresso.
+  //
+  // O cabeçalho (nome, leito, prontuário, idade, peso, sexo, admissão,
+  // nascimento, unidade, atendimento, alergias) é hidratado por buscas
+  // assíncronas independentes que rodam em paralelo ao abrir a tela
+  // (usePatientIdentifiers, fallback de patients, sincronização de peso).
+  // Antes desta correção, o botão Imprimir não esperava nada — se disparado
+  // antes de alguma dessas buscas terminar, o documento saía com o campo
+  // daquela busca em branco. Reportado: sexo/nascimento ausentes ou
+  // trocados, não reproduzível sob demanda — exatamente o padrão de uma
+  // corrida entre fetch e impressão, não um bug determinístico de dado.
+  //
+  // Esta checagem NÃO dispara nenhuma busca nova — só lê sinais de
+  // carregamento que essas buscas já expõem (loading do hook, refs/estado
+  // dedicados). Para o caso comum (usuário já navegando na tela há alguns
+  // segundos antes de clicar em Imprimir), tudo já terminou e a impressão
+  // sai instantânea, sem nenhum atraso perceptível. Só nos casos raros
+  // (clique muito rápido, rede lenta) é que há uma pausa curta — capada em
+  // ~1.2s — antes de imprimir ou, se ainda não resolver, um aviso pedindo
+  // para tentar de novo em vez de imprimir com dado incompleto.
+  const isPatientHeaderReady = () =>
+    !identifiersLoading &&
+    fallbackDataReady &&
+    (weightHydratedRef.current || !allergiesPatientId);
+
+  const waitForPatientHeaderReady = async (timeoutMs = 1200): Promise<boolean> => {
+    if (isPatientHeaderReady()) return true;
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      await new Promise(r => setTimeout(r, 100));
+      if (isPatientHeaderReady()) return true;
+    }
+    return false;
+  };
+
   const doPrintPrescription = async () => {
+    const headerReady = await waitForPatientHeaderReady();
+    if (!headerReady) {
+      toast.error("Dados do paciente ainda carregando", {
+        description: "Aguarde um instante e tente imprimir novamente — isso evita imprimir com campos incompletos.",
+      });
+      return;
+    }
     // Garante snapshot persistido ANTES da impressão (assinatura, validações, etc.)
     // FIX bug "PDF em branco": persistItems falhando silenciosamente abortava o print
     // sem o usuário entender; agora avisamos e seguimos imprimindo o snapshot em memória
@@ -10697,6 +10749,23 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
     return parsed.toLocaleDateString('pt-BR');
   };
 
+  // BUGFIX (07/08/2026): a versão antiga fazia
+  //   patient.sex.toLowerCase().startsWith('m') ? 'M' : 'F'
+  // — qualquer valor que não começasse por 'm' (ex: cadastro com sexo "Outro",
+  // dado legado com espaço/formatação diferente) virava Feminino por padrão,
+  // silenciosamente. Reportado: paciente do sexo masculino impresso como
+  // feminino, não reproduzível sob demanda — exatamente o padrão de dado
+  // malformado, não de bug determinístico. Checagem agora é explícita: só
+  // rotula M ou F quando o valor bate exatamente; qualquer outra coisa
+  // (incluindo "Outro") mostra o valor real, nunca assume.
+  const formatSexCode = (sex?: string | null): string => {
+    if (!sex) return '—';
+    const v = sex.trim().toUpperCase();
+    if (v === 'M' || v === 'MASCULINO') return 'M';
+    if (v === 'F' || v === 'FEMININO') return 'F';
+    return sex.trim(); // ex: "Outro" — nunca vira F por padrão
+  };
+
   const isSimple = (cat: PrescriptionCategory) => ['nutrition', 'care'].includes(cat);
 
   const docCode = generatePrintDocCode("PRESC");
@@ -10755,7 +10824,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
             <td style={headerCellStyle}>Peso</td>
             <td style={cellStyle}>{patient.weight ? `${patient.weight}kg` : '—'}</td>
             <td style={headerCellStyle}>Sexo</td>
-            <td style={cellStyle}>{patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'M' : 'F') : '—'}</td>
+            <td style={cellStyle}>{formatSexCode(patient.sex)}</td>
             <td style={headerCellStyle}>Admissão</td>
             <td style={cellStyle}>{safeFormatPatientDate(patient.admissionDate)}</td>
           </tr>
