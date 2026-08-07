@@ -6563,9 +6563,45 @@ const PrescricaoPage = () => {
           }
         }
 
-        // 2b) Fallback: sem filtro de encounter_id (cobre prescrições legadas)
+        // 2b) Fallback: sem filtro de encounter_id (cobre prescrições legadas
+        // gravadas antes do sistema ter o campo encounter_id preenchido).
         // NUNCA usa .eq('encounter_id', null) — só patient_registry_id (anti-avulsa).
-        const { data: validatedRows, error: vErr } = await supabase
+        //
+        // BUGFIX (07/08/2026): sem âncora de data, este fallback buscava a última
+        // prescrição não-arquivada do registry independente do internamento —
+        // carregando prescrições do internamento ANTERIOR na nova internação.
+        // O mecanismo: archive_patient_bed_data arquiva prescrições pelo patient_id
+        // (linha-leito). Prescrições legadas sem encounter_id ficam fora do escopo
+        // da RPC (vinculadas só por patient_registry_id) e sobrevivem ao arquivamento,
+        // depois sendo encontradas aqui sem restrição de data.
+        //
+        // Correção: buscar a admission_date do encounter ativo e aplicar como
+        // filtro de created_at. Assim:
+        //   - Prescrições do internamento anterior (created_at < admission_date
+        //     do encounter atual) NÃO sobem na nova internação.
+        //   - Prescrições legadas (sem encounter_id) do internamento ATUAL
+        //     (created_at >= admission_date) continuam cobertas — o fallback
+        //     cumpre sua função original.
+        //   - Histórico completo permanece preservado no banco — nada é apagado.
+        //   - Se não houver encounter ativo (sem admission_date disponível), o
+        //     filtro não é aplicado — comportamento anterior, seguro para
+        //     pacientes sem internação formal aberta (atendimento ambulatorial,
+        //     legado pré-encounter).
+        let legacyAdmissionFilter: string | null = null;
+        if (activeEncounterId && activeEncounterId.length > 10) {
+          const { data: encRow } = await supabase
+            .from('patient_encounters')
+            .select('admission_date, created_at')
+            .eq('id', activeEncounterId)
+            .maybeSingle();
+          // Usa admission_date se disponível, senão created_at do encounter
+          // (ambos são anteriores a qualquer prescrição da internação atual).
+          const anchor = encRow?.admission_date || encRow?.created_at || null;
+          if (anchor) legacyAdmissionFilter = anchor;
+        }
+        if (capturedGeneration !== loadGenerationRef.current) return;
+
+        let fallbackQuery = supabase
           .from('prescriptions')
           .select('id, items, created_at, version, patient_registry_id')
           .eq('hospital_unit_id', currentHospital.id)
@@ -6575,6 +6611,10 @@ const PrescricaoPage = () => {
           .is('archived_at', null)
           .order('created_at', { ascending: false })
           .limit(1);
+        if (legacyAdmissionFilter) {
+          fallbackQuery = fallbackQuery.gte('created_at', legacyAdmissionFilter);
+        }
+        const { data: validatedRows, error: vErr } = await fallbackQuery;
         if (vErr) throw vErr;
         if (capturedGeneration !== loadGenerationRef.current) return;
         const lastValidated = (validatedRows || [])[0];
