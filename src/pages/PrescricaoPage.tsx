@@ -5499,7 +5499,11 @@ const PrescricaoPage = () => {
       route: effectiveRoute,
       posology: med.defaultPosology,
       schedule: '',
-      instructions: "", // Recomendação sempre em branco — preenchimento exclusivo do médico
+      // Esquema de correção de insulina: preserva as faixas pré-definidas do catálogo.
+      // Demais medicamentos: sempre em branco — preenchimento exclusivo do médico.
+      instructions: med.instructions && /esquema.*correc.*insulin/i.test(
+        med.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      ) ? med.instructions : "",
       category: med.category,
       flags: med.instructions?.toLowerCase().includes('bomba de infusão') ? ['bi' as PrescriptionFlag] : [],
 
@@ -10319,11 +10323,9 @@ const PrescricaoPage = () => {
             <AlertDialogAction
               onClick={() => {
                 const schemeName = 'Esquema de correção de insulina (Regular SC conforme HGT)';
-                if (items.some(i => i.status === 'active' && (i as any).insulinPlan)) {
-                  toast.info('Já existe esquema de insulinoterapia ativo nesta prescrição');
-                  return;
-                }
-                if (items.some(i => i.name === schemeName)) {
+                // Removida guarda de insulinPlan ativo (07/08/2026): a decisão
+                // de incluir o esquema de correção é do médico, não do sistema.
+                if (items.some(i => i.name === schemeName && i.status === 'active')) {
                   toast.info('Esquema já está na prescrição');
                   return;
                 }
