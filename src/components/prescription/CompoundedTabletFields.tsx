@@ -12,18 +12,27 @@
  *   - Removidos os 3 campos numéricos (diluir/lavagem pré/pós), o toggle
  *     "administrar separadamente" e o botão "Aplicar à instrução" — a
  *     instrução no padrão ISMP-Brasil (ou a técnica específica do
- *     medicamento, quando existe) é aplicada automaticamente ao campo
- *     `instructions` assim que o item aparece, uma única vez, sem exigir
- *     preenchimento manual. Igual ao fluxo oral: o médico só edita o texto
- *     livre de "Observações adicionais" se quiser ajustar algo.
+ *     medicamento, quando existe) é gerada automaticamente no impresso via
+ *     buildPrepSegments (isOralSolidEnteral), sem precisar ser gravada em
+ *     instructions.
  *   - Preservado o que é segurança do paciente, não burocracia: o alerta
  *     vermelho bloqueante (NÃO TRITURAR sem técnica viável) e o resumo da
  *     técnica específica (ex.: omeprazol — abrir cápsula e dispersar em
- *     suco) continuam visíveis, agora em formato compacto e somente leitura.
+ *     suco) continuam visíveis, em formato compacto e somente leitura.
+ *
+ * BUGFIX (07/08/2026): o useEffect que preenchia instructions automaticamente
+ * foi removido. O autofill gerava dois problemas:
+ *   1. Poluição visual: o texto de trituração aparecia nas "Observações" do
+ *      item, ao lado da quantidade, mesmo sendo redundante com o compacto.
+ *   2. Persistente: ao navegar para outro item e voltar, o componente era
+ *      remontado e o autoFilledRef perdia o valor — o texto voltava mesmo
+ *      depois de o médico ter apagado manualmente.
+ * A instrução de trituração já sai no impresso e no compacto via
+ * buildPrepSegments (isOralSolidEnteral + enteralDilutionVolume), sem
+ * depender do campo instructions. O campo fica livre para observações reais.
  */
-import { useEffect, useRef } from "react";
-import { AlertTriangle, Pill } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AlertTriangle, Pill } from "lucide-react";
 import { findNotCrushable } from "@/data/notCrushableMedications";
 
 interface PrescriptionLikeItem {
@@ -39,39 +48,10 @@ interface Props {
   onUpdate: (id: string, field: 'instructions', value: string) => void;
 }
 
-// Defaults ISMP-Brasil: diluir em 20 mL de água, lavar sonda com 10 mL antes/depois.
-const DEFAULT_VOLUME = '20';
-const DEFAULT_PRE_FLUSH = '10';
-const DEFAULT_POST_FLUSH = '10';
-
-export function CompoundedTabletFields({ item, onUpdate }: Props) {
+export function CompoundedTabletFields({ item }: Props) {
   const block = findNotCrushable(item.name, item.presentation);
   const hasTechnique = !!block?.technique;
   const hardBlock = !!block && !hasTechnique;
-
-  // Aplica a instrução automaticamente UMA VEZ por item (quando o campo ainda
-  // está vazio) — não sobrescreve texto que o médico já tenha digitado/editado.
-  const autoFilledRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (hardBlock) return; // sem técnica viável — nada a auto-preencher, é bloqueio.
-    if (autoFilledRef.current === item.id) return;
-    if (item.instructions && item.instructions.trim()) {
-      autoFilledRef.current = item.id;
-      return;
-    }
-    const text = hasTechnique
-      ? block!.technique!.instructionTemplate
-          .replace('{volume}', DEFAULT_VOLUME)
-          .replace('{preLav}', DEFAULT_PRE_FLUSH)
-          .replace('{posLav}', DEFAULT_POST_FLUSH)
-      : `Triturar e diluir em ${DEFAULT_VOLUME} mL de água destilada/filtrada. `
-        + `Lavar sonda com ${DEFAULT_PRE_FLUSH} mL de água ANTES. Administrar pela sonda. `
-        + `Lavar sonda com ${DEFAULT_POST_FLUSH} mL de água APÓS. `
-        + `NÃO misturar com outros medicamentos (administrar separadamente).`;
-    autoFilledRef.current = item.id;
-    onUpdate(item.id, 'instructions', text);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [item.id]);
 
   // Nem bloqueio nem técnica específica → nada a exibir (igual ao modo oral;
   // a instrução já foi preenchida em segundo plano pelo efeito acima).

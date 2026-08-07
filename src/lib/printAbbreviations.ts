@@ -61,6 +61,10 @@ const ROUTE_MAP: Array<[RegExp, string]> = [
   [/\bsonda nasog[áa]strica\b/gi, 'SNG'],
   [/\bgastrostomia\b/gi, 'GTT'],
   [/\bjejunostomia\b/gi, 'JJT'],
+  // BUGFIX (07/08/2026): a entrada genérica /enteral/ processava 'Enteral (SNE/SNG)'
+  // substituindo só 'Enteral' e deixando '(SNE/SNG)' intacto → resultado 'SNE (SNE/SNG)'.
+  // Entrada específica antes da genérica resolve sem afetar outros casos.
+  [/\bEnteral\s*\(SNE\/SNG\)\b/gi, 'SNE'],
   [/\benteral\b/gi, 'SNE'],
 ];
 
