@@ -481,7 +481,11 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
         dietType: ORAL_DIETTYPE[oralConsist],
         nutConsistency: consist,
         dietInterval: oralFraction,
-        name: `${isMixed ? "Dieta mista — VO" : "Dieta via oral"} — ${consist}${profiles ? ` (${profiles})` : ""}`,
+        // Perfil oral (Livre, Sem açúcar, etc.) agora vai para dietProfile
+        // para aparecer na frase de detalhe via buildNutritionParts, já que
+        // saiu do nome (Opção B — 07/08/2026).
+        dietProfile: profiles || undefined,
+        name: isMixed ? "Dieta mista" : "Dieta via oral",
         presentation: "-",
         defaultDose: "-",
         defaultRoute: "Oral",
@@ -531,7 +535,12 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
         nutFraction: entMode !== "continua" ? `${entFractions}x` : undefined,
         nutProgression: entProgression ? "Iniciar 20 mL/h; progredir +20 mL/h a cada 6-8h conforme tolerância" : undefined,
         nutBedHead: "30-45",
-        name: `${isMixed ? "Dieta mista — Enteral" : "Dieta enteral"} (${sysLabel}) — ${formula} via ${via}`,
+        // Via e sistema agora ficam em campos estruturados (nutAccess, dietProfile)
+        // para aparecerem na frase de detalhe via buildNutritionParts, já que
+        // saíram do nome (Opção B — 07/08/2026).
+        nutAccess: via || undefined,
+        dietProfile: sysLabel,
+        name: isMixed ? "Dieta mista" : "Dieta enteral",
         presentation: "-",
         defaultDose: dose,
         defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : via === "SOG" ? "Sonda orogástrica" : "Enteral (SNE/SNG)",
@@ -609,7 +618,10 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
         nutritionType: "diet_parenteral",
         nutVolDay: parVolume,
         infusionRate: parRate || undefined,
-        name: `${isMixed ? "Dieta mista — NPT" : "NPT"} ${parType === "central" ? "central" : "periférica"}`,
+        // Tipo de acesso agora em nutAccess para sair na frase de detalhe
+        // (saiu do nome na Opção B — 07/08/2026).
+        nutAccess: parType === "central" ? "Central (PICC/CVC)" : "Periférico",
+        name: isMixed ? "Dieta mista" : "NPT",
         presentation: "Bolsa NPT",
         defaultDose: `${parVolume} mL${parKcal ? ` (${parKcal} kcal)` : ""}`,
         defaultRoute: "Intravenosa",
