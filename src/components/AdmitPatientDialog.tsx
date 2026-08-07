@@ -27,6 +27,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 import { PisRegistrySyncDialog, computePisDiff, type PisSourceRow } from "@/components/PisRegistrySyncDialog";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
 interface PreAdmissionFull {
   id: string;
@@ -114,6 +115,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   // Sincronização PIS → patient_registry antes de admitir
   const [pisSyncOpen, setPisSyncOpen] = useState(false);
   const [pisSyncSkipped, setPisSyncSkipped] = useState(false);
+  const [passwordConfirmOpen, setPasswordConfirmOpen] = useState(false);
 
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment, currentSectorCode } = useDepartment();
@@ -950,7 +952,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
             Cancelar
           </Button>
           <Button
-            onClick={handleAdmit}
+            onClick={() => setPasswordConfirmOpen(true)}
             disabled={!selectedSector || !selectedBed || isSubmitting || (sectorFullAlert && !extraBedRequested)}
             className="gap-1"
           >
@@ -983,6 +985,14 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         setPisSyncSkipped(true);
         setTimeout(() => { void handleAdmit(); }, 50);
       }}
+    />
+    <PasswordConfirmDialog
+      open={passwordConfirmOpen}
+      onOpenChange={setPasswordConfirmOpen}
+      title="Confirmar Admissão"
+      description="Confirme sua identidade para registrar a admissão do paciente."
+      actionLabel="Admitir"
+      onConfirmed={handleAdmit}
     />
     </>
   );
