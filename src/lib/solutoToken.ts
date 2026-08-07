@@ -280,45 +280,66 @@ export function buildPrepSegments(item: PrepFields): { head: string[]; tail: str
     return { head, tail };
   }
 
+  // BUGFIX (07/08/2026): mesmo problema do modo compactado — a função lia
+  // diluent/volumeTotal/infusionTime diretamente do item sem checar o tipo de
+  // apresentação. Para vias não-EV (oral_solid, oral_liquid, im_sc, topical,
+  // rectal) esses campos não fazem sentido clínico e não devem aparecer no
+  // impresso. O impresso real e o modo compactado agora usam a mesma guarda.
+  // Exceção: oral-sólido por SONDA (isOralSolidEnteral) — precisa de instrução
+  // de trituração/diluição, mas não de diluente/volume/tempo de infusão EV.
+  const presLower = (item.presentation || '').toLowerCase();
+  const routeLower = (item.route || '').toLowerCase();
+  const isOralSolidEnteral =
+    /(comprimido|c[áa]psula|c[áa]ps\\b|cap\\.|dr[áa]gea|dragea)/.test(presLower)
+    && /(\bsng\b|\bsne\b|enteral|nasoenter|nasogastr|orogastr|gastrostomia|jejunostomia|\bgtt\b|sonda)/.test(routeLower);
+
+  // Inferência de tipo de apresentação — para decidir se campos IV devem aparecer.
+  // Importação local evita dependência circular (prescriptionPresentation importa
+  // solutoToken indiretamente); usamos a mesma lógica canônica.
+  const isIVPresentation = (() => {
+    const r = routeLower.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const p = presLower.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    // Oral/enteral/tópico/retal/IM/SC → nunca mostra campos IV
+    if (/(comprimido|capsula|cap\.|dragea|sublingual|orodispersivel)/.test(p)) return false;
+    if (/(oral|\bvo\b|sublingual|enteral|sonda|topico|retal|supositorio|pomada|creme|gel|intramuscular|subcutanea|\bsc\b|\bim\b)/.test(r)) return false;
+    // IV confirmado
+    if (/(intravenosa|endovenosa|\bev\b)/.test(r)) return true;
+    // Frasco-ampola/ampola sem rota explícita — presume IV
+    if (/(ampola|frasco|fr\.?\s*ampola|po liofiliz)/.test(p)) return true;
+    return false;
+  })();
+
   // ── HEAD ──
-  // Reconstituição (pó liofilizado) — formato unificado: preserva o nº de FA
-  // (dado real de preparo, vinha da principal) no layout da extra (com seta).
-  if (item.reconstitutionSolvent && item.reconstitutionVolume) {
+  // Reconstituição (pó liofilizado) — formato unificado.
+  if (isIVPresentation && item.reconstitutionSolvent && item.reconstitutionVolume) {
     const solvent = item.reconstitutionSolvent.replace(/\bABD\b/gi, 'AD');
     const qtyFA = item.quantity?.trim() && item.quantity.trim() !== '0' ? item.quantity.trim() : '1';
     head.push(`Reconstituir: ${qtyFA} FA em ${solvent} ${item.reconstitutionVolume} mL →`);
   }
 
   // Diluição para sonda — comprimido/cápsula por via enteral precisa ser
-  // triturado e diluído (ISMP). Instrução essencial para a enfermagem, então
-  // sai na tela compacta E no impresso pela mesma fonte. (22/07/2026.)
-  const presLower = (item.presentation || '').toLowerCase();
-  const routeLower = (item.route || '').toLowerCase();
-  const isOralSolidEnteral =
-    /(comprimido|c[áa]psula|c[áa]ps\\b|cap\\.|dr[áa]gea|dragea)/.test(presLower)
-    && /(\bsng\b|\bsne\b|enteral|nasoenter|nasogastr|orogastr|gastrostomia|jejunostomia|\bgtt\b|sonda)/.test(routeLower);
+  // triturado e diluído (ISMP). Instrução essencial para a enfermagem.
   if (isOralSolidEnteral) {
-    // Campo vazio significa "usar o padrão" — o valor nunca e escrito no item
-    // (auto-preenchimento causava loop com o autosave do rascunho). A instrução
-    // sai igual na tela compacta e no impresso.
     const dilMl = (item.enteralDilutionVolume || '').trim() || ENTERAL_DILUTION_DEFAULT_ML;
     head.push(`Triturar e diluir em ${dilMl} mL de água`);
   }
 
-  // Diluente — ou "Sem diluente" explícito
-  const hasDiluent = !!(item.diluent && !isNoDiluent(item.diluent) && item.diluent !== '-');
-  if (hasDiluent) {
-    const dilLabel = item.diluent === 'diluente_proprio' ? 'Diluente próprio' : item.diluent;
-    head.push(item.diluentVolume ? `Dil.: ${dilLabel} ${item.diluentVolume} mL` : `Dil.: ${dilLabel}`);
-  } else if (isNoDiluent(item.diluent)) {
-    head.push('Sem diluente');
-  }
+  // Diluente, volume e tempo — APENAS para vias IV
+  if (isIVPresentation) {
+    // Diluente — ou "Sem diluente" explícito
+    const hasDiluent = !!(item.diluent && !isNoDiluent(item.diluent) && item.diluent !== '-');
+    if (hasDiluent) {
+      const dilLabel = item.diluent === 'diluente_proprio' ? 'Diluente próprio' : item.diluent;
+      head.push(item.diluentVolume ? `Dil.: ${dilLabel} ${item.diluentVolume} mL` : `Dil.: ${dilLabel}`);
+    } else if (isNoDiluent(item.diluent)) {
+      head.push('Sem diluente');
+    }
 
-  // Volume total — SEMPRE mostra quando preenchido (dado de segurança em BIC:
-  // define concentração e confere a vazão). Não esconde mais por "redundância".
-  if (item.volumeTotal) {
-    const volTotalNum = parseFloat(item.volumeTotal.replace(',', '.'));
-    if (volTotalNum > 0) head.push(`Vol.: ${item.volumeTotal} mL`);
+    // Volume total
+    if (item.volumeTotal) {
+      const volTotalNum = parseFloat(item.volumeTotal.replace(',', '.'));
+      if (volTotalNum > 0) head.push(`Vol.: ${item.volumeTotal} mL`);
+    }
   }
 
   // ── TAIL ──
@@ -330,8 +351,8 @@ export function buildPrepSegments(item: PrepFields): { head: string[]; tail: str
     tail.push('BIC');
   }
 
-  // Tempo / Vazão — mL/h ou gts/min
-  if (!item.ivBolus && (item.infusionTime || item.infusionRate)) {
+  // Tempo / Vazão — mL/h ou gts/min — apenas IV
+  if (isIVPresentation && !item.ivBolus && (item.infusionTime || item.infusionRate)) {
     const unit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
     const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
     if (item.infusionTime) tail.push(`Correr em: ${item.infusionTime}${unit}`);

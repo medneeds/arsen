@@ -685,11 +685,22 @@ function applyIvClinicalAutofills(baseItem: PrescriptionItem, medName: string, p
       const isEmptyField = (v?: string) => !v || !v.trim() || v.trim() === '-';
       if (ev.defaultRoute && isEmptyField(baseItem.route)) baseItem.route = ev.defaultRoute;
       if (ev.defaultPosology && isEmptyField(baseItem.posology)) baseItem.posology = ev.defaultPosology;
-      if (ev.diluent && isEmptyField(baseItem.diluent)) baseItem.diluent = ev.diluent;
-      if (ev.volumeTotal && isEmptyField(baseItem.volumeTotal)) baseItem.volumeTotal = ev.volumeTotal;
-      if (ev.infusionTime && isEmptyField(baseItem.infusionTime)) {
-        baseItem.infusionTime = ev.infusionTime;
-        if (ev.infusionTimeUnit) baseItem.infusionTimeUnit = ev.infusionTimeUnit as 'min' | 'h';
+      // BUGFIX (07/08/2026): campos de infusão (diluente, volume, tempo) só fazem
+      // sentido em vias EV. Antes eram aplicados incondicionalmente pelo nome do
+      // medicamento — ex: Omeprazol VO recebia diluent='SF0,9%', volumeTotal='100',
+      // infusionTime='30min' da sugestão IV, e esses valores apareciam no modo
+      // compactado e na folha impressa como "diluir em SF0,9% 100mL, correr em 30min",
+      // que é clinicamente errado para via oral.
+      // A sugestão clínica tem uma única entrada por nome (ex: 'omeprazol' → IV),
+      // não por apresentação — então sem esta guarda, ela contaminava qualquer
+      // variante oral/IM/SC/tópica do mesmo medicamento.
+      if (isIV) {
+        if (ev.diluent && isEmptyField(baseItem.diluent)) baseItem.diluent = ev.diluent;
+        if (ev.volumeTotal && isEmptyField(baseItem.volumeTotal)) baseItem.volumeTotal = ev.volumeTotal;
+        if (ev.infusionTime && isEmptyField(baseItem.infusionTime)) {
+          baseItem.infusionTime = ev.infusionTime;
+          if (ev.infusionTimeUnit) baseItem.infusionTimeUnit = ev.infusionTimeUnit as 'min' | 'h';
+        }
       }
     }
   }
@@ -2183,7 +2194,18 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
       // (Correção 22/07/2026.)
       const doseLabel = composeDoseLabel(item);
       if (doseLabel) compactParts.push(doseLabel);
-      if (item.diluent && !isNoDiluent(item.diluent)) {
+
+      // BUGFIX (07/08/2026): o modo compactado lia diluent/volumeTotal/infusionTime
+      // DIRETAMENTE do objeto do item, sem checar o tipo de apresentação — se esses
+      // campos estivessem preenchidos por uma sugestão IV aplicada indevidamente
+      // (ex: Omeprazol VO recebendo sugestão do Omeprazol EV), apareciam na linha
+      // compactada como "diluir em SF0,9% 100mL · vol 100mL · correr em 30min"
+      // mesmo para via oral. A correção aplica o mesmo inferPresentationType já
+      // usado na visualização expandida (linha 2457) antes de incluir esses campos.
+      const ptypeCompact = inferPresentationType(item.presentation, item.route, item.name);
+      const showInfusionCompact = showInfusionBlock(ptypeCompact);
+
+      if (showInfusionCompact && item.diluent && !isNoDiluent(item.diluent)) {
         // Rótulo legível — mesmo mapeamento da fonte única (evita "diluir em
         // diluente_proprio" cru na tela).
         const dilLabelHydr = item.diluent === 'diluente_proprio' ? 'Diluente próprio' : item.diluent;
@@ -2191,13 +2213,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         if (item.diluentVolume) dil += ` ${item.diluentVolume}mL`;
         compactParts.push(dil);
       }
-      if (item.volumeTotal) compactParts.push(`vol ${item.volumeTotal}mL`);
+      if (showInfusionCompact && item.volumeTotal) compactParts.push(`vol ${item.volumeTotal}mL`);
       // Bolus só faz sentido em via intravenosa — mesma regra do
       // buildPrepSegments (impresso). Antes a tela rotulava "EV em bolus"
       // sem checar a via, podendo marcar bolus em medicação não-EV.
       if (item.ivBolus && isIVRoute(item.route || '')) {
         compactParts.push('EV em bolus');
-      } else if (item.infusionTime) {
+      } else if (showInfusionCompact && item.infusionTime) {
         const tUnit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
         let inf = `correr em ${item.infusionTime}${tUnit}`;
         if (item.infusionRate) {
@@ -2205,7 +2227,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           inf += ` (${item.infusionRate} ${rLabel})`;
         }
         compactParts.push(inf);
-      } else if (item.infusionRate) {
+      } else if (showInfusionCompact && item.infusionRate) {
         const rLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
         compactParts.push(`${item.infusionRate} ${rLabel}`);
       }
