@@ -2266,36 +2266,12 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
       // consistência IDDSI não saía em nenhum impresso).
       buildNutritionParts({ ...item, nutritionType: sub }).forEach(p => compactParts.push(p));
     } else if (isHydration) {
-      // Frase de detalhe (buildHydrationLine) só é necessária quando o nome
-      // NÃO contém já o volume/via/intervalo — o que acontece para itens criados
-      // manualmente. Itens criados pelo wizard (buildWaterEntryName) embutem
-      // "Água filtrada — 350mL · SNE · 4/4h" diretamente no nome, tornando
-      // volume, fases e intervalo da frase de detalhe redundantes (Opção A,
-      // 07/08/2026). O separador "—" é o marcador confiável do formato wizard.
-      const nameHasDetail = item.name.includes('—');
-      if (!nameHasDetail) {
-        // Item criado manualmente — mostrar detalhe normalmente
-        const phrase = buildHydrationLine(item);
-        if (phrase) compactParts.push(phrase);
-      } else {
-        // Item do wizard — mostrar só o total/24h (dado que NÃO está no nome)
-        const vol = parseFloat((item.volumeTotal || '0').replace(',', '.')) || 0;
-        const phases = (() => {
-          const p = (item.posology || '').match(/^(\d+)\//);
-          if (!p) return 0;
-          const interval = parseInt(p[1], 10);
-          return interval > 0 ? Math.round(24 / interval) : 0;
-        })();
-        const total24 = vol > 0 && phases > 0 ? vol * phases : 0;
-        if (total24 > 0) compactParts.push(`total ${total24}mL/24h`);
-        // Tempo/vazão para SNE (não está no nome, é dado de preparo)
-        if (!isOralLikeRoute(item.route) && item.infusionTime) {
-          const tUnit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
-          let seg = `correr em ${item.infusionTime}${tUnit}`;
-          if (item.infusionRate) seg += ` (${item.infusionRate} ${item.infusionMode === 'gts' ? 'gts/min' : 'mL/h'})`;
-          compactParts.push(seg);
-        }
-      }
+      // Frase única com volume/fases/intervalo/vazão/total — fonte única
+      // (buildHydrationLine). Como o nome agora contém apenas o tipo
+      // ("Água filtrada", sem volume/via/intervalo — Opção B, 07/08/2026),
+      // a frase de detalhe traz todas as informações sem repetição.
+      const phrase = buildHydrationLine(item);
+      if (phrase) compactParts.push(phrase);
     } else {
       // Dose / Qtd+Forma — fonte única (buildSolutoTokenLabeled).
       // ANTES exigia item.dose preenchido, o que escondia a QUANTIDADE nas
@@ -2348,9 +2324,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
     // Via ABREVIADA na tela, como no impresso: o rotulo completo repetia a
     // informacao — "Enteral (SNE/SNG)" ja diz sonda no proprio nome e depois
     // repete entre parenteses. abbrevRoute devolve "SNE". (23/07/2026.)
-    // Para hidratação criada pelo wizard, a via também está no nome — não repetir.
-    const hydrationNameHasDetail = isHydration && item.name.includes('—');
-    if (item.route && item.route !== '-' && !isInhalation && !isNutrition && !hydrationNameHasDetail) routePosology.push(abbrevRoute(item.route));
+    if (item.route && item.route !== '-' && !isInhalation && !isNutrition) routePosology.push(abbrevRoute(item.route));
     if (!isHydration && !isInhalation && !isNutrition && item.posology && item.posology !== '-') routePosology.push(item.posology);
 
 

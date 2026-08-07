@@ -95,12 +95,11 @@ export function computeWaterTotal24h(state: WaterOfferingState): number | null {
   return null;
 }
 
-/** Constrói o nome curto da prescrição: "Água filtrada · 100mL VO 4/4h". */
+/** Constrói o nome curto da prescrição: só o tipo (ex: "Água filtrada").
+ * Volume, via e intervalo ficam na frase de detalhe (buildHydrationLine),
+ * evitando repetição na linha compacta da prescrição (Opção B, 07/08/2026). */
 export function buildWaterEntryName(state: WaterOfferingState): string {
-  const type = WATER_TYPES.find(t => t.key === state.type)?.label ?? "Água";
-  const vol = parseDecimalBR(state.volumePerOffering) || 0;
-  const route = WATER_ROUTES.find(r => r.key === state.route)?.label ?? "";
-  return `${type} — ${vol > 0 ? `${vol}mL · ` : ""}${route} · ${state.fraction}`;
+  return WATER_TYPES.find(t => t.key === state.type)?.label ?? "Água";
 }
 
 /** Linha de instrução estendida (temperatura, total/24h, restrição). */
