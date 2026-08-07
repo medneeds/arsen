@@ -34,6 +34,8 @@ import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
 import { DiagnosticsPanel } from "@/components/evolution/DiagnosticsPanel";
 import type { Patient } from "@/types/patient";
 import { getEffectiveAdmissionDate } from "@/lib/dihCalc";
+import { calcDIH } from "@/lib/dihCalc";
+import { formatDeviceLabel, deviceAlertTone, type EvolutionDevice } from "@/lib/devicesCatalog";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PatientHeader {
@@ -277,6 +279,23 @@ const EvolucaoPage = () => {
     if (result) {
       setShowNewForm(false);
       resetNewForm();
+
+      // BUGFIX (07/08/2026): sincroniza patients.uti_devices com os dispositivos
+      // registrados na evolução. Sem isso, o Painel Clínico e o impresso do Painel
+      // continuavam mostrando o texto livre antigo, independente do que o médico
+      // registrou na Evolução com data/subtipo estruturados.
+      // Converte EvolutionDevice[] → string[] (label + detail) → \n-joined para uti_devices.
+      if (initialPatientId && newDevices.length > 0) {
+        const deviceLines = newDevices
+          .filter((d: EvolutionDevice) => typeof d.label === 'string' && d.label.trim())
+          .map((d: EvolutionDevice) => formatDeviceLabel({ label: d.label, detail: d.detail }));
+        if (deviceLines.length > 0) {
+          await supabase
+            .from('patients')
+            .update({ uti_devices: deviceLines.join('\n'), updated_at: new Date().toISOString() })
+            .eq('id', initialPatientId);
+        }
+      }
     }
   };
 
@@ -825,6 +844,42 @@ const EvolucaoPage = () => {
                 </tbody>
               </table>
             </>
+          );
+        })()}
+
+        {/* Dispositivos invasivos — BUGFIX (07/08/2026): ausentes da pré-visualização.
+            Usa os mesmos dados e lógica de printEvolution.ts (formatDeviceLabel + calcDIH
+            + deviceAlertTone) para garantir que tela e papel mostrem o mesmo conteúdo. */}
+        {newDevices.length > 0 && (() => {
+          const itens = newDevices
+            .filter((d: EvolutionDevice) => typeof d.label === 'string' && d.label.trim())
+            .map((d: EvolutionDevice) => {
+              const rotulo = formatDeviceLabel({ label: d.label, detail: d.detail });
+              const dias = d.insertedAt ? calcDIH(d.insertedAt) : null;
+              const tom = deviceAlertTone(dias);
+              const cor = tom === 'red' ? '#b91c1c' : tom === 'amber' ? '#b45309' : '#047857';
+              const dataFmt = d.insertedAt
+                ? (() => { try { return format(new Date(d.insertedAt.split('/').reverse().join('-') + 'T12:00:00'), 'dd/MM', { locale: ptBR }); } catch { return d.insertedAt; } })()
+                : '';
+              return { rotulo, dias, cor, dataFmt };
+            });
+          if (itens.length === 0) return null;
+          return (
+            <div style={{ marginBottom: '8px', pageBreakInside: 'avoid' }}>
+              <div style={{ fontSize: '7.5pt', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px', borderBottom: '0.5px solid #cbd5e1', paddingBottom: '2px' }}>
+                Dispositivos Invasivos
+              </div>
+              <div style={{ padding: '4pt 6pt', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '3pt', fontSize: '8pt', lineHeight: 1.6, display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                {itens.map((it, i) => (
+                  <span key={i} style={{ whiteSpace: 'nowrap' }}>
+                    {it.rotulo}
+                    {it.dataFmt && <span style={{ color: '#64748b', marginLeft: '3px' }}>{it.dataFmt}</span>}
+                    {it.dias !== null && <strong style={{ color: it.cor, marginLeft: '3px' }}>D{it.dias}</strong>}
+                    {i < itens.length - 1 && <span style={{ color: '#cbd5e1', marginLeft: '4px' }}>·</span>}
+                  </span>
+                ))}
+              </div>
+            </div>
           );
         })()}
 
