@@ -1868,58 +1868,102 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   };
 
   if (isSimple) {
+    // Detecta se é o item de esquema de correção (simples, category=care)
+    // para habilitar a sanfona com faixas editáveis inline.
+    const isSlidingSchemeItem = /esquema.*correc.*insulin/i.test(
+      item.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    );
+
+    // Parses as faixas do campo instructions para exibição/edição
+    const parseSlidingInstructions = (raw: string): Array<{ label: string; units: string }> => {
+      if (!raw) return [];
+      return raw.split('|').map(seg => {
+        const parts = seg.split(':');
+        const label = parts[0]?.trim() ?? seg.trim();
+        const units = parts.slice(1).join(':').trim();
+        return { label, units };
+      }).filter(r => r.label && r.units);
+    };
+
+    const serializeSlidingInstructions = (rows: Array<{ label: string; units: string }>) =>
+      rows.map(r => `${r.label}: ${r.units}`).join(' | ');
+
+    const slidingRows = isSlidingSchemeItem
+      ? parseSlidingInstructions(item.instructions || '')
+      : [];
+
     return (
       <div
         ref={setNodeRef}
         style={style}
         className={cn(
-          "flex items-center gap-2 px-2.5 py-2 rounded-lg border group transition-all",
+          "rounded-lg border group transition-all",
           item.status === 'suspended'
             ? "border-destructive/30 bg-destructive/5 opacity-60"
-            : "border-border/40 bg-muted/20",
+            : isSlidingSchemeItem
+              ? "border-emerald-300/50 bg-emerald-50/30 dark:bg-emerald-950/10"
+              : "border-border/40 bg-muted/20",
           selected && "ring-2 ring-primary/40 border-primary/30",
           isDragging && "shadow-lg"
         )}
       >
-        <ValidationDot />
-        <button
-          className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0 touch-none"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-4 w-4" />
-        </button>
-        <Checkbox
-          checked={selected}
-          onCheckedChange={() => onToggleSelect(item.id)}
-          className="shrink-0"
-        />
-        <span className="text-xs font-mono text-muted-foreground w-5">{index + 1}.</span>
-        <div className="flex-1 min-w-0">
-          <span className={cn("text-sm font-medium", item.status === 'suspended' && "line-through")}>
-            {item.name}
-          </span>
-          {item.status === 'suspended' && item.suspensionReason && (
-            <p className="text-[10px] text-destructive/70 italic truncate">Motivo: {item.suspensionReason}</p>
-          )}
-        </div>
-        {item.dose !== '-' && <Badge variant="outline" className="text-[10px]">{item.dose}</Badge>}
-        {isSimple ? (
-          <Popover>
-            <PopoverTrigger asChild>
+        {/* Linha principal — sempre visível */}
+        <div className="flex items-center gap-2 px-2.5 py-2">
+          <ValidationDot />
+          <button
+            className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0 touch-none"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+          <Checkbox
+            checked={selected}
+            onCheckedChange={() => onToggleSelect(item.id)}
+            className="shrink-0"
+          />
+          <span className="text-xs font-mono text-muted-foreground w-5">{index + 1}.</span>
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            <span className={cn("text-sm font-medium flex-1 min-w-0 truncate", item.status === 'suspended' && "line-through")}>
+              {item.name}
+            </span>
+            {isSlidingSchemeItem && !isLocked && item.status !== 'suspended' && (
               <button
                 type="button"
-                disabled={isLocked || item.status === 'suspended'}
+                onClick={() => setIndividualExpanded(v => !v)}
                 className={cn(
-                  "shrink-0 inline-flex items-center gap-1 rounded-md border border-border/50 bg-secondary text-secondary-foreground text-[10px] px-1.5 py-0.5 hover:border-primary/50 hover:bg-secondary/80 transition-colors",
-                  (isLocked || item.status === 'suspended') && "opacity-60 cursor-not-allowed"
+                  "shrink-0 inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+                  individualExpanded
+                    ? "border-emerald-400/60 bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                    : "border-border/50 bg-secondary text-secondary-foreground hover:border-emerald-400/50 hover:bg-emerald-50"
                 )}
-                title="Ajustar aprazamento"
+                title={individualExpanded ? "Fechar visualização das faixas" : "Ver e editar faixas de correção"}
               >
-                {item.posology && item.posology !== '-' ? item.posology : 'Aprazar'}
-                <Pencil className="h-2.5 w-2.5 opacity-60" />
+                <Syringe className="h-2.5 w-2.5" />
+                {individualExpanded ? '↑ Fechar' : '↓ Ver faixas'}
               </button>
-            </PopoverTrigger>
+            )}
+            {item.status === 'suspended' && item.suspensionReason && (
+              <p className="text-[10px] text-destructive/70 italic truncate">Motivo: {item.suspensionReason}</p>
+            )}
+          </div>
+          {item.dose !== '-' && <Badge variant="outline" className="text-[10px]">{item.dose}</Badge>}
+          {isSimple ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  disabled={isLocked || item.status === 'suspended'}
+                  className={cn(
+                    "shrink-0 inline-flex items-center gap-1 rounded-md border border-border/50 bg-secondary text-secondary-foreground text-[10px] px-1.5 py-0.5 hover:border-primary/50 hover:bg-secondary/80 transition-colors",
+                    (isLocked || item.status === 'suspended') && "opacity-60 cursor-not-allowed"
+                  )}
+                  title="Ajustar aprazamento"
+                >
+                  {item.posology && item.posology !== '-' ? item.posology : 'Aprazar'}
+                  <Pencil className="h-2.5 w-2.5 opacity-60" />
+                </button>
+              </PopoverTrigger>
             <PopoverContent className="w-64 p-3" align="end">
               <p className="text-[11px] font-semibold text-muted-foreground mb-2">Aprazamento</p>
               {(() => {
@@ -2041,6 +2085,38 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         {/* Schedule removed — manual aprazamento by nursing */}
         <ItemActions />
       </div>
+
+      {/* Painel sanfonado de faixas — só para item de esquema de correção */}
+      {isSlidingSchemeItem && individualExpanded && !isLocked && item.status !== 'suspended' && (
+        <div className="border-t border-emerald-200/60 dark:border-emerald-800/40 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-2.5 space-y-1.5">
+          <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide mb-2">
+            Faixas de correção — editáveis
+          </p>
+          {slidingRows.map((row, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className="text-[10px] text-muted-foreground w-48 shrink-0 truncate" title={row.label}>
+                {row.label}:
+              </span>
+              <Input
+                value={row.units}
+                disabled={isLocked}
+                onChange={(e) => {
+                  const updated = slidingRows.map((r, j) =>
+                    j === i ? { ...r, units: e.target.value } : r
+                  );
+                  onUpdate(item.id, 'instructions', serializeSlidingInstructions(updated));
+                }}
+                className="h-6 text-[11px] flex-1 min-w-0 bg-white dark:bg-slate-800 border-emerald-200 dark:border-emerald-800 focus-visible:ring-emerald-400"
+                placeholder="Ex: 2 UI SC"
+              />
+            </div>
+          ))}
+          {slidingRows.length === 0 && (
+            <p className="text-[10px] text-muted-foreground italic">Nenhuma faixa encontrada. Edite o campo de instruções manualmente.</p>
+          )}
+        </div>
+      )}
+    </div>
     );
   }
 
@@ -5565,7 +5641,10 @@ const PrescricaoPage = () => {
     // item (busca direta na barra de Cuidados, atalhos, etc.). Antes só
     // funcionava vindo do modal dedicado de Cuidados; a via mais comum
     // (busca/autocomplete direto) nunca disparava o popup.
-    if (med.category === 'care' && isGlycemicControlName(med.name) && !hasInsulinSchemeCare(items)) {
+    // BUGFIX (07/08/2026): a guarda !hasInsulinSchemeCare bloqueava o pop-up
+    // quando já havia insulina na prescrição — mas a decisão de incluir ou não
+    // o esquema de correção é do médico, não do sistema. Pop-up aparece sempre.
+    if (med.category === 'care' && isGlycemicControlName(med.name)) {
       setInsulinSchemePromptOpen(true);
     }
 
@@ -10175,7 +10254,7 @@ const PrescricaoPage = () => {
             setItems(prev => [...prev, ...newItems]);
             toast.success(`${newItems.length} cuidado(s) adicionado(s)${profile ? ` — ${profile.label}` : ''}`);
             const addedGlycemic = newItems.some(i => isGlycemicControlName(i.name));
-            if (addedGlycemic && !hasInsulinSchemeCare([...items, ...newItems])) {
+            if (addedGlycemic) {
               setInsulinSchemePromptOpen(true);
             }
           } else {

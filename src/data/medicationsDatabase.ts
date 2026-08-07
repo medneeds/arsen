@@ -248,6 +248,14 @@ export const CARE_OPTIONS: (MedicationEntry & { group?: string })[] = [
   { id: 'c1g',  group: 'Monitorização',  name: 'PA invasiva (PAi)',                          presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
   { id: 'c1h',  group: 'Monitorização',  name: 'Glicemia capilar (HGT)',                     presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '6/6h',     defaultSchedule: '-', category: 'care' },
   { id: 'c1i',  group: 'Monitorização',  name: 'Glicemia capilar (HGT) — protocolo intensivo', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '2/2h',   defaultSchedule: '-', category: 'care' },
+  { id: 'c1i2', group: 'Monitorização',  name: 'Esquema de correção de insulina (Regular SC conforme HGT)',
+    presentation: 'Insulina Regular 100 UI/mL', defaultDose: 'Conforme HGT', defaultRoute: 'Subcutânea',
+    defaultPosology: 'Conforme glicemia capilar', defaultSchedule: 'Atrelado ao HGT',
+    instructions:
+      '<70 mg/dL: SG 50% 40 mL EV + reavaliar em 15 min | 70-149: não administrar | ' +
+      '150-200: 2 UI SC | 201-250: 4 UI SC | 251-300: 6 UI SC | 301-350: 8 UI SC | ' +
+      '351-400: 10 UI SC + comunicar médico | >400: chamar médico imediatamente',
+    category: 'care' },
   { id: 'c9',   group: 'Monitorização',  name: 'Balanço hídrico',                            presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '6/6h',     defaultSchedule: '-', category: 'care' },
   { id: 'c9b',  group: 'Monitorização',  name: 'Balanço hídrico horário',                    presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1/1h',     defaultSchedule: '-', category: 'care' },
   { id: 'c1j',  group: 'Monitorização',  name: 'Diurese horária quantificada',               presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1/1h',     defaultSchedule: '-', category: 'care' },
