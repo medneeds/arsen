@@ -34,6 +34,7 @@ import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
 import { DiagnosticsPanel } from "@/components/evolution/DiagnosticsPanel";
 import type { Patient } from "@/types/patient";
 import { getEffectiveAdmissionDate } from "@/lib/dihCalc";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PatientHeader {
   name: string;
@@ -170,7 +171,33 @@ const EvolucaoPage = () => {
   } = usePatientDiagnosticContext(initialPatientId || null);
 
   // Live patient row (realtime sync with Painel Clínico)
-  const { patient: livePatient } = usePatientLive(initialPatientId || null);
+  const { patient: livePatient, loading: livePatientLoading } = usePatientLive(initialPatientId || null);
+
+  // ⚠️  BUGFIX (07/08/2026): `usePatientLive` não mapeia peso (`uti_weight_kg`),
+  // e o `patient` (useMemo acima) só popula sexo/nascimento/idade/admissão/
+  // alergias/peso/prontuário para os pacientes DEMO (L09/L10/L11) — para
+  // paciente real, esses campos ficavam SEMPRE vazios no cabeçalho impresso,
+  // não só às vezes. Busca dedicada de peso, mesmo padrão do
+  // PrescricaoPage.tsx (patients.uti_weight_kg).
+  const [utiWeightKg, setUtiWeightKg] = useState<string>("");
+  const [weightLoaded, setWeightLoaded] = useState(false);
+  React.useEffect(() => {
+    if (!initialPatientId) { setUtiWeightKg(""); setWeightLoaded(true); return; }
+    let cancelled = false;
+    setWeightLoaded(false);
+    (async () => {
+      const { data } = await supabase
+        .from("patients")
+        .select("uti_weight_kg" as any)
+        .eq("id", initialPatientId)
+        .maybeSingle();
+      if (cancelled) return;
+      const kg = (data as any)?.uti_weight_kg;
+      setUtiWeightKg(kg !== null && kg !== undefined ? String(kg) : "");
+      setWeightLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, [initialPatientId]);
 
   const hasPatient = patient.name.trim() !== "";
 
@@ -427,9 +454,27 @@ const EvolucaoPage = () => {
     </div>
   );
 
+  // ⚠️  Aviso visível SÓ EM TELA (print:hidden) enquanto os dados do
+  // cabeçalho impresso ainda carregam. Diferente da Prescrição, esta tela
+  // não tem botão "Imprimir" próprio — a impressão depende do Ctrl+P nativo
+  // do navegador, que o código não intercepta. Não é possível bloquear o
+  // print em si, então este aviso é a mitigação disponível: reduz a chance
+  // de imprimir no instante exato em que sexo/nascimento/idade/peso/
+  // alergias ainda não chegaram do banco.
+  const headerDataLoading = hasPatient && (ids.loading || livePatientLoading || !weightLoaded);
+  const headerLoadingWarning = headerDataLoading && (
+    <div className="mx-4 mt-2 mb-0 flex items-center gap-2 rounded-md border border-blue-300/60 bg-blue-50 dark:bg-blue-950/20 px-3 py-1.5 print:hidden">
+      <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600 shrink-0" />
+      <p className="text-xs text-blue-700 dark:text-blue-400">
+        Carregando dados do paciente (sexo, nascimento, peso, alergias) — aguarde antes de imprimir.
+      </p>
+    </div>
+  );
+
   return (
     <div className="print:p-2">
       {dischargeAlert}
+      {headerLoadingWarning}
       <ClinicalHeader moduleLabel="Evolução Clínica" />
 
       <div className="flex print:hidden">
@@ -702,6 +747,26 @@ const EvolucaoPage = () => {
             try { return format(new Date(d + 'T12:00:00'), 'dd/MM/yyyy'); } catch { return d; }
           };
 
+          // ⚠️  BUGFIX (07/08/2026): `patient` (useMemo no topo do componente)
+          // só popula sexo/nascimento/idade/admissão/alergias/peso/prontuário
+          // para os pacientes DEMO (L09/L10/L11) — para paciente real, esses
+          // campos vinham SEMPRE vazios do objeto `patient`, não só às vezes.
+          // Aqui mesclamos com as fontes reais já buscadas na tela
+          // (usePatientIdentifiers → registry; usePatientLive → dados vivos;
+          // fetch dedicado de peso acima), na mesma ordem de prioridade usada
+          // em PrescricaoPage.tsx.
+          const headerSex = patient.sex || ids.registry?.sex || '';
+          const headerBirthDate = patient.birthDate || ids.registry?.birthDate || '';
+          const headerAge = patient.age || livePatient?.age || '';
+          const headerAdmissionDate = patient.admissionDate || livePatient?.admissionDate || '';
+          const headerAllergies =
+            patient.allergies ||
+            (livePatient?.utiAllergies?.length ? livePatient.utiAllergies.join(', ') : '') ||
+            ids.registry?.allergies ||
+            '';
+          const headerRecord = patient.record || ids.prontuario || '';
+          const headerWeight = patient.weight || utiWeightKg || '';
+
           return (
             <>
               {/* Cabeçalho institucional Norma Zero */}
@@ -730,29 +795,29 @@ const EvolucaoPage = () => {
                     <td style={labelSt}>Setor / Unidade</td>
                     <td style={{ ...cellSt, fontWeight: 600 }}>{patient.unit || '—'}</td>
                     <td style={labelSt}>Prontuário</td>
-                    <td style={{ ...cellSt, fontWeight: 700 }}>{patient.record || '—'}</td>
+                    <td style={{ ...cellSt, fontWeight: 700 }}>{headerRecord || '—'}</td>
                     <td style={labelSt}>Nº Atendimento</td>
                     <td style={{ ...cellSt, fontWeight: 700 }}>{ids.atendimento ? `#${ids.atendimento}` : '—'}</td>
                   </tr>
                   {/* Linha 3: Idade / Nascimento / Admissão / Sexo / Peso / Alergias */}
                   <tr>
                     <td style={labelSt}>Idade</td>
-                    <td style={cellSt}>{patient.age || '—'}</td>
+                    <td style={cellSt}>{headerAge || '—'}</td>
                     <td style={labelSt}>Data de Nasc.</td>
-                    <td style={cellSt}>{fmt(patient.birthDate)}</td>
+                    <td style={cellSt}>{fmt(headerBirthDate)}</td>
                     <td style={labelSt}>Admissão</td>
-                    <td style={cellSt}>{fmt(patient.admissionDate)}</td>
+                    <td style={cellSt}>{fmt(headerAdmissionDate)}</td>
                     <td style={{ ...labelSt, color: '#dc2626', fontSize: '6pt' }}>⚠ ALERGIAS</td>
                     <td style={{ ...cellSt, fontWeight: 700, color: '#991b1b', backgroundColor: '#fef2f2', fontSize: '7.5pt' }}>
-                      {patient.allergies || 'NDAM'}
+                      {headerAllergies || 'NDAM'}
                     </td>
                   </tr>
                   {/* Linha 4: Sexo / Peso — linha compacta complementar */}
                   <tr>
                     <td style={labelSt}>Sexo</td>
-                    <td style={cellSt}>{formatSexLabel(patient.sex)}</td>
+                    <td style={cellSt}>{formatSexLabel(headerSex)}</td>
                     <td style={labelSt}>Peso</td>
-                    <td style={cellSt}>{patient.weight ? `${patient.weight} kg` : '—'}</td>
+                    <td style={cellSt}>{headerWeight ? `${headerWeight} kg` : '—'}</td>
                     <td colSpan={4} style={{ ...cellSt, color: '#64748b', fontSize: '7pt', fontStyle: 'italic' }}>
                       Documento gerado em {printDate} · {docCode}
                     </td>
