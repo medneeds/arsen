@@ -63,8 +63,8 @@ const ROUTE_MAP: Array<[RegExp, string]> = [
   [/\bjejunostomia\b/gi, 'JJT'],
   // BUGFIX (07/08/2026): a entrada genérica /enteral/ processava 'Enteral (SNE/SNG)'
   // substituindo só 'Enteral' e deixando '(SNE/SNG)' intacto → resultado 'SNE (SNE/SNG)'.
-  // Entrada específica antes da genérica resolve sem afetar outros casos.
-  [/\bEnteral\s*\(SNE\/SNG\)\b/gi, 'SNE'],
+  // \b não funciona antes de '(' (não é word char) — regex sem \b no final resolve.
+  [/\bEnteral\s*\(SNE\/SNG\)/gi, 'SNE'],
   [/\benteral\b/gi, 'SNE'],
 ];
 
