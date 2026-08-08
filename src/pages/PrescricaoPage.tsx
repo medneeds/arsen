@@ -4861,13 +4861,57 @@ const PrescricaoPage = () => {
           .eq('id', currentPrescriptionId);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase
-          .from('prescriptions')
-          .insert(basePayload)
-          .select('id')
-          .single();
-        if (error) throw error;
-        if (data) setCurrentPrescriptionId(data.id);
+        // BUGFIX (07/08/2026) — Pontos 1 e 4 da otimização de rascunhos:
+        //
+        // ANTES: INSERT cego quando currentPrescriptionId === null, gerando um
+        // novo rascunho a cada vez que o componente remontava (navegação entre
+        // pacientes/módulos) — múltiplos rascunhos por dia para o mesmo paciente.
+        //
+        // AGORA: antes de INSERT, busca se já existe um rascunho (status='draft')
+        // do dia clínico atual para este paciente nesta unidade. Se encontrar,
+        // faz UPDATE (rascunho único por dia) e seta currentPrescriptionId.
+        // Só faz INSERT se realmente não existir nenhum rascunho ainda.
+        //
+        // Isso garante que "Salvar rascunho" manual também sempre substitua o
+        // anterior em vez de acumular, sem nenhuma mudança na chamada do caller.
+        let existingDraftId: string | null = null;
+        try {
+          const dayStart = getClinicalDayWindowSP().start;
+          let q = supabase
+            .from('prescriptions')
+            .select('id')
+            .eq('hospital_unit_id', currentHospital.id)
+            .eq('state_id', currentState.id)
+            .eq('status', 'draft')
+            .is('archived_at', null)
+            .gte('created_at', dayStart.toISOString())
+            .order('created_at', { ascending: false })
+            .limit(1);
+          q = patientRegistryId
+            ? q.eq('patient_registry_id', patientRegistryId)
+            : q.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
+          const { data: existing } = await q;
+          existingDraftId = (existing as any)?.[0]?.id ?? null;
+        } catch { /* falha silenciosa — cai no INSERT normal */ }
+
+        if (existingDraftId) {
+          // Atualiza o rascunho existente — rascunho único por dia (Ponto 1 + 4)
+          const { error: updErr } = await supabase
+            .from('prescriptions')
+            .update(basePayload)
+            .eq('id', existingDraftId);
+          if (updErr) throw updErr;
+          setCurrentPrescriptionId(existingDraftId);
+        } else {
+          // Não existe rascunho do dia — cria o primeiro
+          const { data, error } = await supabase
+            .from('prescriptions')
+            .insert(basePayload)
+            .select('id')
+            .single();
+          if (error) throw error;
+          if (data) setCurrentPrescriptionId(data.id);
+        }
       }
     } catch (err: any) {
       console.error('[persistItems] persist failed', err);
