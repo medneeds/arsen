@@ -113,6 +113,14 @@ export const ROUTE_SHORT: Record<string, string> = {
 };
 export const routeShort = (r?: string): string => (r ? (ROUTE_SHORT[r] || r) : '');
 
+/** Rótulo legível para o select de via — sem redundância entre sigla e nome.
+ *  Ex: mostra "SNE — Enteral" em vez de "SNE — Enteral (SNE/SNG)". */
+export const ROUTE_LABEL: Record<string, string> = {
+  'Enteral (SNE/SNG)': 'Enteral',
+  'Sonda orogástrica': 'Orogástrica',
+};
+export const routeLabel = (r?: string): string => (r ? (ROUTE_LABEL[r] || r) : '');
+
 export const POSOLOGIES: string[] = [
   '1x/dia', '2x/dia', '3x/dia', '4x/dia',
   '6/6h', '8/8h', '12/12h', '24/24h', '4/4h', '2/2h',

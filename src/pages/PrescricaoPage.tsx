@@ -94,6 +94,7 @@ import {
   PRESCRIPTION_FLAGS,
   ROUTES,
   routeShort,
+  routeLabel,
   POSOLOGIES,
   CARE_OPTIONS,
   CARE_PROFILES,
@@ -1675,7 +1676,7 @@ function HydrationFields({
             {ROUTES.map((r) => (
               <SelectItem key={r} value={r} className="text-xs">
                 <span className="font-semibold mr-1.5">{routeShort(r)}</span>
-                <span className="text-muted-foreground">— {r}</span>
+                <span className="text-muted-foreground">— {routeLabel(r)}</span>
               </SelectItem>
             ))}
           </SelectContent>
@@ -2803,7 +2804,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       {ROUTES.map((r) => (
                         <SelectItem key={r} value={r} className="text-xs">
                           <span className="font-semibold mr-1.5">{routeShort(r)}</span>
-                          <span className="text-muted-foreground">— {r}</span>
+                          <span className="text-muted-foreground">— {routeLabel(r)}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
