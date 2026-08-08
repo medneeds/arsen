@@ -1,7 +1,8 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { formatPresentation } from "@/lib/formatPresentation";
 import { createPortal } from "react-dom";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useBlocker } from "react-router-dom";
+import { useUnsavedPrescription } from "@/contexts/UnsavedPrescriptionContext";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import ReactMarkdown from "react-markdown";
 import { format, addDays, isAfter, setHours, setMinutes, setSeconds, startOfDay } from "date-fns";
@@ -4931,6 +4932,13 @@ const PrescricaoPage = () => {
   // - Faz fallback em localStorage caso o save remoto falhe (ex.: rede caiu).
   const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
   const [draftSaving, setDraftSaving] = useState(false);
+  // ── UNSAVED CHANGES — detecta alterações não persistidas ──────────────────
+  // Compara a serialização atual de `items` com a última persistida no banco.
+  // isDirty = true quando há itens e eles diferem do último estado salvo.
+  // Alimenta o Context (PatientSidebar), o useBlocker (react-router) e o
+  // beforeunload (fechar aba / recarregar).
+  const { setDirty, registerSaveDraft } = useUnsavedPrescription();
+
   const lastPersistedSerializedRef = useRef<string>('');
   const autosaveSkipFirstRef = useRef(true);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -5018,6 +5026,60 @@ const PrescricaoPage = () => {
 
   // Restaura backup local se DB ainda não trouxe nada (paciente sem prescrição salva hoje)
   const draftRestoreAttemptedRef = useRef(false);
+
+  // ── isDirty: atualiza o Context sempre que items muda em relação ao persisted ──
+  useEffect(() => {
+    const serialized = JSON.stringify(items);
+    const dirty = items.length > 0
+      && !!patient.name?.trim()
+      && !digitalSignature
+      && serialized !== lastPersistedSerializedRef.current;
+    setDirty(dirty);
+  }, [items, patient.name, digitalSignature, setDirty]);
+
+  // Registra o callback de salvar rascunho no Context para o PatientSidebar usar
+  useEffect(() => {
+    registerSaveDraft(async () => {
+      if (items.length > 0 && patient.name?.trim() && !digitalSignature) {
+        await persistItems(items, { mode: 'update', silent: true });
+      }
+    });
+    return () => registerSaveDraft(null);
+  }, [registerSaveDraft, items, patient.name, digitalSignature, persistItems]);
+
+  // Limpa isDirty ao desmontar
+  useEffect(() => () => { setDirty(false); }, [setDirty]);
+
+  // ── useBlocker: intercepta navegações via react-router (trocar de módulo) ──
+  // Cobre: AppSidebar → outro módulo, botão Voltar do browser, links internos.
+  // NÃO cobre: troca de paciente via PatientSidebar (mesma rota /prescricao,
+  // só searchParams mudam) — coberto no PatientSidebar diretamente.
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => {
+    const serialized = JSON.stringify(items);
+    const dirty = items.length > 0
+      && !!patient.name?.trim()
+      && !digitalSignature
+      && serialized !== lastPersistedSerializedRef.current;
+    // Só bloqueia se estiver saindo da rota /prescricao
+    return dirty && currentLocation.pathname !== nextLocation.pathname;
+  });
+
+  // ── beforeunload: fechar aba ou recarregar página ──
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      const serialized = JSON.stringify(items);
+      const dirty = items.length > 0
+        && !!patient.name?.trim()
+        && !digitalSignature
+        && serialized !== lastPersistedSerializedRef.current;
+      if (dirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [items, patient.name, digitalSignature]);
   useEffect(() => {
     if (draftRestoreAttemptedRef.current) return;
     if (!draftStorageKey) return;
@@ -10328,6 +10390,52 @@ const PrescricaoPage = () => {
         appliedProfileIds={appliedCareProfiles}
         patientName={patient?.name}
       />
+
+      {/* Pop-up de alterações não salvas — useBlocker (troca de módulo via react-router) */}
+      <AlertDialog open={blocker.state === 'blocked'} onOpenChange={() => blocker.reset?.()}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-sm">
+              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+              Prescrição com alterações não salvas
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground">
+              Você tem alterações na prescrição que ainda não foram salvas. Deseja salvar um rascunho antes de sair?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-2 mt-2">
+            <AlertDialogAction
+              className="w-full"
+              onClick={async () => {
+                try {
+                  await persistItems(items, { mode: 'update', silent: true });
+                  toast.success('Rascunho salvo');
+                } catch {
+                  toast.error('Não foi possível salvar o rascunho');
+                } finally {
+                  blocker.proceed?.();
+                }
+              }}
+            >
+              Salvar rascunho e sair
+            </AlertDialogAction>
+            <AlertDialogCancel
+              className="w-full"
+              onClick={() => blocker.proceed?.()}
+            >
+              Sair sem salvar
+            </AlertDialogCancel>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-xs"
+              onClick={() => blocker.reset?.()}
+            >
+              Cancelar — continuar editando
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Pop-up: sugerir incluir esquema padrão de correção de insulina ao adicionar controle glicêmico */}
       <AlertDialog open={insulinSchemePromptOpen} onOpenChange={setInsulinSchemePromptOpen}>
