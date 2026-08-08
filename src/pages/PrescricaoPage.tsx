@@ -5066,9 +5066,6 @@ const PrescricaoPage = () => {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed?.items) && parsed.items.length > 0) {
         setItems((parsed.items as PrescriptionItem[]).map(normalizeLegacyIntervalFlags));
-        toast.info("Rascunho local restaurado", {
-          description: "Itens não validados foram recuperados deste paciente.",
-        });
       }
     } catch {}
     draftRestoreAttemptedRef.current = true;
@@ -6702,10 +6699,6 @@ const PrescricaoPage = () => {
             if (loadPrescriptionRef.current) {
               if (capturedGeneration !== loadGenerationRef.current) return false;
               await loadPrescriptionRef.current(row.id);
-              toast.success('Prescrição do dia carregada', {
-                description: 'Exibindo a última prescrição validada deste plantão.',
-                duration: 4000,
-              });
               return true;
             }
             return false;
@@ -6735,11 +6728,6 @@ const PrescricaoPage = () => {
           setDigitalSignature(null);
           setCurrentPrescriptionId(null);
           setSelectedIds(new Set());
-          const when = format(new Date(row.created_at), "dd/MM 'às' HH:mm", { locale: ptBR });
-          toast.info(`Renovação de plantão — prescrição de ${when} replicada`, {
-            description: `${renewedItems.length} itens aguardam revalidação pelo médico do plantão atual. A original permanece intocada no histórico.`,
-            duration: 8000,
-          });
           return true;
         };
 
@@ -6887,7 +6875,6 @@ const PrescricaoPage = () => {
         setDigitalSignature(data.digital_signature as unknown as DigitalSignature | null);
         setCurrentPrescriptionId(data.id);
         setSelectedIds(new Set());
-        toast.success("Prescrição carregada", { description: `v${data.version} — ${data.patient_name}` });
         fetchVersionHistory(id);
       }
     } catch (err: any) {
@@ -7219,7 +7206,6 @@ const PrescricaoPage = () => {
       return;
     }
     resetPrescriptionForNewDay();
-    toast.info("Nova prescrição iniciada — em branco");
   };
 
   const handleCopyPreviousFlow = useCallback(async () => {
