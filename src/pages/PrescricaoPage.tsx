@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { formatPresentation } from "@/lib/formatPresentation";
 import { createPortal } from "react-dom";
-import { useSearchParams, useBlocker } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useUnsavedPrescription } from "@/contexts/UnsavedPrescriptionContext";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import ReactMarkdown from "react-markdown";
@@ -5053,10 +5053,27 @@ const PrescricaoPage = () => {
   // Limpa isDirty ao desmontar
   useEffect(() => () => { setDirty(false); }, [setDirty]);
 
-  // ── useBlocker: intercepta navegações via react-router (trocar de módulo) ──
-  const blocker = useBlocker(({ currentLocation, nextLocation }) => {
-    return isDirtyRef.current && currentLocation.pathname !== nextLocation.pathname;
-  });
+  // ── useBlocker substituído por popstate ────────────────────────────────────
+  // useBlocker requer createBrowserRouter (Data Router API) — o ARSen usa
+  // BrowserRouter legado, então useBlocker causava tela branca.
+  // popstate cobre o botão Voltar do browser. Outros cenários de navegação
+  // (troca de módulo pelo AppSidebar, troca de paciente pelo PatientSidebar)
+  // são cobertos pelo interceptador no próprio componente de navegação.
+  const [backBlockerOpen, setBackBlockerOpen] = useState(false);
+  const pendingBackRef = useRef(false);
+
+  useEffect(() => {
+    const handler = () => {
+      if (!isDirtyRef.current) return;
+      // Empurra um estado para "cancelar" o voltar e mostrar o pop-up
+      window.history.pushState(null, '', window.location.href);
+      setBackBlockerOpen(true);
+      pendingBackRef.current = true;
+    };
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, []);
 
   // ── beforeunload: fechar aba ou recarregar página ──
   useEffect(() => {
@@ -10380,8 +10397,8 @@ const PrescricaoPage = () => {
         patientName={patient?.name}
       />
 
-      {/* Pop-up de alterações não salvas — useBlocker (troca de módulo via react-router) */}
-      <AlertDialog open={blocker.state === 'blocked'} onOpenChange={() => blocker.reset?.()}>
+      {/* Pop-up de alterações não salvas — botão Voltar do browser (popstate) */}
+      <AlertDialog open={backBlockerOpen} onOpenChange={setBackBlockerOpen}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-sm">
@@ -10402,7 +10419,8 @@ const PrescricaoPage = () => {
                 } catch {
                   toast.error('Não foi possível salvar o rascunho');
                 } finally {
-                  blocker.proceed?.();
+                  setBackBlockerOpen(false);
+                  window.history.go(-2);
                 }
               }}
             >
@@ -10410,7 +10428,7 @@ const PrescricaoPage = () => {
             </AlertDialogAction>
             <AlertDialogCancel
               className="w-full"
-              onClick={() => blocker.proceed?.()}
+              onClick={() => { setBackBlockerOpen(false); window.history.go(-2); }}
             >
               Sair sem salvar
             </AlertDialogCancel>
@@ -10418,7 +10436,7 @@ const PrescricaoPage = () => {
               variant="ghost"
               size="sm"
               className="w-full text-xs"
-              onClick={() => blocker.reset?.()}
+              onClick={() => setBackBlockerOpen(false)}
             >
               Cancelar — continuar editando
             </Button>
