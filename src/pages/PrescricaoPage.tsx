@@ -4923,7 +4923,12 @@ const PrescricaoPage = () => {
       }
       throw err;
     }
-  }, [currentHospital, currentState, patient, digitalSignature, currentPrescriptionId, user?.id, initialPatientSector]);
+    // Atualiza o ref de "último estado persistido" para que isDirty resete
+    // corretamente após qualquer tipo de salvamento (autosave, validar, assinar,
+    // salvar rascunho manual, imprimir). Sem isso, isDirty ficaria true mesmo
+    // depois de salvar e o pop-up apareceria desnecessariamente.
+    lastPersistedSerializedRef.current = JSON.stringify(nextItems);
+  }, [currentHospital, currentState, patient, digitalSignature, currentPrescriptionId, user?.id, initialPatientSector, patientRegistryId]);
 
   // ============= AUTOSAVE DE RASCUNHO (CRÍTICO) =============
   // Persiste automaticamente qualquer alteração em `items` ~800ms após a última edição,
@@ -4933,11 +4938,8 @@ const PrescricaoPage = () => {
   const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
   const [draftSaving, setDraftSaving] = useState(false);
   // ── UNSAVED CHANGES — detecta alterações não persistidas ──────────────────
-  // Compara a serialização atual de `items` com a última persistida no banco.
-  // isDirty = true quando há itens e eles diferem do último estado salvo.
-  // Alimenta o Context (PatientSidebar), o useBlocker (react-router) e o
-  // beforeunload (fechar aba / recarregar).
   const { setDirty, registerSaveDraft } = useUnsavedPrescription();
+  const isDirtyRef = useRef(false); // ref para o useBlocker (closure-safe)
 
   const lastPersistedSerializedRef = useRef<string>('');
   const autosaveSkipFirstRef = useRef(true);
@@ -5034,6 +5036,7 @@ const PrescricaoPage = () => {
       && !!patient.name?.trim()
       && !digitalSignature
       && serialized !== lastPersistedSerializedRef.current;
+    isDirtyRef.current = dirty;
     setDirty(dirty);
   }, [items, patient.name, digitalSignature, setDirty]);
 
@@ -5051,35 +5054,21 @@ const PrescricaoPage = () => {
   useEffect(() => () => { setDirty(false); }, [setDirty]);
 
   // ── useBlocker: intercepta navegações via react-router (trocar de módulo) ──
-  // Cobre: AppSidebar → outro módulo, botão Voltar do browser, links internos.
-  // NÃO cobre: troca de paciente via PatientSidebar (mesma rota /prescricao,
-  // só searchParams mudam) — coberto no PatientSidebar diretamente.
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {
-    const serialized = JSON.stringify(items);
-    const dirty = items.length > 0
-      && !!patient.name?.trim()
-      && !digitalSignature
-      && serialized !== lastPersistedSerializedRef.current;
-    // Só bloqueia se estiver saindo da rota /prescricao
-    return dirty && currentLocation.pathname !== nextLocation.pathname;
+    return isDirtyRef.current && currentLocation.pathname !== nextLocation.pathname;
   });
 
   // ── beforeunload: fechar aba ou recarregar página ──
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
-      const serialized = JSON.stringify(items);
-      const dirty = items.length > 0
-        && !!patient.name?.trim()
-        && !digitalSignature
-        && serialized !== lastPersistedSerializedRef.current;
-      if (dirty) {
+      if (isDirtyRef.current) {
         e.preventDefault();
         e.returnValue = '';
       }
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
-  }, [items, patient.name, digitalSignature]);
+  }, []);
   useEffect(() => {
     if (draftRestoreAttemptedRef.current) return;
     if (!draftStorageKey) return;
