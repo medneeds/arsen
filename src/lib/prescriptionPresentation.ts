@@ -132,6 +132,7 @@ export function getRequiredFields(type: PresentationType): RequiredField[] {
 }
 
 // Whether the IV/infusion block (diluente, vol, tempo, vazão) should be rendered.
+// Inclui inhalation porque nebulizações também usam diluente (SF/AD) e volume.
 export function showInfusionBlock(type: PresentationType): boolean {
   return type === 'iv_continuous' || type === 'iv_intermittent' || type === 'iv_bolus' || type === 'inhalation';
 }
@@ -139,6 +140,22 @@ export function showInfusionBlock(type: PresentationType): boolean {
 // Whether the diluente/volume/access row should be rendered.
 export function showDiluentRow(type: PresentationType): boolean {
   return type === 'iv_continuous' || type === 'iv_intermittent' || type === 'inhalation';
+}
+
+/**
+ * Campos EXCLUSIVOS de infusão EV — tempo (min), vazão (mL/h ou gts/min),
+ * rótulo "Infusão EV", toggle Bolus/BIC.
+ *
+ * BUGFIX (07/08/2026): showInfusionBlock retorna true para 'inhalation'
+ * (correto — nebulizações usam diluente e volume), mas isso fazia o bloco
+ * inteiro de EV aparecer para inalatórios, incluindo campos sem sentido
+ * clínico para nebulização: tempo de infusão em min, vazão mL/h, rótulo
+ * "Infusão EV". Esta função separa os dois conceitos:
+ *   - showInfusionBlock → "tem diluente/volume" (inclui inhalation)
+ *   - showIVOnlyFields  → "tem tempo/vazão/rótulo EV" (exclui inhalation)
+ */
+export function showIVOnlyFields(type: PresentationType): boolean {
+  return type === 'iv_continuous' || type === 'iv_intermittent' || type === 'iv_bolus';
 }
 
 // =========================================================================

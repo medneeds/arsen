@@ -106,6 +106,7 @@ import {
   inferPresentationType,
   showInfusionBlock,
   showDiluentRow,
+  showIVOnlyFields,
   getEvidenceSuggestion,
 } from "@/lib/prescriptionPresentation";
 import { findRegulatoryInfo } from "@/data/mavPort344Catalog";
@@ -2291,22 +2292,19 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
       // usado na visualização expandida (linha 2457) antes de incluir esses campos.
       const ptypeCompact = inferPresentationType(item.presentation, item.route, item.name);
       const showInfusionCompact = showInfusionBlock(ptypeCompact);
+      // Tempo, vazão e bolus são exclusivos de EV — não aparecem para inalatórios.
+      const showIVCompact = showIVOnlyFields(ptypeCompact);
 
       if (showInfusionCompact && item.diluent && !isNoDiluent(item.diluent)) {
-        // Rótulo legível — mesmo mapeamento da fonte única (evita "diluir em
-        // diluente_proprio" cru na tela).
         const dilLabelHydr = item.diluent === 'diluente_proprio' ? 'Diluente próprio' : item.diluent;
         let dil = `diluir em ${dilLabelHydr}`;
         if (item.diluentVolume) dil += ` ${item.diluentVolume}mL`;
         compactParts.push(dil);
       }
       if (showInfusionCompact && item.volumeTotal) compactParts.push(`vol ${item.volumeTotal}mL`);
-      // Bolus só faz sentido em via intravenosa — mesma regra do
-      // buildPrepSegments (impresso). Antes a tela rotulava "EV em bolus"
-      // sem checar a via, podendo marcar bolus em medicação não-EV.
       if (item.ivBolus && isIVRoute(item.route || '')) {
         compactParts.push('EV em bolus');
-      } else if (showInfusionCompact && item.infusionTime) {
+      } else if (showIVCompact && item.infusionTime) {
         const tUnit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
         let inf = `correr em ${item.infusionTime}${tUnit}`;
         if (item.infusionRate) {
@@ -2314,7 +2312,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           inf += ` (${item.infusionRate} ${rLabel})`;
         }
         compactParts.push(inf);
-      } else if (showInfusionCompact && item.infusionRate) {
+      } else if (showIVCompact && item.infusionRate) {
         const rLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
         compactParts.push(`${item.infusionRate} ${rLabel}`);
       }
@@ -2555,6 +2553,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             const ptype = inferPresentationType(item.presentation, item.route, item.name);
             const renderInfusion = showInfusionBlock(ptype);
             const renderDiluent = showDiluentRow(ptype);
+            // Campos exclusivos EV (rótulo "Infusão EV", tempo, vazão, bolus/BIC)
+            // não aparecem para inalatórios — só diluente e volume fazem sentido.
+            const renderIVOnly = showIVOnlyFields(ptype);
             return (
             <>
               {/* ===== Container integrado: 3 linhas de edição com fundo único ===== */}
@@ -2836,7 +2837,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 )}
               </div>
 
-              {renderInfusion && (
+              {renderIVOnly && (
               <div className="flex items-center gap-2 flex-wrap pt-1.5 border-t border-border/40">
                 <Droplets className="h-3 w-3 text-muted-foreground shrink-0" />
                 <span className="text-[10px] text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-wide">Infusão EV</span>
