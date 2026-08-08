@@ -2263,11 +2263,26 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         supplement: 'Suplementação',
       };
       compactParts.push(subLabel[sub]);
-      // Detalhamento via fonte única (buildNutritionParts) — MESMOS campos e
-      // rótulos da tela, do impresso principal e do impresso extra
-      // (unificação 21/07/2026; antes eram 4 lógicas divergentes, e a
-      // consistência IDDSI não saía em nenhum impresso).
-      buildNutritionParts({ ...item, nutritionType: sub }).forEach(p => compactParts.push(p));
+      // Compacto: só os campos essenciais para identificação e operação
+      // imediata. Campos de detalhe clínico (progressão, cabeceira, perfil,
+      // monitoramento, resíduo, pausa noturna) ficam disponíveis no item
+      // expandido e no impresso, mas não aparecem na linha compacta para
+      // evitar o transbordamento de texto observado (Opção B, 07/08/2026).
+      {
+        const f = { ...item, nutritionType: sub };
+        const rateUnit = f.nutRateMode === 'gtt' ? 'gts/min' : 'mL/h';
+        const scheduleText = f.nutScheduleMode === 'steps'
+          ? (f.nutSteps ? `${f.nutSteps} ${f.nutSteps === '1' ? 'etapa/dia' : 'etapas/dia'}` : null)
+          : (f.dietInterval ? `${f.dietInterval}` : null);
+        const isInfusion = !['diet_oral','water','supplement','zero'].includes(sub ?? '');
+        [
+          f.dietType || null,
+          f.nutAccess ? `${f.nutAccess}` : null,
+          f.nutVolDay ? `${f.nutVolDay} mL/dia` : null,
+          scheduleText,
+          isInfusion && f.infusionRate ? `${f.infusionRate} ${rateUnit}` : null,
+        ].filter(Boolean).forEach(p => compactParts.push(p as string));
+      }
     } else if (isHydration) {
       // Frase única com volume/fases/intervalo/vazão/total — fonte única
       // (buildHydrationLine). Como o nome agora contém apenas o tipo
