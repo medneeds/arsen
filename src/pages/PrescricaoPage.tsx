@@ -4953,6 +4953,12 @@ const PrescricaoPage = () => {
     return `rx-draft::${patient.name.trim()}::${dateKey}`;
   }, [patient.name]);
 
+  // Backup local imediato (localStorage) — sem autosave remoto.
+  // O autosave remoto foi removido (ponto 2 da otimização de rascunhos):
+  // ele criava múltiplos rascunhos por causar INSERTs repetidos sempre
+  // que o componente remontava (currentPrescriptionId voltava a null).
+  // O backup local continua para recuperação de emergência em caso de
+  // falha de rede ou fechamento acidental da aba.
   useEffect(() => {
     if (autosaveSkipFirstRef.current) {
       autosaveSkipFirstRef.current = false;
@@ -4960,11 +4966,9 @@ const PrescricaoPage = () => {
       return;
     }
     if (digitalSignature) return;
-    if (!currentHospital || !currentState || !patient.name?.trim()) return;
-
+    if (!patient.name?.trim()) return;
     const serialized = JSON.stringify(items);
     if (serialized === lastPersistedSerializedRef.current) return;
-
     if (draftStorageKey) {
       try {
         localStorage.setItem(draftStorageKey, JSON.stringify({
@@ -4972,59 +4976,9 @@ const PrescricaoPage = () => {
         }));
       } catch {}
     }
-
+    // Limpa o timer anterior se existir (deixado de autosave removido)
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-    autosaveTimerRef.current = setTimeout(async () => {
-      // 🔒 B2 — se ainda não há prescription id (nada carregado) e já existe SIGNED
-      // hoje para este paciente+unidade, não criar draft paralelo. A assinada é a verdade.
-      if (!currentPrescriptionId && currentHospital && currentState && patient.name?.trim()) {
-        const dayKey = format(new Date(), 'yyyy-MM-dd');
-        const affinityKey = patientRegistryId || `name:${patient.name.trim()}`;
-        const cacheKey = `${currentHospital.id}::${currentState.id}::${affinityKey}::${dayKey}`;
-        let signedExists = signedTodayCacheRef.current?.key === cacheKey
-          ? signedTodayCacheRef.current.exists
-          : null;
-        if (signedExists === null) {
-          try {
-            const dayStart = getClinicalDayWindowSP().start;
-            let q = supabase
-              .from('prescriptions')
-              .select('id', { count: 'exact', head: true })
-              .eq('hospital_unit_id', currentHospital.id)
-              .eq('state_id', currentState.id)
-              .eq('status', 'signed')
-              .gte('created_at', dayStart.toISOString());
-            q = patientRegistryId
-              ? q.eq('patient_registry_id', patientRegistryId)
-              : q.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
-            const { count } = await q;
-            signedExists = (count || 0) > 0;
-            signedTodayCacheRef.current = { key: cacheKey, exists: signedExists };
-          } catch {
-            signedExists = false;
-          }
-        }
-        if (signedExists) {
-          lastPersistedSerializedRef.current = serialized;
-          return;
-        }
-      }
-      setDraftSaving(true);
-      try {
-        await persistItems(items, { mode: 'update', silent: true });
-        lastPersistedSerializedRef.current = serialized;
-        setDraftSavedAt(new Date());
-      } catch (err) {
-        console.warn('[autosave] persistência remota falhou, mantendo backup local', err);
-      } finally {
-        setDraftSaving(false);
-      }
-    }, 800);
-
-    return () => {
-      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-    };
-  }, [items, digitalSignature, currentHospital, currentState, patient, persistItems, draftStorageKey]);
+  }, [items, digitalSignature, patient, draftStorageKey]);
 
   // Restaura backup local se DB ainda não trouxe nada (paciente sem prescrição salva hoje)
   const draftRestoreAttemptedRef = useRef(false);

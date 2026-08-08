@@ -238,8 +238,8 @@ export function AppSidebar() {
   ];
 
   const handleSectorClick = (department: Department, customLink?: string) => {
-    setCurrentDepartment(department); // context auto-syncs localStorage
-    navigate(customLink || "/mapa");
+    setCurrentDepartment(department);
+    safeNavigate(customLink || "/mapa");
     if (isMobile) setOpenMobile(false);
   };
 
@@ -656,7 +656,7 @@ export function AppSidebar() {
                     <button
                       key={tab.link}
                       onClick={() => {
-                        navigate(tab.link);
+                        safeNavigate(tab.link);
                         if (isMobile) setOpenMobile(false);
                       }}
                       title={`${tab.title} — ${currentSectorLabel || currentDepartment}`}
