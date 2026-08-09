@@ -475,7 +475,17 @@ export default function PacienteHubPage() {
   return (
     <div className="flex flex-col h-full bg-background">
       <div className="px-2 sm:px-4 pt-3">
-        <BreadcrumbBar variant="institutional" />
+        {/*
+          showPatient liga o PatientSwitcher — o mesmo seletor que as paginas de
+          modulo ja tem via ClinicalHeader. O Hub montava o BreadcrumbBar direto,
+          sem essa prop, entao era a unica tela de paciente onde nao dava para
+          alternar entre os pacientes do setor: era preciso entrar num modulo so
+          para trocar, e voltar.
+
+          O switcher navega para `${location.pathname}?<novos params>`, ou seja,
+          permanece no Hub e so troca o paciente. Nada a adaptar.
+        */}
+        <BreadcrumbBar variant="institutional" showPatient />
       </div>
 
       <div className="flex-1 flex overflow-hidden">
