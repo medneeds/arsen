@@ -514,53 +514,90 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         </div>
 
         {/* ===== ZONA 2: AÇÕES PRIMÁRIAS ===== */}
+        {/*
+          Acao que aponta para a rota ATUAL nao e renderizada.
+
+          Antes, goPatient() detectava o caso (location.pathname === path) e
+          respondia navegando para a propria pagina: a URL trocava, a tela nao
+          mudava, e o usuario concluia que travou. Botao que nao faz nada
+          visivel e pior que botao ausente.
+
+          A regra vale so para acoes que NAVEGAM. "Emitir documento" e
+          "Sinalizar" abrem dialogo e funcionam em qualquer pagina, entao
+          ficam sempre.
+
+          Efeito colateral desejado no Hub do Paciente: la os cards ja cobrem
+          Historico, e "Abrir Atendimento" apontaria para a propria tela — as
+          duas somem sozinhas, sem o hub precisar saber disso.
+        */}
         <div className="px-3 py-3 border-b border-border space-y-2">
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              size="sm"
-              variant="default"
-              className="h-8 text-xs gap-1.5"
-              onClick={() => goPatient("/paciente")}
-            >
-              <Stethoscope className="h-3.5 w-3.5" />
-              Abrir Atendimento
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 text-xs gap-1.5"
-              onClick={() => goPatient("/historico-paciente")}
-            >
-              <FileText className="h-3.5 w-3.5" />
-              Histórico
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 text-xs gap-1.5"
-              onClick={() => setDocDialogOpen(true)}
-            >
-              <FileSignature className="h-3.5 w-3.5" />
-              Emitir documentos
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 text-xs gap-1.5"
-              onClick={() => goPatient("/monitoramento")}
-            >
-              <Activity className="h-3.5 w-3.5" />
-              Monitoramento clínico
-            </Button>
-          </div>
+          {/*
+            Sinalizar vem PRIMEIRO: e a acao mais buscada do cockpit.
+            Peso visual permanece normal, de proposito — alta, transferencia e
+            obito sao irreversiveis ou quase, e transformar isso no botao mais
+            chamativo da tela convida ao clique acidental em plantao corrido.
+            A posicao entrega o ganho de tempo; o destaque so entregaria risco.
+          */}
           <DischargeQuickActions
             patientId={patient.id}
             patientName={patient.name}
             admissionStatus={patient.admissionStatus}
             fallback={() => setMovementDialogOpen(true)}
           />
+
+          {(() => {
+            const navActions = [
+              { path: "/paciente", label: "Abrir Atendimento", Icon: Stethoscope, primary: true },
+              { path: "/historico-paciente", label: "Histórico", Icon: FileText, primary: false },
+              { path: "/monitoramento", label: "Monitoramento clínico", Icon: Activity, primary: false },
+            ].filter((a) => a.path !== location.pathname);
+
+            const dialogActions = [
+              { key: "emitir", label: "Emitir documento", Icon: FileSignature, onClick: () => setDocDialogOpen(true) },
+            ];
+
+            const todas = [
+              ...navActions.map((a) => ({
+                key: a.path,
+                label: a.label,
+                Icon: a.Icon,
+                variant: (a.primary ? "default" : "outline") as "default" | "outline",
+                onClick: () => goPatient(a.path),
+              })),
+              ...dialogActions.map((a) => ({
+                key: a.key,
+                label: a.label,
+                Icon: a.Icon,
+                variant: "outline" as const,
+                onClick: a.onClick,
+              })),
+            ];
+
+            // Sem acao nenhuma o container ficaria como um retangulo vazio.
+            if (todas.length === 0) return null;
+
+            return (
+              <div className="grid grid-cols-2 gap-2">
+                {todas.map(({ key, label, Icon, variant, onClick }) => (
+                  <Button
+                    key={key}
+                    size="sm"
+                    variant={variant}
+                    className={cn(
+                      "h-8 text-xs gap-1.5",
+                      // Item impar sozinho na ultima linha ocupa a largura toda,
+                      // em vez de deixar meia coluna vazia.
+                      todas.length % 2 === 1 && key === todas[todas.length - 1].key && "col-span-2",
+                    )}
+                    onClick={onClick}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            );
+          })()}
         </div>
 
         {/* ===== ZONA 3: ALERTAS CLÍNICOS ===== */}

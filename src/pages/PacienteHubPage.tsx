@@ -12,6 +12,8 @@ import { printAdmissionNormaZero } from "@/lib/printAdmission";
 import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
+import { useCockpitPatient } from "@/hooks/useCockpitPatient";
+import { PatientCockpit } from "@/components/PatientCockpit";
 import { getSectorLabel } from "@/lib/sectorUtils";
 
 type AdmissionStatus = "pre_admitido" | "admitido" | "suspenso" | null;
@@ -40,6 +42,13 @@ export default function PacienteHubPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { currentHospital } = useHospital();
+
+  // Cockpit — mesma fonte (searchParams) e mesma variante "fixed" das outras
+  // sete paginas de paciente. O Hub era a UNICA sem ele, e era justamente onde
+  // o usuario comeca: para sinalizar uma movimentacao ou desfecho ele
+  // precisava abrir um modulo clinico qualquer so para alcancar o cockpit que
+  // mora la.
+  const cockpitPatient = useCockpitPatient();
 
   const ctx = useMemo(() => ({
     patientId: params.get("patientId") || "",
@@ -323,7 +332,8 @@ export default function PacienteHubPage() {
         <BreadcrumbBar variant="institutional" />
       </div>
 
-      <main className="flex-1 flex items-center justify-center px-6 py-10">
+      <div className="flex-1 flex overflow-hidden">
+      <main className="flex-1 flex items-center justify-center px-6 py-10 overflow-y-auto">
         <div className="w-full max-w-6xl flex flex-col gap-8">
           {/* Patient identity */}
           <div className="text-center space-y-3">
@@ -411,7 +421,14 @@ export default function PacienteHubPage() {
           )}
 
           {/* Action grid — 6 cards aspect-square, harmônicos */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          {/*
+            Seis cards em UMA linha so a partir de xl. O cockpit "fixed" e
+            sticky (entra no fluxo, nao sobrepoe): ocupa 44px recolhido e ate
+            384px expandido no hover. Com lg:grid-cols-6, passar o mouse nele
+            encolhia os cards ~22% num notebook de 1280px — reflow visivel a
+            cada hover. Em duas linhas de tres o efeito some.
+          */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
             {/* ADMISSÃO — gate */}
             <div className="relative group">
               <button
@@ -534,6 +551,10 @@ export default function PacienteHubPage() {
           </p>
         </div>
       </main>
+
+      {/* Patient Cockpit — fixed right sidebar (mesma variante das demais paginas) */}
+      {cockpitPatient && <PatientCockpit patient={cockpitPatient} />}
+      </div>
 
       {ctx.patientId && (
         <AdmissionDialog
