@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Pill, Stethoscope, ClipboardList, FolderOpen, History, ClipboardCheck, Lock, CheckCircle2, AlertTriangle, Printer, ShieldCheck, Timer } from "lucide-react";
+import { Pill, Stethoscope, ClipboardList, FolderOpen, History, ClipboardCheck, Lock, CheckCircle2, AlertTriangle, Printer, ShieldCheck, Timer, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
 import { AdmissionDialog } from "@/components/AdmissionDialog";
@@ -14,6 +14,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import { PatientCockpit } from "@/components/PatientCockpit";
+import { PatientMovementDialog } from "@/components/PatientMovementDialog";
 import { getSectorLabel } from "@/lib/sectorUtils";
 
 type AdmissionStatus = "pre_admitido" | "admitido" | "suspenso" | null;
@@ -49,6 +50,28 @@ export default function PacienteHubPage() {
   // precisava abrir um modulo clinico qualquer so para alcancar o cockpit que
   // mora la.
   const cockpitPatient = useCockpitPatient();
+  const [movementOpen, setMovementOpen] = useState(false);
+
+  /**
+   * Estado de sinalizacao do paciente, para o card refletir a realidade em vez
+   * de ser so um atalho. O card de Admissao ja faz isso ("Concluida"), e e o
+   * que transforma o Hub de lancador em painel de situacao: quem abre a tela
+   * ve, sem clicar, que aquele paciente ja tem obito ou alta sinalizados.
+   */
+  const signalState = (() => {
+    switch (cockpitPatient?.admissionStatus) {
+      case "obito":
+        return { label: "Óbito sinalizado", tone: "danger" as const };
+      case "alta_dada":
+        return { label: "Alta sinalizada", tone: "info" as const };
+      case "transferencia_externa_pendente":
+        return { label: "Transf. externa", tone: "warn" as const };
+      case "transferencia_interna_pendente":
+        return { label: "Transf. interna", tone: "warn" as const };
+      default:
+        return null;
+    }
+  })();
 
   const ctx = useMemo(() => ({
     patientId: params.get("patientId") || "",
@@ -334,7 +357,7 @@ export default function PacienteHubPage() {
 
       <div className="flex-1 flex overflow-hidden">
       <main className="flex-1 flex items-center justify-center px-6 py-10 overflow-y-auto">
-        <div className="w-full max-w-6xl flex flex-col gap-8">
+        <div className="w-full max-w-6xl xl:max-w-7xl flex flex-col gap-8">
           {/* Patient identity */}
           <div className="text-center space-y-3">
             <span className="text-[10px] uppercase tracking-[0.3em] font-semibold text-muted-foreground">
@@ -422,13 +445,22 @@ export default function PacienteHubPage() {
 
           {/* Action grid — 6 cards aspect-square, harmônicos */}
           {/*
-            Seis cards em UMA linha so a partir de xl. O cockpit "fixed" e
+            SETE cards (6 modulos + Sinalizacao), reproporcionados:
+              base  2 colunas -> 3 linhas de 2 + 1
+              sm    4 colunas -> 4 + 3
+              xl    7 colunas -> linha unica, e o container abre para max-w-7xl
+                                 para os cards nao encolherem (7 em 1152px
+                                 daria ~151px cada; em 1280px, ~169px)
+            gap menor no mobile (gap-3) porque com 2 colunas o respiro lateral
+            ja vem do padding da pagina.
+
+            Sete cards em UMA linha so a partir de xl. O cockpit "fixed" e
             sticky (entra no fluxo, nao sobrepoe): ocupa 44px recolhido e ate
             384px expandido no hover. Com lg:grid-cols-6, passar o mouse nele
             encolhia os cards ~22% num notebook de 1280px — reflow visivel a
             cada hover. Em duas linhas de tres o efeito some.
           */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
             {/* ADMISSÃO — gate */}
             <div className="relative group">
               <button
@@ -539,6 +571,93 @@ export default function PacienteHubPage() {
                 </div>
               </button>
             ))}
+
+            {/*
+              Sinalizacao — 7o card. Fecha o arco cronologico da estadia:
+              Admissao (entrada) -> modulos de trabalho -> Sinalizacao (saida).
+              Por isso vem por ultimo, e nao no meio dos modulos.
+
+              Nao e duplicata do botao do cockpit: aqui e o ATALHO para abrir o
+              fluxo; la, alem disso, vivem as acoes de estado (Suspender obito,
+              Suspender alta, Cancelar transferencia), que o card nao cobre.
+              O cockpit tambem fica recolhido por padrao (44px), entao nao ha
+              dois botoes competindo na mesma tela.
+
+              O card e o unico do grid que muda de cor conforme o estado — de
+              proposito: obito e alta sinalizados sao informacao que precisa
+              saltar aos olhos antes de qualquer clique.
+            */}
+            <button
+              onClick={() => locked ? handleLockedClick(lockReason!) : setMovementOpen(true)}
+              aria-disabled={locked}
+              title="Sinalizar movimentação interna, transferência, alta ou óbito"
+              className="relative group text-left"
+            >
+              <div className={cn(
+                "relative flex flex-col items-center justify-center aspect-square rounded-lg overflow-hidden transition-all",
+                "bg-card border",
+                locked
+                  ? "opacity-40 grayscale border-border cursor-not-allowed"
+                  : [
+                      "cursor-pointer hover:scale-[1.02] hover:shadow-md",
+                      signalState?.tone === "danger" && "border-red-300 dark:border-red-500/40",
+                      signalState?.tone === "info" && "border-sky-300 dark:border-sky-500/40",
+                      signalState?.tone === "warn" && "border-amber-300 dark:border-amber-500/40",
+                      !signalState && "border-border",
+                    ],
+              )}>
+                <span className={cn(
+                  "absolute top-0 left-0 right-0 h-1",
+                  locked ? "bg-muted-foreground/30"
+                    : signalState?.tone === "danger" ? "bg-red-400"
+                    : signalState?.tone === "info" ? "bg-sky-400"
+                    : signalState?.tone === "warn" ? "bg-amber-400"
+                    : "bg-primary/70",
+                )} />
+                {locked && (
+                  <span className="absolute top-2 right-2">
+                    <Lock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2} />
+                  </span>
+                )}
+                <div className={cn(
+                  "p-3 rounded-xl mb-3 transition-colors",
+                  locked ? "bg-transparent"
+                    : signalState?.tone === "danger" ? "bg-red-50 dark:bg-red-950/30"
+                    : signalState?.tone === "info" ? "bg-sky-50 dark:bg-sky-950/30"
+                    : signalState?.tone === "warn" ? "bg-amber-50 dark:bg-amber-950/30"
+                    : "bg-muted group-hover:bg-primary/10",
+                )}>
+                  <ArrowLeftRight
+                    className={cn(
+                      "w-7 h-7 transition-transform duration-200",
+                      !locked && "group-hover:translate-x-0.5",
+                      locked ? "text-muted-foreground/40"
+                        : signalState?.tone === "danger" ? "text-red-600 dark:text-red-400"
+                        : signalState?.tone === "info" ? "text-sky-600 dark:text-sky-400"
+                        : signalState?.tone === "warn" ? "text-amber-600 dark:text-amber-500"
+                        : "text-muted-foreground group-hover:text-primary",
+                    )}
+                    strokeWidth={1.5}
+                  />
+                </div>
+                <span className={cn(
+                  "text-[11px] font-bold tracking-[0.15em] uppercase text-center px-1",
+                  locked ? "text-foreground/50" : "text-foreground",
+                )}>
+                  Sinalização
+                </span>
+                {signalState && !locked && (
+                  <span className={cn(
+                    "text-[9px] font-semibold tracking-widest uppercase mt-1 text-center px-1 leading-tight",
+                    signalState.tone === "danger" && "text-red-600 dark:text-red-400",
+                    signalState.tone === "info" && "text-sky-600 dark:text-sky-400",
+                    signalState.tone === "warn" && "text-amber-600 dark:text-amber-500",
+                  )}>
+                    {signalState.label}
+                  </span>
+                )}
+              </div>
+            </button>
           </div>
 
           {/* Footer */}
@@ -555,6 +674,16 @@ export default function PacienteHubPage() {
       {/* Patient Cockpit — fixed right sidebar (mesma variante das demais paginas) */}
       {cockpitPatient && <PatientCockpit patient={cockpitPatient} />}
       </div>
+
+      {/* Fluxo de movimentacoes e desfechos, aberto pelo card de Sinalizacao.
+          Mesmo dialogo que o cockpit usa — um caminho de codigo so. */}
+      <PatientMovementDialog
+        patient={cockpitPatient}
+        movementType={null}
+        isOpen={movementOpen}
+        onClose={() => setMovementOpen(false)}
+        onSuccess={() => setMovementOpen(false)}
+      />
 
       {ctx.patientId && (
         <AdmissionDialog
