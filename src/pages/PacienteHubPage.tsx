@@ -415,7 +415,7 @@ export default function PacienteHubPage() {
 
       <div className="flex-1 flex overflow-hidden">
       <main className="flex-1 flex items-center justify-center px-6 py-10 overflow-y-auto">
-        <div className="w-full max-w-6xl xl:max-w-7xl flex flex-col gap-8">
+        <div className="w-full max-w-6xl flex flex-col gap-8">
           {/* Patient identity */}
           <div className="text-center space-y-3">
             <span className="text-[10px] uppercase tracking-[0.3em] font-semibold text-muted-foreground">
@@ -503,22 +503,26 @@ export default function PacienteHubPage() {
 
           {/* Action grid — 6 cards aspect-square, harmônicos */}
           {/*
-            SETE cards (6 modulos + Sinalizacao), reproporcionados:
-              base  2 colunas -> 3 linhas de 2 + 1
-              sm    4 colunas -> 4 + 3
-              xl    7 colunas -> linha unica, e o container abre para max-w-7xl
-                                 para os cards nao encolherem (7 em 1152px
-                                 daria ~151px cada; em 1280px, ~169px)
-            gap menor no mobile (gap-3) porque com 2 colunas o respiro lateral
-            ja vem do padding da pagina.
+            SETE cards (6 modulos + Sinalizacao) em DUAS linhas: 4 + 3.
 
-            Sete cards em UMA linha so a partir de xl. O cockpit "fixed" e
-            sticky (entra no fluxo, nao sobrepoe): ocupa 44px recolhido e ate
-            384px expandido no hover. Com lg:grid-cols-6, passar o mouse nele
-            encolhia os cards ~22% num notebook de 1280px — reflow visivel a
-            cada hover. Em duas linhas de tres o efeito some.
+            Por que nao os sete numa fila so, como estava: os breakpoints do
+            Tailwind medem a VIEWPORT, nao o container. O cockpit e `sticky` e
+            entra no fluxo — ao expandir no hover ele salta de 44px para 384px,
+            o espaco disponivel encolhe ~340px, mas a viewport nao muda. A grade
+            continuava exigindo 7 colunas e espremia cada card, de forma
+            desproporcional e com reflow visivel a cada passagem do mouse.
+
+            A grade agora tem largura PROPRIA (max-w-3xl = 768px, que da cards
+            de ~180px em 4 colunas — o mesmo tamanho dos 6 cards originais) e e
+            centralizada sob o titulo, que tambem e centralizado.
+
+            O ganho real: em 1280px com o cockpit expandido sobram 848px de
+            espaco util para uma grade que precisa de 768px. Ela deixa de
+            reagir ao cockpit — nao ha mais encolhimento nem reflow.
+
+            Progressao: base 2 colunas | sm 3 | md+ 4 (4 + 3).
           */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
+          <div className="w-full max-w-3xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
             {/* ADMISSÃO — gate */}
             <div className="relative group">
               <button
