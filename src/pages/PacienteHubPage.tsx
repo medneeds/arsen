@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Pill, Stethoscope, ClipboardList, FolderOpen, History, ClipboardCheck, Lock, CheckCircle2, AlertTriangle, Printer, ShieldCheck, Timer, ArrowLeftRight } from "lucide-react";
+import { Pill, Stethoscope, ClipboardList, FolderOpen, History, ClipboardCheck, Lock, CheckCircle2, AlertTriangle, Printer, ShieldCheck, Timer, ArrowLeftRight, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
 import { AdmissionDialog } from "@/components/AdmissionDialog";
@@ -33,6 +33,12 @@ const CLINICAL_ACTIONS = [
   { key: "prescricao", label: "Prescrição", icon: Pill, path: "/prescricao" },
   { key: "evolucao", label: "Evolução", icon: Stethoscope, path: "/evolucao" },
   { key: "requisicoes", label: "Requisições", icon: ClipboardList, path: "/requisicoes" },
+  // Monitoramento era o UNICO modulo do paciente com rota propria sem card no
+  // Hub — so existia como botao do cockpit, por falta de espaco na grade de 6.
+  // Com a grade em 4+3 sobrou o oitavo lugar, e ele fecha duas linhas de
+  // quatro. Pela regra de auto-supressao (e3af8dbc), o botao correspondente
+  // some do cockpit aqui no Hub sozinho, sem codigo adicional.
+  { key: "monitoramento", label: "Monitoramento", icon: Activity, path: "/monitoramento" },
   { key: "docs", label: "Docs", icon: FolderOpen, path: "/documentos" },
   { key: "historico", label: "Histórico", icon: History, path: "/historico-paciente" },
 ];
@@ -503,7 +509,7 @@ export default function PacienteHubPage() {
 
           {/* Action grid — 6 cards aspect-square, harmônicos */}
           {/*
-            SETE cards (6 modulos + Sinalizacao) em DUAS linhas: 4 + 3.
+            OITO cards (7 modulos + Sinalizacao) em DUAS linhas de QUATRO.
 
             Por que nao os sete numa fila so, como estava: os breakpoints do
             Tailwind medem a VIEWPORT, nao o container. O cockpit e `sticky` e
@@ -520,7 +526,7 @@ export default function PacienteHubPage() {
             espaco util para uma grade que precisa de 768px. Ela deixa de
             reagir ao cockpit — nao ha mais encolhimento nem reflow.
 
-            Progressao: base 2 colunas | sm 3 | md+ 4 (4 + 3).
+            Progressao: base 2 colunas | sm 3 | md+ 4 (duas linhas cheias).
           */}
           <div className="w-full max-w-3xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
             {/* ADMISSÃO — gate */}
