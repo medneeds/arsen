@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { ADMISSION_STATUS } from "@/lib/admissionStatus";
+import { useSignalingStatus, SignalingStatusPanel } from "@/components/SignalingStatusPanel";
 import type { TransferClassification } from "@/lib/sectorComplexity";
 import { useNavigate } from "react-router-dom";
 import { Patient } from "@/types/patient";
@@ -135,6 +136,22 @@ export function PatientMovementDialog({
     destinationLabel: string | null;
   } | null>(null);
 
+  /**
+   * Estado de sinalizacao ATUAL do paciente.
+   *
+   * O dialogo abria sempre no seletor "Transferencias / Saidas", mesmo para
+   * paciente que ja tinha obito ou transferencia sinalizados — nao dizia em que
+   * estado o paciente estava, nem oferecia suspender. Quem precisava suspender
+   * tinha que sair, achar o cockpit e usar o botao de la.
+   */
+  const signaling = useSignalingStatus(
+    patient?.id || "",
+    patient?.name || "",
+    patient?.admissionStatus,
+  );
+  // Sinalizacao ativa + intencao explicita de sinalizar OUTRA coisa por cima.
+  const [overrideSignaled, setOverrideSignaled] = useState(false);
+
   const { toast } = useToast();
   const { currentState, currentHospital } = useHospital();
   const { currentDepartment } = useDepartment();
@@ -156,6 +173,7 @@ export function PatientMovementDialog({
     setStep("category");
     setCategory(null);
     setSubtype(null);
+    setOverrideSignaled(false);
   }, [isOpen, movementType]);
 
   // Sincroniza médico responsável com o usuário logado (para sumário de alta / óbito)
@@ -576,6 +594,46 @@ export function PatientMovementDialog({
   /* ───────── Step 1: Category ───────── */
   const renderCategoryStep = () => (
     <div className="space-y-3">
+      {/*
+        Estado atual PRIMEIRO. Quem reabre esta tela com sinalizacao ativa quase
+        sempre vem para entender o que esta valendo ou para suspender — nao para
+        sinalizar de novo. Mostrar o seletor antes disso obrigava a sair e achar
+        o cockpit.
+      */}
+      {signaling.kind && (
+        <SignalingStatusPanel
+          status={signaling}
+          patientId={patient?.id || ""}
+          patientName={patient?.name || ""}
+          density="full"
+          onChangeDestination={() => setOverrideSignaled(true)}
+        />
+      )}
+
+      {/*
+        Com sinalizacao ativa, o seletor fica atras de um passo consciente.
+        Nao e trava — e freio: sinalizar alta por cima de um obito, ou uma
+        segunda transferencia por cima da primeira, produz estados
+        contraditorios que alguem vai ter que desfazer depois.
+      */}
+      {signaling.kind && !overrideSignaled ? (
+        <div className="rounded-lg border border-dashed border-border p-3 space-y-2">
+          <p className="text-[12px] text-muted-foreground leading-snug">
+            {signaling.kind === "transfer"
+              ? "Para trocar o destino desta transferência, use \u201cAlterar destino\u201d acima. Sinalizar outro tipo de movimentação por cima cria estados contraditórios."
+              : "Este paciente já tem um desfecho sinalizado. Para registrar outra movimentação, suspenda o desfecho atual acima — assim o histórico fica coerente."}
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-[11px] text-muted-foreground hover:text-foreground"
+            onClick={() => setOverrideSignaled(true)}
+          >
+            Ainda assim, sinalizar outra movimentação
+          </Button>
+        </div>
+      ) : (
+      <>
       <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold">
         Selecione o tipo de movimentação
       </p>
@@ -614,6 +672,8 @@ export function PatientMovementDialog({
           );
         })}
       </div>
+      </>
+      )}
     </div>
   );
 
