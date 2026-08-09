@@ -13,11 +13,19 @@ import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
+import { usePatientPendingItems } from "@/hooks/usePatientPendingItems";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { PatientMovementDialog } from "@/components/PatientMovementDialog";
 import { getSectorLabel } from "@/lib/sectorUtils";
+import type { AdmissionStatus as CanonicalAdmissionStatus } from "@/lib/admissionStatus";
 
-type AdmissionStatus = "pre_admitido" | "admitido" | "suspenso" | null;
+// O tipo local declarava apenas "pre_admitido" | "admitido" | "suspenso", mas
+// `setAdmissionStatus` recebe o valor cru de patients.admission_status — que
+// em runtime tambem vale obito, alta_dada e os dois de transferencia. O tipo
+// mentia, e por isso o card de Sinalizacao nao compilava ao ler esses estados.
+// Passa a usar o union canonico de src/lib/admissionStatus.ts, que ja existe
+// justamente para ser a fonte unica desses literais (auditoria de 22/07/2026).
+type AdmissionStatus = CanonicalAdmissionStatus | "suspenso" | null;
 
 const SAPS_DEADLINE_MS = 24 * 60 * 60 * 1000;
 
@@ -52,26 +60,7 @@ export default function PacienteHubPage() {
   const cockpitPatient = useCockpitPatient();
   const [movementOpen, setMovementOpen] = useState(false);
 
-  /**
-   * Estado de sinalizacao do paciente, para o card refletir a realidade em vez
-   * de ser so um atalho. O card de Admissao ja faz isso ("Concluida"), e e o
-   * que transforma o Hub de lancador em painel de situacao: quem abre a tela
-   * ve, sem clicar, que aquele paciente ja tem obito ou alta sinalizados.
-   */
-  const signalState = (() => {
-    switch (cockpitPatient?.admissionStatus) {
-      case "obito":
-        return { label: "Óbito sinalizado", tone: "danger" as const };
-      case "alta_dada":
-        return { label: "Alta sinalizada", tone: "info" as const };
-      case "transferencia_externa_pendente":
-        return { label: "Transf. externa", tone: "warn" as const };
-      case "transferencia_interna_pendente":
-        return { label: "Transf. interna", tone: "warn" as const };
-      default:
-        return null;
-    }
-  })();
+
 
   const ctx = useMemo(() => ({
     patientId: params.get("patientId") || "",
@@ -86,10 +75,79 @@ export default function PacienteHubPage() {
   const identifiers = usePatientIdentifiers(ctx.patientId, ctx.patientName, currentHospital?.id || null);
   const registryId = identifiers.registry?.id ?? null;
 
+  /**
+   * Requisicoes pendentes — reusa o hook que a aba "Exames" do cockpit ja usa,
+   * com assinatura realtime. Nenhuma consulta nova: a contagem que aparece no
+   * card e exatamente a mesma que o cockpit mostra, e atualiza sozinha quando
+   * o laboratorio conclui um exame.
+   */
+  const { summary: pendingSummary } = usePatientPendingItems(
+    ctx.patientId || null,
+    ctx.patientName || null,
+    currentHospital?.id || null,
+  );
+  const pendingRequests = pendingSummary.pendingExams + pendingSummary.pendingCultures;
+
+  /**
+   * Houve evolucao hoje? Consulta leve (select id, limit 1).
+   *
+   * Filtra por patient_registry_id quando existe, e so cai em patient_id na falta
+   * dele: `patients` e a tabela de LEITOS, entao patient_id muda a cada
+   * transferencia — o mesmo detalhe que ja causou bug de reabertura de
+   * atendimento neste projeto. patient_registry_id acompanha a pessoa.
+   */
+  const [evolvedToday, setEvolvedToday] = useState<boolean | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!ctx.patientId && !registryId) { setEvolvedToday(null); return; }
+      const inicioDoDia = new Date();
+      inicioDoDia.setHours(0, 0, 0, 0);
+      let q = supabase
+        .from("clinical_evolutions")
+        .select("id")
+        .gte("created_at", inicioDoDia.toISOString())
+        .limit(1);
+      q = registryId ? q.eq("patient_registry_id", registryId) : q.eq("patient_id", ctx.patientId);
+      const { data, error } = await q;
+      if (cancelled) return;
+      // Erro nao vira "nao evoluiu": ficaria afirmando algo falso sobre o
+      // prontuario. Sem resposta confiavel, o card fica neutro.
+      setEvolvedToday(error ? null : (data?.length ?? 0) > 0);
+    })();
+    return () => { cancelled = true; };
+  }, [ctx.patientId, registryId]);
+
   // Usar status passado pela URL como valor inicial — evita flash de bloqueio
   const [admissionStatus, setAdmissionStatus] = useState<AdmissionStatus>(
     ctx.initialAdmissionStatus ?? null
   );
+
+  /**
+   * Estado de sinalizacao do paciente, para o card refletir a realidade em vez
+   * de ser so um atalho. O card de Admissao ja faz isso ("Concluida"), e e o
+   * que transforma o Hub de lancador em painel de situacao: quem abre a tela
+   * ve, sem clicar, que aquele paciente ja tem obito ou alta sinalizados.
+   *
+   * Le do `admissionStatus` do PROPRIO hub, nao do cockpitPatient: o hub ja
+   * busca esse campo e aplica a regra de effectiveStatus (pre_admitido que ja
+   * tem admissao vira admitido). Usar a outra fonte criaria duas verdades para
+   * o mesmo dado na mesma tela.
+   */
+  const signalState = (() => {
+    switch (admissionStatus) {
+      case "obito":
+        return { label: "Óbito sinalizado", tone: "danger" as const };
+      case "alta_dada":
+        return { label: "Alta sinalizada", tone: "info" as const };
+      case "transferencia_externa_pendente":
+        return { label: "Transf. externa", tone: "warn" as const };
+      case "transferencia_interna_pendente":
+        return { label: "Transf. interna", tone: "warn" as const };
+      default:
+        return null;
+    }
+  })();
   const [statusLoading, setStatusLoading] = useState(!ctx.initialAdmissionStatus);
   const [admissionOpen, setAdmissionOpen] = useState(false);
   const [consultOpen, setConsultOpen] = useState(false);
@@ -568,6 +626,24 @@ export default function PacienteHubPage() {
                   )}>
                     {label}
                   </span>
+
+                  {/*
+                    Sub-rotulo de estado. Regra deliberada: so alarma quando ha
+                    ACAO CONCRETA pendente. Ausencia NAO alarma — marcar de
+                    ambar todo paciente ainda nao evoluido acenderia o painel
+                    inteiro as 8h da manha, e alerta que acende sempre vira
+                    ruido, o oposto do que uma passagem de plantao precisa.
+                  */}
+                  {!locked && key === "evolucao" && evolvedToday === true && (
+                    <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-widest uppercase mt-1">
+                      Evoluída hoje
+                    </span>
+                  )}
+                  {!locked && key === "requisicoes" && pendingRequests > 0 && (
+                    <span className="text-[9px] font-semibold text-amber-600 dark:text-amber-500 tracking-widest uppercase mt-1">
+                      {pendingRequests} pendente{pendingRequests > 1 ? "s" : ""}
+                    </span>
+                  )}
                 </div>
               </button>
             ))}
