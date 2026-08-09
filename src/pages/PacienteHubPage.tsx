@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Pill, Stethoscope, ClipboardList, FolderOpen, History, ClipboardCheck, Lock, CheckCircle2, AlertTriangle, Printer, ShieldCheck, Timer, ArrowLeftRight, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { printAdmissionNormaZero } from "@/lib/printAdmission";
 import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import { usePatientPendingItems } from "@/hooks/usePatientPendingItems";
 import { PatientCockpit } from "@/components/PatientCockpit";
@@ -57,6 +58,7 @@ export default function PacienteHubPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { currentHospital } = useHospital();
+  const queryClient = useQueryClient();
 
   // Cockpit — mesma fonte (searchParams) e mesma variante "fixed" das outras
   // sete paginas de paciente. O Hub era a UNICA sem ele, e era justamente onde
@@ -103,6 +105,17 @@ export default function PacienteHubPage() {
    * atendimento neste projeto. patient_registry_id acompanha a pessoa.
    */
   const [evolvedToday, setEvolvedToday] = useState<boolean | null>(null);
+  const [prescribedToday, setPrescribedToday] = useState<boolean | null>(null);
+  /**
+   * Contador que forca a releitura dos estados derivados. Incrementado por
+   * refreshHubState() apos uma acao e ao voltar o foco para a aba.
+   *
+   * Sem isso o Hub so refletia a realidade ao remontar. Como o usuario sai
+   * para /prescricao, valida, e volta pelo breadcrumb — que NAO remonta a
+   * pagina — o card ficava mostrando o estado anterior por tempo indefinido.
+   */
+  const [refreshTick, setRefreshTick] = useState(0);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -120,9 +133,32 @@ export default function PacienteHubPage() {
       // Erro nao vira "nao evoluiu": ficaria afirmando algo falso sobre o
       // prontuario. Sem resposta confiavel, o card fica neutro.
       setEvolvedToday(error ? null : (data?.length ?? 0) > 0);
+
+      // Prescricao validada hoje. `validated`/`validatedAt` vivem DENTRO do
+      // JSON `items`, entao nao da para filtrar no banco — busca-se a
+      // prescricao mais recente do prontuario e inspeciona-se os itens aqui.
+      if (!registryId) { setPrescribedToday(null); return; }
+      const { data: presc, error: errPresc } = await supabase
+        .from("prescriptions")
+        .select("items, created_at")
+        .eq("patient_registry_id", registryId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (cancelled) return;
+      if (errPresc || !presc?.length) { setPrescribedToday(errPresc ? null : false); return; }
+      const itens = Array.isArray(presc[0].items) ? presc[0].items : [];
+      setPrescribedToday(
+        itens.some((raw) => {
+          const it = raw as { validated?: unknown; validatedAt?: unknown };
+          if (it?.validated !== true || typeof it?.validatedAt !== "string") return false;
+          const d = new Date(it.validatedAt);
+          return !Number.isNaN(d.getTime()) && d >= inicioDoDia;
+        }),
+      );
     })();
     return () => { cancelled = true; };
-  }, [ctx.patientId, registryId]);
+  }, [ctx.patientId, registryId, refreshTick]);
+
 
   // Usar status passado pela URL como valor inicial — evita flash de bloqueio
   const [admissionStatus, setAdmissionStatus] = useState<AdmissionStatus>(
@@ -183,7 +219,10 @@ export default function PacienteHubPage() {
     return () => { window.removeEventListener("storage", onStorage); clearInterval(t); };
   }, [registryId, admissionOpen]);
 
-  const fetchStatus = async () => {
+  // Memoizado: sem isso a funcao se recria a cada render, o useCallback de
+  // refreshHubState muda junto, e o listener de foco seria desanexado e
+  // reanexado indefinidamente.
+  const fetchStatus = useCallback(async () => {
     if (!ctx.patientId) { setStatusLoading(false); return; }
     setStatusLoading(true);
     const { data } = await supabase
@@ -252,9 +291,29 @@ export default function PacienteHubPage() {
     setSapsPending(stillPending);
     setSapsSince(row.saps_pending_since ?? null);
     setStatusLoading(false);
-  };
+  }, [ctx.patientId, registryId]);
 
-  useEffect(() => { fetchStatus(); }, [ctx.patientId, registryId]);
+  useEffect(() => { fetchStatus(); }, [fetchStatus]);
+
+  /**
+   * Refresca tudo que o Hub deriva do banco. Chamado apos uma acao concluida e
+   * ao voltar o foco para a aba — o usuario sai para validar uma prescricao e
+   * volta pelo breadcrumb, que nao remonta a pagina.
+   */
+  const refreshHubState = useCallback(() => {
+    fetchStatus();
+    setRefreshTick((n) => n + 1);
+  }, [fetchStatus]);
+
+  useEffect(() => {
+    const aoVoltar = () => { if (!document.hidden) refreshHubState(); };
+    window.addEventListener("focus", aoVoltar);
+    document.addEventListener("visibilitychange", aoVoltar);
+    return () => {
+      window.removeEventListener("focus", aoVoltar);
+      document.removeEventListener("visibilitychange", aoVoltar);
+    };
+  }, [refreshHubState]);
 
   // Cronômetro vivo
   useEffect(() => {
@@ -644,6 +703,11 @@ export default function PacienteHubPage() {
                     inteiro as 8h da manha, e alerta que acende sempre vira
                     ruido, o oposto do que uma passagem de plantao precisa.
                   */}
+                  {!locked && key === "prescricao" && prescribedToday === true && (
+                    <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-widest uppercase mt-1">
+                      Validada hoje
+                    </span>
+                  )}
                   {!locked && key === "evolucao" && evolvedToday === true && (
                     <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-widest uppercase mt-1">
                       Evoluída hoje
@@ -768,7 +832,23 @@ export default function PacienteHubPage() {
         movementType={null}
         isOpen={movementOpen}
         onClose={() => setMovementOpen(false)}
-        onSuccess={() => setMovementOpen(false)}
+        onSuccess={() => {
+          setMovementOpen(false);
+          // BUG (relatado 09/08/2026): o card de Sinalizacao continuava com o
+          // status antigo apos confirmar. Este onSuccess so fechava o dialogo.
+          //
+          // Duas fontes precisam ser refrescadas, e uma nao cobre a outra:
+          //  - refreshHubState(): o admissionStatus do Hub vem de fetchStatus(),
+          //    useState proprio, que NAO passa pelo react-query;
+          //  - invalidateQueries(): o cockpit ao lado le pelo react-query, e sem
+          //    isso ele ficaria dessincronizado do card na mesma tela.
+          // O cockpit ja fazia a segunda parte desde 16/07; faltava a primeira.
+          refreshHubState();
+          queryClient.invalidateQueries({ queryKey: ["discharge-docs"] });
+          queryClient.invalidateQueries({ queryKey: ["patients"] });
+          queryClient.invalidateQueries({ queryKey: ["patient-movements"] });
+          queryClient.invalidateQueries({ queryKey: ["internal-transfer-requests"] });
+        }}
       />
 
       {ctx.patientId && (
