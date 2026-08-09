@@ -549,7 +549,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             const navActions = [
               { path: "/paciente", label: "Abrir Atendimento", Icon: Stethoscope, primary: true },
               { path: "/historico-paciente", label: "Histórico", Icon: FileText, primary: false },
-              { path: "/monitoramento", label: "Monitoramento clínico", Icon: Activity, primary: false },
+              { path: "/monitoramento", label: "Monitoramento", Icon: Activity, primary: false },
             ].filter((a) => a.path !== location.pathname);
 
             const dialogActions = [
@@ -1384,8 +1384,24 @@ function DischargeQuickActions({ patientId, patientName, admissionStatus, fallba
     );
   }
   return (
-    <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5" onClick={fallback}>
-      <ArrowLeftRight className="h-3.5 w-3.5" /> Sinalizar Alta, Movimentações e Desfechos
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={fallback}
+      title="Sinalizar movimentação interna, transferência, alta ou óbito"
+      className={cn(
+        "group w-full h-9 text-xs font-medium gap-1.5",
+        // Destaque MODERADO: e a acao mais buscada do cockpit, mas alta,
+        // transferencia e obito sao irreversiveis ou quase. Realce de borda e
+        // fundo sutil, sem virar botao primario cheio — chamar demais a
+        // atencao convidaria ao clique acidental em plantao corrido.
+        "border-primary/40 text-foreground",
+        "hover:bg-primary/5 hover:border-primary hover:shadow-sm",
+        "transition-all duration-200",
+      )}
+    >
+      <ArrowLeftRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+      Movimentações ou Desfechos
     </Button>
   );
 }
