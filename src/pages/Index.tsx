@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { SectorSection } from "@/components/SectorSection";
 import { UtiSectorSection } from "@/components/UtiSectorSection";
 import { PreAdmissionSection, type PreAdmissionSectionHandle } from "@/components/PreAdmissionSection";
 import { InternalTransferQueueSection } from "@/components/InternalTransferQueueSection";
@@ -178,43 +177,25 @@ const Index = () => {
   // Sector visual config — padronizado em azul institucional para integridade visual
   const BLUE_DOT = "bg-primary/80 border-primary/40";
   const BLUE_GRAD = "from-primary/20 to-primary/10";
-  // 🔒 useCensusLayout: true → UtiSectorSection + UtiPatientCard
-  //    Linha compacta de censo: leito, paciente, DIH, admissão no setor e
-  //    previsão de alta. É a leitura de quem passa visita e de quem gerencia
-  //    ocupação.
-  //    false → SectorSection + PatientCard: card expandido com Hipóteses,
-  //    Antecedentes, Exames e Programações — a folha de round.
+  // SECTOR_VISUAL guarda apenas APARENCIA: titulo, cor e ponto do setor.
   //
-  // O flag se chamava `isUti`, mas o nome já não descrevia o que fazia: a
-  // ENFERMARIA DE TRANSIÇÃO recebeu o layout de censo e não é UTI. Mantê-lo
-  // com esse nome enquanto quatro enfermarias entram junto faria o código
-  // mentir sobre a própria regra. Isto é só o LAYOUT — quem decide
-  // comportamento de admissão e SAPS é a constante UTI_SECTORS, em outro
-  // arquivo, e ela não muda aqui.
-  const SECTOR_VISUAL: Record<string, { title: string; color: string; dotClass: string; colorVariant: string; useCensusLayout?: boolean }> = {
-    // ── Intensivos e semi-intensivos ───────────────────────────────────
-    red:     { title: "UTI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
-    yellow:  { title: "UTI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
-    blue:    { title: "UCI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
-    outside: { title: "UCI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
-    ucc:     { title: "UCC",    color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
-    // ── Enfermarias — mesmo layout de censo da Enf. Transição ──────────
-    // A Enf. Transição já usava o layout de censo; as demais enfermarias
-    // ficaram para trás e continuavam na folha de round, com "Clique para
-    // adicionar nome" em cada leito vago. Mesma natureza de internação
-    // (permanência em dias, DIH e previsão de alta fazem sentido), mesmo
-    // layout.
-    neuro_01:             { title: "Neuro 01",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
-    neuro_02:             { title: "Neuro 02",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
-    clinica_cirurgica:    { title: "Clínica Cirúrgica",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
-    enfermaria_transicao: { title: "Enf. Transição",     color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
-    enfermaria_vascular:  { title: "Enf. Vascular",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
+  // Nao decide mais layout. Existia aqui uma flag (`isUti`, depois
+  // `useCensusLayout`) que escolhia entre dois componentes de mapa de leitos;
+  // ela foi removida porque o mapa passou a ser o mesmo para todos os setores.
+  // Setor nao muda a natureza da informacao "quem esta neste leito e ha quanto
+  // tempo".
+  const SECTOR_VISUAL: Record<string, { title: string; color: string; dotClass: string; colorVariant: string }> = {
+    red:     { title: "UTI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    yellow:  { title: "UTI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    blue:    { title: "UCI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    outside: { title: "UCI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    ucc:     { title: "UCC",    color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    neuro_01:             { title: "Neuro 01",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    neuro_02:             { title: "Neuro 02",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    clinica_cirurgica:    { title: "Clínica Cirúrgica",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    enfermaria_transicao: { title: "Enf. Transição",     color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    enfermaria_vascular:  { title: "Enf. Vascular",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
 
-    // ── UE, RIV e Centro Cirúrgico — seguem na folha de round ──────────
-    // NÃO migrados de propósito: no CC a permanência é de HORAS (preparo,
-    // bloco, RPA), e uma coluna "DIH" em dias marcaria 0 em todo leito, o que
-    // é pior que não mostrar. UE e RIV têm fluxo próprio. Decisão operacional,
-    // não técnica — migrar é só acrescentar a flag.
     sala_vermelha:        { title: "Sala Vermelha",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     sala_laranja:         { title: "Sala Laranja",       color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     observacao_clinica:   { title: "Obs. Clínica",       color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
@@ -1051,60 +1032,60 @@ const Index = () => {
                 <InternalTransferQueueSection sectorCode={activeSector} />
               </div>
 
-              {SECTOR_VISUAL[activeSector]?.useCensusLayout ? (
-                <div className="space-y-4">
-                  <UtiSectorSection 
-                    sector={activeSector as any}
-                    patients={patients.filter(p => p.sector === activeSector)}
-                    onUpdatePatient={handleUpdatePatient}
-                    onDeletePatient={handleDeletePatient}
-                    onReleasePreAdmissionBed={handleReleasePreAdmissionBed}
-                    onUndeletePatient={handleUndeletePatient}
-                    onPrintSector={() => handlePrintSector(activeSector)}
-                    onPrintRound={() => setRoundSectorDialogOpen(true)}
-                    onAddExtraBed={() => handleAddExtraBed(activeSector as Patient['sector'])}
-                    selectionMode={selectionMode}
-                    selectedPatients={selectedPatients}
-                    onToggleSelection={handleToggleSelection}
-                    onReorderPatients={(reordered) => handleReorderPatients(activeSector, reordered)}
-                    onTransfer={handleTransferPatient}
-                    onPrintPatient={handlePrintPatient}
-                    onRefetch={refetch}
-                    customTitle={SECTOR_VISUAL[activeSector]?.title || "Setor"}
-                    customIcon={<span className={`w-3 h-3 rounded-full ${SECTOR_VISUAL[activeSector]?.dotClass} border`} />}
-                    colorVariant={SECTOR_VISUAL[activeSector]?.colorVariant as any || "red"}
-                    allPatients={patients}
-                    currentUtiUnit={SECTOR_VISUAL[activeSector]?.title || "UTI 1"}
-                  />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <SectorSection 
-                    sector={activeSector as any}
-                    patients={filterPatients(patients.filter(p =>
-                      p.sector === activeSector ||
-                      (p as any).department === ({
-                        ucc: 'UCC', blue: 'UCI 1', enfermaria_transicao: 'ENFERMARIA DE TRANSIÇÃO',
-                        neuro_01: 'NEURO 01', neuro_02: 'NEURO 02', clinica_cirurgica: 'CLÍNICA CIRÚRGICA',
-                      } as Record<string,string>)[activeSector]
-                    ))}
-                    onUpdatePatient={handleUpdatePatient}
-                    onDeletePatient={handleDeletePatient}
-                    onReleasePreAdmissionBed={handleReleasePreAdmissionBed}
-                    onUndeletePatient={handleUndeletePatient}
-                    onPrintSector={() => handlePrintSector(activeSector)}
-                    onAddExtraBed={() => handleAddExtraBed(activeSector as Patient['sector'])}
-                    selectionMode={selectionMode}
-                    selectedPatients={selectedPatients}
-                    onToggleSelection={handleToggleSelection}
-                    onReorderPatients={(reordered) => handleReorderPatients(activeSector, reordered)}
-                    onTransfer={handleTransferPatient}
-                    onPrintPatient={handlePrintPatient}
-                    onRefetch={refetch}
-                    onQuickView={handleQuickView}
-                  />
-                </div>
-              )}
+              {/*
+                UM layout de leitos para TODOS os setores.
+
+                Antes havia um ternario: setores com a flag usavam
+                UtiSectorSection (linha compacta de censo) e o resto caia em
+                SectorSection (folha de round, com "Clique para adicionar nome"
+                em cada leito vago). A flag chamava-se `isUti`, mas a Enf.
+                Transicao — que nao e UTI — ja estava dentro, e as demais
+                enfermarias tinham ficado para tras. Era uma regra que ninguem
+                conseguia enunciar sem olhar a lista.
+
+                O mapa de leitos e uma leitura so: leito, quem ocupa, ha quanto
+                tempo, previsao de saida. Isso vale para UTI, enfermaria,
+                urgencia e centro cirurgico igualmente. Setor nao muda a
+                natureza da informacao — muda so o que se faz com ela.
+
+                A filtragem de pacientes aqui e a UNIAO das duas que existiam:
+                  - filterPatients(): respeita o toggle "mostrar so ocupados",
+                    que antes NAO funcionava nos setores de UTI;
+                  - fallback por `department`: pega paciente cujo `sector` nao
+                    bate mas cujo departamento sim, que antes so era aplicado
+                    fora da UTI. Sem ele, paciente somia da tela.
+              */}
+              <div className="space-y-4">
+                <UtiSectorSection
+                  sector={activeSector as any}
+                  patients={filterPatients(patients.filter(p =>
+                    p.sector === activeSector ||
+                    (p as any).department === ({
+                      ucc: 'UCC', blue: 'UCI 1', enfermaria_transicao: 'ENFERMARIA DE TRANSIÇÃO',
+                      neuro_01: 'NEURO 01', neuro_02: 'NEURO 02', clinica_cirurgica: 'CLÍNICA CIRÚRGICA',
+                    } as Record<string,string>)[activeSector]
+                  ))}
+                  onUpdatePatient={handleUpdatePatient}
+                  onDeletePatient={handleDeletePatient}
+                  onReleasePreAdmissionBed={handleReleasePreAdmissionBed}
+                  onUndeletePatient={handleUndeletePatient}
+                  onPrintSector={() => handlePrintSector(activeSector)}
+                  onPrintRound={() => setRoundSectorDialogOpen(true)}
+                  onAddExtraBed={() => handleAddExtraBed(activeSector as Patient['sector'])}
+                  selectionMode={selectionMode}
+                  selectedPatients={selectedPatients}
+                  onToggleSelection={handleToggleSelection}
+                  onReorderPatients={(reordered) => handleReorderPatients(activeSector, reordered)}
+                  onTransfer={handleTransferPatient}
+                  onPrintPatient={handlePrintPatient}
+                  onRefetch={refetch}
+                  customTitle={SECTOR_VISUAL[activeSector]?.title || "Setor"}
+                  customIcon={<span className={`w-3 h-3 rounded-full ${SECTOR_VISUAL[activeSector]?.dotClass} border`} />}
+                  colorVariant={SECTOR_VISUAL[activeSector]?.colorVariant as any || "blue"}
+                  allPatients={patients}
+                  currentUtiUnit={SECTOR_VISUAL[activeSector]?.title || "UTI 1"}
+                />
+              </div>
 
               {/* Anotações, Lembretes e Check-lists — removido do mapa de leitos */}
             </div>
