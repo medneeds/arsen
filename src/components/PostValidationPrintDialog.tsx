@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Printer } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { formatValidationMoment } from "@/lib/formatValidationMoment";
 
 /** Item selecionável na etapa de impressão. */
@@ -43,6 +44,14 @@ interface PostValidationPrintDialogProps {
    * Recebe os ids marcados (vazio quando não há opções).
    */
   onPrint: (selectedIds: string[]) => void;
+  /**
+   * Classes extras no conteúdo do diálogo.
+   *
+   * Existe por causa da AIH: o laudo dela imprime com window.print(), que leva
+   * a PÁGINA INTEIRA, e o CSS do laudo só esconde o que carrega `print:hidden`.
+   * Sem poder marcar este diálogo, ele sairia impresso junto com a AIH.
+   */
+  className?: string;
 }
 
 /**
@@ -115,6 +124,7 @@ export function PostValidationPrintDialog({
   note,
   options,
   onPrint,
+  className,
 }: PostValidationPrintDialogProps) {
   const moment = formatValidationMoment(validatedAt);
   const quem = validatedByName?.trim();
@@ -137,7 +147,7 @@ export function PostValidationPrintDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className={cn("sm:max-w-md", className)}>
         <DialogHeader>
           <div className="flex flex-col items-center gap-2.5 pt-1 pb-0.5">
             <AnimatedCheck />
