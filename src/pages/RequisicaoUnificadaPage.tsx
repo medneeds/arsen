@@ -2413,6 +2413,8 @@ async function printTerapeuticoRequest(
 
   return printRequisitionGuideWithGasometriaPrompt(request, sectorLabel);
 }
+
+interface ApacSelectedProcedure {
   code: string;
   name: string;
   qty: number;
