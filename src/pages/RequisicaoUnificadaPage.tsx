@@ -2193,30 +2193,76 @@ function askGuideOrApac(examLabel: string): Promise<ImagingPrintChoice> {
 }
 
 /**
+ * Busca os dados de identificação do paciente no cadastro central
+ * (patient_registry) — CPF, CNS, nascimento, sexo, mãe, endereço — que a
+ * ficha de Imagem não pede, mas que já existem no sistema desde o cadastro
+ * do paciente. Cai em campos vazios apenas quando não há vínculo
+ * (patient_registry_id nulo) ou quando o próprio cadastro está incompleto.
+ */
+async function fetchImagingApacPatientData(request: any): Promise<{
+  record: string; cpf: string; cns: string; dob: string; sex: string;
+  motherName: string; phone: string; address: string; city: string; uf: string;
+}> {
+  const empty = {
+    record: "", cpf: "", cns: "", dob: "", sex: "",
+    motherName: "", phone: "", address: "", city: "", uf: "",
+  };
+  const registryId = request?.patient_registry_id;
+  if (!registryId) return empty;
+  try {
+    const { data, error } = await supabase
+      .from("patient_registry")
+      .select("medical_record, cpf, cns, birth_date, sex, mother_name, phone, address, city, state")
+      .eq("id", registryId)
+      .maybeSingle();
+    if (error || !data) return empty;
+    return {
+      record: data.medical_record || "",
+      cpf: data.cpf || "",
+      cns: data.cns || "",
+      dob: data.birth_date || "",
+      sex: data.sex || "",
+      motherName: data.mother_name || "",
+      phone: data.phone || "",
+      address: data.address || "",
+      city: data.city || "",
+      uf: data.state || "",
+    };
+  } catch {
+    return empty;
+  }
+}
+
+/**
+ * Extrai nome e CRM de "Nome — CRM 12345" (formato gravado em
+ * requested_by_name pelas fichas do sistema). Sem CRM reconhecível, devolve
+ * o texto inteiro como nome e CRM vazio.
+ */
+function splitDoctorNameCrm(requestedByName: string): { name: string; crm: string } {
+  const raw = (requestedByName || "").trim();
+  const match = raw.match(/^(.*?)\s*—\s*CRM\s*(.+)$/i);
+  if (match) return { name: match[1].trim(), crm: match[2].trim() };
+  return { name: raw, crm: "" };
+}
+
+/**
  * Monta o laudo APAC a partir de uma requisição de Imagem já registrada.
  *
- * A ficha de Imagem não coleta CID, CPF, CNS, nome da mãe, endereço etc.
- * (só a ficha de Procedimento/APAC coleta). Por isso o laudo sai com o que a
- * requisição tem — paciente, exame(s), justificativa clínica, solicitante —
- * e o restante em branco, para preenchimento manual pelo médico, exatamente
- * como acontece hoje quando a ficha de Procedimento é impressa incompleta.
+ * A ficha de Imagem não coleta CID nem os dados assistenciais da solicitação
+ * (diagnóstico específico do laudo, código SIGTAP). Esses ficam em branco,
+ * para preenchimento manual pelo médico. Já os dados de identificação do
+ * paciente (CPF, CNS, nascimento, mãe, endereço) e o CRM do solicitante são
+ * buscados no cadastro central — não precisam ser preenchidos à mão.
  */
-function buildApacHtmlFromImagingRequest(request: any): string {
+async function buildApacHtmlFromImagingRequest(request: any): Promise<string> {
   const items: any[] = Array.isArray(request?.items) ? request.items : [];
+  const patientData = await fetchImagingApacPatientData(request);
+  const doctor = splitDoctorNameCrm(request?.requested_by_name || "");
   return buildApacHtml({
     institution: APAC_INSTITUTION,
     patient: {
       name: request?.patient_name || "",
-      record: "",
-      cpf: "",
-      cns: "",
-      dob: "",
-      sex: "",
-      motherName: "",
-      phone: "",
-      address: "",
-      city: "",
-      uf: "",
+      ...patientData,
     },
     procedures: items.map((it) => ({
       code: "",
@@ -2228,7 +2274,7 @@ function buildApacHtmlFromImagingRequest(request: any): string {
     cidSecondary: "",
     cidAssociated: "",
     observations: request?.notes || "",
-    doctor: { name: request?.requested_by_name || "", cpf: "", crm: "" },
+    doctor: { name: doctor.name, cpf: "", crm: doctor.crm },
     today: format(new Date(), "dd/MM/yyyy"),
   });
 }
@@ -2249,7 +2295,8 @@ async function printImagingRequest(
   const choice = await askGuideOrApac(examLabel);
   if (choice === "cancel") return;
   if (choice === "apac") {
-    openPrintWindow(buildApacHtmlFromImagingRequest(request), "Preparando Laudo APAC…");
+    const html = await buildApacHtmlFromImagingRequest(request);
+    openPrintWindow(html, "Preparando Laudo APAC…");
     return;
   }
   return printRequisitionGuideWithGasometriaPrompt(request, sectorLabel);
