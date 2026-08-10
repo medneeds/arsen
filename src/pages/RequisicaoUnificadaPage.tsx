@@ -2246,63 +2246,6 @@ function splitDoctorNameCrm(requestedByName: string): { name: string; crm: strin
 }
 
 /**
- * Monta o laudo APAC a partir de uma requisição de Imagem já registrada.
- *
- * A ficha de Imagem não coleta CID nem os dados assistenciais da solicitação
- * (diagnóstico específico do laudo, código SIGTAP). Esses ficam em branco,
- * para preenchimento manual pelo médico. Já os dados de identificação do
- * paciente (CPF, CNS, nascimento, mãe, endereço) e o CRM do solicitante são
- * buscados no cadastro central — não precisam ser preenchidos à mão.
- */
-async function buildApacHtmlFromImagingRequest(request: any): Promise<string> {
-  const items: any[] = Array.isArray(request?.items) ? request.items : [];
-  const patientData = await fetchImagingApacPatientData(request);
-  const doctor = splitDoctorNameCrm(request?.requested_by_name || "");
-  return buildApacHtml({
-    institution: APAC_INSTITUTION,
-    patient: {
-      name: request?.patient_name || "",
-      ...patientData,
-    },
-    procedures: items.map((it) => ({
-      code: "",
-      name: typeof it === "string" ? it : (it?.name || String(it ?? "")),
-      qty: 1,
-    })),
-    diagnosis: request?.clinical_indication || "",
-    cidPrimary: "",
-    cidSecondary: "",
-    cidAssociated: "",
-    observations: request?.notes || "",
-    doctor: { name: doctor.name, cpf: "", crm: doctor.crm },
-    today: format(new Date(), "dd/MM/yyyy"),
-  });
-}
-
-/**
- * Ponto único de impressão para a aba "Solicitados" de Imagem: pergunta
- * Guia x APAC e delega para o builder correto.
- */
-async function printImagingRequest(
-  request: any,
-  sectorLabel?: (s: string | null) => string,
-): Promise<void> {
-  const items: any[] = Array.isArray(request?.items) ? request.items : [];
-  const examLabel = items
-    .map((it) => (typeof it === "string" ? it : (it?.name || "")))
-    .filter(Boolean)
-    .join(", ") || "exame de imagem";
-  const choice = await askGuideOrApac(examLabel);
-  if (choice === "cancel") return;
-  if (choice === "apac") {
-    const html = await buildApacHtmlFromImagingRequest(request);
-    openPrintWindow(html, "Preparando Laudo APAC…");
-    return;
-  }
-  return printRequisitionGuideWithGasometriaPrompt(request, sectorLabel);
-}
-
-/**
  * Monta o laudo APAC a partir de uma requisição de Procedimento.
  *
  * Prioridade 1 — document_payload.kind === "apac": snapshot real, gravado no
@@ -3500,18 +3443,14 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
             )}
           </div>
           <div className="flex gap-1.5 shrink-0">
-            {category === "imagem" || category === "procedimento" ? (
+            {category === "procedimento" ? (
               <Button
                 size="sm"
                 variant="ghost"
                 className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (category === "imagem") {
-                    printImagingRequest(request, (s) => getSectorLabel(s));
-                  } else {
-                    printProcedimentoRequest(request, (s) => getSectorLabel(s));
-                  }
+                  printProcedimentoRequest(request, (s) => getSectorLabel(s));
                 }}
                 title="Imprimir"
               >
@@ -3533,9 +3472,11 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
                 gravado antes da migration), cai na guia generica — que e o
                 comportamento atual e nao regride nada.
 
-                Imagem fica de fora deste despacho de propósito: usa sempre o
-                modal Guia x APAC (printImagingRequest, acima), mesmo sem
-                document_payload — decisão do usuário em 10/08/2026.
+                Procedimento fica de fora deste despacho de propósito: usa
+                sempre o modal Guia x APAC (printProcedimentoRequest, acima),
+                mesmo sem document_payload — decisão do usuário em 10/08/2026.
+                Imagem foi revertida para o botão simples original nesta
+                mesma data.
               */
               const snap = (request as { document_payload?: { kind?: string; data?: Record<string, unknown> } }).document_payload;
               const temLaudoApac = snap?.kind === "apac" && !!snap.data;
