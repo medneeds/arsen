@@ -2388,8 +2388,26 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   };
 
   const handlePrint = async () => {
+    /*
+      Obrigatorios do APAC, definidos pelo gestor: nome do paciente, CID e
+      procedimento.
+
+      O CID faltava. Sem ele o laudo sai com o campo 34 (CID-10 Principal) em
+      branco e o SUS devolve — mas o formulario deixava imprimir, e a partir da
+      fase 2 tambem deixava GRAVAR. O registro entrava no historico parecendo
+      completo e nunca geraria documento aceito.
+
+      Bloqueio ANTES do roteamento para AIH: o Laudo AIH tem o mesmo campo de
+      CID, entao a exigencia vale para os dois caminhos.
+    */
     if (selectedProcedures.length === 0) { toast.error("Adicione ao menos um procedimento"); return; }
     if (!apacPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
+    if (!cidPrimary.trim()) {
+      toast.error("Informe o CID-10 Principal", {
+        description: "Obrigatório no laudo — sem ele o documento não é aceito.",
+      });
+      return;
+    }
     const hasAih = selectedProcedures.some(p => p.instrumento === "AIH");
     if (hasAih) {
       // Roteamento: procedimento AIH → abre Laudo AIH
@@ -2750,7 +2768,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
             <CardContent className="space-y-3">
               <div><Label className="text-xs text-muted-foreground">Diagnóstico Inicial</Label><Input value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} placeholder="Descreva o diagnóstico" /></div>
               <div className="grid grid-cols-3 gap-2">
-                <div><Label className="text-xs text-muted-foreground">CID-10 Principal</Label><Input value={cidPrimary} onChange={(e) => setCidPrimary(e.target.value)} placeholder="I63.9" className="font-mono" /></div>
+                <div><Label className="text-xs text-muted-foreground">CID-10 Principal *</Label><Input value={cidPrimary} onChange={(e) => setCidPrimary(e.target.value)} placeholder="I63.9" className="font-mono" /></div>
                 <div><Label className="text-xs text-muted-foreground">Secundário</Label><Input value={cidSecondary} onChange={(e) => setCidSecondary(e.target.value)} className="font-mono" /></div>
                 <div><Label className="text-xs text-muted-foreground">Associado</Label><Input value={cidAssociated} onChange={(e) => setCidAssociated(e.target.value)} className="font-mono" /></div>
               </div>
