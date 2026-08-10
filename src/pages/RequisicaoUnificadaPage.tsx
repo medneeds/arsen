@@ -39,6 +39,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { PrintableRequisitionGuide } from "@/components/PrintableRequisitionGuide";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
 import { openPrintWindow } from "@/lib/printNormaZero";
 import { registrarSolicitacao } from "@/lib/registrarSolicitacao";
@@ -3224,15 +3225,77 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
             )}
           </div>
           <div className="flex gap-1.5 shrink-0">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-              onClick={(e) => { e.stopPropagation(); printRequisitionGuideWithGasometriaPrompt(request, (s) => getSectorLabel(s)); }}
-              title="Imprimir Guia"
-            >
-              <Printer className="h-3.5 w-3.5" />
-            </Button>
+            {(() => {
+              /*
+                O botao de impressao passa a oferecer o IMPRESSO PROPRIO da
+                solicitacao, quando existe, alem da guia generica.
+
+                Ate aqui ele so sabia imprimir a guia — mesmo numa solicitacao
+                de procedimento, cujo documento real e o Laudo APAC. Quem
+                precisava do laudo depois do envio tinha que refazer o
+                formulario.
+
+                O despacho e pelo `kind` do document_payload, nao pela
+                `category`: e o payload que diz qual documento aquela linha
+                gerou de fato. Sem payload (registro anterior a este fluxo, ou
+                gravado antes da migration), cai na guia generica — que e o
+                comportamento atual e nao regride nada.
+              */
+              const snap = (request as { document_payload?: { kind?: string; data?: Record<string, unknown> } }).document_payload;
+              const temLaudoApac = snap?.kind === "apac" && !!snap.data;
+
+              const imprimirGuia = (e: React.MouseEvent) => {
+                e.stopPropagation();
+                printRequisitionGuideWithGasometriaPrompt(request, (s) => getSectorLabel(s));
+              };
+
+              if (!temLaudoApac) {
+                return (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                    onClick={imprimirGuia}
+                    title="Imprimir Guia"
+                  >
+                    <Printer className="h-3.5 w-3.5" />
+                  </Button>
+                );
+              }
+
+              return (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                      onClick={(e) => e.stopPropagation()}
+                      title="Imprimir"
+                    >
+                      <Printer className="h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuItem
+                      className="text-xs gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openPrintWindow(
+                          buildApacHtml(snap!.data as Parameters<typeof buildApacHtml>[0]),
+                          "Preparando Laudo APAC…",
+                        );
+                      }}
+                    >
+                      <FileText className="h-3.5 w-3.5" /> Laudo APAC
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-xs gap-2" onClick={imprimirGuia}>
+                      <Printer className="h-3.5 w-3.5" /> Guia de requisição
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              );
+            })()}
             <Button size="sm" variant="outline" className="h-8 px-2.5 text-xs gap-1" onClick={onViewResult}>
               <Eye className="h-3.5 w-3.5" />
               {showResult ? "Ver Resultado" : "Ver Detalhes"}
