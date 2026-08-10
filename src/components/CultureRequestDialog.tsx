@@ -31,6 +31,7 @@ import { usePatientLive } from "@/hooks/usePatientLive";
 import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { toast } from "sonner";
+import { comSnapshotDeDocumento } from "@/lib/registrarSolicitacao";
 import {
   PrintableCultureRequest,
   printCultureRequest,
@@ -255,16 +256,27 @@ export function CultureRequestDialog({
         requested_by_name: data.requested_by_name || null,
         status: "pending",
       };
+      // Snapshot do documento (fase 3b) — permite reemitir o impresso de
+      // cultura pelo historico. Envelope cuida do caso git != banco.
+      const snapshot = { kind: "cultura" as const, version: 1, data: { ...data } };
+
       if (savedId) {
-        const { error } = await supabase.from("exam_requests").update(payload).eq("id", savedId);
+        const { error } = await comSnapshotDeDocumento(
+          (extra) => supabase.from("exam_requests").update({ ...payload, ...extra }).eq("id", savedId).then(r => ({ data: null, error: r.error })),
+          snapshot,
+        );
         if (error) throw error;
         return savedId;
       }
-      const { data: inserted, error } = await supabase
-        .from("exam_requests")
-        .insert(payload)
-        .select("id")
-        .single();
+      const { data: inserted, error } = await comSnapshotDeDocumento<{ id: string }>(
+        (extra) => supabase
+          .from("exam_requests")
+          .insert({ ...payload, ...extra })
+          .select("id")
+          .single()
+          .then(r => ({ data: r.data as { id: string } | null, error: r.error })),
+        snapshot,
+      );
       if (error) throw error;
       setSavedId(inserted.id);
       return inserted.id;

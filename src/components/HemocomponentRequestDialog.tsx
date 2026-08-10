@@ -28,6 +28,7 @@ import { asUuidOrNull } from "@/lib/utils";
 import { resolvePatientHeader, resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
 import { toast } from "sonner";
+import { comSnapshotDeDocumento } from "@/lib/registrarSolicitacao";
 import {
   PrintableHemocomponentRequest,
   printHemocomponentRequest,
@@ -301,16 +302,34 @@ export function HemocomponentRequestDialog({
         requested_by_name: data.requested_by_name || null,
         status: "pending",
       };
+      /*
+        Snapshot do documento — e o que permite reemitir o impresso de
+        hemocomponente a partir do historico (fase 3b). Sem ele a linha aparece
+        na aba mas cai na guia generica, perdendo o impresso diferenciado.
+
+        comSnapshotDeDocumento preserva a logica de insert/update deste dialogo
+        e cuida do caso git != banco: se a coluna nao existir, regrava sem o
+        snapshot em vez de derrubar a solicitacao.
+      */
+      const snapshot = { kind: "hemocomponente" as const, version: 1, data: { ...data } };
+
       if (savedId) {
-        const { error } = await supabase.from("exam_requests").update(payload).eq("id", savedId);
+        const { error } = await comSnapshotDeDocumento(
+          (extra) => supabase.from("exam_requests").update({ ...payload, ...extra }).eq("id", savedId).then(r => ({ data: null, error: r.error })),
+          snapshot,
+        );
         if (error) throw error;
         return savedId;
       }
-      const { data: inserted, error } = await supabase
-        .from("exam_requests")
-        .insert(payload)
-        .select("id")
-        .single();
+      const { data: inserted, error } = await comSnapshotDeDocumento<{ id: string }>(
+        (extra) => supabase
+          .from("exam_requests")
+          .insert({ ...payload, ...extra })
+          .select("id")
+          .single()
+          .then(r => ({ data: r.data as { id: string } | null, error: r.error })),
+        snapshot,
+      );
       if (error) throw error;
       setSavedId(inserted.id);
       return inserted.id;
