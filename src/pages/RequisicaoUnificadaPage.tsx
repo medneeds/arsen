@@ -16,7 +16,11 @@ import {
   ShieldAlert, ChevronRight,
 } from "lucide-react";
 import { HemocomponentRequestDialog } from "@/components/HemocomponentRequestDialog";
-import { SatRequestDialog } from "@/components/SatRequestDialog";
+import { printHemocomponentRequest, type HemocomponentRequestData } from "@/components/PrintableHemocomponentRequest";
+import {
+  SatRequestDialog, printSatRequest, PRODUCT_LABEL,
+  type SatPrintData, type Product, type WoundClass, type VaccinationStatus,
+} from "@/components/SatRequestDialog";
 import { CultureRequestDialog } from "@/components/CultureRequestDialog";
 import { AihFormDialog } from "@/components/AihFormDialog";
 import { OPMEDialog } from "@/components/OPMEDialog";
@@ -2111,14 +2115,15 @@ function buildApacHtml(input: {
 }
 
 /**
- * Modal "Como deseja imprimir?" — Guia (comum) x APAC (documento formal).
+ * Modal "Como deseja imprimir?" — Guia (comum) x documento formal do
+ * hospital (APAC, impresso de hemocomponente, impresso de SAT...).
  *
- * Usado no botão de impressão da aba "Solicitados" de Imagem. Sempre pergunta
- * (sem memória de sessão), igual ao padrão já usado para gasometria em Lab.
+ * Usado no botão de impressão da aba "Solicitados". Sempre pergunta (sem
+ * memória de sessão), igual ao padrão já usado para gasometria em Lab.
  */
 type ImagingPrintChoice = "guia" | "apac" | "cancel";
 
-function askGuideOrApac(examLabel: string): Promise<ImagingPrintChoice> {
+function askGuideOrApac(examLabel: string, formalLabel: string = "Imprimir APAC"): Promise<ImagingPrintChoice> {
   return new Promise((resolve) => {
     const host = document.createElement("div");
     document.body.appendChild(host);
@@ -2183,7 +2188,7 @@ function askGuideOrApac(examLabel: string): Promise<ImagingPrintChoice> {
             { style: rowStyle },
             React.createElement("button", { style: btnGhost, onClick: () => finish("cancel") }, "Cancelar"),
             React.createElement("button", { style: btnSecondary, onClick: () => finish("guia") }, "Imprimir Guia"),
-            React.createElement("button", { style: btnPrimary, onClick: () => finish("apac") }, "Imprimir APAC"),
+            React.createElement("button", { style: btnPrimary, onClick: () => finish("apac") }, formalLabel),
           ),
         ),
       );
@@ -2316,8 +2321,98 @@ async function printProcedimentoRequest(
   return printRequisitionGuideWithGasometriaPrompt(request, sectorLabel);
 }
 
+/**
+ * Reconstrói os dados de SAT/IGHAT a partir da requisição (linha de
+ * exam_requests). Ao contrário de Procedimento/Imagem, a ficha de SAT já
+ * grava tudo que o impresso precisa direto na linha (items[0] carrega
+ * ferimento, vacinação, produto, dose, via) — não depende de haver
+ * document_payload para reconstruir o impresso, funciona igual em
+ * solicitações antigas e novas.
+ */
+function buildSatDataFromRequest(request: any): SatPrintData {
+  const item = (Array.isArray(request?.items) ? request.items[0] : null) || {};
+  const notes: string = request?.notes || "";
+  const doctorMatch = notes.match(/Médico:\s*(.*?)(?:\s*—\s*CRM\s*(.+))?$/m);
+  const obsMatch = notes.match(/Obs:\s*(.*)$/ms);
+  const productEntry = (Object.entries(PRODUCT_LABEL) as [Product, string][])
+    .find(([, label]) => label === item.name);
+  const traumaAt: string = item.trauma_at || "";
+  const [traumaDate, traumaTime] = traumaAt.includes("T") ? traumaAt.split("T") : ["", ""];
+  return {
+    patientName: request?.patient_name || "",
+    patientBed: request?.patient_bed || "",
+    patientSector: request?.patient_sector || "",
+    hospitalName: APAC_INSTITUTION.name,
+    wound: (item.wound_class as WoundClass) || "outras",
+    vac: (item.vaccination_status as VaccinationStatus) || "incompleta_ou_desconhecida",
+    woundLocation: item.wound_location || "",
+    traumaDate,
+    traumaTime,
+    woundDescription: item.wound_description || "",
+    allergyHistory: item.allergy_history || "",
+    product: productEntry ? productEntry[0] : "sat",
+    dose: item.dose || "",
+    route: item.route || "",
+    doctorName: (doctorMatch?.[1] || request?.requested_by_name || "").trim(),
+    doctorCrm: (doctorMatch?.[2] || "").trim(),
+    observations: (obsMatch?.[1] || "").trim(),
+  };
+}
 
-interface ApacSelectedProcedure {
+/**
+ * Ponto único de impressão para a aba "Solicitados" de Terapêutico
+ * (Hemocomponentes + SAT/IGHAT): mesmo padrão do modal de Procedimento —
+ * sempre pergunta Guia x impresso interno do hospital.
+ *
+ * Hemocomponente depende do document_payload (kind "hemocomponente") para
+ * reconstruir o impresso — a ficha coleta dados clínicos (histórico
+ * transfusional, tipagem, justificativa laboratorial) que não cabem na
+ * linha genérica de exam_requests. Sem snapshot (solicitações de antes da
+ * fase 3b), cai na guia — não tem de onde reconstruir sem inventar dado
+ * assistencial.
+ */
+async function printTerapeuticoRequest(
+  request: any,
+  sectorLabel?: (s: string | null) => string,
+): Promise<void> {
+  const kind: string = request?.category || "";
+  const items: any[] = Array.isArray(request?.items) ? request.items : [];
+  const examLabel = items
+    .map((it) => (typeof it === "string" ? it : (it?.name || "")))
+    .filter(Boolean)
+    .join(", ") || "solicitação terapêutica";
+
+  if (kind === "hemocomponente") {
+    const choice = await askGuideOrApac(examLabel, "Imprimir Solicitação de Hemocomponentes");
+    if (choice === "cancel") return;
+    if (choice === "apac") {
+      const snap = (request as { document_payload?: { kind?: string; data?: HemocomponentRequestData } })
+        .document_payload;
+      if (snap?.kind === "hemocomponente" && snap.data) {
+        await printHemocomponentRequest(snap.data);
+      } else {
+        toast.error("Sem impresso salvo para esta solicitação", {
+          description: "Registro anterior a este fluxo — imprimindo a guia.",
+        });
+        return printRequisitionGuideWithGasometriaPrompt(request, sectorLabel);
+      }
+      return;
+    }
+    return printRequisitionGuideWithGasometriaPrompt(request, sectorLabel);
+  }
+
+  if (kind === "sat") {
+    const choice = await askGuideOrApac(examLabel, "Imprimir Solicitação de SAT");
+    if (choice === "cancel") return;
+    if (choice === "apac") {
+      printSatRequest(buildSatDataFromRequest(request));
+      return;
+    }
+    return printRequisitionGuideWithGasometriaPrompt(request, sectorLabel);
+  }
+
+  return printRequisitionGuideWithGasometriaPrompt(request, sectorLabel);
+}
   code: string;
   name: string;
   qty: number;
@@ -3443,14 +3538,18 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
             )}
           </div>
           <div className="flex gap-1.5 shrink-0">
-            {category === "procedimento" ? (
+            {category === "procedimento" || category === "terapeutico" ? (
               <Button
                 size="sm"
                 variant="ghost"
                 className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
                 onClick={(e) => {
                   e.stopPropagation();
-                  printProcedimentoRequest(request, (s) => getSectorLabel(s));
+                  if (category === "procedimento") {
+                    printProcedimentoRequest(request, (s) => getSectorLabel(s));
+                  } else {
+                    printTerapeuticoRequest(request, (s) => getSectorLabel(s));
+                  }
                 }}
                 title="Imprimir"
               >

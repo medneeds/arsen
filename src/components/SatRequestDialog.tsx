@@ -46,31 +46,31 @@ interface Props {
   patientSector?: string;
 }
 
-type Product = "sat" | "ighat" | "vat";
-type WoundClass = "limpo_superficial" | "outras" | "alto_risco";
-type VaccinationStatus = "completa_recente" | "completa_antiga" | "incompleta_ou_desconhecida";
+export type Product = "sat" | "ighat" | "vat";
+export type WoundClass = "limpo_superficial" | "outras" | "alto_risco";
+export type VaccinationStatus = "completa_recente" | "completa_antiga" | "incompleta_ou_desconhecida";
 
-const PRODUCT_LABEL: Record<Product, string> = {
+export const PRODUCT_LABEL: Record<Product, string> = {
   sat: "SAT — Soro Antitetânico (heterólogo, 5.000 UI IM)",
   ighat: "IGHAT — Imunoglobulina Humana Antitetânica (250 UI IM)",
   vat: "Vacina dT (toxoide tetânico) — 0,5 mL IM",
 };
 
-const WOUND_LABEL: Record<WoundClass, string> = {
+export const WOUND_LABEL: Record<WoundClass, string> = {
   limpo_superficial: "Ferimento limpo e superficial",
   outras: "Outras condições (ferimento contaminado/profundo)",
   alto_risco:
     "Alto risco (queimadura, mordedura, fratura exposta, trauma com tecido desvitalizado, corpo estranho, ferida puntiforme)",
 };
 
-const VACCINATION_LABEL: Record<VaccinationStatus, string> = {
+export const VACCINATION_LABEL: Record<VaccinationStatus, string> = {
   completa_recente: "Esquema completo, última dose < 5 anos",
   completa_antiga: "Esquema completo, última dose ≥ 5 anos",
   incompleta_ou_desconhecida: "Esquema incompleto, desconhecido ou < 3 doses",
 };
 
 /** Tabela do PNI: combina situação vacinal + tipo de ferimento → conduta. */
-function recommendConduct(wound: WoundClass, vac: VaccinationStatus): {
+export function recommendConduct(wound: WoundClass, vac: VaccinationStatus): {
   vat: boolean;
   sat: boolean;
   rationale: string;
@@ -98,6 +98,86 @@ function recommendConduct(wound: WoundClass, vac: VaccinationStatus): {
     sat: true,
     rationale: "Esquema incompleto + ferimento de risco → indicar VAT + SAT (ou IGHAT se hipersensibilidade).",
   };
+}
+
+/** Dados suficientes para (re)imprimir a solicitação de SAT/IGHAT. */
+export interface SatPrintData {
+  patientName: string;
+  patientBed?: string;
+  patientSector?: string;
+  hospitalName?: string;
+  wound: WoundClass;
+  vac: VaccinationStatus;
+  woundLocation?: string;
+  traumaDate?: string;
+  traumaTime?: string;
+  woundDescription?: string;
+  allergyHistory?: string;
+  product: Product;
+  dose?: string;
+  route?: string;
+  doctorName?: string;
+  doctorCrm?: string;
+  observations?: string;
+}
+
+const escSat = (s: unknown) =>
+  String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]!));
+
+/** Monta o HTML da solicitação de SAT/IGHAT — usado tanto na emissão quanto na reimpressão pelo histórico. */
+export function buildSatPrintHtml(input: SatPrintData): string {
+  const now = format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+  const productLabel = PRODUCT_LABEL[input.product];
+  const rationale = recommendConduct(input.wound, input.vac).rationale;
+  return `
+      <html><head><title>Solicitação SAT — ${escSat(input.patientName)}</title>
+      <style>
+        body { font-family: -apple-system, system-ui, sans-serif; padding: 32px; color: #111; }
+        h1 { font-size: 18px; margin: 0 0 4px; }
+        h2 { font-size: 13px; margin: 18px 0 6px; text-transform: uppercase; letter-spacing: .04em; color: #444; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+        .meta { font-size: 12px; color: #555; margin-bottom: 16px; }
+        .row { display: flex; gap: 24px; font-size: 13px; margin-bottom: 6px; }
+        .row b { min-width: 130px; display: inline-block; color: #333; }
+        .box { border: 1px solid #ccc; border-radius: 6px; padding: 12px; font-size: 13px; }
+        .sig { margin-top: 60px; border-top: 1px solid #333; padding-top: 6px; font-size: 12px; text-align: center; }
+      </style></head><body>
+        <h1>Solicitação de Imunização — Profilaxia do Tétano</h1>
+        <div class="meta">${escSat(input.hospitalName || "")} • Emitido em ${escSat(now)}</div>
+
+        <h2>Paciente</h2>
+        <div class="row"><b>Nome:</b> ${escSat(input.patientName)}</div>
+        <div class="row"><b>Setor / Leito:</b> ${escSat(getSectorDisplayLabel(input.patientSector) || "—")} / ${escSat(input.patientBed || "—")}</div>
+
+        <h2>Avaliação clínica</h2>
+        <div class="row"><b>Tipo de ferimento:</b> ${escSat(WOUND_LABEL[input.wound])}</div>
+        <div class="row"><b>Localização:</b> ${escSat(input.woundLocation || "—")}</div>
+        <div class="row"><b>Data/hora trauma:</b> ${escSat(input.traumaDate)} ${escSat(input.traumaTime)}</div>
+        <div class="row"><b>Descrição:</b> ${escSat(input.woundDescription)}</div>
+        <div class="row"><b>Status vacinal:</b> ${escSat(VACCINATION_LABEL[input.vac])}</div>
+        <div class="row"><b>Alergia a soro:</b> ${escSat(input.allergyHistory)}</div>
+
+        <h2>Conduta indicada</h2>
+        <div class="box">
+          <div><b>${escSat(productLabel)}</b></div>
+          <div>Dose: ${escSat(input.dose)} • Via: ${escSat(input.route)}</div>
+          <div style="margin-top:6px; color:#444">${escSat(rationale)}</div>
+        </div>
+
+        ${input.observations ? `<h2>Observações</h2><div class="box">${escSat(input.observations)}</div>` : ""}
+
+        <div class="sig">${escSat(input.doctorName)}${input.doctorCrm ? " — CRM " + escSat(input.doctorCrm) : ""}<br>Médico solicitante</div>
+      </body></html>
+    `;
+}
+
+/** Abre a janela de impressão da solicitação de SAT/IGHAT. */
+export function printSatRequest(input: SatPrintData): void {
+  const w = window.open("", "_blank", "width=820,height=1000");
+  if (!w) return;
+  w.document.write(buildSatPrintHtml(input));
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 300);
 }
 
 export function SatRequestDialog({
@@ -257,53 +337,12 @@ export function SatRequestDialog({
   };
 
   const handlePrint = () => {
-    const w = window.open("", "_blank", "width=820,height=1000");
-    if (!w) return;
-    const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]!));
-    const now = format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
-    const productLabel = PRODUCT_LABEL[product];
-    w.document.write(`
-      <html><head><title>Solicitação SAT — ${esc(patientName)}</title>
-      <style>
-        body { font-family: -apple-system, system-ui, sans-serif; padding: 32px; color: #111; }
-        h1 { font-size: 18px; margin: 0 0 4px; }
-        h2 { font-size: 13px; margin: 18px 0 6px; text-transform: uppercase; letter-spacing: .04em; color: #444; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
-        .meta { font-size: 12px; color: #555; margin-bottom: 16px; }
-        .row { display: flex; gap: 24px; font-size: 13px; margin-bottom: 6px; }
-        .row b { min-width: 130px; display: inline-block; color: #333; }
-        .box { border: 1px solid #ccc; border-radius: 6px; padding: 12px; font-size: 13px; }
-        .sig { margin-top: 60px; border-top: 1px solid #333; padding-top: 6px; font-size: 12px; text-align: center; }
-      </style></head><body>
-        <h1>Solicitação de Imunização — Profilaxia do Tétano</h1>
-        <div class="meta">${esc(currentHospital?.name || "")} • Emitido em ${esc(now)}</div>
-
-        <h2>Paciente</h2>
-        <div class="row"><b>Nome:</b> ${esc(patientName)}</div>
-        <div class="row"><b>Setor / Leito:</b> ${esc(getSectorDisplayLabel(patientSector) || "—")} / ${esc(patientBed || "—")}</div>
-
-        <h2>Avaliação clínica</h2>
-        <div class="row"><b>Tipo de ferimento:</b> ${esc(WOUND_LABEL[wound])}</div>
-        <div class="row"><b>Localização:</b> ${esc(woundLocation || "—")}</div>
-        <div class="row"><b>Data/hora trauma:</b> ${esc(traumaDate)} ${esc(traumaTime)}</div>
-        <div class="row"><b>Descrição:</b> ${esc(woundDescription)}</div>
-        <div class="row"><b>Status vacinal:</b> ${esc(VACCINATION_LABEL[vac])}</div>
-        <div class="row"><b>Alergia a soro:</b> ${esc(allergyHistory)}</div>
-
-        <h2>Conduta indicada</h2>
-        <div class="box">
-          <div><b>${esc(productLabel)}</b></div>
-          <div>Dose: ${esc(dose)} • Via: ${esc(route)}</div>
-          <div style="margin-top:6px; color:#444">${esc(recommendation.rationale)}</div>
-        </div>
-
-        ${observations ? `<h2>Observações</h2><div class="box">${esc(observations)}</div>` : ""}
-
-        <div class="sig">${esc(doctorName)}${doctorCrm ? " — CRM " + esc(doctorCrm) : ""}<br>Médico solicitante</div>
-      </body></html>
-    `);
-    w.document.close();
-    w.focus();
-    setTimeout(() => w.print(), 300);
+    printSatRequest({
+      patientName, patientBed, patientSector,
+      hospitalName: currentHospital?.name || "",
+      wound, vac, woundLocation, traumaDate, traumaTime, woundDescription,
+      allergyHistory, product, dose, route, doctorName, doctorCrm, observations,
+    });
   };
 
   return (
