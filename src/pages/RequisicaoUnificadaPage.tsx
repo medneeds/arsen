@@ -2545,7 +2545,16 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   // ANTES era "rastro": chamado com `void` DEPOIS de imprimir, e uma falha só
   // gerava toast. Ou seja, o laudo saía impresso e podia não existir no
   // sistema. Agora BLOQUEIA — gravar é o objetivo do ato, não efeito colateral.
-  const registrarProcedimento = async (): Promise<boolean> => {
+  //
+  // document_payload (kind: "apac") vai junto: sem isso, o despachante de
+  // impressão da aba Solicitados (RequestCard) nunca teria como oferecer o
+  // Laudo APAC — só a guia genérica, mesmo sendo um procedimento com laudo
+  // de verdade por trás. `apacData` é o MESMO objeto usado para montar o
+  // HTML de impressão logo abaixo — evita registrar um snapshot diferente
+  // do que foi de fato impresso.
+  const registrarProcedimento = async (
+    apacData: Parameters<typeof buildApacHtml>[0],
+  ): Promise<boolean> => {
     if (!user?.id || !currentHospital?.id || !currentState?.id) {
       toast.error("Não foi possível registrar a solicitação", {
         description: "Contexto de unidade ou usuário ausente.",
@@ -2573,6 +2582,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         requestedByName: requesterName,
         hospitalUnitId: currentHospital.id,
         stateId: currentState.id,
+        documentPayload: { kind: "apac", version: 1, data: apacData },
       });
       onProcedureRegistered?.();
       return true;
@@ -2613,7 +2623,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     }
     // Gera o HTML do laudo APAC em janela isolada (garante página única
     // sem interferência do restante da UI da página).
-    const html = buildApacHtml({
+    const apacData: Parameters<typeof buildApacHtml>[0] = {
       institution: APAC_INSTITUTION,
       patient: {
         name: apacPatientName,
@@ -2636,11 +2646,12 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       observations,
       doctor: { name: doctorName, cpf: doctorCPF, crm: doctorCRM },
       today: todayFormatted,
-    });
+    };
+    const html = buildApacHtml(apacData);
     // Grava PRIMEIRO. Se falhar, nada é impresso — laudo no papel sem
     // contrapartida no sistema é o furo de rastreabilidade que este trabalho
     // veio fechar.
-    const ok = await registrarProcedimento();
+    const ok = await registrarProcedimento(apacData);
     if (!ok) return;
 
     /*
