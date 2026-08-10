@@ -240,8 +240,21 @@ export function PrintableRequisitionGuide({
   const [resolvedEncounter, setResolvedEncounter] = React.useState<string | null>(
     (request as any).patient_encounter_code || null,
   );
+  // BUGFIX (07/08/2026): mesma investigação de PrescricaoPage/EvolucaoPage —
+  // enquanto o fetch abaixo não resolve, os campos ficam null e a tela
+  // mostra "—" como se o dado não existisse, quando na verdade só ainda não
+  // chegou. A impressão REAL (printRequisitionGuide, mais abaixo) já é
+  // segura — ela faz `await fetchPatientIdentifiers` antes de montar
+  // qualquer HTML, então nunca imprime com esses campos em branco por
+  // corrida. O risco era só na pré-visualização em tela.
+  const [identifiersResolving, setIdentifiersResolving] = React.useState(
+    !(request.patient_birth_date && (request as any).patient_medical_record && (request as any).patient_encounter_code),
+  );
   React.useEffect(() => {
     let alive = true;
+    setIdentifiersResolving(
+      !(request.patient_birth_date && (request as any).patient_medical_record && (request as any).patient_encounter_code),
+    );
     fetchPatientIdentifiers({
       patient_registry_id: request.patient_registry_id,
       patient_id: request.patient_id,
@@ -250,6 +263,7 @@ export function PrintableRequisitionGuide({
       if (!request.patient_birth_date) setResolvedBirth(d.birth_date);
       if (!(request as any).patient_medical_record) setResolvedRecord(d.medical_record);
       if (!(request as any).patient_encounter_code) setResolvedEncounter(d.encounter_code);
+      setIdentifiersResolving(false);
     });
     if (request.patient_birth_date) setResolvedBirth(request.patient_birth_date);
     if ((request as any).patient_medical_record) setResolvedRecord((request as any).patient_medical_record);
@@ -384,19 +398,19 @@ export function PrintableRequisitionGuide({
           <tr>
             <th style={thStyle}>Nº Prontuário</th>
             <td style={{ ...tdStyle, fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontWeight: 600 }}>
-              {resolvedRecord || "—"}
+              {resolvedRecord || (identifiersResolving ? "carregando…" : "—")}
             </td>
             <th style={thStyle}>Nº Atendimento</th>
             <td style={{ ...tdStyle, fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontWeight: 600 }}>
-              {resolvedEncounter || "—"}
+              {resolvedEncounter || (identifiersResolving ? "carregando…" : "—")}
             </td>
           </tr>
           <tr>
             <th style={thStyle}>Data Nasc.</th>
-            <td style={tdStyle}>{fmtBirthDate(resolvedBirth)}</td>
+            <td style={tdStyle}>{resolvedBirth ? fmtBirthDate(resolvedBirth) : (identifiersResolving ? "carregando…" : "—")}</td>
             <th style={thStyle}>Idade</th>
             <td style={tdStyle}>
-              {ageInYears(resolvedBirth) !== null ? `${ageInYears(resolvedBirth)} anos` : "—"}
+              {ageInYears(resolvedBirth) !== null ? `${ageInYears(resolvedBirth)} anos` : (identifiersResolving ? "carregando…" : "—")}
             </td>
           </tr>
           <tr>

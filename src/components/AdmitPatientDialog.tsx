@@ -979,7 +979,6 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       } : null}
       contextLabel="Puxada da pré-admissão"
       onResolved={() => {
-        // Após resolver (salvar ou pular), retoma a admissão sem reabrir o diff.
         setPisSyncSkipped(true);
         setTimeout(() => { void handleAdmit(); }, 50);
       }}

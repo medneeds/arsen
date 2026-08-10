@@ -54,6 +54,7 @@ import { Printer } from "lucide-react";
 import { PatientIdentityHeader } from "./PatientIdentityHeader";
 import { SuspendDischargeDialog } from "./SuspendDischargeDialog";
 import { CancelTransferSignalDialog } from "./CancelTransferSignalDialog";
+import { useSignalingStatus, SignalingStatusPanel } from "@/components/SignalingStatusPanel";
 import { Ban } from "lucide-react";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 
@@ -514,53 +515,90 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         </div>
 
         {/* ===== ZONA 2: AÇÕES PRIMÁRIAS ===== */}
+        {/*
+          Acao que aponta para a rota ATUAL nao e renderizada.
+
+          Antes, goPatient() detectava o caso (location.pathname === path) e
+          respondia navegando para a propria pagina: a URL trocava, a tela nao
+          mudava, e o usuario concluia que travou. Botao que nao faz nada
+          visivel e pior que botao ausente.
+
+          A regra vale so para acoes que NAVEGAM. "Emitir documento" e
+          "Sinalizar" abrem dialogo e funcionam em qualquer pagina, entao
+          ficam sempre.
+
+          Efeito colateral desejado no Hub do Paciente: la os cards ja cobrem
+          Historico, e "Abrir Atendimento" apontaria para a propria tela — as
+          duas somem sozinhas, sem o hub precisar saber disso.
+        */}
         <div className="px-3 py-3 border-b border-border space-y-2">
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              size="sm"
-              variant="default"
-              className="h-8 text-xs gap-1.5"
-              onClick={() => goPatient("/paciente")}
-            >
-              <Stethoscope className="h-3.5 w-3.5" />
-              Abrir Atendimento
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 text-xs gap-1.5"
-              onClick={() => goPatient("/historico-paciente")}
-            >
-              <FileText className="h-3.5 w-3.5" />
-              Histórico
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 text-xs gap-1.5"
-              onClick={() => setDocDialogOpen(true)}
-            >
-              <FileSignature className="h-3.5 w-3.5" />
-              Emitir documentos
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 text-xs gap-1.5"
-              onClick={() => goPatient("/monitoramento")}
-            >
-              <Activity className="h-3.5 w-3.5" />
-              Monitoramento clínico
-            </Button>
-          </div>
+          {/*
+            Sinalizar vem PRIMEIRO: e a acao mais buscada do cockpit.
+            Peso visual permanece normal, de proposito — alta, transferencia e
+            obito sao irreversiveis ou quase, e transformar isso no botao mais
+            chamativo da tela convida ao clique acidental em plantao corrido.
+            A posicao entrega o ganho de tempo; o destaque so entregaria risco.
+          */}
           <DischargeQuickActions
             patientId={patient.id}
             patientName={patient.name}
             admissionStatus={patient.admissionStatus}
             fallback={() => setMovementDialogOpen(true)}
           />
+
+          {(() => {
+            const navActions = [
+              { path: "/paciente", label: "Abrir Atendimento", Icon: Stethoscope, primary: true },
+              { path: "/historico-paciente", label: "Histórico", Icon: FileText, primary: false },
+              { path: "/monitoramento", label: "Monitoramento", Icon: Activity, primary: false },
+            ].filter((a) => a.path !== location.pathname);
+
+            const dialogActions = [
+              { key: "emitir", label: "Emitir documento", Icon: FileSignature, onClick: () => setDocDialogOpen(true) },
+            ];
+
+            const todas = [
+              ...navActions.map((a) => ({
+                key: a.path,
+                label: a.label,
+                Icon: a.Icon,
+                variant: (a.primary ? "default" : "outline") as "default" | "outline",
+                onClick: () => goPatient(a.path),
+              })),
+              ...dialogActions.map((a) => ({
+                key: a.key,
+                label: a.label,
+                Icon: a.Icon,
+                variant: "outline" as const,
+                onClick: a.onClick,
+              })),
+            ];
+
+            // Sem acao nenhuma o container ficaria como um retangulo vazio.
+            if (todas.length === 0) return null;
+
+            return (
+              <div className="grid grid-cols-2 gap-2">
+                {todas.map(({ key, label, Icon, variant, onClick }) => (
+                  <Button
+                    key={key}
+                    size="sm"
+                    variant={variant}
+                    className={cn(
+                      "h-8 text-xs gap-1.5",
+                      // Item impar sozinho na ultima linha ocupa a largura toda,
+                      // em vez de deixar meia coluna vazia.
+                      todas.length % 2 === 1 && key === todas[todas.length - 1].key && "col-span-2",
+                    )}
+                    onClick={onClick}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            );
+          })()}
         </div>
 
         {/* ===== ZONA 3: ALERTAS CLÍNICOS ===== */}
@@ -1249,106 +1287,43 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
 /* ===== Subcomponentes ===== */
 
 function DischargeQuickActions({ patientId, patientName, admissionStatus, fallback }: { patientId: string; patientName: string; admissionStatus?: string; fallback: () => void }) {
-  const { data: docs } = usePatientDischargeDocs(patientId, patientName);
-  const latestAlta = docs?.find((d) => d.document_type === "alta_hospitalar" || d.document_type === "alta_pedido");
-  const latestObito = docs?.find((d) => d.document_type === ADMISSION_STATUS.DEATH);
-  const [suspendOpen, setSuspendOpen] = useState(false);
-  const [cancelTransferOpen, setCancelTransferOpen] = useState(false);
+  // Painel e textos vem de SignalingStatusPanel — a MESMA fonte que o dialogo
+  // de movimentacao usa. Antes so o cockpit sabia explicar o que uma
+  // sinalizacao ativa significa, e o dialogo contava outra historia sobre o
+  // mesmo paciente.
+  const status = useSignalingStatus(patientId, patientName, admissionStatus);
 
-  // Sinalização de transferência (sem documento clínico — só status no patients)
-  if (admissionStatus === ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING || admissionStatus === ADMISSION_STATUS.EXTERNAL_TRANSFER_PENDING) {
-    const isInt = admissionStatus === ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING;
+  if (status.kind) {
     return (
-      <div className="w-full rounded-md border border-sky-500/40 bg-sky-50 dark:bg-sky-950/30 p-2 space-y-1.5">
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-sky-800 dark:text-sky-200">
-          <ArrowLeftRight className="h-3.5 w-3.5" />
-          {isInt ? "TRANSFERÊNCIA INTERNA SINALIZADA" : "TRANSFERÊNCIA EXTERNA SINALIZADA"}
-        </div>
-        <p className="text-[11px] leading-snug text-sky-900/80 dark:text-sky-100/80">
-          A sinalização está ativa. A <strong>desalocação física</strong> do leito é feita no <strong>Mapa de Leitos</strong> (botão "Desalocar leito").
-        </p>
-        <div className="grid grid-cols-2 gap-1.5">
-          <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1.5 border-sky-500/50 text-sky-700 dark:text-sky-300 hover:bg-sky-500/10"
-            onClick={fallback}>
-            <Pencil className="h-3 w-3" /> Alterar destino
-          </Button>
-          <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1.5 border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
-            onClick={() => setCancelTransferOpen(true)}>
-            <Ban className="h-3 w-3" /> Suspender sinalização
-          </Button>
-        </div>
-        <CancelTransferSignalDialog
-          open={cancelTransferOpen}
-          onOpenChange={setCancelTransferOpen}
-          patientId={patientId}
-          patientName={patientName}
-          transferKind={isInt ? "interna" : "externa"}
-        />
-      </div>
+      <SignalingStatusPanel
+        status={status}
+        patientId={patientId}
+        patientName={patientName}
+        density="compact"
+        onChangeDestination={status.kind === "transfer" ? fallback : undefined}
+      />
     );
   }
 
-  if (latestObito) {
-    return (
-      <>
-        <div className="grid grid-cols-2 gap-1.5 w-full">
-          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10"
-            onClick={() => printDischargeDocument(ADMISSION_STATUS.DEATH, latestObito.content)}>
-            <Skull className="h-3.5 w-3.5" /> Ver relatório de óbito
-          </Button>
-          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5 border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
-            onClick={() => setSuspendOpen(true)}>
-            <Ban className="h-3.5 w-3.5" /> Suspender óbito
-          </Button>
-        </div>
-        <SuspendDischargeDialog
-          open={suspendOpen}
-          onOpenChange={setSuspendOpen}
-          docId={latestObito.id}
-          patientId={patientId}
-          patientName={patientName}
-          docTypeLabel="Relatório de óbito"
-          documentType="obito"
-        />
-      </>
-    );
-  }
-  if (latestAlta) {
-    return (
-      <>
-        <div className="grid grid-cols-2 gap-1.5 w-full">
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 text-xs gap-1.5 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
-            onClick={() => printDischargeDocument(latestAlta.document_type, latestAlta.content)}
-          >
-            <FileSignature className="h-3.5 w-3.5" /> Ver alta ({DISCHARGE_DOC_SHORT[latestAlta.document_type]})
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 text-xs gap-1.5 border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
-            onClick={() => setSuspendOpen(true)}
-          >
-            <Ban className="h-3.5 w-3.5" /> Suspender alta
-          </Button>
-        </div>
-        <SuspendDischargeDialog
-          open={suspendOpen}
-          onOpenChange={setSuspendOpen}
-          docId={latestAlta.id}
-          patientId={patientId}
-          patientName={patientName}
-          docTypeLabel={DISCHARGE_DOC_SHORT[latestAlta.document_type]}
-          documentType="alta"
-        />
-      </>
-    );
-  }
   return (
-    <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5" onClick={fallback}>
-      <ArrowLeftRight className="h-3.5 w-3.5" /> Sinalizar Alta, Movimentações e Desfechos
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={fallback}
+      title="Sinalizar movimentação interna, transferência, alta ou óbito"
+      className={cn(
+        "group w-full h-9 text-xs font-medium gap-1.5",
+        // Destaque MODERADO: e a acao mais buscada do cockpit, mas alta,
+        // transferencia e obito sao irreversiveis ou quase. Realce de borda e
+        // fundo sutil, sem virar botao primario cheio — chamar demais a
+        // atencao convidaria ao clique acidental em plantao corrido.
+        "border-primary/40 text-foreground",
+        "hover:bg-primary/5 hover:border-primary hover:shadow-sm",
+        "transition-all duration-200",
+      )}
+    >
+      <ArrowLeftRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+      Movimentações ou Desfechos
     </Button>
   );
 }

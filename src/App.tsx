@@ -15,6 +15,7 @@ import { HelpTourProvider } from "@/contexts/HelpTourContext";
 import { HelpTourButton } from "@/components/help/HelpTourButton";
 import { HelpTourOverlay } from "@/components/help/HelpTourOverlay";
 import { MaintenanceModeBanner } from "@/components/MaintenanceModeBanner";
+import { UnsavedPrescriptionProvider } from "@/contexts/UnsavedPrescriptionContext";
 
 // Telas críticas (eager): impactam first paint do app
 // Index (mapa de leitos) é pesado e requer auth — lazy para não competir com o login
@@ -159,6 +160,18 @@ function EvolucaoPageWrapper() {
   return <EvolucaoPage key={key} />;
 }
 
+// O Hub e a tela inicial do paciente e agora tem o PatientSwitcher. Sem esta
+// key ele nao remontaria ao trocar de paciente: os estados derivados (status de
+// admissao, evolucao do dia, prescricao validada, requisicoes pendentes) so se
+// atualizariam por efeito colateral das dependencias, e qualquer estado local
+// sem dependencia — como o dialogo de movimentacao aberto — atravessaria a
+// troca carregando o paciente ANTERIOR. As cinco paginas de modulo ja usavam
+// esse mesmo padrao; o Hub estava de fora.
+function PacienteHubPageWrapper() {
+  const key = usePatientKey();
+  return <PacienteHubPage key={key} />;
+}
+
 function PrescricaoPageWrapper() {
   const key = usePatientKey();
   return <PrescricaoPage key={key} />;
@@ -188,6 +201,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <PrivacyProvider>
+        <UnsavedPrescriptionProvider>
         <TooltipProvider>
           <HelpTourProvider>
             <Toaster />
@@ -208,7 +222,7 @@ const App = () => {
               <Route path="/" element={<ProtectedRoute><ProfileHomeRedirect /></ProtectedRoute>} />
               <Route path="/mapa" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/painel-clinico" element={<ProtectedRoute><MainLayout><PainelClinicoPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/paciente" element={<ProtectedRoute><MainLayout><PacienteHubPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/paciente" element={<ProtectedRoute><MainLayout><PacienteHubPageWrapper /></MainLayout></ProtectedRoute>} />
               <Route path="/resources" element={<ProtectedRoute><MainLayout><ResourcesPage /></MainLayout></ProtectedRoute>} />
               <Route path="/codigos" element={<ProtectedRoute><MainLayout><MedicalCodesPage /></MainLayout></ProtectedRoute>} />
               <Route path="/handovers" element={<ProtectedRoute><MainLayout><HandoversPage /></MainLayout></ProtectedRoute>} />
@@ -284,6 +298,7 @@ const App = () => {
             <HelpTourOverlay />
           </HelpTourProvider>
         </TooltipProvider>
+        </UnsavedPrescriptionProvider>
       </PrivacyProvider>
     </QueryClientProvider>
   );

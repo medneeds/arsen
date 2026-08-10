@@ -2,6 +2,7 @@ import React, { useState, useRef, useMemo, useCallback, useEffect } from "react"
 import { formatPresentation } from "@/lib/formatPresentation";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
+import { useUnsavedPrescription } from "@/contexts/UnsavedPrescriptionContext";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import ReactMarkdown from "react-markdown";
 import { format, addDays, isAfter, setHours, setMinutes, setSeconds, startOfDay } from "date-fns";
@@ -94,6 +95,7 @@ import {
   PRESCRIPTION_FLAGS,
   ROUTES,
   routeShort,
+  routeLabel,
   POSOLOGIES,
   CARE_OPTIONS,
   CARE_PROFILES,
@@ -106,6 +108,7 @@ import {
   inferPresentationType,
   showInfusionBlock,
   showDiluentRow,
+  showIVOnlyFields,
   getEvidenceSuggestion,
 } from "@/lib/prescriptionPresentation";
 import { findRegulatoryInfo } from "@/data/mavPort344Catalog";
@@ -284,7 +287,7 @@ const QUANTITY_UNITS = [
 
 import {
   isNoDiluent,
-  ENTERAL_DILUTION_DEFAULT_ML, quantityUnitShort, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital, parseDecimalBR, isIVRoute } from "@/lib/solutoToken";
+  ENTERAL_DILUTION_DEFAULT_ML, quantityUnitShort, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital, parseDecimalBR, isIVRoute, isOralLikeRoute } from "@/lib/solutoToken";
 import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydration";
 import { buildAtbDayLine, buildAtbLineParts } from "@/lib/atbLine";
 
@@ -685,11 +688,22 @@ function applyIvClinicalAutofills(baseItem: PrescriptionItem, medName: string, p
       const isEmptyField = (v?: string) => !v || !v.trim() || v.trim() === '-';
       if (ev.defaultRoute && isEmptyField(baseItem.route)) baseItem.route = ev.defaultRoute;
       if (ev.defaultPosology && isEmptyField(baseItem.posology)) baseItem.posology = ev.defaultPosology;
-      if (ev.diluent && isEmptyField(baseItem.diluent)) baseItem.diluent = ev.diluent;
-      if (ev.volumeTotal && isEmptyField(baseItem.volumeTotal)) baseItem.volumeTotal = ev.volumeTotal;
-      if (ev.infusionTime && isEmptyField(baseItem.infusionTime)) {
-        baseItem.infusionTime = ev.infusionTime;
-        if (ev.infusionTimeUnit) baseItem.infusionTimeUnit = ev.infusionTimeUnit as 'min' | 'h';
+      // BUGFIX (07/08/2026): campos de infusão (diluente, volume, tempo) só fazem
+      // sentido em vias EV. Antes eram aplicados incondicionalmente pelo nome do
+      // medicamento — ex: Omeprazol VO recebia diluent='SF0,9%', volumeTotal='100',
+      // infusionTime='30min' da sugestão IV, e esses valores apareciam no modo
+      // compactado e na folha impressa como "diluir em SF0,9% 100mL, correr em 30min",
+      // que é clinicamente errado para via oral.
+      // A sugestão clínica tem uma única entrada por nome (ex: 'omeprazol' → IV),
+      // não por apresentação — então sem esta guarda, ela contaminava qualquer
+      // variante oral/IM/SC/tópica do mesmo medicamento.
+      if (isIV) {
+        if (ev.diluent && isEmptyField(baseItem.diluent)) baseItem.diluent = ev.diluent;
+        if (ev.volumeTotal && isEmptyField(baseItem.volumeTotal)) baseItem.volumeTotal = ev.volumeTotal;
+        if (ev.infusionTime && isEmptyField(baseItem.infusionTime)) {
+          baseItem.infusionTime = ev.infusionTime;
+          if (ev.infusionTimeUnit) baseItem.infusionTimeUnit = ev.infusionTimeUnit as 'min' | 'h';
+        }
       }
     }
   }
@@ -1591,6 +1605,12 @@ function HydrationFields({
     if (opt) onUpdate(item.id, 'posology', opt.interval);
   };
 
+  // BUGFIX (07/08/2026): vias orais (VO, livre demanda) não têm tempo de
+  // infusão nem gotejamento — são ingeridas, não infundidas. Ocultar esses
+  // campos evita o alerta permanente "PENDENTE — preencha: tempo ou vazão"
+  // e remove informação clinicamente errada no impresso (ex: gts/min em água VO).
+  const isOral = isOralLikeRoute(item.route);
+
   return (
     <div className="space-y-1.5">
       <div className="relative flex items-center gap-x-3 gap-y-2 flex-wrap rounded-md p-2 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/50 border-l-[3px] border-l-blue-500/70 dark:border-l-blue-400/70">
@@ -1616,33 +1636,37 @@ function HydrationFields({
           </SelectContent>
         </Select>
 
-        <NutFieldLabel>Tempo / fase:</NutFieldLabel>
-        <Input
-          type="number"
-          value={item.infusionTime || ''}
-          onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)}
-          className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-14 text-center focus-visible:ring-1 focus-visible:ring-blue-400"
-          placeholder="—"
-        />
-        <Select value={tUnit} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
-          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="h" className="text-xs">h</SelectItem>
-            <SelectItem value="min" className="text-xs">min</SelectItem>
-          </SelectContent>
-        </Select>
+        {!isOral && (
+          <>
+            <NutFieldLabel>Tempo / fase:</NutFieldLabel>
+            <Input
+              type="number"
+              value={item.infusionTime || ''}
+              onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)}
+              className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-14 text-center focus-visible:ring-1 focus-visible:ring-blue-400"
+              placeholder="—"
+            />
+            <Select value={tUnit} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
+              <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="h" className="text-xs">h</SelectItem>
+                <SelectItem value="min" className="text-xs">min</SelectItem>
+              </SelectContent>
+            </Select>
 
-        <NutFieldLabel>Gotejamento:</NutFieldLabel>
-        <div className="h-6 px-2 flex items-center rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-[11px] font-semibold w-16 justify-center">
-          {isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '—'}
-        </div>
-        <Select value={dripMode} onValueChange={(v) => onUpdate(item.id, 'infusionMode', v)}>
-          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="BIC" className="text-xs">mL/h</SelectItem>
-            <SelectItem value="gts" className="text-xs">gts/min</SelectItem>
-          </SelectContent>
-        </Select>
+            <NutFieldLabel>Gotejamento:</NutFieldLabel>
+            <div className="h-6 px-2 flex items-center rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-[11px] font-semibold w-16 justify-center">
+              {isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '—'}
+            </div>
+            <Select value={dripMode} onValueChange={(v) => onUpdate(item.id, 'infusionMode', v)}>
+              <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="BIC" className="text-xs">mL/h</SelectItem>
+                <SelectItem value="gts" className="text-xs">gts/min</SelectItem>
+              </SelectContent>
+            </Select>
+          </>
+        )}
 
         <NutFieldLabel>Via:</NutFieldLabel>
         <Select value={item.route || 'EV'} onValueChange={(v) => onUpdate(item.id, 'route', v)}>
@@ -1653,7 +1677,7 @@ function HydrationFields({
             {ROUTES.map((r) => (
               <SelectItem key={r} value={r} className="text-xs">
                 <span className="font-semibold mr-1.5">{routeShort(r)}</span>
-                <span className="text-muted-foreground">— {r}</span>
+                <span className="text-muted-foreground">— {routeLabel(r)}</span>
               </SelectItem>
             ))}
           </SelectContent>
@@ -1857,58 +1881,102 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   };
 
   if (isSimple) {
+    // Detecta se é o item de esquema de correção (simples, category=care)
+    // para habilitar a sanfona com faixas editáveis inline.
+    const isSlidingSchemeItem = /esquema.*correc.*insulin/i.test(
+      item.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    );
+
+    // Parses as faixas do campo instructions para exibição/edição
+    const parseSlidingInstructions = (raw: string): Array<{ label: string; units: string }> => {
+      if (!raw) return [];
+      return raw.split('|').map(seg => {
+        const parts = seg.split(':');
+        const label = parts[0]?.trim() ?? seg.trim();
+        const units = parts.slice(1).join(':').trim();
+        return { label, units };
+      }).filter(r => r.label && r.units);
+    };
+
+    const serializeSlidingInstructions = (rows: Array<{ label: string; units: string }>) =>
+      rows.map(r => `${r.label}: ${r.units}`).join(' | ');
+
+    const slidingRows = isSlidingSchemeItem
+      ? parseSlidingInstructions(item.instructions || '')
+      : [];
+
     return (
       <div
         ref={setNodeRef}
         style={style}
         className={cn(
-          "flex items-center gap-2 px-2.5 py-2 rounded-lg border group transition-all",
+          "rounded-lg border group transition-all",
           item.status === 'suspended'
             ? "border-destructive/30 bg-destructive/5 opacity-60"
-            : "border-border/40 bg-muted/20",
+            : isSlidingSchemeItem
+              ? "border-emerald-300/50 bg-emerald-50/30 dark:bg-emerald-950/10"
+              : "border-border/40 bg-muted/20",
           selected && "ring-2 ring-primary/40 border-primary/30",
           isDragging && "shadow-lg"
         )}
       >
-        <ValidationDot />
-        <button
-          className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0 touch-none"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-4 w-4" />
-        </button>
-        <Checkbox
-          checked={selected}
-          onCheckedChange={() => onToggleSelect(item.id)}
-          className="shrink-0"
-        />
-        <span className="text-xs font-mono text-muted-foreground w-5">{index + 1}.</span>
-        <div className="flex-1 min-w-0">
-          <span className={cn("text-sm font-medium", item.status === 'suspended' && "line-through")}>
-            {item.name}
-          </span>
-          {item.status === 'suspended' && item.suspensionReason && (
-            <p className="text-[10px] text-destructive/70 italic truncate">Motivo: {item.suspensionReason}</p>
-          )}
-        </div>
-        {item.dose !== '-' && <Badge variant="outline" className="text-[10px]">{item.dose}</Badge>}
-        {isSimple ? (
-          <Popover>
-            <PopoverTrigger asChild>
+        {/* Linha principal — sempre visível */}
+        <div className="flex items-center gap-2 px-2.5 py-2">
+          <ValidationDot />
+          <button
+            className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0 touch-none"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+          <Checkbox
+            checked={selected}
+            onCheckedChange={() => onToggleSelect(item.id)}
+            className="shrink-0"
+          />
+          <span className="text-xs font-mono text-muted-foreground w-5">{index + 1}.</span>
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            <span className={cn("text-sm font-medium flex-1 min-w-0 truncate", item.status === 'suspended' && "line-through")}>
+              {item.name}
+            </span>
+            {isSlidingSchemeItem && !isLocked && item.status !== 'suspended' && (
               <button
                 type="button"
-                disabled={isLocked || item.status === 'suspended'}
+                onClick={() => setIndividualExpanded(v => !v)}
                 className={cn(
-                  "shrink-0 inline-flex items-center gap-1 rounded-md border border-border/50 bg-secondary text-secondary-foreground text-[10px] px-1.5 py-0.5 hover:border-primary/50 hover:bg-secondary/80 transition-colors",
-                  (isLocked || item.status === 'suspended') && "opacity-60 cursor-not-allowed"
+                  "shrink-0 inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+                  individualExpanded
+                    ? "border-emerald-400/60 bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                    : "border-border/50 bg-secondary text-secondary-foreground hover:border-emerald-400/50 hover:bg-emerald-50"
                 )}
-                title="Ajustar aprazamento"
+                title={individualExpanded ? "Fechar visualização das faixas" : "Ver e editar faixas de correção"}
               >
-                {item.posology && item.posology !== '-' ? item.posology : 'Aprazar'}
-                <Pencil className="h-2.5 w-2.5 opacity-60" />
+                <Syringe className="h-2.5 w-2.5" />
+                {individualExpanded ? '↑ Fechar' : '↓ Ver faixas'}
               </button>
-            </PopoverTrigger>
+            )}
+            {item.status === 'suspended' && item.suspensionReason && (
+              <p className="text-[10px] text-destructive/70 italic truncate">Motivo: {item.suspensionReason}</p>
+            )}
+          </div>
+          {item.dose !== '-' && <Badge variant="outline" className="text-[10px]">{item.dose}</Badge>}
+          {isSimple ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  disabled={isLocked || item.status === 'suspended'}
+                  className={cn(
+                    "shrink-0 inline-flex items-center gap-1 rounded-md border border-border/50 bg-secondary text-secondary-foreground text-[10px] px-1.5 py-0.5 hover:border-primary/50 hover:bg-secondary/80 transition-colors",
+                    (isLocked || item.status === 'suspended') && "opacity-60 cursor-not-allowed"
+                  )}
+                  title="Ajustar aprazamento"
+                >
+                  {item.posology && item.posology !== '-' ? item.posology : 'Aprazar'}
+                  <Pencil className="h-2.5 w-2.5 opacity-60" />
+                </button>
+              </PopoverTrigger>
             <PopoverContent className="w-64 p-3" align="end">
               <p className="text-[11px] font-semibold text-muted-foreground mb-2">Aprazamento</p>
               {(() => {
@@ -2030,6 +2098,38 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         {/* Schedule removed — manual aprazamento by nursing */}
         <ItemActions />
       </div>
+
+      {/* Painel sanfonado de faixas — só para item de esquema de correção */}
+      {isSlidingSchemeItem && individualExpanded && !isLocked && item.status !== 'suspended' && (
+        <div className="border-t border-emerald-200/60 dark:border-emerald-800/40 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-2.5 space-y-1.5">
+          <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide mb-2">
+            Faixas de correção — editáveis
+          </p>
+          {slidingRows.map((row, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className="text-[10px] text-muted-foreground w-48 shrink-0 truncate" title={row.label}>
+                {row.label}:
+              </span>
+              <Input
+                value={row.units}
+                disabled={isLocked}
+                onChange={(e) => {
+                  const updated = slidingRows.map((r, j) =>
+                    j === i ? { ...r, units: e.target.value } : r
+                  );
+                  onUpdate(item.id, 'instructions', serializeSlidingInstructions(updated));
+                }}
+                className="h-6 text-[11px] flex-1 min-w-0 bg-white dark:bg-slate-800 border-emerald-200 dark:border-emerald-800 focus-visible:ring-emerald-400"
+                placeholder="Ex: 2 UI SC"
+              />
+            </div>
+          ))}
+          {slidingRows.length === 0 && (
+            <p className="text-[10px] text-muted-foreground italic">Nenhuma faixa encontrada. Edite o campo de instruções manualmente.</p>
+          )}
+        </div>
+      )}
+    </div>
     );
   }
 
@@ -2163,15 +2263,31 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         supplement: 'Suplementação',
       };
       compactParts.push(subLabel[sub]);
-      // Detalhamento via fonte única (buildNutritionParts) — MESMOS campos e
-      // rótulos da tela, do impresso principal e do impresso extra
-      // (unificação 21/07/2026; antes eram 4 lógicas divergentes, e a
-      // consistência IDDSI não saía em nenhum impresso).
-      buildNutritionParts({ ...item, nutritionType: sub }).forEach(p => compactParts.push(p));
+      // Compacto: só os campos essenciais para identificação e operação
+      // imediata. Campos de detalhe clínico (progressão, cabeceira, perfil,
+      // monitoramento, resíduo, pausa noturna) ficam disponíveis no item
+      // expandido e no impresso, mas não aparecem na linha compacta para
+      // evitar o transbordamento de texto observado (Opção B, 07/08/2026).
+      {
+        const f = { ...item, nutritionType: sub };
+        const rateUnit = f.nutRateMode === 'gtt' ? 'gts/min' : 'mL/h';
+        const scheduleText = f.nutScheduleMode === 'steps'
+          ? (f.nutSteps ? `${f.nutSteps} ${f.nutSteps === '1' ? 'etapa/dia' : 'etapas/dia'}` : null)
+          : (f.dietInterval ? `${f.dietInterval}` : null);
+        const isInfusion = !['diet_oral','water','supplement','zero'].includes(sub ?? '');
+        [
+          f.dietType || null,
+          f.nutAccess ? `${f.nutAccess}` : null,
+          f.nutVolDay ? `${f.nutVolDay} mL/dia` : null,
+          scheduleText,
+          isInfusion && f.infusionRate ? `${f.infusionRate} ${rateUnit}` : null,
+        ].filter(Boolean).forEach(p => compactParts.push(p as string));
+      }
     } else if (isHydration) {
-      // Frase única, em corrida, orientada à enfermagem — fonte única
-      // (buildHydrationLine): mesma frase nos dois impressos, com fases,
-      // vazão e total/24h (balanço hídrico).
+      // Frase única com volume/fases/intervalo/vazão/total — fonte única
+      // (buildHydrationLine). Como o nome agora contém apenas o tipo
+      // ("Água filtrada", sem volume/via/intervalo — Opção B, 07/08/2026),
+      // a frase de detalhe traz todas as informações sem repetição.
       const phrase = buildHydrationLine(item);
       if (phrase) compactParts.push(phrase);
     } else {
@@ -2183,21 +2299,29 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
       // (Correção 22/07/2026.)
       const doseLabel = composeDoseLabel(item);
       if (doseLabel) compactParts.push(doseLabel);
-      if (item.diluent && !isNoDiluent(item.diluent)) {
-        // Rótulo legível — mesmo mapeamento da fonte única (evita "diluir em
-        // diluente_proprio" cru na tela).
+
+      // BUGFIX (07/08/2026): o modo compactado lia diluent/volumeTotal/infusionTime
+      // DIRETAMENTE do objeto do item, sem checar o tipo de apresentação — se esses
+      // campos estivessem preenchidos por uma sugestão IV aplicada indevidamente
+      // (ex: Omeprazol VO recebendo sugestão do Omeprazol EV), apareciam na linha
+      // compactada como "diluir em SF0,9% 100mL · vol 100mL · correr em 30min"
+      // mesmo para via oral. A correção aplica o mesmo inferPresentationType já
+      // usado na visualização expandida (linha 2457) antes de incluir esses campos.
+      const ptypeCompact = inferPresentationType(item.presentation, item.route, item.name);
+      const showInfusionCompact = showInfusionBlock(ptypeCompact);
+      // Tempo, vazão e bolus são exclusivos de EV — não aparecem para inalatórios.
+      const showIVCompact = showIVOnlyFields(ptypeCompact);
+
+      if (showInfusionCompact && item.diluent && !isNoDiluent(item.diluent)) {
         const dilLabelHydr = item.diluent === 'diluente_proprio' ? 'Diluente próprio' : item.diluent;
         let dil = `diluir em ${dilLabelHydr}`;
         if (item.diluentVolume) dil += ` ${item.diluentVolume}mL`;
         compactParts.push(dil);
       }
-      if (item.volumeTotal) compactParts.push(`vol ${item.volumeTotal}mL`);
-      // Bolus só faz sentido em via intravenosa — mesma regra do
-      // buildPrepSegments (impresso). Antes a tela rotulava "EV em bolus"
-      // sem checar a via, podendo marcar bolus em medicação não-EV.
+      if (showInfusionCompact && item.volumeTotal) compactParts.push(`vol ${item.volumeTotal}mL`);
       if (item.ivBolus && isIVRoute(item.route || '')) {
         compactParts.push('EV em bolus');
-      } else if (item.infusionTime) {
+      } else if (showIVCompact && item.infusionTime) {
         const tUnit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
         let inf = `correr em ${item.infusionTime}${tUnit}`;
         if (item.infusionRate) {
@@ -2205,7 +2329,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           inf += ` (${item.infusionRate} ${rLabel})`;
         }
         compactParts.push(inf);
-      } else if (item.infusionRate) {
+      } else if (showIVCompact && item.infusionRate) {
         const rLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
         compactParts.push(`${item.infusionRate} ${rLabel}`);
       }
@@ -2446,6 +2570,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             const ptype = inferPresentationType(item.presentation, item.route, item.name);
             const renderInfusion = showInfusionBlock(ptype);
             const renderDiluent = showDiluentRow(ptype);
+            // Campos exclusivos EV (rótulo "Infusão EV", tempo, vazão, bolus/BIC)
+            // não aparecem para inalatórios — só diluente e volume fazem sentido.
+            const renderIVOnly = showIVOnlyFields(ptype);
             return (
             <>
               {/* ===== Container integrado: 3 linhas de edição com fundo único ===== */}
@@ -2693,7 +2820,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       {ROUTES.map((r) => (
                         <SelectItem key={r} value={r} className="text-xs">
                           <span className="font-semibold mr-1.5">{routeShort(r)}</span>
-                          <span className="text-muted-foreground">— {r}</span>
+                          <span className="text-muted-foreground">— {routeLabel(r)}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -2727,7 +2854,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 )}
               </div>
 
-              {renderInfusion && (
+              {renderIVOnly && (
               <div className="flex items-center gap-2 flex-wrap pt-1.5 border-t border-border/40">
                 <Droplets className="h-3 w-3 text-muted-foreground shrink-0" />
                 <span className="text-[10px] text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-wide">Infusão EV</span>
@@ -4415,7 +4542,9 @@ const PrescricaoPage = () => {
     if (item.category === 'hydration') {
       if (empty(item.volumeTotal)) missing.push('volume');
       if (empty(item.posology)) missing.push('fases / intervalo');
-      if (empty(item.infusionTime) && empty(item.infusionRate)) {
+      // Via oral (VO, livre demanda) não tem infusão: tempo/vazão não são
+      // obrigatórios e o alerta "tempo ou vazão" não deve aparecer.
+      if (!isOralLikeRoute(item.route) && empty(item.infusionTime) && empty(item.infusionRate)) {
         missing.push('tempo ou vazão');
       }
       return missing;
@@ -4748,13 +4877,57 @@ const PrescricaoPage = () => {
           .eq('id', currentPrescriptionId);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase
-          .from('prescriptions')
-          .insert(basePayload)
-          .select('id')
-          .single();
-        if (error) throw error;
-        if (data) setCurrentPrescriptionId(data.id);
+        // BUGFIX (07/08/2026) — Pontos 1 e 4 da otimização de rascunhos:
+        //
+        // ANTES: INSERT cego quando currentPrescriptionId === null, gerando um
+        // novo rascunho a cada vez que o componente remontava (navegação entre
+        // pacientes/módulos) — múltiplos rascunhos por dia para o mesmo paciente.
+        //
+        // AGORA: antes de INSERT, busca se já existe um rascunho (status='draft')
+        // do dia clínico atual para este paciente nesta unidade. Se encontrar,
+        // faz UPDATE (rascunho único por dia) e seta currentPrescriptionId.
+        // Só faz INSERT se realmente não existir nenhum rascunho ainda.
+        //
+        // Isso garante que "Salvar rascunho" manual também sempre substitua o
+        // anterior em vez de acumular, sem nenhuma mudança na chamada do caller.
+        let existingDraftId: string | null = null;
+        try {
+          const dayStart = getClinicalDayWindowSP().start;
+          let q = supabase
+            .from('prescriptions')
+            .select('id')
+            .eq('hospital_unit_id', currentHospital.id)
+            .eq('state_id', currentState.id)
+            .eq('status', 'draft')
+            .is('archived_at', null)
+            .gte('created_at', dayStart.toISOString())
+            .order('created_at', { ascending: false })
+            .limit(1);
+          q = patientRegistryId
+            ? q.eq('patient_registry_id', patientRegistryId)
+            : q.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
+          const { data: existing } = await q;
+          existingDraftId = (existing as any)?.[0]?.id ?? null;
+        } catch { /* falha silenciosa — cai no INSERT normal */ }
+
+        if (existingDraftId) {
+          // Atualiza o rascunho existente — rascunho único por dia (Ponto 1 + 4)
+          const { error: updErr } = await supabase
+            .from('prescriptions')
+            .update(basePayload)
+            .eq('id', existingDraftId);
+          if (updErr) throw updErr;
+          setCurrentPrescriptionId(existingDraftId);
+        } else {
+          // Não existe rascunho do dia — cria o primeiro
+          const { data, error } = await supabase
+            .from('prescriptions')
+            .insert(basePayload)
+            .select('id')
+            .single();
+          if (error) throw error;
+          if (data) setCurrentPrescriptionId(data.id);
+        }
       }
     } catch (err: any) {
       console.error('[persistItems] persist failed', err);
@@ -4765,7 +4938,12 @@ const PrescricaoPage = () => {
       }
       throw err;
     }
-  }, [currentHospital, currentState, patient, digitalSignature, currentPrescriptionId, user?.id, initialPatientSector]);
+    // Atualiza o ref de "último estado persistido" para que isDirty resete
+    // corretamente após qualquer tipo de salvamento (autosave, validar, assinar,
+    // salvar rascunho manual, imprimir). Sem isso, isDirty ficaria true mesmo
+    // depois de salvar e o pop-up apareceria desnecessariamente.
+    lastPersistedSerializedRef.current = JSON.stringify(nextItems);
+  }, [currentHospital, currentState, patient, digitalSignature, currentPrescriptionId, user?.id, initialPatientSector, patientRegistryId]);
 
   // ============= AUTOSAVE DE RASCUNHO (CRÍTICO) =============
   // Persiste automaticamente qualquer alteração em `items` ~800ms após a última edição,
@@ -4774,6 +4952,10 @@ const PrescricaoPage = () => {
   // - Faz fallback em localStorage caso o save remoto falhe (ex.: rede caiu).
   const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
   const [draftSaving, setDraftSaving] = useState(false);
+  // ── UNSAVED CHANGES — detecta alterações não persistidas ──────────────────
+  const { setDirty, registerSaveDraft } = useUnsavedPrescription();
+  const isDirtyRef = useRef(false); // ref para o useBlocker (closure-safe)
+
   const lastPersistedSerializedRef = useRef<string>('');
   const autosaveSkipFirstRef = useRef(true);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -4786,6 +4968,12 @@ const PrescricaoPage = () => {
     return `rx-draft::${patient.name.trim()}::${dateKey}`;
   }, [patient.name]);
 
+  // Backup local imediato (localStorage) — sem autosave remoto.
+  // O autosave remoto foi removido (ponto 2 da otimização de rascunhos):
+  // ele criava múltiplos rascunhos por causar INSERTs repetidos sempre
+  // que o componente remontava (currentPrescriptionId voltava a null).
+  // O backup local continua para recuperação de emergência em caso de
+  // falha de rede ou fechamento acidental da aba.
   useEffect(() => {
     if (autosaveSkipFirstRef.current) {
       autosaveSkipFirstRef.current = false;
@@ -4793,11 +4981,9 @@ const PrescricaoPage = () => {
       return;
     }
     if (digitalSignature) return;
-    if (!currentHospital || !currentState || !patient.name?.trim()) return;
-
+    if (!patient.name?.trim()) return;
     const serialized = JSON.stringify(items);
     if (serialized === lastPersistedSerializedRef.current) return;
-
     if (draftStorageKey) {
       try {
         localStorage.setItem(draftStorageKey, JSON.stringify({
@@ -4805,62 +4991,70 @@ const PrescricaoPage = () => {
         }));
       } catch {}
     }
-
+    // Limpa o timer anterior se existir (deixado de autosave removido)
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-    autosaveTimerRef.current = setTimeout(async () => {
-      // 🔒 B2 — se ainda não há prescription id (nada carregado) e já existe SIGNED
-      // hoje para este paciente+unidade, não criar draft paralelo. A assinada é a verdade.
-      if (!currentPrescriptionId && currentHospital && currentState && patient.name?.trim()) {
-        const dayKey = format(new Date(), 'yyyy-MM-dd');
-        const affinityKey = patientRegistryId || `name:${patient.name.trim()}`;
-        const cacheKey = `${currentHospital.id}::${currentState.id}::${affinityKey}::${dayKey}`;
-        let signedExists = signedTodayCacheRef.current?.key === cacheKey
-          ? signedTodayCacheRef.current.exists
-          : null;
-        if (signedExists === null) {
-          try {
-            const dayStart = getClinicalDayWindowSP().start;
-            let q = supabase
-              .from('prescriptions')
-              .select('id', { count: 'exact', head: true })
-              .eq('hospital_unit_id', currentHospital.id)
-              .eq('state_id', currentState.id)
-              .eq('status', 'signed')
-              .gte('created_at', dayStart.toISOString());
-            q = patientRegistryId
-              ? q.eq('patient_registry_id', patientRegistryId)
-              : q.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
-            const { count } = await q;
-            signedExists = (count || 0) > 0;
-            signedTodayCacheRef.current = { key: cacheKey, exists: signedExists };
-          } catch {
-            signedExists = false;
-          }
-        }
-        if (signedExists) {
-          lastPersistedSerializedRef.current = serialized;
-          return;
-        }
-      }
-      setDraftSaving(true);
-      try {
-        await persistItems(items, { mode: 'update', silent: true });
-        lastPersistedSerializedRef.current = serialized;
-        setDraftSavedAt(new Date());
-      } catch (err) {
-        console.warn('[autosave] persistência remota falhou, mantendo backup local', err);
-      } finally {
-        setDraftSaving(false);
-      }
-    }, 800);
-
-    return () => {
-      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-    };
-  }, [items, digitalSignature, currentHospital, currentState, patient, persistItems, draftStorageKey]);
+  }, [items, digitalSignature, patient, draftStorageKey]);
 
   // Restaura backup local se DB ainda não trouxe nada (paciente sem prescrição salva hoje)
   const draftRestoreAttemptedRef = useRef(false);
+
+  // ── isDirty: atualiza o Context sempre que items muda em relação ao persisted ──
+  useEffect(() => {
+    const serialized = JSON.stringify(items);
+    const dirty = items.length > 0
+      && !!patient.name?.trim()
+      && !digitalSignature
+      && serialized !== lastPersistedSerializedRef.current;
+    isDirtyRef.current = dirty;
+    setDirty(dirty);
+  }, [items, patient.name, digitalSignature, setDirty]);
+
+  // Registra o callback de salvar rascunho no Context para o PatientSidebar usar
+  useEffect(() => {
+    registerSaveDraft(async () => {
+      if (items.length > 0 && patient.name?.trim() && !digitalSignature) {
+        await persistItems(items, { mode: 'update', silent: true });
+      }
+    });
+    return () => registerSaveDraft(null);
+  }, [registerSaveDraft, items, patient.name, digitalSignature, persistItems]);
+
+  // Limpa isDirty ao desmontar
+  useEffect(() => () => { setDirty(false); }, [setDirty]);
+
+  // ── useBlocker substituído por popstate ────────────────────────────────────
+  // useBlocker requer createBrowserRouter (Data Router API) — o ARSen usa
+  // BrowserRouter legado, então useBlocker causava tela branca.
+  // popstate cobre o botão Voltar do browser. Outros cenários de navegação
+  // (troca de módulo pelo AppSidebar, troca de paciente pelo PatientSidebar)
+  // são cobertos pelo interceptador no próprio componente de navegação.
+  const [backBlockerOpen, setBackBlockerOpen] = useState(false);
+  const pendingBackRef = useRef(false);
+
+  useEffect(() => {
+    const handler = () => {
+      if (!isDirtyRef.current) return;
+      // Empurra um estado para "cancelar" o voltar e mostrar o pop-up
+      window.history.pushState(null, '', window.location.href);
+      setBackBlockerOpen(true);
+      pendingBackRef.current = true;
+    };
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, []);
+
+  // ── beforeunload: fechar aba ou recarregar página ──
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirtyRef.current) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
   useEffect(() => {
     if (draftRestoreAttemptedRef.current) return;
     if (!draftStorageKey) return;
@@ -4872,9 +5066,6 @@ const PrescricaoPage = () => {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed?.items) && parsed.items.length > 0) {
         setItems((parsed.items as PrescriptionItem[]).map(normalizeLegacyIntervalFlags));
-        toast.info("Rascunho local restaurado", {
-          description: "Itens não validados foram recuperados deste paciente.",
-        });
       }
     } catch {}
     draftRestoreAttemptedRef.current = true;
@@ -5091,6 +5282,7 @@ const PrescricaoPage = () => {
     prontuario: registryProntuario,
     atendimento: registryAtendimento,
     registry: registryFull,
+    loading: identifiersLoading,
   } = usePatientIdentifiers(
     urlPatientIdForRecord,
     patient.name || null,
@@ -5188,53 +5380,62 @@ const PrescricaoPage = () => {
   // em leitos onde o registry ainda não foi vinculado). Garante que o
   // cabeçalho exiba idade, data de admissão hospitalar e admissão UTI em
   // todos os setores (UTI, UCI, UCC, Enf. Transição, Vascular, Neuro etc).
+  // Sinal de prontidão deste fetch — usado pelo gate de impressão (ver
+  // `patientHeaderReady` mais abaixo). Não é um campo do paciente: é só
+  // "esta busca específica já terminou de rodar?", true por padrão quando
+  // não há paciente carregado (nada a esperar).
+  const [fallbackDataReady, setFallbackDataReady] = useState(true);
   useEffect(() => {
-    if (!urlPatientIdForRecord) return;
+    if (!urlPatientIdForRecord) { setFallbackDataReady(true); return; }
     let cancelled = false;
+    setFallbackDataReady(false);
     (async () => {
       const { data } = await supabase
         .from('patients')
         .select('age, admission_date, uti_admission_date, uti_allergies')
         .eq('id', urlPatientIdForRecord)
         .maybeSingle();
-      if (cancelled || !data) return;
-      setPatient(prev => {
-        const next = { ...prev };
-        let changed = false;
-        // Idade: se ausente, calcula de birthDate ou usa patients.age.
-        if (!prev.age || !prev.age.trim()) {
-          if (prev.birthDate) {
-            try {
-              const bd = new Date(prev.birthDate + 'T12:00:00');
-              const now = new Date();
-              let years = now.getFullYear() - bd.getFullYear();
-              const m = now.getMonth() - bd.getMonth();
-              if (m < 0 || (m === 0 && now.getDate() < bd.getDate())) years--;
-              if (years > 0 && years < 130) {
-                next.age = years === 1 ? '1 ano' : `${years} anos`;
-                changed = true;
-              }
-            } catch { /* ignore */ }
+      if (cancelled) return;
+      if (data) {
+        setPatient(prev => {
+          const next = { ...prev };
+          let changed = false;
+          // Idade: se ausente, calcula de birthDate ou usa patients.age.
+          if (!prev.age || !prev.age.trim()) {
+            if (prev.birthDate) {
+              try {
+                const bd = new Date(prev.birthDate + 'T12:00:00');
+                const now = new Date();
+                let years = now.getFullYear() - bd.getFullYear();
+                const m = now.getMonth() - bd.getMonth();
+                if (m < 0 || (m === 0 && now.getDate() < bd.getDate())) years--;
+                if (years > 0 && years < 130) {
+                  next.age = years === 1 ? '1 ano' : `${years} anos`;
+                  changed = true;
+                }
+              } catch { /* ignore */ }
+            }
+            if (!next.age && data.age) {
+              next.age = data.age;
+              changed = true;
+            }
           }
-          if (!next.age && data.age) {
-            next.age = data.age;
+          if ((!prev.admissionDate || !prev.admissionDate.trim()) && data.admission_date) {
+            next.admissionDate = String(data.admission_date).slice(0, 10);
             changed = true;
           }
-        }
-        if ((!prev.admissionDate || !prev.admissionDate.trim()) && data.admission_date) {
-          next.admissionDate = String(data.admission_date).slice(0, 10);
-          changed = true;
-        }
-        if ((!prev.utiAdmissionDate || !prev.utiAdmissionDate.trim()) && data.uti_admission_date) {
-          next.utiAdmissionDate = String(data.uti_admission_date).slice(0, 10);
-          changed = true;
-        }
-        if ((!prev.allergies || !prev.allergies.trim()) && data.uti_allergies) {
-          next.allergies = data.uti_allergies;
-          changed = true;
-        }
-        return changed ? next : prev;
-      });
+          if ((!prev.utiAdmissionDate || !prev.utiAdmissionDate.trim()) && data.uti_admission_date) {
+            next.utiAdmissionDate = String(data.uti_admission_date).slice(0, 10);
+            changed = true;
+          }
+          if ((!prev.allergies || !prev.allergies.trim()) && data.uti_allergies) {
+            next.allergies = data.uti_allergies;
+            changed = true;
+          }
+          return changed ? next : prev;
+        });
+      }
+      setFallbackDataReady(true);
     })();
     return () => { cancelled = true; };
   }, [urlPatientIdForRecord, registryFull?.birthDate, patient.birthDate]);
@@ -5391,7 +5592,11 @@ const PrescricaoPage = () => {
       route: effectiveRoute,
       posology: med.defaultPosology,
       schedule: '',
-      instructions: "", // Recomendação sempre em branco — preenchimento exclusivo do médico
+      // Esquema de correção de insulina: preserva as faixas pré-definidas do catálogo.
+      // Demais medicamentos: sempre em branco — preenchimento exclusivo do médico.
+      instructions: med.instructions && /esquema.*correc.*insulin/i.test(
+        med.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      ) ? med.instructions : "",
       category: med.category,
       flags: med.instructions?.toLowerCase().includes('bomba de infusão') ? ['bi' as PrescriptionFlag] : [],
 
@@ -5533,7 +5738,10 @@ const PrescricaoPage = () => {
     // item (busca direta na barra de Cuidados, atalhos, etc.). Antes só
     // funcionava vindo do modal dedicado de Cuidados; a via mais comum
     // (busca/autocomplete direto) nunca disparava o popup.
-    if (med.category === 'care' && isGlycemicControlName(med.name) && !hasInsulinSchemeCare(items)) {
+    // BUGFIX (07/08/2026): a guarda !hasInsulinSchemeCare bloqueava o pop-up
+    // quando já havia insulina na prescrição — mas a decisão de incluir ou não
+    // o esquema de correção é do médico, não do sistema. Pop-up aparece sempre.
+    if (med.category === 'care' && isGlycemicControlName(med.name)) {
       setInsulinSchemePromptOpen(true);
     }
 
@@ -6491,17 +6699,19 @@ const PrescricaoPage = () => {
             if (loadPrescriptionRef.current) {
               if (capturedGeneration !== loadGenerationRef.current) return false;
               await loadPrescriptionRef.current(row.id);
-              toast.success('Prescrição do dia carregada', {
-                description: 'Exibindo a última prescrição validada deste plantão.',
-                duration: 4000,
-              });
               return true;
             }
             return false;
           }
 
           // ── DIA SEGUINTE (cruzou 05h): cópia com renovação pendente ──
-          const renewedItems: PrescriptionItem[] = sourceItems.map((it) => ({
+          // BUGFIX (05/08/2026): itens com status 'suspended' (qualquer categoria —
+          // medicação, dieta, inalatório, reposição, ATB) NÃO podem ser renovados como
+          // ativos. Antes, o .map() abaixo forçava status: 'active' incondicionalmente,
+          // ressuscitando itens que o médico/farmácia haviam suspenso no dia anterior.
+          // Mesmo filtro do caminho manual "Repetir prescrição anterior" (openRepeatDialog).
+          const renewableItems = sourceItems.filter((it) => it.status === 'active' && !it.isExtra);
+          const renewedItems: PrescriptionItem[] = renewableItems.map((it) => ({
             ...it,
             id: crypto.randomUUID(),
             validated: false,
@@ -6518,11 +6728,6 @@ const PrescricaoPage = () => {
           setDigitalSignature(null);
           setCurrentPrescriptionId(null);
           setSelectedIds(new Set());
-          const when = format(new Date(row.created_at), "dd/MM 'às' HH:mm", { locale: ptBR });
-          toast.info(`Renovação de plantão — prescrição de ${when} replicada`, {
-            description: `${renewedItems.length} itens aguardam revalidação pelo médico do plantão atual. A original permanece intocada no histórico.`,
-            duration: 8000,
-          });
           return true;
         };
 
@@ -6547,9 +6752,45 @@ const PrescricaoPage = () => {
           }
         }
 
-        // 2b) Fallback: sem filtro de encounter_id (cobre prescrições legadas)
+        // 2b) Fallback: sem filtro de encounter_id (cobre prescrições legadas
+        // gravadas antes do sistema ter o campo encounter_id preenchido).
         // NUNCA usa .eq('encounter_id', null) — só patient_registry_id (anti-avulsa).
-        const { data: validatedRows, error: vErr } = await supabase
+        //
+        // BUGFIX (07/08/2026): sem âncora de data, este fallback buscava a última
+        // prescrição não-arquivada do registry independente do internamento —
+        // carregando prescrições do internamento ANTERIOR na nova internação.
+        // O mecanismo: archive_patient_bed_data arquiva prescrições pelo patient_id
+        // (linha-leito). Prescrições legadas sem encounter_id ficam fora do escopo
+        // da RPC (vinculadas só por patient_registry_id) e sobrevivem ao arquivamento,
+        // depois sendo encontradas aqui sem restrição de data.
+        //
+        // Correção: buscar a admission_date do encounter ativo e aplicar como
+        // filtro de created_at. Assim:
+        //   - Prescrições do internamento anterior (created_at < admission_date
+        //     do encounter atual) NÃO sobem na nova internação.
+        //   - Prescrições legadas (sem encounter_id) do internamento ATUAL
+        //     (created_at >= admission_date) continuam cobertas — o fallback
+        //     cumpre sua função original.
+        //   - Histórico completo permanece preservado no banco — nada é apagado.
+        //   - Se não houver encounter ativo (sem admission_date disponível), o
+        //     filtro não é aplicado — comportamento anterior, seguro para
+        //     pacientes sem internação formal aberta (atendimento ambulatorial,
+        //     legado pré-encounter).
+        let legacyAdmissionFilter: string | null = null;
+        if (activeEncounterId && activeEncounterId.length > 10) {
+          const { data: encRow } = await supabase
+            .from('patient_encounters')
+            .select('admission_date, created_at')
+            .eq('id', activeEncounterId)
+            .maybeSingle();
+          // Usa admission_date se disponível, senão created_at do encounter
+          // (ambos são anteriores a qualquer prescrição da internação atual).
+          const anchor = encRow?.admission_date || encRow?.created_at || null;
+          if (anchor) legacyAdmissionFilter = anchor;
+        }
+        if (capturedGeneration !== loadGenerationRef.current) return;
+
+        let fallbackQuery = supabase
           .from('prescriptions')
           .select('id, items, created_at, version, patient_registry_id')
           .eq('hospital_unit_id', currentHospital.id)
@@ -6559,6 +6800,10 @@ const PrescricaoPage = () => {
           .is('archived_at', null)
           .order('created_at', { ascending: false })
           .limit(1);
+        if (legacyAdmissionFilter) {
+          fallbackQuery = fallbackQuery.gte('created_at', legacyAdmissionFilter);
+        }
+        const { data: validatedRows, error: vErr } = await fallbackQuery;
         if (vErr) throw vErr;
         if (capturedGeneration !== loadGenerationRef.current) return;
         const lastValidated = (validatedRows || [])[0];
@@ -6630,7 +6875,6 @@ const PrescricaoPage = () => {
         setDigitalSignature(data.digital_signature as unknown as DigitalSignature | null);
         setCurrentPrescriptionId(data.id);
         setSelectedIds(new Set());
-        toast.success("Prescrição carregada", { description: `v${data.version} — ${data.patient_name}` });
         fetchVersionHistory(id);
       }
     } catch (err: any) {
@@ -6784,6 +7028,10 @@ const PrescricaoPage = () => {
     const cloned: PrescriptionItem[] = [];
     for (const it of source.items) {
       if (!it?.name) { skipped++; continue; }
+      // BUGFIX (05/08/2026): mesmo problema do caminho de renovação automática de
+      // plantão — sem este filtro, um item suspenso (qualquer categoria) na versão
+      // restaurada era somado de volta como ativo no rascunho atual.
+      if (it.status !== 'active') { skipped++; continue; }
       if (currentSigs.has(sig(it))) { skipped++; continue; }
       currentSigs.add(sig(it));
       cloned.push({
@@ -6958,7 +7206,6 @@ const PrescricaoPage = () => {
       return;
     }
     resetPrescriptionForNewDay();
-    toast.info("Nova prescrição iniciada — em branco");
   };
 
   const handleCopyPreviousFlow = useCallback(async () => {
@@ -7004,7 +7251,49 @@ const PrescricaoPage = () => {
     return !cat.notification_type;
   });
 
+  // ⚠️  BUGFIX (07/08/2026): gate de prontidão do cabeçalho impresso.
+  //
+  // O cabeçalho (nome, leito, prontuário, idade, peso, sexo, admissão,
+  // nascimento, unidade, atendimento, alergias) é hidratado por buscas
+  // assíncronas independentes que rodam em paralelo ao abrir a tela
+  // (usePatientIdentifiers, fallback de patients, sincronização de peso).
+  // Antes desta correção, o botão Imprimir não esperava nada — se disparado
+  // antes de alguma dessas buscas terminar, o documento saía com o campo
+  // daquela busca em branco. Reportado: sexo/nascimento ausentes ou
+  // trocados, não reproduzível sob demanda — exatamente o padrão de uma
+  // corrida entre fetch e impressão, não um bug determinístico de dado.
+  //
+  // Esta checagem NÃO dispara nenhuma busca nova — só lê sinais de
+  // carregamento que essas buscas já expõem (loading do hook, refs/estado
+  // dedicados). Para o caso comum (usuário já navegando na tela há alguns
+  // segundos antes de clicar em Imprimir), tudo já terminou e a impressão
+  // sai instantânea, sem nenhum atraso perceptível. Só nos casos raros
+  // (clique muito rápido, rede lenta) é que há uma pausa curta — capada em
+  // ~1.2s — antes de imprimir ou, se ainda não resolver, um aviso pedindo
+  // para tentar de novo em vez de imprimir com dado incompleto.
+  const isPatientHeaderReady = () =>
+    !identifiersLoading &&
+    fallbackDataReady &&
+    (weightHydratedRef.current || !allergiesPatientId);
+
+  const waitForPatientHeaderReady = async (timeoutMs = 1200): Promise<boolean> => {
+    if (isPatientHeaderReady()) return true;
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      await new Promise(r => setTimeout(r, 100));
+      if (isPatientHeaderReady()) return true;
+    }
+    return false;
+  };
+
   const doPrintPrescription = async () => {
+    const headerReady = await waitForPatientHeaderReady();
+    if (!headerReady) {
+      toast.error("Dados do paciente ainda carregando", {
+        description: "Aguarde um instante e tente imprimir novamente — isso evita imprimir com campos incompletos.",
+      });
+      return;
+    }
     // Garante snapshot persistido ANTES da impressão (assinatura, validações, etc.)
     // FIX bug "PDF em branco": persistItems falhando silenciosamente abortava o print
     // sem o usuário entender; agora avisamos e seguimos imprimindo o snapshot em memória
@@ -10051,7 +10340,7 @@ const PrescricaoPage = () => {
             setItems(prev => [...prev, ...newItems]);
             toast.success(`${newItems.length} cuidado(s) adicionado(s)${profile ? ` — ${profile.label}` : ''}`);
             const addedGlycemic = newItems.some(i => isGlycemicControlName(i.name));
-            if (addedGlycemic && !hasInsulinSchemeCare([...items, ...newItems])) {
+            if (addedGlycemic) {
               setInsulinSchemePromptOpen(true);
             }
           } else {
@@ -10063,64 +10352,85 @@ const PrescricaoPage = () => {
         patientName={patient?.name}
       />
 
+      {/* Pop-up de alterações não salvas — botão Voltar do browser (popstate) */}
+      <AlertDialog open={backBlockerOpen} onOpenChange={setBackBlockerOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-sm">
+              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+              Prescrição com alterações não salvas
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground">
+              Você tem alterações na prescrição que ainda não foram salvas. Deseja salvar um rascunho antes de sair?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-2 mt-2">
+            <AlertDialogAction
+              className="w-full"
+              onClick={async () => {
+                try {
+                  await persistItems(items, { mode: 'update', silent: true });
+                  toast.success('Rascunho salvo');
+                } catch {
+                  toast.error('Não foi possível salvar o rascunho');
+                } finally {
+                  setBackBlockerOpen(false);
+                  window.history.go(-2);
+                }
+              }}
+            >
+              Salvar rascunho e sair
+            </AlertDialogAction>
+            <AlertDialogCancel
+              className="w-full"
+              onClick={() => { setBackBlockerOpen(false); window.history.go(-2); }}
+            >
+              Sair sem salvar
+            </AlertDialogCancel>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-xs"
+              onClick={() => setBackBlockerOpen(false)}
+            >
+              Cancelar — continuar editando
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Pop-up: sugerir incluir esquema padrão de correção de insulina ao adicionar controle glicêmico */}
       <AlertDialog open={insulinSchemePromptOpen} onOpenChange={setInsulinSchemePromptOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Syringe className="h-4 w-4 text-primary" />
+        <AlertDialogContent className="max-w-sm w-[calc(100vw-2rem)] p-4">
+          <AlertDialogHeader className="space-y-1.5">
+            <AlertDialogTitle className="flex items-center gap-2 text-sm">
+              <Syringe className="h-4 w-4 text-primary shrink-0" />
               Incluir esquema de correção de insulina?
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-2 text-sm">
-                <p>
-                  Você adicionou um controle glicêmico nos cuidados. Deseja incluir também o
-                  <strong> esquema padrão de correção de insulina</strong> (Insulina Regular SC conforme HGT)?
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground leading-snug">
+                  Insulina Regular SC conforme HGT — esquema padrão:
                 </p>
-                <div className="rounded-md border bg-muted/40 p-2 font-mono text-xs leading-relaxed">
-                  &lt;70 mg/dL → SG 50% 40 mL EV + reavaliar em 15 min<br />
-                  70–149 → não administrar<br />
-                  150–200 → 2 UI SC<br />
-                  201–250 → 4 UI SC<br />
-                  251–300 → 6 UI SC<br />
-                  301–350 → 8 UI SC<br />
-                  351–400 → 10 UI SC + comunicar médico<br />
-                  &gt;400 → chamar médico imediatamente
+                <div className="rounded-md border bg-muted/40 px-2 py-1.5 font-mono text-[10px] leading-5 space-y-0">
+                  <div className="flex justify-between gap-2"><span className="text-destructive font-semibold">&lt;70 mg/dL</span><span>SG 50% 40 mL EV + reavaliar 15 min</span></div>
+                  <div className="flex justify-between gap-2"><span className="text-muted-foreground">70–149</span><span>não administrar</span></div>
+                  <div className="flex justify-between gap-2"><span>150–200</span><span>2 UI SC</span></div>
+                  <div className="flex justify-between gap-2"><span>201–250</span><span>4 UI SC</span></div>
+                  <div className="flex justify-between gap-2"><span>251–300</span><span>6 UI SC</span></div>
+                  <div className="flex justify-between gap-2"><span>301–350</span><span>8 UI SC</span></div>
+                  <div className="flex justify-between gap-2"><span>351–400</span><span>10 UI SC + comunicar médico</span></div>
+                  <div className="flex justify-between gap-2"><span className="text-destructive font-semibold">&gt;400</span><span>chamar médico imediatamente</span></div>
                 </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
-            <AlertDialogCancel className="sm:mr-auto">Não, somente HGT</AlertDialogCancel>
-            <Button
-              type="button"
-              variant="outline"
-              className="gap-1.5"
-              onClick={() => {
-                setInsulinSchemePromptOpen(false);
-                // Atalho direto pro assistente completo (basal-bolus, NPH,
-                // BIC, peso) — antes só era mencionado em texto, obrigando
-                // o médico a fechar o pop-up e procurar em Medicações.
-                setPendingInsulinMed({
-                  id: 'insulin-custom-from-hgt-prompt',
-                  name: 'Insulina',
-                  presentation: '100UI/mL - Frasco', defaultDose: 'Conforme esquema', defaultRoute: 'Subcutânea',
-                  defaultPosology: 'Conforme esquema', defaultSchedule: '-', category: 'high_alert', highAlert: true,
-                });
-                setEditingInsulinItemId(null);
-                setInsulinDialogOpen(true);
-              }}
-            >
-              <Syringe className="h-3.5 w-3.5" /> Configurar esquema personalizado
-            </Button>
+          <div className="flex flex-col gap-2 mt-3">
             <AlertDialogAction
+              className="w-full"
               onClick={() => {
                 const schemeName = 'Esquema de correção de insulina (Regular SC conforme HGT)';
-                if (items.some(i => i.status === 'active' && (i as any).insulinPlan)) {
-                  toast.info('Já existe esquema de insulinoterapia ativo nesta prescrição');
-                  return;
-                }
-                if (items.some(i => i.name === schemeName)) {
+                if (items.some(i => i.name === schemeName && i.status === 'active')) {
                   toast.info('Esquema já está na prescrição');
                   return;
                 }
@@ -10145,9 +10455,30 @@ const PrescricaoPage = () => {
                 toast.success('Esquema de correção adicionado aos Cuidados');
               }}
             >
-              Sim, incluir esquema padrão
+              <Syringe className="h-3.5 w-3.5 mr-1.5" /> Sim, adicionar aos Cuidados
             </AlertDialogAction>
-          </AlertDialogFooter>
+            <div className="flex gap-2">
+              <AlertDialogCancel className="flex-1 h-8 text-xs">Não, somente HGT</AlertDialogCancel>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 h-8 text-xs gap-1"
+                onClick={() => {
+                  setInsulinSchemePromptOpen(false);
+                  setPendingInsulinMed({
+                    id: 'insulin-custom-from-hgt-prompt',
+                    name: 'Insulina',
+                    presentation: '100UI/mL - Frasco', defaultDose: 'Conforme esquema', defaultRoute: 'Subcutânea',
+                    defaultPosology: 'Conforme esquema', defaultSchedule: '-', category: 'high_alert', highAlert: true,
+                  });
+                  setEditingInsulinItemId(null);
+                  setInsulinDialogOpen(true);
+                }}
+              >
+                <Syringe className="h-3 w-3" /> Editar esquema
+              </Button>
+            </div>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
 
@@ -10687,6 +11018,23 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
     return parsed.toLocaleDateString('pt-BR');
   };
 
+  // BUGFIX (07/08/2026): a versão antiga fazia
+  //   patient.sex.toLowerCase().startsWith('m') ? 'M' : 'F'
+  // — qualquer valor que não começasse por 'm' (ex: cadastro com sexo "Outro",
+  // dado legado com espaço/formatação diferente) virava Feminino por padrão,
+  // silenciosamente. Reportado: paciente do sexo masculino impresso como
+  // feminino, não reproduzível sob demanda — exatamente o padrão de dado
+  // malformado, não de bug determinístico. Checagem agora é explícita: só
+  // rotula M ou F quando o valor bate exatamente; qualquer outra coisa
+  // (incluindo "Outro") mostra o valor real, nunca assume.
+  const formatSexCode = (sex?: string | null): string => {
+    if (!sex) return '—';
+    const v = sex.trim().toUpperCase();
+    if (v === 'M' || v === 'MASCULINO') return 'M';
+    if (v === 'F' || v === 'FEMININO') return 'F';
+    return sex.trim(); // ex: "Outro" — nunca vira F por padrão
+  };
+
   const isSimple = (cat: PrescriptionCategory) => ['nutrition', 'care'].includes(cat);
 
   const docCode = generatePrintDocCode("PRESC");
@@ -10745,7 +11093,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
             <td style={headerCellStyle}>Peso</td>
             <td style={cellStyle}>{patient.weight ? `${patient.weight}kg` : '—'}</td>
             <td style={headerCellStyle}>Sexo</td>
-            <td style={cellStyle}>{patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'M' : 'F') : '—'}</td>
+            <td style={cellStyle}>{formatSexCode(patient.sex)}</td>
             <td style={headerCellStyle}>Admissão</td>
             <td style={cellStyle}>{safeFormatPatientDate(patient.admissionDate)}</td>
           </tr>

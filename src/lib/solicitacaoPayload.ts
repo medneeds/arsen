@@ -8,7 +8,13 @@ import { asUuidOrNull } from "@/lib/utils";
  * tudo que já foi gravado antes.
  */
 export interface DocumentPayload {
-  kind: "apac" | "aih" | "generica";
+  /**
+   * Cada `kind` corresponde a um IMPRESSO proprio, e e por ele que o historico
+   * decide qual documento reemitir (fase 5). Sao seis, nao tres: a fase 2
+   * cobriu apac/aih/generica e deixou de fora hemocomponente, sat e cultura,
+   * que tem impresso diferenciado e gravavam direto em exam_requests.
+   */
+  kind: "apac" | "aih" | "generica" | "hemocomponente" | "sat" | "cultura";
   version: number;
   data: Record<string, unknown>;
 }

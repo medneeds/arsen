@@ -26,7 +26,7 @@
 // buildHydrationLine unifica — mesma frase nas 3 superfícies.
 
 import { intervalToPhases } from '@/lib/prescriptionIntervals';
-import { DRIP_FACTOR_MACRO, roundGtsToHospital } from '@/lib/solutoToken';
+import { DRIP_FACTOR_MACRO, roundGtsToHospital, isOralLikeRoute } from '@/lib/solutoToken';
 
 export interface NutritionPrintFields {
   nutritionType?: string;     // diet_enteral | diet_oral | diet_parenteral | water | npt | zero | supplement
@@ -128,6 +128,8 @@ export interface HydrationLineFields {
   infusionTimeUnit?: string;  // 'h' | 'min'
   infusionRate?: string;      // vazão digitada (sincronizada pela tela)
   infusionMode?: string;      // 'BIC' | 'gts'
+  /** Via de administração — oral suprime tempo/gotejamento */
+  route?: string;
 }
 
 /**
@@ -135,38 +137,38 @@ export interface HydrationLineFields {
  * hídrico). Mesma frase na tela compacta e nos dois impressos. A vazão usa
  * o valor digitado/sincronizado; sem ele, calcula de volume ÷ tempo (mesma
  * regra do buildPrepSegments).
+ *
+ * BUGFIX (07/08/2026): vias orais (VO, livre demanda) não têm gotejamento
+ * nem tempo de infusão — esses campos são suprimidos quando route é oral.
  */
 export function buildHydrationLine(f: HydrationLineFields): string {
+  const isOral = isOralLikeRoute(f.route);
   const phases = intervalToPhases(f.posology);
   const interval = f.posology || '24/24h';
   const vol = parseFloat((f.volumeTotal || '0').replace(',', '.')) || 0;
-  // phases=0 → posologia contínua/condicional (Contínuo, S/N, ACM): não há
-  // "fases" nem total/24h multiplicável — omite ambos em vez de mostrar
-  // "0 fases" (sem sentido clínico) e "total 0mL/24h".
   const hasPhases = phases >= 1;
   const total24 = hasPhases ? vol * phases : 0;
   const tVal = f.infusionTime || '';
   const tUnit = f.infusionTimeUnit === 'h' ? 'h' : 'min';
   const rateLabel = f.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
-  let rate = f.infusionRate ? `${f.infusionRate} ${rateLabel}` : '';
-  if (!rate && vol > 0 && tVal) {
-    const tRaw = parseFloat(tVal.replace(',', '.'));
-    const tMin = f.infusionTimeUnit === 'h' ? tRaw * 60 : tRaw;
-    if (tMin > 0) {
-      const mlh = `${(vol / (tMin / 60)).toFixed(1).replace(/\.0$/, '')} mL/h`;
-      // Modo gotejamento: calcula gts com o MESMO fator e arredondamento da
-      // medicação IV (fonte única solutoToken) e mostra ambos, como
-      // buildPrepSegments faz — antes o fallback mostrava só mL/h mesmo em
-      // modo gts (unidade incoerente com o rótulo do modo).
-      rate = f.infusionMode === 'gts'
-        ? `${mlh} · ${roundGtsToHospital((vol * DRIP_FACTOR_MACRO) / tMin)} gts/min`
-        : mlh;
+  let rate = '';
+  if (!isOral) {
+    rate = f.infusionRate ? `${f.infusionRate} ${rateLabel}` : '';
+    if (!rate && vol > 0 && tVal) {
+      const tRaw = parseFloat(tVal.replace(',', '.'));
+      const tMin = f.infusionTimeUnit === 'h' ? tRaw * 60 : tRaw;
+      if (tMin > 0) {
+        const mlh = `${(vol / (tMin / 60)).toFixed(1).replace(/\.0$/, '')} mL/h`;
+        rate = f.infusionMode === 'gts'
+          ? `${mlh} · ${roundGtsToHospital((vol * DRIP_FACTOR_MACRO) / tMin)} gts/min`
+          : mlh;
+      }
     }
   }
   return [
     vol ? (hasPhases ? `${vol}mL/fase` : `${vol}mL`) : '',
     hasPhases ? `${phases} fase${phases > 1 ? 's' : ''} (${interval})` : (f.posology || ''),
-    tVal ? `correr em ${tVal}${tUnit}` : '',
+    !isOral && tVal ? `correr em ${tVal}${tUnit}` : '',
     rate ? `(${rate})` : '',
     total24 ? `total ${total24}mL/24h` : '',
   ].filter(Boolean).join(' · ');

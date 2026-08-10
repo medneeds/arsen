@@ -13,6 +13,12 @@ import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
+import { useUnsavedPrescription } from "@/contexts/UnsavedPrescriptionContext";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface PatientSidebarProps {
   patient: Patient | null;
@@ -93,6 +99,19 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
   const { namesHidden } = usePrivacy();
   const [recordEditOpen, setRecordEditOpen] = useState(false);
   const navigate = useNavigate();
+  const { isDirty, onSaveDraft } = useUnsavedPrescription();
+  const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+
+  // Navega com verificação de alterações não salvas na prescrição.
+  // Se isDirty, abre o AlertDialog de confirmação antes de navegar.
+  const safeNavigate = (url: string) => {
+    if (isDirty) {
+      setPendingUrl(url);
+    } else {
+      navigate(url);
+      onOpenChange(false);
+    }
+  };
 
   if (!patient) return null;
 
@@ -188,10 +207,7 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             variant="outline"
             size="sm"
             className="flex-1 text-xs"
-            onClick={() => {
-              navigate(`/evolucao?patientId=${patient.id}&patientName=${encodeURIComponent(patient.name)}&patientBed=${encodeURIComponent(patient.bedNumber)}&patientSector=${encodeURIComponent(patient.sector)}`);
-              onOpenChange(false);
-            }}
+            onClick={() => safeNavigate(`/evolucao?patientId=${patient.id}&patientName=${encodeURIComponent(patient.name)}&patientBed=${encodeURIComponent(patient.bedNumber)}&patientSector=${encodeURIComponent(patient.sector)}`)}
           >
             <FileText className="h-3.5 w-3.5 mr-1.5" />
             Evolução
@@ -200,10 +216,7 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             variant="outline"
             size="sm"
             className="flex-1 text-xs"
-            onClick={() => {
-              navigate(`/prescricao?patientId=${patient.id}&patientName=${encodeURIComponent(patient.name)}&patientBed=${encodeURIComponent(patient.bedNumber)}&patientSector=${encodeURIComponent(patient.sector)}`);
-              onOpenChange(false);
-            }}
+            onClick={() => safeNavigate(`/prescricao?patientId=${patient.id}&patientName=${encodeURIComponent(patient.name)}&patientBed=${encodeURIComponent(patient.bedNumber)}&patientSector=${encodeURIComponent(patient.sector)}`)}
           >
             <Pill className="h-3.5 w-3.5 mr-1.5" />
             Prescrição
@@ -212,10 +225,7 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             variant="outline"
             size="sm"
             className="flex-1 text-xs"
-            onClick={() => {
-              navigate(`/monitoramento?patientId=${patient.id}`);
-              onOpenChange(false);
-            }}
+            onClick={() => safeNavigate(`/monitoramento?patientId=${patient.id}`)}
           >
             <Activity className="h-3.5 w-3.5 mr-1.5" />
             Monitoramento
@@ -226,10 +236,7 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             variant="outline"
             size="sm"
             className="flex-1 text-xs"
-            onClick={() => {
-              navigate(`/ficha-atendimento?patientId=${patient.id}&patientName=${encodeURIComponent(patient.name)}`);
-              onOpenChange(false);
-            }}
+            onClick={() => safeNavigate(`/ficha-atendimento?patientId=${patient.id}&patientName=${encodeURIComponent(patient.name)}`)}
           >
             <FileText className="h-3.5 w-3.5 mr-1.5" />
             Ficha de Atendimento
@@ -238,10 +245,7 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             variant="outline"
             size="sm"
             className="flex-1 text-xs"
-            onClick={() => {
-              navigate(`/historico-paciente?patientId=${patient.id}&patientName=${encodeURIComponent(patient.name)}&patientBed=${encodeURIComponent(patient.bedNumber)}&patientSector=${encodeURIComponent(patient.sector)}`);
-              onOpenChange(false);
-            }}
+            onClick={() => safeNavigate(`/historico-paciente?patientId=${patient.id}&patientName=${encodeURIComponent(patient.name)}&patientBed=${encodeURIComponent(patient.bedNumber)}&patientSector=${encodeURIComponent(patient.sector)}`)}
           >
             <Clock className="h-3.5 w-3.5 mr-1.5" />
             Histórico
@@ -257,6 +261,59 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             Prontuário
           </Button>
         </div>
+
+        {/* AlertDialog de confirmação — alterações não salvas na prescrição */}
+        <AlertDialog open={!!pendingUrl} onOpenChange={(open) => { if (!open) setPendingUrl(null); }}>
+          <AlertDialogContent className="max-w-sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2 text-sm">
+                <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                Prescrição com alterações não salvas
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-xs text-muted-foreground">
+                Você tem alterações na prescrição que ainda não foram salvas. Deseja salvar um rascunho antes de sair?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="flex flex-col gap-2 mt-2">
+              <AlertDialogAction
+                className="w-full"
+                onClick={async () => {
+                  if (onSaveDraft) {
+                    try {
+                      await onSaveDraft();
+                      toast.success('Rascunho salvo');
+                    } catch {
+                      toast.error('Não foi possível salvar o rascunho');
+                    }
+                  }
+                  if (pendingUrl) navigate(pendingUrl);
+                  setPendingUrl(null);
+                  onOpenChange(false);
+                }}
+              >
+                Salvar rascunho e sair
+              </AlertDialogAction>
+              <AlertDialogCancel
+                className="w-full"
+                onClick={() => {
+                  if (pendingUrl) navigate(pendingUrl);
+                  setPendingUrl(null);
+                  onOpenChange(false);
+                }}
+              >
+                Sair sem salvar
+              </AlertDialogCancel>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs"
+                onClick={() => setPendingUrl(null)}
+              >
+                Cancelar — continuar editando
+              </Button>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
       </SheetContent>
       <MedicalRecordEditDialog
         open={recordEditOpen}

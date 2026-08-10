@@ -4,6 +4,7 @@ import {
   isMissingDocumentPayloadColumn,
   SolicitacaoError,
   type SolicitacaoInput,
+  type DocumentPayload,
 } from "@/lib/solicitacaoPayload";
 
 export {
@@ -77,4 +78,42 @@ export async function registrarSolicitacao(
     );
   }
   return id;
+}
+
+/**
+ * Envelope para os fluxos que fazem a propria gravacao (insert OU update) e
+ * so precisam anexar o snapshot do documento.
+ *
+ * Existe porque registrarSolicitacao() e insert-only, e dialogos como o de
+ * hemocomponente suportam EDICAO: rescrever a persistencia deles para caber no
+ * helper seria mexer em logica que ja funciona, para ganhar so o snapshot.
+ * Aqui a logica de cada dialogo fica intacta e ganha duas coisas:
+ *   - o document_payload no payload;
+ *   - o mesmo fallback de git != banco do registrarSolicitacao: se a coluna
+ *     nao existir neste banco, regrava SEM o snapshot em vez de derrubar a
+ *     solicitacao inteira.
+ *
+ * Sem esse fallback, anexar document_payload antes da migration 20260727180000
+ * quebraria hemocomponente, SAT e cultura por completo — hoje eles gravam e
+ * funcionam.
+ *
+ * @param executar recebe o extra a mesclar no payload e devolve o resultado
+ *                 do supabase (insert ou update, indiferente)
+ */
+export async function comSnapshotDeDocumento<T>(
+  executar: (extra: Record<string, unknown>) => PromiseLike<{ data: T | null; error: unknown }>,
+  snapshot?: DocumentPayload,
+): Promise<{ data: T | null; error: unknown }> {
+  if (!snapshot) return executar({});
+
+  const primeiro = await executar({ document_payload: snapshot });
+  if (!primeiro.error || !isMissingDocumentPayloadColumn(primeiro.error)) return primeiro;
+
+  console.warn(
+    "[Solicitação] Coluna document_payload ausente neste banco — a migration " +
+      "20260727180000 provavelmente não foi aplicada. Gravando sem o snapshot; " +
+      "esta solicitação NÃO poderá ser reimpressa pelo histórico.",
+    primeiro.error,
+  );
+  return executar({});
 }

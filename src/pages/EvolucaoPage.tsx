@@ -34,6 +34,9 @@ import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
 import { DiagnosticsPanel } from "@/components/evolution/DiagnosticsPanel";
 import type { Patient } from "@/types/patient";
 import { getEffectiveAdmissionDate } from "@/lib/dihCalc";
+import { calcDIH } from "@/lib/dihCalc";
+import { formatDeviceLabel, deviceAlertTone, type EvolutionDevice } from "@/lib/devicesCatalog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PatientHeader {
   name: string;
@@ -170,7 +173,33 @@ const EvolucaoPage = () => {
   } = usePatientDiagnosticContext(initialPatientId || null);
 
   // Live patient row (realtime sync with Painel Clínico)
-  const { patient: livePatient } = usePatientLive(initialPatientId || null);
+  const { patient: livePatient, loading: livePatientLoading } = usePatientLive(initialPatientId || null);
+
+  // ⚠️  BUGFIX (07/08/2026): `usePatientLive` não mapeia peso (`uti_weight_kg`),
+  // e o `patient` (useMemo acima) só popula sexo/nascimento/idade/admissão/
+  // alergias/peso/prontuário para os pacientes DEMO (L09/L10/L11) — para
+  // paciente real, esses campos ficavam SEMPRE vazios no cabeçalho impresso,
+  // não só às vezes. Busca dedicada de peso, mesmo padrão do
+  // PrescricaoPage.tsx (patients.uti_weight_kg).
+  const [utiWeightKg, setUtiWeightKg] = useState<string>("");
+  const [weightLoaded, setWeightLoaded] = useState(false);
+  React.useEffect(() => {
+    if (!initialPatientId) { setUtiWeightKg(""); setWeightLoaded(true); return; }
+    let cancelled = false;
+    setWeightLoaded(false);
+    (async () => {
+      const { data } = await supabase
+        .from("patients")
+        .select("uti_weight_kg" as any)
+        .eq("id", initialPatientId)
+        .maybeSingle();
+      if (cancelled) return;
+      const kg = (data as any)?.uti_weight_kg;
+      setUtiWeightKg(kg !== null && kg !== undefined ? String(kg) : "");
+      setWeightLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, [initialPatientId]);
 
   const hasPatient = patient.name.trim() !== "";
 
@@ -250,6 +279,23 @@ const EvolucaoPage = () => {
     if (result) {
       setShowNewForm(false);
       resetNewForm();
+
+      // BUGFIX (07/08/2026): sincroniza patients.uti_devices com os dispositivos
+      // registrados na evolução. Sem isso, o Painel Clínico e o impresso do Painel
+      // continuavam mostrando o texto livre antigo, independente do que o médico
+      // registrou na Evolução com data/subtipo estruturados.
+      // Converte EvolutionDevice[] → string[] (label + detail) → \n-joined para uti_devices.
+      if (initialPatientId && newDevices.length > 0) {
+        const deviceLines = newDevices
+          .filter((d: EvolutionDevice) => typeof d.label === 'string' && d.label.trim())
+          .map((d: EvolutionDevice) => formatDeviceLabel({ label: d.label, detail: d.detail }));
+        if (deviceLines.length > 0) {
+          await supabase
+            .from('patients')
+            .update({ uti_devices: deviceLines.join('\n'), updated_at: new Date().toISOString() })
+            .eq('id', initialPatientId);
+        }
+      }
     }
   };
 
@@ -427,9 +473,27 @@ const EvolucaoPage = () => {
     </div>
   );
 
+  // ⚠️  Aviso visível SÓ EM TELA (print:hidden) enquanto os dados do
+  // cabeçalho impresso ainda carregam. Diferente da Prescrição, esta tela
+  // não tem botão "Imprimir" próprio — a impressão depende do Ctrl+P nativo
+  // do navegador, que o código não intercepta. Não é possível bloquear o
+  // print em si, então este aviso é a mitigação disponível: reduz a chance
+  // de imprimir no instante exato em que sexo/nascimento/idade/peso/
+  // alergias ainda não chegaram do banco.
+  const headerDataLoading = hasPatient && (ids.loading || livePatientLoading || !weightLoaded);
+  const headerLoadingWarning = headerDataLoading && (
+    <div className="mx-4 mt-2 mb-0 flex items-center gap-2 rounded-md border border-blue-300/60 bg-blue-50 dark:bg-blue-950/20 px-3 py-1.5 print:hidden">
+      <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600 shrink-0" />
+      <p className="text-xs text-blue-700 dark:text-blue-400">
+        Carregando dados do paciente (sexo, nascimento, peso, alergias) — aguarde antes de imprimir.
+      </p>
+    </div>
+  );
+
   return (
     <div className="print:p-2">
       {dischargeAlert}
+      {headerLoadingWarning}
       <ClinicalHeader moduleLabel="Evolução Clínica" />
 
       <div className="flex print:hidden">
@@ -685,11 +749,42 @@ const EvolucaoPage = () => {
 
           const cellSt: React.CSSProperties = { border: '0.5px solid #94a3b8', padding: '3px 6px', fontSize: '7.5pt', lineHeight: 1.3, verticalAlign: 'top' };
           const labelSt: React.CSSProperties = { ...cellSt, fontWeight: 700, fontSize: '6.5pt', backgroundColor: '#f1f5f9', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.3px' };
+          // BUGFIX (07/08/2026): mesma correção de PrescricaoPage.tsx — a lógica
+          // antiga (`startsWith('m') ? 'Masculino' : 'Feminino'`) assumia Feminino
+          // por padrão pra qualquer valor que não começasse por 'm' (cadastro com
+          // sexo "Outro", dado legado malformado). Checagem agora é explícita.
+          const formatSexLabel = (sex?: string | null): string => {
+            if (!sex) return '—';
+            const v = sex.trim().toUpperCase();
+            if (v === 'M' || v === 'MASCULINO') return 'Masculino';
+            if (v === 'F' || v === 'FEMININO') return 'Feminino';
+            return sex.trim();
+          };
 
           const fmt = (d?: string) => {
             if (!d) return '—';
             try { return format(new Date(d + 'T12:00:00'), 'dd/MM/yyyy'); } catch { return d; }
           };
+
+          // ⚠️  BUGFIX (07/08/2026): `patient` (useMemo no topo do componente)
+          // só popula sexo/nascimento/idade/admissão/alergias/peso/prontuário
+          // para os pacientes DEMO (L09/L10/L11) — para paciente real, esses
+          // campos vinham SEMPRE vazios do objeto `patient`, não só às vezes.
+          // Aqui mesclamos com as fontes reais já buscadas na tela
+          // (usePatientIdentifiers → registry; usePatientLive → dados vivos;
+          // fetch dedicado de peso acima), na mesma ordem de prioridade usada
+          // em PrescricaoPage.tsx.
+          const headerSex = patient.sex || ids.registry?.sex || '';
+          const headerBirthDate = patient.birthDate || ids.registry?.birthDate || '';
+          const headerAge = patient.age || livePatient?.age || '';
+          const headerAdmissionDate = patient.admissionDate || livePatient?.admissionDate || '';
+          const headerAllergies =
+            patient.allergies ||
+            (livePatient?.utiAllergies?.length ? livePatient.utiAllergies.join(', ') : '') ||
+            ids.registry?.allergies ||
+            '';
+          const headerRecord = patient.record || ids.prontuario || '';
+          const headerWeight = patient.weight || utiWeightKg || '';
 
           return (
             <>
@@ -719,29 +814,29 @@ const EvolucaoPage = () => {
                     <td style={labelSt}>Setor / Unidade</td>
                     <td style={{ ...cellSt, fontWeight: 600 }}>{patient.unit || '—'}</td>
                     <td style={labelSt}>Prontuário</td>
-                    <td style={{ ...cellSt, fontWeight: 700 }}>{patient.record || '—'}</td>
+                    <td style={{ ...cellSt, fontWeight: 700 }}>{headerRecord || '—'}</td>
                     <td style={labelSt}>Nº Atendimento</td>
                     <td style={{ ...cellSt, fontWeight: 700 }}>{ids.atendimento ? `#${ids.atendimento}` : '—'}</td>
                   </tr>
                   {/* Linha 3: Idade / Nascimento / Admissão / Sexo / Peso / Alergias */}
                   <tr>
                     <td style={labelSt}>Idade</td>
-                    <td style={cellSt}>{patient.age || '—'}</td>
+                    <td style={cellSt}>{headerAge || '—'}</td>
                     <td style={labelSt}>Data de Nasc.</td>
-                    <td style={cellSt}>{fmt(patient.birthDate)}</td>
+                    <td style={cellSt}>{fmt(headerBirthDate)}</td>
                     <td style={labelSt}>Admissão</td>
-                    <td style={cellSt}>{fmt(patient.admissionDate)}</td>
+                    <td style={cellSt}>{fmt(headerAdmissionDate)}</td>
                     <td style={{ ...labelSt, color: '#dc2626', fontSize: '6pt' }}>⚠ ALERGIAS</td>
                     <td style={{ ...cellSt, fontWeight: 700, color: '#991b1b', backgroundColor: '#fef2f2', fontSize: '7.5pt' }}>
-                      {patient.allergies || 'NDAM'}
+                      {headerAllergies || 'NDAM'}
                     </td>
                   </tr>
                   {/* Linha 4: Sexo / Peso — linha compacta complementar */}
                   <tr>
                     <td style={labelSt}>Sexo</td>
-                    <td style={cellSt}>{patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'Masculino' : 'Feminino') : '—'}</td>
+                    <td style={cellSt}>{formatSexLabel(headerSex)}</td>
                     <td style={labelSt}>Peso</td>
-                    <td style={cellSt}>{patient.weight ? `${patient.weight} kg` : '—'}</td>
+                    <td style={cellSt}>{headerWeight ? `${headerWeight} kg` : '—'}</td>
                     <td colSpan={4} style={{ ...cellSt, color: '#64748b', fontSize: '7pt', fontStyle: 'italic' }}>
                       Documento gerado em {printDate} · {docCode}
                     </td>
@@ -749,6 +844,42 @@ const EvolucaoPage = () => {
                 </tbody>
               </table>
             </>
+          );
+        })()}
+
+        {/* Dispositivos invasivos — BUGFIX (07/08/2026): ausentes da pré-visualização.
+            Usa os mesmos dados e lógica de printEvolution.ts (formatDeviceLabel + calcDIH
+            + deviceAlertTone) para garantir que tela e papel mostrem o mesmo conteúdo. */}
+        {newDevices.length > 0 && (() => {
+          const itens = newDevices
+            .filter((d: EvolutionDevice) => typeof d.label === 'string' && d.label.trim())
+            .map((d: EvolutionDevice) => {
+              const rotulo = formatDeviceLabel({ label: d.label, detail: d.detail });
+              const dias = d.insertedAt ? calcDIH(d.insertedAt) : null;
+              const tom = deviceAlertTone(dias);
+              const cor = tom === 'red' ? '#b91c1c' : tom === 'amber' ? '#b45309' : '#047857';
+              const dataFmt = d.insertedAt
+                ? (() => { try { return format(new Date(d.insertedAt.split('/').reverse().join('-') + 'T12:00:00'), 'dd/MM', { locale: ptBR }); } catch { return d.insertedAt; } })()
+                : '';
+              return { rotulo, dias, cor, dataFmt };
+            });
+          if (itens.length === 0) return null;
+          return (
+            <div style={{ marginBottom: '8px', pageBreakInside: 'avoid' }}>
+              <div style={{ fontSize: '7.5pt', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px', borderBottom: '0.5px solid #cbd5e1', paddingBottom: '2px' }}>
+                Dispositivos Invasivos
+              </div>
+              <div style={{ padding: '4pt 6pt', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '3pt', fontSize: '8pt', lineHeight: 1.6, display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                {itens.map((it, i) => (
+                  <span key={i} style={{ whiteSpace: 'nowrap' }}>
+                    {it.rotulo}
+                    {it.dataFmt && <span style={{ color: '#64748b', marginLeft: '3px' }}>{it.dataFmt}</span>}
+                    {it.dias !== null && <strong style={{ color: it.cor, marginLeft: '3px' }}>D{it.dias}</strong>}
+                    {i < itens.length - 1 && <span style={{ color: '#cbd5e1', marginLeft: '4px' }}>·</span>}
+                  </span>
+                ))}
+              </div>
+            </div>
           );
         })()}
 

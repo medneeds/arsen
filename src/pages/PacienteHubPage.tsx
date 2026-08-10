@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Pill, Stethoscope, ClipboardList, FolderOpen, History, ClipboardCheck, Lock, CheckCircle2, AlertTriangle, Printer, ShieldCheck, Timer } from "lucide-react";
+import { Pill, Stethoscope, ClipboardList, FolderOpen, History, ClipboardCheck, Lock, CheckCircle2, AlertTriangle, Printer, ShieldCheck, Timer, ArrowLeftRight, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
 import { AdmissionDialog } from "@/components/AdmissionDialog";
@@ -12,9 +12,21 @@ import { printAdmissionNormaZero } from "@/lib/printAdmission";
 import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCockpitPatient } from "@/hooks/useCockpitPatient";
+import { usePatientPendingItems } from "@/hooks/usePatientPendingItems";
+import { PatientCockpit } from "@/components/PatientCockpit";
+import { PatientMovementDialog } from "@/components/PatientMovementDialog";
 import { getSectorLabel } from "@/lib/sectorUtils";
+import type { AdmissionStatus as CanonicalAdmissionStatus } from "@/lib/admissionStatus";
 
-type AdmissionStatus = "pre_admitido" | "admitido" | "suspenso" | null;
+// O tipo local declarava apenas "pre_admitido" | "admitido" | "suspenso", mas
+// `setAdmissionStatus` recebe o valor cru de patients.admission_status — que
+// em runtime tambem vale obito, alta_dada e os dois de transferencia. O tipo
+// mentia, e por isso o card de Sinalizacao nao compilava ao ler esses estados.
+// Passa a usar o union canonico de src/lib/admissionStatus.ts, que ja existe
+// justamente para ser a fonte unica desses literais (auditoria de 22/07/2026).
+type AdmissionStatus = CanonicalAdmissionStatus | "suspenso" | null;
 
 const SAPS_DEADLINE_MS = 24 * 60 * 60 * 1000;
 
@@ -22,6 +34,12 @@ const CLINICAL_ACTIONS = [
   { key: "prescricao", label: "Prescrição", icon: Pill, path: "/prescricao" },
   { key: "evolucao", label: "Evolução", icon: Stethoscope, path: "/evolucao" },
   { key: "requisicoes", label: "Requisições", icon: ClipboardList, path: "/requisicoes" },
+  // Monitoramento era o UNICO modulo do paciente com rota propria sem card no
+  // Hub — so existia como botao do cockpit, por falta de espaco na grade de 6.
+  // Com a grade em 4+3 sobrou o oitavo lugar, e ele fecha duas linhas de
+  // quatro. Pela regra de auto-supressao (e3af8dbc), o botao correspondente
+  // some do cockpit aqui no Hub sozinho, sem codigo adicional.
+  { key: "monitoramento", label: "Monitoramento", icon: Activity, path: "/monitoramento" },
   { key: "docs", label: "Docs", icon: FolderOpen, path: "/documentos" },
   { key: "historico", label: "Histórico", icon: History, path: "/historico-paciente" },
 ];
@@ -40,6 +58,17 @@ export default function PacienteHubPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { currentHospital } = useHospital();
+  const queryClient = useQueryClient();
+
+  // Cockpit — mesma fonte (searchParams) e mesma variante "fixed" das outras
+  // sete paginas de paciente. O Hub era a UNICA sem ele, e era justamente onde
+  // o usuario comeca: para sinalizar uma movimentacao ou desfecho ele
+  // precisava abrir um modulo clinico qualquer so para alcancar o cockpit que
+  // mora la.
+  const cockpitPatient = useCockpitPatient();
+  const [movementOpen, setMovementOpen] = useState(false);
+
+
 
   const ctx = useMemo(() => ({
     patientId: params.get("patientId") || "",
@@ -54,10 +83,113 @@ export default function PacienteHubPage() {
   const identifiers = usePatientIdentifiers(ctx.patientId, ctx.patientName, currentHospital?.id || null);
   const registryId = identifiers.registry?.id ?? null;
 
+  /**
+   * Requisicoes pendentes — reusa o hook que a aba "Exames" do cockpit ja usa,
+   * com assinatura realtime. Nenhuma consulta nova: a contagem que aparece no
+   * card e exatamente a mesma que o cockpit mostra, e atualiza sozinha quando
+   * o laboratorio conclui um exame.
+   */
+  const { summary: pendingSummary } = usePatientPendingItems(
+    ctx.patientId || null,
+    ctx.patientName || null,
+    currentHospital?.id || null,
+  );
+  const pendingRequests = pendingSummary.pendingExams + pendingSummary.pendingCultures;
+
+  /**
+   * Houve evolucao hoje? Consulta leve (select id, limit 1).
+   *
+   * Filtra por patient_registry_id quando existe, e so cai em patient_id na falta
+   * dele: `patients` e a tabela de LEITOS, entao patient_id muda a cada
+   * transferencia — o mesmo detalhe que ja causou bug de reabertura de
+   * atendimento neste projeto. patient_registry_id acompanha a pessoa.
+   */
+  const [evolvedToday, setEvolvedToday] = useState<boolean | null>(null);
+  const [prescribedToday, setPrescribedToday] = useState<boolean | null>(null);
+  /**
+   * Contador que forca a releitura dos estados derivados. Incrementado por
+   * refreshHubState() apos uma acao e ao voltar o foco para a aba.
+   *
+   * Sem isso o Hub so refletia a realidade ao remontar. Como o usuario sai
+   * para /prescricao, valida, e volta pelo breadcrumb — que NAO remonta a
+   * pagina — o card ficava mostrando o estado anterior por tempo indefinido.
+   */
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!ctx.patientId && !registryId) { setEvolvedToday(null); return; }
+      const inicioDoDia = new Date();
+      inicioDoDia.setHours(0, 0, 0, 0);
+      let q = supabase
+        .from("clinical_evolutions")
+        .select("id")
+        .gte("created_at", inicioDoDia.toISOString())
+        .limit(1);
+      q = registryId ? q.eq("patient_registry_id", registryId) : q.eq("patient_id", ctx.patientId);
+      const { data, error } = await q;
+      if (cancelled) return;
+      // Erro nao vira "nao evoluiu": ficaria afirmando algo falso sobre o
+      // prontuario. Sem resposta confiavel, o card fica neutro.
+      setEvolvedToday(error ? null : (data?.length ?? 0) > 0);
+
+      // Prescricao validada hoje. `validated`/`validatedAt` vivem DENTRO do
+      // JSON `items`, entao nao da para filtrar no banco — busca-se a
+      // prescricao mais recente do prontuario e inspeciona-se os itens aqui.
+      if (!registryId) { setPrescribedToday(null); return; }
+      const { data: presc, error: errPresc } = await supabase
+        .from("prescriptions")
+        .select("items, created_at")
+        .eq("patient_registry_id", registryId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (cancelled) return;
+      if (errPresc || !presc?.length) { setPrescribedToday(errPresc ? null : false); return; }
+      const itens = Array.isArray(presc[0].items) ? presc[0].items : [];
+      setPrescribedToday(
+        itens.some((raw) => {
+          const it = raw as { validated?: unknown; validatedAt?: unknown };
+          if (it?.validated !== true || typeof it?.validatedAt !== "string") return false;
+          const d = new Date(it.validatedAt);
+          return !Number.isNaN(d.getTime()) && d >= inicioDoDia;
+        }),
+      );
+    })();
+    return () => { cancelled = true; };
+  }, [ctx.patientId, registryId, refreshTick]);
+
+
   // Usar status passado pela URL como valor inicial — evita flash de bloqueio
   const [admissionStatus, setAdmissionStatus] = useState<AdmissionStatus>(
     ctx.initialAdmissionStatus ?? null
   );
+
+  /**
+   * Estado de sinalizacao do paciente, para o card refletir a realidade em vez
+   * de ser so um atalho. O card de Admissao ja faz isso ("Concluida"), e e o
+   * que transforma o Hub de lancador em painel de situacao: quem abre a tela
+   * ve, sem clicar, que aquele paciente ja tem obito ou alta sinalizados.
+   *
+   * Le do `admissionStatus` do PROPRIO hub, nao do cockpitPatient: o hub ja
+   * busca esse campo e aplica a regra de effectiveStatus (pre_admitido que ja
+   * tem admissao vira admitido). Usar a outra fonte criaria duas verdades para
+   * o mesmo dado na mesma tela.
+   */
+  const signalState = (() => {
+    switch (admissionStatus) {
+      case "obito":
+        return { label: "Óbito sinalizado", tone: "danger" as const };
+      case "alta_dada":
+        return { label: "Alta sinalizada", tone: "info" as const };
+      case "transferencia_externa_pendente":
+        return { label: "Transf. externa", tone: "warn" as const };
+      case "transferencia_interna_pendente":
+        return { label: "Transf. interna", tone: "warn" as const };
+      default:
+        return null;
+    }
+  })();
   const [statusLoading, setStatusLoading] = useState(!ctx.initialAdmissionStatus);
   const [admissionOpen, setAdmissionOpen] = useState(false);
   const [consultOpen, setConsultOpen] = useState(false);
@@ -87,7 +219,10 @@ export default function PacienteHubPage() {
     return () => { window.removeEventListener("storage", onStorage); clearInterval(t); };
   }, [registryId, admissionOpen]);
 
-  const fetchStatus = async () => {
+  // Memoizado: sem isso a funcao se recria a cada render, o useCallback de
+  // refreshHubState muda junto, e o listener de foco seria desanexado e
+  // reanexado indefinidamente.
+  const fetchStatus = useCallback(async () => {
     if (!ctx.patientId) { setStatusLoading(false); return; }
     setStatusLoading(true);
     const { data } = await supabase
@@ -156,9 +291,29 @@ export default function PacienteHubPage() {
     setSapsPending(stillPending);
     setSapsSince(row.saps_pending_since ?? null);
     setStatusLoading(false);
-  };
+  }, [ctx.patientId, registryId]);
 
-  useEffect(() => { fetchStatus(); }, [ctx.patientId, registryId]);
+  useEffect(() => { fetchStatus(); }, [fetchStatus]);
+
+  /**
+   * Refresca tudo que o Hub deriva do banco. Chamado apos uma acao concluida e
+   * ao voltar o foco para a aba — o usuario sai para validar uma prescricao e
+   * volta pelo breadcrumb, que nao remonta a pagina.
+   */
+  const refreshHubState = useCallback(() => {
+    fetchStatus();
+    setRefreshTick((n) => n + 1);
+  }, [fetchStatus]);
+
+  useEffect(() => {
+    const aoVoltar = () => { if (!document.hidden) refreshHubState(); };
+    window.addEventListener("focus", aoVoltar);
+    document.addEventListener("visibilitychange", aoVoltar);
+    return () => {
+      window.removeEventListener("focus", aoVoltar);
+      document.removeEventListener("visibilitychange", aoVoltar);
+    };
+  }, [refreshHubState]);
 
   // Cronômetro vivo
   useEffect(() => {
@@ -320,10 +475,21 @@ export default function PacienteHubPage() {
   return (
     <div className="flex flex-col h-full bg-background">
       <div className="px-2 sm:px-4 pt-3">
-        <BreadcrumbBar variant="institutional" />
+        {/*
+          showPatient liga o PatientSwitcher — o mesmo seletor que as paginas de
+          modulo ja tem via ClinicalHeader. O Hub montava o BreadcrumbBar direto,
+          sem essa prop, entao era a unica tela de paciente onde nao dava para
+          alternar entre os pacientes do setor: era preciso entrar num modulo so
+          para trocar, e voltar.
+
+          O switcher navega para `${location.pathname}?<novos params>`, ou seja,
+          permanece no Hub e so troca o paciente. Nada a adaptar.
+        */}
+        <BreadcrumbBar variant="institutional" showPatient />
       </div>
 
-      <main className="flex-1 flex items-center justify-center px-6 py-10">
+      <div className="flex-1 flex overflow-hidden">
+      <main className="flex-1 flex items-center justify-center px-6 py-10 overflow-y-auto">
         <div className="w-full max-w-6xl flex flex-col gap-8">
           {/* Patient identity */}
           <div className="text-center space-y-3">
@@ -411,7 +577,27 @@ export default function PacienteHubPage() {
           )}
 
           {/* Action grid — 6 cards aspect-square, harmônicos */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          {/*
+            OITO cards (7 modulos + Sinalizacao) em DUAS linhas de QUATRO.
+
+            Por que nao os sete numa fila so, como estava: os breakpoints do
+            Tailwind medem a VIEWPORT, nao o container. O cockpit e `sticky` e
+            entra no fluxo — ao expandir no hover ele salta de 44px para 384px,
+            o espaco disponivel encolhe ~340px, mas a viewport nao muda. A grade
+            continuava exigindo 7 colunas e espremia cada card, de forma
+            desproporcional e com reflow visivel a cada passagem do mouse.
+
+            A grade agora tem largura PROPRIA (max-w-3xl = 768px, que da cards
+            de ~180px em 4 colunas — o mesmo tamanho dos 6 cards originais) e e
+            centralizada sob o titulo, que tambem e centralizado.
+
+            O ganho real: em 1280px com o cockpit expandido sobram 848px de
+            espaco util para uma grade que precisa de 768px. Ela deixa de
+            reagir ao cockpit — nao ha mais encolhimento nem reflow.
+
+            Progressao: base 2 colunas | sm 3 | md+ 4 (duas linhas cheias).
+          */}
+          <div className="w-full max-w-3xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
             {/* ADMISSÃO — gate */}
             <div className="relative group">
               <button
@@ -519,9 +705,119 @@ export default function PacienteHubPage() {
                   )}>
                     {label}
                   </span>
+
+                  {/*
+                    Sub-rotulo de estado. Regra deliberada: so alarma quando ha
+                    ACAO CONCRETA pendente. Ausencia NAO alarma — marcar de
+                    ambar todo paciente ainda nao evoluido acenderia o painel
+                    inteiro as 8h da manha, e alerta que acende sempre vira
+                    ruido, o oposto do que uma passagem de plantao precisa.
+                  */}
+                  {!locked && key === "prescricao" && prescribedToday === true && (
+                    <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-widest uppercase mt-1">
+                      Validada hoje
+                    </span>
+                  )}
+                  {!locked && key === "evolucao" && evolvedToday === true && (
+                    <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-widest uppercase mt-1">
+                      Evoluída hoje
+                    </span>
+                  )}
+                  {!locked && key === "requisicoes" && pendingRequests > 0 && (
+                    <span className="text-[9px] font-semibold text-amber-600 dark:text-amber-500 tracking-widest uppercase mt-1">
+                      {pendingRequests} pendente{pendingRequests > 1 ? "s" : ""}
+                    </span>
+                  )}
                 </div>
               </button>
             ))}
+
+            {/*
+              Sinalizacao — 7o card. Fecha o arco cronologico da estadia:
+              Admissao (entrada) -> modulos de trabalho -> Sinalizacao (saida).
+              Por isso vem por ultimo, e nao no meio dos modulos.
+
+              Nao e duplicata do botao do cockpit: aqui e o ATALHO para abrir o
+              fluxo; la, alem disso, vivem as acoes de estado (Suspender obito,
+              Suspender alta, Cancelar transferencia), que o card nao cobre.
+              O cockpit tambem fica recolhido por padrao (44px), entao nao ha
+              dois botoes competindo na mesma tela.
+
+              O card e o unico do grid que muda de cor conforme o estado — de
+              proposito: obito e alta sinalizados sao informacao que precisa
+              saltar aos olhos antes de qualquer clique.
+            */}
+            <button
+              onClick={() => locked ? handleLockedClick(lockReason!) : setMovementOpen(true)}
+              aria-disabled={locked}
+              title="Sinalizar movimentação interna, transferência, alta ou óbito"
+              className="relative group text-left"
+            >
+              <div className={cn(
+                "relative flex flex-col items-center justify-center aspect-square rounded-lg overflow-hidden transition-all",
+                "bg-card border",
+                locked
+                  ? "opacity-40 grayscale border-border cursor-not-allowed"
+                  : [
+                      "cursor-pointer hover:scale-[1.02] hover:shadow-md",
+                      signalState?.tone === "danger" && "border-red-300 dark:border-red-500/40",
+                      signalState?.tone === "info" && "border-sky-300 dark:border-sky-500/40",
+                      signalState?.tone === "warn" && "border-amber-300 dark:border-amber-500/40",
+                      !signalState && "border-border",
+                    ],
+              )}>
+                <span className={cn(
+                  "absolute top-0 left-0 right-0 h-1",
+                  locked ? "bg-muted-foreground/30"
+                    : signalState?.tone === "danger" ? "bg-red-400"
+                    : signalState?.tone === "info" ? "bg-sky-400"
+                    : signalState?.tone === "warn" ? "bg-amber-400"
+                    : "bg-primary/70",
+                )} />
+                {locked && (
+                  <span className="absolute top-2 right-2">
+                    <Lock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2} />
+                  </span>
+                )}
+                <div className={cn(
+                  "p-3 rounded-xl mb-3 transition-colors",
+                  locked ? "bg-transparent"
+                    : signalState?.tone === "danger" ? "bg-red-50 dark:bg-red-950/30"
+                    : signalState?.tone === "info" ? "bg-sky-50 dark:bg-sky-950/30"
+                    : signalState?.tone === "warn" ? "bg-amber-50 dark:bg-amber-950/30"
+                    : "bg-muted group-hover:bg-primary/10",
+                )}>
+                  <ArrowLeftRight
+                    className={cn(
+                      "w-7 h-7 transition-transform duration-200",
+                      !locked && "group-hover:translate-x-0.5",
+                      locked ? "text-muted-foreground/40"
+                        : signalState?.tone === "danger" ? "text-red-600 dark:text-red-400"
+                        : signalState?.tone === "info" ? "text-sky-600 dark:text-sky-400"
+                        : signalState?.tone === "warn" ? "text-amber-600 dark:text-amber-500"
+                        : "text-muted-foreground group-hover:text-primary",
+                    )}
+                    strokeWidth={1.5}
+                  />
+                </div>
+                <span className={cn(
+                  "text-[11px] font-bold tracking-[0.15em] uppercase text-center px-1",
+                  locked ? "text-foreground/50" : "text-foreground",
+                )}>
+                  Sinalização
+                </span>
+                {signalState && !locked && (
+                  <span className={cn(
+                    "text-[9px] font-semibold tracking-widest uppercase mt-1 text-center px-1 leading-tight",
+                    signalState.tone === "danger" && "text-red-600 dark:text-red-400",
+                    signalState.tone === "info" && "text-sky-600 dark:text-sky-400",
+                    signalState.tone === "warn" && "text-amber-600 dark:text-amber-500",
+                  )}>
+                    {signalState.label}
+                  </span>
+                )}
+              </div>
+            </button>
           </div>
 
           {/* Footer */}
@@ -534,6 +830,36 @@ export default function PacienteHubPage() {
           </p>
         </div>
       </main>
+
+      {/* Patient Cockpit — fixed right sidebar (mesma variante das demais paginas) */}
+      {cockpitPatient && <PatientCockpit patient={cockpitPatient} />}
+      </div>
+
+      {/* Fluxo de movimentacoes e desfechos, aberto pelo card de Sinalizacao.
+          Mesmo dialogo que o cockpit usa — um caminho de codigo so. */}
+      <PatientMovementDialog
+        patient={cockpitPatient}
+        movementType={null}
+        isOpen={movementOpen}
+        onClose={() => setMovementOpen(false)}
+        onSuccess={() => {
+          setMovementOpen(false);
+          // BUG (relatado 09/08/2026): o card de Sinalizacao continuava com o
+          // status antigo apos confirmar. Este onSuccess so fechava o dialogo.
+          //
+          // Duas fontes precisam ser refrescadas, e uma nao cobre a outra:
+          //  - refreshHubState(): o admissionStatus do Hub vem de fetchStatus(),
+          //    useState proprio, que NAO passa pelo react-query;
+          //  - invalidateQueries(): o cockpit ao lado le pelo react-query, e sem
+          //    isso ele ficaria dessincronizado do card na mesma tela.
+          // O cockpit ja fazia a segunda parte desde 16/07; faltava a primeira.
+          refreshHubState();
+          queryClient.invalidateQueries({ queryKey: ["discharge-docs"] });
+          queryClient.invalidateQueries({ queryKey: ["patients"] });
+          queryClient.invalidateQueries({ queryKey: ["patient-movements"] });
+          queryClient.invalidateQueries({ queryKey: ["internal-transfer-requests"] });
+        }}
+      />
 
       {ctx.patientId && (
         <AdmissionDialog

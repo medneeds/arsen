@@ -28,6 +28,7 @@ import { useEffect, useState } from "react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useUnsavedPrescription } from "@/contexts/UnsavedPrescriptionContext";
 import {
   Sidebar,
   SidebarContent,
@@ -108,6 +109,19 @@ function ThemeToggleInline() {
 export function AppSidebar() {
   const { open, setOpen, openMobile, setOpenMobile, state } = useSidebar();
   const navigate = useNavigate();
+  const { isDirty, onSaveDraft } = useUnsavedPrescription();
+  const [unsavedOpen, setUnsavedOpen] = useState(false);
+  const [pendingUnsavedUrl, setPendingUnsavedUrl] = useState<string | null>(null);
+
+  // Navega com verificação de alterações não salvas na prescrição.
+  const safeNavigate = (url: string) => {
+    if (isDirty) {
+      setPendingUnsavedUrl(url);
+      setUnsavedOpen(true);
+    } else {
+      navigate(url);
+    }
+  };
   const { signOut, user, role } = useAuth();
   const { currentDepartment, setCurrentDepartment, currentSectorLabel } = useDepartment();
   const location = useLocation();
@@ -224,8 +238,8 @@ export function AppSidebar() {
   ];
 
   const handleSectorClick = (department: Department, customLink?: string) => {
-    setCurrentDepartment(department); // context auto-syncs localStorage
-    navigate(customLink || "/mapa");
+    setCurrentDepartment(department);
+    safeNavigate(customLink || "/mapa");
     if (isMobile) setOpenMobile(false);
   };
 
@@ -501,48 +515,28 @@ export function AppSidebar() {
   };
 
   const handleItemClick = (item: string | { name: string; link?: string | null; action?: string; subsections?: any[] }, parentSection?: any) => {
-    // Check if parent section requires password (Gestor Master bypasses)
     if (parentSection?.requiresPassword && !isGestorMaster) {
       setPendingNavigation(typeof item === 'string' ? item : (item.link || null));
       setSelectedSection(parentSection.title);
       setShowPasswordDialog(true);
       return;
     }
-    // Handle direct string links (like from section.link)
     if (typeof item === 'string') {
-      navigate(item);
-      if (isMobile) {
-        setOpenMobile(false);
-      }
+      safeNavigate(item);
+      if (isMobile) setOpenMobile(false);
       return;
     }
-    
-    // Handle object items
     if (typeof item === 'object') {
-      // Skip if item has subsections (it's a collapsible parent)
-      if (item.subsections) {
-        return;
-      }
-      
+      if (item.subsections) return;
       if (item.action === 'openHandover') {
-        // Corrigido (22/07/2026): antes chamava onOpenHandover() → setIsHandoverOpen
-        // no App, cujo valor NUNCA era lido (estado morto — o botão não fazia nada).
-        // Há uma página /handovers funcional; navega para ela, igual aos demais
-        // itens de action (ex.: openSepsisProtocol).
-        navigate('/handovers');
-        if (isMobile) {
-          setOpenMobile(false);
-        }
+        safeNavigate('/handovers');
+        if (isMobile) setOpenMobile(false);
       } else if (item.action === 'openSepsisProtocol') {
-        navigate('/sepsis-protocol');
-        if (isMobile) {
-          setOpenMobile(false);
-        }
+        safeNavigate('/sepsis-protocol');
+        if (isMobile) setOpenMobile(false);
       } else if (item.link) {
-        navigate(item.link);
-        if (isMobile) {
-          setOpenMobile(false);
-        }
+        safeNavigate(item.link);
+        if (isMobile) setOpenMobile(false);
       }
     }
   };
@@ -662,7 +656,7 @@ export function AppSidebar() {
                     <button
                       key={tab.link}
                       onClick={() => {
-                        navigate(tab.link);
+                        safeNavigate(tab.link);
                         if (isMobile) setOpenMobile(false);
                       }}
                       title={`${tab.title} — ${currentSectorLabel || currentDepartment}`}
@@ -972,6 +966,42 @@ export function AppSidebar() {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setPassword("")}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handlePasswordSubmit}>Acessar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Pop-up de alterações não salvas na prescrição */}
+      <AlertDialog open={unsavedOpen} onOpenChange={setUnsavedOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-sm">
+              Prescrição com alterações não salvas
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground">
+              Você tem alterações na prescrição que ainda não foram salvas. Deseja salvar um rascunho antes de sair?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2">
+            <AlertDialogAction
+              onClick={async () => {
+                if (onSaveDraft) {
+                  try { await onSaveDraft(); toast.success('Rascunho salvo'); }
+                  catch { toast.error('Não foi possível salvar o rascunho'); }
+                }
+                if (pendingUnsavedUrl) navigate(pendingUnsavedUrl);
+                setUnsavedOpen(false);
+                setPendingUnsavedUrl(null);
+              }}
+            >
+              Salvar rascunho e sair
+            </AlertDialogAction>
+            <AlertDialogCancel onClick={() => {
+              if (pendingUnsavedUrl) navigate(pendingUnsavedUrl);
+              setUnsavedOpen(false);
+              setPendingUnsavedUrl(null);
+            }}>
+              Sair sem salvar
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

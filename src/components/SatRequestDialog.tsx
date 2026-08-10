@@ -30,6 +30,7 @@ import { CollapsibleInfoCard } from "@/components/shared/CollapsibleInfoCard";
 import { SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { toast } from "sonner";
+import { comSnapshotDeDocumento } from "@/lib/registrarSolicitacao";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
@@ -236,7 +237,13 @@ export function SatRequestDialog({
         status: "pending",
       };
 
-      const { error } = await supabase.from("exam_requests").insert(payload);
+      // Snapshot do documento (fase 3b) — permite reemitir o impresso de SAT
+      // pelo historico. O envelope cuida do caso git != banco: sem a coluna,
+      // regrava sem o snapshot em vez de derrubar a solicitacao.
+      const { error } = await comSnapshotDeDocumento(
+        (extra) => supabase.from("exam_requests").insert({ ...payload, ...extra }).then(r => ({ data: null, error: r.error })),
+        { kind: "sat" as const, version: 1, data: { ...payload } },
+      );
       if (error) throw error;
 
       toast.success("Solicitação de SAT registrada");

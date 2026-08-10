@@ -101,11 +101,22 @@ function ivSnapshotToEntry(s: IvSnapshot): MedicationEntry {
 
 function enteralSnapshotToEntry(s: EnteralSnapshot): MedicationEntry {
   const name = buildWaterEntryName(s.water);
-  const route = s.water.route.startsWith("vo")
+  // BUGFIX (07/08/2026): "Enteral (SNE)" não tem entrada em ROUTE_SHORT/abbrevRoute,
+  // então a regra genérica /enteral/ substituía só 'Enteral' e deixava '(SNE)' →
+  // resultado 'SNE (SNE)' na linha compacta. Usando 'Enteral (SNE/SNG)' que já tem
+  // mapeamento correto, ou valores padrão do catálogo para GTT/JJT/SOG.
+  const routeKey = s.water.route;
+  const route = routeKey.startsWith("vo")
     ? "Oral"
-    : s.water.route === "hipodermo"
+    : routeKey === "hipodermo"
       ? "Hipodermóclise"
-      : `Enteral (${s.water.route.toUpperCase()})`;
+      : routeKey === "gtt"
+        ? "Gastrostomia"
+        : routeKey === "jjt" || routeKey === "jej"
+          ? "Jejunostomia"
+          : routeKey === "sog"
+            ? "Sonda orogástrica"
+            : "Enteral (SNE/SNG)"; // SNE, SNG e qualquer outro enteral → valor padrão com mapeamento
   return {
     id: `hyd-ent-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     name,

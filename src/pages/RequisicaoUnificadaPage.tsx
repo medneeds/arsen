@@ -40,9 +40,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { PrintableRequisitionGuide } from "@/components/PrintableRequisitionGuide";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
 import { openPrintWindow } from "@/lib/printNormaZero";
 import { registrarSolicitacao } from "@/lib/registrarSolicitacao";
+import { PostValidationPrintDialog } from "@/components/PostValidationPrintDialog";
 import { useHospital } from "@/contexts/HospitalContext";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
@@ -2364,6 +2366,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
 
   const [diagnosis, setDiagnosis] = useState("");
   const [cidPrimary, setCidPrimary] = useState("");
+  // HTML do laudo aguardando a etapa pos-envio. null = nada pendente.
+  const [apacPrintHtml, setApacPrintHtml] = useState<string | null>(null);
   const [cidSecondary, setCidSecondary] = useState("");
   const [cidAssociated, setCidAssociated] = useState("");
   const [observations, setObservations] = useState("");
@@ -2534,8 +2538,26 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   };
 
   const handlePrint = async () => {
+    /*
+      Obrigatorios do APAC, definidos pelo gestor: nome do paciente, CID e
+      procedimento.
+
+      O CID faltava. Sem ele o laudo sai com o campo 34 (CID-10 Principal) em
+      branco e o SUS devolve — mas o formulario deixava imprimir, e a partir da
+      fase 2 tambem deixava GRAVAR. O registro entrava no historico parecendo
+      completo e nunca geraria documento aceito.
+
+      Bloqueio ANTES do roteamento para AIH: o Laudo AIH tem o mesmo campo de
+      CID, entao a exigencia vale para os dois caminhos.
+    */
     if (selectedProcedures.length === 0) { toast.error("Adicione ao menos um procedimento"); return; }
     if (!apacPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
+    if (!cidPrimary.trim()) {
+      toast.error("Informe o CID-10 Principal", {
+        description: "Obrigatório no laudo — sem ele o documento não é aceito.",
+      });
+      return;
+    }
     const hasAih = selectedProcedures.some(p => p.instrumento === "AIH");
     if (hasAih) {
       // Roteamento: procedimento AIH → abre Laudo AIH
@@ -2573,7 +2595,20 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     // veio fechar.
     const ok = await registrarProcedimento();
     if (!ok) return;
-    openPrintWindow(html, "Preparando Laudo APAC…");
+
+    /*
+      O ato terminou aqui: a requisicao foi ENVIADA. A impressao vira um passo
+      seguinte, oferecido — nao uma consequencia automatica do botao.
+
+      Mesmo desenho da validacao de evolucao e prescricao (34f3a868): o botao
+      cumpre o ato, e o documento se oferece depois. O usuario que so queria
+      registrar nao leva uma janela de impressao na cara; o que precisa do papel
+      esta a um clique.
+
+      O HTML ja foi montado ANTES da gravacao de proposito: se buildApacHtml
+      falhasse depois de gravar, existiria solicitacao sem laudo possivel.
+    */
+    setApacPrintHtml(html);
   };
 
 
@@ -2896,7 +2931,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
             <CardContent className="space-y-3">
               <div><Label className="text-xs text-muted-foreground">Diagnóstico Inicial</Label><Input value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} placeholder="Descreva o diagnóstico" /></div>
               <div className="grid grid-cols-3 gap-2">
-                <div><Label className="text-xs text-muted-foreground">CID-10 Principal</Label><Input value={cidPrimary} onChange={(e) => setCidPrimary(e.target.value)} placeholder="I63.9" className="font-mono" /></div>
+                <div><Label className="text-xs text-muted-foreground">CID-10 Principal *</Label><Input value={cidPrimary} onChange={(e) => setCidPrimary(e.target.value)} placeholder="I63.9" className="font-mono" /></div>
                 <div><Label className="text-xs text-muted-foreground">Secundário</Label><Input value={cidSecondary} onChange={(e) => setCidSecondary(e.target.value)} className="font-mono" /></div>
                 <div><Label className="text-xs text-muted-foreground">Associado</Label><Input value={cidAssociated} onChange={(e) => setCidAssociated(e.target.value)} className="font-mono" /></div>
               </div>
@@ -3034,11 +3069,31 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
 
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1" onClick={resetApacForm}><RotateCcw className="h-4 w-4 mr-1" /> Limpar</Button>
+          {/* Icone de envio, nao de impressora: este botao cumpre o ATO. A
+              impressao virou passo seguinte, na etapa pos-envio. */}
           <Button className="flex-1" onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-1" />
-            {selectedProcedures.some(p => p.instrumento === "AIH") ? "Encaminhar via AIH" : "Imprimir APAC"}
+            <Send className="h-4 w-4 mr-1" />
+            {selectedProcedures.some(p => p.instrumento === "AIH") ? "Encaminhar via AIH" : "Enviar Requisição"}
           </Button>
         </div>
+
+        {/*
+          Etapa pos-envio do APAC — mesmo componente da validacao de evolucao e
+          prescricao (34f3a868), entao o usuario reconhece o padrao: acao
+          concluida, check animado, e o documento oferecido num botao.
+
+          Fechar sem imprimir NAO perde nada: a solicitacao ja esta gravada com o
+          snapshot, e o laudo podera ser reemitido pelo historico.
+        */}
+        <PostValidationPrintDialog
+          open={!!apacPrintHtml}
+          onOpenChange={(v) => { if (!v) setApacPrintHtml(null); }}
+          documentLabel="Requisição"
+          validatedAt={new Date()}
+          note="O laudo APAC pode ser impresso agora ou reemitido depois pela aba de solicitações."
+          onPrint={() => { if (apacPrintHtml) openPrintWindow(apacPrintHtml, "Preparando Laudo APAC…"); }}
+        />
+
       </div>
 
       {/* ── APAC Print Layout ──
@@ -3316,22 +3371,94 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
             )}
           </div>
           <div className="flex gap-1.5 shrink-0">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (category === "imagem") {
+            {category === "imagem" ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                onClick={(e) => {
+                  e.stopPropagation();
                   printImagingRequest(request, (s) => getSectorLabel(s));
-                } else {
-                  printRequisitionGuideWithGasometriaPrompt(request, (s) => getSectorLabel(s));
-                }
-              }}
-              title="Imprimir Guia"
-            >
-              <Printer className="h-3.5 w-3.5" />
-            </Button>
+                }}
+                title="Imprimir"
+              >
+                <Printer className="h-3.5 w-3.5" />
+              </Button>
+            ) : (() => {
+              /*
+                O botao de impressao passa a oferecer o IMPRESSO PROPRIO da
+                solicitacao, quando existe, alem da guia generica.
+
+                Ate aqui ele so sabia imprimir a guia — mesmo numa solicitacao
+                de procedimento, cujo documento real e o Laudo APAC. Quem
+                precisava do laudo depois do envio tinha que refazer o
+                formulario.
+
+                O despacho e pelo `kind` do document_payload, nao pela
+                `category`: e o payload que diz qual documento aquela linha
+                gerou de fato. Sem payload (registro anterior a este fluxo, ou
+                gravado antes da migration), cai na guia generica — que e o
+                comportamento atual e nao regride nada.
+
+                Imagem fica de fora deste despacho de propósito: usa sempre o
+                modal Guia x APAC (printImagingRequest, acima), mesmo sem
+                document_payload — decisão do usuário em 10/08/2026.
+              */
+              const snap = (request as { document_payload?: { kind?: string; data?: Record<string, unknown> } }).document_payload;
+              const temLaudoApac = snap?.kind === "apac" && !!snap.data;
+
+              const imprimirGuia = (e: React.MouseEvent) => {
+                e.stopPropagation();
+                printRequisitionGuideWithGasometriaPrompt(request, (s) => getSectorLabel(s));
+              };
+
+              if (!temLaudoApac) {
+                return (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                    onClick={imprimirGuia}
+                    title="Imprimir Guia"
+                  >
+                    <Printer className="h-3.5 w-3.5" />
+                  </Button>
+                );
+              }
+
+              return (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                      onClick={(e) => e.stopPropagation()}
+                      title="Imprimir"
+                    >
+                      <Printer className="h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuItem
+                      className="text-xs gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openPrintWindow(
+                          buildApacHtml(snap!.data as Parameters<typeof buildApacHtml>[0]),
+                          "Preparando Laudo APAC…",
+                        );
+                      }}
+                    >
+                      <FileText className="h-3.5 w-3.5" /> Laudo APAC
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-xs gap-2" onClick={imprimirGuia}>
+                      <Printer className="h-3.5 w-3.5" /> Guia de requisição
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              );
+            })()}
             <Button size="sm" variant="outline" className="h-8 px-2.5 text-xs gap-1" onClick={onViewResult}>
               <Eye className="h-3.5 w-3.5" />
               {showResult ? "Ver Resultado" : "Ver Detalhes"}

@@ -29,6 +29,7 @@ import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
 import { PatientIdentityHeader } from "./PatientIdentityHeader";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
 const UTI_SECTORS = ["red", "yellow", "outside", "uti_01", "uti_02", "uci_02"];
 
@@ -219,6 +220,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   const [specialties, setSpecialties] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+  const [passwordConfirmOpen, setPasswordConfirmOpen] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
   const [draftHydrated, setDraftHydrated] = useState(false);
@@ -969,7 +971,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
               Salvar Rascunho
             </Button>
             <Button
-              onClick={handleSubmit}
+              onClick={() => setPasswordConfirmOpen(true)}
               disabled={submitting || !canValidate}
               className="w-full sm:w-auto gap-2 bg-emerald-600 hover:bg-emerald-700 text-white uppercase"
             >
@@ -1011,6 +1013,16 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    {/* Confirmação de identidade antes de assinar a admissão clínica */}
+    <PasswordConfirmDialog
+      open={passwordConfirmOpen}
+      onOpenChange={setPasswordConfirmOpen}
+      title="Assinar e Admitir (D0)"
+      description="Confirme sua identidade para registrar a admissão clínica do paciente. Após assinado, o documento D0 será gerado no prontuário."
+      actionLabel="Assinar e Admitir"
+      onConfirmed={handleSubmit}
+    />
     </>
   );
 }

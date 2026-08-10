@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { asUuidOrNull } from "@/lib/utils";
 import { registrarSolicitacao } from "@/lib/registrarSolicitacao";
+import { PostValidationPrintDialog } from "@/components/PostValidationPrintDialog";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -18,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  FileText, Printer, RotateCcw, Loader2, ClipboardList, Search,
+  FileText, Printer, Send, RotateCcw, Loader2, ClipboardList, Search,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -293,6 +294,23 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
         requestedByName: requesterName,
         hospitalUnitId: currentHospital.id,
         stateId: currentState.id,
+        /*
+          Snapshot do Laudo AIH. Faltava: a AIH gravava a solicitacao desde a
+          fase 2, mas SEM documentPayload — ou seja, entrava no historico como
+          rastro, nao como documento reemitivel.
+
+          `version: 1` importa aqui mais que nos outros: este formulario tem 33
+          campos e vai mudar. Sem a versao, acrescentar um campo depois
+          quebraria a reimpressao de tudo que ja foi gravado.
+        */
+        documentPayload: {
+          kind: "aih",
+          version: 1,
+          data: {
+            aihPatientName, procedureCode, procLabel, tipoLabel,
+            diagnosisInitial, caraterInternacao, requesterName,
+          },
+        },
       });
       return true;
     } catch (err) {
@@ -303,6 +321,9 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
     }
   };
 
+  // Solicitacao enviada, aguardando a etapa de impressao.
+  const [enviado, setEnviado] = useState(false);
+
   const handlePrint = async () => {
     if (!aihPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
     if (!procedureCode) { toast.error("Selecione um procedimento"); return; }
@@ -310,7 +331,19 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
     // ficou registrada produz papel sem contrapartida no sistema.
     const ok = await registrarRegulacao();
     if (!ok) return;
-    window.print();
+
+    /*
+      O ato terminou: a requisicao foi ENVIADA. A impressao vira passo
+      seguinte, como no APAC (099335cb) e na validacao de evolucao e
+      prescricao.
+
+      Aqui NAO da para fechar este dialogo antes de imprimir: o layout do laudo
+      vive dentro dele e so existe no DOM enquanto ele esta aberto — o proprio
+      codigo documenta que extrair o print root quebraria a impressao do APAC.
+      Entao a etapa aparece POR CIMA, e o dialogo dela carrega `print:hidden`
+      para nao sair no papel junto com o laudo.
+    */
+    setEnviado(true);
   };
 
   const formatDOB = (dob: string) => {
@@ -512,7 +545,21 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
               {/* Actions */}
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1 text-xs" onClick={resetForm}><RotateCcw className="h-3.5 w-3.5 mr-1" /> Limpar</Button>
-                <Button className="flex-1 text-xs" onClick={handlePrint}><Printer className="h-3.5 w-3.5 mr-1" /> Imprimir AIH</Button>
+                <Button className="flex-1 text-xs" onClick={handlePrint}><Send className="h-3.5 w-3.5 mr-1" /> Enviar Requisição</Button>
+
+                {/* Etapa pos-envio. `print:hidden` e obrigatorio: window.print()
+                    imprime a pagina inteira, e o CSS do laudo so esconde o que
+                    carrega essa classe — sem ela, este dialogo sairia no papel
+                    junto com a AIH. */}
+                <PostValidationPrintDialog
+                  open={enviado}
+                  onOpenChange={(v) => { if (!v) setEnviado(false); }}
+                  documentLabel="Requisição"
+                  validatedAt={new Date()}
+                  note="O Laudo AIH pode ser impresso agora ou reemitido depois pela aba de solicitações."
+                  onPrint={() => { setEnviado(false); setTimeout(() => window.print(), 0); }}
+                  className="print:hidden"
+                />
               </div>
             </div>
           </div>
