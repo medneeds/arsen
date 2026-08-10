@@ -42,6 +42,7 @@ import { PrintableRequisitionGuide } from "@/components/PrintableRequisitionGuid
 import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
 import { openPrintWindow } from "@/lib/printNormaZero";
 import { registrarSolicitacao } from "@/lib/registrarSolicitacao";
+import { PostValidationPrintDialog } from "@/components/PostValidationPrintDialog";
 import { useHospital } from "@/contexts/HospitalContext";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
@@ -2218,6 +2219,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
 
   const [diagnosis, setDiagnosis] = useState("");
   const [cidPrimary, setCidPrimary] = useState("");
+  // HTML do laudo aguardando a etapa pos-envio. null = nada pendente.
+  const [apacPrintHtml, setApacPrintHtml] = useState<string | null>(null);
   const [cidSecondary, setCidSecondary] = useState("");
   const [cidAssociated, setCidAssociated] = useState("");
   const [observations, setObservations] = useState("");
@@ -2445,7 +2448,20 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     // veio fechar.
     const ok = await registrarProcedimento();
     if (!ok) return;
-    openPrintWindow(html, "Preparando Laudo APAC…");
+
+    /*
+      O ato terminou aqui: a requisicao foi ENVIADA. A impressao vira um passo
+      seguinte, oferecido — nao uma consequencia automatica do botao.
+
+      Mesmo desenho da validacao de evolucao e prescricao (34f3a868): o botao
+      cumpre o ato, e o documento se oferece depois. O usuario que so queria
+      registrar nao leva uma janela de impressao na cara; o que precisa do papel
+      esta a um clique.
+
+      O HTML ja foi montado ANTES da gravacao de proposito: se buildApacHtml
+      falhasse depois de gravar, existiria solicitacao sem laudo possivel.
+    */
+    setApacPrintHtml(html);
   };
 
 
@@ -2906,11 +2922,31 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
 
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1" onClick={resetApacForm}><RotateCcw className="h-4 w-4 mr-1" /> Limpar</Button>
+          {/* Icone de envio, nao de impressora: este botao cumpre o ATO. A
+              impressao virou passo seguinte, na etapa pos-envio. */}
           <Button className="flex-1" onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-1" />
-            {selectedProcedures.some(p => p.instrumento === "AIH") ? "Encaminhar via AIH" : "Imprimir APAC"}
+            <Send className="h-4 w-4 mr-1" />
+            {selectedProcedures.some(p => p.instrumento === "AIH") ? "Encaminhar via AIH" : "Enviar Requisição"}
           </Button>
         </div>
+
+        {/*
+          Etapa pos-envio do APAC — mesmo componente da validacao de evolucao e
+          prescricao (34f3a868), entao o usuario reconhece o padrao: acao
+          concluida, check animado, e o documento oferecido num botao.
+
+          Fechar sem imprimir NAO perde nada: a solicitacao ja esta gravada com o
+          snapshot, e o laudo podera ser reemitido pelo historico.
+        */}
+        <PostValidationPrintDialog
+          open={!!apacPrintHtml}
+          onOpenChange={(v) => { if (!v) setApacPrintHtml(null); }}
+          documentLabel="Requisição"
+          validatedAt={new Date()}
+          note="O laudo APAC pode ser impresso agora ou reemitido depois pela aba de solicitações."
+          onPrint={() => { if (apacPrintHtml) openPrintWindow(apacPrintHtml, "Preparando Laudo APAC…"); }}
+        />
+
       </div>
 
       {/* ── APAC Print Layout ──
