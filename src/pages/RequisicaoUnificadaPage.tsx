@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { createRoot } from "react-dom/client";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 
@@ -2107,6 +2108,151 @@ function buildApacHtml(input: {
 </body></html>`;
 }
 
+/**
+ * Modal "Como deseja imprimir?" — Guia (comum) x APAC (documento formal).
+ *
+ * Usado no botão de impressão da aba "Solicitados" de Imagem. Sempre pergunta
+ * (sem memória de sessão), igual ao padrão já usado para gasometria em Lab.
+ */
+type ImagingPrintChoice = "guia" | "apac" | "cancel";
+
+function askGuideOrApac(examLabel: string): Promise<ImagingPrintChoice> {
+  return new Promise((resolve) => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+
+    const cleanup = () => {
+      try { root.unmount(); } catch { /* noop */ }
+      try { host.remove(); } catch { /* noop */ }
+    };
+    const finish = (choice: ImagingPrintChoice) => { cleanup(); resolve(choice); };
+
+    const overlayStyle: React.CSSProperties = {
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      zIndex: 9999, padding: 16,
+    };
+    const cardStyle: React.CSSProperties = {
+      background: "hsl(var(--background, 0 0% 100%))",
+      color: "hsl(var(--foreground, 222 47% 11%))",
+      borderRadius: 12, maxWidth: 440, width: "100%",
+      boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+      padding: "20px 22px 16px",
+      fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+      border: "1px solid hsl(var(--border, 214 32% 91%))",
+    };
+    const titleStyle: React.CSSProperties = { fontSize: 16, fontWeight: 700, margin: 0, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.3 };
+    const bodyStyle: React.CSSProperties = { fontSize: 13.5, lineHeight: 1.5, color: "hsl(var(--muted-foreground, 215 16% 47%))", marginBottom: 14 };
+    const rowStyle: React.CSSProperties = { display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" };
+    const btnBase: React.CSSProperties = {
+      padding: "8px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600,
+      cursor: "pointer", border: "1px solid transparent", textTransform: "uppercase", letterSpacing: 0.3,
+    };
+    const btnGhost: React.CSSProperties = {
+      ...btnBase, background: "transparent",
+      color: "hsl(var(--muted-foreground, 215 16% 47%))",
+      border: "1px solid hsl(var(--border, 214 32% 91%))",
+    };
+    const btnSecondary: React.CSSProperties = {
+      ...btnBase, background: "hsl(var(--secondary, 210 40% 96%))",
+      color: "hsl(var(--secondary-foreground, 222 47% 11%))",
+    };
+    const btnPrimary: React.CSSProperties = {
+      ...btnBase, background: "hsl(var(--primary, 222 47% 11%))",
+      color: "hsl(var(--primary-foreground, 210 40% 98%))",
+    };
+
+    const Modal = () =>
+      React.createElement(
+        "div",
+        { style: overlayStyle, onClick: () => finish("cancel") },
+        React.createElement(
+          "div",
+          { style: cardStyle, onClick: (e: any) => e.stopPropagation() },
+          React.createElement("h2", { style: titleStyle }, "Como imprimir?"),
+          React.createElement(
+            "p",
+            { style: bodyStyle },
+            `"${examLabel}" — escolha o documento a imprimir:`,
+          ),
+          React.createElement(
+            "div",
+            { style: rowStyle },
+            React.createElement("button", { style: btnGhost, onClick: () => finish("cancel") }, "Cancelar"),
+            React.createElement("button", { style: btnSecondary, onClick: () => finish("guia") }, "Imprimir Guia"),
+            React.createElement("button", { style: btnPrimary, onClick: () => finish("apac") }, "Imprimir APAC"),
+          ),
+        ),
+      );
+
+    root.render(React.createElement(Modal));
+  });
+}
+
+/**
+ * Monta o laudo APAC a partir de uma requisição de Imagem já registrada.
+ *
+ * A ficha de Imagem não coleta CID, CPF, CNS, nome da mãe, endereço etc.
+ * (só a ficha de Procedimento/APAC coleta). Por isso o laudo sai com o que a
+ * requisição tem — paciente, exame(s), justificativa clínica, solicitante —
+ * e o restante em branco, para preenchimento manual pelo médico, exatamente
+ * como acontece hoje quando a ficha de Procedimento é impressa incompleta.
+ */
+function buildApacHtmlFromImagingRequest(request: any): string {
+  const items: any[] = Array.isArray(request?.items) ? request.items : [];
+  return buildApacHtml({
+    institution: APAC_INSTITUTION,
+    patient: {
+      name: request?.patient_name || "",
+      record: "",
+      cpf: "",
+      cns: "",
+      dob: "",
+      sex: "",
+      motherName: "",
+      phone: "",
+      address: "",
+      city: "",
+      uf: "",
+    },
+    procedures: items.map((it) => ({
+      code: "",
+      name: typeof it === "string" ? it : (it?.name || String(it ?? "")),
+      qty: 1,
+    })),
+    diagnosis: request?.clinical_indication || "",
+    cidPrimary: "",
+    cidSecondary: "",
+    cidAssociated: "",
+    observations: request?.notes || "",
+    doctor: { name: request?.requested_by_name || "", cpf: "", crm: "" },
+    today: format(new Date(), "dd/MM/yyyy"),
+  });
+}
+
+/**
+ * Ponto único de impressão para a aba "Solicitados" de Imagem: pergunta
+ * Guia x APAC e delega para o builder correto.
+ */
+async function printImagingRequest(
+  request: any,
+  sectorLabel?: (s: string | null) => string,
+): Promise<void> {
+  const items: any[] = Array.isArray(request?.items) ? request.items : [];
+  const examLabel = items
+    .map((it) => (typeof it === "string" ? it : (it?.name || "")))
+    .filter(Boolean)
+    .join(", ") || "exame de imagem";
+  const choice = await askGuideOrApac(examLabel);
+  if (choice === "cancel") return;
+  if (choice === "apac") {
+    openPrintWindow(buildApacHtmlFromImagingRequest(request), "Preparando Laudo APAC…");
+    return;
+  }
+  return printRequisitionGuideWithGasometriaPrompt(request, sectorLabel);
+}
+
 
 interface ApacSelectedProcedure {
   code: string;
@@ -3174,7 +3320,14 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
               size="sm"
               variant="ghost"
               className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-              onClick={(e) => { e.stopPropagation(); printRequisitionGuideWithGasometriaPrompt(request, (s) => getSectorLabel(s)); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (category === "imagem") {
+                  printImagingRequest(request, (s) => getSectorLabel(s));
+                } else {
+                  printRequisitionGuideWithGasometriaPrompt(request, (s) => getSectorLabel(s));
+                }
+              }}
               title="Imprimir Guia"
             >
               <Printer className="h-3.5 w-3.5" />
