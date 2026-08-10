@@ -178,23 +178,43 @@ const Index = () => {
   // Sector visual config — padronizado em azul institucional para integridade visual
   const BLUE_DOT = "bg-primary/80 border-primary/40";
   const BLUE_GRAD = "from-primary/20 to-primary/10";
-  // 🔒 isUti: true → UtiSectorSection + UtiPatientCard (card intensivista)
-  // Apenas setores de cuidados intensivos/semi-intensivos.
-  // red=UTI1, yellow=UTI2, blue=UCI1, outside=UCI2, ucc=UCC
-  // Todos os outros setores usam SectorSection + PatientCard (card padrão).
-  const SECTOR_VISUAL: Record<string, { title: string; color: string; dotClass: string; colorVariant: string; isUti?: boolean }> = {
-    // ── Intensivos e Semi-Intensivos (isUti: true) ─────────────────────
-    red:     { title: "UTI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    yellow:  { title: "UTI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    blue:    { title: "UCI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    outside: { title: "UCI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    ucc:     { title: "UCC",    color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    // ── Demais setores (sem isUti — usam SectorSection padrão) ─────────
-    neuro_01:             { title: "Neuro 01",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
-    neuro_02:             { title: "Neuro 02",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
-    clinica_cirurgica:    { title: "Clínica Cirúrgica",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
-    enfermaria_transicao: { title: "Enf. Transição",     color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
-    enfermaria_vascular:  { title: "Enf. Vascular",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+  // 🔒 useCensusLayout: true → UtiSectorSection + UtiPatientCard
+  //    Linha compacta de censo: leito, paciente, DIH, admissão no setor e
+  //    previsão de alta. É a leitura de quem passa visita e de quem gerencia
+  //    ocupação.
+  //    false → SectorSection + PatientCard: card expandido com Hipóteses,
+  //    Antecedentes, Exames e Programações — a folha de round.
+  //
+  // O flag se chamava `isUti`, mas o nome já não descrevia o que fazia: a
+  // ENFERMARIA DE TRANSIÇÃO recebeu o layout de censo e não é UTI. Mantê-lo
+  // com esse nome enquanto quatro enfermarias entram junto faria o código
+  // mentir sobre a própria regra. Isto é só o LAYOUT — quem decide
+  // comportamento de admissão e SAPS é a constante UTI_SECTORS, em outro
+  // arquivo, e ela não muda aqui.
+  const SECTOR_VISUAL: Record<string, { title: string; color: string; dotClass: string; colorVariant: string; useCensusLayout?: boolean }> = {
+    // ── Intensivos e semi-intensivos ───────────────────────────────────
+    red:     { title: "UTI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
+    yellow:  { title: "UTI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
+    blue:    { title: "UCI 1",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
+    outside: { title: "UCI 2",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
+    ucc:     { title: "UCC",    color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
+    // ── Enfermarias — mesmo layout de censo da Enf. Transição ──────────
+    // A Enf. Transição já usava o layout de censo; as demais enfermarias
+    // ficaram para trás e continuavam na folha de round, com "Clique para
+    // adicionar nome" em cada leito vago. Mesma natureza de internação
+    // (permanência em dias, DIH e previsão de alta fazem sentido), mesmo
+    // layout.
+    neuro_01:             { title: "Neuro 01",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
+    neuro_02:             { title: "Neuro 02",           color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
+    clinica_cirurgica:    { title: "Clínica Cirúrgica",  color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
+    enfermaria_transicao: { title: "Enf. Transição",     color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
+    enfermaria_vascular:  { title: "Enf. Vascular",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", useCensusLayout: true },
+
+    // ── UE, RIV e Centro Cirúrgico — seguem na folha de round ──────────
+    // NÃO migrados de propósito: no CC a permanência é de HORAS (preparo,
+    // bloco, RPA), e uma coluna "DIH" em dias marcaria 0 em todo leito, o que
+    // é pior que não mostrar. UE e RIV têm fluxo próprio. Decisão operacional,
+    // não técnica — migrar é só acrescentar a flag.
     sala_vermelha:        { title: "Sala Vermelha",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     sala_laranja:         { title: "Sala Laranja",       color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     observacao_clinica:   { title: "Obs. Clínica",       color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
@@ -1031,7 +1051,7 @@ const Index = () => {
                 <InternalTransferQueueSection sectorCode={activeSector} />
               </div>
 
-              {SECTOR_VISUAL[activeSector]?.isUti ? (
+              {SECTOR_VISUAL[activeSector]?.useCensusLayout ? (
                 <div className="space-y-4">
                   <UtiSectorSection 
                     sector={activeSector as any}
