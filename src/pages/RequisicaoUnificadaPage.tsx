@@ -2302,6 +2302,77 @@ async function printImagingRequest(
   return printRequisitionGuideWithGasometriaPrompt(request, sectorLabel);
 }
 
+/**
+ * Monta o laudo APAC a partir de uma requisição de Procedimento.
+ *
+ * Prioridade 1 — document_payload.kind === "apac": snapshot real, gravado no
+ * momento da solicitação (a partir de 10/08/2026). Usa os dados exatamente
+ * como foram preenchidos no formulário.
+ *
+ * Prioridade 2 — sem snapshot (solicitações antigas, de antes deste fluxo):
+ * reconstrói o possível a partir do que a linha tem — nome do paciente,
+ * itens (que já trazem "Nome (código)" quando o código SIGTAP foi
+ * selecionado) e dados de identificação buscados no cadastro central, igual
+ * ao fallback já usado em Imagem. CID e diagnóstico ficam em branco — não
+ * existe de onde vir, e não é para ser inventado.
+ */
+async function buildApacHtmlFromProcedimentoRequest(request: any): Promise<string> {
+  const snap = (request as { document_payload?: { kind?: string; data?: Record<string, unknown> } })
+    .document_payload;
+  if (snap?.kind === "apac" && snap.data) {
+    return buildApacHtml(snap.data as Parameters<typeof buildApacHtml>[0]);
+  }
+  const items: any[] = Array.isArray(request?.items) ? request.items : [];
+  const patientData = await fetchImagingApacPatientData(request);
+  const doctor = splitDoctorNameCrm(request?.requested_by_name || "");
+  return buildApacHtml({
+    institution: APAC_INSTITUTION,
+    patient: {
+      name: request?.patient_name || "",
+      ...patientData,
+    },
+    procedures: items.map((it) => {
+      const raw = typeof it === "string" ? it : (it?.name || String(it ?? ""));
+      // "Nome do Procedimento (código)" — separa quando o código foi
+      // gravado embutido no nome (padrão usado antes do document_payload).
+      const match = raw.match(/^(.*)\s\(([^)]+)\)\s*$/);
+      return match
+        ? { code: match[2], name: match[1], qty: 1 }
+        : { code: "", name: raw, qty: 1 };
+    }),
+    diagnosis: request?.clinical_indication || "",
+    cidPrimary: "",
+    cidSecondary: "",
+    cidAssociated: "",
+    observations: request?.notes || "",
+    doctor: { name: doctor.name, cpf: "", crm: doctor.crm },
+    today: format(new Date(), "dd/MM/yyyy"),
+  });
+}
+
+/**
+ * Ponto único de impressão para a aba "Solicitados" de Procedimento: mesmo
+ * padrão do modal de Imagem — sempre pergunta Guia x APAC.
+ */
+async function printProcedimentoRequest(
+  request: any,
+  sectorLabel?: (s: string | null) => string,
+): Promise<void> {
+  const items: any[] = Array.isArray(request?.items) ? request.items : [];
+  const examLabel = items
+    .map((it) => (typeof it === "string" ? it : (it?.name || "")))
+    .filter(Boolean)
+    .join(", ") || "procedimento";
+  const choice = await askGuideOrApac(examLabel);
+  if (choice === "cancel") return;
+  if (choice === "apac") {
+    const html = await buildApacHtmlFromProcedimentoRequest(request);
+    openPrintWindow(html, "Preparando Laudo APAC…");
+    return;
+  }
+  return printRequisitionGuideWithGasometriaPrompt(request, sectorLabel);
+}
+
 
 interface ApacSelectedProcedure {
   code: string;
@@ -3429,14 +3500,18 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
             )}
           </div>
           <div className="flex gap-1.5 shrink-0">
-            {category === "imagem" ? (
+            {category === "imagem" || category === "procedimento" ? (
               <Button
                 size="sm"
                 variant="ghost"
                 className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
                 onClick={(e) => {
                   e.stopPropagation();
-                  printImagingRequest(request, (s) => getSectorLabel(s));
+                  if (category === "imagem") {
+                    printImagingRequest(request, (s) => getSectorLabel(s));
+                  } else {
+                    printProcedimentoRequest(request, (s) => getSectorLabel(s));
+                  }
                 }}
                 title="Imprimir"
               >
