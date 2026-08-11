@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Printer, Eye, Droplet } from "lucide-react";
+import { Eye, Droplet, Send } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -31,7 +31,6 @@ import { toast } from "sonner";
 import { comSnapshotDeDocumento } from "@/lib/registrarSolicitacao";
 import {
   PrintableHemocomponentRequest,
-  printHemocomponentRequest,
   type HemocomponentRequestData,
   type SectorKey,
   type ComponentKey,
@@ -345,22 +344,18 @@ export function HemocomponentRequestDialog({
     if (id) toast.success("Solicitação registrada — visível no Cockpit");
   };
 
-  const handlePrint = async () => {
-    // Re-resolve cabeçalho ANTES de imprimir (anti-race / pós-relocação).
-    // Imprime usando o patch fresco direto, sem depender do closure de `data`.
-    let freshPatch: Partial<HemocomponentRequestData> | null = null;
-    if (patientId) {
-      try { freshPatch = await loadFromPatient(); } catch {}
+  // Segue o mesmo fluxo de Laboratório/Imagem/Procedimento: o botão principal
+  // REGISTRA a solicitação — não imprime. A impressão acontece depois, a
+  // partir da aba "Solicitados" (ícone de impressora → modal Guia x
+  // impresso interno), igual a todas as outras categorias.
+  const handleGenerateRequest = async () => {
+    const id = await persistRequest();
+    if (id) {
+      toast.success("Solicitação registrada", {
+        description: "Disponível em Terapêutico → Solicitados para impressão.",
+      });
+      onOpenChange(false);
     }
-    await persistRequest();
-    const merged: HemocomponentRequestData = {
-      ...data,
-      ...(freshPatch || {}),
-      created_at: new Date().toISOString(),
-    };
-    // limpa marker interno antes de imprimir
-    delete (merged as any).__sectorCode;
-    printHemocomponentRequest(merged);
   };
 
 
@@ -397,9 +392,6 @@ export function HemocomponentRequestDialog({
           <div className="flex gap-2">
             <Button onClick={handleSaveOnly} size="sm" variant="outline">
               Salvar no Cockpit
-            </Button>
-            <Button onClick={handlePrint} size="sm" className="bg-rose-500 hover:bg-rose-600">
-              <Printer className="h-4 w-4 mr-1" /> Salvar e Imprimir
             </Button>
           </div>
         </div>
@@ -630,8 +622,8 @@ export function HemocomponentRequestDialog({
 
         <DialogFooter className="p-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
-          <Button onClick={handlePrint} className="bg-rose-500 hover:bg-rose-600">
-            <Printer className="h-4 w-4 mr-1" /> Gerar e Imprimir
+          <Button onClick={handleGenerateRequest} className="bg-rose-500 hover:bg-rose-600">
+            <Send className="h-4 w-4 mr-1" /> Gerar Solicitação
           </Button>
         </DialogFooter>
       </DialogContent>

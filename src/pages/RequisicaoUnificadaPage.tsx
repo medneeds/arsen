@@ -1746,7 +1746,7 @@ const RequisicaoUnificadaPage = () => {
       {/* Hemocomponentes — diálogo padrão Socorrão I */}
       <HemocomponentRequestDialog
         open={hemoDialogOpen}
-        onOpenChange={setHemoDialogOpen}
+        onOpenChange={(v) => { setHemoDialogOpen(v); if (!v) fetchRequests(); }}
         patientId={asUuidOrNull(formPatientId)}
         patientName={formPatientName}
         patientBed={formPatientBed}
