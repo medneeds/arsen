@@ -7889,7 +7889,6 @@ const PrescricaoPage = () => {
             <div className="flex flex-wrap gap-1.5">
               {todays.map(p => {
                 const isCurrent = currentPrescriptionId === p.id;
-                const doctor = p.digital_signature?.doctorName || "—";
                 return (
                   <div
                     key={p.id}
@@ -7901,9 +7900,6 @@ const PrescricaoPage = () => {
                     <Badge className="text-[9px] h-4 px-1.5 bg-emerald-600 hover:bg-emerald-600 shrink-0">v{p.version}</Badge>
                     <span className="text-[10px] text-muted-foreground font-mono shrink-0">
                       {format(new Date(p.created_at), "HH:mm", { locale: ptBR })}
-                    </span>
-                    <span className="text-[10px] text-foreground/80 truncate max-w-[160px]" title={doctor}>
-                      {doctor}
                     </span>
                     {isCurrent && (
                       <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">Atual</Badge>
@@ -7953,15 +7949,6 @@ const PrescricaoPage = () => {
           <ShieldCheck className="h-4 w-4 shrink-0" />
           <div className="text-[12px] leading-snug min-w-0">
             <strong className="font-semibold">PRESCRIÇÃO VALIDADA HOJE</strong>
-            {digitalSignature && (
-              <>
-                {" — registrada por "}
-                <span className="font-semibold">{digitalSignature.doctorName}</span>
-                {digitalSignature.crm && <> (CRM {digitalSignature.crm})</>}
-                {" às "}
-                <span className="font-mono">{digitalSignature.signedAt}</span>
-              </>
-            )}
             {". "}
             <span className="opacity-80">A assinatura legal é feita manualmente (carimbo + caneta) no PDF impresso.</span>
           </div>
@@ -8470,7 +8457,7 @@ const PrescricaoPage = () => {
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-0.5">
                       {format(new Date(v.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                      {v.digital_signature && ` — Assinado por ${v.digital_signature.doctorName}`}
+                      {v.digital_signature && ``}
                     </p>
                   </div>
                 </button>
@@ -9677,11 +9664,6 @@ const PrescricaoPage = () => {
               <Pause className="h-3 w-3" /> {suspendedItemsCount} suspenso{suspendedItemsCount > 1 ? 's' : ''}
             </Badge>
           )}
-          {digitalSignature && (
-            <Badge variant="outline" className="gap-1 text-[10px] border-green-300 text-green-700 bg-green-50">
-              <ShieldCheck className="h-3 w-3" /> Assinado — {digitalSignature.doctorName}
-            </Badge>
-          )}
           <span className="text-xs text-muted-foreground">
             {TAB_ORDER.map(cat => {
               const count = itemsByCategory[cat].length;
@@ -9705,16 +9687,6 @@ const PrescricaoPage = () => {
           >
             <Save className="h-3.5 w-3.5" />
             {savingDraft ? "Salvando..." : "Salvar Rascunho"}
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleRequestSign}
-            disabled={!canPrescribe || activeItemsCount === 0}
-            className="gap-1.5 text-xs"
-            title={digitalSignature ? "Reassinar como médico do plantão — gera nova versão e atualiza o PDF" : "Assinar prescrição"}
-          >
-            <ShieldCheck className="h-3.5 w-3.5" />
-            {digitalSignature ? "Reassinar Prescrição" : "Assinar Prescrição"}
           </Button>
           {/* Validar — espelha o botão do topo para conveniência do médico */}
           <Button
@@ -9771,14 +9743,6 @@ const PrescricaoPage = () => {
         activeCount={activeItemsCount}
         suspendedCount={suspendedItemsCount}
       />
-      <SignPrescriptionDialog
-        open={signDialogOpen}
-        onClose={() => setSignDialogOpen(false)}
-        onConfirm={confirmSign}
-        totalItems={totalItems}
-        activeItems={activeItemsCount}
-      />
-
       {/* ===== PRÉ-VISUALIZAÇÃO DO PERFIL DE CUIDADO ===== */}
       <Dialog open={!!careProfilePreview} onOpenChange={(o) => { if (!o) setCareProfilePreview(null); }}>
         <DialogContent className="max-w-lg">
@@ -11373,20 +11337,11 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
       {/* Signature */}
       <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'space-between', gap: '20px', pageBreakInside: 'avoid' }}>
         <div style={{ flex: 1, textAlign: 'center' }}>
-          {digitalSignature ? (
-            <div style={{ border: '1.5px solid #0c4a6e', borderRadius: '6px', padding: '8px 16px', display: 'inline-block', backgroundColor: '#f0f9ff' }}>
-              <div style={{ fontSize: '7pt', fontWeight: 800, color: '#0c4a6e', letterSpacing: '1px' }}>✓ ASSINADO DIGITALMENTE</div>
-              <div style={{ fontSize: '8pt', fontWeight: 700, color: '#0f172a', marginTop: '3px' }}>{digitalSignature.doctorName}</div>
-              <div style={{ fontSize: '6.5pt', color: '#475569', marginTop: '1px' }}>CRM: {digitalSignature.crm} · {digitalSignature.signedAt}</div>
-              <div style={{ fontSize: '5pt', color: '#94a3b8', fontFamily: 'monospace', marginTop: '3px', borderTop: '0.5px solid #e2e8f0', paddingTop: '2px' }}>Hash: {digitalSignature.hash}</div>
-            </div>
-          ) : (
-            <div style={{ paddingTop: '14px' }}>
-              <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
-              <div style={{ fontSize: '7pt', fontWeight: 700 }}>Assinatura / Carimbo do Médico</div>
-              <div style={{ fontSize: '6.5pt', color: '#64748b' }}>CRM: _______________</div>
-            </div>
-          )}
+          <div style={{ paddingTop: '14px' }}>
+            <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
+            <div style={{ fontSize: '7pt', fontWeight: 700 }}>Assinatura / Carimbo do Médico</div>
+            <div style={{ fontSize: '6.5pt', color: '#64748b' }}>CRM: _______________</div>
+          </div>
         </div>
         <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
           <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
