@@ -625,6 +625,200 @@ export function PrintableRequisitionGuide({
 // Impressão real (Norma Zero via popup) — inalterada
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * buildRequisitionGuideHtml — fonte única de verdade para o documento de requisição.
+ *
+ * Tanto printRequisitionGuide (impressão real) quanto o dialog "Ver Detalhes"
+ * (pré-visualização) usam esta função — garante que o que o médico vê na tela
+ * é pixel-perfect com o que sai no papel, sem duplicação de código.
+ *
+ * @returns HTML completo do documento, ou null para casos especiais (cultura,
+ *          compactDuo) que têm seu próprio layout.
+ */
+export async function buildRequisitionGuideHtml(
+  request: any,
+  sectorLabel?: (s: string | null) => string,
+): Promise<string | null> {
+  const items = Array.isArray(request.items) ? request.items : [];
+
+  // Cultura microbiológica tem layout próprio — não usa este fluxo
+  if (isCultureRequest(items)) return null;
+
+  const resolvedIds = await fetchPatientIdentifiers({
+    patient_registry_id: request.patient_registry_id,
+    patient_id: request.patient_id,
+  });
+  const birthDate: string | null = request.patient_birth_date || resolvedIds.birth_date;
+  const medicalRecord: string | null =
+    (request as any).patient_medical_record || resolvedIds.medical_record;
+  const encounterCode: string | null =
+    (request as any).patient_encounter_code || resolvedIds.encounter_code;
+  const ageY = ageInYears(birthDate);
+
+  const logoDataUrl = await loadLogoAsBase64().catch(() => "");
+  const cat: string = request.category || "laboratorio";
+  const legacyCat = LEGACY_CATEGORY_MAP[cat] ?? cat;
+  const categoryLabel = CATEGORY_LABELS[legacyCat] ?? cat;
+  const docPrefix = CATEGORY_PREFIX[legacyCat] ?? "REQ";
+  const sectorName = sectorLabel
+    ? sectorLabel(request.patient_sector ?? null)
+    : (request.patient_sector ?? "");
+  const createdStr = request.created_at
+    ? format(new Date(request.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
+    : "—";
+  const isParecer = cat === "parecer";
+
+  // Identificação
+  const esc = (s: unknown) =>
+    String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const priorityColors: Record<string, string> = {
+    urgente: "background:#fee2e2;color:#b91c1c;border:1px solid #b91c1c",
+    rotina: "background:#dbeafe;color:#1d4ed8;border:1px solid #1d4ed8",
+    programado: "background:#dcfce7;color:#15803d;border:1px solid #15803d",
+  };
+  const prio = (request.priority || "rotina").toLowerCase();
+  const prioLabel = PRIORITY_LABELS[prio] ?? prio.toUpperCase();
+  const prioStyle = priorityColors[prio] ?? priorityColors.rotina;
+
+  const scheduledAt = (request as any).scheduled_at;
+  const scheduledInfo = scheduledAt
+    ? `Agendado para ${format(new Date(scheduledAt), "dd/MM/yyyy", { locale: ptBR })}`
+    : null;
+
+  const parecerSpecialtyLabel = isParecer
+    ? (request.items?.[0]
+        ? (typeof request.items[0] === "string"
+            ? request.items[0]
+            : (request.items[0] as any)?.name ?? "")
+        : "")
+    : "";
+
+  const identificationRows = isParecer
+    ? `<tr><th>Paciente</th><td colspan="3" style="font-weight:700">${esc(request.patient_name)}</td></tr>
+       <tr><th>Setor</th><td>${esc(sectorName || "—")}</td><th style="width:14%">Leito</th><td style="width:18%">${esc(request.patient_bed || "—")}</td></tr>
+       <tr><th>Nº Prontuário</th><td style="font-family:monospace;font-weight:600">${esc(medicalRecord || "—")}</td><th>Nº Atendimento</th><td style="font-family:monospace;font-weight:600">${esc(encounterCode || "—")}</td></tr>
+       <tr><th>Nasc.</th><td>${esc(fmtBirthDate(birthDate))}</td><th>Idade</th><td>${ageY !== null ? `${ageY} anos` : "—"}</td></tr>
+       <tr><th>Solicitante</th><td>${esc(request.requested_by_name || "—")}</td><th>Solicitação</th><td>${esc(createdStr)}</td></tr>
+       <tr><th>Especialidade</th><td colspan="3">${esc(parecerSpecialtyLabel || "—")}</td></tr>`
+    : `<tr><th>Paciente</th><td colspan="3" style="font-weight:700">${esc(request.patient_name)}</td></tr>
+       <tr><th>Setor</th><td>${esc(sectorName || "—")}</td><th style="width:14%">Leito</th><td style="width:18%">${esc(request.patient_bed || "—")}</td></tr>
+       <tr><th>Nº Prontuário</th><td style="font-family:monospace;font-weight:600">${esc(medicalRecord || "—")}</td><th>Nº Atendimento</th><td style="font-family:monospace;font-weight:600">${esc(encounterCode || "—")}</td></tr>
+       <tr><th>Nasc.</th><td>${esc(fmtBirthDate(birthDate))}</td><th>Idade</th><td>${ageY !== null ? `${ageY} anos` : "—"}</td></tr>
+       <tr><th>Solicitante</th><td>${esc(request.requested_by_name || "—")}</td><th>Solicitação</th><td>${esc(createdStr)}</td></tr>
+       <tr><th>Categoria</th><td>${esc(categoryLabel)}</td><th>Prioridade</th><td><span class="prio-badge" style="${prioStyle}">${esc(prioLabel)}</span></td></tr>
+       ${scheduledInfo ? `<tr><th>Agendamento</th><td colspan="3">${esc(scheduledInfo)}</td></tr>` : ""}`;
+
+  // Justificativa / Motivo
+  const indication = request.clinical_indication ?? "";
+  const isHtmlIndication = /<\/?(p|br|strong|em|u|ul|ol|li|b|i|span|div)[\s>/]/i.test(indication);
+  const indicationHtml = isHtmlIndication
+    ? sanitizeRichHtmlPrint(indication)
+    : esc(indication).replace(/\n/g, "<br>");
+  const justificationBlock = indication
+    ? `<h2 class="nz-section">${isParecer ? "Motivo da Solicitação de Parecer" : "Justificativa Clínica"}</h2>
+       <table class="nz"><tbody><tr><td class="${isParecer ? "parecer-just" : ""}">${indicationHtml}</td></tr></tbody></table>`
+    : "";
+
+  // Assinatura do médico solicitante (só parecer)
+  const solicitanteSignBlock = isParecer
+    ? `<div style="display:flex;justify-content:flex-end;margin:8pt 0 2pt 0;page-break-inside:avoid;">
+         <div style="width:45%;text-align:center;padding-top:18pt;">
+           <div style="border-bottom:0.8pt solid #0a1628;margin-bottom:4pt;"></div>
+           <div style="font-size:6.5pt;font-weight:700;letter-spacing:0.4pt;color:#334155;text-transform:uppercase;">
+             Assinatura e Carimbo do Médico Solicitante
+           </div>
+         </div>
+       </div>`
+    : "";
+
+  // Itens solicitados (exceto parecer — especialidade já está na identificação)
+  const itemsBlock = isParecer
+    ? ""
+    : items.length > 0
+    ? `<h2 class="nz-section">Itens Solicitados (${items.length})</h2>
+       <div class="req-grid">
+         ${items.map((it: any, i: number) => {
+           const name = typeof it === "string" ? it : (it?.name ?? String(it ?? ""));
+           return `<div class="req-item"><span class="req-num">${i + 1}.</span><span>${esc(name)}</span></div>`;
+         }).join("")}
+       </div>`
+    : "";
+
+  // Observações
+  const cleanNotes = (request.notes ?? "")
+    .replace(/\[JUSTIFICATIVA[^\]]*\][\s\S]*?(?=\n\n|\n\[|$)/g, "")
+    .trim();
+  const notesBlock = cleanNotes
+    ? `<h2 class="nz-section">Observações</h2>
+       <table class="nz"><tbody><tr><td>${esc(cleanNotes).replace(/\n/g, "<br>")}</td></tr></tbody></table>`
+    : "";
+
+  // Área de resposta do parecer
+  const justMaxMm = 60;
+  const respHeightMm = 70;
+  const parecerResponseBlock = isParecer
+    ? `<h2 class="nz-section">Resposta do Parecer</h2>
+       <div class="parecer-response">
+         <div class="parecer-response-lines" style="height:${respHeightMm}mm"></div>
+         <table class="parecer-sign">
+           <tbody>
+             <tr>
+               <td class="psl"><span>Parecerista:</span><div class="psf"></div></td>
+               <td class="psl" style="width:22%"><span>CRM:</span><div class="psf"></div></td>
+               <td class="psl" style="width:18%"><span>Data:</span><div class="psf"></div></td>
+               <td class="psl" style="width:14%"><span>Hora:</span><div class="psf"></div></td>
+             </tr>
+             <tr>
+               <td class="psl" colspan="4" style="height:24pt"><span>Assinatura e carimbo:</span></td>
+             </tr>
+           </tbody>
+         </table>
+       </div>`
+    : "";
+
+  const bodyHtml = `
+    <h2 class="nz-section">Identificação</h2>
+    <table class="nz"><tbody>${identificationRows}</tbody></table>
+    ${justificationBlock}
+    ${solicitanteSignBlock}
+    ${itemsBlock}
+    ${notesBlock}
+    ${parecerResponseBlock}
+  `;
+
+  const extraStyles = `
+    .prio-badge { display:inline-block; padding:1.5pt 8pt; border-radius:3pt; font-weight:700; font-size:8pt; letter-spacing:0.4pt; }
+    .parecer-just { max-height: ${justMaxMm}mm; overflow: hidden; font-size: 9pt; line-height: 1.38; }
+    .parecer-response { border: 1pt solid #0a1628; border-radius: 3pt; margin-top: 4pt; padding: 4pt 6pt 6pt; background: #fff; page-break-inside: avoid; }
+    .parecer-response-lines { background: repeating-linear-gradient(to bottom, transparent 0, transparent 17pt, #cbd5e1 17pt, #cbd5e1 17.5pt); }
+    .parecer-sign { width: 100%; border-collapse: collapse; margin-top: 6pt; }
+    .psl { padding: 3pt 5pt; border-top: 0.5pt solid #94a3b8; font-size: 7pt; color: #64748b; vertical-align: bottom; }
+    .psl span { display: block; margin-bottom: 2pt; }
+    .psf { border-bottom: 0.5pt solid #94a3b8; min-height: 14pt; }
+    .req-grid { display:grid; grid-template-columns: 1fr 1fr; gap:0; border:0.5pt solid #cbd5e1; border-radius:3pt; overflow:hidden; }
+    .req-item { display:flex; align-items:center; gap:5pt; padding:4pt 7pt; font-size:8.5pt; border-bottom:0.5pt solid #e2e8f0; border-right:0.5pt solid #e2e8f0; }
+    .req-item:nth-child(2n) { border-right:none; }
+    .req-num { min-width:14pt; font-size:8.5pt; font-weight:600; color:#0a1628; text-align:right; flex-shrink:0; }
+  `;
+
+  return buildNormaZeroDocument({
+    title: `Guia de Requisição — ${categoryLabel}`,
+    subtitle: `Solicitada em ${createdStr}`,
+    sectorLabel: sectorName || "Assistência Hospitalar",
+    docCodePrefix: docPrefix,
+    bodyHtml,
+    signatures: isParecer
+      ? [{ label: "Médico Solicitante", caption: "CRM · Carimbo e assinatura" }]
+      : [
+          { label: "Médico Solicitante", caption: "CRM · Carimbo e assinatura" },
+          { label: "Setor Executor", caption: "Recebimento e execução" },
+        ],
+    logoDataUrl,
+    extraStyles,
+  });
+}
+
 export async function printRequisitionGuide(
   request: any,
   sectorLabel?: (s: string | null) => string,
@@ -1125,21 +1319,12 @@ export async function printRequisitionGuide(
   }
   // ── fim do bloco compactDuo ──
 
-  const html = buildNormaZeroDocument({
-    title: `Guia de Requisição — ${categoryLabel}`,
-    subtitle: `Solicitada em ${createdStr}`,
-    sectorLabel: sectorName || "Assistência Hospitalar",
-    docCodePrefix: docPrefix,
-    bodyHtml,
-    signatures: isParecer
-      ? [{ label: "Médico Solicitante", caption: "CRM · Carimbo e assinatura" }]
-      : [
-          { label: "Médico Solicitante", caption: "CRM · Carimbo e assinatura" },
-          { label: "Setor Executor", caption: "Recebimento e execução" },
-        ],
-    logoDataUrl,
-    extraStyles,
-  });
+  const html = await buildRequisitionGuideHtml(request, sectorLabel);
+  if (!html) {
+    // buildRequisitionGuideHtml retorna null para casos especiais (cultura)
+    // que já foram tratados acima — não deveria chegar aqui, mas por segurança:
+    return;
+  }
 
   const w = openPrintWindow(html, "Preparando guia de requisição…");
   if (!w) {

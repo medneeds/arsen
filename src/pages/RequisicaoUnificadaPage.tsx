@@ -43,7 +43,7 @@ import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
-import { PrintableRequisitionGuide } from "@/components/PrintableRequisitionGuide";
+import { PrintableRequisitionGuide, printRequisitionGuide, buildRequisitionGuideHtml } from "@/components/PrintableRequisitionGuide";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
 import { openPrintWindow } from "@/lib/printNormaZero";
@@ -369,6 +369,27 @@ const RequisicaoUnificadaPage = () => {
   const [formIndication, setFormIndication] = useState("");
   const [formNotes, setFormNotes] = useState("");
   const [formSelectedItems, setFormSelectedItems] = useState<string[]>([]);
+
+  // HTML da pré-visualização — mesmo documento do impresso real
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  // Abre o dialog "Ver Detalhes" carregando o HTML exato do documento impresso
+  const openRequestViewer = React.useCallback(async (req: typeof requests[number]) => {
+    setViewingRequest(req);
+    setResultText(req.results || "");
+    setResultFiles(req.result_data?.files || []);
+    setPreviewHtml(null);
+    setPreviewLoading(true);
+    try {
+      const html = await buildRequisitionGuideHtml(req as any, (s) => getSectorLabel(s));
+      setPreviewHtml(html);
+    } catch {
+      setPreviewHtml(null);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [requests]);
 
   // ── Validação obrigatória para TC ────────────────────────────────────────
   // Qualquer solicitação de Tomografia Computadorizada requer confirmação de
@@ -844,7 +865,7 @@ const RequisicaoUnificadaPage = () => {
         ) : (
           activePending.map(req => (
             <RequestCard key={req.id} request={req} category={activeCategory}
-              onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
+              onViewResult={() => openRequestViewer(req)}
               onCancel={() => handleCancelRequest(req.id)} />
           ))
         )}
@@ -857,7 +878,7 @@ const RequisicaoUnificadaPage = () => {
         ) : (
           activeCompleted.map(req => (
             <RequestCard key={req.id} request={req} category={activeCategory}
-              onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
+              onViewResult={() => openRequestViewer(req)}
               showResult />
           ))
         )}
@@ -1021,7 +1042,7 @@ const RequisicaoUnificadaPage = () => {
             ) : (
               allPendingProcedures.map(req => (
                 <RequestCard key={req.id} request={req} category="procedimento"
-                  onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
+                  onViewResult={() => openRequestViewer(req)}
                   onCancel={() => handleCancelRequest(req.id)} />
               ))
             )}
@@ -1036,7 +1057,7 @@ const RequisicaoUnificadaPage = () => {
             ) : (
               allCompletedProcedures.map(req => (
                 <RequestCard key={req.id} request={req} category="procedimento"
-                  onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
+                  onViewResult={() => openRequestViewer(req)}
                   showResult />
               ))
             )}
@@ -1661,7 +1682,7 @@ const RequisicaoUnificadaPage = () => {
                 key={req.id}
                 request={req}
                 category={activeCategory}
-                onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
+                onViewResult={() => openRequestViewer(req)}
                 onCancel={() => handleCancelRequest(req.id)}
               />
             ))
@@ -1682,7 +1703,7 @@ const RequisicaoUnificadaPage = () => {
                 key={req.id}
                 request={req}
                 category={activeCategory}
-                onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
+                onViewResult={() => openRequestViewer(req)}
                 showResult
               />
             ))
@@ -1707,7 +1728,7 @@ const RequisicaoUnificadaPage = () => {
       )}
 
       {/* ── Result Dialog (read-only for physicians) ── */}
-      <Dialog open={!!viewingRequest} onOpenChange={() => { setViewingRequest(null); setResultText(""); setResultFiles([]); }}>
+      <Dialog open={!!viewingRequest} onOpenChange={() => { setViewingRequest(null); setResultText(""); setResultFiles([]); setPreviewHtml(null); }}>
         <DialogContent className="max-w-3xl max-h-[88vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1720,11 +1741,26 @@ const RequisicaoUnificadaPage = () => {
           </DialogHeader>
           {viewingRequest && (
             <div className="space-y-4">
-              {/* Pré-visualização Norma Zero — espelha exatamente o documento impresso */}
-              <PrintableRequisitionGuide
-                request={viewingRequest as any}
-                sectorLabel={(s) => getSectorLabel(s)}
-              />
+              {/* Pré-visualização — mesmo HTML do documento impresso (fonte única) */}
+              {previewLoading ? (
+                <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Carregando documento...</span>
+                </div>
+              ) : previewHtml ? (
+                <iframe
+                  srcDoc={previewHtml}
+                  title="Pré-visualização da requisição"
+                  className="w-full rounded-md border border-border/50"
+                  style={{ height: "600px", background: "#fff" }}
+                  sandbox="allow-same-origin"
+                />
+              ) : (
+                <PrintableRequisitionGuide
+                  request={viewingRequest as any}
+                  sectorLabel={(s) => getSectorLabel(s)}
+                />
+              )}
 
               {/* Result display (read-only — physicians only view results) */}
               {viewingRequest.status === "completed" ? (
