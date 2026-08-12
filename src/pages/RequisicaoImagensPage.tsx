@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ScanLine, Printer, RotateCcw, Plus, Trash2, Search } from "lucide-react";
+import { ScanLine, Printer, RotateCcw, Plus, Trash2, Search, ShieldAlert, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -113,6 +114,12 @@ const RequisicaoImagensPage = () => {
 
   // Procedures
   const [selectedProcedures, setSelectedProcedures] = useState<SelectedProcedure[]>([]);
+
+  // Validação obrigatória para APAC (TC e RM — todos os procedimentos desta página são APAC)
+  const [apacValidated, setApacValidated] = useState(false);
+  const [apacValidationOpen, setApacValidationOpen] = useState(false);
+  // Reseta validação se os procedimentos mudarem
+  useEffect(() => { setApacValidated(false); }, [selectedProcedures]);
   const [searchProcedure, setSearchProcedure] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
@@ -920,9 +927,36 @@ const RequisicaoImagensPage = () => {
               </CardContent>
             </Card>
 
-            <Button className="w-full" size="lg" onClick={handlePrint}>
-              <Printer className="h-5 w-5 mr-2" /> Gerar e Imprimir Laudo APAC
-            </Button>
+            <div className="flex gap-2">
+              {selectedProcedures.length > 0 && !apacValidated && (
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2 border-amber-400 text-amber-700 hover:bg-amber-50"
+                  onClick={() => setApacValidationOpen(true)}
+                >
+                  <ShieldAlert className="h-4 w-4" /> Validar
+                </Button>
+              )}
+              <Button
+                className="flex-1"
+                disabled={selectedProcedures.length > 0 && !apacValidated}
+                onClick={handlePrint}
+                title={selectedProcedures.length > 0 && !apacValidated
+                  ? "Exames APAC requerem validação com senha antes de solicitar"
+                  : undefined}
+              >
+                <Send className="h-4 w-4 mr-1" /> Solicitar
+              </Button>
+            </div>
+
+            <PasswordConfirmDialog
+              open={apacValidationOpen}
+              onOpenChange={setApacValidationOpen}
+              title="Validar solicitação APAC"
+              description="Exames de alta complexidade (TC, RM) requerem confirmação de identidade antes de solicitar."
+              actionLabel="Validar e liberar"
+              onConfirmed={() => { setApacValidated(true); setApacValidationOpen(false); }}
+            />
           </div>
         </div>
       </div>

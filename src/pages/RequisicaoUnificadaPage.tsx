@@ -1655,12 +1655,12 @@ const RequisicaoUnificadaPage = () => {
                     className="gap-2"
                     title={
                       isTcSelected && !tcValidated
-                        ? "Solicitação de TC requer validação com senha antes de enviar"
-                        : blocked ? `Falta: ${missing.join(" · ")}` : "Enviar requisição"
+                        ? "Solicitação de TC requer validação com senha antes de solicitar"
+                        : blocked ? `Falta: ${missing.join(" · ")}` : "Solicitar"
                     }
                   >
                     {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    Enviar Requisição
+                    Solicitar
                   </Button>
                 </div>
               </div>
@@ -2565,6 +2565,11 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   }, [unitPatients, pickerSearch]);
 
   const [selectedProcedures, setSelectedProcedures] = useState<ApacSelectedProcedure[]>([]);
+
+  // Validação obrigatória para APAC (todos os procedimentos desta aba são APAC)
+  const [procApacValidated, setProcApacValidated] = useState(false);
+  const [procApacValidationOpen, setProcApacValidationOpen] = useState(false);
+  React.useEffect(() => { setProcApacValidated(false); }, [selectedProcedures]);
   const [customProcCode, setCustomProcCode] = useState("");
   const [customProcName, setCustomProcName] = useState("");
   const [searchProcedure, setSearchProcedure] = useState("");
@@ -3299,13 +3304,36 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
 
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1" onClick={resetApacForm}><RotateCcw className="h-4 w-4 mr-1" /> Limpar</Button>
-          {/* Icone de envio, nao de impressora: este botao cumpre o ATO. A
-              impressao virou passo seguinte, na etapa pos-envio. */}
-          <Button className="flex-1" onClick={handlePrint}>
+          {selectedProcedures.length > 0 && !procApacValidated && (
+            <Button
+              variant="outline"
+              className="flex-1 gap-2 border-amber-400 text-amber-700 hover:bg-amber-50"
+              onClick={() => setProcApacValidationOpen(true)}
+            >
+              <ShieldAlert className="h-4 w-4" /> Validar
+            </Button>
+          )}
+          <Button
+            className="flex-1"
+            disabled={selectedProcedures.length > 0 && !procApacValidated}
+            onClick={handlePrint}
+            title={selectedProcedures.length > 0 && !procApacValidated
+              ? "Procedimentos APAC requerem validação com senha antes de solicitar"
+              : undefined}
+          >
             <Send className="h-4 w-4 mr-1" />
-            {selectedProcedures.some(p => p.instrumento === "AIH") ? "Encaminhar via AIH" : "Enviar Requisição"}
+            {selectedProcedures.some(p => p.instrumento === "AIH") ? "Encaminhar via AIH" : "Solicitar"}
           </Button>
         </div>
+
+        <PasswordConfirmDialog
+          open={procApacValidationOpen}
+          onOpenChange={setProcApacValidationOpen}
+          title="Validar solicitação APAC"
+          description="Procedimentos de alta complexidade requerem confirmação de identidade antes de solicitar."
+          actionLabel="Validar e liberar"
+          onConfirmed={() => { setProcApacValidated(true); setProcApacValidationOpen(false); }}
+        />
 
         {/*
           Etapa pos-envio do APAC — mesmo componente da validacao de evolucao e
