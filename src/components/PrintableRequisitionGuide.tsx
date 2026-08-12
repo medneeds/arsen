@@ -552,6 +552,38 @@ export function PrintableRequisitionGuide({
         </>
       )}
 
+      {/* Assinatura do médico solicitante — apenas para Parecer,
+          aparece entre o motivo/observações e a área de resposta */}
+      {request.category === "parecer" && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            margin: "16px 0 8px 0",
+          }}
+        >
+          <div style={{ width: "45%", textAlign: "center", paddingTop: "20px" }}>
+            <div
+              style={{
+                borderBottom: `0.8px solid ${ink}`,
+                marginBottom: "4px",
+              }}
+            />
+            <div
+              style={{
+                fontSize: "6.5pt",
+                fontWeight: 700,
+                letterSpacing: "0.4px",
+                color: "#334155",
+                textTransform: "uppercase",
+              }}
+            >
+              Assinatura e Carimbo do Médico Solicitante
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Assinaturas */}
       <div
         style={{
