@@ -49,6 +49,7 @@ import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitio
 import { openPrintWindow } from "@/lib/printNormaZero";
 import { registrarSolicitacao } from "@/lib/registrarSolicitacao";
 import { PostValidationPrintDialog } from "@/components/PostValidationPrintDialog";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import { useHospital } from "@/contexts/HospitalContext";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
@@ -368,6 +369,16 @@ const RequisicaoUnificadaPage = () => {
   const [formIndication, setFormIndication] = useState("");
   const [formNotes, setFormNotes] = useState("");
   const [formSelectedItems, setFormSelectedItems] = useState<string[]>([]);
+
+  // ── Validação obrigatória para TC ────────────────────────────────────────
+  // Qualquer solicitação de Tomografia Computadorizada requer confirmação de
+  // senha antes de enviar. Reseta ao mudar os itens selecionados.
+  const TC_PATTERN = /\b(tc|tomografia|angio-?tc)\b/i;
+  const isTcSelected = formSelectedItems.some(item => TC_PATTERN.test(item));
+  const [tcValidated, setTcValidated] = useState(false);
+  const [tcValidationOpen, setTcValidationOpen] = useState(false);
+  // Reseta validação se os itens mudarem
+  React.useEffect(() => { setTcValidated(false); }, [formSelectedItems]);
   const [formCustomItem, setFormCustomItem] = useState("");
   // Etapa 2 — busca de exame dentro da categoria (Imagem e demais)
   const [examSearch, setExamSearch] = useState("");
@@ -1607,11 +1618,25 @@ const RequisicaoUnificadaPage = () => {
                 )}
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={resetForm} disabled={submitting}>Limpar</Button>
+                  {isTcSelected && !tcValidated && (
+                    <Button
+                      variant="outline"
+                      className="gap-2 border-amber-400 text-amber-700 hover:bg-amber-50"
+                      onClick={() => setTcValidationOpen(true)}
+                    >
+                      <ShieldAlert className="h-4 w-4" />
+                      Validar TC
+                    </Button>
+                  )}
                   <Button
                     onClick={handleSubmitRequest}
-                    disabled={submitting || blocked}
+                    disabled={submitting || blocked || (isTcSelected && !tcValidated)}
                     className="gap-2"
-                    title={blocked ? `Falta: ${missing.join(" · ")}` : "Enviar requisição"}
+                    title={
+                      isTcSelected && !tcValidated
+                        ? "Solicitação de TC requer validação com senha antes de enviar"
+                        : blocked ? `Falta: ${missing.join(" · ")}` : "Enviar requisição"
+                    }
                   >
                     {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     Enviar Requisição
@@ -3261,6 +3286,19 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           validatedAt={new Date()}
           note="O laudo APAC pode ser impresso agora ou reemitido depois pela aba de solicitações."
           onPrint={() => { if (apacPrintHtml) openPrintWindow(apacPrintHtml, "Preparando Laudo APAC…"); }}
+        />
+
+        {/* Validação obrigatória para TC */}
+        <PasswordConfirmDialog
+          open={tcValidationOpen}
+          onOpenChange={setTcValidationOpen}
+          title="Validar solicitação de Tomografia"
+          description="Solicitações de TC requerem confirmação de identidade. Confirme sua senha para liberar o envio."
+          actionLabel="Validar e liberar envio"
+          onConfirmed={() => {
+            setTcValidated(true);
+            setTcValidationOpen(false);
+          }}
         />
 
       </div>
