@@ -795,6 +795,19 @@ export async function printRequisitionGuide(
        <table class="nz"><tbody><tr><td>${escapeHtml(cleanNotes).replace(/\n/g, "<br/>")}</td></tr></tbody></table>`
     : "";
 
+  // Bloco de assinatura do médico solicitante — inserido entre o motivo
+  // e a resposta, alinhado à direita, ~45% da largura, sem nome/CRM.
+  const solicitanteSignBlock = isParecer
+    ? `<div style="display:flex; justify-content:flex-end; margin:8pt 0 2pt 0; page-break-inside:avoid;">
+         <div style="width:45%; text-align:center; padding-top:18pt;">
+           <div style="border-bottom:0.8pt solid #0a1628; margin-bottom:4pt;"></div>
+           <div style="font-size:6.5pt; font-weight:700; letter-spacing:0.4pt; color:#334155; text-transform:uppercase;">
+             Assinatura e Carimbo do Médico Solicitante
+           </div>
+         </div>
+       </div>`
+    : "";
+
   // Bloco específico do parecer: área pautada para resposta do parecerista (altura fixa)
   const parecerResponseBlock = isParecer
     ? `<h2 class="nz-section">Resposta do Parecer</h2>
@@ -820,6 +833,7 @@ export async function printRequisitionGuide(
     <h2 class="nz-section">Identificação</h2>
     ${identificationRows}
     ${justificationBlock}
+    ${solicitanteSignBlock}
     ${itemsBlock}
     ${notesBlock}
     ${parecerResponseBlock}
