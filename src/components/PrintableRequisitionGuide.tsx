@@ -808,8 +808,11 @@ export async function buildRequisitionGuideHtml(
     sectorLabel: sectorName || "Assistência Hospitalar",
     docCodePrefix: docPrefix,
     bodyHtml,
+    // Parecer: assinatura do solicitante já aparece no solicitanteSignBlock
+    // (entre motivo e resposta) — não repetir nas signatures finais.
+    // Só o Setor Executor (parecerista) e o Farmacêutico ficam no rodapé.
     signatures: isParecer
-      ? [{ label: "Médico Solicitante", caption: "CRM · Carimbo e assinatura" }]
+      ? [{ label: "Setor Executor / Parecerista", caption: "CRM · Carimbo e assinatura" }]
       : [
           { label: "Médico Solicitante", caption: "CRM · Carimbo e assinatura" },
           { label: "Setor Executor", caption: "Recebimento e execução" },

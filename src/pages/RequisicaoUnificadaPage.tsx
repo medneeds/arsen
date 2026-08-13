@@ -396,10 +396,8 @@ const RequisicaoUnificadaPage = () => {
   // senha antes de enviar. Reseta ao mudar os itens selecionados.
   const TC_PATTERN = /\b(tc|tomografia|angio-?tc)\b/i;
   const isTcSelected = formSelectedItems.some(item => TC_PATTERN.test(item));
-  const [tcValidated, setTcValidated] = useState(false);
   const [tcValidationOpen, setTcValidationOpen] = useState(false);
-  // Reseta validação se os itens mudarem
-  React.useEffect(() => { setTcValidated(false); }, [formSelectedItems]);
+  React.useEffect(() => { }, [formSelectedItems]); // mantém dep para futuros usos
   const [formCustomItem, setFormCustomItem] = useState("");
   // Etapa 2 — busca de exame dentro da categoria (Imagem e demais)
   const [examSearch, setExamSearch] = useState("");
@@ -1639,28 +1637,14 @@ const RequisicaoUnificadaPage = () => {
                 )}
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={resetForm} disabled={submitting}>Limpar</Button>
-                  {isTcSelected && !tcValidated && (
-                    <Button
-                      variant="outline"
-                      className="gap-2 border-amber-400 text-amber-700 hover:bg-amber-50"
-                      onClick={() => setTcValidationOpen(true)}
-                    >
-                      <ShieldAlert className="h-4 w-4" />
-                      Validar TC
-                    </Button>
-                  )}
                   <Button
-                    onClick={handleSubmitRequest}
-                    disabled={submitting || blocked || (isTcSelected && !tcValidated)}
+                    onClick={() => isTcSelected ? setTcValidationOpen(true) : handleSubmitRequest()}
+                    disabled={submitting || blocked}
                     className="gap-2"
-                    title={
-                      isTcSelected && !tcValidated
-                        ? "Solicitação de TC requer validação com senha antes de solicitar"
-                        : blocked ? `Falta: ${missing.join(" · ")}` : "Solicitar"
-                    }
+                    title={blocked ? `Falta: ${missing.join(" · ")}` : undefined}
                   >
                     {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    Solicitar
+                    {isTcSelected ? "Validar e Solicitar" : "Solicitar"}
                   </Button>
                 </div>
               </div>
@@ -2565,11 +2549,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   }, [unitPatients, pickerSearch]);
 
   const [selectedProcedures, setSelectedProcedures] = useState<ApacSelectedProcedure[]>([]);
-
-  // Validação obrigatória para APAC (todos os procedimentos desta aba são APAC)
-  const [procApacValidated, setProcApacValidated] = useState(false);
   const [procApacValidationOpen, setProcApacValidationOpen] = useState(false);
-  React.useEffect(() => { setProcApacValidated(false); }, [selectedProcedures]);
   const [customProcCode, setCustomProcCode] = useState("");
   const [customProcName, setCustomProcName] = useState("");
   const [searchProcedure, setSearchProcedure] = useState("");
@@ -3304,35 +3284,25 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
 
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1" onClick={resetApacForm}><RotateCcw className="h-4 w-4 mr-1" /> Limpar</Button>
-          {selectedProcedures.length > 0 && !procApacValidated && (
-            <Button
-              variant="outline"
-              className="flex-1 gap-2 border-amber-400 text-amber-700 hover:bg-amber-50"
-              onClick={() => setProcApacValidationOpen(true)}
-            >
-              <ShieldAlert className="h-4 w-4" /> Validar
-            </Button>
-          )}
           <Button
-            className="flex-1"
-            disabled={selectedProcedures.length > 0 && !procApacValidated}
-            onClick={handlePrint}
-            title={selectedProcedures.length > 0 && !procApacValidated
-              ? "Procedimentos APAC requerem validação com senha antes de solicitar"
-              : undefined}
+            className="flex-1 gap-2"
+            onClick={() => selectedProcedures.length > 0 ? setProcApacValidationOpen(true) : handlePrint()}
           >
-            <Send className="h-4 w-4 mr-1" />
-            {selectedProcedures.some(p => p.instrumento === "AIH") ? "Encaminhar via AIH" : "Solicitar"}
+            <Send className="h-4 w-4" />
+            {selectedProcedures.some(p => p.instrumento === "AIH") ? "Encaminhar via AIH" : "Validar e Solicitar"}
           </Button>
         </div>
 
         <PasswordConfirmDialog
           open={procApacValidationOpen}
           onOpenChange={setProcApacValidationOpen}
-          title="Validar solicitação APAC"
-          description="Procedimentos de alta complexidade requerem confirmação de identidade antes de solicitar."
-          actionLabel="Validar e liberar"
-          onConfirmed={() => { setProcApacValidated(true); setProcApacValidationOpen(false); }}
+          title="Validar e Solicitar — APAC"
+          description="Procedimentos de alta complexidade requerem confirmação de identidade. Após confirmar, a solicitação será enviada automaticamente."
+          actionLabel="Confirmar e Solicitar"
+          onConfirmed={async () => {
+            setProcApacValidationOpen(false);
+            await handlePrint();
+          }}
         />
 
         {/*
@@ -3352,16 +3322,16 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           onPrint={() => { if (apacPrintHtml) openPrintWindow(apacPrintHtml, "Preparando Laudo APAC…"); }}
         />
 
-        {/* Validação obrigatória para TC */}
+        {/* Validação obrigatória para TC — executa envio automaticamente após confirmar */}
         <PasswordConfirmDialog
           open={tcValidationOpen}
           onOpenChange={setTcValidationOpen}
-          title="Validar solicitação de Tomografia"
-          description="Solicitações de TC requerem confirmação de identidade. Confirme sua senha para liberar o envio."
-          actionLabel="Validar e liberar envio"
-          onConfirmed={() => {
-            setTcValidated(true);
+          title="Validar e Solicitar — TC"
+          description="Solicitações de TC requerem confirmação de identidade. Após confirmar, a solicitação será enviada automaticamente."
+          actionLabel="Confirmar e Solicitar"
+          onConfirmed={async () => {
             setTcValidationOpen(false);
+            await handleSubmitRequest();
           }}
         />
 

@@ -115,11 +115,9 @@ const RequisicaoImagensPage = () => {
   // Procedures
   const [selectedProcedures, setSelectedProcedures] = useState<SelectedProcedure[]>([]);
 
-  // Validação obrigatória para APAC (TC e RM — todos os procedimentos desta página são APAC)
-  const [apacValidated, setApacValidated] = useState(false);
   const [apacValidationOpen, setApacValidationOpen] = useState(false);
-  // Reseta validação se os procedimentos mudarem
-  useEffect(() => { setApacValidated(false); }, [selectedProcedures]);
+  // Reseta ao mudar procedimentos
+  useEffect(() => { setApacValidationOpen(false); }, [selectedProcedures]);
   const [searchProcedure, setSearchProcedure] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
@@ -928,34 +926,24 @@ const RequisicaoImagensPage = () => {
             </Card>
 
             <div className="flex gap-2">
-              {selectedProcedures.length > 0 && !apacValidated && (
-                <Button
-                  variant="outline"
-                  className="flex-1 gap-2 border-amber-400 text-amber-700 hover:bg-amber-50"
-                  onClick={() => setApacValidationOpen(true)}
-                >
-                  <ShieldAlert className="h-4 w-4" /> Validar
-                </Button>
-              )}
               <Button
-                className="flex-1"
-                disabled={selectedProcedures.length > 0 && !apacValidated}
-                onClick={handlePrint}
-                title={selectedProcedures.length > 0 && !apacValidated
-                  ? "Exames APAC requerem validação com senha antes de solicitar"
-                  : undefined}
+                className="flex-1 gap-2"
+                onClick={() => selectedProcedures.length > 0 ? setApacValidationOpen(true) : handlePrint()}
               >
-                <Send className="h-4 w-4 mr-1" /> Solicitar
+                <Send className="h-4 w-4" /> Validar e Solicitar
               </Button>
             </div>
 
             <PasswordConfirmDialog
               open={apacValidationOpen}
               onOpenChange={setApacValidationOpen}
-              title="Validar solicitação APAC"
-              description="Exames de alta complexidade (TC, RM) requerem confirmação de identidade antes de solicitar."
-              actionLabel="Validar e liberar"
-              onConfirmed={() => { setApacValidated(true); setApacValidationOpen(false); }}
+              title="Validar e Solicitar — APAC"
+              description="Exames de alta complexidade (TC, RM) requerem confirmação de identidade. Após confirmar, a solicitação será enviada automaticamente."
+              actionLabel="Confirmar e Solicitar"
+              onConfirmed={async () => {
+                setApacValidationOpen(false);
+                await handlePrint();
+              }}
             />
           </div>
         </div>
