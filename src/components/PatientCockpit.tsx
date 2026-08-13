@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { ADMISSION_STATUS } from "@/lib/admissionStatus";
 import { useQueryClient } from "@tanstack/react-query";
-import { createPortal } from "react-dom";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -263,73 +263,72 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
 
   // ── Vertical/reduzido (<lg): trilho lateral fino + Sheet ──────────
   if (isBelowLg && variant === "fixed" && patient?.name) {
-    // Portala o trilho para document.body: evita que `transform` de
-    // ancestrais (PageTransition/framer-motion) quebre o `position: fixed`.
-    const rail = typeof document !== "undefined"
-      ? createPortal(
-          <button
-            type="button"
-            onClick={() => setMobileSheetOpen(true)}
-            aria-label="Abrir painel do paciente"
-            className={cn(
-              "group fixed right-2 top-24 z-50 w-9 print:hidden rounded-xl border-r",
-              "h-[20dvh] min-h-[140px]",
-              "flex flex-col items-center justify-center gap-3 py-4",
-              "rounded-xl border border-[hsl(217,30%,75%)] dark:border-[hsl(217,30%,28%)]",
-              "bg-card dark:bg-card",
-              "shadow-[-2px_0_10px_rgba(10,22,56,0.18)]",
-              "hover:bg-accent/30",
-              "transition-colors duration-200 cursor-pointer overflow-hidden"
-            )}
-          >
-            {/* Borda esquerda institucional */}
-            <span
-              aria-hidden
-              className="absolute left-0 top-0 bottom-0 w-[3px] pointer-events-none"
-              style={{
-                background: "linear-gradient(to bottom, #94a3b8 0%, #0f2847 40%, #1a3a5c 70%, #0a1628 100%)"
-              }}
-            />
-            <ChevronLeft className="h-3.5 w-3.5 text-[hsl(217,72%,42%)] group-hover:text-[hsl(217,72%,28%)] shrink-0" />
-            <div className={cn("h-2 w-2 rounded-full shrink-0", status.dot)} title={status.label} />
-            <div
-              className="flex-1 flex items-center justify-center"
-              style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
-            >
-              <div className="flex flex-col items-center gap-3">
-                {patient.bedNumber && (
-                  <span className="text-[10px] font-black tracking-[0.18em] text-[hsl(217,72%,30%)]">
-                    {patient.bedNumber}
-                  </span>
-                )}
-                <span className="text-[7px] font-bold tracking-[0.25em] uppercase text-foreground/50">
-                  {sector}
-                </span>
-                {patient.name && (
-                  <>
-                    <span className="w-3 h-px bg-border" />
-                    <span className="text-[8px] font-semibold tracking-wide text-foreground/70">
-                      {patient.name.split(' ').slice(0, 3).join(' ')}
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-            {allergies.length > 0 && (
-              <span title={`Alergia: ${allergies.join(", ")}`} className="inline-flex shrink-0">
-                <ShieldAlert className="h-3 w-3 text-destructive" />
+    // Portal removido (07/08/2026): o motivo original era que o transform
+    // do PageTransition (framer-motion y:8→0) quebrava position:fixed.
+    // Corrigido removendo a animação y do PageTransition — fixed funciona
+    // normalmente, sem risco de stale portals sobrepostos ao remontar.
+    const rail = (
+      <button
+        type="button"
+        onClick={() => setMobileSheetOpen(true)}
+        aria-label="Abrir painel do paciente"
+        className={cn(
+          "group fixed right-2 top-24 z-50 w-9 print:hidden rounded-xl border-r",
+          "h-[20dvh] min-h-[140px]",
+          "flex flex-col items-center justify-center gap-3 py-4",
+          "rounded-xl border border-[hsl(217,30%,75%)] dark:border-[hsl(217,30%,28%)]",
+          "bg-card dark:bg-card",
+          "shadow-[-2px_0_10px_rgba(10,22,56,0.18)]",
+          "hover:bg-accent/30",
+          "transition-colors duration-200 cursor-pointer overflow-hidden"
+        )}
+      >
+        {/* Borda esquerda institucional */}
+        <span
+          aria-hidden
+          className="absolute left-0 top-0 bottom-0 w-[3px] pointer-events-none"
+          style={{
+            background: "linear-gradient(to bottom, #94a3b8 0%, #0f2847 40%, #1a3a5c 70%, #0a1628 100%)"
+          }}
+        />
+        <ChevronLeft className="h-3.5 w-3.5 text-[hsl(217,72%,42%)] group-hover:text-[hsl(217,72%,28%)] shrink-0" />
+        <div className={cn("h-2 w-2 rounded-full shrink-0", status.dot)} title={status.label} />
+        <div
+          className="flex-1 flex items-center justify-center"
+          style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
+        >
+          <div className="flex flex-col items-center gap-3">
+            {patient.bedNumber && (
+              <span className="text-[10px] font-black tracking-[0.18em] text-[hsl(217,72%,30%)]">
+                {patient.bedNumber}
               </span>
             )}
-            <span
-              className="text-[6px] font-bold tracking-[0.2em] uppercase text-[hsl(217,72%,52%)]/70 shrink-0"
-              style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
-            >
-              ver
+            <span className="text-[7px] font-bold tracking-[0.25em] uppercase text-foreground/50">
+              {sector}
             </span>
-          </button>,
-          document.body
-        )
-      : null;
+            {patient.name && (
+              <>
+                <span className="w-3 h-px bg-border" />
+                <span className="text-[8px] font-semibold tracking-wide text-foreground/70">
+                  {patient.name.split(' ').slice(0, 3).join(' ')}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+        {allergies.length > 0 && (
+          <span title={`Alergia: ${allergies.join(", ")}`} className="inline-flex shrink-0">
+            <ShieldAlert className="h-3 w-3 text-destructive" />
+          </span>
+        )}
+        <span
+          className="text-[6px] font-bold tracking-[0.2em] uppercase text-[hsl(217,72%,52%)]/70 shrink-0"
+          style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
+        >
+          ver
+        </span>
+      </button>
+    );
     return (
       <>
         {rail}
