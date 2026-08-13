@@ -1046,7 +1046,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
             onBlur={() => setTimeout(() => setFocused(false), 200)}
             placeholder={
               selectedCat === 'all'
-                ? "Buscar em todas as categorias (tolera erros de digitação)..."
+                ? "Buscar em todas as categorias..."
                 : `Buscar em ${CATEGORY_CONFIG[selectedCat]?.label.toLowerCase()}...`
             }
             className="pl-9 bg-background/60 border-border/50 h-9 text-sm focus:border-primary/50 transition-colors"
@@ -8472,125 +8472,6 @@ const PrescricaoPage = () => {
       {/* ===== UNIFIED PRESCRIPTION WORKBENCH (itens + histórico + busca) ===== */}
       <div className="rounded-xl border border-border bg-card overflow-visible print:hidden divide-y divide-border/40">
 
-        {/* Section 2 — Itens summary chips (clicáveis: navegam até a categoria) */}
-        {items.length > 0 && (
-          <div className="sticky top-0 z-10 px-3 py-2 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b border-border/40">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase mr-1">Ir para:</span>
-              {/* Grupo 1: Suporte (dieta + hidratação + reposição) */}
-              {(['nutrition', 'hydration', 'replacement'] as PrescriptionCategory[]).map(cat => {
-                const activeItemsCat = itemsByCategory[cat].filter(i => i.status !== 'suspended');
-                const count = activeItemsCat.length;
-                if (count === 0) return null;
-                const config = CATEGORY_CONFIG[cat];
-                const validatedCount = activeItemsCat.filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
-                const ok = validatedCount === count;
-                const hasWizard = cat === 'nutrition' || cat === 'hydration' || cat === 'replacement';
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    title={hasWizard ? `Abrir assistente de ${config.label.toLowerCase()}` : undefined}
-                    onClick={() => {
-                      document.getElementById(`prescription-cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      if (cat === 'nutrition') setNutritionConfirmOpen(true);
-                      else if (cat === 'hydration') setHydrationWizardOpen(true);
-                      else if (cat === 'replacement') setReplacementWizardOpen(true);
-                    }}
-                    className={cn(
-                      "group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all hover:shadow-sm hover:-translate-y-px",
-                      ok
-                        ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
-                        : "border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300"
-                    )}
-                  >
-                    <Circle className={cn("h-1.5 w-1.5 fill-current", ok ? "text-emerald-500" : "text-amber-500")} />
-                    {config.label.toLowerCase()}
-                    <span className="ml-0.5 font-bold">{count}</span>
-                    {hasWizard && <Sparkles className="h-2.5 w-2.5 ml-0.5 opacity-70" />}
-                  </button>
-                );
-              })}
-              {/* Separador entre grupos */}
-              {(itemsByCategory.nutrition.length > 0 || itemsByCategory.hydration.length > 0) &&
-                (itemsByCategory.medication.length > 0 || itemsByCategory.antimicrobial.length > 0 || itemsByCategory.high_alert.length > 0) && (
-                <span className="w-px h-4 bg-border/60 mx-0.5" />
-              )}
-              {/* Grupo 2: Medicações (com ênfase em ATB e alto alerta) */}
-              {(['medication', 'antimicrobial', 'high_alert', 'inhalation', 'hemotherapy'] as PrescriptionCategory[]).map(cat => {
-                const activeItemsCat = itemsByCategory[cat].filter(i => i.status !== 'suspended');
-                const count = activeItemsCat.length;
-                if (count === 0) return null;
-                const config = CATEGORY_CONFIG[cat];
-                const validatedCount = activeItemsCat.filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
-                const ok = validatedCount === count;
-                const emphasis = cat === 'antimicrobial' || cat === 'high_alert';
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    title={config.label}
-                    onClick={() => document.getElementById(`prescription-cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                    className={cn(
-                      "group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all hover:shadow-sm hover:-translate-y-px",
-                      emphasis && cat === 'antimicrobial' && "ring-1 ring-[hsl(217,55%,72%)]/60",
-                      emphasis && cat === 'high_alert' && "ring-1 ring-red-300/70",
-                      ok
-                        ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
-                        : "border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300"
-                    )}
-                  >
-                    <Circle className={cn("h-1.5 w-1.5 fill-current", ok ? "text-emerald-500" : "text-amber-500")} />
-                    {config.shortLabel ?? config.label.toLowerCase()}
-                    <span className="ml-0.5 font-bold">{count}</span>
-                  </button>
-                );
-              })}
-              {/* Separador antes de cuidados */}
-              {(itemsByCategory.medication.length + itemsByCategory.antimicrobial.length + itemsByCategory.high_alert.length + itemsByCategory.inhalation.length + itemsByCategory.hemotherapy.length) > 0 &&
-                (itemsByCategory.care.length > 0 || itemsByCategory.nonstandard.length > 0) && (
-                <span className="w-px h-4 bg-border/60 mx-0.5" />
-              )}
-              {/* Grupo 3: Cuidados + não padrão */}
-              {(['care', 'nonstandard'] as PrescriptionCategory[]).map(cat => {
-                const activeItemsCat = itemsByCategory[cat].filter(i => i.status !== 'suspended');
-                const count = activeItemsCat.length;
-                if (count === 0) return null;
-                const config = CATEGORY_CONFIG[cat];
-                const validatedCount = activeItemsCat.filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
-                const ok = validatedCount === count;
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => document.getElementById(`prescription-cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                    className={cn(
-                      "group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all hover:shadow-sm hover:-translate-y-px",
-                      ok
-                        ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
-                        : "border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300"
-                    )}
-                  >
-                    <Circle className={cn("h-1.5 w-1.5 fill-current", ok ? "text-emerald-500" : "text-amber-500")} />
-                    {config.label.toLowerCase()}
-                    <span className="ml-0.5 font-bold">{count}</span>
-                  </button>
-                );
-              })}
-              {!allItemsValidated && (
-                <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-300 text-amber-600 bg-amber-50 dark:bg-amber-950/20 ml-auto">
-                  Pendente validação
-                </Badge>
-              )}
-              {allItemsValidated && (
-                <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-emerald-300 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 ml-auto">
-                  ✓ Validada
-                </Badge>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Prescrições anteriores agora acessíveis via popup do Calendário no cabeçalho. */}
 
         {/* Section 4 — Busca global (sem rótulo redundante) */}
@@ -8616,17 +8497,6 @@ const PrescricaoPage = () => {
           />
         </div>
       </div>
-
-      {/* ===== SHIFT RENEWAL ALERT (05:00 turnover) ===== */}
-      {canPrescribe && (
-        <ShiftRenewalAlert
-          pendingCount={renewalPendingCount}
-          activeCount={activeItemsCount}
-          isPastRenewal={isPastRenewalTime}
-          onRenewAll={requestValidateAll}
-          disabled={!canPrescribe}
-        />
-      )}
 
       {/* ===== DISPENSATION HISTORY ===== */}
       {dispensations.length > 0 && (
