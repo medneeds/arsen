@@ -293,7 +293,6 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
             </Suspense>
-            <FloatingThemeToggle />
             <HelpTourButton />
             <HelpTourOverlay />
           </HelpTourProvider>
