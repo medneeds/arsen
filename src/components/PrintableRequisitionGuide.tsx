@@ -655,7 +655,7 @@ export async function buildRequisitionGuideHtml(
     (request as any).patient_encounter_code || resolvedIds.encounter_code;
   const ageY = ageInYears(birthDate);
 
-  const logoDataUrl = await loadLogoAsBase64().catch(() => "");
+  const logoDataUrl = await prepareLogo().catch(() => "");
   const cat: string = request.category || "laboratorio";
   const legacyCat = LEGACY_CATEGORY_MAP[cat] ?? cat;
   const categoryLabel = CATEGORY_LABELS[legacyCat] ?? cat;

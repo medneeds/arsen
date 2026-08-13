@@ -3322,17 +3322,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         />
 
         {/* Validação obrigatória para TC — executa envio automaticamente após confirmar */}
-        <PasswordConfirmDialog
-          open={tcValidationOpen}
-          onOpenChange={setTcValidationOpen}
-          title="Validar e Solicitar — TC"
-          description="Solicitações de TC requerem confirmação de identidade. Após confirmar, a solicitação será enviada automaticamente."
-          actionLabel="Confirmar e Solicitar"
-          onConfirmed={async () => {
-            setTcValidationOpen(false);
-            await handleSubmitRequest();
-          }}
-        />
+        {/* NOTA: movido para o componente pai (RequisicaoUnificadaPage) onde tcValidationOpen é declarado */}
 
       </div>
 
@@ -3983,6 +3973,19 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
           ))}
         </CardContent>
       </Card>
+
+      {/* Validação obrigatória para TC — no componente pai onde tcValidationOpen é declarado */}
+      <PasswordConfirmDialog
+        open={tcValidationOpen}
+        onOpenChange={setTcValidationOpen}
+        title="Validar e Solicitar — TC"
+        description="Solicitações de TC requerem confirmação de identidade. Após confirmar, a solicitação será enviada automaticamente."
+        actionLabel="Confirmar e Solicitar"
+        onConfirmed={async () => {
+          setTcValidationOpen(false);
+          await handleSubmitRequest();
+        }}
+      />
     </div>
   );
 }
