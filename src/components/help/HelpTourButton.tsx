@@ -43,7 +43,7 @@ export function HelpTourButton() {
           onClick={open}
           aria-label="Abrir ajuda desta página"
           className={cn(
-            "fixed bottom-5 left-5 z-[60] flex h-10 w-10 items-center justify-center",
+            "fixed bottom-16 right-4 z-[60] flex h-10 w-10 items-center justify-center",
             "rounded-full border border-border bg-slate-200/80 text-slate-700",
             "shadow-md backdrop-blur-sm transition-all",
             "opacity-60 hover:opacity-100 hover:bg-slate-300 hover:scale-105",
@@ -53,12 +53,11 @@ export function HelpTourButton() {
         >
           <HelpCircle className="h-5 w-5" />
           {isFirstTime && (
-            // Pontinho discreto convidando o usuário a clicar na primeira vez.
             <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-background" />
           )}
         </button>
       </TooltipTrigger>
-      <TooltipContent side="right" sideOffset={8}>
+      <TooltipContent side="left" sideOffset={8}>
         <span className="text-xs uppercase tracking-wide">
           Ajuda desta página
         </span>
