@@ -616,7 +616,7 @@ export function AppSidebar() {
           <SidebarGroup className="py-0 my-0 border-b border-border/50">
             <div className={cn(
               "pt-2 pb-1.5",
-              isCollapsed ? "px-0 flex flex-col items-center" : "px-3"
+              isCollapsed ? "px-0 flex flex-col items-center gap-1" : "px-3"
             )}>
               {!isCollapsed && (
                 <div className="flex items-center gap-1.5 mb-1.5">
@@ -634,50 +634,58 @@ export function AppSidebar() {
                   </span>
                 </div>
               )}
-              {isCollapsed && (
-                <div
-                  className="mx-auto mb-1.5 h-4 w-4 rounded-md bg-primary/10 flex items-center justify-center"
-                  title={currentSectorLabel || currentDepartment}
-                >
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              {/* Modo expandido: container com os 3 botões lado a lado */}
+              {!isCollapsed && (
+                <div className="flex gap-1 p-1 rounded-lg bg-muted/40 border border-border/60">
+                  {[
+                    { title: "Início", icon: HomeIcon, link: "/" },
+                    { title: "Mapa", icon: BedDouble, link: "/mapa" },
+                    ...(accessProfile === "gestor" ? [] : [{ title: "Painel", icon: ClipboardList, link: "/painel-clinico" }]),
+                  ].map((tab) => {
+                    const isActive = location.pathname === tab.link;
+                    return (
+                      <button
+                        key={tab.link}
+                        onClick={() => { safeNavigate(tab.link); if (isMobile) setOpenMobile(false); }}
+                        title={`${tab.title} — ${currentSectorLabel || currentDepartment}`}
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-1 px-1.5 py-1.5 text-[10px]",
+                          "transition-all duration-200 rounded-md font-semibold tracking-wide",
+                          isActive
+                            ? "bg-primary text-primary-foreground shadow-md ring-1 ring-primary/40"
+                            : "bg-background text-foreground/80 hover:bg-primary/10 hover:text-primary ring-1 ring-border/40 hover:ring-primary/30"
+                        )}
+                      >
+                        <tab.icon className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span className="truncate">{tab.title}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
-              <div className={cn(
-                "rounded-lg bg-muted/40 border border-border/60",
-                isCollapsed
-                  ? "flex flex-col items-stretch gap-2 p-1.5 mx-auto w-fit"
-                  : "flex gap-1 p-1"
-              )}>
-                {[
-                  { title: "Início", icon: HomeIcon, link: "/" },
-                  { title: "Mapa", icon: BedDouble, link: "/mapa" },
-                  ...(accessProfile === "gestor" ? [] : [{ title: "Painel", icon: ClipboardList, link: "/painel-clinico" }]),
-                ].map((tab) => {
-                  const isActive = location.pathname === tab.link;
-                  return (
-                    <button
-                      key={tab.link}
-                      onClick={() => {
-                        safeNavigate(tab.link);
-                        if (isMobile) setOpenMobile(false);
-                      }}
-                      title={`${tab.title} — ${currentSectorLabel || currentDepartment}`}
-                      className={cn(
-                        "flex items-center justify-center transition-all duration-200 rounded-md font-semibold tracking-wide",
-                        isCollapsed
-                          ? "h-7 w-7 p-0"
-                          : "flex-1 gap-1 px-1.5 py-1.5 text-[10px]",
-                        isActive
-                          ? "bg-primary text-primary-foreground shadow-md ring-1 ring-primary/40"
-                          : "bg-background text-foreground/80 hover:bg-primary/10 hover:text-primary ring-1 ring-border/40 hover:ring-primary/30"
-                      )}
-                    >
-                      <tab.icon className={cn("flex-shrink-0", isCollapsed ? "h-3.5 w-3.5" : "h-3.5 w-3.5")} />
-                      {!isCollapsed && <span className="truncate">{tab.title}</span>}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* Modo colapsado: ícones soltos, centralizados, sem container extra */}
+              {isCollapsed && [
+                { title: "Início", icon: HomeIcon, link: "/" },
+                { title: "Mapa", icon: BedDouble, link: "/mapa" },
+                ...(accessProfile === "gestor" ? [] : [{ title: "Painel", icon: ClipboardList, link: "/painel-clinico" }]),
+              ].map((tab) => {
+                const isActive = location.pathname === tab.link;
+                return (
+                  <button
+                    key={tab.link}
+                    onClick={() => { safeNavigate(tab.link); if (isMobile) setOpenMobile(false); }}
+                    title={`${tab.title} — ${currentSectorLabel || currentDepartment}`}
+                    className={cn(
+                      "h-8 w-8 flex items-center justify-center rounded-md transition-all duration-200",
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "text-foreground/70 hover:bg-primary/10 hover:text-primary"
+                    )}
+                  >
+                    <tab.icon className="h-4 w-4 flex-shrink-0" />
+                  </button>
+                );
+              })}
             </div>
           </SidebarGroup>
         )}
@@ -840,6 +848,29 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border/50 p-2 bg-muted/30">
+        {/* Dúvidas Frequentes */}
+        <button
+          type="button"
+          onClick={() => navigate("/ajuda")}
+          title="Dúvidas Frequentes"
+          className={cn(
+            "group w-full flex items-center rounded-lg transition-all duration-200",
+            "hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+            location.pathname === "/ajuda" && "bg-primary/10",
+            isCollapsed ? "justify-center p-2" : "gap-2.5 px-3 py-2"
+          )}
+        >
+          <HelpCircle className={cn(
+            "h-4 w-4 flex-shrink-0 transition-colors",
+            location.pathname === "/ajuda" ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+          )} />
+          {!isCollapsed && (
+            <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+              Dúvidas Frequentes
+            </span>
+          )}
+        </button>
+
         {/* Tema */}
         <div className={cn(
           "flex items-center rounded-lg transition-all duration-200",
@@ -851,7 +882,7 @@ export function AppSidebar() {
           <ThemeToggleInline />
         </div>
 
-        {/* Perfil + Sair — sempre numa linha, sem sobreposição */}
+        {/* Perfil + Sair */}
         <div className={cn(
           "flex items-center rounded-xl transition-all duration-200",
           isCollapsed ? "flex-col gap-1 py-1" : "gap-2 px-2 py-1.5 bg-card/50"
