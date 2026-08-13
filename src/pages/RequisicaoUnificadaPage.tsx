@@ -397,7 +397,6 @@ const RequisicaoUnificadaPage = () => {
   const TC_PATTERN = /\b(tc|tomografia|angio-?tc)\b/i;
   const isTcSelected = formSelectedItems.some(item => TC_PATTERN.test(item));
   const [tcValidationOpen, setTcValidationOpen] = useState(false);
-  React.useEffect(() => { }, [formSelectedItems]); // mantém dep para futuros usos
   const [formCustomItem, setFormCustomItem] = useState("");
   // Etapa 2 — busca de exame dentro da categoria (Imagem e demais)
   const [examSearch, setExamSearch] = useState("");
