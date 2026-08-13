@@ -1,43 +1,38 @@
-import { Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { HelpCircle } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 /**
- * Botão flutuante global de alternância de tema (claro/escuro).
+ * Botão flutuante global de Dúvidas Frequentes.
  * Fica fixo no canto inferior direito em todas as telas, oculto na impressão.
  * Em /prescricao sobe para não colidir com a toolbar fixa do rodapé.
+ * O controle de tema foi movido para o footer da sidebar.
  */
 export function FloatingThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const isPrescription = pathname.startsWith("/prescricao");
-
-  useEffect(() => setMounted(true), []);
-
-  const isDark = mounted && resolvedTheme === "dark";
+  const isAjuda = pathname === "/ajuda";
 
   return (
     <Button
       variant="outline"
       size="icon"
-      aria-label={isDark ? "Ativar modo claro" : "Ativar modo escuro"}
-      title={isDark ? "Modo claro" : "Modo escuro"}
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      aria-label="Dúvidas Frequentes"
+      title="Dúvidas Frequentes — Guias didáticos"
+      onClick={() => navigate("/ajuda")}
       className={cn(
         "fixed right-4 z-[80] h-10 w-10 rounded-full shadow-lg",
         isPrescription ? "bottom-3" : "bottom-4",
         "bg-background/90 backdrop-blur border-border",
-        "hover:bg-accent hover:text-accent-foreground",
+        "hover:bg-primary/10 hover:text-primary hover:border-primary/40",
+        isAjuda && "bg-primary/10 text-primary border-primary/40",
         "print:hidden"
       )}
     >
-      <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-      <span className="sr-only">Alternar tema</span>
+      <HelpCircle className="h-4 w-4" />
+      <span className="sr-only">Dúvidas Frequentes</span>
     </Button>
   );
 }

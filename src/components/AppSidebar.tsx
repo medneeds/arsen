@@ -636,9 +636,11 @@ export function AppSidebar() {
               )}
               {isCollapsed && (
                 <div
-                  className="mx-auto mb-1.5 h-1 w-1 rounded-full bg-primary animate-pulse"
+                  className="mx-auto mb-1.5 h-4 w-4 rounded-md bg-primary/10 flex items-center justify-center"
                   title={currentSectorLabel || currentDepartment}
-                />
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                </div>
               )}
               <div className={cn(
                 "rounded-lg bg-muted/40 border border-border/60",
@@ -837,37 +839,11 @@ export function AppSidebar() {
 
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border/50 p-3 bg-muted/30 space-y-2">
-        {/* Dev Console agora é acessado via perfil "Desenvolvedor" (rota /dev-console) */}
-
-        {/* Dúvidas Frequentes — guia didático */}
-        <button
-          type="button"
-          onClick={() => navigate("/ajuda")}
-          title="Dúvidas Frequentes"
-          aria-label="Dúvidas Frequentes"
-          className={cn(
-            "group w-full flex items-center gap-2.5 rounded-lg border border-transparent transition-all duration-200",
-            "hover:border-primary/30 hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-            location.pathname === "/ajuda" && "border-primary/40 bg-primary/10",
-            isCollapsed ? "justify-center p-2" : "px-3 py-2",
-          )}
-        >
-          <div className="h-7 w-7 rounded-md bg-primary/10 group-hover:bg-primary/20 grid place-items-center flex-shrink-0 transition-colors">
-            <HelpCircle className="h-3.5 w-3.5 text-primary" />
-          </div>
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0 text-left">
-              <div className="text-xs font-semibold leading-tight">Dúvidas Frequentes</div>
-              <div className="text-[10px] text-muted-foreground leading-tight">Guias didáticos</div>
-            </div>
-          )}
-        </button>
-
-        {/* Theme toggle */}
+      <SidebarFooter className="border-t border-border/50 p-2 bg-muted/30">
+        {/* Tema */}
         <div className={cn(
-          "flex items-center rounded-lg p-1.5 transition-all duration-200",
-          isCollapsed ? "justify-center" : "justify-between bg-card/30 px-3"
+          "flex items-center rounded-lg transition-all duration-200",
+          isCollapsed ? "justify-center py-1" : "justify-between px-3 py-1.5 bg-card/30"
         )}>
           {!isCollapsed && (
             <span className="text-[10px] text-muted-foreground font-medium">Tema</span>
@@ -875,21 +851,22 @@ export function AppSidebar() {
           <ThemeToggleInline />
         </div>
 
-        {/* User info + logout */}
+        {/* Perfil + Sair — sempre numa linha, sem sobreposição */}
         <div className={cn(
-          "flex items-center gap-2 rounded-xl p-2 transition-all duration-200",
-          isCollapsed ? "justify-center" : "bg-card/50"
+          "flex items-center rounded-xl transition-all duration-200",
+          isCollapsed ? "flex-col gap-1 py-1" : "gap-2 px-2 py-1.5 bg-card/50"
         )}>
           <button
             type="button"
             onClick={() => navigate("/meu-perfil")}
             title="Meu perfil"
             className={cn(
-              "group flex items-center gap-3 rounded-lg transition-all duration-200 hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-              isCollapsed ? "p-1" : "flex-1 min-w-0 p-1 pr-2"
+              "group flex items-center gap-3 rounded-lg transition-all duration-200",
+              "hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+              isCollapsed ? "p-1.5 justify-center" : "flex-1 min-w-0 p-1 pr-2"
             )}
           >
-            <div className="bg-primary/10 group-hover:bg-primary/20 rounded-full flex items-center justify-center h-9 w-9 flex-shrink-0 transition-colors">
+            <div className="bg-primary/10 group-hover:bg-primary/20 rounded-full flex items-center justify-center h-8 w-8 flex-shrink-0 transition-colors">
               <User className="text-primary h-4 w-4" />
             </div>
             {!isCollapsed && (
@@ -907,7 +884,7 @@ export function AppSidebar() {
             variant="ghost"
             size="icon"
             onClick={signOut}
-            className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive transition-all duration-200 flex-shrink-0"
+            className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive transition-all duration-200 flex-shrink-0"
             title="Sair"
           >
             <LogOut className="h-4 w-4" />
