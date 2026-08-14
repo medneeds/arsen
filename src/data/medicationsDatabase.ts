@@ -162,7 +162,7 @@ export const SOLUTION_OPTIONS: MedicationEntry[] = [
   { id: 'rep2', name: 'Cloreto de Potássio (KCl) 10%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '-', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 1-2h. NUNCA em bolus.', category: 'replacement' },
   { id: 'rep3', name: 'Sulfato de Magnésio 50%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: '-', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 1h.', category: 'replacement' },
   { id: 'rep4', name: 'Sulfato de Magnésio 10%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: '-', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 1h.', category: 'replacement' },
-  { id: 'rep5', name: 'Gluconato de Cálcio 10%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '-', instructions: 'Diluir em 100mL de SG5%. Infundir em 30-60 min. Incompatível com bicarbonato.', category: 'replacement' },
+  { id: 'rep5', name: 'Gluconato de Cálcio 10%', presentation: '10mL - Ampola', defaultDose: '1g (10mL)', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '-', instructions: 'Diluir em 100mL de SG5%. Infundir em 30-60 min. Incompatível com bicarbonato.', category: 'replacement' },
   { id: 'rep6', name: 'Cloreto de Cálcio 10%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '-', instructions: 'Acesso central preferencial. Infundir lentamente. Vesicante.', category: 'replacement' },
   { id: 'rep7', name: 'Fosfato de Potássio 2mEq/mL', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '12/12h', defaultSchedule: '-', instructions: 'Diluir em 250mL de SF0,9%. Infundir em 4-6h.', category: 'replacement' },
   { id: 'rep8', name: 'Cloreto de Sódio 20%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '-', instructions: 'Diluir em solução de hidratação. Acesso central para concentrações >3%.', category: 'replacement' },
@@ -458,7 +458,7 @@ export const MEDICATIONS_DATABASE: MedicationEntry[] = [
 
   // ===== Eletrólitos / Reposições adicionais =====
   { id: 'm50', name: 'Sulfato de Magnésio 50%', presentation: '10mL - Ampola', defaultDose: '2g', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: '-', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 30 min.', category: 'medication' },
-  { id: 'm51', name: 'Gluconato de Cálcio 10%', presentation: '10mL - Ampola', defaultDose: '10mL', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: '-', instructions: 'Infundir lentamente em 10-20 min. Monitorar FC.', category: 'medication' },
+  { id: 'm51', name: 'Gluconato de Cálcio 10%', presentation: '10mL - Ampola', defaultDose: '1g (10mL)', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: '-', instructions: 'Infundir lentamente em 10-20 min. Monitorar FC.', category: 'medication' },
 
   // ===== Antialérgicos =====
   { id: 'm52', name: 'Prometazina', presentation: '50mg/2mL - Ampola', defaultDose: '25-50mg', defaultRoute: 'Intramuscular', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication', aliases: ['Fenergan'] },
@@ -488,7 +488,7 @@ export const MEDICATIONS_DATABASE: MedicationEntry[] = [
   { id: 'm66', name: 'Adenosina', presentation: '6mg/2mL - Ampola', defaultDose: '6mg', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: '-', instructions: 'Bolus rápido + flush 20mL SF0,9%.', category: 'medication' },
   { id: 'm67', name: 'Atropina', presentation: '0,25mg/mL - Ampola', defaultDose: '0,5-1mg', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: '-', category: 'medication' },
   { id: 'm68', name: 'Adrenalina (Epinefrina)', presentation: '1mg/mL - Ampola', defaultDose: '1mg', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: '-', instructions: 'PCR conforme ACLS.', category: 'medication', aliases: ['Epinefrina'] },
-  { id: 'm69', name: 'Gluconato de Cálcio para Hipercalemia', presentation: '10mL - Ampola', defaultDose: '10mL', defaultQuantity: '2', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: '-', category: 'medication' },
+  { id: 'm69', name: 'Gluconato de Cálcio para Hipercalemia', presentation: '10mL - Ampola', defaultDose: '1g (10mL)', defaultQuantity: '2', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: '-', category: 'medication' },
   { id: 'm75', name: 'Insulina Regular SOS Hipercalemia', presentation: '100UI/mL - Frasco', defaultDose: '10UI', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: '-', instructions: 'Com 50mL de Glicose 50%. Hipercalemia.', category: 'medication' },
 ];
 
