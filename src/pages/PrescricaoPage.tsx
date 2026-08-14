@@ -4388,6 +4388,7 @@ const PrescricaoPage = () => {
     autoLoadReadyRef.current = false;
     setAutoLoadTriggered(false);
     setAutoLoadDone(false);
+    isLoadingRef.current = true; // novo paciente — aguarda carregamento antes de avaliar dirty
     loadGenerationRef.current += 1; // ← cancela qualquer load em andamento
     draftRestoreAttemptedRef.current = false;
   }, [urlPatientId, searchParams]);
@@ -5006,12 +5007,16 @@ const PrescricaoPage = () => {
   // Restaura backup local se DB ainda não trouxe nada (paciente sem prescrição salva hoje)
   const draftRestoreAttemptedRef = useRef(false);
 
-  // ── isDirty: atualiza o Context sempre que items muda em relação ao persisted ──
-  // Compara JSON dos items atuais com o último estado efetivamente persistido no banco.
-  // !digitalSignature foi removido: uma prescrição validada pode ser editada depois
-  // e também merece o popup ao sair com alterações. O que evita false positives é
-  // lastPersistedSerializedRef ser atualizado ao carregar do banco (loadPrescription).
+  // ── isDirty: verdadeiro SOMENTE após edição real do usuário ────────────────
+  // Problema anterior: race condition entre carregamento assíncrono (loadPrescription)
+  // e o useEffect de isDirty — se lastPersistedSerializedRef ainda era '' quando
+  // items chegavam do banco, dirty=true mesmo sem edição.
+  // Solução: isLoadingRef bloqueia isDirty enquanto o carregamento está em andamento.
+  // loadPrescription seta isLoadingRef=true antes de buscar e false ao setar items.
+  const isLoadingRef = useRef(true); // começa true — carregamento inicial em andamento
+
   useEffect(() => {
+    if (isLoadingRef.current) return; // aguarda carregamento completar
     const serialized = JSON.stringify(items);
     const dirty = items.length > 0
       && !!patient.name?.trim()
@@ -6825,6 +6830,10 @@ const PrescricaoPage = () => {
         console.error('[autoLoadPrescription] failed', err);
       } finally {
         setAutoLoadDone(true);
+        // Libera o dirty tracker — se chegou aqui sem chamar loadPrescription
+        // (nenhuma prescrição encontrada), o isLoadingRef fica true para sempre.
+        // Garante que a tela em branco também libere o dirty state.
+        isLoadingRef.current = false;
       }
     })();
   }, [autoLoadTriggered, currentHospital, currentState, patientRegistryId, activeEncounterId, currentPrescriptionId]);
@@ -6884,10 +6893,11 @@ const PrescricaoPage = () => {
         // ao abrir prescrições gravadas antes da unificação de 22/07/2026.
         const loadedItems = (data.items as unknown as PrescriptionItem[]).map(normalizeLegacyIntervalFlags);
         setItems(loadedItems);
-        // Marca o estado carregado como "base" para isDirty — sem isso,
-        // qualquer carregamento do banco marcava isDirty=true porque o ref
-        // estava em '' (valor inicial) enquanto items já tinha os itens carregados.
+        // Atualiza a baseline ANTES de liberar isDirty (isLoadingRef=false).
+        // Sem isso, o useEffect de isDirty via ao carregar e compara com ''→dirty=true.
         lastPersistedSerializedRef.current = JSON.stringify(loadedItems);
+        // Libera o isDirty — a partir daqui somente edições reais do usuário marcam dirty.
+        isLoadingRef.current = false;
         setDigitalSignature(data.digital_signature as unknown as DigitalSignature | null);
         setCurrentPrescriptionId(data.id);
         setSelectedIds(new Set());

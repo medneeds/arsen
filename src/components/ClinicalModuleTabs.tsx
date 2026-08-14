@@ -51,7 +51,8 @@ export function ClinicalModuleTabs({ variant = "dark" }: ClinicalModuleTabsProps
 
   const handleTabClick = (path: string) => {
     const url = `${path}${queryString ? `?${queryString}` : ""}`;
-    if (isDirty && location.pathname === "/prescricao") {
+    // Intercepta se isDirty em qualquer página clínica (prescrição ou evolução)
+    if (isDirty) {
       setPendingUrl(url);
     } else {
       navigate(url);
