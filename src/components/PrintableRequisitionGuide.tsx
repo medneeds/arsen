@@ -641,6 +641,9 @@ export async function buildRequisitionGuideHtml(
 ): Promise<string | null> {
   const items = Array.isArray(request.items) ? request.items : [];
 
+  // Mapa de categorias legadas para canônicas
+  const LEGACY_CATEGORY_MAP: Record<string, string> = { apac: "procedimento" };
+
   // Cultura microbiológica tem layout próprio — não usa este fluxo
   if (isCultureRequest(items)) return null;
 

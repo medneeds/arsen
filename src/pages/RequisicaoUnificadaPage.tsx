@@ -384,7 +384,8 @@ const RequisicaoUnificadaPage = () => {
     try {
       const html = await buildRequisitionGuideHtml(req as any, (s) => getSectorLabel(s));
       setPreviewHtml(html);
-    } catch {
+    } catch (err) {
+      console.error('[openRequestViewer] buildRequisitionGuideHtml falhou:', err);
       setPreviewHtml(null);
     } finally {
       setPreviewLoading(false);
@@ -1772,16 +1773,14 @@ const RequisicaoUnificadaPage = () => {
             </div>
           )}
           <DialogFooter>
-            {viewingRequest?.status === "completed" && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1.5 text-xs mr-auto"
-                onClick={() => printRequisitionGuideWithGasometriaPrompt(viewingRequest, (s) => getSectorLabel(s))}
-              >
-                <Printer className="h-3.5 w-3.5" /> Imprimir Guia
-              </Button>
-            )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs mr-auto"
+              onClick={() => printRequisitionGuideWithGasometriaPrompt(viewingRequest, (s) => getSectorLabel(s))}
+            >
+              <Printer className="h-3.5 w-3.5" /> Imprimir Guia
+            </Button>
             <Button variant="outline" onClick={() => setViewingRequest(null)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
