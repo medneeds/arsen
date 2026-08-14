@@ -109,7 +109,8 @@ function ThemeToggleInline() {
 export function AppSidebar() {
   const { open, setOpen, openMobile, setOpenMobile, state } = useSidebar();
   const navigate = useNavigate();
-  const { isDirty, onSaveDraft } = useUnsavedPrescription();
+  const { isDirty, onSaveDraft, dirtyLabel } = useUnsavedPrescription();
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const [unsavedOpen, setUnsavedOpen] = useState(false);
   const [pendingUnsavedUrl, setPendingUnsavedUrl] = useState<string | null>(null);
 
@@ -983,10 +984,10 @@ export function AppSidebar() {
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-sm">
-              Prescrição com alterações não salvas
+              {capitalize(dirtyLabel)} com alterações não salvas
             </AlertDialogTitle>
             <AlertDialogDescription className="text-xs text-muted-foreground">
-              Você tem alterações na prescrição que ainda não foram salvas. Deseja salvar um rascunho antes de sair?
+              Você tem alterações na {dirtyLabel} que ainda não foram salvas. Deseja salvar um rascunho antes de sair?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col gap-2">

@@ -32,7 +32,8 @@ export function ClinicalModuleTabs({ variant = "dark" }: ClinicalModuleTabsProps
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { isDirty, onSaveDraft } = useUnsavedPrescription();
+  const { isDirty, onSaveDraft, dirtyLabel } = useUnsavedPrescription();
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
 
   // Build query string preserving patient context
@@ -95,10 +96,10 @@ export function ClinicalModuleTabs({ variant = "dark" }: ClinicalModuleTabsProps
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-sm">
               <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-              Prescrição com alterações não salvas
+              {cap(dirtyLabel)} com alterações não salvas
             </AlertDialogTitle>
             <AlertDialogDescription className="text-xs text-muted-foreground">
-              Você tem alterações na prescrição que ainda não foram salvas. Deseja salvar um rascunho antes de sair?
+              Você tem alterações na {dirtyLabel} que ainda não foram salvas. Deseja salvar um rascunho antes de sair?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex flex-col gap-2 mt-2">

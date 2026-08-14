@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useUnsavedClinical } from "@/contexts/UnsavedPrescriptionContext";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { SectionLoader } from "@/components/SectionLoader";
 
@@ -157,6 +158,66 @@ const EvolucaoPage = () => {
   const [pendenciasItems, setPendenciasItems] = useState<string[]>([]);
   const [pendingDuplicate, setPendingDuplicate] = useState<EvolutionRecord | null>(null);
 
+  // ── Dirty state da Evolução ──────────────────────────────────────────────
+  // Compara estado atual do formulário com a baseline (vazio = formulário não aberto).
+  // isDirty = true apenas quando há conteúdo real diferente do baseline.
+  const { setDirty, registerSaveDraft } = useUnsavedClinical('evolucao');
+  const isDirtyRef = useRef(false);
+
+  const serializeForm = () => JSON.stringify({
+    soap: newSoap, vitals: newVitals, exam: newExam,
+    devices: newDevices, culturesHtml: newCulturesHtml,
+    diagnosticHypotheses, antecedentes, planItems, pendenciasItems,
+  });
+
+  const baselineRef = useRef<string>('');
+
+  // Quando o formulário de nova evolução abre, registra a baseline
+  useEffect(() => {
+    if (showNewForm) {
+      baselineRef.current = serializeForm();
+    } else {
+      // Formulário fechado — limpa dirty
+      isDirtyRef.current = false;
+      setDirty(false);
+      baselineRef.current = '';
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showNewForm]);
+
+  // Atualiza isDirty sempre que o formulário muda
+  useEffect(() => {
+    if (!showNewForm) return;
+    const dirty = serializeForm() !== baselineRef.current;
+    isDirtyRef.current = dirty;
+    setDirty(dirty);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newSoap, newVitals, newExam, newDevices, newCulturesHtml,
+      diagnosticHypotheses, antecedentes, planItems, pendenciasItems, showNewForm]);
+
+  // Registra callback de salvar rascunho para o sidebar usar
+  useEffect(() => {
+    if (!showNewForm) { registerSaveDraft(null); return; }
+    registerSaveDraft(async () => {
+      if (isDirtyRef.current) await handleSaveDraftEvolution();
+    });
+    return () => registerSaveDraft(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showNewForm, newSoap, newVitals, newExam,
+      diagnosticHypotheses, antecedentes, planItems, pendenciasItems]);
+
+  // Limpa dirty ao desmontar
+  useEffect(() => () => { setDirty(false); }, [setDirty]);
+
+  // beforeunload — fechar aba com evolução em edição
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirtyRef.current) { e.preventDefault(); e.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
+
   // CID state — persisted to admission_histories via usePatientCid
   const {
     cidPrimary, cidSecondary,
@@ -248,6 +309,31 @@ const EvolucaoPage = () => {
     if (isolationPrecautions) updateIsolationPrecautions("");
     setDiagnosticHypotheses([]);
     setDiagnosticsReplicated(false);
+  };
+
+  /** Salva a evolução como rascunho sem fechar o formulário.
+   *  Chamado pelo callback do sidebar ao sair com alterações. */
+  const handleSaveDraftEvolution = async () => {
+    const soapWithExtras = {
+      ...newSoap, devices: newDevices, culturesHtml: newCulturesHtml,
+    } as any;
+    const hypoStr = Array.isArray(diagnosticHypotheses)
+      ? diagnosticHypotheses.filter(Boolean).join("\n")
+      : diagnosticHypotheses;
+    if (planItems.filter(Boolean).length > 0) soapWithExtras.plan = "";
+    await createEvolution(
+      patient.name, patient.bed, patient.unit,
+      soapWithExtras, newVitals, newExam, hypoStr,
+      cidPrimary || null,
+      Array.isArray(cidSecondary) && cidSecondary.length > 0 ? cidSecondary : null,
+      antecedentes.filter(Boolean),
+      planItems.filter(Boolean),
+      pendenciasItems.filter(Boolean),
+    );
+    // Reseta baseline após salvar para que isDirty volte a false
+    baselineRef.current = serializeForm();
+    isDirtyRef.current = false;
+    setDirty(false);
   };
 
   const handleCreateEvolution = async () => {

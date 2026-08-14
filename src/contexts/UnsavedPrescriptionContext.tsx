@@ -1,55 +1,96 @@
 /**
- * UnsavedPrescriptionContext
+ * UnsavedClinicalContext
  *
- * Compartilha o estado "prescrição com alterações não salvas" entre
- * PrescricaoPage (quem sabe se há alterações) e PatientSidebar / useBlocker
- * (quem precisa interceptar a navegação).
+ * Context genérico de "alterações não salvas" — usado por qualquer página
+ * clínica (Prescrição, Evolução) para comunicar dirty state aos componentes
+ * de navegação (AppSidebar, PatientSidebar, ClinicalModuleTabs).
  *
- * Fluxo:
- *   1. PrescricaoPage chama setDirty(true) quando items muda em relação ao
- *      último estado persistido, e setDirty(false) após salvar/validar.
- *   2. PatientSidebar chama isDirty antes de qualquer navigate() — se true,
- *      abre o AlertDialog de confirmação.
- *   3. O AlertDialog oferece "Salvar rascunho e sair" (chama onSaveDraft()
- *      e navega) ou "Sair sem salvar" (navega direto).
+ * Cada página registra seu próprio dirty state e callback de salvar.
+ * O sidebar lê isDirty (OR de todas as páginas) e usa o onSaveDraft
+ * da página ativa para salvar antes de navegar.
  */
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 
-interface UnsavedPrescriptionContextValue {
+type PageKey = 'prescricao' | 'evolucao';
+
+interface PageState {
+  dirty: boolean;
+  saveDraft: (() => Promise<void>) | null;
+  label: string; // usado no texto do popup
+}
+
+interface UnsavedClinicalContextValue {
+  /** true se QUALQUER página registrada tiver alterações não salvas */
   isDirty: boolean;
-  setDirty: (dirty: boolean) => void;
-  /** Callback registrado pela PrescricaoPage para salvar o rascunho atual */
+  /** label da página dirty (para o texto do popup) */
+  dirtyLabel: string;
+  setPageDirty: (page: PageKey, dirty: boolean) => void;
+  registerPageSaveDraft: (page: PageKey, fn: (() => Promise<void>) | null) => void;
+  /** Callback de salvar da página dirty ativa */
   onSaveDraft: (() => Promise<void>) | null;
+  // ── retrocompatibilidade com código existente da Prescrição ──
+  setDirty: (dirty: boolean) => void;
   registerSaveDraft: (fn: (() => Promise<void>) | null) => void;
 }
 
-const UnsavedPrescriptionContext = createContext<UnsavedPrescriptionContextValue>({
+const UnsavedClinicalContext = createContext<UnsavedClinicalContextValue>({
   isDirty: false,
-  setDirty: () => {},
+  dirtyLabel: 'prescrição',
+  setPageDirty: () => {},
+  registerPageSaveDraft: () => {},
   onSaveDraft: null,
+  setDirty: () => {},
   registerSaveDraft: () => {},
 });
 
+const PAGE_LABELS: Record<PageKey, string> = {
+  prescricao: 'prescrição',
+  evolucao: 'evolução',
+};
+
 export function UnsavedPrescriptionProvider({ children }: { children: React.ReactNode }) {
-  const [isDirty, setIsDirty] = useState(false);
-  const saveDraftRef = useRef<(() => Promise<void>) | null>(null);
+  const [pageStates, setPageStates] = useState<Partial<Record<PageKey, boolean>>>({});
+  const saveDraftRefs = useRef<Partial<Record<PageKey, (() => Promise<void>) | null>>>({});
 
-  const setDirty = useCallback((dirty: boolean) => setIsDirty(dirty), []);
-
-  const registerSaveDraft = useCallback((fn: (() => Promise<void>) | null) => {
-    saveDraftRef.current = fn;
+  const setPageDirty = useCallback((page: PageKey, dirty: boolean) => {
+    setPageStates(prev => ({ ...prev, [page]: dirty }));
   }, []);
 
-  // Expõe via getter para evitar re-renders desnecessários no sidebar
-  const onSaveDraft = saveDraftRef.current;
+  const registerPageSaveDraft = useCallback((page: PageKey, fn: (() => Promise<void>) | null) => {
+    saveDraftRefs.current[page] = fn;
+  }, []);
+
+  // OR de todos os dirty states
+  const dirtyPage = (Object.entries(pageStates) as [PageKey, boolean][]).find(([, v]) => v)?.[0];
+  const isDirty = !!dirtyPage;
+  const dirtyLabel = dirtyPage ? PAGE_LABELS[dirtyPage] : 'prescrição';
+  const onSaveDraft = dirtyPage ? (saveDraftRefs.current[dirtyPage] ?? null) : null;
+
+  // Retrocompatibilidade — prescrição usa setDirty/registerSaveDraft diretamente
+  const setDirty = useCallback((dirty: boolean) => setPageDirty('prescricao', dirty), [setPageDirty]);
+  const registerSaveDraft = useCallback((fn: (() => Promise<void>) | null) => {
+    registerPageSaveDraft('prescricao', fn);
+  }, [registerPageSaveDraft]);
 
   return (
-    <UnsavedPrescriptionContext.Provider value={{ isDirty, setDirty, onSaveDraft, registerSaveDraft }}>
+    <UnsavedClinicalContext.Provider value={{
+      isDirty, dirtyLabel, setPageDirty, registerPageSaveDraft, onSaveDraft,
+      setDirty, registerSaveDraft,
+    }}>
       {children}
-    </UnsavedPrescriptionContext.Provider>
+    </UnsavedClinicalContext.Provider>
   );
 }
 
 export function useUnsavedPrescription() {
-  return useContext(UnsavedPrescriptionContext);
+  return useContext(UnsavedClinicalContext);
+}
+
+/** Hook específico para páginas clínicas registrarem seu dirty state */
+export function useUnsavedClinical(page: PageKey) {
+  const ctx = useContext(UnsavedClinicalContext);
+  return {
+    setDirty: (dirty: boolean) => ctx.setPageDirty(page, dirty),
+    registerSaveDraft: (fn: (() => Promise<void>) | null) => ctx.registerPageSaveDraft(page, fn),
+  };
 }
