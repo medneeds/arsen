@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { ChevronDown, ChevronUp, Clock, Calendar, Edit, Trash2, Copy, ArrowLeftRight, Check, X, GripVertical, Maximize2, TrendingUp, Sparkles, Star, FileText, CheckCircle2, BedDouble, Settings, Zap, CircleCheck, Shuffle, AlertTriangle, Utensils, MessageSquare, XCircle, ClipboardList, ClipboardCheck, Eye, TestTubes, UserMinus } from "lucide-react";
+import { ChevronDown, ChevronUp, Clock, Calendar, Edit, Trash2, Copy, ArrowLeftRight, Check, X, GripVertical, Maximize2, TrendingUp, Sparkles, Star, FileText, CheckCircle2, BedDouble, Settings, Zap, CircleCheck, Shuffle, AlertTriangle, Utensils, MessageSquare, XCircle, ClipboardList, ClipboardCheck, Eye, TestTubes, UserMinus, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { EditPatientDialog } from "./EditPatientDialog";
@@ -3326,6 +3326,26 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
               />
               <Edit className="h-5 w-5 md:h-4 md:w-4 relative z-10" />
             </Button>
+            )}
+
+            {/* Sinais Vitais — acesso direto ao painel de monitoramento */}
+            {patient.name && (
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => navigate(`/monitoramento?patientId=${patient.id}`)}
+                className={cn(
+                  "h-10 w-10 md:h-8 md:w-8 rounded-lg transition-all duration-300 hover:scale-110 shadow-sm",
+                  "border border-transparent hover:border-current",
+                  "relative overflow-hidden group print:hidden"
+                )}
+                style={{ backgroundColor: `${sectorColor}10`, color: sectorColor }}
+                title="Sinais vitais"
+                aria-label="Sinais vitais"
+              >
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-15 transition-opacity duration-300" style={{ backgroundColor: sectorColor }} />
+                <Activity className="h-5 w-5 md:h-4 md:w-4 relative z-10 transition-transform duration-300 group-hover:scale-110" />
+              </Button>
             )}
 
             {/* Actions Menu - Secondary Action */}

@@ -216,19 +216,44 @@ export default function MonitoramentoClinicoPage() {
       const encId = await resolveActiveEncounterId(selectedPatientId);
       if (cancelled) return;
 
+      // Carrega os últimos 50 registros imediatamente para resposta rápida.
+      // Registros mais antigos são incluídos numa segunda query assíncrona.
+      const INITIAL_LIMIT = 50;
+
       let q = supabase
         .from("vital_signs")
         .select("*")
         .gte("recorded_at", since)
-        .order("recorded_at", { ascending: true });
+        .order("recorded_at", { ascending: false })
+        .limit(INITIAL_LIMIT);
       q = encId
         ? q.or(`encounter_id.eq.${encId},and(encounter_id.is.null,patient_id.eq.${selectedPatientId})`)
         : q.eq("patient_id", selectedPatientId);
 
-      const { data } = await q;
+      const { data: initial } = await q;
       if (cancelled) return;
-      if (data) setRecords(data as unknown as VitalRecord[]);
+      if (initial) setRecords((initial as unknown as VitalRecord[]).slice().reverse());
       setLoading(false);
+
+      // Segunda query: registros restantes além dos primeiros 50
+      if (initial && initial.length === INITIAL_LIMIT) {
+        const oldest = initial[initial.length - 1]?.recorded_at;
+        if (oldest) {
+          let q2 = supabase
+            .from("vital_signs")
+            .select("*")
+            .gte("recorded_at", since)
+            .lt("recorded_at", oldest)
+            .order("recorded_at", { ascending: true });
+          q2 = encId
+            ? q2.or(`encounter_id.eq.${encId},and(encounter_id.is.null,patient_id.eq.${selectedPatientId})`)
+            : q2.eq("patient_id", selectedPatientId);
+          const { data: rest } = await q2;
+          if (!cancelled && rest && rest.length > 0) {
+            setRecords(prev => [...(rest as unknown as VitalRecord[]), ...prev]);
+          }
+        }
+      }
 
       // Realtime segue o mesmo critério da busca.
       channel = supabase
