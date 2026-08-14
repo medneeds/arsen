@@ -451,7 +451,15 @@ function calcVolumeTotal(item: PrescriptionItem): string {
                  || item.dose?.match(/([\d.,]+)\s*mL/i);
     if (mlMatch) {
       const parsed = parseFloat(mlMatch[1].replace(',', '.'));
-      if (parsed > 0) medVol = parsed;
+      if (parsed > 0) {
+        // BUGFIX (07/08/2026): quando a unidade é contagem (amp, FA, cp, gts),
+        // o volume extraído da dose é POR UNIDADE — precisa multiplicar pela
+        // quantidade prescrita. Ex: dose='1g (10mL)', qty=2 AMP → medVol = 20mL.
+        // Antes ficava em 10mL independente da quantidade, fazendo o Vol. final
+        // não escalar ao aumentar ampolas.
+        const isCountUnit = qtyVal > 0 && !['ml', 'mg', 'mcg', 'g', 'ui', 'meq'].includes(qtyUnit);
+        medVol = isCountUnit ? parsed * qtyVal : parsed;
+      }
     }
   }
   // With diluent: medication volume + diluent volume
