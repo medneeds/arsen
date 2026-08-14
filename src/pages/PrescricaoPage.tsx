@@ -5007,15 +5007,18 @@ const PrescricaoPage = () => {
   const draftRestoreAttemptedRef = useRef(false);
 
   // ── isDirty: atualiza o Context sempre que items muda em relação ao persisted ──
+  // Compara JSON dos items atuais com o último estado efetivamente persistido no banco.
+  // !digitalSignature foi removido: uma prescrição validada pode ser editada depois
+  // e também merece o popup ao sair com alterações. O que evita false positives é
+  // lastPersistedSerializedRef ser atualizado ao carregar do banco (loadPrescription).
   useEffect(() => {
     const serialized = JSON.stringify(items);
     const dirty = items.length > 0
       && !!patient.name?.trim()
-      && !digitalSignature
       && serialized !== lastPersistedSerializedRef.current;
     isDirtyRef.current = dirty;
     setDirty(dirty);
-  }, [items, patient.name, digitalSignature, setDirty]);
+  }, [items, patient.name, setDirty]);
 
   // Registra o callback de salvar rascunho no Context para o PatientSidebar usar
   useEffect(() => {
@@ -6879,7 +6882,12 @@ const PrescricaoPage = () => {
         }));
         // Normaliza marcações legadas (flags sn/acm/ag → campo intervalo)
         // ao abrir prescrições gravadas antes da unificação de 22/07/2026.
-        setItems((data.items as unknown as PrescriptionItem[]).map(normalizeLegacyIntervalFlags));
+        const loadedItems = (data.items as unknown as PrescriptionItem[]).map(normalizeLegacyIntervalFlags);
+        setItems(loadedItems);
+        // Marca o estado carregado como "base" para isDirty — sem isso,
+        // qualquer carregamento do banco marcava isDirty=true porque o ref
+        // estava em '' (valor inicial) enquanto items já tinha os itens carregados.
+        lastPersistedSerializedRef.current = JSON.stringify(loadedItems);
         setDigitalSignature(data.digital_signature as unknown as DigitalSignature | null);
         setCurrentPrescriptionId(data.id);
         setSelectedIds(new Set());
