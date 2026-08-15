@@ -6670,48 +6670,15 @@ const PrescricaoPage = () => {
           }
         };
 
-        // Etapa 1 — rascunho do dia clínico atual deste encounter
-        // Só aplica .eq('encounter_id', ...) se o encounter é válido (não null) —
-        // evita IS NULL matching que pegaria rascunhos avulsos.
-        let draftQuery = supabase
-          .from('prescriptions')
-          .select('id, items, created_at, patient_registry_id, encounter_id')
-          .eq('hospital_unit_id', currentHospital.id)
-          .eq('state_id', currentState.id)
-          .eq('patient_registry_id', patientRegistryId)
-          .eq('status', 'draft')
-          .is('archived_at', null)
-          .gte('created_at', clinicalStart)
-          .order('created_at', { ascending: false })
-          .limit(1);
-        if (activeEncounterId && activeEncounterId.length > 10) {
-          draftQuery = draftQuery.eq('encounter_id', activeEncounterId);
-        }
-        const { data: draftRows, error: draftErr } = await draftQuery;
-        if (draftErr) throw draftErr;
-        if (capturedGeneration !== loadGenerationRef.current) return;
-        const draft = (draftRows || [])[0];
-        // Segurança anti-avulsa: rejeitar se patient_registry_id não bate
-        if (draft && (draft as any).patient_registry_id && (draft as any).patient_registry_id !== patientRegistryId) return;
-        const draftItems = Array.isArray(draft?.items) ? draft!.items : [];
-        if (draft?.id && draftItems.length > 0 && loadPrescriptionRef.current) {
-          if (capturedGeneration !== loadGenerationRef.current) return;
-          await loadPrescriptionRef.current(draft.id);
-          return;
-        }
-
-        // Etapa 2 — última validada/assinada (com fallback para legados sem encounter)
-        // Bifurcação:
-        //  • Mesmo dia clínico (não cruzou 05h) → carrega a prescrição REAL via
-        //    loadPrescriptionRef (preserva validated=true, assinatura, etc.)
-        //  • Cruzou 05h → cópia com needsShiftRevalidation=true (amarelas)
+        // Helper: carrega prescrição real (mesmo dia clínico) ou renova para
+        // o plantão atual (cruzou 05h). Usado tanto na query principal quanto
+        // no fallback 2b para legados sem encounter_id.
         const loadValidatedPrescription = async (row: { id: string; items: unknown; created_at: string }) => {
           const sourceItems = (Array.isArray(row.items) ? row.items as unknown as PrescriptionItem[] : []).map(normalizeLegacyIntervalFlags);
           if (sourceItems.length === 0) return false;
           const crossedShift = hasCrossedShiftBoundary(row.created_at);
 
           if (!crossedShift) {
-            // ── MESMO DIA CLÍNICO: carrega o registro REAL com status preservado ──
             if (loadPrescriptionRef.current) {
               if (capturedGeneration !== loadGenerationRef.current) return false;
               await loadPrescriptionRef.current(row.id);
@@ -6720,12 +6687,7 @@ const PrescricaoPage = () => {
             return false;
           }
 
-          // ── DIA SEGUINTE (cruzou 05h): cópia com renovação pendente ──
-          // BUGFIX (05/08/2026): itens com status 'suspended' (qualquer categoria —
-          // medicação, dieta, inalatório, reposição, ATB) NÃO podem ser renovados como
-          // ativos. Antes, o .map() abaixo forçava status: 'active' incondicionalmente,
-          // ressuscitando itens que o médico/farmácia haviam suspenso no dia anterior.
-          // Mesmo filtro do caminho manual "Repetir prescrição anterior" (openRepeatDialog).
+          // Cruzou 05h — renova para o plantão atual
           const renewableItems = sourceItems.filter((it) => it.status === 'active' && !it.isExtra);
           const renewedItems: PrescriptionItem[] = renewableItems.map((it) => ({
             ...it,
@@ -6747,13 +6709,25 @@ const PrescricaoPage = () => {
           return true;
         };
 
-        // 2a) Tenta com encounter (se disponível e válido)
-        // BUGFIX: antes excluía drafts (.neq('status','draft')), então
-        // validada + rascunho posterior → carregava a validada (mais antiga).
-        // Agora busca o registro mais recente de qualquer status não-arquivado
-        // e o carrega diretamente — rascunho posterior à validação prevalece.
+        // ── QUERY UNIFICADA: sempre carrega o registro mais recente ──────────
+        // Regra: o "último registro" é definido por created_at DESC, independente
+        // de status (draft, signed, validated) ou data. Não há filtro de clinicalStart
+        // nem .neq('status','draft') — qualquer um desses filtros pode descartar o
+        // registro mais recente e carregar um mais antigo.
+        //
+        // Cenários cobertos:
+        //   draft → validada → draft posterior → abre o draft posterior ✅
+        //   draft → validada → abre a validada ✅
+        //   só draft → abre o draft ✅
+        //   só validada → abre a validada ✅
+        //   validada ontem (cruzou 05h) → renova para o plantão atual ✅
+        //
+        // O hasCrossedShiftBoundary ainda é usado: se o registro mais recente
+        // cruzou a janela das 05h, o sistema faz a renovação de plantão normal.
+        // Se não cruzou, carrega o registro diretamente.
+
         if (activeEncounterId && activeEncounterId.length > 10) {
-          const { data: encRows, error: encErr } = await supabase
+          const { data: rows, error: rowsErr } = await supabase
             .from('prescriptions')
             .select('id, items, created_at, version, patient_registry_id, status')
             .eq('hospital_unit_id', currentHospital.id)
@@ -6763,15 +6737,12 @@ const PrescricaoPage = () => {
             .is('archived_at', null)
             .order('created_at', { ascending: false })
             .limit(1);
-          if (encErr) throw encErr;
+          if (rowsErr) throw rowsErr;
           if (capturedGeneration !== loadGenerationRef.current) return;
-          const encRow = (encRows || [])[0];
-          if (encRow?.id && (encRow as any).patient_registry_id === patientRegistryId) {
-            // Carrega diretamente pelo id — preserva status real (draft ou signed)
-            if (loadPrescriptionRef.current) {
-              await loadPrescriptionRef.current(encRow.id);
-              return;
-            }
+          const row = (rows || [])[0];
+          if (row?.id && (row as any).patient_registry_id === patientRegistryId) {
+            if (await loadValidatedPrescription(row as any)) return;
+            // Se loadValidatedPrescription retornou false (items vazio), continua para fallback
           }
         }
 
