@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { format, differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -54,6 +54,8 @@ interface EvolutionTimelineProps {
   onSuspend: (id: string, reason: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   onDuplicate: (evolution: EvolutionRecord) => void;
+  /** Chamado quando localEdits muda — comunica dirty state ao EvolucaoPage */
+  onLocalDirtyChange?: (dirty: boolean) => void;
 }
 
 
@@ -64,7 +66,7 @@ const STATUS_CONFIG = {
 };
 
 export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
-  evolutions, admissionDate, patientRecord, cidPrimary, cidSecondary, patientId, diagnosticsSlot, onUpdate, onValidate, onSuspend, onDelete, onDuplicate,
+  evolutions, admissionDate, patientRecord, cidPrimary, cidSecondary, patientId, diagnosticsSlot, onUpdate, onValidate, onSuspend, onDelete, onDuplicate, onLocalDirtyChange,
 }) => {
   const { user } = useAuth();
   const { currentHospital } = useHospital();
@@ -73,6 +75,12 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
   const [collapsedDays, setCollapsedDays] = useState<Set<number>>(new Set());
   const [savingId, setSavingId] = useState<string | null>(null);
   const [localEdits, setLocalEdits] = useState<Record<string, { soap: any; vitals: any; exam: any }>>({});
+
+  // Propaga dirty state para EvolucaoPage sempre que localEdits muda
+  useEffect(() => {
+    const hasPending = Object.keys(localEdits).length > 0;
+    onLocalDirtyChange?.(hasPending);
+  }, [localEdits, onLocalDirtyChange]);
   const [suspendDialogId, setSuspendDialogId] = useState<string | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);

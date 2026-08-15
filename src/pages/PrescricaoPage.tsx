@@ -6748,15 +6748,18 @@ const PrescricaoPage = () => {
         };
 
         // 2a) Tenta com encounter (se disponível e válido)
+        // BUGFIX: antes excluía drafts (.neq('status','draft')), então
+        // validada + rascunho posterior → carregava a validada (mais antiga).
+        // Agora busca o registro mais recente de qualquer status não-arquivado
+        // e o carrega diretamente — rascunho posterior à validação prevalece.
         if (activeEncounterId && activeEncounterId.length > 10) {
           const { data: encRows, error: encErr } = await supabase
             .from('prescriptions')
-            .select('id, items, created_at, version, patient_registry_id')
+            .select('id, items, created_at, version, patient_registry_id, status')
             .eq('hospital_unit_id', currentHospital.id)
             .eq('state_id', currentState.id)
             .eq('patient_registry_id', patientRegistryId)
             .eq('encounter_id', activeEncounterId)
-            .neq('status', 'draft')
             .is('archived_at', null)
             .order('created_at', { ascending: false })
             .limit(1);
@@ -6764,7 +6767,11 @@ const PrescricaoPage = () => {
           if (capturedGeneration !== loadGenerationRef.current) return;
           const encRow = (encRows || [])[0];
           if (encRow?.id && (encRow as any).patient_registry_id === patientRegistryId) {
-            if (await loadValidatedPrescription(encRow as any)) return;
+            // Carrega diretamente pelo id — preserva status real (draft ou signed)
+            if (loadPrescriptionRef.current) {
+              await loadPrescriptionRef.current(encRow.id);
+              return;
+            }
           }
         }
 

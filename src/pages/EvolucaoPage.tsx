@@ -197,7 +197,12 @@ const EvolucaoPage = () => {
 
   // Registra callback de salvar rascunho para o sidebar usar
   useEffect(() => {
-    if (!showNewForm) { registerSaveDraft(null); return; }
+    if (!showNewForm) {
+      // Mesmo sem o formulário de nova evolução aberto, pode haver rascunhos
+      // sendo editados inline na timeline — o callback salva via onLocalDirtyChange
+      registerSaveDraft(null);
+      return;
+    }
     registerSaveDraft(async () => {
       if (isDirtyRef.current) await handleSaveDraftEvolution();
     });
@@ -806,6 +811,10 @@ const EvolucaoPage = () => {
               (patient as any).allergies ||
               undefined
             }
+            onLocalDirtyChange={(dirty) => {
+              isDirtyRef.current = dirty;
+              setDirty(dirty);
+            }}
           />
         )}
 
