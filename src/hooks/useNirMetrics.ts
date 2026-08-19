@@ -27,7 +27,12 @@ const SECTOR_SCOPE: Record<string, Exclude<SectorScope, "all">> = {
   ue_vertical: "emergencia", ue_horizontal: "emergencia", internacao_ue: "emergencia",
   // Centro cirúrgico — a pedido do gestor. Não é enfermaria: a permanência é
   // de horas e o leito serve a um fluxo próprio (preparo, bloco, recuperação).
-  cc_preparo: "centro_cirurgico", cc_bloco_cirurgico: "centro_cirurgico", cc_rpa: "centro_cirurgico",
+  //
+  // ATENÇÃO ao código do bloco: é `cc_bloco`, e NÃO `cc_bloco_cirurgico`.
+  // "CC Bloco Cirúrgico" é o RÓTULO de exibição (SECTOR_DISPLAY); o código no
+  // banco é `cc_bloco` — vide o array de setores travados na migration
+  // 20260514211527 e DEPARTMENT_TO_SECTOR em DepartmentContext.
+  cc_preparo: "centro_cirurgico", cc_bloco: "centro_cirurgico", cc_rpa: "centro_cirurgico",
 };
 
 export type NirPeriod = "today" | "7d" | "30d";
