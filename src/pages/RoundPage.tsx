@@ -11,6 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { formatAge } from "@/lib/patientAge";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROUND_SECTIONS, STATUS_OPTIONS, type RoundStatus } from "@/data/roundChecklistSchema";
@@ -100,14 +101,29 @@ export default function RoundPage() {
     if (!currentHospital || !currentState) return;
     const { data } = await supabase
       .from("patients")
-      .select("id, name, sector, bed_number, age, diagnoses")
+      .select("id, name, sector, bed_number, age, diagnoses, patient_registry_id")
       .eq("hospital_unit_id", currentHospital.id)
       .eq("state_id", currentState.id)
       .eq("department", "UTI")
       .eq("is_vacant", false)
       .order("sector")
       .order("bed_number");
-    if (data) setPatients(data.filter((p) => p.name && p.name.trim()));
+    if (data) {
+      // Idade ao vivo a partir de patient_registry.birth_date — patients.age
+      // é estático (congelado na admissão). Busca em lote (1 query), não N+1.
+      const rows = data.filter((p) => p.name && p.name.trim());
+      const registryIds = Array.from(new Set(rows.map((p: any) => p.patient_registry_id).filter(Boolean)));
+      const birthDateByRegistryId = new Map<string, string | null>();
+      if (registryIds.length > 0) {
+        const { data: registryRows } = await supabase
+          .from("patient_registry").select("id, birth_date").in("id", registryIds);
+        for (const r of registryRows || []) birthDateByRegistryId.set(r.id, r.birth_date);
+      }
+      setPatients(rows.map((p: any) => ({
+        ...p,
+        age: (p.patient_registry_id && formatAge(birthDateByRegistryId.get(p.patient_registry_id))) || p.age,
+      })));
+    }
   }, [currentHospital, currentState]);
 
   const handleSyncPatient = useCallback(async (e: React.MouseEvent, patientId: string) => {
@@ -117,13 +133,20 @@ export default function RoundPage() {
     try {
       const { data: fresh, error } = await supabase
         .from("patients")
-        .select("id, name, sector, bed_number, age, diagnoses")
+        .select("id, name, sector, bed_number, age, diagnoses, patient_registry_id")
         .eq("id", patientId)
         .maybeSingle();
       if (error) throw error;
       if (fresh) {
-        setPatients((prev) => prev.map((p) => (p.id === fresh.id ? (fresh as PatientOption) : p)));
-        if (selectedPatient?.id === fresh.id) setSelectedPatient(fresh as PatientOption);
+        let liveAge = fresh.age;
+        if (fresh.patient_registry_id) {
+          const { data: registryRow } = await supabase
+            .from("patient_registry").select("birth_date").eq("id", fresh.patient_registry_id).maybeSingle();
+          liveAge = formatAge(registryRow?.birth_date) || fresh.age;
+        }
+        const freshWithLiveAge = { ...fresh, age: liveAge } as PatientOption;
+        setPatients((prev) => prev.map((p) => (p.id === freshWithLiveAge.id ? freshWithLiveAge : p)));
+        if (selectedPatient?.id === freshWithLiveAge.id) setSelectedPatient(freshWithLiveAge);
       }
       toast.success("Dados do paciente sincronizados");
     } catch (err: any) {
