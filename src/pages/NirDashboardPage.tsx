@@ -260,6 +260,51 @@ export default function NirDashboardPage() {
 
         return (
           <div className="space-y-4">
+            {/*
+              Ocupação por setor (semáforo) — MUDOU DE LUGAR.
+
+              Estava na camada superior da página, competindo com os cards e
+              obrigando a rolar antes de chegar neles. É detalhamento, não
+              panorama: responde "onde tem vaga agora", que é exatamente a
+              pergunta do Censo.
+
+              A versão ANALÍTICA da mesma informação — taxa média, tendência,
+              comparação entre períodos — fica em Relatórios. Mesmo dado, duas
+              perguntas: "onde alocar agora" e "como estamos evoluindo".
+            */}
+            {/* Ocupação por setor (semáforo) */}
+            {metrics.occupancyBySector.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-primary" />
+                    Ocupação por setor
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {metrics.occupancyBySector.map((s) => {
+                      const tone = s.rate >= 95 ? "danger" : s.rate >= 80 ? "warning" : "success";
+                      const colorBar = tone === "danger" ? "bg-red-500" : tone === "warning" ? "bg-amber-500" : "bg-emerald-500";
+                      const colorText = tone === "danger" ? "text-red-600 dark:text-red-400" : tone === "warning" ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400";
+                      return (
+                        <div key={s.sector} className="rounded-lg border p-2.5">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs font-medium truncate">{sectorLabelFromCode(s.sector)}</span>
+                            <span className={cn("text-xs font-bold", colorText)}>{s.rate}%</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div className={cn("h-full rounded-full transition-all", colorBar)} style={{ width: `${s.rate}%` }} />
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-1">{s.occupied}/{s.total} ocupados</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-lg font-semibold text-foreground">Censo de Leitos — Tempo Real</h3>
               <div className="flex items-center gap-2">
@@ -412,6 +457,15 @@ export default function NirDashboardPage() {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-foreground">Relatórios e Indicadores NIR</h3>
             <NirAnalyticsPanel metrics={metrics} historical={historical} heatmap={heatmap} flow={flow} />
+            {/*
+              Previsão de altas — MUDOU DE LUGAR.
+
+              Estava na camada superior, entre os indicadores e os cards. É
+              DETALHAMENTO analítico, não panorama de situação: quem entra no
+              NIR para trabalhar não precisa dela antes de escolher o que fazer,
+              e ela empurrava os cards (e o Mapa de Leitos) para fora da tela.
+            */}
+            <NirDischargeForecast hospitalUnitId={currentHospital?.id} />
           </div>
         );
 
@@ -591,41 +645,6 @@ export default function NirDashboardPage() {
       {/* KPIs ricos */}
       <NirKpiStrip metrics={metrics} />
 
-      {/* Ocupação por setor (semáforo) */}
-      {metrics.occupancyBySector.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Activity className="h-4 w-4 text-primary" />
-              Ocupação por setor
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {metrics.occupancyBySector.map((s) => {
-                const tone = s.rate >= 95 ? "danger" : s.rate >= 80 ? "warning" : "success";
-                const colorBar = tone === "danger" ? "bg-red-500" : tone === "warning" ? "bg-amber-500" : "bg-emerald-500";
-                const colorText = tone === "danger" ? "text-red-600 dark:text-red-400" : tone === "warning" ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400";
-                return (
-                  <div key={s.sector} className="rounded-lg border p-2.5">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-medium truncate">{sectorLabelFromCode(s.sector)}</span>
-                      <span className={cn("text-xs font-bold", colorText)}>{s.rate}%</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div className={cn("h-full rounded-full transition-all", colorBar)} style={{ width: `${s.rate}%` }} />
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">{s.occupied}/{s.total} ocupados</p>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Previsão de altas */}
-      <NirDischargeForecast hospitalUnitId={currentHospital?.id} />
 
       {/* Alert detail dialog */}
       <Dialog open={!!activeAlert} onOpenChange={(o) => !o && setActiveAlert(null)}>
