@@ -213,7 +213,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
     sala_vermelha:        { title: "Sala Vermelha",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     sala_laranja:         { title: "Sala Laranja",       color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     observacao_clinica:   { title: "Obs. Clínica",       color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
-    internacao_ue:        { title: "Internação UE",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
+    internacao_ue:        { title: "Posto de Internação", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     ue_vertical:          { title: "UE Vertical",        color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     ue_horizontal:        { title: "UE Horizontal",      color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },
     riv:                  { title: "RIV",                color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue" },

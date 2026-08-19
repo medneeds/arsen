@@ -33,6 +33,10 @@ export const SECTOR_BED_CONFIG: Record<string, SectorBedConfig> = {
   observacao_clinica: { prefix: 'OC', maxRegularBeds: 20, label: 'Obs. Clínica' },
   ue_vertical: { prefix: 'EV', maxRegularBeds: 20, label: 'UE Vertical' },
   ue_horizontal: { prefix: 'EH', maxRegularBeds: 20, label: 'UE Horizontal' },
+  // Posto de Internação — 14 macas fixas (M01–M14). Não são leitos: a estrutura
+  // é de maca, mas o fluxo é de internação. Acima da capacidade, o gerador
+  // atribui EXTRA{n} como em qualquer outro setor.
+  internacao_ue: { prefix: 'M', maxRegularBeds: 14, label: 'Posto de Internação' },
   // RIV
   riv: { prefix: 'RV', maxRegularBeds: 10, label: 'RIV' },
 };

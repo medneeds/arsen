@@ -15,13 +15,15 @@ export interface DestinationSectorOption {
 }
 
 export const DESTINATION_SECTORS: DestinationSectorOption[] = [
-  // Triagem / Urgência
-  { value: "sala_vermelha", label: "Sala Vermelha", group: "Triagem / Urgência", mapTitle: "Sala Vermelha" },
-  { value: "sala_laranja", label: "Sala Laranja", group: "Triagem / Urgência", mapTitle: "Sala Laranja" },
+  // Urgência e Emergência (Horizontal) — guarda-chuva da internação na UE.
+  // Abaixo dele ficam Sala Vermelha, Sala Laranja e o Posto de Internação.
+  { value: "sala_vermelha", label: "Sala Vermelha", group: "Urgência e Emergência (Horizontal)", mapTitle: "Sala Vermelha" },
+  { value: "sala_laranja", label: "Sala Laranja", group: "Urgência e Emergência (Horizontal)", mapTitle: "Sala Laranja" },
+  { value: "internacao_ue", label: "Posto de Internação", group: "Urgência e Emergência (Horizontal)", mapTitle: "Posto de Internação" },
+  // Triagem / Urgência — fora do escopo de internação
   { value: "ue_vertical", label: "UE Vertical", group: "Triagem / Urgência", mapTitle: "UE Vertical" },
   { value: "ue_horizontal", label: "UE Horizontal", group: "Triagem / Urgência", mapTitle: "UE Horizontal" },
   { value: "observacao_clinica", label: "Observação Clínica", group: "Triagem / Urgência", mapTitle: "Obs. Clínica" },
-  { value: "internacao_ue", label: "Internação UE", group: "Triagem / Urgência", mapTitle: "Internação UE" },
   // UTIs
   { value: "red", label: "UTI 1", group: "Terapia Intensiva", mapTitle: "UTI 1" },
   { value: "yellow", label: "UTI 2", group: "Terapia Intensiva", mapTitle: "UTI 2" },

@@ -66,12 +66,12 @@ const DESTINATION_SECTORS: DestinationSector[] = [
   // Triagem (recomendado para casos sem definição prévia)
   { value: "triagem", label: "Triagem", group: "Triagem / Urgência", color: "bg-emerald-500", isTriage: true },
   // Urgência e Emergência (admissão direta sem leito clínico fixo)
-  { value: "sala_vermelha", label: "Sala Vermelha", group: "Triagem / Urgência", color: "bg-red-700", sectorKey: "sala_vermelha" },
-  { value: "sala_laranja", label: "Sala Laranja", group: "Triagem / Urgência", color: "bg-orange-500", sectorKey: "sala_laranja" },
+  { value: "sala_vermelha", label: "Sala Vermelha", group: "Urgência e Emergência (Horizontal)", color: "bg-red-700", sectorKey: "sala_vermelha" },
+  { value: "sala_laranja", label: "Sala Laranja", group: "Urgência e Emergência (Horizontal)", color: "bg-orange-500", sectorKey: "sala_laranja" },
   { value: "ue_vertical", label: "UE Vertical", group: "Triagem / Urgência", color: "bg-purple-500", sectorKey: "ue_vertical" },
   { value: "ue_horizontal", label: "UE Horizontal", group: "Triagem / Urgência", color: "bg-indigo-500", sectorKey: "ue_horizontal" },
   { value: "observacao_clinica", label: "Observação Clínica", group: "Triagem / Urgência", color: "bg-sky-500", sectorKey: "observacao_clinica" },
-  { value: "internacao_ue", label: "Internação UE", group: "Triagem / Urgência", color: "bg-indigo-600", sectorKey: "internacao_ue" },
+  { value: "internacao_ue", label: "Posto de Internação", group: "Urgência e Emergência (Horizontal)", color: "bg-indigo-600", sectorKey: "internacao_ue" },
   // UTIs
   { value: "red", label: "UTI 1", group: "Terapia Intensiva", color: "bg-red-500", sectorKey: "red" },
   { value: "yellow", label: "UTI 2", group: "Terapia Intensiva", color: "bg-yellow-500", sectorKey: "yellow" },
@@ -104,7 +104,7 @@ const SECTOR_KEY_TO_MAP_TITLE: Record<string, string> = {
   enfermaria_vascular: "Enf. Vascular",
   sala_vermelha: "Sala Vermelha", sala_laranja: "Sala Laranja",
   observacao_clinica: "Obs. Clínica",
-  internacao_ue: "Internação UE",
+  internacao_ue: "Posto de Internação",
   ue_vertical: "UE Vertical", ue_horizontal: "UE Horizontal",
   riv: "RIV",
   cc_preparo: "CC Preparo", cc_bloco: "CC Bloco Cirúrgico", cc_rpa: "CC RPA",

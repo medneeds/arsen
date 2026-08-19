@@ -50,7 +50,7 @@ const SECTOR_HIERARCHY: SectorGroup[] = [
       { name: "UE Horizontal", department: "UE HORIZONTAL" as Department, link: "/ue-horizontal" },
       { name: "Sala Vermelha", department: "SALA VERMELHA" as Department },
       { name: "Sala Laranja", department: "SALA LARANJA" as Department },
-      { name: "Internação UE", department: "INTERNAÇÃO UE" as Department },
+      { name: "Posto de Internação", department: "INTERNAÇÃO UE" as Department },
       { name: "Observação Clínica", department: "OBSERVAÇÃO CLÍNICA" as Department },
     ],
   },

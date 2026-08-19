@@ -213,7 +213,7 @@ export function PatientSearchActionsDialog({
         clinica_cirurgica: "Clínica Cirúrgica", enfermaria_transicao: "Enf. Transição",
         enfermaria_vascular: "Enf. Vascular", sala_vermelha: "Sala Vermelha",
         sala_laranja: "Sala Laranja", observacao_clinica: "Obs. Clínica",
-        internacao_ue: "Internação UE", riv: "RIV", cc_bloco: "Centro Cirúrgico",
+        internacao_ue: "Posto de Internação", riv: "RIV", cc_bloco: "Centro Cirúrgico",
       };
 
       const admStatus = (bedData as any)?.admission_status ?? null;

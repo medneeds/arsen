@@ -67,7 +67,7 @@ export const SECTOR_DISPLAY: Record<string, string> = {
   sala_vermelha: "Sala Vermelha",
   sala_laranja: "Sala Laranja",
   observacao_clinica: "Obs. Clínica",
-  internacao_ue: "Internação UE",
+  internacao_ue: "Posto de Internação",
   ue_vertical: "UE Vertical",
   ue_horizontal: "UE Horizontal",
   riv: "RIV",
