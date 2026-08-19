@@ -495,6 +495,66 @@ export default function NirDashboardPage() {
 
       <div className="space-y-4 p-4 md:p-6 max-w-7xl mx-auto">
 
+      {/*
+        ORDEM DA PÁGINA — cards PRIMEIRO, dashboard depois.
+
+        Antes a grade de módulos vinha depois de filtros, alertas, KPIs,
+        ocupação por setor e previsão de altas: cinco blocos antes dos cards.
+        O Mapa de Leitos, sendo o décimo card, ficava a meia tela de rolagem —
+        o gestor relatou "não estou visualizando o mapa dentro do NIR", e era
+        isso.
+
+        O atendimento inicial do painel clínico, que serve de referência aqui,
+        é uma TELA DE ESCOLHA: identidade no topo, cards, e o módulo abre. Os
+        indicadores continuam na página, abaixo — quem quer o panorama rola;
+        quem entrou para fazer algo escolhe de cara.
+      */}
+      {/* Module Grid */}
+      <div>
+        <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Módulos de Acesso</h2>
+        <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-3">
+          {NIR_MODULES.map(mod => (
+            <Card
+              key={mod.key}
+              className={cn(
+                "cursor-pointer transition-all hover:shadow-md border",
+                activeModule === mod.key
+                  ? `${mod.borderColor} ${mod.bgColor} ring-1 ring-offset-1`
+                  : "hover:border-border/80"
+              )}
+              onClick={() => setActiveModule(activeModule === mod.key ? null : mod.key)}
+            >
+              <CardContent className="py-4 px-4 flex flex-col items-center text-center gap-2">
+                <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center", mod.bgColor)}>
+                  <mod.icon className={cn("h-5 w-5", mod.color)} />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-foreground leading-tight">{mod.label}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{mod.subtitle}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Active Module Content */}
+      {activeModule && (
+        <Card>
+          {/*
+            O Mapa de Leitos traz a propria estrutura de secoes e ja tem
+            respiro interno; o padding do Card somaria margem sobre margem e
+            estreitaria as linhas de leito sem necessidade. Os demais modulos
+            seguem com o padding de sempre.
+          */}
+          <CardContent className={activeModule === "mapa_leitos" ? "p-0 overflow-x-auto" : "pt-6 pb-4"}>
+            {renderModuleContent()}
+          </CardContent>
+        </Card>
+      )}
+
+
+      {/* ── Panorama: indicadores abaixo dos módulos ────────────────────── */}
       {/* Filtros globais */}
       <NirGlobalFilters filters={filters} onChange={setFilters} onRefresh={refetch} isLoading={isLoading} />
 
@@ -539,50 +599,6 @@ export default function NirDashboardPage() {
 
       {/* Previsão de altas */}
       <NirDischargeForecast hospitalUnitId={currentHospital?.id} />
-
-      {/* Module Grid */}
-      <div>
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Módulos de Acesso</h2>
-        <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-3">
-          {NIR_MODULES.map(mod => (
-            <Card
-              key={mod.key}
-              className={cn(
-                "cursor-pointer transition-all hover:shadow-md border",
-                activeModule === mod.key
-                  ? `${mod.borderColor} ${mod.bgColor} ring-1 ring-offset-1`
-                  : "hover:border-border/80"
-              )}
-              onClick={() => setActiveModule(activeModule === mod.key ? null : mod.key)}
-            >
-              <CardContent className="py-4 px-4 flex flex-col items-center text-center gap-2">
-                <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center", mod.bgColor)}>
-                  <mod.icon className={cn("h-5 w-5", mod.color)} />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-foreground leading-tight">{mod.label}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{mod.subtitle}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Active Module Content */}
-      {activeModule && (
-        <Card>
-          {/*
-            O Mapa de Leitos traz a propria estrutura de secoes e ja tem
-            respiro interno; o padding do Card somaria margem sobre margem e
-            estreitaria as linhas de leito sem necessidade. Os demais modulos
-            seguem com o padding de sempre.
-          */}
-          <CardContent className={activeModule === "mapa_leitos" ? "p-0 overflow-x-auto" : "pt-6 pb-4"}>
-            {renderModuleContent()}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Alert detail dialog */}
       <Dialog open={!!activeAlert} onOpenChange={(o) => !o && setActiveAlert(null)}>

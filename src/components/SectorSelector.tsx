@@ -138,7 +138,13 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
     if (typeof window !== "undefined") {
       localStorage.setItem("gestor_sector_filter", "ALL");
     }
-    navigate("/painel-gestor");
+    // BUG (10/08/2026): este handler ficou de fora quando `navigateOnSelect`
+    // foi criado. Resultado: no NIR, clicar em "Todos" navegava para
+    // /painel-gestor — o usuário não via o corpo do módulo mudar, ele SAÍA do
+    // módulo. Contrato agora vale para os dois handlers.
+    if (navigateOnSelect) {
+      navigate("/painel-gestor");
+    }
     setOpen(false);
   };
 

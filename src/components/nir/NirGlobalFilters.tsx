@@ -55,10 +55,19 @@ export function NirGlobalFilters({ filters, onChange, onRefresh, isLoading }: Pr
         </div>
       </div>
 
-      {/* Setor */}
+      {/*
+        "Escopo", não "Setor".
+
+        O cabeçalho ganhou o seletor HIERÁRQUICO, que escolhe UM setor
+        específico. Este controle é outra coisa: agrupa por natureza
+        assistencial (UTI/UCI, Enfermaria, Emergência) para recortar os
+        indicadores. Dois controles chamados "Setor" na mesma tela é o que
+        tornava o cabeçalho confuso — são granularidades diferentes e agora
+        dizem isso no rótulo.
+      */}
       <div className="flex items-center gap-1.5">
         <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Setor:</span>
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Escopo:</span>
         <div className="flex rounded-md border overflow-hidden">
           {SCOPES.map((s) => (
             <button
