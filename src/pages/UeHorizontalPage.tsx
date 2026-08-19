@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { formatAge } from "@/lib/patientAge";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -316,9 +317,20 @@ export default function UeHorizontalPage() {
         .eq("department", UE_DEPARTMENT).eq("sector", "ue_horizontal")
         .order("display_order", { ascending: true });
       if (error) throw error;
-      setPatients((data || []).map(p => ({
+      // Idade ao vivo a partir de patient_registry.birth_date — patients.age
+      // é estático (congelado na admissão). Busca em lote (1 query), não N+1.
+      const rows = data || [];
+      const registryIds = Array.from(new Set(rows.map((p: any) => p.patient_registry_id).filter(Boolean)));
+      const birthDateByRegistryId = new Map<string, string | null>();
+      if (registryIds.length > 0) {
+        const { data: registryRows } = await supabase
+          .from("patient_registry").select("id, birth_date").in("id", registryIds);
+        for (const r of registryRows || []) birthDateByRegistryId.set(r.id, r.birth_date);
+      }
+      setPatients(rows.map(p => ({
         id: p.id, name: p.name, bed_number: p.bed_number,
-        age: p.age || undefined, diagnoses: p.diagnoses || undefined,
+        age: (p.patient_registry_id && formatAge(birthDateByRegistryId.get(p.patient_registry_id))) || p.age || undefined,
+        diagnoses: p.diagnoses || undefined,
         pendencies: p.pendencies || undefined, admission_date: p.admission_date || undefined,
         clinical_status: p.clinical_status || undefined, medical_record: p.medical_record || undefined,
         is_vacant: p.is_vacant || false, medical_history: p.medical_history || undefined,

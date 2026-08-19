@@ -23,6 +23,7 @@ import {
   Eye,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { formatAge } from "@/lib/patientAge";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -459,7 +460,23 @@ export default function EmergenciaSectorPage() {
         .order("display_order", { ascending: true });
 
       if (error) throw error;
-      setPatients(data || []);
+
+      // Idade ao vivo a partir de patient_registry.birth_date — patients.age
+      // é estático (congelado na admissão). Busca em lote (1 query), não N+1.
+      const rows = data || [];
+      const registryIds = Array.from(new Set(rows.map((p: any) => p.patient_registry_id).filter(Boolean)));
+      const birthDateByRegistryId = new Map<string, string | null>();
+      if (registryIds.length > 0) {
+        const { data: registryRows } = await supabase
+          .from("patient_registry")
+          .select("id, birth_date")
+          .in("id", registryIds);
+        for (const r of registryRows || []) birthDateByRegistryId.set(r.id, r.birth_date);
+      }
+      setPatients(rows.map((p: any) => ({
+        ...p,
+        age: (p.patient_registry_id && formatAge(birthDateByRegistryId.get(p.patient_registry_id))) || p.age,
+      })));
     } catch (err) {
       console.error("Error fetching emergency patients:", err);
     } finally {

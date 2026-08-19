@@ -8,6 +8,7 @@ import { Printer, ArrowLeft, Loader2, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
+import { formatAge } from "@/lib/patientAge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
@@ -381,12 +382,12 @@ const FichaAtendimentoPage = () => {
           pd.fichaDate = format(new Date(enc[0].created_at), "dd/MM/yyyy HH:mm:ss");
         }
 
-        // Calculate age
-        if (pd.birthDate && !pd.age) {
-          const birth = new Date(pd.birthDate.split("/").reverse().join("-"));
-          const now = new Date();
-          const years = now.getFullYear() - birth.getFullYear();
-          pd.age = `${years} ano(s)`;
+        // Idade ao vivo a partir da data de nascimento — tem prioridade sobre
+        // o campo estático (patients.age, congelado na admissão). pd.birthDate
+        // já vem em dd/mm/yyyy; convertida para ISO antes do cálculo.
+        if (pd.birthDate) {
+          const isoBirthDate = pd.birthDate.split("/").reverse().join("-");
+          pd.age = formatAge(isoBirthDate) || pd.age;
         }
 
         setPatientData(pd);

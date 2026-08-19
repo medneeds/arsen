@@ -28,6 +28,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
+import { formatAge } from "@/lib/patientAge";
 
 const SECTORS = ["red", "yellow", "blue", "outside", "ucc"] as const;
 
@@ -145,7 +146,7 @@ const CcihDashboardPage = () => {
       const [patientsRes, culturesRes] = await Promise.all([
         supabase
           .from("patients")
-          .select("id, name, bed_number, sector, age, diagnoses, admission_date, uti_cultures_antibiotics, uti_devices")
+          .select("id, name, bed_number, sector, age, diagnoses, admission_date, uti_cultures_antibiotics, uti_devices, patient_registry_id")
           .eq("hospital_unit_id", hospitalId)
           .eq("state_id", stateId)
           .eq("is_vacant", false)
@@ -164,7 +165,24 @@ const CcihDashboardPage = () => {
       if (patientsRes.error) throw patientsRes.error;
       if (culturesRes.error) throw culturesRes.error;
 
-      setPatients((patientsRes.data as PatientBasic[]) || []);
+      // Idade ao vivo a partir de patient_registry.birth_date — patients.age
+      // é estático (congelado na admissão). Busca em lote (1 query), não N+1.
+      const patientRows = (patientsRes.data as (PatientBasic & { patient_registry_id?: string | null })[]) || [];
+      const registryIds = Array.from(new Set(patientRows.map(p => p.patient_registry_id).filter(Boolean))) as string[];
+      const birthDateByRegistryId = new Map<string, string | null>();
+      if (registryIds.length > 0) {
+        const { data: registryRows } = await supabase
+          .from("patient_registry")
+          .select("id, birth_date")
+          .in("id", registryIds);
+        for (const r of registryRows || []) birthDateByRegistryId.set(r.id, r.birth_date);
+      }
+      const patientsWithLiveAge = patientRows.map(p => ({
+        ...p,
+        age: (p.patient_registry_id && formatAge(birthDateByRegistryId.get(p.patient_registry_id))) || p.age,
+      }));
+
+      setPatients(patientsWithLiveAge as PatientBasic[]);
       setCultureResults((culturesRes.data as CultureResult[]) || []);
     } catch (err) {
       console.error(err);

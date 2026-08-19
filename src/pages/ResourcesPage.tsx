@@ -7,6 +7,7 @@ import { useDepartment } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { formatAge } from "@/lib/patientAge";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NotesTab from "@/components/resources/NotesTab";
 import {
@@ -88,7 +89,7 @@ const ResourcesPage = () => {
   const loadPatients = async () => {
     const { data, error } = await supabase
       .from("patients")
-      .select("id, name, bed_number, sector, age, admission_history, diagnoses")
+      .select("id, name, bed_number, sector, age, admission_history, diagnoses, patient_registry_id")
       .eq("department", currentDepartment)
       .order("sector", { ascending: true })
       .order("bed_number", { ascending: true });
@@ -100,7 +101,20 @@ const ResourcesPage = () => {
       return;
     }
 
-    setPatients(data || []);
+    // Idade ao vivo a partir de patient_registry.birth_date — patients.age
+    // é estático (congelado na admissão). Busca em lote (1 query), não N+1.
+    const rows = data || [];
+    const registryIds = Array.from(new Set(rows.map((p: any) => p.patient_registry_id).filter(Boolean)));
+    const birthDateByRegistryId = new Map<string, string | null>();
+    if (registryIds.length > 0) {
+      const { data: registryRows } = await supabase
+        .from("patient_registry").select("id, birth_date").in("id", registryIds);
+      for (const r of registryRows || []) birthDateByRegistryId.set(r.id, r.birth_date);
+    }
+    setPatients(rows.map((p: any) => ({
+      ...p,
+      age: (p.patient_registry_id && formatAge(birthDateByRegistryId.get(p.patient_registry_id))) || p.age,
+    })));
   };
 
   const handleImportDiagnoses = () => {
