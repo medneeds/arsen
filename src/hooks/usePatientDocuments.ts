@@ -28,7 +28,8 @@ export type DocumentType =
   | "parecer"
   | "evolucao"
   | "round"
-  | "receituario";
+  | "receituario"
+  | "documento_medico";
 
 export interface PatientDocument {
   id: string;
@@ -46,7 +47,7 @@ export interface PatientDocument {
   patientSector?: string | null;
   patientBed?: string | null;
   /** Tabela de origem — útil p/ navegação e ações (reimprimir, ver detalhe). */
-  source: "exam_requests" | "culture_results" | "clinical_evolutions" | "hemocomponent_requests" | "sat_requests" | "aih_requests" | "receituarios";
+  source: "exam_requests" | "culture_results" | "clinical_evolutions" | "hemocomponent_requests" | "sat_requests" | "aih_requests" | "receituarios" | "documentos_medicos";
   /** Payload bruto p/ ações específicas (reimprimir, abrir dialog, etc). */
   raw: any;
 }
@@ -193,7 +194,25 @@ export function usePatientDocuments({
       }
       if (encounterOr) receituarioQuery = receituarioQuery.or(encounterOr);
 
-      const [examRes, cultureRes, evolRes, receituarioRes] = await Promise.all([examQuery, cultureQuery, evolQuery, receituarioQuery]);
+      // ── documentos_medicos (atestado / relatório / termo) ──
+      let docMedicoQuery = supabase
+        .from("documentos_medicos")
+        .select("*")
+        .eq("hospital_unit_id", hospitalUnitId)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (resolvedRegistryId && validId) {
+        docMedicoQuery = docMedicoQuery.or(
+          `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${validId})`
+        );
+      } else if (validId) {
+        docMedicoQuery = docMedicoQuery.eq("patient_id", validId);
+      } else if (patientName) {
+        docMedicoQuery = docMedicoQuery.eq("patient_name", patientName);
+      }
+      if (encounterOr) docMedicoQuery = docMedicoQuery.or(encounterOr);
+
+      const [examRes, cultureRes, evolRes, receituarioRes, docMedicoRes] = await Promise.all([examQuery, cultureQuery, evolQuery, receituarioQuery, docMedicoQuery]);
 
       const list: PatientDocument[] = [];
 
@@ -285,6 +304,30 @@ export function usePatientDocuments({
         });
       });
 
+      // documentos_medicos → "documento_medico" (atestado / relatório / termo)
+      const DOC_MEDICO_LABEL: Record<string, string> = {
+        atestado: "Atestado Médico",
+        relatorio: "Relatório Médico",
+        termo: "Termo / Declaração",
+      };
+      (docMedicoRes.data || []).forEach((r: any) => {
+        list.push({
+          id: r.id,
+          type: "documento_medico",
+          label: DOC_MEDICO_LABEL[r.type] || "Documento Médico",
+          // mesmo racional do receituário: documento emitido, sem workflow
+          // de status.
+          status: "concluido",
+          rawStatus: r.type,
+          createdAt: r.created_at,
+          authorName: r.signed_by_name,
+          patientSector: r.patient_sector,
+          patientBed: r.patient_bed,
+          source: "documentos_medicos",
+          raw: r,
+        });
+      });
+
       list.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
       setDocs(list);
     } catch (e: any) {
@@ -308,6 +351,7 @@ export function usePatientDocuments({
       .on("postgres_changes", { event: "*", schema: "public", table: "culture_results" }, fetchAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "clinical_evolutions" }, fetchAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "receituarios" }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "documentos_medicos" }, fetchAll)
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -358,6 +402,7 @@ export const DOCUMENT_TYPE_META: Record<
   evolucao: { label: "Evoluções", shortLabel: "Evolução", tone: "text-slate-600 dark:text-slate-400", bg: "bg-slate-500/10", ring: "ring-slate-500/30" },
   round: { label: "Round multiprofissional", shortLabel: "Round", tone: "text-teal-600 dark:text-teal-400", bg: "bg-teal-500/10", ring: "ring-teal-500/30" },
   receituario: { label: "Receituários", shortLabel: "Receituário", tone: "text-lime-600 dark:text-lime-400", bg: "bg-lime-500/10", ring: "ring-lime-500/30" },
+  documento_medico: { label: "Atestados, Relatórios e Termos", shortLabel: "Documento", tone: "text-sky-600 dark:text-sky-400", bg: "bg-sky-500/10", ring: "ring-sky-500/30" },
 };
 
 export const STATUS_BADGE: Record<

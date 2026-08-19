@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Activity, Clock, Droplet, FileCheck, FileText, Microscope, NotebookPen, Plus, Printer,
+  Activity, Clock, Droplet, FileCheck, FileSignature, FileText, Microscope, NotebookPen, Plus, Printer,
   ScanLine, ScrollText, Stethoscope, Syringe, TestTubes,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,7 @@ const TYPE_ICON: Record<DocumentType, React.ElementType> = {
   evolucao: NotebookPen,
   round: Activity,
   receituario: ScrollText,
+  documento_medico: FileSignature,
 };
 
 interface PatientDocumentsPanelProps {
@@ -62,6 +63,7 @@ const DEFAULT_ORDER: DocumentType[] = [
   "evolucao",
   "round",
   "receituario",
+  "documento_medico",
 ];
 
 function formatDate(d: string) {

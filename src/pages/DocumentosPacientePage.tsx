@@ -24,6 +24,8 @@ import {
   type PatientDocument,
 } from "@/hooks/usePatientDocuments";
 import { printReceituario, type ReceituarioData } from "@/lib/receituario";
+import { printDocumentoMedico } from "@/lib/documentoMedico";
+import type { DocumentoMedicoData } from "@/hooks/useDocumentoMedico";
 
 const DocumentosPacientePage = () => {
   const [searchParams] = useSearchParams();
@@ -84,6 +86,9 @@ const DocumentosPacientePage = () => {
         case "receituario":
           setMedDocOpen(true);
           break;
+        case "documento_medico":
+          setMedDocOpen(true);
+          break;
       }
     },
     [navigate, searchParams]
@@ -92,6 +97,8 @@ const DocumentosPacientePage = () => {
   const handlePrintDoc = useCallback(async (doc: PatientDocument) => {
     if (doc.source === "receituarios") {
       await printReceituario(doc.raw as ReceituarioData, currentHospital?.name);
+    } else if (doc.source === "documentos_medicos") {
+      await printDocumentoMedico(doc.raw as DocumentoMedicoData, { hospitalName: currentHospital?.name });
     }
   }, [currentHospital]);
 
@@ -110,6 +117,8 @@ const DocumentosPacientePage = () => {
       // Receituário não tem tela de detalhe própria — abrir = reimprimir,
       // já que o documento em si é a única representação que existe.
       printReceituario(doc.raw as ReceituarioData, currentHospital?.name);
+    } else if (doc.source === "documentos_medicos") {
+      printDocumentoMedico(doc.raw as DocumentoMedicoData, { hospitalName: currentHospital?.name });
     }
   }, [navigate, searchParams, currentHospital]);
 

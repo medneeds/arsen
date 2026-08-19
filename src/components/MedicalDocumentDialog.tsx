@@ -17,10 +17,27 @@ import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 import { useReceituario } from "@/hooks/useReceituario";
-import type { ReceituarioItem, ReceituarioType } from "@/lib/receituario";
+import { printReceituario, type ReceituarioType } from "@/lib/receituario";
+import type { ReceituarioItem } from "@/lib/receituario";
+import { useDocumentoMedico, type DocumentoMedicoType } from "@/hooks/useDocumentoMedico";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 type DocKind = "atestado" | "relatorio" | "termo" | "receituario" | "receituario_especial";
+
+const RECEITUARIO_HISTORY_LABEL: Record<string, string> = {
+  alta: "Receituário de Alta",
+  ambulatorial: "Receituário Ambulatorial",
+  simples: "Receituário Simples",
+  controle_especial: "Receituário de Controle Especial",
+};
+
+const DOC_MEDICO_HISTORY_LABEL: Record<string, string> = {
+  atestado: "Atestado Médico",
+  relatorio: "Relatório Médico",
+  termo: "Termo / Declaração",
+};
 
 const TEMPLATES: Array<{
   kind: DocKind;
@@ -59,7 +76,8 @@ export function MedicalDocumentDialog({
   const doctor = useCurrentDoctor();
   const { patient } = usePatientLive(patientId);
   const { cidPrimary } = usePatientCid(patientId);
-  const { save: saveReceituario } = useReceituario(patientId, patientName);
+  const { receituarios, save: saveReceituario } = useReceituario(patientId, patientName);
+  const { documentos, save: saveDocumentoMedico } = useDocumentoMedico(patientId, patientName);
 
   const [kind, setKind] = useState<DocKind | null>(null);
 
@@ -182,6 +200,29 @@ export function MedicalDocumentDialog({
       if (!savedId) return;
     }
 
+    // Atestado / Relatório / Termo: mesmo princípio — grava PRIMEIRO. Antes
+    // desta correção esses 3 tipos não tinham nem tabela: só geravam HTML e
+    // mandavam pra impressão, sem nenhum rastro no sistema.
+    if (!isRx) {
+      if (!body.trim()) {
+        toast.error("Preencha o conteúdo do documento antes de imprimir");
+        return;
+      }
+      const savedId = await saveDocumentoMedico({
+        type: kind as DocumentoMedicoType,
+        patient_id: patientId ?? null,
+        patient_name: patientName,
+        patient_bed: patientBed,
+        patient_sector: patientSector,
+        body,
+        days: kind === "atestado" && days ? Number(days) : null,
+        cid: kind === "relatorio" && includeCid ? (cidPrimary || null) : null,
+        signed_by_name: doctor.fullName || undefined,
+        signed_by_crm: doctor.crm || undefined,
+      });
+      if (!savedId) return;
+    }
+
     const logo = await prepareLogo();
     const subtitle =
       kind === "atestado" && days ? `Afastamento de ${days} dia(s)` :
@@ -268,6 +309,72 @@ export function MedicalDocumentDialog({
                 </div>
               </button>
             )}
+          </div>
+        )}
+
+        {/* Histórico — combina receituários e documentos (atestado/relatório/
+            termo) já emitidos para este paciente, com reimpressão. Aparece
+            só na tela de seleção de tipo (mesmo componente usado no Cockpit
+            e em Documentos do Paciente — cobre os 2 lugares de uma vez). */}
+        {!kind && (receituarios.length > 0 || documentos.length > 0) && (
+          <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5 space-y-1.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
+              Histórico ({receituarios.length + documentos.length})
+            </p>
+            <div className="max-h-40 overflow-y-auto space-y-1">
+              {[
+                ...receituarios.map((r) => ({
+                  key: `rx-${r.id}`,
+                  label: RECEITUARIO_HISTORY_LABEL[r.type] || "Receituário",
+                  detail: Array.isArray(r.items) && r.items.length > 0
+                    ? `${r.items.length} ${r.items.length === 1 ? "item" : "itens"}`
+                    : undefined,
+                  createdAt: r.created_at,
+                  authorName: r.signed_by_name,
+                  onPrint: () => printReceituario(r, hospitalName),
+                })),
+                ...documentos.map((d) => ({
+                  key: `doc-${d.id}`,
+                  label: DOC_MEDICO_HISTORY_LABEL[d.type] || "Documento",
+                  detail: undefined,
+                  createdAt: d.created_at,
+                  authorName: d.signed_by_name,
+                  onPrint: () => printDocumentoMedico(d, {
+                    hospitalName,
+                    doctorName: doctor.fullName,
+                    doctorCrm: doctor.crm,
+                    doctorSpecialty: doctor.specialty,
+                  }),
+                })),
+              ]
+                .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+                .map((item) => (
+                  <div
+                    key={item.key}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-background/80 border border-border/40 text-xs"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground/90 truncate normal-case">
+                        {item.label}
+                        {item.detail && <span className="text-muted-foreground font-normal"> · {item.detail}</span>}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground normal-case">
+                        {item.createdAt ? format(new Date(item.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : ""}
+                        {item.authorName ? ` · ${item.authorName}` : ""}
+                      </p>
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 shrink-0"
+                      title="Reimprimir"
+                      onClick={item.onPrint}
+                    >
+                      <Printer className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+            </div>
           </div>
         )}
 
