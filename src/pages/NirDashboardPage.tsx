@@ -604,6 +604,33 @@ export default function NirDashboardPage() {
         indicadores continuam na página, abaixo — quem quer o panorama rola;
         quem entrou para fazer algo escolhe de cara.
       */}
+      {/*
+        ORDEM DA PÁGINA — situação primeiro, escolha depois.
+
+        Camada 1 (aqui): alertas e os oito KPIs, respondendo "como está o
+        hospital agora" antes de qualquer clique. É onde o gestor pediu que
+        ficassem, e é UMA faixa compacta — o que empurrava os cards para fora
+        da tela eram a ocupação por setor e a previsão de altas, que foram para
+        o Censo e para Relatórios (ea36c43f).
+
+        Camada 2 (abaixo): os cards. Quem já viu a situação escolhe o que fazer.
+
+        Alertas ANTES dos KPIs de propósito: alerta é acionável e pode mudar a
+        decisão; indicador é contexto.
+
+        Os FILTROS GLOBAIS saíram. Eles governam apenas as métricas desta faixa,
+        e apareciam como um bloco do tamanho de um card no meio da página, sem
+        dono aparente. Viraram um controle discreto dentro da própria faixa —
+        ver NirGlobalFilters logo abaixo dos KPIs.
+      */}
+      <NirAlertBar metrics={metrics} onOpenAlert={setActiveAlert} />
+
+      <NirKpiStrip metrics={metrics} />
+
+      {/* Controles da faixa de indicadores — período, escopo e prioridade */}
+      <NirGlobalFilters filters={filters} onChange={setFilters} onRefresh={refetch} isLoading={isLoading} />
+
+
       {/* Module Grid */}
       <div>
         <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Módulos de Acesso</h2>
@@ -675,16 +702,6 @@ export default function NirDashboardPage() {
         </Card>
       )}
 
-
-      {/* ── Panorama: indicadores abaixo dos módulos ────────────────────── */}
-      {/* Filtros globais */}
-      <NirGlobalFilters filters={filters} onChange={setFilters} onRefresh={refetch} isLoading={isLoading} />
-
-      {/* Alertas inteligentes */}
-      <NirAlertBar metrics={metrics} onOpenAlert={setActiveAlert} />
-
-      {/* KPIs ricos */}
-      <NirKpiStrip metrics={metrics} />
 
 
       {/* Alert detail dialog */}
