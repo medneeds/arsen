@@ -29,29 +29,44 @@ import { sectorLabelFromCode, HOSPITAL_SECTOR_GROUPS } from "@/lib/hospitalSecto
 import { SlaBadge } from "@/components/sla/SlaBadge";
 import { NirRequestActions } from "@/components/nir/NirRequestActions";
 
+/**
+ * Os tipos de solicitação — o que antes eram sete cards separados.
+ *
+ * "Solicitação de Vaga" vem primeiro e é o padrão: o gestor a marcou como
+ * importantíssima, então quem abre o card cai nela.
+ */
+const REQUEST_TYPES = [
+  { key: "solicitacao_vaga", label: "Vaga" },
+  { key: "interna", label: "Regulação interna" },
+  { key: "externa_sisreg", label: "Regulação externa" },
+  { key: "transferencia_interunidade", label: "Interunidade" },
+  { key: "alta_administrativa", label: "Alta administrativa" },
+  { key: "bloqueio_interdicao", label: "Bloqueio" },
+  { key: "parecer_regulatorio", label: "Parecer" },
+  { key: "todos", label: "Todos" },
+] as const;
+
 const NIR_MODULES = [
-  { key: "regulacao_interna", label: "Regulação Interna", subtitle: "Transferências entre setores", icon: ArrowLeftRight, color: "text-blue-500", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/20" },
-  { key: "regulacao_externa", label: "Regulação Externa", subtitle: "SISREG / Central de Regulação", icon: Globe, color: "text-purple-500", bgColor: "bg-purple-500/10", borderColor: "border-purple-500/20" },
-  { key: "censo_leitos", label: "Censo de Leitos", subtitle: "Ocupação em tempo real", icon: BedDouble, color: "text-emerald-500", bgColor: "bg-emerald-500/10", borderColor: "border-emerald-500/20" },
   /*
-    Mapa de Leitos — card NOVO, deliberadamente SEPARADO do Censo.
+    CINCO cards, no lugar de dez.
 
-    Decisão do gestor (10/08/2026): não absorver um no outro. O Censo trabalha
-    com mais detalhamento uma série de questões que o Mapa não traz. Os dois
-    serão sincronizados no futuro e trabalharão em harmonia, mas por ora
-    convivem separados.
+    SETE deles — Regulação Interna, Regulação Externa, Solicitação de Vaga,
+    Transferência Interunidade, Alta Administrativa, Bloqueio/Interdição e
+    Parecer Regulatório — caíam TODOS no mesmo `default` do switch:
+    renderizavam a MESMA lista, mudando apenas o `request_type`. Não eram sete
+    módulos; eram sete filtros da mesma lista, vestidos de módulo.
 
-    Este é o primeiro passo de tirar o mapa do ambiente do usuário médico e
-    levá-lo ao NIR. O mapa NÃO sai do médico agora — passa a existir nos dois
-    lugares, para a migração ser gradual.
+    Agora são o que sempre foram por baixo: um card "Solicitações" com os tipos
+    como filtro interno. Uma porta com sete gavetas, em vez de sete portas para
+    a mesma sala.
+
+    As cinco naturezas: VER (mapa, censo) · FAZER (solicitações) ·
+    ANALISAR (relatórios) · CONFIGURAR (a construir).
   */
   { key: "mapa_leitos", label: "Mapa de Leitos", subtitle: "Visão operacional dos leitos", icon: LayoutGrid, color: "text-sky-500", bgColor: "bg-sky-500/10", borderColor: "border-sky-500/20" },
-  { key: "solicitacao_vaga", label: "Solicitação de Vaga", subtitle: "Pedidos de internação", icon: ClipboardPlus, color: "text-amber-500", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/20" },
-  { key: "transferencia_interunidade", label: "Transferência Interunidade", subtitle: "Movimentação entre hospitais", icon: Repeat, color: "text-cyan-500", bgColor: "bg-cyan-500/10", borderColor: "border-cyan-500/20" },
-  { key: "alta_administrativa", label: "Alta Administrativa", subtitle: "Liberação e desfecho", icon: LogOut, color: "text-rose-500", bgColor: "bg-rose-500/10", borderColor: "border-rose-500/20" },
-  { key: "bloqueio_interdicao", label: "Bloqueio / Interdição", subtitle: "Gestão de leitos bloqueados", icon: Lock, color: "text-red-500", bgColor: "bg-red-500/10", borderColor: "border-red-500/20" },
-  { key: "parecer_regulatorio", label: "Parecer Regulatório", subtitle: "Avaliações e laudos", icon: FileText, color: "text-indigo-500", bgColor: "bg-indigo-500/10", borderColor: "border-indigo-500/20" },
-  { key: "relatorios_nir", label: "Relatórios NIR", subtitle: "Indicadores e métricas", icon: BarChart3, color: "text-teal-500", bgColor: "bg-teal-500/10", borderColor: "border-teal-500/20" },
+  { key: "censo_leitos", label: "Censo de Leitos", subtitle: "Panorama, ocupação e bloqueios", icon: BedDouble, color: "text-emerald-500", bgColor: "bg-emerald-500/10", borderColor: "border-emerald-500/20" },
+  { key: "solicitacoes", label: "Solicitações", subtitle: "Fila de trabalho do NIR", icon: ClipboardPlus, color: "text-amber-500", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/20" },
+  { key: "relatorios_nir", label: "Relatórios NIR", subtitle: "Indicadores, séries e previsões", icon: BarChart3, color: "text-violet-500", bgColor: "bg-violet-500/10", borderColor: "border-violet-500/20" },
 ];
 
 const BED_STATUS_LABELS: Record<
@@ -122,6 +137,7 @@ export default function NirDashboardPage() {
   const { currentHospital } = useHospital();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeModule, setActiveModule] = useState<string | null>(searchParams.get("modulo"));
+  const [requestType, setRequestType] = useState<string>("solicitacao_vaga");
 
   useEffect(() => {
     const m = searchParams.get("modulo");
@@ -470,23 +486,19 @@ export default function NirDashboardPage() {
         );
 
       default: {
-        const typeMap: Record<string, string> = {
-          regulacao_interna: "interna",
-          regulacao_externa: "externa_sisreg",
-          solicitacao_vaga: "solicitacao_vaga",
-          transferencia_interunidade: "transferencia_interunidade",
-          alta_administrativa: "alta_administrativa",
-          bloqueio_interdicao: "bloqueio_interdicao",
-          parecer_regulatorio: "parecer_regulatorio",
-        };
-        const moduleConfig = NIR_MODULES.find(m => m.key === activeModule);
-        const typeFilter = typeMap[activeModule];
-        const moduleRequests = typeFilter ? filteredRequests.filter((r: any) => r.request_type === typeFilter) : filteredRequests;
-
+        /*
+          Os sete tipos que antes eram CARDS agora sao ABAS deste card unico.
+          "Solicitação de Vaga" entra PRE-SELECIONADA: o gestor a marcou como
+          importantissima, entao quem abre cai no que mais usa e os demais
+          ficam a um clique.
+        */
+        const moduleRequests = requestType === "todos"
+          ? filteredRequests
+          : filteredRequests.filter((r: any) => r.request_type === requestType);
         return (
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h3 className="text-lg font-semibold text-foreground">{moduleConfig?.label}</h3>
+              <h3 className="text-lg font-semibold text-foreground">Solicitações</h3>
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -503,10 +515,35 @@ export default function NirDashboardPage() {
               </div>
             </div>
 
+            {/* Tipos como filtro interno — o que antes eram sete cards */}
+            <div className="flex flex-wrap gap-1.5">
+              {REQUEST_TYPES.map((t) => {
+                // Sem `any`: só o campo que interessa, tipado no ponto de uso.
+                const qtd = t.key === "todos"
+                  ? filteredRequests.length
+                  : filteredRequests.filter((r: { request_type?: string }) => r.request_type === t.key).length;
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setRequestType(t.key)}
+                    className={cn(
+                      "px-2.5 py-1 rounded-md text-[11px] font-medium border transition-colors",
+                      requestType === t.key
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background hover:bg-accent border-border text-muted-foreground",
+                    )}
+                  >
+                    {t.label}
+                    {qtd > 0 && <span className="ml-1.5 tabular-nums opacity-80">{qtd}</span>}
+                  </button>
+                );
+              })}
+            </div>
+
             <NirRequestActions
               requests={moduleRequests}
-              typeFilter={typeFilter}
-              defaultRequestType={typeFilter}
+              typeFilter={requestType === "todos" ? undefined : requestType}
+              defaultRequestType={requestType === "todos" ? undefined : requestType}
             />
           </div>
         );
