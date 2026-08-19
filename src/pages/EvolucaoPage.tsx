@@ -607,7 +607,7 @@ const EvolucaoPage = () => {
                 </p>
                 <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                   {patient.unit && <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold uppercase tracking-wide">{patient.unit}</span>}
-                  {patient.age && <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold">{patient.age}</span>}
+                  {(ids.registry?.age || livePatient?.age) && <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold">{ids.registry?.age || livePatient?.age}</span>}
                   {patient.birthDate && (
                     <>
                       <span className="text-muted-foreground/40 text-[10px]">·</span>
@@ -871,7 +871,7 @@ const EvolucaoPage = () => {
           // em PrescricaoPage.tsx.
           const headerSex = patient.sex || ids.registry?.sex || '';
           const headerBirthDate = patient.birthDate || ids.registry?.birthDate || '';
-          const headerAge = patient.age || livePatient?.age || '';
+          const headerAge = ids.registry?.age || patient.age || livePatient?.age || '';
           const headerAdmissionDate = patient.admissionDate || livePatient?.admissionDate || '';
           const headerAllergies =
             patient.allergies ||

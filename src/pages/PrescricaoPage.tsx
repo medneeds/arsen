@@ -5346,6 +5346,10 @@ const PrescricaoPage = () => {
       apply('name', registryFull.fullName);
       apply('motherName', registryFull.motherName);
       apply('birthDate', registryFull.birthDate);
+      // Idade: sincroniza a calculada ao vivo (a partir de birthDate) — para
+      // de depender do valor semeado uma única vez via URL (?patientAge=),
+      // que ficava congelado pelo resto da sessão de prescrição.
+      apply('age', registryFull.age);
       apply('sex', registryFull.sex);
       const composedAddress = [registryFull.address, registryFull.neighborhood]
         .filter(Boolean)
