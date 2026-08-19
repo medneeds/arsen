@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { 
   Building2, ArrowLeftRight, Globe, BedDouble, ClipboardPlus, 
-  Repeat, LogOut, Lock, FileText, BarChart3, Search, RefreshCw, AlertTriangle, Sparkles, Activity, Move, X, LayoutGrid
+  Repeat, LogOut, Lock, FileText, BarChart3, Search, RefreshCw, AlertTriangle, Sparkles, Activity, Move, X, LayoutGrid, Settings2
 } from "lucide-react";
 import BedMapPage from "@/pages/Index";
+import { NirConfigPanel } from "@/components/nir/NirConfigPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,7 @@ const NIR_MODULES = [
   { key: "censo_leitos", label: "Censo de Leitos", subtitle: "Panorama, ocupação e bloqueios", icon: BedDouble, color: "text-emerald-500", bgColor: "bg-emerald-500/10", borderColor: "border-emerald-500/20" },
   { key: "solicitacoes", label: "Solicitações", subtitle: "Fila de trabalho do NIR", icon: ClipboardPlus, color: "text-amber-500", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/20" },
   { key: "relatorios_nir", label: "Relatórios NIR", subtitle: "Indicadores, séries e previsões", icon: BarChart3, color: "text-violet-500", bgColor: "bg-violet-500/10", borderColor: "border-violet-500/20" },
+  { key: "configuracao", label: "Configuração", subtitle: "Estrutura e capacidade de leitos", icon: Settings2, color: "text-slate-500", bgColor: "bg-slate-500/10", borderColor: "border-slate-500/20" },
 ];
 
 const BED_STATUS_LABELS: Record<
@@ -468,6 +470,8 @@ export default function NirDashboardPage() {
       }
 
 
+      case "configuracao":
+        return <NirConfigPanel bedsBySector={bedsBySector} />;
       case "relatorios_nir":
         return (
           <div className="space-y-4">
