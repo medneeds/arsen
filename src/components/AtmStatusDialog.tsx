@@ -5,7 +5,7 @@
 import React, { useMemo, useState } from "react";
 import { differenceInCalendarDays, format, parseISO, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Shield, Activity, Plus, AlertTriangle, Clock, Ban, ChevronRight, CalendarDays, Timer, Printer } from "lucide-react";
+import { Shield, Activity, Plus, AlertTriangle, Clock, Ban, ChevronRight, CalendarDays, Timer, Printer, CalendarPlus } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -15,6 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 export interface AtmStatusItem {
@@ -53,6 +56,11 @@ interface Props {
    * para suspensão (apenas em modo 'troca').
    */
   onStartNew: (mode: 'acrescimo' | 'troca' | 'inicial', suspendIds: string[]) => void;
+  /**
+   * Estende a duração de um ATB em curso sem criar novo episódio.
+   * Atualiza apenas atbPlannedDays do item existente.
+   */
+  onExtendItem?: (itemId: string, newPlannedDays: number, justification: string) => void;
 }
 
 function dayOfTherapy(startDate?: string): number | null {
@@ -76,11 +84,28 @@ function endDate(startDate?: string, plannedDays?: string): string | null {
 }
 
 export function AtmStatusDialog({
-  open, onOpenChange, activeItems, onSuspendItem, onReprintItem, onReprintAll, onStartNew,
+  open, onOpenChange, activeItems, onSuspendItem, onReprintItem, onReprintAll, onStartNew, onExtendItem,
 }: Props) {
   const [tab, setTab] = useState<'status' | 'nova'>('status');
   const [novaMode, setNovaMode] = useState<'acrescimo' | 'troca'>('acrescimo');
   const [trocaIds, setTrocaIds] = useState<Set<string>>(new Set());
+
+  // Mini-modal de extensão de tratamento
+  const [extendItem, setExtendItem] = useState<AtmStatusItem | null>(null);
+  const [extendDays, setExtendDays] = useState('');
+  const [extendJustification, setExtendJustification] = useState('');
+
+  const currentDays = extendItem ? parseInt(extendItem.atbPlannedDays || '0', 10) : 0;
+  const newDays = parseInt(extendDays, 10);
+  const extendValid = Number.isFinite(newDays) && newDays > currentDays;
+
+  const handleConfirmExtend = () => {
+    if (!extendItem || !extendValid || !onExtendItem) return;
+    onExtendItem(extendItem.id, newDays, extendJustification.trim());
+    setExtendItem(null);
+    setExtendDays('');
+    setExtendJustification('');
+  };
 
   const hasActive = activeItems.length > 0;
 
@@ -112,6 +137,7 @@ export function AtmStatusDialog({
   };
 
   return (
+  <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[88vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-5 py-3 border-b bg-[hsl(217,55%,96%)]/50 dark:bg-[hsl(217,75%,12%)]/15">
@@ -264,6 +290,21 @@ export function AtmStatusDialog({
                             )}
                           </div>
                           <div className="flex flex-col gap-1 items-end shrink-0">
+                            {onExtendItem && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setExtendItem(it);
+                                  setExtendDays(it.atbPlannedDays || '');
+                                  setExtendJustification('');
+                                }}
+                                className="h-7 text-[11px] gap-1 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                                title="Estender duração do tratamento sem criar novo episódio"
+                              >
+                                <CalendarPlus className="h-3 w-3" /> Estender
+                              </Button>
+                            )}
                             {onReprintItem && (
                               <Button
                                 variant="ghost"
@@ -402,5 +443,84 @@ export function AtmStatusDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* ── Mini-modal: Estender tratamento ── */}
+    <Dialog open={!!extendItem} onOpenChange={(o) => { if (!o) { setExtendItem(null); setExtendDays(''); setExtendJustification(''); } }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-sm">
+            <CalendarPlus className="h-4 w-4 text-emerald-600" />
+            Estender tratamento
+          </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            {extendItem?.name} — mantém o mesmo episódio terapêutico, apenas amplia a duração planejada.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 py-1">
+          {/* Duração atual */}
+          <div className="rounded-md bg-muted/50 border border-border/60 px-3 py-2 text-xs">
+            <span className="text-muted-foreground">Duração atual: </span>
+            <strong>{currentDays > 0 ? `${currentDays} dias` : 'não definida'}</strong>
+            {extendItem?.atbStartDate && currentDays > 0 && (() => {
+              const end = endDate(extendItem.atbStartDate, extendItem.atbPlannedDays);
+              return end ? <span className="text-muted-foreground"> · previsão {end}</span> : null;
+            })()}
+          </div>
+
+          {/* Nova duração */}
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Nova duração total (dias)</Label>
+            <Input
+              type="number"
+              min={currentDays + 1}
+              value={extendDays}
+              onChange={e => setExtendDays(e.target.value)}
+              placeholder={`Mínimo ${currentDays + 1} dias`}
+              className="h-8 text-sm"
+            />
+            {extendDays && !extendValid && (
+              <p className="text-xs text-destructive">
+                A nova duração deve ser maior que a atual ({currentDays} dias).
+              </p>
+            )}
+            {extendValid && extendItem?.atbStartDate && (() => {
+              const newEnd = endDate(extendItem.atbStartDate, String(newDays));
+              return newEnd ? (
+                <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                  Nova previsão de término: <strong>{newEnd}</strong>
+                </p>
+              ) : null;
+            })()}
+          </div>
+
+          {/* Justificativa */}
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Justificativa da extensão</Label>
+            <Textarea
+              value={extendJustification}
+              onChange={e => setExtendJustification(e.target.value)}
+              placeholder="Ex.: aguardar resultado de cultura; má resposta clínica; manutenção por orientação da CCIH..."
+              className="text-xs min-h-[64px] resize-none"
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" size="sm" onClick={() => { setExtendItem(null); setExtendDays(''); setExtendJustification(''); }}>
+            Cancelar
+          </Button>
+          <Button
+            size="sm"
+            disabled={!extendValid || !extendJustification.trim()}
+            onClick={handleConfirmExtend}
+            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            <CalendarPlus className="h-3.5 w-3.5" /> Confirmar extensão
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </>
   );
 }

@@ -9981,12 +9981,27 @@ const PrescricaoPage = () => {
             toast.info(`${suspendIds.length} antibiótico(s) suspenso(s) — preencha o substituto na Guia ATM.`);
           }
           setPendingAtbMode(mode);
-          // Sinaliza transição → onOpenChange do AtmStatus não vai limpar pendingAntimicrobialMed
           transitioningToAtmGuideRef.current = true;
           setTimeout(() => {
             setAntimicrobialGuideOpen(true);
             transitioningToAtmGuideRef.current = false;
           }, 150);
+        }}
+        onExtendItem={(itemId, newPlannedDays, justification) => {
+          setItems(prev => prev.map(it => {
+            if (it.id !== itemId) return it;
+            const prevDays = it.atbPlannedDays || '?';
+            const note = `Extensão de ${prevDays} para ${newPlannedDays} dias — ${justification}`;
+            return {
+              ...it,
+              atbPlannedDays: String(newPlannedDays),
+              // Registra a justificativa na observação do item para auditoria
+              instructions: it.instructions
+                ? `${it.instructions}\n[${new Date().toLocaleDateString('pt-BR')}] ${note}`
+                : `[${new Date().toLocaleDateString('pt-BR')}] ${note}`,
+            };
+          }));
+          toast.success(`Tratamento estendido para ${newPlannedDays} dias`);
         }}
       />
 
