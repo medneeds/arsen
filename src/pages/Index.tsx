@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { UtiSectorSection } from "@/components/UtiSectorSection";
 import { PreAdmissionSection, type PreAdmissionSectionHandle } from "@/components/PreAdmissionSection";
@@ -140,7 +140,26 @@ function DynamicHeader({ children }: { children: React.ReactNode }) {
   );
 }
 
-const Index = () => {
+/**
+ * Mapa de leitos.
+ *
+ * `embedded` existe para o módulo do NIR poder exibir o MESMO mapa dentro do
+ * ambiente dele, sem duplicar moldura: quando true, a página não monta o
+ * MainLayout nem o BreadcrumbBar próprio, porque o hospedeiro já os fornece.
+ *
+ * POR QUE UMA PROP E NÃO UM COMPONENTE EXTRAÍDO: são 1.177 linhas com blocos
+ * de impressão entremeados ao conteúdo. Partir o arquivo agora arriscaria
+ * perder estado ou comportamento num fluxo que já roda em produção — e o
+ * ganho seria só de organização. A prop entrega o mesmo resultado com um diff
+ * que dá para revisar inteiro. Extrair de verdade fica para quando a
+ * convivência entre os dois ambientes estiver estabilizada.
+ */
+interface IndexProps {
+  /** Sem moldura própria — o hospedeiro (ex.: módulo do NIR) já a fornece. */
+  embedded?: boolean;
+}
+
+const Index = ({ embedded = false }: IndexProps = {}) => {
   const navigate = useNavigate();
   
   // Redirect sector-specific profiles to their dedicated panels
@@ -854,8 +873,11 @@ const Index = () => {
     return <PageLoader message={sectorLabel ? `Preparando ${sectorLabel}` : "Carregando mapa de leitos"} subMessage={whitelabel.institution.hospitalAbbreviation} />;
   }
 
+  // Moldura: MainLayout quando a pagina e a rota; Fragment quando embutida.
+  const Moldura = embedded ? React.Fragment : MainLayout;
+
   return (
-    <MainLayout>
+    <Moldura>
         {/* Print-only layout - Hidden on screen, visible only when printing */}
         {printMode && (
           <div className="print-layout-container">
@@ -943,7 +965,10 @@ const Index = () => {
           {/* Main Content — sem cabeçalho duplicado; ações ficam no BreadcrumbBar */}
           <main className="w-full max-w-full px-1.5 sm:px-4 py-2 sm:py-6 print:py-0 print:px-1 print:pt-3 overflow-x-hidden">
             <div className="space-y-2 sm:space-y-4 print:space-y-1">
-              {/* Unified breadcrumb bar com ações integradas */}
+              {/* Unified breadcrumb bar com ações integradas.
+                  Embutido no NIR, o hospedeiro ja tem o proprio cabecalho —
+                  montar este produziria duas barras empilhadas. */}
+              {!embedded && (
               <BreadcrumbBar
                 variant="institutional"
                 actions={
@@ -1017,7 +1042,7 @@ const Index = () => {
                   </TooltipProvider>
                 }
               />
-
+              )}
 
               {/* Pre-admission section — filtra por setor ativo (exceto UE Vertical/Horizontal que mostram todos) */}
               <div className="print:hidden space-y-3">
@@ -1174,7 +1199,7 @@ const Index = () => {
         open={quickViewOpen}
         onOpenChange={setQuickViewOpen}
       />
-    </MainLayout>
+    </Moldura>
   );
 };
 
