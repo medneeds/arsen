@@ -2,6 +2,8 @@ import { ReactNode } from "react";
 import { LucideIcon, Building2 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { SectorSelector } from "@/components/SectorSelector";
+import type { Department } from "@/contexts/DepartmentContext";
 
 interface PlatformHeaderProps {
   /** Title of the section / sector */
@@ -17,6 +19,23 @@ interface PlatformHeaderProps {
   variant?: "institutional" | "clinical";
   /** Optional eyebrow label above the title (e.g. "Painel · Gestor") */
   eyebrow?: string;
+  /**
+   * Exibe o seletor HIERÁRQUICO de setores (Enfermarias, UTI, UCI, Urgência e
+   * Emergência, Anexo Vascular, Centro Cirúrgico) ao lado das ações.
+   *
+   * É o mesmo `SectorSelector` do painel clínico — a hierarquia já existia
+   * ali e não precisou ser reconstruída. O que faltava era o cabeçalho
+   * institucional poder usá-la.
+   */
+  showSectorSelector?: boolean;
+  /**
+   * Trocar de setor NAVEGA (padrão do painel clínico) ou apenas troca o setor
+   * corrente. No NIR, trocar de setor filtra o que está na tela — sair da
+   * página seria o oposto do esperado.
+   */
+  navigateOnSectorSelect?: boolean;
+  /** Disparado após a troca de setor, com o departamento escolhido. */
+  onSectorSelect?: (department: Department) => void;
   className?: string;
 }
 
@@ -32,6 +51,9 @@ export function PlatformHeader({
   actions,
   variant = "institutional",
   eyebrow,
+  showSectorSelector = false,
+  navigateOnSectorSelect = true,
+  onSectorSelect,
   className,
 }: PlatformHeaderProps) {
   const isInstitutional = variant === "institutional";
@@ -128,11 +150,18 @@ export function PlatformHeader({
           )}
         </div>
 
-        {actions && (
+        {(showSectorSelector || actions) && (
           <div className={cn(
             "flex items-center gap-1.5 shrink-0",
             isInstitutional && "institutional-actions"
           )}>
+            {showSectorSelector && (
+              <SectorSelector
+                variant={isInstitutional ? "dark" : "light"}
+                navigateOnSelect={navigateOnSectorSelect}
+                onSelect={onSectorSelect}
+              />
+            )}
             {actions}
           </div>
         )}

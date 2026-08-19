@@ -74,9 +74,21 @@ const SECTOR_HIERARCHY: SectorGroup[] = [
 interface SectorSelectorProps {
   /** Visual variant: light for body, dark for header */
   variant?: "light" | "dark";
+  /**
+   * Trocar de setor NAVEGA para o mapa daquele setor (padrão), ou apenas
+   * TROCA o setor corrente sem sair da página.
+   *
+   * No painel clínico, escolher um setor significa ir para outro lugar. No
+   * módulo do NIR significa filtrar o que já está na tela — sair da página
+   * seria o oposto do esperado. Mesmo componente, dois contratos, e o padrão
+   * preserva o comportamento de quem já o usa.
+   */
+  navigateOnSelect?: boolean;
+  /** Disparado após a troca, com o departamento escolhido. */
+  onSelect?: (department: Department) => void;
 }
 
-export function SectorSelector({ variant = "light" }: SectorSelectorProps) {
+export function SectorSelector({ variant = "light", navigateOnSelect = true, onSelect }: SectorSelectorProps) {
   const navigate = useNavigate();
   const { currentDepartment, currentSectorLabel, setCurrentDepartment } = useDepartment();
   const { role } = useAuth();
@@ -113,9 +125,12 @@ export function SectorSelector({ variant = "light" }: SectorSelectorProps) {
       }
     }
     setCurrentDepartment(department);
-    // Todos os perfis (inclusive Gestor) vão ao mapa de leitos do setor selecionado.
-    // Gestor mantém o filtro persistido e pode voltar ao Painel do Gestor pelo menu.
-    navigate(link || "/mapa");
+    onSelect?.(department);
+    if (navigateOnSelect) {
+      // Todos os perfis (inclusive Gestor) vão ao mapa de leitos do setor selecionado.
+      // Gestor mantém o filtro persistido e pode voltar ao Painel do Gestor pelo menu.
+      navigate(link || "/mapa");
+    }
     setOpen(false);
   };
 

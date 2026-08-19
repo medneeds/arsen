@@ -454,6 +454,16 @@ export default function NirDashboardPage() {
             <span className="truncate">Gestão de leitos e fluxo de pacientes</span>
           </>
         }
+        /*
+          Seletor hierarquico de setores no cabecalho institucional.
+
+          `navigateOnSectorSelect={false}`: no painel clinico, escolher um setor
+          significa IR para outro lugar; aqui significa filtrar o que ja esta na
+          tela. Sair da pagina do NIR ao trocar de setor seria o oposto do
+          esperado por quem regula leitos.
+        */
+        showSectorSelector
+        navigateOnSectorSelect={false}
         actions={
           <>
             <NirNotificationCenter metrics={metrics} />
