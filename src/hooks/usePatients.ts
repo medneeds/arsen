@@ -1,5 +1,5 @@
 // @ts-ignore - React module/types are resolved by the app build environment
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ADMISSION_STATUS } from "@/lib/admissionStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { Patient } from "@/types/patient";
@@ -8,6 +8,7 @@ import { Department } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { isExtraBed } from "@/utils/bedNaming";
+import { formatAge } from "@/lib/patientAge";
 
 export const GHOST_PREFIXES = ['ARQ-', 'ARCHIVED-', '_GHOST_'];
 
@@ -25,6 +26,9 @@ export function usePatients(department?: Department, sector?: string) {
   const { toast } = useToast();
   const { currentState, currentHospital } = useHospital();
   const { user } = useAuth();
+  // Cache (registry_id → birth_date) populado a cada fetchPatients, reaproveitado
+  // pelo mapper dos eventos realtime para não fazer uma query extra por evento.
+  const registryBirthDateCacheRef = useRef<Map<string, string | null>>(new Map());
 
   const fetchPatients = async () => {
     try {
@@ -80,13 +84,35 @@ export function usePatients(department?: Department, sector?: string) {
 
       if (error) throw error;
 
+      // Busca em lote (1 query, não N+1) o birth_date de todos os
+      // patient_registry vinculados aos pacientes desta página/lista, para
+      // calcular a idade ao vivo em vez de usar patients.age (estático,
+      // congelado no dia da admissão).
+      const registryIds = Array.from(
+        new Set((data || []).map((p: any) => p.patient_registry_id).filter(Boolean)),
+      );
+      const birthDateByRegistryId = new Map<string, string | null>();
+      if (registryIds.length > 0) {
+        const { data: registryRows } = await supabase
+          .from('patient_registry')
+          .select('id, birth_date')
+          .in('id', registryIds);
+        for (const r of registryRows || []) {
+          birthDateByRegistryId.set(r.id, r.birth_date);
+        }
+      }
+      // Alimenta o cache compartilhado com os eventos realtime (não substitui
+      // o Map inteiro — soma, para não perder ids resolvidos por outra chamada
+      // concorrente de fetchPatients, ex.: sector e department disparando junto).
+      birthDateByRegistryId.forEach((v, k) => registryBirthDateCacheRef.current.set(k, v));
+
       const mappedPatients: Patient[] = (data || [])
         .filter(p => !((p.bed_number || '').startsWith('_GHOST')))  // filtrar leitos ghost residuais
         .map(p => ({
         id: p.id,
         bedNumber: p.bed_number,
         name: p.name || '',
-        age: p.age || '',
+        age: formatAge(p.patient_registry_id ? birthDateByRegistryId.get(p.patient_registry_id) : null) || p.age || '',
         sector: p.sector as 'red' | 'yellow' | 'blue' | 'outside',
         diagnoses: p.diagnoses ? p.diagnoses.split('\n').filter(Boolean) : [],
         medicalHistory: p.medical_history ? p.medical_history.split('\n').filter(Boolean) : [],
@@ -876,7 +902,11 @@ export function usePatients(department?: Department, sector?: string) {
     id: record.id,
     bedNumber: record.bed_number,
     name: record.name || '',
-    age: record.age || '',
+    age: formatAge(
+      record.patient_registry_id
+        ? registryBirthDateCacheRef.current.get(record.patient_registry_id)
+        : null,
+    ) || record.age || '',
     sector: record.sector as 'red' | 'yellow' | 'blue' | 'outside',
     diagnoses: record.diagnoses ? record.diagnoses.split('\n').filter(Boolean) : [],
     medicalHistory: record.medical_history ? record.medical_history.split('\n').filter(Boolean) : [],
