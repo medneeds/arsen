@@ -27,7 +27,8 @@ export type DocumentType =
   | "imagem"
   | "parecer"
   | "evolucao"
-  | "round";
+  | "round"
+  | "receituario";
 
 export interface PatientDocument {
   id: string;
@@ -45,7 +46,7 @@ export interface PatientDocument {
   patientSector?: string | null;
   patientBed?: string | null;
   /** Tabela de origem — útil p/ navegação e ações (reimprimir, ver detalhe). */
-  source: "exam_requests" | "culture_results" | "clinical_evolutions" | "hemocomponent_requests" | "sat_requests" | "aih_requests";
+  source: "exam_requests" | "culture_results" | "clinical_evolutions" | "hemocomponent_requests" | "sat_requests" | "aih_requests" | "receituarios";
   /** Payload bruto p/ ações específicas (reimprimir, abrir dialog, etc). */
   raw: any;
 }
@@ -174,7 +175,25 @@ export function usePatientDocuments({
       }
       if (encounterOr) evolQuery = evolQuery.or(encounterOr);
 
-      const [examRes, cultureRes, evolRes] = await Promise.all([examQuery, cultureQuery, evolQuery]);
+      // ── receituarios (alta / ambulatorial / simples / controle especial) ──
+      let receituarioQuery = supabase
+        .from("receituarios")
+        .select("*")
+        .eq("hospital_unit_id", hospitalUnitId)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (resolvedRegistryId && validId) {
+        receituarioQuery = receituarioQuery.or(
+          `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${validId})`
+        );
+      } else if (validId) {
+        receituarioQuery = receituarioQuery.eq("patient_id", validId);
+      } else if (patientName) {
+        receituarioQuery = receituarioQuery.eq("patient_name", patientName);
+      }
+      if (encounterOr) receituarioQuery = receituarioQuery.or(encounterOr);
+
+      const [examRes, cultureRes, evolRes, receituarioRes] = await Promise.all([examQuery, cultureQuery, evolQuery, receituarioQuery]);
 
       const list: PatientDocument[] = [];
 
@@ -239,6 +258,33 @@ export function usePatientDocuments({
         });
       });
 
+      // receituarios → "receituario" (alta / ambulatorial / simples / controle especial)
+      const RECEITUARIO_LABEL: Record<string, string> = {
+        alta: "Receituário de Alta",
+        ambulatorial: "Receituário Ambulatorial",
+        simples: "Receituário Simples",
+        controle_especial: "Receituário de Controle Especial",
+      };
+      (receituarioRes.data || []).forEach((r: any) => {
+        const itemCount = Array.isArray(r.items) ? r.items.length : 0;
+        const itemsSuffix = itemCount > 0 ? ` (${itemCount} ${itemCount === 1 ? "item" : "itens"})` : "";
+        list.push({
+          id: r.id,
+          type: "receituario",
+          label: `${RECEITUARIO_LABEL[r.type] || "Receituário"}${itemsSuffix}`,
+          // receituário não tem workflow de status (pendente/concluído) — é
+          // um documento emitido, por definição já "pronto".
+          status: "concluido",
+          rawStatus: r.type,
+          createdAt: r.created_at,
+          authorName: r.signed_by_name,
+          patientSector: r.patient_sector,
+          patientBed: r.patient_bed,
+          source: "receituarios",
+          raw: r,
+        });
+      });
+
       list.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
       setDocs(list);
     } catch (e: any) {
@@ -261,6 +307,7 @@ export function usePatientDocuments({
       .on("postgres_changes", { event: "*", schema: "public", table: "exam_requests" }, fetchAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "culture_results" }, fetchAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "clinical_evolutions" }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "receituarios" }, fetchAll)
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -310,6 +357,7 @@ export const DOCUMENT_TYPE_META: Record<
   parecer: { label: "Pareceres", shortLabel: "Parecer", tone: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-500/10", ring: "ring-cyan-500/30" },
   evolucao: { label: "Evoluções", shortLabel: "Evolução", tone: "text-slate-600 dark:text-slate-400", bg: "bg-slate-500/10", ring: "ring-slate-500/30" },
   round: { label: "Round multiprofissional", shortLabel: "Round", tone: "text-teal-600 dark:text-teal-400", bg: "bg-teal-500/10", ring: "ring-teal-500/30" },
+  receituario: { label: "Receituários", shortLabel: "Receituário", tone: "text-lime-600 dark:text-lime-400", bg: "bg-lime-500/10", ring: "ring-lime-500/30" },
 };
 
 export const STATUS_BADGE: Record<

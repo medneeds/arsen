@@ -224,7 +224,7 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
               signedByName={form.signed_by_name}
               signedByCrm={form.signed_by_crm}
               hospitalName={hospitalName}
-              onSave={async (data) => { await saveReceituario(data); }}
+              onSave={async (data) => !!(await saveReceituario(data))}
             />
           </div>
           <div className="grid grid-cols-2 gap-2">

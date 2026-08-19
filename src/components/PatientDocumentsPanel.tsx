@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Activity, Clock, Droplet, FileCheck, FileText, Microscope, NotebookPen, Plus, Printer,
-  ScanLine, Stethoscope, Syringe, TestTubes,
+  ScanLine, ScrollText, Stethoscope, Syringe, TestTubes,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -30,6 +30,7 @@ const TYPE_ICON: Record<DocumentType, React.ElementType> = {
   parecer: Stethoscope,
   evolucao: NotebookPen,
   round: Activity,
+  receituario: ScrollText,
 };
 
 interface PatientDocumentsPanelProps {
@@ -60,6 +61,7 @@ const DEFAULT_ORDER: DocumentType[] = [
   "parecer",
   "evolucao",
   "round",
+  "receituario",
 ];
 
 function formatDate(d: string) {

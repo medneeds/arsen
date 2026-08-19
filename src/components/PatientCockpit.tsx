@@ -13,6 +13,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { sanitizeRichHtml } from "@/components/ui/rich-text-editor";
 import { ScrollText } from "lucide-react";
 import { ReceituarioForm } from "./ReceituarioForm";
+import { printReceituario } from "@/lib/receituario";
 import { useReceituario } from "@/hooks/useReceituario";
 import {
   Activity, AlertTriangle, ArrowRight, BedDouble, ChevronLeft, ChevronRight,
@@ -64,6 +65,13 @@ interface PatientCockpitProps {
   /** Show as a fixed sidebar (desktop) or as inline content (mobile) */
   variant?: "fixed" | "inline";
 }
+
+const RECEITUARIO_TYPE_LABEL: Record<string, string> = {
+  alta: "Receituário de Alta",
+  ambulatorial: "Receituário Ambulatorial",
+  simples: "Receituário Simples",
+  controle_especial: "Receituário de Controle Especial",
+};
 
 const sectorLabels: Record<string, string> = {
   red: "UTI 1",
@@ -148,7 +156,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   // Live patient data — sync sector, bed, allergies, medical responsibility, etc.
   const { patient: livePatient } = usePatientLive(patientProp?.id || null);
   const patient = livePatient || patientProp;
-  const { save: saveReceituario } = useReceituario(patient?.id ?? null, patient?.name ?? null);
+  const { receituarios, save: saveReceituario } = useReceituario(patient?.id ?? null, patient?.name ?? null);
 
   // Watch for medical responsibility changes from other users
   const lastResponsibilityRef = useRef<string | null>(
@@ -1240,6 +1248,51 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               Receituário Ambulatorial
             </DialogTitle>
           </DialogHeader>
+
+          {/* Histórico — todos os receituários já emitidos para este paciente
+              (ambulatorial, alta, simples e controle especial), com opção de
+              reimprimir. Antes disso não existia nenhum jeito de consultar o
+              que já tinha sido preenchido. */}
+          {receituarios.length > 0 && (
+            <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5 space-y-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
+                Histórico ({receituarios.length})
+              </p>
+              <div className="max-h-32 overflow-y-auto space-y-1">
+                {receituarios.map((r) => {
+                  const itemCount = Array.isArray(r.items) ? r.items.length : 0;
+                  const typeLabel = RECEITUARIO_TYPE_LABEL[r.type] || "Receituário";
+                  return (
+                    <div
+                      key={r.id}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-background/80 border border-border/40 text-xs"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-foreground/90 truncate">
+                          {typeLabel}
+                          {itemCount > 0 && <span className="text-muted-foreground font-normal"> · {itemCount} {itemCount === 1 ? "item" : "itens"}</span>}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {r.created_at ? format(new Date(r.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : ""}
+                          {r.signed_by_name ? ` · ${r.signed_by_name}` : ""}
+                        </p>
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 shrink-0"
+                        title="Reimprimir"
+                        onClick={() => printReceituario(r, currentHospital?.name)}
+                      >
+                        <Printer className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {patient?.name && (
             <ReceituarioForm
               type="ambulatorial"
@@ -1248,8 +1301,9 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               patientBed={patient.bedNumber}
               patientSector={patient.sector}
               onSave={async (data) => {
-                await saveReceituario(data);
-                setReceituarioOpen(false);
+                const id = await saveReceituario(data);
+                if (id) setReceituarioOpen(false);
+                return !!id;
               }}
             />
           )}

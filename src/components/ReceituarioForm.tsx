@@ -43,8 +43,10 @@ interface ReceituarioFormProps {
   signedByName?: string;
   signedByCrm?: string;
   hospitalName?: string;
-  /** Chamado ao salvar (persistir no banco) */
-  onSave: (data: ReceituarioData) => Promise<void>;
+  /** Chamado ao salvar (persistir no banco). Retorna se salvou com sucesso —
+   *  "Imprimir" bloqueia a impressão quando vier false, para nunca emitir
+   *  um receituário que não existe no sistema. */
+  onSave: (data: ReceituarioData) => Promise<boolean>;
   /** Receituário existente para edição (undefined = novo) */
   initial?: ReceituarioData | null;
   /** Classe CSS adicional */
@@ -145,8 +147,17 @@ export function ReceituarioForm({
   };
 
   const handlePrint = async () => {
+    if (items.length === 0 && !freeText.trim()) {
+      toast.error("Adicione pelo menos um medicamento ou orientação antes de imprimir");
+      return;
+    }
     setPrinting(true);
     try {
+      // Grava PRIMEIRO. Se falhar, nada é impresso — receituário no papel
+      // sem contrapartida no sistema é o furo de rastreabilidade que essa
+      // correção veio fechar.
+      const ok = await onSave(buildPayload());
+      if (!ok) return;
       await printReceituario(buildPayload(), hospitalName);
     } finally {
       setPrinting(false);

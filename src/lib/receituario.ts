@@ -13,7 +13,7 @@ import {
 
 // ── Tipos ───────────────────────────────────────────────────────────────────
 
-export type ReceituarioType = "alta" | "ambulatorial";
+export type ReceituarioType = "alta" | "ambulatorial" | "simples" | "controle_especial";
 
 export interface ReceituarioItem {
   id: string;
@@ -74,8 +74,14 @@ export const RECEITUARIO_FREQUENCIES = [
 
 // ── Impressão ────────────────────────────────────────────────────────────────
 
+const TYPE_LABELS: Record<ReceituarioType, { title: string; sectorLabel: string; docPrefix: string }> = {
+  alta: { title: "Receituário de Alta", sectorLabel: "Alta Hospitalar", docPrefix: "RX-ALTA" },
+  ambulatorial: { title: "Receituário Médico", sectorLabel: "Ambulatório", docPrefix: "RX-AMB" },
+  simples: { title: "Receituário Médico", sectorLabel: "Assistência Médica", docPrefix: "RECEIT" },
+  controle_especial: { title: "Receituário de Controle Especial", sectorLabel: "Assistência Médica", docPrefix: "RECCE" },
+};
+
 function buildReceituarioBody(data: ReceituarioData): string {
-  const isAlta = data.type === "alta";
   const sector = data.patient_bed && data.patient_sector
     ? `${data.patient_bed} · ${data.patient_sector}`
     : data.patient_bed || data.patient_sector || "";
@@ -115,15 +121,22 @@ function buildReceituarioBody(data: ReceituarioData): string {
     </div>
   ` : "";
 
+  const especialNote = data.type === "controle_especial" ? `
+    <div style="margin-top:14px;padding:8px 10px;border:1px dashed #be123c;border-radius:4px;font-size:9.5px;color:#9f1239;background:#fff1f2;">
+      <strong>Receituário de Controle Especial</strong> — Portaria SVS/MS nº 344/1998. Validade: 30 dias
+      a partir da data de emissão. Emitido em 2 (duas) vias: 1ª via retida pela farmácia, 2ª via do paciente.
+    </div>
+  ` : "";
+
   const titleSection = `
     <div style="text-align:center;margin-bottom:18px;">
       <div style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#0f172a;border:2px solid #0f172a;display:inline-block;padding:5px 20px;border-radius:4px;">
-        ${isAlta ? "Receituário de Alta" : "Receituário Médico"}
+        ${TYPE_LABELS[data.type].title}
       </div>
     </div>
   `;
 
-  return titleSection + header + itemsHtml + freeTextHtml;
+  return titleSection + header + itemsHtml + freeTextHtml + especialNote;
 }
 
 export async function printReceituario(
@@ -131,14 +144,22 @@ export async function printReceituario(
   hospitalName?: string,
 ): Promise<void> {
   const logoDataUrl = await prepareLogo();
-  const bodyHtml = buildReceituarioBody(data);
+  const baseBody = buildReceituarioBody(data);
+  // Controle especial sai sempre em 2 vias (farmácia + paciente) — mesma
+  // regra que já existia no MedicalDocumentDialog antes de passar a gravar.
+  const bodyHtml = data.type === "controle_especial"
+    ? `<div style="border-bottom:2px dashed #94a3b8;padding-bottom:8px;margin-bottom:8px;"><div style="font-size:8px;color:#64748b;margin-bottom:4px;"><b>1ª VIA — FARMÁCIA</b></div>${baseBody}</div>
+       <div style="page-break-before:always;"></div>
+       <div><div style="font-size:8px;color:#64748b;margin-bottom:4px;"><b>2ª VIA — PACIENTE</b></div>${baseBody}</div>`
+    : baseBody;
 
+  const { title, sectorLabel, docPrefix } = TYPE_LABELS[data.type];
   const html = buildNormaZeroDocument({
-    title: data.type === "alta" ? "Receituário de Alta" : "Receituário Médico",
-    subtitle: data.patient_name,
-    sectorLabel: data.type === "alta" ? "Alta Hospitalar" : "Ambulatório",
+    title,
+    subtitle: data.type === "controle_especial" ? "Portaria SVS/MS nº 344/1998 — 2 vias" : data.patient_name,
+    sectorLabel,
     hospitalName: hospitalName || "Hospital Municipal Djalma Marques (Socorrão I)",
-    docCodePrefix: data.type === "alta" ? "RX-ALTA" : "RX-AMB",
+    docCodePrefix: docPrefix,
     bodyHtml,
     signatures: [
       {

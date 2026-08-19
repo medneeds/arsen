@@ -23,6 +23,7 @@ import {
   type DocumentType,
   type PatientDocument,
 } from "@/hooks/usePatientDocuments";
+import { printReceituario, type ReceituarioData } from "@/lib/receituario";
 
 const DocumentosPacientePage = () => {
   const [searchParams] = useSearchParams();
@@ -80,10 +81,19 @@ const DocumentosPacientePage = () => {
           // AIH é gerada no fluxo de internação, não como requisição avulsa
           toast.info("Laudo de AIH é gerado no fluxo de internação — abra o status da admissão do paciente");
           break;
+        case "receituario":
+          setMedDocOpen(true);
+          break;
       }
     },
     [navigate, searchParams]
   );
+
+  const handlePrintDoc = useCallback(async (doc: PatientDocument) => {
+    if (doc.source === "receituarios") {
+      await printReceituario(doc.raw as ReceituarioData, currentHospital?.name);
+    }
+  }, [currentHospital]);
 
   const handleOpenDoc = useCallback((doc: PatientDocument) => {
     // Roteia para a página apropriada com base na origem
@@ -96,8 +106,12 @@ const DocumentosPacientePage = () => {
     } else if (doc.source === "clinical_evolutions") {
       const params = new URLSearchParams(searchParams);
       navigate(`/evolucao?${params.toString()}`);
+    } else if (doc.source === "receituarios") {
+      // Receituário não tem tela de detalhe própria — abrir = reimprimir,
+      // já que o documento em si é a única representação que existe.
+      printReceituario(doc.raw as ReceituarioData, currentHospital?.name);
     }
-  }, [navigate, searchParams]);
+  }, [navigate, searchParams, currentHospital]);
 
   if (!hasPatient) {
     return (
@@ -216,6 +230,7 @@ const DocumentosPacientePage = () => {
             loading={loading}
             onNewByType={handleNewByType}
             onOpenDoc={handleOpenDoc}
+            onPrintDoc={handlePrintDoc}
           />
         </div>
 

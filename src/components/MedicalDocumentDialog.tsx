@@ -16,6 +16,9 @@ import { usePatientLive } from "@/hooks/usePatientLive";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { useReceituario } from "@/hooks/useReceituario";
+import type { ReceituarioItem, ReceituarioType } from "@/lib/receituario";
+import { toast } from "sonner";
 
 type DocKind = "atestado" | "relatorio" | "termo" | "receituario" | "receituario_especial";
 
@@ -56,6 +59,7 @@ export function MedicalDocumentDialog({
   const doctor = useCurrentDoctor();
   const { patient } = usePatientLive(patientId);
   const { cidPrimary } = usePatientCid(patientId);
+  const { save: saveReceituario } = useReceituario(patientId, patientName);
 
   const [kind, setKind] = useState<DocKind | null>(null);
 
@@ -144,6 +148,40 @@ export function MedicalDocumentDialog({
 
   const handlePrint = async () => {
     if (!tpl) return;
+
+    // Receituário (simples ou de controle especial): grava PRIMEIRO — mesmo
+    // furo de rastreabilidade já corrigido em Hemocomponente/SAT/Procedimento,
+    // só que aqui nem existia tabela até esta correção. Se salvar falhar,
+    // nada é impresso.
+    if (isRx) {
+      const validItems = rx.filter((r) => r.name.trim());
+      if (validItems.length === 0) {
+        toast.error("Adicione pelo menos um medicamento antes de imprimir");
+        return;
+      }
+      const items: ReceituarioItem[] = validItems.map((r) => ({
+        id: crypto.randomUUID(),
+        name: r.name,
+        dose: r.dose,
+        route: r.route,
+        frequency: r.freq,
+        duration: r.duration,
+      }));
+      const receituarioType: ReceituarioType = kind === "receituario_especial" ? "controle_especial" : "simples";
+      const savedId = await saveReceituario({
+        type: receituarioType,
+        patient_id: patientId ?? null,
+        patient_name: patientName,
+        patient_bed: patientBed,
+        patient_sector: patientSector,
+        items,
+        free_text: body || undefined,
+        signed_by_name: doctor.fullName || undefined,
+        signed_by_crm: doctor.crm || undefined,
+      });
+      if (!savedId) return;
+    }
+
     const logo = await prepareLogo();
     const subtitle =
       kind === "atestado" && days ? `Afastamento de ${days} dia(s)` :
