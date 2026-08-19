@@ -430,7 +430,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         name: patient.name,
         bed: live.bed || patient.bed,
         sector: live.sector || patient.sector,
-        age: patient.age,
+        age: identifiers.registry?.age || patient.age,
       },
       identifiers: {
         prontuario: identifiers.prontuario,

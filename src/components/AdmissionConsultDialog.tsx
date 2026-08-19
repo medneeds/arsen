@@ -207,7 +207,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
         name: patient.name,
         bed: live.bed || patient.bed,
         sector: live.sector || patient.sector,
-        age: patient.age,
+        age: identifiers.registry?.age || patient.age,
       },
       identifiers: {
         prontuario: identifiers.prontuario,

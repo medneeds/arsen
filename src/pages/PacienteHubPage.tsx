@@ -423,7 +423,7 @@ export default function PacienteHubPage() {
         name: ctx.patientName,
         bed: live.bed || ctx.patientBed,
         sector: live.sector || ctx.patientSector,
-        age: ctx.patientAge,
+        age: identifiers.registry?.age || ctx.patientAge,
       },
       identifiers: {
         prontuario: identifiers.prontuario,
