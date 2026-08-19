@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { 
   Building2, ArrowLeftRight, Globe, BedDouble, ClipboardPlus, 
-  Repeat, LogOut, Lock, FileText, BarChart3, Search, RefreshCw, AlertTriangle, Sparkles, Activity, Move, X
+  Repeat, LogOut, Lock, FileText, BarChart3, Search, RefreshCw, AlertTriangle, Sparkles, Activity, Move, X, LayoutGrid
 } from "lucide-react";
+import BedMapPage from "@/pages/Index";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,19 @@ const NIR_MODULES = [
   { key: "regulacao_interna", label: "Regulação Interna", subtitle: "Transferências entre setores", icon: ArrowLeftRight, color: "text-blue-500", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/20" },
   { key: "regulacao_externa", label: "Regulação Externa", subtitle: "SISREG / Central de Regulação", icon: Globe, color: "text-purple-500", bgColor: "bg-purple-500/10", borderColor: "border-purple-500/20" },
   { key: "censo_leitos", label: "Censo de Leitos", subtitle: "Ocupação em tempo real", icon: BedDouble, color: "text-emerald-500", bgColor: "bg-emerald-500/10", borderColor: "border-emerald-500/20" },
+  /*
+    Mapa de Leitos — card NOVO, deliberadamente SEPARADO do Censo.
+
+    Decisão do gestor (10/08/2026): não absorver um no outro. O Censo trabalha
+    com mais detalhamento uma série de questões que o Mapa não traz. Os dois
+    serão sincronizados no futuro e trabalharão em harmonia, mas por ora
+    convivem separados.
+
+    Este é o primeiro passo de tirar o mapa do ambiente do usuário médico e
+    levá-lo ao NIR. O mapa NÃO sai do médico agora — passa a existir nos dois
+    lugares, para a migração ser gradual.
+  */
+  { key: "mapa_leitos", label: "Mapa de Leitos", subtitle: "Visão operacional dos leitos", icon: LayoutGrid, color: "text-sky-500", bgColor: "bg-sky-500/10", borderColor: "border-sky-500/20" },
   { key: "solicitacao_vaga", label: "Solicitação de Vaga", subtitle: "Pedidos de internação", icon: ClipboardPlus, color: "text-amber-500", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/20" },
   { key: "transferencia_interunidade", label: "Transferência Interunidade", subtitle: "Movimentação entre hospitais", icon: Repeat, color: "text-cyan-500", bgColor: "bg-cyan-500/10", borderColor: "border-cyan-500/20" },
   { key: "alta_administrativa", label: "Alta Administrativa", subtitle: "Liberação e desfecho", icon: LogOut, color: "text-rose-500", bgColor: "bg-rose-500/10", borderColor: "border-rose-500/20" },
@@ -223,6 +237,13 @@ export default function NirDashboardPage() {
     if (!activeModule) return null;
 
     switch (activeModule) {
+      case "mapa_leitos":
+        /*
+          O MESMO mapa da rota /mapa, com `embedded`: sem MainLayout e sem
+          BreadcrumbBar proprios, porque esta pagina ja fornece a moldura.
+          Um caminho de codigo so — o que for corrigido no mapa vale aqui.
+        */
+        return <BedMapPage embedded />;
       case "censo_leitos": {
         // Agrupa setores conforme HOSPITAL_SECTOR_GROUPS para reduzir o ruído
         // de filtros e dar uma visão hierárquica institucional.
@@ -551,7 +572,13 @@ export default function NirDashboardPage() {
       {/* Active Module Content */}
       {activeModule && (
         <Card>
-          <CardContent className="pt-6 pb-4">
+          {/*
+            O Mapa de Leitos traz a propria estrutura de secoes e ja tem
+            respiro interno; o padding do Card somaria margem sobre margem e
+            estreitaria as linhas de leito sem necessidade. Os demais modulos
+            seguem com o padding de sempre.
+          */}
+          <CardContent className={activeModule === "mapa_leitos" ? "p-0 overflow-x-auto" : "pt-6 pb-4"}>
             {renderModuleContent()}
           </CardContent>
         </Card>
