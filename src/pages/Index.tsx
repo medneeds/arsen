@@ -19,6 +19,7 @@ import { ShiftReminderDialog } from "@/components/ShiftReminderDialog";
 import { Patient } from "@/types/patient";
 import { Printer, Eye, EyeOff, CheckSquare, Trash2, GripVertical, ClipboardCheck, RefreshCw, Maximize2, Minimize2 } from "lucide-react";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
+import { SectorSelector } from "@/components/SectorSelector";
 import { whitelabel } from "@/config/whitelabel";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { GlobalSearchDialog } from "@/components/GlobalSearchDialog";
@@ -187,12 +188,6 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
     }
   }, [currentSectorCode]);
   
-  // Persist active sector changes
-  const handleSectorChange = (sector: string) => {
-    setActiveSector(sector);
-    localStorage.setItem("selected_sector", sector);
-  };
-
   // Sector visual config — padronizado em azul institucional para integridade visual
   const BLUE_DOT = "bg-primary/80 border-primary/40";
   const BLUE_GRAD = "from-primary/20 to-primary/10";
@@ -1043,6 +1038,39 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                 }
               />
               )}
+
+              {/*
+                Barra de setores do modo EMBUTIDO.
+
+                No ambiente médico o mapa é a página inteira, e o seletor vive
+                no cabeçalho logo acima — perto o bastante. Dentro do NIR o mapa
+                abre no acordeão, DEPOIS dos cards: o seletor do cabeçalho fica
+                a uma tela de distância do conteúdo que ele governa, e trocar de
+                setor exige rolar para cima e voltar.
+
+                O controle precisa estar onde a ação acontece. Esta barra usa o
+                MESMO SectorSelector do cabeçalho — mesma hierarquia, mesmo
+                contexto — apenas mais perto. Com navigateOnSelect={false},
+                porque aqui trocar de setor filtra a lista, não navega.
+
+                Só o setor corrente é carregado, nunca todos: `usePatients`
+                busca por `activeSector`, e a Enf. Vascular sozinha tem 95
+                leitos. Ver tudo de uma vez seria caro e ilegível.
+              */}
+              {embedded && (
+                <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border bg-muted/30 px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                      Setor exibido
+                    </span>
+                    <SectorSelector variant="light" navigateOnSelect={false} />
+                  </div>
+                  <span className="text-[11px] text-muted-foreground tabular-nums">
+                    {patients.filter((p) => p.sector === activeSector).length} leitos
+                  </span>
+                </div>
+              )}
+
 
               {/* Pre-admission section — filtra por setor ativo (exceto UE Vertical/Horizontal que mostram todos) */}
               <div className="print:hidden space-y-3">
