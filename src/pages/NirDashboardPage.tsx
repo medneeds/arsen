@@ -512,29 +512,56 @@ export default function NirDashboardPage() {
       {/* Module Grid */}
       <div>
         <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Módulos de Acesso</h2>
-        <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-3">
-          {NIR_MODULES.map(mod => (
-            <Card
-              key={mod.key}
-              className={cn(
-                "cursor-pointer transition-all hover:shadow-md border",
-                activeModule === mod.key
-                  ? `${mod.borderColor} ${mod.bgColor} ring-1 ring-offset-1`
-                  : "hover:border-border/80"
-              )}
-              onClick={() => setActiveModule(activeModule === mod.key ? null : mod.key)}
-            >
-              <CardContent className="py-4 px-4 flex flex-col items-center text-center gap-2">
-                <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center", mod.bgColor)}>
-                  <mod.icon className={cn("h-5 w-5", mod.color)} />
+        {/*
+          Mesma linguagem visual do atendimento inicial do painel clínico:
+          card quadrado (aspect-square), faixa fina no topo, ícone em caixa
+          arredondada, rótulo em versalete e legenda abaixo.
+
+          A grade era `grid-cols-3` FIXA nos três breakpoints — dez cards em
+          três colunas viram quatro fileiras, e no celular cada card ficava com
+          um terço da largura. Agora acompanha a do Hub: 2 no mobile, 3 no sm,
+          5 a partir do md — dez cards em duas fileiras cheias.
+
+          A COR SEGUE POR CATEGORIA, como o gestor pediu (escolha conservadora).
+          A faixa do topo usa a cor do módulo; o card em si permanece neutro,
+          como no Hub. Quando a cor passar a significar ESTADO, é aqui que a
+          regra entra, sem mexer no resto.
+        */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
+          {NIR_MODULES.map(mod => {
+            const ativo = activeModule === mod.key;
+            return (
+              <button
+                key={mod.key}
+                onClick={() => setActiveModule(ativo ? null : mod.key)}
+                aria-pressed={ativo}
+                title={mod.subtitle}
+                className="relative group text-left"
+              >
+                <div className={cn(
+                  "relative flex flex-col items-center justify-center aspect-square rounded-lg overflow-hidden",
+                  "bg-card border transition-all cursor-pointer",
+                  ativo
+                    ? `${mod.borderColor} ${mod.bgColor} shadow-md`
+                    : "border-border hover:scale-[1.02] hover:shadow-md",
+                )}>
+                  <span className={cn("absolute top-0 left-0 right-0 h-1", mod.bgColor.replace("/10", "/70"))} />
+                  <div className={cn(
+                    "p-3 rounded-xl mb-3 transition-colors",
+                    ativo ? mod.bgColor : "bg-muted group-hover:bg-primary/10",
+                  )}>
+                    <mod.icon className={cn("w-7 h-7", ativo ? mod.color : "text-muted-foreground group-hover:text-primary")} strokeWidth={1.5} />
+                  </div>
+                  <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-center px-1.5 leading-tight text-foreground">
+                    {mod.label}
+                  </span>
+                  <span className="text-[9px] text-muted-foreground text-center px-2 mt-1 leading-tight line-clamp-2">
+                    {mod.subtitle}
+                  </span>
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-foreground leading-tight">{mod.label}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{mod.subtitle}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+              </button>
+            );
+          })}
         </div>
       </div>
 
