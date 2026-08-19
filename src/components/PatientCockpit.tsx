@@ -251,7 +251,8 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
       patientBed: patient.bedNumber,
       patientSector: patient.sector,
     });
-    if (patient.age) params.set("patientAge", patient.age.toString());
+    const liveAge = registry?.age || patient.age;
+    if (liveAge) params.set("patientAge", liveAge.toString());
     const target = `${path}?${params.toString()}`;
     if (location.pathname === path) {
       navigate(target, { replace: true });
@@ -886,7 +887,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             patientName={patient.name}
             patientSector={sector}
             patientBed={patient.bedNumber}
-            patientAge={patient.age}
+            patientAge={registry?.age || patient.age}
           />
         )}
 

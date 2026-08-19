@@ -12,6 +12,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { detectUnidentified } from "@/lib/unidentifiedDetector";
+import { formatAge } from "@/lib/patientAge";
 
 export interface ResolvedPatientHeader {
   /** Nome canônico (registry.full_name → patient.name → fallback) */
@@ -25,6 +26,8 @@ export interface ResolvedPatientHeader {
   cns: string | null;
   /** ISO yyyy-mm-dd */
   birthDate: string | null;
+  /** Calculada a partir de birthDate no momento da leitura — nunca fica desatualizada. */
+  age: string | null;
   sex: string | null;
   motherName: string | null;
   /** Endereço composto (logradouro, bairro, cidade/UF) */
@@ -80,6 +83,7 @@ export async function resolvePatientHeader(
     cpf: null,
     cns: null,
     birthDate: null,
+    age: null,
     sex: null,
     motherName: null,
     address: null,
@@ -303,6 +307,7 @@ export async function resolvePatientHeader(
     cpf: registryRow?.cpf || null,
     cns: registryRow?.cns || null,
     birthDate: registryRow?.birth_date || null,
+    age: formatAge(registryRow?.birth_date),
     sex: registryRow?.sex || null,
     motherName: registryRow?.mother_name || null,
     address: composedAddress,

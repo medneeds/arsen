@@ -92,7 +92,10 @@ export function PatientIdentityHeader({
   const sectorCode = livePatient?.sector || fallbackSector || "";
   const sector = sectorLabelFromCode(sectorCode);
   const bed = livePatient?.bedNumber || fallbackBed || "—";
-  const age = livePatient?.age || fallbackAge || null;
+  // registry.age é calculado ao vivo a partir de birth_date — nunca fica
+  // desatualizado. livePatient?.age e fallbackAge são o campo estático
+  // (patients.age), usados só quando não há patient_registry vinculado.
+  const age = registry?.age || livePatient?.age || fallbackAge || null;
   const clinicalStatusKey =
     livePatient?.clinicalStatus || (fallbackClinicalStatus || "regular");
   const status = clinicalStatusConfig[clinicalStatusKey] || clinicalStatusConfig.regular;

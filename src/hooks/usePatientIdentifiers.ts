@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { detectUnidentified } from "@/lib/unidentifiedDetector";
+import { formatAge } from "@/lib/patientAge";
 
 export interface PatientIdentifiers {
   /** Número de Prontuário (ex: 26-001-000123-4) */
@@ -15,6 +16,8 @@ export interface PatientIdentifiers {
     cpf: string | null;
     cns: string | null;
     birthDate: string | null;
+    /** Calculada a partir de birthDate no momento da leitura — nunca fica desatualizada. */
+    age: string | null;
     sex: string | null;
     motherName: string | null;
     phone: string | null;
@@ -204,6 +207,7 @@ export function usePatientIdentifiers(
               cpf: registryRow.cpf,
               cns: registryRow.cns,
               birthDate: registryRow.birth_date,
+              age: formatAge(registryRow.birth_date),
               sex: registryRow.sex,
               motherName: registryRow.mother_name,
               phone: registryRow.phone,
