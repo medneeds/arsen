@@ -3,11 +3,35 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 // Sectors classification heuristics — matches existing project structure
-const UTI_KEYWORDS = ["uti", "uci"];
-const EMERGENCY_KEYWORDS = ["sala_vermelha", "sala_laranja", "observacao", "ue_vertical", "ue_horizontal", "emergencia", "red", "yellow", "orange"];
+/**
+ * Escopo de cada setor, por CÓDIGO EXATO.
+ *
+ * BUG QUE ISTO CORRIGE: a classificação era por palavra contida no texto, e a
+ * lista de emergência tinha "red" e "yellow" — que são justamente os códigos
+ * de UTI 1 e UTI 2 no banco. Consequência: filtrar por "UTI/UCI" NÃO devolvia
+ * nenhuma das quatro UTIs. UTI 1 e UTI 2 apareciam em Emergência; UCI 1
+ * (`blue`) e UCI 2 (`outside`) caíam em Enfermaria, porque não continham
+ * "uti"/"uci" no código.
+ *
+ * Mapa explícito em vez de heurística: código de setor não é texto descritivo,
+ * e adivinhar a natureza dele por substring foi o que produziu o erro.
+ */
+const SECTOR_SCOPE: Record<string, Exclude<SectorScope, "all">> = {
+  // Intensivos e semi-intensivos
+  red: "uti", yellow: "uti", blue: "uti", outside: "uti", ucc: "uti",
+  // Enfermarias
+  neuro_01: "enfermaria", neuro_02: "enfermaria", clinica_cirurgica: "enfermaria",
+  enfermaria_transicao: "enfermaria", enfermaria_vascular: "enfermaria", riv: "enfermaria",
+  // Urgência e emergência
+  sala_vermelha: "emergencia", sala_laranja: "emergencia", observacao_clinica: "emergencia",
+  ue_vertical: "emergencia", ue_horizontal: "emergencia", internacao_ue: "emergencia",
+  // Centro cirúrgico — a pedido do gestor. Não é enfermaria: a permanência é
+  // de horas e o leito serve a um fluxo próprio (preparo, bloco, recuperação).
+  cc_preparo: "centro_cirurgico", cc_bloco_cirurgico: "centro_cirurgico", cc_rpa: "centro_cirurgico",
+};
 
 export type NirPeriod = "today" | "7d" | "30d";
-export type SectorScope = "all" | "uti" | "enfermaria" | "emergencia";
+export type SectorScope = "all" | "uti" | "enfermaria" | "emergencia" | "centro_cirurgico";
 
 export interface NirFilters {
   period: NirPeriod;
@@ -17,13 +41,10 @@ export interface NirFilters {
 
 const periodToHours = (p: NirPeriod) => (p === "today" ? 24 : p === "7d" ? 24 * 7 : 24 * 30);
 
-const classifySector = (sector: string | null | undefined): "uti" | "emergencia" | "enfermaria" => {
-  if (!sector) return "enfermaria";
-  const s = sector.toLowerCase();
-  if (UTI_KEYWORDS.some((k) => s.includes(k))) return "uti";
-  if (EMERGENCY_KEYWORDS.some((k) => s.includes(k))) return "emergencia";
-  return "enfermaria";
-};
+const classifySector = (sector: string | null | undefined): Exclude<SectorScope, "all"> =>
+  // Setor desconhecido cai em enfermaria — mas agora é exceção, não regra:
+  // todos os dezesseis setores configurados estão no mapa acima.
+  SECTOR_SCOPE[(sector ?? "").toLowerCase()] ?? "enfermaria";
 
 export function useNirMetrics(hospitalUnitId: string | undefined, filters: NirFilters) {
   const sinceISO = useMemo(() => {

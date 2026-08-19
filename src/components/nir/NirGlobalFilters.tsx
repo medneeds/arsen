@@ -22,6 +22,10 @@ const SCOPES: { key: SectorScope; label: string }[] = [
   { key: "uti", label: "UTI/UCI" },
   { key: "enfermaria", label: "Enfermaria" },
   { key: "emergencia", label: "Emergência" },
+  // Centro Cirúrgico a pedido do gestor: não é enfermaria — permanência de
+  // horas e fluxo próprio (preparo, bloco, recuperação). Antes caía em
+  // "Enfermaria" por omissão, inflando aquele recorte.
+  { key: "centro_cirurgico", label: "Centro Cirúrgico" },
 ];
 
 
