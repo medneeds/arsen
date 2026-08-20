@@ -57,6 +57,7 @@ import { ChevronDown, Repeat2 } from "lucide-react";
 import { ProfileSwitcherDialog } from "@/components/auth/ProfileSwitcherDialog";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { SECTOR_NAVIGATION } from "@/config/sectorNavigation";
 import { useDepartment, type Department } from "@/contexts/DepartmentContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -184,59 +185,10 @@ export function AppSidebar() {
   // ── Menu structure with per-item profile visibility ──
   // Profiles: medico, gestor, multi, administrativo
   // "porta" and "visitante" roles get special handling below
-  // Sector hierarchy definition
-  const sectorHierarchy = [
-    {
-      group: "Enfermarias",
-      sectors: [
-        { name: "Neuro 01", department: "NEURO 01" as Department },
-        { name: "Neuro 02", department: "NEURO 02" as Department },
-        { name: "Clínica Cirúrgica", department: "CLÍNICA CIRÚRGICA" as Department },
-        { name: "Enf. Transição", department: "ENFERMARIA DE TRANSIÇÃO" as Department },
-        { name: "UCC", department: "UCC" as Department },
-      ],
-    },
-    {
-      group: "UTI",
-      sectors: [
-        { name: "UTI 1", department: "UTI 1" as Department },
-        { name: "UTI 2", department: "UTI 2" as Department },
-      ],
-    },
-    {
-      group: "UCI",
-      sectors: [
-        { name: "UCI 1", department: "UCI 1" as Department },
-        { name: "UCI 2", department: "UCI 2" as Department },
-      ],
-    },
-    {
-      group: "Urgência e Emergência",
-      sectors: [
-        { name: "UE Vertical", department: "UE VERTICAL" as Department, link: "/ue-vertical" },
-        { name: "UE Horizontal", department: "UE HORIZONTAL" as Department, link: "/ue-horizontal" },
-        { name: "Sala Vermelha", department: "SALA VERMELHA" as Department },
-        { name: "Sala Laranja", department: "SALA LARANJA" as Department },
-        { name: "Posto de Internação", department: "INTERNAÇÃO UE" as Department },
-        { name: "Observação Clínica", department: "OBSERVAÇÃO CLÍNICA" as Department },
-      ],
-    },
-    {
-      group: "Enf. Vascular (Anexo)",
-      sectors: [
-        { name: "Enfermaria Vascular", department: "ENFERMARIA VASCULAR" as Department },
-        { name: "RIV", department: "RIV" as Department },
-      ],
-    },
-    {
-      group: "Centro Cirúrgico",
-      sectors: [
-        { name: "Preparo", department: "CC PREPARO" as Department },
-        { name: "Bloco Cirúrgico", department: "CC BLOCO CIRÚRGICO" as Department },
-        { name: "RPA", department: "CC RPA" as Department },
-      ],
-    },
-  ];
+  // Hierarquia de setores: fonte unica em src/config/sectorNavigation.ts,
+  // compartilhada com o SectorSelector. As duas listas viviam duplicadas aqui
+  // e la, e ja divergiam entre si.
+  const sectorHierarchy = SECTOR_NAVIGATION;
 
   const handleSectorClick = (department: Department, customLink?: string) => {
     setCurrentDepartment(department);

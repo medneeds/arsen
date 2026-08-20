@@ -12,64 +12,13 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useMemo } from "react";
+import { SECTOR_NAVIGATION, type NavSectorGroup } from "@/config/sectorNavigation";
 
-interface SectorGroup {
-  group: string;
-  sectors: { name: string; department: Department; link?: string }[];
-}
+// Hierarquia vem de src/config/sectorNavigation.ts (fonte unica compartilhada
+// com a AppSidebar). Nao declarar lista local aqui.
+type SectorGroup = NavSectorGroup;
 
-const SECTOR_HIERARCHY: SectorGroup[] = [
-  {
-    group: "Enfermarias",
-    sectors: [
-      { name: "Neuro 01", department: "NEURO 01" as Department },
-      { name: "Neuro 02", department: "NEURO 02" as Department },
-      { name: "Clínica Cirúrgica", department: "CLÍNICA CIRÚRGICA" as Department },
-      { name: "Enf. Transição", department: "ENFERMARIA DE TRANSIÇÃO" as Department },
-      { name: "UCC", department: "UCC" as Department },
-    ],
-  },
-  {
-    group: "UTI",
-    sectors: [
-      { name: "UTI 1", department: "UTI 1" as Department },
-      { name: "UTI 2", department: "UTI 2" as Department },
-    ],
-  },
-  {
-    group: "UCI",
-    sectors: [
-      { name: "UCI 1", department: "UCI 1" as Department },
-      { name: "UCI 2", department: "UCI 2" as Department },
-    ],
-  },
-  {
-    group: "Urgência e Emergência",
-    sectors: [
-      { name: "UE Vertical", department: "UE VERTICAL" as Department, link: "/ue-vertical" },
-      { name: "UE Horizontal", department: "UE HORIZONTAL" as Department, link: "/ue-horizontal" },
-      { name: "Sala Vermelha", department: "SALA VERMELHA" as Department },
-      { name: "Sala Laranja", department: "SALA LARANJA" as Department },
-      { name: "Posto de Internação", department: "INTERNAÇÃO UE" as Department },
-      { name: "Observação Clínica", department: "OBSERVAÇÃO CLÍNICA" as Department },
-    ],
-  },
-  {
-    group: "Anexo Vascular",
-    sectors: [
-      { name: "Enf. Vascular", department: "ENFERMARIA VASCULAR" as Department },
-      { name: "RIV", department: "RIV" as Department },
-    ],
-  },
-  {
-    group: "Centro Cirúrgico",
-    sectors: [
-      { name: "Preparo", department: "CC PREPARO" as Department },
-      { name: "Bloco Cirúrgico", department: "CC BLOCO CIRÚRGICO" as Department },
-      { name: "RPA", department: "CC RPA" as Department },
-    ],
-  },
-];
+const SECTOR_HIERARCHY: SectorGroup[] = SECTOR_NAVIGATION;
 
 interface SectorSelectorProps {
   /** Visual variant: light for body, dark for header */
