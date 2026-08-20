@@ -40,28 +40,33 @@ const ASSISTENCIAIS_COMPLETO: Department[] = [
   "CLÍNICA CIRÚRGICA",
   "ENFERMARIA DE TRANSIÇÃO",
   "ENFERMARIA VASCULAR",
-  "RIV",
   "URGÊNCIA E EMERGÊNCIA ADULTO",
-  "UE VERTICAL",
-  "UE HORIZONTAL",
   "SALA VERMELHA",
   "SALA LARANJA",
+  "POSTO INTERNAÇÃO",
+  // Alias historico de POSTO INTERNAÇÃO — mantido para nao invalidar acessos
+  // ja concedidos com o rotulo antigo.
   "INTERNAÇÃO UE",
-  "OBSERVAÇÃO CLÍNICA",
   "URGÊNCIA E EMERGÊNCIA PEDIÁTRICA",
   "CC PREPARO",
   "CC BLOCO CIRÚRGICO",
   "CC RPA",
 ];
 
+/**
+ * Urgencia e Emergencia (Horizontal) — o guarda-chuva da INTERNACAO na
+ * urgencia: Sala Vermelha, Sala Laranja e Posto de Internacao.
+ *
+ * UE VERTICAL e OBSERVAÇÃO CLÍNICA saíram: são atendimento, não internação, e
+ * a plataforma não cobre esse fluxo. 'INTERNAÇÃO UE' permanece como alias
+ * histórico de 'POSTO INTERNAÇÃO' para não invalidar acessos já concedidos.
+ */
 const EMERGENCIA_ADULTO: Department[] = [
   "URGÊNCIA E EMERGÊNCIA ADULTO",
-  "UE VERTICAL",
-  "UE HORIZONTAL",
   "SALA VERMELHA",
   "SALA LARANJA",
+  "POSTO INTERNAÇÃO",
   "INTERNAÇÃO UE",
-  "OBSERVAÇÃO CLÍNICA",
 ];
 
 export const PROFILE_DEFAULTS: Record<AccessProfile, ProfileDefaults> = {
@@ -69,7 +74,7 @@ export const PROFILE_DEFAULTS: Record<AccessProfile, ProfileDefaults> = {
     role: "medico",
     departments: ASSISTENCIAIS_COMPLETO,
     landingRoute: "/",
-    hint: "Médico assistente • acesso a UTIs, enfermarias, emergência e CC",
+    hint: "Médico assistente • acesso a UTIs, UCIs, enfermarias, urgência e centro cirúrgico",
   },
   gestor: {
     role: "admin",
@@ -111,7 +116,7 @@ export const PROFILE_DEFAULTS: Record<AccessProfile, ProfileDefaults> = {
     role: "medico",
     departments: [],
     landingRoute: "/recepcao",
-    hint: "Administrativo / Recepção • cadastros e fluxos administrativos",
+    hint: "Administrativo • cadastro de pacientes, registro de entrada e fluxos administrativos",
   },
   multi: {
     role: "medico",

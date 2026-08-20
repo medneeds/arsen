@@ -72,7 +72,7 @@ export const SYSTEM_ROLES: RoleConfig[] = [
   {
     value: "porta",
     label: "Médico Porta",
-    description: "Triagem e avaliação inicial na emergência",
+    description: "Avaliação inicial do paciente na entrada da internação",
     icon: Activity,
   },
   {
@@ -173,9 +173,9 @@ export const ACCESS_PROFILES: AccessProfileConfig[] = [
   },
   {
     value: "administrativo",
-    label: "Administrativo / Recepção",
+    label: "Administrativo",
     shortLabel: "Administrativo",
-    description: "Cadastros, recepção e fluxos administrativos",
+    description: "Cadastro de pacientes, registro de entrada e fluxos administrativos",
     defaultRoute: "/recepcao",
     icon: ClipboardList,
     skipSectorSelection: true,
@@ -290,16 +290,18 @@ export const SECTOR_GROUPS: SectorGroup[] = [
   },
   {
     id: "emergencia_adulto",
-    label: "Urgência e Emergência — Adulto",
-    description: "Pronto-socorro adulto (vertical, horizontal, salas)",
+    label: "Urgência e Emergência (Horizontal)",
+    description: "Sala Vermelha, Sala Laranja e Posto de Internação",
+    // Guarda-chuva da internacao na urgencia. UE VERTICAL e OBSERVAÇÃO CLÍNICA
+    // ficam FORA: sao atendimento, nao internacao. 'INTERNAÇÃO UE' segue na
+    // lista como alias historico de 'POSTO INTERNAÇÃO' (ver
+    // DEPARTMENT_TO_SECTOR) para nao invalidar acessos ja concedidos.
     departments: [
       "URGÊNCIA E EMERGÊNCIA ADULTO",
-      "UE VERTICAL",
-      "UE HORIZONTAL",
       "SALA VERMELHA",
       "SALA LARANJA",
+      "POSTO INTERNAÇÃO",
       "INTERNAÇÃO UE",
-      "OBSERVAÇÃO CLÍNICA",
     ],
   },
   {
