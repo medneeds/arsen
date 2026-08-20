@@ -170,7 +170,7 @@ export function TriageExpressDialog({
           <DialogHeader className="space-y-1">
             <DialogTitle className="flex items-center gap-2 text-white">
               <Zap className="h-5 w-5" />
-              Triagem Express — Pré-identificação
+              Cadastro Express — Paciente sem identificação
               {receptionPoint && (
                 <Badge
                   variant="outline"

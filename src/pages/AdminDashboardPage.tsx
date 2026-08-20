@@ -63,8 +63,8 @@ type DestinationSector = {
    * true = não oferecido como NOVO destino na recepção; entrada mantida só
    * para resolver encaminhamentos legados. Aqui apenas riv (fora do escopo de
    * internação) e ue_horizontal (agrupamento — o destino é Sala Vermelha,
-   * Sala Laranja ou Posto de Internação). UE Vertical e Observação Clínica
-   * PERMANECEM: a recepção também serve o primeiro atendimento/consultório.
+   * Sala Laranja ou Posto de Internação), alem de UE Vertical e Observação
+   * Clínica, que ficaram fora do escopo de internação.
    */
   legacyOnly?: boolean;
 };
@@ -76,9 +76,9 @@ const DESTINATION_SECTORS: DestinationSector[] = [
   // Urgência e Emergência (admissão direta sem leito clínico fixo)
   { value: "sala_vermelha", label: "Sala Vermelha", group: "Urgência e Emergência (Horizontal)", color: "bg-red-700", sectorKey: "sala_vermelha" },
   { value: "sala_laranja", label: "Sala Laranja", group: "Urgência e Emergência (Horizontal)", color: "bg-orange-500", sectorKey: "sala_laranja" },
-  { value: "ue_vertical", label: "UE Vertical", group: "Triagem / Urgência", color: "bg-purple-500", sectorKey: "ue_vertical", legacyOnly: true },
-  { value: "ue_horizontal", label: "UE Horizontal", group: "Triagem / Urgência", color: "bg-indigo-500", sectorKey: "ue_horizontal", legacyOnly: true },
-  { value: "observacao_clinica", label: "Observação Clínica", group: "Triagem / Urgência", color: "bg-sky-500", sectorKey: "observacao_clinica", legacyOnly: true },
+  { value: "ue_vertical", label: "UE Vertical", group: "Legado", color: "bg-purple-500", sectorKey: "ue_vertical", legacyOnly: true },
+  { value: "ue_horizontal", label: "UE Horizontal", group: "Legado", color: "bg-indigo-500", sectorKey: "ue_horizontal", legacyOnly: true },
+  { value: "observacao_clinica", label: "Observação Clínica", group: "Legado", color: "bg-sky-500", sectorKey: "observacao_clinica", legacyOnly: true },
   { value: "internacao_ue", label: "Posto de Internação", group: "Urgência e Emergência (Horizontal)", color: "bg-indigo-600", sectorKey: "internacao_ue" },
   // Alta complexidade (UTI + UCI num bloco so, como no menu de setores)
   { value: "red", label: "UTI 1", group: "Alta Complexidade", color: "bg-red-500", sectorKey: "red" },
@@ -241,7 +241,7 @@ const AdminDashboardPage = () => {
   // Busca global Ctrl+K
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
 
-  // Triagem Express dialog
+  // Cadastro Express (paciente sem identificacao) dialog
   const [showTriageExpress, setShowTriageExpress] = useState(false);
 
   // Load recent encounters
@@ -585,7 +585,7 @@ const AdminDashboardPage = () => {
     }
   };
 
-  // ── Triagem Express: abre dialog para coletar dados parciais antes de gerar atendimento ──
+  // ── Cadastro Express: coleta dados parciais do paciente sem identificacao ──
   const openTriageExpress = () => {
     if (!selectedHospitalId) {
       toast.error("Unidade hospitalar não selecionada");
@@ -635,7 +635,7 @@ const AdminDashboardPage = () => {
           is_unidentified: !hasName,
           unidentified_code: niCode,
           unidentified_features: {
-            arrival_circumstance: "Triagem Express",
+            arrival_circumstance: "Cadastro Express",
             arrival_mode: payload.arrivalMode,
             approx_age: payload.approxAge || null,
             age_mode: payload.ageMode,
@@ -715,10 +715,10 @@ const AdminDashboardPage = () => {
         .single();
       if (encErr) throw encErr;
 
-      // 6) Se for setor clínico (não triagem), cria pré-admissão
+      // 6) Cria pré-admissão no setor de destino
       if (sectorDef.sectorKey) {
         const noteParts = [
-          `Triagem Express • Atendimento ${(enc as any).encounter_code}`,
+          `Cadastro Express • Entrada ${(enc as any).encounter_code}`,
           payload.chiefComplaint && `Queixa: ${payload.chiefComplaint}`,
           payload.documentsPending && "⚠ Documentação pendente",
         ].filter(Boolean).join(" • ");
@@ -741,14 +741,14 @@ const AdminDashboardPage = () => {
         if (paErr) console.warn("Pre-admissão falhou:", paErr);
       }
 
-      toast.success("Triagem Express criada!", {
+      toast.success("Cadastro Express criado!", {
         description: `${niCode || "Identificado"} • Atd ${(enc as any).encounter_code} → ${sectorDef.label}`,
       });
       setShowTriageExpress(false);
       loadRecentEncounters();
     } catch (err: any) {
-      console.error("Erro Triagem Express:", err);
-      toast.error("Falha na Triagem Express", { description: err?.message });
+      console.error("Erro Cadastro Express:", err);
+      toast.error("Falha no Cadastro Express", { description: err?.message });
     } finally {
       setIsCreatingEncounter(false);
     }
@@ -772,22 +772,6 @@ const AdminDashboardPage = () => {
     }
   };
 
-  const getTriageStatusBadge = (status?: string) => {
-    switch (status) {
-      case "aguardando_chamada":
-        return <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30">Aguardando chamada</Badge>;
-      case "chamado":
-        return <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50 dark:bg-blue-950/30">Chamado</Badge>;
-      case "em_triagem":
-        return <Badge variant="outline" className="text-purple-600 border-purple-300 bg-purple-50 dark:bg-purple-950/30">Em triagem</Badge>;
-      case "triado":
-        return <Badge variant="outline" className="text-emerald-600 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30">Triado</Badge>;
-      case "encaminhado":
-        return <Badge variant="outline" className="text-sky-600 border-sky-300 bg-sky-50 dark:bg-sky-950/30">Encaminhado direto</Badge>;
-      default:
-        return <Badge variant="outline">Pendente</Badge>;
-    }
-  };
 
   const getSectorBadge = (sector?: string) => {
     const s = DESTINATION_SECTORS.find(d => d.value === sector);
@@ -805,8 +789,8 @@ const AdminDashboardPage = () => {
         {/* Header */}
         <PlatformHeader
           variant="institutional"
-          eyebrow="Atendimento · Recepção"
-          title="Recepção / Administrativo"
+          eyebrow="Internação · Registro de Entrada"
+          title="Administrativo"
           icon={ClipboardList}
           actions={
             <>
@@ -845,14 +829,14 @@ const AdminDashboardPage = () => {
                     Novo Cadastro Completo
                     <span className="hidden md:inline text-[11px] opacity-80 font-normal ml-1">· prontuário + dados completos</span>
                   </Button>
-                  {/* Triagem Express — secundária, tom vermelho discreto */}
+                  {/* Cadastro Express — paciente sem identificação (NI) */}
                   <Button
                     variant="outline"
                     onClick={openTriageExpress}
                     className="h-12 border-rose-300 text-rose-700 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-900/60 dark:text-rose-400 dark:hover:bg-rose-950/40 font-medium"
                   >
                     <AlertTriangle className="h-4 w-4" />
-                    Triagem Express
+                    Cadastro Express
                   </Button>
                 </div>
 
@@ -1036,7 +1020,6 @@ const AdminDashboardPage = () => {
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             {getSectorBadge(enc.destination_sector)}
-                            {enc.destination_sector === "triagem" && getTriageStatusBadge(enc.triage_status)}
                           </div>
                         </div>
                       ))}
@@ -1485,9 +1468,9 @@ const AdminDashboardPage = () => {
               <div>
                 <Label className="mb-2 block">Setor de Destino *</Label>
                 <p className="text-xs text-muted-foreground mb-3">
-                  Selecione um setor clínico para que o paciente apareça automaticamente
+                  Selecione o setor de internação de destino. O paciente aparece
                   em <span className="font-semibold">"Aguardando Admissão"</span> daquele setor,
-                  ou envie para <span className="font-semibold">Triagem</span> para classificação de risco.
+                  onde o NIR ou o médico efetiva a admissão no leito.
                 </p>
                 <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
                   {DESTINATION_GROUPS.map((group) => (
@@ -1562,7 +1545,7 @@ const AdminDashboardPage = () => {
         }}
       />
 
-      {/* Triagem Express — pop-up de pré-identificação */}
+      {/* Cadastro Express — paciente sem identificacao (NI) */}
       <TriageExpressDialog
         open={showTriageExpress}
         onOpenChange={setShowTriageExpress}
