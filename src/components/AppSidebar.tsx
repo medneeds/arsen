@@ -351,7 +351,7 @@ export function AppSidebar() {
     if (accessProfile === "administrativo") {
       return [
         { title: "Administrativo", icon: ClipboardList, profiles: ["administrativo"], items: [
-          { name: "Início", link: "/recepcao?tab=inicio", profiles: ["administrativo"] },
+          { name: "Painel do Dia", link: "/recepcao?tab=inicio", profiles: ["administrativo"] },
           { name: "Entradas do Dia", link: "/recepcao?tab=dia", profiles: ["administrativo"] },
           { name: "Prontuários", link: "/recepcao?tab=prontuarios", profiles: ["administrativo"] },
         ]},

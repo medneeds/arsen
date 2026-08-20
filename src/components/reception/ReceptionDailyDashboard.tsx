@@ -486,27 +486,33 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
 
       </div>
 
-      {/* KPIs do período */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/*
+        KPIs do periodo.
+
+        Sao CINCO cards numa grade de quatro colunas: o quinto caia sozinho
+        numa segunda linha, com tres buracos ao lado. Grade de cinco em telas
+        largas resolve; abaixo disso desce para tres e depois dois, sem sobra.
+      */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
         <KpiCard
           icon={ListTodo}
           label={`Entradas ${periodFilter === "today" ? "hoje" : periodFilter === "7d" ? "(7 dias)" : "(30 dias)"}`}
           value={kpis.totalToday}
-          hint={periodFilter === "today" ? "Registradas no balcão" : `Período: ${periodFilter === "7d" ? "últimos 7 dias" : "últimos 30 dias"}`}
+          hint={periodFilter === "today" ? "Pacientes registrados hoje" : `Período: ${periodFilter === "7d" ? "últimos 7 dias" : "últimos 30 dias"}`}
           tone="default"
         />
         <KpiCard
           icon={BedDouble}
           label="Aguardando admissão"
           value={kpis.waitingAdmission}
-          hint="Direcionados sem leito"
+          hint="Encaminhados, sem leito efetivado"
           tone="info"
         />
         <KpiCard
           icon={FileWarning}
           label="Documentação pendente"
           value={kpis.docsPending}
-          hint="Express / sem documentos"
+          hint="Cadastro Express ou identificação parcial"
           tone="warn"
         />
         <KpiCard
@@ -520,7 +526,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
           icon={UserCheck}
           label="Equipe ativa agora"
           value={userStats.filter((u) => u.isOnline).length}
-          hint={`${userStats.length} no dia`}
+          hint={`${userStats.length} atuaram no dia`}
           tone="info"
         />
       </div>
@@ -548,7 +554,12 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
       )}
 
       {/* Tabs internas */}
-      <Tabs defaultValue={defaultSubTab} className="w-full">
+      {/*
+        `key` amarra a sub-aba ao deep-link: entrar por ?tab=aguardando precisa
+        abrir na aba certa mesmo com o componente ja montado. Sem isso,
+        defaultValue so valeria na primeira renderizacao.
+      */}
+      <Tabs key={defaultSubTab} defaultValue={defaultSubTab} className="w-full">
         <TabsList>
           <TabsTrigger value="dia" className="gap-1.5">
             <Activity className="h-3.5 w-3.5" />
@@ -562,7 +573,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
           </TabsTrigger>
           <TabsTrigger value="equipe" className="gap-1.5">
             <Trophy className="h-3.5 w-3.5" />
-            Por usuário
+            Equipe
             <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{userStats.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="minhas" className="gap-1.5">
@@ -572,7 +583,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
           </TabsTrigger>
         </TabsList>
 
-        {/* Atendimentos do dia */}
+        {/* Entradas do dia */}
         <TabsContent value="dia" className="mt-3">
           <Card>
             <CardHeader className="pb-2">

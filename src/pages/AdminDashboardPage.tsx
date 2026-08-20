@@ -172,6 +172,19 @@ const AdminDashboardPage = () => {
     setSearchParams(next, { replace: true });
   };
 
+  /*
+    Compatibilidade com os links antigos do menu lateral: ?tab=dia e
+    ?tab=aguardando eram abas proprias e agora sao sub-abas do painel.
+    Em vez de quebrar o link, resolve-se para o painel com a sub-aba certa.
+  */
+  const LEGACY_SUBTABS = ["dia", "aguardando", "minhas", "equipe"] as const;
+  const legacySubTab = (LEGACY_SUBTABS as readonly string[]).includes(activeTab)
+    ? (activeTab as (typeof LEGACY_SUBTABS)[number])
+    : "dia";
+  const effectiveTab = (LEGACY_SUBTABS as readonly string[]).includes(activeTab)
+    ? "inicio"
+    : activeTab;
+
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<PatientRegistry[]>([]);
@@ -857,16 +870,24 @@ const AdminDashboardPage = () => {
               </CardContent>
             </Card>
 
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+            <Tabs value={effectiveTab} onValueChange={handleTabChange} className="w-full">
+              {/*
+                UM nivel de abas.
+
+                Havia dois: "Atendimentos do Dia" e "Aguardando Admissao" aqui
+                em cima renderizavam o MESMO ReceptionDailyDashboard, mudando
+                so a sub-aba inicial — e o componente exibe as proprias abas
+                com os mesmos rotulos. O usuario via "Aguardando Admissao"
+                duas vezes na tela e nao sabia qual clicar.
+
+                Agora o topo separa o que e de fato diferente: o PAINEL do dia
+                e a BUSCA de prontuarios. A navegacao dentro do painel fica com
+                o painel. Os links antigos (?tab=dia, ?tab=aguardando) seguem
+                funcionando — ver handleTabChange.
+              */}
               <TabsList className="mb-4">
                 <TabsTrigger value="inicio" className="gap-1.5">
-                  <ClipboardList className="h-3.5 w-3.5" /> Início
-                </TabsTrigger>
-                <TabsTrigger value="dia" className="gap-1.5">
-                  <Clock className="h-3.5 w-3.5" /> Atendimentos do Dia
-                </TabsTrigger>
-                <TabsTrigger value="aguardando" className="gap-1.5">
-                  <Send className="h-3.5 w-3.5" /> Aguardando Admissão
+                  <ClipboardList className="h-3.5 w-3.5" /> Painel do Dia
                 </TabsTrigger>
                 <TabsTrigger value="prontuarios" className="gap-1.5">
                   <FileText className="h-3.5 w-3.5" /> Prontuários
@@ -880,6 +901,7 @@ const AdminDashboardPage = () => {
               onPickRegistry={handlePickRegistryFromDashboard}
               onTriageExpress={openTriageExpress}
               onNewRegistration={() => setShowRegisterDialog(true)}
+              defaultSubTab={legacySubTab}
               hideQuickActions
             />
 
@@ -1030,23 +1052,7 @@ const AdminDashboardPage = () => {
             </Card>
               </TabsContent>
 
-              <TabsContent value="dia" className="mt-0">
-                <ReceptionDailyDashboard
-                  onPickRegistry={handlePickRegistryFromDashboard}
-                  onTriageExpress={openTriageExpress}
-                  onNewRegistration={() => setShowRegisterDialog(true)}
-                  defaultSubTab="dia"
-                />
-              </TabsContent>
 
-              <TabsContent value="aguardando" className="mt-0">
-                <ReceptionDailyDashboard
-                  onPickRegistry={handlePickRegistryFromDashboard}
-                  onTriageExpress={openTriageExpress}
-                  onNewRegistration={() => setShowRegisterDialog(true)}
-                  defaultSubTab="aguardando"
-                />
-              </TabsContent>
 
               <TabsContent value="prontuarios" className="mt-0 space-y-2">
                 <div className="flex justify-end">
