@@ -17,7 +17,7 @@ import {
   Activity, BedDouble, Clock, FileText, Users, AlertTriangle, RefreshCw, ArrowRight, ListTodo, History,
   CheckCircle2, UserPlus, Play, FileWarning, UserX,
   Footprints, Ambulance, Trophy, UserCheck, Printer, MoreVertical,
-  CalendarRange, Siren, Volume2,
+  CalendarRange, Siren,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { ReceptionPoint } from "@/hooks/useReceptionPost";
@@ -327,23 +327,10 @@ export function ReceptionDailyDashboard({
   }, [todayEncounters]);
 
   /** Chama o paciente no painel — atualiza triage_status para "chamado" */
-  const handleCallNext = async (encounterId: string, patientName: string) => {
-    try {
-      const { error } = await supabase
-        .from("patient_encounters")
-        .update({
-          triage_status: "chamado",
-          called_at: new Date().toISOString(),
-          called_by: user?.id,
-        } as any)
-        .eq("id", encounterId);
-      if (error) throw error;
-      toast.success(`📢 ${patientName} chamado no painel da TV`);
-      fetchAll();
-    } catch (err: any) {
-      toast.error("Erro ao chamar paciente", { description: err?.message });
-    }
-  };
+/** Encontro aberto e ainda nao admitido no leito: conta tempo de espera. */
+const COALESCE_STATUS = (e: { status: string | null; triage_status: string | null }) =>
+  (e.status ?? "active") === "active" && (e.triage_status ?? "") !== "admitido";
+
 
   /** Imprime pulseira buscando dados completos do registry */
   const handlePrintWristband = async (registryId: string | null, encounterCode: string) => {
@@ -394,9 +381,6 @@ export function ReceptionDailyDashboard({
   // KPIs (segmentados pelo filtro) + split comparativo
   const kpis = useMemo(() => {
     const totalToday = filteredEncounters.length;
-    const waitingTriage = filteredEncounters.filter(
-      (e) => e.destination_sector === "triagem" && e.triage_status === "aguardando_chamada"
-    ).length;
     const waitingAdmission = pendingAdmissions.length;
     const docsPending = filteredEncounters.filter(
       (e) => e.documents_pending || e.partial_identification || e.is_unidentified
@@ -416,7 +400,7 @@ export function ReceptionDailyDashboard({
       { vertical: 0, horizontal: 0, unassigned: 0 },
     );
 
-    return { totalToday, waitingTriage, waitingAdmission, docsPending, myToday, splitByPoint };
+    return { totalToday, waitingAdmission, docsPending, myToday, splitByPoint };
   }, [filteredEncounters, todayEncounters, pendingAdmissions, myActions, userPointMap]);
 
   // Stats por usuário (recepcionistas com sessão hoje OU que abriram encounters)
@@ -500,13 +484,6 @@ export function ReceptionDailyDashboard({
       ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30"
       : "bg-muted text-muted-foreground";
 
-  // Próximo paciente da fila de triagem (mais antigo aguardando)
-  const nextInQueue = useMemo(() => {
-    return filteredEncounters
-      .filter((e) => e.destination_sector === "triagem" && e.triage_status === "aguardando_chamada")
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0];
-  }, [filteredEncounters]);
-
   return (
     <div className="space-y-4">
       {/* Filtro de período */}
@@ -533,17 +510,6 @@ export function ReceptionDailyDashboard({
           ))}
         </div>
 
-        {/* Atalho "Chamar próximo da fila" */}
-        {nextInQueue && (
-          <Button
-            size="sm"
-            onClick={() => handleCallNext(nextInQueue.id, nextInQueue.patient_name)}
-            className="bg-primary text-primary-foreground gap-2"
-          >
-            <Volume2 className="h-3.5 w-3.5" />
-            Chamar próximo: <strong>{nextInQueue.patient_name}</strong>
-          </Button>
-        )}
       </div>
 
       {/* Filtro segmentado por posto */}
@@ -606,13 +572,6 @@ export function ReceptionDailyDashboard({
           value={kpis.totalToday}
           hint={periodFilter === "today" ? "Abertos no balcão" : `Período: ${periodFilter === "7d" ? "últimos 7 dias" : "últimos 30 dias"}`}
           tone="default"
-        />
-        <KpiCard
-          icon={Clock}
-          label="Aguardando triagem"
-          value={kpis.waitingTriage}
-          hint="Manchester pendente"
-          tone="warn"
         />
         <KpiCard
           icon={BedDouble}
@@ -710,10 +669,10 @@ export function ReceptionDailyDashboard({
                   <div className="divide-y">
                     {filteredEncounters.map((e) => {
                       const waitMin = Math.round((Date.now() - new Date(e.created_at).getTime()) / 60000);
-                      const isWaitingTriage =
-                        e.destination_sector === "triagem" && e.triage_status === "aguardando_chamada";
+                      // Tempo de espera pela admissao no setor de destino.
+                      const isAwaitingAdmission = COALESCE_STATUS(e);
                       const slaTone =
-                        !isWaitingTriage ? null : waitMin > 30 ? "danger" : waitMin > 15 ? "warn" : "ok";
+                        !isAwaitingAdmission ? null : waitMin > 30 ? "danger" : waitMin > 15 ? "warn" : "ok";
                       const isRedRoom = e.destination_sector === "sala_vermelha";
                       return (
                         <div
@@ -763,12 +722,12 @@ export function ReceptionDailyDashboard({
                                     </Badge>
                                   );
                                 })()}
-                                {/* SLA: chegada → chamada de triagem (15/30/60min) */}
-                                {isWaitingTriage && (
+                                {/* SLA: chegada → admissão no leito (15/30/60min) */}
+                                {isAwaitingAdmission && (
                                   <SlaBadge
                                     startAt={e.created_at}
                                     thresholds={[15, 30, 60]}
-                                    label="triagem"
+                                    label="admissão"
                                     compact
                                   />
                                 )}
@@ -786,18 +745,6 @@ export function ReceptionDailyDashboard({
                               </div>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
-                              {isWaitingTriage && (
-                                <Button
-                                  size="sm"
-                                  variant="default"
-                                  className="h-7 text-[10px] gap-1"
-                                  onClick={() => handleCallNext(e.id, e.patient_name)}
-                                  title="Chamar paciente no painel da TV"
-                                >
-                                  <Volume2 className="h-3 w-3" />
-                                  Chamar
-                                </Button>
-                              )}
                               {e.registry_id && (
                                 <Button
                                   size="sm"

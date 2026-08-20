@@ -42,7 +42,6 @@ export type AccessProfile =
   | "laboratorio"
   | "administrativo"
   | "multi"
-  | "classificacao_risco"
   | "coord_medico"
   | "coord_enfermagem"
   | "coord_multi"
@@ -191,15 +190,6 @@ export const ACCESS_PROFILES: AccessProfileConfig[] = [
     skipSectorSelection: true,
   },
   {
-    value: "classificacao_risco",
-    label: "Classificação de Risco",
-    shortLabel: "Classif. Risco",
-    description: "Acesso exclusivo à fila de triagem e Protocolo de Manchester",
-    defaultRoute: "/triagem-fila",
-    icon: Activity,
-    skipSectorSelection: true,
-  },
-  {
     value: "coord_medico",
     label: "Coordenador Médico",
     shortLabel: "Coord. Médico",
@@ -257,7 +247,6 @@ export const PROFILE_TO_ROLE_HINT: Record<AccessProfile, AppRole> = {
   laboratorio: "medico",
   administrativo: "medico",
   multi: "medico",
-  classificacao_risco: "medico",
   coord_medico: "coordenador",
   coord_enfermagem: "coordenador",
   coord_multi: "coordenador",

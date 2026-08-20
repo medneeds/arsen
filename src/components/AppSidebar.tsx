@@ -367,14 +367,7 @@ export function AppSidebar() {
         ]},
       ];
     }
-    // Classificação de Risco: acesso exclusivo à fila de triagem
-    if (accessProfile === "classificacao_risco") {
-      return [
-        { title: "Fila de Triagem", icon: Users, link: "/triagem-fila", profiles: ["classificacao_risco"] },
-        { title: "Painel TV", icon: LayoutDashboard, link: "/triagem-tv", profiles: ["classificacao_risco"] },
-      ];
-    }
-    // Equipe Multi: sidebar multiprofissional (sem triagem — agora perfil próprio)
+    // Equipe Multi: sidebar multiprofissional
     if (accessProfile === "multi") {
       return [
         { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: ["multi"] },

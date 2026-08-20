@@ -4,7 +4,7 @@
  *
  * Filosofia (acordada com gestão):
  *  - Perfis GLOBAIS (gestor / role admin) ignoram setores → painel próprio.
- *  - Perfis SETORIAIS (medico, multi, classificacao_risco) recebem um
+ *  - Perfis SETORIAIS (medico, multi) recebem um
  *    conjunto sugerido de setores que cobre o escopo típico daquela função.
  *  - Perfis TRANSVERSAIS de painel próprio (farmácia, NIR, CCIH, imagem,
  *    laboratório, administrativo) também não exigem setores — a UI deles é
@@ -119,12 +119,6 @@ export const PROFILE_DEFAULTS: Record<AccessProfile, ProfileDefaults> = {
     landingRoute: "/mapa",
     hint: "Equipe multiprofissional • acesso assistencial amplo",
   },
-  classificacao_risco: {
-    role: "porta",
-    departments: EMERGENCIA_ADULTO,
-    landingRoute: "/triagem-fila",
-    hint: "Classificação de risco • fila Manchester e PA adulto",
-  },
   coord_medico: {
     role: "coordenador",
     departments: [],
@@ -174,7 +168,9 @@ export function resolveLandingRoute(
     case "nir":
       return "/nir";
     case "porta":
-      return "/triagem-fila";
+      // A triagem foi removida (plataforma de internacao). O perfil de porta
+      // passa a abrir na recepcao, que e a porta de entrada do fluxo.
+      return "/recepcao";
     case "visitante":
       return "/mapa";
     default:

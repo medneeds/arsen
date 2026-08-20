@@ -59,7 +59,6 @@ type DestinationSector = {
   // Quando definida, gera também uma pre_admissions com destination_sector=label
   // para que o paciente apareça em "Aguardando Admissão" do setor clínico.
   sectorKey?: string;
-  isTriage?: boolean;
   /**
    * true = não oferecido como NOVO destino na recepção; entrada mantida só
    * para resolver encaminhamentos legados. Aqui apenas riv (fora do escopo de
@@ -71,8 +70,9 @@ type DestinationSector = {
 };
 
 const DESTINATION_SECTORS: DestinationSector[] = [
-  // Triagem (recomendado para casos sem definição prévia)
-  { value: "triagem", label: "Triagem", group: "Triagem / Urgência", color: "bg-emerald-500", isTriage: true },
+  // A triagem foi removida: a plataforma cobre internacao, e o primeiro
+  // atendimento fica fora do sistema. O paciente e encaminhado direto ao setor
+  // de internacao de destino.
   // Urgência e Emergência (admissão direta sem leito clínico fixo)
   { value: "sala_vermelha", label: "Sala Vermelha", group: "Urgência e Emergência (Horizontal)", color: "bg-red-700", sectorKey: "sala_vermelha" },
   { value: "sala_laranja", label: "Sala Laranja", group: "Urgência e Emergência (Horizontal)", color: "bg-orange-500", sectorKey: "sala_laranja" },
@@ -530,7 +530,7 @@ const AdminDashboardPage = () => {
           state_id: stateId,
           department: currentDepartment,
           destination_sector: destinationSector,
-          triage_status: sectorDef.isTriage ? "aguardando_chamada" : "encaminhado",
+          triage_status: "encaminhado",
           status: "active",
           created_by: user?.id,
         } as any)
@@ -539,9 +539,9 @@ const AdminDashboardPage = () => {
 
       if (encErr) throw encErr;
 
-      // 2) Se for setor clínico (não triagem), cria pré-admissão "aguardando_leito"
-      //    para aparecer no card "Aguardando Admissão" do setor escolhido.
-      if (!sectorDef.isTriage && sectorDef.sectorKey) {
+      // 2) Cria pré-admissão "aguardando_leito" para o paciente aparecer no
+      //    card "Aguardando Admissão" do setor de destino.
+      if (sectorDef.sectorKey) {
         const { error: paErr } = await supabase
           .from("pre_admissions")
           .insert({
@@ -706,7 +706,7 @@ const AdminDashboardPage = () => {
           department: currentDepartment,
           reception_point: receptionPoint || null,
           destination_sector: payload.destinationValue,
-          triage_status: sectorDef.isTriage ? "aguardando_chamada" : "encaminhado",
+          triage_status: "encaminhado",
           status: "active",
           entry_type: payload.arrivalMode?.toLowerCase().includes("samu") ? "samu" : "espontaneo",
           created_by: user?.id,
@@ -716,7 +716,7 @@ const AdminDashboardPage = () => {
       if (encErr) throw encErr;
 
       // 6) Se for setor clínico (não triagem), cria pré-admissão
-      if (!sectorDef.isTriage && sectorDef.sectorKey) {
+      if (sectorDef.sectorKey) {
         const noteParts = [
           `Triagem Express • Atendimento ${(enc as any).encounter_code}`,
           payload.chiefComplaint && `Queixa: ${payload.chiefComplaint}`,
@@ -1507,11 +1507,6 @@ const AdminDashboardPage = () => {
                           >
                             <div className={cn("h-2.5 w-2.5 rounded-full shrink-0", sector.color)} />
                             <span className="text-xs font-medium flex-1 truncate">{sector.label}</span>
-                            {sector.isTriage && (
-                              <Badge className="bg-emerald-500 text-white text-[9px] px-1.5 py-0 h-4">
-                                Recomendado
-                              </Badge>
-                            )}
                           </button>
                         ))}
                       </div>
@@ -1520,7 +1515,7 @@ const AdminDashboardPage = () => {
                 </div>
                 {destinationSector && (() => {
                   const def = DESTINATION_SECTORS.find(s => s.value === destinationSector);
-                  if (!def || def.isTriage) return null;
+                  if (!def) return null;
                   return (
                     <div className="mt-3 p-2.5 rounded-md bg-blue-500/10 border border-blue-500/30 text-xs text-blue-700 dark:text-blue-300">
                       ✓ Paciente entrará em <strong>"Aguardando Admissão"</strong> de{" "}

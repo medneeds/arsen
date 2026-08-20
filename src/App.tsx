@@ -79,16 +79,12 @@ const ClinicalDashboardPage = lazy(() => import("./pages/ClinicalDashboardPage")
 const ProtocolosUtiPage = lazy(() => import("./pages/ProtocolosUtiPage"));
 const CcihDashboardPage = lazy(() => import("./pages/CcihDashboardPage"));
 const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
-const TriageQueuePage = lazy(() => import("./pages/TriageQueuePage"));
-const TriageQueueTVPage = lazy(() => import("./pages/TriageQueueTVPage"));
 const AltaDesfechoPage = lazy(() => import("./pages/AltaDesfechoPage"));
 const EmergenciaSectorPage = lazy(() => import("./pages/EmergenciaSectorPage"));
 const MonitoramentoClinicoPage = lazy(() => import("./pages/MonitoramentoClinicoPage"));
 const RequisicaoImagensPage = lazy(() => import("./pages/RequisicaoImagensPage"));
 const FichaAtendimentoPage = lazy(() => import("./pages/FichaAtendimentoPage"));
 const NirDashboardPage = lazy(() => import("./pages/NirDashboardPage"));
-const UeVerticalPage = lazy(() => import("./pages/UeVerticalPage"));
-const UeHorizontalPage = lazy(() => import("./pages/UeHorizontalPage"));
 const DevConsolePage = lazy(() => import("./pages/DevConsolePage"));
 const HistoricoPacientePage = lazy(() => import("./pages/HistoricoPacientePage"));
 const ApresentacaoPage = lazy(() => import("./pages/ApresentacaoPage"));
@@ -115,17 +111,18 @@ const queryClient = new QueryClient({
 const PageFallback = () => <PageLoader />;
 
 /** Redirects profile-specific roles to their dedicated panels */
+// A triagem foi removida: a plataforma cobre INTERNACAO, e o primeiro
+// atendimento fica fora do sistema (Direcao Clinica, 20/08/2026). Os perfis
+// que abriam na fila de triagem passam ao painel clinico padrao.
 function ProfileHomeRedirect() {
   const profile = typeof window !== "undefined" ? localStorage.getItem("access_profile") || "medico" : "medico";
   if (profile === "ccih") return <Navigate to="/ccih" replace />;
   if (profile === "imagem") return <Navigate to="/setor-imagem" replace />;
   if (profile === "laboratorio") return <Navigate to="/setor-laboratorio" replace />;
   if (profile === "administrativo") return <Navigate to="/recepcao" replace />;
-  if (profile === "multi") return <Navigate to="/triagem-fila" replace />;
   if (profile === "nir") return <Navigate to="/nir" replace />;
   if (profile === "gestor") return <Navigate to="/painel-gestor" replace />;
   if (profile === "farmacia") return <Navigate to="/validacao-farmaceutica" replace />;
-  if (profile === "classificacao_risco") return <Navigate to="/triagem-fila" replace />;
   return <ClinicalDashboardPage />;
 }
 
@@ -276,12 +273,8 @@ const App = () => {
               <Route path="/ccih" element={<ProtectedRoute><MainLayout><CcihDashboardPage /></MainLayout></ProtectedRoute>} />
               <Route path="/nir" element={<ProtectedRoute><MainLayout><IpRestricted moduleKey="nir" moduleLabel="NIR / Regulação"><NirDashboardPage /></IpRestricted></MainLayout></ProtectedRoute>} />
               <Route path="/recepcao" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
-              <Route path="/triagem-fila" element={<ProtectedRoute><TriageQueuePage /></ProtectedRoute>} />
-              <Route path="/triagem-tv" element={<ProtectedRoute><TriageQueueTVPage /></ProtectedRoute>} />
               <Route path="/alta-desfecho" element={<ProtectedRoute><MainLayout><AltaDesfechoPage /></MainLayout></ProtectedRoute>} />
               <Route path="/emergencia" element={<ProtectedRoute><EmergenciaSectorPage /></ProtectedRoute>} />
-              <Route path="/ue-vertical" element={<ProtectedRoute><UeVerticalPage /></ProtectedRoute>} />
-              <Route path="/ue-horizontal" element={<ProtectedRoute><UeHorizontalPage /></ProtectedRoute>} />
               <Route path="/ficha-atendimento" element={<ProtectedRoute><MainLayout><FichaAtendimentoPage /></MainLayout></ProtectedRoute>} />
               <Route path="/historico-paciente" element={<ProtectedRoute><HistoricoPageWrapper /></ProtectedRoute>} />
               <Route path="/dev-console" element={<ProtectedRoute><MainLayout><IpRestricted moduleKey="dev_console" moduleLabel="Console Dev"><DevConsolePage /></IpRestricted></MainLayout></ProtectedRoute>} />
