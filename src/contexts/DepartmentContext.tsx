@@ -44,6 +44,12 @@ export const DEPARTMENT_TO_SECTOR: Record<string, string> = {
   "UE HORIZONTAL": "ue_horizontal",
   "SALA VERMELHA": "sala_vermelha",
   "SALA LARANJA": "sala_laranja",
+  // O rotulo institucional e "POSTO INTERNAÇÃO" (Direcao Clinica, 19/08/2026);
+  // os leitos M01-M14 foram gravados com ele. "INTERNAÇÃO UE" fica como ALIAS
+  // do mesmo setor, porque registros antigos carregam esse texto. Ambos apontam
+  // para internacao_ue: dois departments para o mesmo setor foi exatamente o que
+  // duplicou L08/L31/L32 na UCC.
+  "POSTO INTERNAÇÃO": "internacao_ue",
   "INTERNAÇÃO UE": "internacao_ue",
   "OBSERVAÇÃO CLÍNICA": "observacao_clinica",
   "RIV": "riv",
@@ -154,7 +160,7 @@ export const DEPARTMENTS: Department[] = [
   "UE HORIZONTAL",
   "SALA VERMELHA",
   "SALA LARANJA",
-  "INTERNAÇÃO UE",
+  "POSTO INTERNAÇÃO",
   "OBSERVAÇÃO CLÍNICA",
   "CC PREPARO",
   "CC BLOCO CIRÚRGICO",
