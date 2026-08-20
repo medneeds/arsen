@@ -58,6 +58,47 @@ export const DEPARTMENT_TO_SECTOR: Record<string, string> = {
   "CC RPA": "cc_rpa",
 };
 
+/**
+ * Departamento CANONICO de cada setor.
+ *
+ * O department de uma linha de `patients` e propriedade do LEITO, nao de quem
+ * operou a tela. Gravar o departamento do contexto do usuario ao ocupar um
+ * leito corrompe o cadastro: e o que deixou linhas de `ucc` com department
+ * 'UTI' e de `outside` com 'OUTROS'.
+ *
+ * Espelha a constraint valid_department. Setores fora do escopo de internacao
+ * seguem o departamento historico deles.
+ */
+export const SECTOR_TO_DEPARTMENT: Record<string, string> = {
+  red: "UTI 1",
+  yellow: "UTI 2",
+  blue: "UCI 1",
+  outside: "UCI 2",
+  ucc: "UCC",
+  neuro_01: "NEURO 01",
+  neuro_02: "NEURO 02",
+  clinica_cirurgica: "CLÍNICA CIRÚRGICA",
+  enfermaria_transicao: "ENFERMARIA DE TRANSIÇÃO",
+  enfermaria_vascular: "ENFERMARIA VASCULAR",
+  sala_vermelha: "SALA VERMELHA",
+  sala_laranja: "SALA LARANJA",
+  internacao_ue: "POSTO INTERNAÇÃO",
+  cc_preparo: "CC PREPARO",
+  cc_bloco: "CC BLOCO CIRÚRGICO",
+  cc_rpa: "CC RPA",
+  observacao_clinica: "OBSERVAÇÃO CLÍNICA",
+  ue_vertical: "UE VERTICAL",
+  ue_horizontal: "UE HORIZONTAL",
+  riv: "RIV",
+};
+
+/**
+ * Departamento do setor; cai no departamento informado quando o setor nao e
+ * conhecido, para nunca gravar nulo em coluna NOT NULL.
+ */
+export const departmentForSector = (sector: string | null | undefined, fallback: string): string =>
+  (sector && SECTOR_TO_DEPARTMENT[sector]) || fallback;
+
 /** Reverse mapping: sector code → display label */
 export const SECTOR_DISPLAY: Record<string, string> = {
   red: "UTI 1",

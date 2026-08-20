@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
-import { useDepartment } from "@/contexts/DepartmentContext";
+import { useDepartment, departmentForSector } from "@/contexts/DepartmentContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -388,7 +388,11 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         age: age ? `${age}a` : null,
         bed_number: finalBed,
         sector: selectedSector,
-        department: currentDepartment,
+        // O department do LEITO vem do setor de destino, nunca do contexto de
+        // quem admite. Gravar currentDepartment aqui trocava o departamento da
+        // linha do leito conforme o seletor do usuario — origem das linhas de
+        // `ucc` com 'UTI' e de `outside` com 'OUTROS'.
+        department: departmentForSector(selectedSector, currentDepartment),
         hospital_unit_id: currentHospital.id,
         state_id: currentState.id,
         created_by: user?.id,

@@ -68,3 +68,21 @@ test("a lista de ocupados não pode depender de department", () => {
   assert.deepStrictEqual(ocupadosCorreto, ["L08"]);
   assert.deepStrictEqual(ocupadosComDept, [], "o filtro por department escondia o leito ocupado");
 });
+
+test("o department do leito vem do setor, nunca do contexto do usuario", () => {
+  // Reproduz departmentForSector. O defeito: ocupar um leito gravava o
+  // departamento de quem operava a tela, trocando a propriedade do leito.
+  const SECTOR_TO_DEPARTMENT: Record<string, string> = {
+    ucc: "UCC", blue: "UCI 1", outside: "UCI 2",
+    internacao_ue: "POSTO INTERNAÇÃO", cc_bloco: "CC BLOCO CIRÚRGICO",
+  };
+  const departmentForSector = (sector: string, fallback: string) =>
+    SECTOR_TO_DEPARTMENT[sector] || fallback;
+
+  // Admitir na UCC com o seletor em "UTI" tem de gravar UCC.
+  assert.strictEqual(departmentForSector("ucc", "UTI"), "UCC");
+  assert.strictEqual(departmentForSector("outside", "OUTROS"), "UCI 2");
+  assert.strictEqual(departmentForSector("internacao_ue", "URGÊNCIA E EMERGÊNCIA ADULTO"), "POSTO INTERNAÇÃO");
+  // Setor desconhecido usa o fallback: coluna é NOT NULL, nunca gravar nulo.
+  assert.strictEqual(departmentForSector("setor_inexistente", "UTI"), "UTI");
+});
