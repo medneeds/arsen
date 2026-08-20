@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatAge } from "@/lib/patientAge";
+import { occupyBedInSector } from "@/lib/bedOccupancy";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -298,15 +299,12 @@ export default function UeHorizontalPage() {
   const { role } = useAuth();
   const navigate = useNavigate();
 
-  const UE_DEPARTMENT = "URGÊNCIA E EMERGÊNCIA ADULTO";
-
-  const getNextBedNumber = (existingBeds: { bed_number: string }[], prefix: string) => {
-    const nums = (existingBeds || [])
-      .map(b => parseInt(b.bed_number.replace(prefix, ""), 10))
-      .filter(n => !isNaN(n));
-    const maxNum = nums.length > 0 ? Math.max(...nums) : 0;
-    return `${prefix}${String(maxNum + 1).padStart(2, "0")}`;
-  };
+  // Macas de internação da UE Horizontal pertencem ao POSTO DE INTERNAÇÃO
+  // (internacao_ue, M01–M14 + EXTRA); ue_horizontal é o agrupamento, não um
+  // setor-folha. Macas legadas "M-xx" gravadas em ue_horizontal continuam
+  // listadas até a alta natural. Decisão da Direção Clínica, 19/08/2026.
+  const POSTO_SECTOR = "internacao_ue";
+  const POSTO_DEPARTMENT = "POSTO INTERNAÇÃO";
 
   const fetchPatients = async () => {
     if (!currentHospital?.id || !currentState?.id) return;
@@ -314,7 +312,7 @@ export default function UeHorizontalPage() {
     try {
       const { data, error } = await supabase.from("patients").select("*")
         .eq("hospital_unit_id", currentHospital.id).eq("state_id", currentState.id)
-        .eq("department", UE_DEPARTMENT).eq("sector", "ue_horizontal")
+        .in("sector", ["ue_horizontal", POSTO_SECTOR])
         .order("display_order", { ascending: true });
       if (error) throw error;
       // Idade ao vivo a partir de patient_registry.birth_date — patients.age
@@ -388,28 +386,24 @@ export default function UeHorizontalPage() {
 
   const handlePullPatient = async (wp: WaitingPatient) => {
     try {
-      const { data: existing } = await supabase.from("patients").select("bed_number")
-        .eq("hospital_unit_id", currentHospital!.id).eq("sector", "ue_horizontal")
-        .like("bed_number", "M-%");
-      const bedNumber = getNextBedNumber(existing || [], "M-");
-      const nextNum = parseInt(bedNumber.replace("M-", ""), 10);
-
       const clinicalStatus = wp.risk_classification === "vermelho" ? "gravissimo"
         : wp.risk_classification === "laranja" ? "grave" : "potencialmente_grave";
 
-      const { error } = await supabase.from("patients").insert({
-        name: wp.patient_name, bed_number: bedNumber, sector: "ue_horizontal",
-        hospital_unit_id: currentHospital!.id, state_id: currentState!.id,
-        department: UE_DEPARTMENT, admission_date: new Date().toISOString(),
-        diagnoses: wp.chief_complaint || null, display_order: nextNum,
-        clinical_status: clinicalStatus,
-        patient_registry_id: wp.patient_registry_id ?? null,
-      } as any);
-      if (error) throw error;
+      const { bedNumber, isExtra } = await occupyBedInSector({
+        sector: POSTO_SECTOR, department: POSTO_DEPARTMENT,
+        hospitalUnitId: currentHospital!.id, stateId: currentState!.id,
+        patientData: {
+          name: wp.patient_name,
+          admission_date: new Date().toISOString(),
+          diagnoses: wp.chief_complaint || null,
+          clinical_status: clinicalStatus,
+          patient_registry_id: wp.patient_registry_id ?? null,
+        },
+      });
 
       await supabase.from("pre_admissions").update({ status: "admitido" } as any).eq("id", wp.id);
 
-      toast.success(`${wp.patient_name} → Maca ${bedNumber} (UE Horizontal)`);
+      toast.success(`${wp.patient_name} → Maca ${bedNumber}${isExtra ? " (EXTRA — faixa lotada)" : ""} (Posto de Internação)`);
       setShowPull(false);
       fetchPatients();
       fetchWaitingPatients();

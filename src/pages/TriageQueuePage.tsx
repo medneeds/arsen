@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
+import { occupyBedInSector } from "@/lib/bedOccupancy";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -196,6 +197,14 @@ const TriageQueuePage = () => {
     } catch { toast.error("Erro ao concluir triagem"); }
   };
 
+  // Fluxo horizontal interna no POSTO DE INTERNAÇÃO (internacao_ue, M01–M14 +
+  // EXTRA). ue_horizontal é agrupamento; macas legadas "M-xx" ficam até a alta.
+  const POSTO_SECTOR = "internacao_ue";
+  const POSTO_DEPARTMENT = "POSTO INTERNAÇÃO";
+
+  // Numeração dos CONSULTÓRIOS (C1-, C2-) na UE Vertical. Não usa a faixa fixa:
+  // consultório é primeiro atendimento, fora do escopo de internação, e a
+  // "vaga" é a passagem pelo consultório, não um leito instalado.
   const getNextBedNumber = (existingBeds: { bed_number: string }[], prefix: string) => {
     const nums = (existingBeds || [])
       .map(b => parseInt(b.bed_number.replace(prefix, ""), 10))
@@ -206,26 +215,21 @@ const TriageQueuePage = () => {
 
   const handleDirectHorizontal = async (patient: TriagePatient) => {
     try {
-      const { data: existing } = await supabase.from("patients").select("bed_number")
-        .eq("hospital_unit_id", currentHospital!.id).eq("sector", "ue_horizontal")
-        .like("bed_number", "M-%");
-      const bedNumber = getNextBedNumber(existing || [], "M-");
-      const nextNum = parseInt(bedNumber.replace("M-", ""), 10);
-
-      const { data: newPatient, error: insertErr } = await supabase.from("patients").insert({
-        name: patient.patient_name, bed_number: bedNumber, sector: "ue_horizontal",
-        hospital_unit_id: currentHospital!.id, state_id: currentState!.id,
-        department: "URGÊNCIA E EMERGÊNCIA ADULTO", admission_date: new Date().toISOString(),
-        display_order: nextNum,
-        patient_registry_id: patient.registry_id ?? null,
-      } as any).select("id").single();
-      if (insertErr) throw insertErr;
+      const { bedNumber, patientId, isExtra } = await occupyBedInSector({
+        sector: POSTO_SECTOR, department: POSTO_DEPARTMENT,
+        hospitalUnitId: currentHospital!.id, stateId: currentState!.id,
+        patientData: {
+          name: patient.patient_name,
+          admission_date: new Date().toISOString(),
+          patient_registry_id: patient.registry_id ?? null,
+        },
+      });
 
       await supabase.from("patient_encounters")
-        .update({ triage_status: "triado", destination_sector: "ue_horizontal", status: "completed", patient_id: newPatient?.id } as any)
+        .update({ triage_status: "triado", destination_sector: POSTO_SECTOR, status: "completed", patient_id: patientId } as any)
         .eq("id", patient.id);
 
-      toast.success(`${patient.patient_name} → Maca ${bedNumber} (UE Horizontal)`);
+      toast.success(`${patient.patient_name} → Maca ${bedNumber}${isExtra ? " (EXTRA — faixa lotada)" : ""} (Posto de Internação)`);
       setDirectTarget(null);
     } catch { toast.error("Erro ao encaminhar paciente"); setDirectTarget(null); }
   };
@@ -262,24 +266,19 @@ const TriageQueuePage = () => {
     if (!routeTarget || !routeDestination) return;
     try {
       if (routeDestination === "horizontal") {
-        const { data: existing } = await supabase.from("patients").select("bed_number")
-          .eq("hospital_unit_id", currentHospital!.id).eq("sector", "ue_horizontal")
-          .like("bed_number", "M-%");
-        const bedNumber = getNextBedNumber(existing || [], "M-");
-        const nextNum = parseInt(bedNumber.replace("M-", ""), 10);
-
-        const { error } = await supabase.from("patients").insert({
-          name: routeTarget.patient_name, bed_number: bedNumber,
-          sector: "ue_horizontal", hospital_unit_id: currentHospital!.id,
-          state_id: currentState!.id, department: "URGÊNCIA E EMERGÊNCIA ADULTO",
-          admission_date: new Date().toISOString(), display_order: nextNum,
-          clinical_status: routeTarget.risk_classification === "vermelho" ? "gravissimo"
-            : routeTarget.risk_classification === "laranja" ? "grave" : "potencialmente_grave",
-          diagnoses: routeTarget.chief_complaint || null,
-          patient_registry_id: routeTarget.patient_registry_id ?? null,
-        } as any);
-        if (error) throw error;
-        toast.success(`${routeTarget.patient_name} → Maca ${bedNumber} (UE Horizontal)`);
+        const { bedNumber, isExtra } = await occupyBedInSector({
+          sector: POSTO_SECTOR, department: POSTO_DEPARTMENT,
+          hospitalUnitId: currentHospital!.id, stateId: currentState!.id,
+          patientData: {
+            name: routeTarget.patient_name,
+            admission_date: new Date().toISOString(),
+            clinical_status: routeTarget.risk_classification === "vermelho" ? "gravissimo"
+              : routeTarget.risk_classification === "laranja" ? "grave" : "potencialmente_grave",
+            diagnoses: routeTarget.chief_complaint || null,
+            patient_registry_id: routeTarget.patient_registry_id ?? null,
+          },
+        });
+        toast.success(`${routeTarget.patient_name} → Maca ${bedNumber}${isExtra ? " (EXTRA — faixa lotada)" : ""} (Posto de Internação)`);
       } else {
         const consultorio = routeDestination === "c1" ? 1 : 2;
         const prefix = `C${consultorio}-`;
