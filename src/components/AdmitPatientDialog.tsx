@@ -150,7 +150,9 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           .select("bed_number")
           .eq("hospital_unit_id", currentHospital.id)
           .eq("state_id", currentState.id)
-          .eq("department", currentDepartment)
+          // Sem filtro por department: a chave do leito e (unidade, setor,
+          // numero). Filtrar por department SUBCONTA os ocupados e o dialog
+          // acaba oferecendo leito que ja tem paciente.
           .eq("sector", storedSector)
           .or("is_vacant.is.null,is_vacant.eq.false"),
       ]);
@@ -194,7 +196,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       .select("bed_number")
       .eq("hospital_unit_id", currentHospital.id)
       .eq("state_id", currentState.id)
-      .eq("department", currentDepartment)
+      // Sem filtro por department — ver nota acima.
       .eq("sector", newSector)
       .or("is_vacant.is.null,is_vacant.eq.false");
 
@@ -351,7 +353,14 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         .select("id, is_vacant")
         .eq("hospital_unit_id", currentHospital.id)
         .eq("state_id", currentState.id)
-        .eq("department", currentDepartment)
+        // CAUSA RAIZ das duplicatas de leito: filtrar por department aqui
+        // fazia a busca NAO encontrar a linha do leito quando o contexto de
+        // departamento divergia do gravado (ex.: admitir na UCC com contexto
+        // "UTI"), o codigo concluia que o leito nao existia e INSERIA outra
+        // linha. Resultado em producao: L08, L31 e L32 da UCC duplicados,
+        // cada par com uma linha ocupada e outra vaga.
+        // A chave real do leito e (hospital_unit_id, sector, bed_number) — a
+        // mesma da constraint patients_unit_sector_bed_key.
         .eq("sector", selectedSector)
         .eq("bed_number", finalBed)
         .maybeSingle();

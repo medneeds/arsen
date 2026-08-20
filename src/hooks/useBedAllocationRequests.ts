@@ -197,7 +197,9 @@ export function useBedAllocationRequests() {
         .from("patients")
         .select("bed_number, display_order")
         .eq("hospital_unit_id", currentHospital.id)
-        .eq("department", currentDepartment)
+        // Sem filtro por department: com ele, leitos gravados sob outro
+        // department ficavam invisiveis e o gerador devolvia um numero ja
+        // usado, colidindo com a unicidade (unidade, setor, numero).
         .eq("sector", dbSector);
 
       let maxDisplayOrder = 0;
