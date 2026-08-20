@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getSectorCoverage, type SectorGroup, isHighComplexity } from "@/config/sectorCoverage";
 
 // Sectors classification heuristics — matches existing project structure
 /**
@@ -16,34 +17,28 @@ import { supabase } from "@/integrations/supabase/client";
  * Mapa explícito em vez de heurística: código de setor não é texto descritivo,
  * e adivinhar a natureza dele por substring foi o que produziu o erro.
  */
-const SECTOR_SCOPE: Record<string, Exclude<SectorScope, "all">> = {
-  // Intensivos e semi-intensivos
-  red: "uti", yellow: "uti", blue: "uti", outside: "uti",
-  // Enfermarias — a UCC é Unidade de Cuidados CLÍNICOS: bloco de enfermarias
-  // por definição institucional (Direção Clínica, 19/08/2026; ver
-  // docs/disposicao-setores-leitos-arsen.pdf, Bloco II). Já esteve no filtro
-  // "UTI/UCI" e distorcia a taxa de ocupação intensiva com 37 leitos clínicos.
-  ucc: "enfermaria",
-  neuro_01: "enfermaria", neuro_02: "enfermaria", clinica_cirurgica: "enfermaria",
-  enfermaria_transicao: "enfermaria", enfermaria_vascular: "enfermaria",
-  // riv está FORA do escopo de internação (nível "out" em sectorCoverage) e
-  // não recebe leitos no censo; permanece mapeado apenas para dado legado.
-  riv: "enfermaria",
-  // Urgência e emergência
-  sala_vermelha: "emergencia", sala_laranja: "emergencia", observacao_clinica: "emergencia",
-  ue_vertical: "emergencia", ue_horizontal: "emergencia", internacao_ue: "emergencia",
-  // Centro cirúrgico — a pedido do gestor. Não é enfermaria: a permanência é
-  // de horas e o leito serve a um fluxo próprio (preparo, bloco, recuperação).
-  //
-  // ATENÇÃO ao código do bloco: é `cc_bloco`, e NÃO `cc_bloco_cirurgico`.
-  // "CC Bloco Cirúrgico" é o RÓTULO de exibição (SECTOR_DISPLAY); o código no
-  // banco é `cc_bloco` — vide o array de setores travados na migration
-  // 20260514211527 e DEPARTMENT_TO_SECTOR em DepartmentContext.
-  cc_preparo: "centro_cirurgico", cc_bloco: "centro_cirurgico", cc_rpa: "centro_cirurgico",
+/**
+ * Escopo de um setor no NIR — DERIVADO de SECTOR_COVERAGE.
+ *
+ * Antes havia aqui um mapa proprio, a sexta lista paralela de setores do
+ * sistema. Foi ela que classificou o Bloco Cirurgico como enfermaria (por um
+ * codigo inexistente) e a UCC como terapia intensiva. Agora o agrupamento vem
+ * de uma fonte so: src/config/sectorCoverage.ts.
+ *
+ * Os grupos espelham os blocos de docs/disposicao-setores-leitos-arsen.pdf.
+ */
+const GROUP_TO_SCOPE: Record<SectorGroup, Exclude<SectorScope, "all">> = {
+  alta_complexidade: "alta_complexidade",
+  enfermaria: "enfermaria",
+  urgencia_horizontal: "urgencia_horizontal",
+  centro_cirurgico: "centro_cirurgico",
+  // Setores fora do escopo de internacao nao recebem leito novo, mas podem
+  // ter registro historico; caem no recorte de urgencia para nao sumirem.
+  fora_escopo: "urgencia_horizontal",
 };
 
 export type NirPeriod = "today" | "7d" | "30d";
-export type SectorScope = "all" | "uti" | "enfermaria" | "emergencia" | "centro_cirurgico";
+export type SectorScope = "all" | "alta_complexidade" | "enfermaria" | "urgencia_horizontal" | "centro_cirurgico";
 
 export interface NirFilters {
   period: NirPeriod;
@@ -53,10 +48,12 @@ export interface NirFilters {
 
 const periodToHours = (p: NirPeriod) => (p === "today" ? 24 : p === "7d" ? 24 * 7 : 24 * 30);
 
-const classifySector = (sector: string | null | undefined): Exclude<SectorScope, "all"> =>
-  // Setor desconhecido cai em enfermaria — mas agora é exceção, não regra:
-  // todos os dezesseis setores configurados estão no mapa acima.
-  SECTOR_SCOPE[(sector ?? "").toLowerCase()] ?? "enfermaria";
+const classifySector = (sector: string | null | undefined): Exclude<SectorScope, "all"> => {
+  const group = getSectorCoverage((sector ?? "").toLowerCase())?.group;
+  // Setor desconhecido cai em enfermaria — exceção, não regra: os dezenove
+  // setores declarados estão em SECTOR_COVERAGE.
+  return group ? GROUP_TO_SCOPE[group] : "enfermaria";
+};
 
 export function useNirMetrics(hospitalUnitId: string | undefined, filters: NirFilters) {
   const sinceISO = useMemo(() => {
@@ -227,7 +224,7 @@ export function useNirMetrics(hospitalUnitId: string | undefined, filters: NirFi
     });
     const stuck48hUti = filteredRequests.filter((r: any) => {
       if (r.status !== "pendente" && r.status !== "em_analise") return false;
-      const isUti = (r.destination_sector || "").toLowerCase().includes("uti");
+      const isUti = isHighComplexity(r.destination_sector);
       return isUti && (now - new Date(r.created_at).getTime()) / 3_600_000 > 48;
     });
 

@@ -17,14 +17,14 @@ const PERIODS: { key: NirPeriod; label: string }[] = [
   { key: "30d", label: "30d" },
 ];
 
+// Recortes espelham os blocos de docs/disposicao-setores-leitos-arsen.pdf.
+// Centro Cirurgico e recorte proprio: permanencia de horas e fluxo proprio
+// (preparo, bloco, recuperacao); antes caia em "Enfermaria" por omissao.
 const SCOPES: { key: SectorScope; label: string }[] = [
   { key: "all", label: "Todos" },
-  { key: "uti", label: "UTI/UCI" },
-  { key: "enfermaria", label: "Enfermaria" },
-  { key: "emergencia", label: "Emergência" },
-  // Centro Cirúrgico a pedido do gestor: não é enfermaria — permanência de
-  // horas e fluxo próprio (preparo, bloco, recuperação). Antes caía em
-  // "Enfermaria" por omissão, inflando aquele recorte.
+  { key: "alta_complexidade", label: "Alta Complexidade" },
+  { key: "enfermaria", label: "Enfermarias" },
+  { key: "urgencia_horizontal", label: "Urgência e Emergência" },
   { key: "centro_cirurgico", label: "Centro Cirúrgico" },
 ];
 

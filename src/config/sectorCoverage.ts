@@ -41,7 +41,7 @@
  * 3. Se o setor for "out", ele passa a ser candidato ao cancelamento automático
  *    de sinalizações. Ver docs/sql-cadeado-setores-dessincronizado.md.
  */
-import { SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
+import { SECTOR_DISPLAY, DEPARTMENT_TO_SECTOR } from "@/contexts/DepartmentContext";
 
 /** Grau de cobertura da plataforma sobre o setor. */
 export type SectorCoverageLevel = "clinical" | "tracking" | "out";
@@ -148,6 +148,42 @@ export function sectorsByGroup(group: SectorGroup): string[] {
  * as duas listas precisam ser mantidas iguais à mão.
  */
 export const OUT_OF_SCOPE_SECTOR_CODES: readonly string[] = sectorsByLevel("out");
+
+/**
+ * Resolve o CODIGO do setor a partir de qualquer forma em que ele apareca no
+ * banco: o proprio codigo ("red"), o rotulo de exibicao ("UTI 1") ou o
+ * departamento ("UTI 1", "POSTO INTERNAÇÃO").
+ *
+ * Existe porque `destination_sector` em pre_admissions e
+ * bed_allocation_requests guarda ora codigo, ora rotulo — o front gravou das
+ * duas formas ao longo do tempo. Comparar por substring ("includes('uti')")
+ * acertava o rotulo e errava o codigo, em silencio.
+ */
+export function resolveSectorCode(value: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  const raw = value.trim();
+  if (BY_CODE.has(raw)) return raw;
+  const lower = raw.toLowerCase();
+  if (BY_CODE.has(lower)) return lower;
+
+  const norm = (t: string) =>
+    t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  const alvo = norm(raw);
+
+  for (const [code, label] of Object.entries(SECTOR_DISPLAY)) {
+    if (norm(label) === alvo) return code;
+  }
+  for (const [dep, code] of Object.entries(DEPARTMENT_TO_SECTOR)) {
+    if (norm(dep) === alvo) return code;
+  }
+  return undefined;
+}
+
+/** O destino pertence ao bloco de alta complexidade (UTI/UCI)? */
+export function isHighComplexity(value: string | null | undefined): boolean {
+  const code = resolveSectorCode(value);
+  return !!code && getSectorCoverage(code)?.group === "alta_complexidade";
+}
 
 /**
  * Verificação de consistência contra SECTOR_DISPLAY.

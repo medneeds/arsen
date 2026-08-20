@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { NirMetrics } from "@/hooks/useNirMetrics";
+import { getSectorCoverage } from "@/config/sectorCoverage";
 
 interface Props {
   metrics: NirMetrics;
@@ -26,7 +27,19 @@ const toneStyles: Record<AlertItem["tone"], string> = {
 };
 
 export function NirAlertBar({ metrics, onOpenAlert }: Props) {
-  const utiSector = metrics.occupancyBySector.find((s) => s.sector.toLowerCase().includes("uti"));
+  // Saturacao de alta complexidade (UTI/UCI).
+  //
+  // Antes: find(s => s.sector.includes("uti")). occupancyBySector guarda o
+  // CODIGO do setor, e os codigos das UTIs sao "red" e "yellow" — nenhum
+  // contem "uti". O alerta NUNCA disparava. Mesmo antipadrao de substring que
+  // classificou o bloco cirurgico como enfermaria.
+  const highComplexity = metrics.occupancyBySector.filter(
+    (s) => getSectorCoverage(s.sector)?.group === "alta_complexidade",
+  );
+  const utiSector = highComplexity.reduce<typeof highComplexity[number] | undefined>(
+    (pior, s) => (!pior || s.rate > pior.rate ? s : pior),
+    undefined,
+  );
   const utiSaturated = utiSector && utiSector.rate >= 95;
 
   const alerts: AlertItem[] = [

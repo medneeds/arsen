@@ -350,9 +350,9 @@ export function AppSidebar() {
     // Administrativo — Recepção em 3 grupos: Atendimento, Fluxos, Documentos
     if (accessProfile === "administrativo") {
       return [
-        { title: "Atendimento", icon: ClipboardList, profiles: ["administrativo"], items: [
+        { title: "Administrativo", icon: ClipboardList, profiles: ["administrativo"], items: [
           { name: "Início", link: "/recepcao?tab=inicio", profiles: ["administrativo"] },
-          { name: "Atendimentos do Dia", link: "/recepcao?tab=dia", profiles: ["administrativo"] },
+          { name: "Entradas do Dia", link: "/recepcao?tab=dia", profiles: ["administrativo"] },
           { name: "Prontuários", link: "/recepcao?tab=prontuarios", profiles: ["administrativo"] },
         ]},
         { title: "Fluxos", icon: ArrowRight, profiles: ["administrativo"], items: [
@@ -558,7 +558,7 @@ export function AppSidebar() {
 
       <SidebarContent className="gap-0 py-2">
         {/* ── Bloco "Setor Ativo": trio Início / Mapa / Painel sincronizado com o setor ── */}
-        {!["porta","visitante","farmacia","ccih","imagem","laboratorio","administrativo","classificacao_risco","nir"].includes(accessProfile) && (
+        {!["porta","visitante","farmacia","ccih","imagem","laboratorio","administrativo","nir"].includes(accessProfile) && (
           <SidebarGroup className="py-0 my-0 border-b border-border/50">
             <div className={cn(
               "pt-2 pb-1.5",
