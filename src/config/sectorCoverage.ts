@@ -99,7 +99,7 @@ export const SECTOR_COVERAGE: readonly SectorCoverage[] = [
 
 /** Rótulos legíveis dos grupos. */
 export const SECTOR_GROUP_LABELS: Record<SectorGroup, string> = {
-  alta_complexidade: "Alta Complexidade",
+  alta_complexidade: "UTI/UCI",
   enfermaria: "Enfermarias",
   urgencia_horizontal: "Urgência e Emergência (Horizontal)",
   centro_cirurgico: "Centro Cirúrgico",

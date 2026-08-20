@@ -80,11 +80,11 @@ const DESTINATION_SECTORS: DestinationSector[] = [
   { value: "ue_horizontal", label: "UE Horizontal", group: "Legado", color: "bg-indigo-500", sectorKey: "ue_horizontal", legacyOnly: true },
   { value: "observacao_clinica", label: "Observação Clínica", group: "Legado", color: "bg-sky-500", sectorKey: "observacao_clinica", legacyOnly: true },
   { value: "internacao_ue", label: "Posto de Internação", group: "Urgência e Emergência (Horizontal)", color: "bg-indigo-600", sectorKey: "internacao_ue" },
-  // Alta complexidade (UTI + UCI num bloco so, como no menu de setores)
-  { value: "red", label: "UTI 1", group: "Alta Complexidade", color: "bg-red-500", sectorKey: "red" },
-  { value: "yellow", label: "UTI 2", group: "Alta Complexidade", color: "bg-yellow-500", sectorKey: "yellow" },
-  { value: "blue", label: "UCI 1", group: "Alta Complexidade", color: "bg-blue-500", sectorKey: "blue" },
-  { value: "outside", label: "UCI 2", group: "Alta Complexidade", color: "bg-emerald-500", sectorKey: "outside" },
+  // UTI/UCI num bloco so, como no menu de setores
+  { value: "red", label: "UTI 1", group: "UTI/UCI", color: "bg-red-500", sectorKey: "red" },
+  { value: "yellow", label: "UTI 2", group: "UTI/UCI", color: "bg-yellow-500", sectorKey: "yellow" },
+  { value: "blue", label: "UCI 1", group: "UTI/UCI", color: "bg-blue-500", sectorKey: "blue" },
+  { value: "outside", label: "UCI 2", group: "UTI/UCI", color: "bg-emerald-500", sectorKey: "outside" },
   // Enfermarias — inclui a UCC (Unidade de Cuidados CLÍNICOS): bloco de
   // enfermarias por definição institucional (Direção Clínica, 19/08/2026).
   { value: "ucc", label: "UCC — Unidade Cuidados Clínicos", group: "Enfermarias", color: "bg-violet-500", sectorKey: "ucc" },

@@ -69,9 +69,9 @@ test("o menu nao oferece nada fora da internacao", () => {
   assert.deepStrictEqual(SECTOR_NAVIGATION, INPATIENT_SECTOR_GROUPS);
 });
 
-test("UTI e UCI ficam no mesmo bloco de alta complexidade", () => {
-  const bloco = SECTOR_NAVIGATION.find((g) => g.group === "Alta Complexidade");
-  assert.ok(bloco, "bloco de alta complexidade ausente");
+test("UTI e UCI ficam no mesmo bloco", () => {
+  const bloco = SECTOR_NAVIGATION.find((g) => g.group === "UTI/UCI");
+  assert.ok(bloco, "bloco UTI/UCI ausente");
   const deps = bloco!.sectors.map((s) => s.department);
   assert.deepStrictEqual(deps, ["UTI 1", "UTI 2", "UCI 1", "UCI 2"]);
 });

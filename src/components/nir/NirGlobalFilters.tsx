@@ -24,7 +24,7 @@ const PERIODS: { key: NirPeriod; label: string }[] = [
 // (preparo, bloco, recuperacao); antes caia em "Enfermaria" por omissao.
 const SCOPES: { key: SectorScope; label: string }[] = [
   { key: "all", label: "Todos" },
-  { key: "alta_complexidade", label: "Alta Complexidade" },
+  { key: "alta_complexidade", label: "UTI/UCI" },
   { key: "enfermaria", label: "Enfermarias" },
   { key: "urgencia_horizontal", label: "Urgência e Emergência" },
   { key: "centro_cirurgico", label: "Centro Cirúrgico" },

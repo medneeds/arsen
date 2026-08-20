@@ -38,7 +38,7 @@ const makeOut = (code: string, fallback?: string): HospitalSectorItem => ({
 
 export const HOSPITAL_SECTOR_GROUPS: HospitalSectorGroup[] = [
   {
-    title: "Alta Complexidade",
+    title: "UTI/UCI",
     items: [
       make("red"),
       make("yellow"),

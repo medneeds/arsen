@@ -63,9 +63,9 @@ export const SECTOR_NAVIGATION: NavSectorGroup[] = [
     ],
   },
   {
-    // Bloco I do documento institucional: UTIs e UCIs num unico bloco de alta
-    // complexidade. Estavam separados em dois grupos de dois itens cada.
-    group: "Alta Complexidade",
+    // Bloco I do documento institucional: UTIs e UCIs num unico bloco.
+    // Estavam separados em dois grupos de dois itens cada.
+    group: "UTI/UCI",
     sectors: [
       { name: "UTI 1", department: "UTI 1" as Department },
       { name: "UTI 2", department: "UTI 2" as Department },
