@@ -60,6 +60,14 @@ type DestinationSector = {
   // para que o paciente apareça em "Aguardando Admissão" do setor clínico.
   sectorKey?: string;
   isTriage?: boolean;
+  /**
+   * true = não oferecido como NOVO destino na recepção; entrada mantida só
+   * para resolver encaminhamentos legados. Aqui apenas riv (fora do escopo de
+   * internação) e ue_horizontal (agrupamento — o destino é Sala Vermelha,
+   * Sala Laranja ou Posto de Internação). UE Vertical e Observação Clínica
+   * PERMANECEM: a recepção também serve o primeiro atendimento/consultório.
+   */
+  legacyOnly?: boolean;
 };
 
 const DESTINATION_SECTORS: DestinationSector[] = [
@@ -69,7 +77,7 @@ const DESTINATION_SECTORS: DestinationSector[] = [
   { value: "sala_vermelha", label: "Sala Vermelha", group: "Urgência e Emergência (Horizontal)", color: "bg-red-700", sectorKey: "sala_vermelha" },
   { value: "sala_laranja", label: "Sala Laranja", group: "Urgência e Emergência (Horizontal)", color: "bg-orange-500", sectorKey: "sala_laranja" },
   { value: "ue_vertical", label: "UE Vertical", group: "Triagem / Urgência", color: "bg-purple-500", sectorKey: "ue_vertical" },
-  { value: "ue_horizontal", label: "UE Horizontal", group: "Triagem / Urgência", color: "bg-indigo-500", sectorKey: "ue_horizontal" },
+  { value: "ue_horizontal", label: "UE Horizontal", group: "Triagem / Urgência", color: "bg-indigo-500", sectorKey: "ue_horizontal", legacyOnly: true },
   { value: "observacao_clinica", label: "Observação Clínica", group: "Triagem / Urgência", color: "bg-sky-500", sectorKey: "observacao_clinica" },
   { value: "internacao_ue", label: "Posto de Internação", group: "Urgência e Emergência (Horizontal)", color: "bg-indigo-600", sectorKey: "internacao_ue" },
   // UTIs
@@ -78,19 +86,20 @@ const DESTINATION_SECTORS: DestinationSector[] = [
   // UCIs
   { value: "blue", label: "UCI 1", group: "Cuidados Intermediários", color: "bg-blue-500", sectorKey: "blue" },
   { value: "outside", label: "UCI 2", group: "Cuidados Intermediários", color: "bg-emerald-500", sectorKey: "outside" },
-  // UCC
-  { value: "ucc", label: "UCC — Unidade Cuidados Clínicos", group: "Cuidados Intermediários", color: "bg-violet-500", sectorKey: "ucc" },
-  // Enfermarias
+  // Enfermarias — inclui a UCC (Unidade de Cuidados CLÍNICOS): bloco de
+  // enfermarias por definição institucional (Direção Clínica, 19/08/2026).
+  { value: "ucc", label: "UCC — Unidade Cuidados Clínicos", group: "Enfermarias", color: "bg-violet-500", sectorKey: "ucc" },
   { value: "neuro_01", label: "Enfermaria Neuro 01", group: "Enfermarias", color: "bg-cyan-500", sectorKey: "neuro_01" },
   { value: "neuro_02", label: "Enfermaria Neuro 02", group: "Enfermarias", color: "bg-cyan-600", sectorKey: "neuro_02" },
   { value: "clinica_cirurgica", label: "Clínica Cirúrgica", group: "Enfermarias", color: "bg-teal-500", sectorKey: "clinica_cirurgica" },
   { value: "enfermaria_transicao", label: "Enfermaria de Transição", group: "Enfermarias", color: "bg-amber-500", sectorKey: "enfermaria_transicao" },
   { value: "enfermaria_vascular", label: "Enfermaria Vascular", group: "Enfermarias", color: "bg-pink-500", sectorKey: "enfermaria_vascular" },
-  // RIV / Centro Cirúrgico
-  { value: "riv", label: "RIV — Ref. Internação Vascular", group: "Centro Cirúrgico / RIV", color: "bg-rose-500", sectorKey: "riv" },
-  { value: "cc_preparo", label: "CC — Preparo", group: "Centro Cirúrgico / RIV", color: "bg-slate-500", sectorKey: "cc_preparo" },
-  { value: "cc_bloco", label: "CC — Bloco Cirúrgico", group: "Centro Cirúrgico / RIV", color: "bg-slate-600", sectorKey: "cc_bloco" },
-  { value: "cc_rpa", label: "CC — RPA", group: "Centro Cirúrgico / RIV", color: "bg-slate-700", sectorKey: "cc_rpa" },
+  // Centro Cirúrgico
+  { value: "cc_preparo", label: "CC — Preparo", group: "Centro Cirúrgico", color: "bg-slate-500", sectorKey: "cc_preparo" },
+  { value: "cc_bloco", label: "CC — Bloco Cirúrgico", group: "Centro Cirúrgico", color: "bg-slate-600", sectorKey: "cc_bloco" },
+  { value: "cc_rpa", label: "CC — RPA", group: "Centro Cirúrgico", color: "bg-slate-700", sectorKey: "cc_rpa" },
+  // RIV: fora do escopo de internação — mantido só para dado legado.
+  { value: "riv", label: "RIV — Ref. Internação Vascular", group: "Centro Cirúrgico", color: "bg-rose-500", sectorKey: "riv", legacyOnly: true },
 ];
 
 // Mapa sectorKey → título EXATO usado no mapa de leitos (Index.tsx SECTOR_VISUAL.title).
@@ -110,7 +119,7 @@ const SECTOR_KEY_TO_MAP_TITLE: Record<string, string> = {
   cc_preparo: "CC Preparo", cc_bloco: "CC Bloco Cirúrgico", cc_rpa: "CC RPA",
 };
 
-const DESTINATION_GROUPS = Array.from(new Set(DESTINATION_SECTORS.map(s => s.group)));
+const DESTINATION_GROUPS = Array.from(new Set(DESTINATION_SECTORS.filter(s => !s.legacyOnly).map(s => s.group)));
 
 interface PatientRegistry {
   id: string;
@@ -1488,7 +1497,7 @@ const AdminDashboardPage = () => {
                         {group}
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                        {DESTINATION_SECTORS.filter(s => s.group === group).map((sector) => (
+                        {DESTINATION_SECTORS.filter(s => s.group === group && !s.legacyOnly).map((sector) => (
                           <button
                             key={sector.value}
                             onClick={() => setDestinationSector(sector.value)}

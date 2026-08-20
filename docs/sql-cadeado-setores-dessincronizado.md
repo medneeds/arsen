@@ -149,24 +149,28 @@ ORDER BY em_risco DESC;
 
 ## 4. Etapa C — corrigir a lista
 
-### DECISÃO NECESSÁRIA ANTES DE RODAR
+### Níveis de cobertura — decidido em 19/08/2026
 
-A lista correta depende de uma pergunta que só o gestor responde:
+O gestor definiu três níveis. A distinção entre os dois primeiros é essencial:
+setor "rastreado" **não** é setor desativado.
 
-> **Quais setores efetivamente NÃO estão implantados na unidade real?**
+| Nível | Significado | Setores |
+|---|---|---|
+| **clinical** | operação clínica completa (prescrição, evolução, requisição) | `red` `yellow` `blue` `outside` `ucc` `enfermaria_transicao` `sala_vermelha` `sala_laranja` `internacao_ue` |
+| **tracking** | paciente internado e rastreado (censo, NIR, encontro), sem operação clínica por ora | `clinica_cirurgica` `enfermaria_vascular` `neuro_01` `neuro_02` `cc_preparo` `cc_bloco` `cc_rpa` |
+| **out** | fora do escopo de internação | `ue_vertical` `observacao_clinica` `riv` |
 
-Isso importa porque, se o banco consultado for o de produção, encurtar a lista **libera em produção** setores que talvez não tenham leito cadastrado nem fluxo implantado. O comentário no `lockedSectors.ts` registra que a liberação de 05/08 foi deliberadamente de **ambiente de teste**.
+**Somente o nível `out` entra na lista de cancelamento automático.** Incluir um
+setor `tracking` faria pacientes internados terem suas sinalizações descartadas.
 
-Pelas decisões de hoje, os setores que saem da cobertura de internação são:
+Pendente: `ue_horizontal` é guarda-chuva da urgência, não um lugar de leito.
+Fica fora da lista até resolvermos se existem leitos `EH` gravados no banco.
 
-- `ue_vertical` — paciente de consultório, fora do escopo da plataforma
-- `observacao_clinica` — não é internação
+Fonte única no código: `src/config/sectorCoverage.ts`.
 
-E os que passam a ser ativos:
-
-- `sala_vermelha`, `sala_laranja`, `internacao_ue` (Posto de Internação)
-
-Os demais — enfermarias, vascular, RIV, centro cirúrgico — **não foram discutidos** e precisam de decisão explícita.
+**Atenção ao RIV:** ele tem 10 leitos configurados (`RV01`–`RV10`) e passa agora
+a ser elegível ao cancelamento automático. Conferir em B.3 se há sinalização
+pendente para RIV **antes** de executar C.1.
 
 ### C.1 — Correção (preencher a lista antes de executar)
 
@@ -180,15 +184,18 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  -- ⚠️ PREENCHER: apenas setores SEM implantação ativa na unidade real.
+  -- Apenas setores FORA do escopo de internação (nível "out").
   -- Setor listado aqui tem suas sinalizações canceladas automaticamente em 24h.
+  -- Espelha OUT_OF_SCOPE_SECTOR_CODES em src/config/sectorCoverage.ts.
   v_locked_codes TEXT[] := ARRAY[
     'ue_vertical',
-    'observacao_clinica'
+    'observacao_clinica',
+    'riv'
   ];
   v_locked_labels TEXT[] := ARRAY[
     'UE VERTICAL',
-    'OBSERVAÇÃO CLÍNICA'
+    'OBSERVAÇÃO CLÍNICA',
+    'RIV'
   ];
   v_pre INT := 0;
   v_bar INT := 0;
@@ -287,6 +294,61 @@ ORDER BY l.cleaned_at DESC;
 
 A causa raiz é a **duplicação da lista** em dois lugares que não se falam. Enquanto existir array hardcoded no SQL e Set no frontend, eles voltarão a divergir.
 
-Correção definitiva: uma tabela `sector_implantation` (código, unidade, ativo) como fonte única, lida pela função via `SELECT` e exposta ao frontend por view ou RPC. Elimina a classe inteira de bug — mas é mudança estrutural, com migration de dados, e não deve ser feita sob pressão de um incidente.
+**Fase 1 concluída:** `src/config/sectorCoverage.ts` declara cada setor uma vez,
+com nível e grupo, e traz `assertSectorCoverageIntegrity()` mais 8 testes que
+acusam código órfão, código faltante e sobreposição de nível. Nenhum consumidor
+ainda — o arquivo é aditivo.
 
-Registrar como pendência. Fazer depois de estabilizar.
+**Fase 2:** migrar os consumidores um a um (`SECTOR_SCOPE` do NIR,
+`HOSPITAL_SECTOR_GROUPS`, `DESTINATION_SECTORS`, `LOCKED_DEPARTMENTS`) para
+derivarem daqui.
+
+**Fase 3:** remover as listas antigas e fechar `SectorType` como união de
+literais — hoje ele termina em `| string` e por isso não valida nada. Fechado,
+o compilador teria pego o `cc_bloco_cirurgico`.
+
+**Fase 4 (banco):** a função SQL passar a ler de uma tabela de configuração em
+vez do array hardcoded. Só assim as duas listas deixam de poder divergir.
+
+---
+
+## Auditoria de 19/08/2026 — achados adicionais
+
+Espelho local do schema (PostgreSQL 16, 282 das 325 migrations aplicadas; as 43
+restantes falham só em `publication`/`realtime`, irrelevantes aqui). Todos os
+achados abaixo foram REPRODUZIDOS, não deduzidos.
+
+### 1. A função de limpeza tem três defeitos, não um
+
+| # | Defeito | Consequência |
+|---|---------|--------------|
+| 1 | Lista de 14 setores inclui setores ativos | Cancela sinalização de paciente real. Reproduzido: `CASO NEURO` (30h) cancelado. |
+| 2 | Grava `status='cancelled'`, fora do vocabulário da constraint (`pending/approved/discussing/rejected`) | Viola constraint → **a transação inteira reverte**, inclusive os cancelamentos de pré-admissão do mesmo ciclo. O front engole a exceção (`console.debug`): falha invisível. |
+| 3 | Comparação sensível a maiúsculas | `'Internação UE'` (como o front grava) não casa com `'internacao_ue'` nem `'INTERNAÇÃO UE'`. **A pré-admissão real de 30h+ sobreviveu por acaso, não por proteção.** |
+
+Corrigidos em `20260819230000_fix_cleanup_locked_sectors_escopo_internacao.sql`.
+Verificação após a correção: cancela apenas `RIV` (30h) e o pedido de
+`observacao_clinica` (30h); preserva `Internação UE`, `neuro_01` e a
+sinalização de `ue_vertical` com 2h.
+
+### 2. `patients` tinha UNIQUE(bed_number) GLOBAL
+
+Herança de novembro/2025, quando só existiam os quatro setores de UTI. É
+incompatível com a estrutura aprovada: `L01` existe simultaneamente em UTI 1,
+UCI 1, Neuro 01, Clínica Cirúrgica e Enf. Vascular. Substituída pela unicidade
+composta `(hospital_unit_id, sector, bed_number)` — a mesma que `bed_census` já
+usava. Nenhum código dependia da global (nenhum `onConflict`/upsert sobre
+`bed_number`).
+
+### 3. Os fluxos da urgência inseriam leito em vez de ocupar
+
+Triagem e UE Horizontal criavam uma linha nova por paciente, com numeração
+própria (`M-01`, `M-02`…) no setor `ue_horizontal`. Com a faixa oficial
+semeada (`M01`–`M14` no Posto de Internação), manter o INSERT produziria os
+14 leitos oficiais eternamente vazios, todo paciente nascendo como `EXTRA`, e
+colisão com a unicidade composta.
+
+Corrigido com `src/lib/bedOccupancy.ts`: ocupa o menor leito vago da faixa por
+UPDATE — o padrão que `AdmitPatientDialog` já seguia — e abre `EXTRA` apenas
+quando a faixa está lotada (superlotação nunca recusa paciente). Macas legadas
+`M-xx` permanecem listadas até a alta natural.

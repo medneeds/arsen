@@ -18,10 +18,17 @@ import { supabase } from "@/integrations/supabase/client";
  */
 const SECTOR_SCOPE: Record<string, Exclude<SectorScope, "all">> = {
   // Intensivos e semi-intensivos
-  red: "uti", yellow: "uti", blue: "uti", outside: "uti", ucc: "uti",
-  // Enfermarias
+  red: "uti", yellow: "uti", blue: "uti", outside: "uti",
+  // Enfermarias — a UCC é Unidade de Cuidados CLÍNICOS: bloco de enfermarias
+  // por definição institucional (Direção Clínica, 19/08/2026; ver
+  // docs/disposicao-setores-leitos-arsen.pdf, Bloco II). Já esteve no filtro
+  // "UTI/UCI" e distorcia a taxa de ocupação intensiva com 37 leitos clínicos.
+  ucc: "enfermaria",
   neuro_01: "enfermaria", neuro_02: "enfermaria", clinica_cirurgica: "enfermaria",
-  enfermaria_transicao: "enfermaria", enfermaria_vascular: "enfermaria", riv: "enfermaria",
+  enfermaria_transicao: "enfermaria", enfermaria_vascular: "enfermaria",
+  // riv está FORA do escopo de internação (nível "out" em sectorCoverage) e
+  // não recebe leitos no censo; permanece mapeado apenas para dado legado.
+  riv: "enfermaria",
   // Urgência e emergência
   sala_vermelha: "emergencia", sala_laranja: "emergencia", observacao_clinica: "emergencia",
   ue_vertical: "emergencia", ue_horizontal: "emergencia", internacao_ue: "emergencia",

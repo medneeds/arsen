@@ -256,7 +256,9 @@ export function PatientSearchActionsDialog({
 
   const groupedSectors = useMemo(() => {
     const groups = new Map<string, DestinationSectorOption[]>();
-    DESTINATION_SECTORS.forEach(s => {
+    // legacyOnly fica fora do seletor de NOVOS destinos (fora do escopo de
+    // internação ou agrupamento); lookups por value/mapTitle seguem resolvendo.
+    DESTINATION_SECTORS.filter(s => !s.legacyOnly).forEach(s => {
       if (!groups.has(s.group)) groups.set(s.group, []);
       groups.get(s.group)!.push(s);
     });

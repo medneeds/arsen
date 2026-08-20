@@ -30,7 +30,6 @@ export const HOSPITAL_SECTOR_GROUPS: HospitalSectorGroup[] = [
       make("yellow"),
       make("blue"),
       make("outside"),
-      make("ucc"),
     ],
   },
   {
@@ -55,11 +54,16 @@ export const HOSPITAL_SECTOR_GROUPS: HospitalSectorGroup[] = [
   {
     title: "Clínicas",
     items: [
+      // UCC = Unidade de Cuidados Clínicos: bloco de enfermarias por
+      // definição institucional (Direção Clínica, 19/08/2026).
+      make("ucc"),
       make("clinica_cirurgica"),
       make("neuro_01"),
       make("neuro_02"),
       make("enfermaria_transicao"),
       make("enfermaria_vascular"),
+      // riv: fora do escopo de internação; permanece no catálogo porque
+      // requisições legadas podem referenciar o setor.
       make("riv"),
     ],
   },
