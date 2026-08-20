@@ -1063,19 +1063,64 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                 busca por `activeSector`, e a Enf. Vascular sozinha tem 95
                 leitos. Ver tudo de uma vez seria caro e ilegível.
               */}
-              {embedded && (
-                <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border bg-muted/30 px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                      Setor exibido
-                    </span>
-                    <SectorSelector variant="light" navigateOnSelect={false} />
+              {embedded && (() => {
+                /*
+                  Barra de contexto do mapa embutido, no mesmo desenho do
+                  BreadcrumbBar do modulo medico: CONTEXTO a esquerda (setor +
+                  quantos leitos), ACOES a direita.
+
+                  Antes esta barra tinha so o seletor e a contagem. As acoes do
+                  mapa — atualizar, imprimir, round — vivem no BreadcrumbBar, que
+                  nao e montado no modo embutido; entao, dentro do NIR, o mapa
+                  ficava sem NENHUMA delas. Quem regula precisava sair para o
+                  modulo medico so para imprimir.
+                */
+                const doSetor = patients.filter((p) => p.sector === activeSector);
+                const ocupados = doSetor.filter((p) => !!p.name?.trim()).length;
+                return (
+                  <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border bg-muted/30 px-3 py-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium shrink-0">
+                        Setor exibido
+                      </span>
+                      <SectorSelector variant="light" navigateOnSelect={false} />
+                      <span className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap">
+                        {ocupados}/{doSetor.length} leitos ocupados
+                      </span>
+                    </div>
+                    <TooltipProvider delayDuration={300}>
+                      <div className="flex items-center gap-1 print:hidden">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="outline" size="icon" onClick={handleRefreshMap}
+                              disabled={isRefreshing} className="h-8 w-8">
+                              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Atualizar mapa</p></TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="outline" size="icon" onClick={handlePrintCompact} className="h-8 w-8">
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Imprimir mapa</p></TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="outline" size="icon"
+                              onClick={() => setRoundSectorDialogOpen(true)} className="h-8 w-8">
+                              <ClipboardCheck className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Imprimir Round do Setor</p></TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </TooltipProvider>
                   </div>
-                  <span className="text-[11px] text-muted-foreground tabular-nums">
-                    {patients.filter((p) => p.sector === activeSector).length} leitos
-                  </span>
-                </div>
-              )}
+                );
+              })()}
 
 
               {/* Pre-admission section — filtra por setor ativo (exceto UE Vertical/Horizontal que mostram todos) */}
