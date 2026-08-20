@@ -34,11 +34,11 @@ export const DESTINATION_SECTORS: DestinationSectorOption[] = [
   { value: "ue_horizontal", label: "UE Horizontal", group: "Triagem / Urgência", mapTitle: "UE Horizontal", legacyOnly: true },
   { value: "observacao_clinica", label: "Observação Clínica", group: "Triagem / Urgência", mapTitle: "Obs. Clínica", legacyOnly: true },
   // UTIs
-  { value: "red", label: "UTI 1", group: "Terapia Intensiva", mapTitle: "UTI 1" },
-  { value: "yellow", label: "UTI 2", group: "Terapia Intensiva", mapTitle: "UTI 2" },
+  { value: "red", label: "UTI 1", group: "Alta Complexidade", mapTitle: "UTI 1" },
+  { value: "yellow", label: "UTI 2", group: "Alta Complexidade", mapTitle: "UTI 2" },
   // UCIs
-  { value: "blue", label: "UCI 1", group: "Cuidados Intermediários", mapTitle: "UCI 1" },
-  { value: "outside", label: "UCI 2", group: "Cuidados Intermediários", mapTitle: "UCI 2" },
+  { value: "blue", label: "UCI 1", group: "Alta Complexidade", mapTitle: "UCI 1" },
+  { value: "outside", label: "UCI 2", group: "Alta Complexidade", mapTitle: "UCI 2" },
   // Enfermarias — inclui a UCC (Unidade de Cuidados Clínicos): bloco de
   // enfermarias por definição institucional (19/08/2026).
   { value: "ucc", label: "UCC", group: "Enfermarias", mapTitle: "UCC" },

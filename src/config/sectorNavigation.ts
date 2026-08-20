@@ -19,13 +19,11 @@
  *                              filhos: Sala Vermelha, Sala Laranja e Posto de
  *                              Internação.
  *
- * ─── Atendimento fora da internação ─────────────────────────────────────────
- * UE Vertical e UE Horizontal continuam acessíveis, mas em bloco PRÓPRIO e
- * separado, porque são páginas de atendimento e não setores de internação —
- * os consultórios da triagem gravam em `ue_vertical`, e a página da UE
- * Horizontal é onde a equipe acompanha as macas. Removê-las do menu deixaria
- * esses pacientes sem via de acesso, o que é inaceitável numa plataforma em
- * uso à beira do leito.
+ *   ue_vertical              — a plataforma NÃO recebe paciente fora da
+ *                              internação (Direção Clínica, 20/08/2026). O
+ *                              paciente entra no fluxo quando a internação é
+ *                              decidida; consultório e primeiro atendimento
+ *                              ficam fora do sistema.
  *
  * Os grupos e a ordem espelham docs/disposicao-setores-leitos-arsen.pdf.
  */
@@ -42,8 +40,8 @@ export interface NavSectorGroup {
   group: string;
   sectors: NavSector[];
   /**
-   * true = não é setor de internação; é página de atendimento. Renderizado em
-   * bloco separado para não se confundir com leito instalado.
+   * Reservado. Hoje TODO grupo do menu é de internação: a plataforma não
+   * recebe paciente fora dela.
    */
   outOfInpatientScope?: boolean;
 }
@@ -65,15 +63,12 @@ export const SECTOR_NAVIGATION: NavSectorGroup[] = [
     ],
   },
   {
-    group: "UTI",
+    // Bloco I do documento institucional: UTIs e UCIs num unico bloco de alta
+    // complexidade. Estavam separados em dois grupos de dois itens cada.
+    group: "Alta Complexidade",
     sectors: [
       { name: "UTI 1", department: "UTI 1" as Department },
       { name: "UTI 2", department: "UTI 2" as Department },
-    ],
-  },
-  {
-    group: "UCI",
-    sectors: [
       { name: "UCI 1", department: "UCI 1" as Department },
       { name: "UCI 2", department: "UCI 2" as Department },
     ],
@@ -94,14 +89,6 @@ export const SECTOR_NAVIGATION: NavSectorGroup[] = [
       { name: "Preparo", department: "CC PREPARO" as Department },
       { name: "Bloco Cirúrgico", department: "CC BLOCO CIRÚRGICO" as Department },
       { name: "RPA", department: "CC RPA" as Department },
-    ],
-  },
-  {
-    group: "Atendimento (fora da internação)",
-    outOfInpatientScope: true,
-    sectors: [
-      { name: "UE Vertical", department: "UE VERTICAL" as Department, link: "/ue-vertical" },
-      { name: "UE Horizontal", department: "UE HORIZONTAL" as Department, link: "/ue-horizontal" },
     ],
   },
 ];

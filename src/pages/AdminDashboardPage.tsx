@@ -76,16 +76,15 @@ const DESTINATION_SECTORS: DestinationSector[] = [
   // Urgência e Emergência (admissão direta sem leito clínico fixo)
   { value: "sala_vermelha", label: "Sala Vermelha", group: "Urgência e Emergência (Horizontal)", color: "bg-red-700", sectorKey: "sala_vermelha" },
   { value: "sala_laranja", label: "Sala Laranja", group: "Urgência e Emergência (Horizontal)", color: "bg-orange-500", sectorKey: "sala_laranja" },
-  { value: "ue_vertical", label: "UE Vertical", group: "Triagem / Urgência", color: "bg-purple-500", sectorKey: "ue_vertical" },
+  { value: "ue_vertical", label: "UE Vertical", group: "Triagem / Urgência", color: "bg-purple-500", sectorKey: "ue_vertical", legacyOnly: true },
   { value: "ue_horizontal", label: "UE Horizontal", group: "Triagem / Urgência", color: "bg-indigo-500", sectorKey: "ue_horizontal", legacyOnly: true },
-  { value: "observacao_clinica", label: "Observação Clínica", group: "Triagem / Urgência", color: "bg-sky-500", sectorKey: "observacao_clinica" },
+  { value: "observacao_clinica", label: "Observação Clínica", group: "Triagem / Urgência", color: "bg-sky-500", sectorKey: "observacao_clinica", legacyOnly: true },
   { value: "internacao_ue", label: "Posto de Internação", group: "Urgência e Emergência (Horizontal)", color: "bg-indigo-600", sectorKey: "internacao_ue" },
-  // UTIs
-  { value: "red", label: "UTI 1", group: "Terapia Intensiva", color: "bg-red-500", sectorKey: "red" },
-  { value: "yellow", label: "UTI 2", group: "Terapia Intensiva", color: "bg-yellow-500", sectorKey: "yellow" },
-  // UCIs
-  { value: "blue", label: "UCI 1", group: "Cuidados Intermediários", color: "bg-blue-500", sectorKey: "blue" },
-  { value: "outside", label: "UCI 2", group: "Cuidados Intermediários", color: "bg-emerald-500", sectorKey: "outside" },
+  // Alta complexidade (UTI + UCI num bloco so, como no menu de setores)
+  { value: "red", label: "UTI 1", group: "Alta Complexidade", color: "bg-red-500", sectorKey: "red" },
+  { value: "yellow", label: "UTI 2", group: "Alta Complexidade", color: "bg-yellow-500", sectorKey: "yellow" },
+  { value: "blue", label: "UCI 1", group: "Alta Complexidade", color: "bg-blue-500", sectorKey: "blue" },
+  { value: "outside", label: "UCI 2", group: "Alta Complexidade", color: "bg-emerald-500", sectorKey: "outside" },
   // Enfermarias — inclui a UCC (Unidade de Cuidados CLÍNICOS): bloco de
   // enfermarias por definição institucional (Direção Clínica, 19/08/2026).
   { value: "ucc", label: "UCC — Unidade Cuidados Clínicos", group: "Enfermarias", color: "bg-violet-500", sectorKey: "ucc" },

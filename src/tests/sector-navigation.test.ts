@@ -58,12 +58,22 @@ test("todo setor de internação do menu tem faixa de leitos configurada", () =>
   }
 });
 
-test("as páginas de atendimento seguem acessíveis, em bloco separado", () => {
-  const bloco = SECTOR_NAVIGATION.find((g) => g.outOfInpatientScope);
-  assert.ok(bloco, "o bloco de atendimento fora da internação sumiu");
-  const links = bloco!.sectors.map((s) => s.link);
-  assert.ok(links.includes("/ue-vertical"), "UE Vertical precisa continuar alcançável");
-  assert.ok(links.includes("/ue-horizontal"), "UE Horizontal precisa continuar alcançável");
+test("o menu nao oferece nada fora da internacao", () => {
+  // A plataforma so recebe paciente internado (Direcao Clinica, 20/08/2026):
+  // nenhum grupo do menu pode estar fora do escopo.
+  assert.strictEqual(
+    SECTOR_NAVIGATION.filter((g) => g.outOfInpatientScope).length,
+    0,
+    "surgiu grupo fora do escopo de internacao no menu",
+  );
+  assert.deepStrictEqual(SECTOR_NAVIGATION, INPATIENT_SECTOR_GROUPS);
+});
+
+test("UTI e UCI ficam no mesmo bloco de alta complexidade", () => {
+  const bloco = SECTOR_NAVIGATION.find((g) => g.group === "Alta Complexidade");
+  assert.ok(bloco, "bloco de alta complexidade ausente");
+  const deps = bloco!.sectors.map((s) => s.department);
+  assert.deepStrictEqual(deps, ["UTI 1", "UTI 2", "UCI 1", "UCI 2"]);
 });
 
 test("destino de transferencia interna nao oferece setor fora do escopo", () => {
