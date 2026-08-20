@@ -17,6 +17,7 @@ import {
 import { DEPARTMENT_TO_SECTOR } from "@/contexts/DepartmentContext";
 import { sectorsByLevel, OUT_OF_SCOPE_SECTOR_CODES } from "@/config/sectorCoverage";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
+import { HOSPITAL_SECTOR_GROUPS, INPATIENT_SECTOR_GROUPS as INPATIENT_CATALOG } from "@/lib/hospitalSectors";
 
 const setoresDeInternacao = () =>
   INPATIENT_SECTOR_GROUPS.flatMap((g) => g.sectors.map((s) => DEPARTMENT_TO_SECTOR[s.department as string]));
@@ -63,4 +64,23 @@ test("as páginas de atendimento seguem acessíveis, em bloco separado", () => {
   const links = bloco!.sectors.map((s) => s.link);
   assert.ok(links.includes("/ue-vertical"), "UE Vertical precisa continuar alcançável");
   assert.ok(links.includes("/ue-horizontal"), "UE Horizontal precisa continuar alcançável");
+});
+
+test("destino de transferencia interna nao oferece setor fora do escopo", () => {
+  const destinos = INPATIENT_CATALOG.flatMap((g) => g.items.map((i) => i.key));
+  for (const fora of [...OUT_OF_SCOPE_SECTOR_CODES, "ue_horizontal"]) {
+    assert.ok(!destinos.includes(fora), `setor fora do escopo ofertado como destino: ${fora}`);
+  }
+  // e todo setor coberto continua alcançável como destino
+  for (const code of [...sectorsByLevel("clinical"), ...sectorsByLevel("tracking")]) {
+    assert.ok(destinos.includes(code), `setor coberto ausente dos destinos: ${code}`);
+  }
+});
+
+test("o catalogo completo preserva os setores fora do escopo para lookup", () => {
+  const todos = HOSPITAL_SECTOR_GROUPS.flatMap((g) => g.items.map((i) => i.key));
+  // Transfusao em observacao clinica e legitima; requisicoes antigas citam riv.
+  for (const code of ["observacao_clinica", "riv", "ue_vertical"]) {
+    assert.ok(todos.includes(code), `codigo sumiu do catalogo e quebraria lookup: ${code}`);
+  }
 });

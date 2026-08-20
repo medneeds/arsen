@@ -10,6 +10,14 @@ export interface HospitalSectorItem {
   key: string;
   /** Rótulo amigável para exibição */
   label: string;
+  /**
+   * true = fora do escopo de internação, ou agrupamento sem leito próprio.
+   * Continua no catálogo porque um paciente PODE estar fisicamente ali (uma
+   * transfusão em observação clínica é legítima) e porque requisições antigas
+   * referenciam esses códigos. Mas não pode ser oferecido como DESTINO de
+   * internação — ver INPATIENT_SECTOR_GROUPS.
+   */
+  outOfInpatientScope?: boolean;
 }
 
 export interface HospitalSectorGroup {
@@ -20,6 +28,12 @@ export interface HospitalSectorGroup {
 const make = (code: string, fallback?: string): HospitalSectorItem => ({
   key: code,
   label: SECTOR_DISPLAY[code] || fallback || code,
+});
+
+/** Item fora do escopo de internação (ou agrupamento). */
+const makeOut = (code: string, fallback?: string): HospitalSectorItem => ({
+  ...make(code, fallback),
+  outOfInpatientScope: true,
 });
 
 export const HOSPITAL_SECTOR_GROUPS: HospitalSectorGroup[] = [
@@ -35,11 +49,11 @@ export const HOSPITAL_SECTOR_GROUPS: HospitalSectorGroup[] = [
   {
     title: "Pronto Socorro",
     items: [
-      make("ue_vertical"),
-      make("ue_horizontal"),
+      makeOut("ue_vertical"),
+      makeOut("ue_horizontal"),
       make("sala_vermelha"),
       make("sala_laranja"),
-      make("observacao_clinica"),
+      makeOut("observacao_clinica"),
       make("internacao_ue"),
     ],
   },
@@ -64,10 +78,19 @@ export const HOSPITAL_SECTOR_GROUPS: HospitalSectorGroup[] = [
       make("enfermaria_vascular"),
       // riv: fora do escopo de internação; permanece no catálogo porque
       // requisições legadas podem referenciar o setor.
-      make("riv"),
+      makeOut("riv"),
     ],
   },
 ];
+
+/**
+ * Setores válidos como DESTINO de internação: exclui os fora do escopo e os
+ * agrupamentos. Sinalizar transferência interna para um setor fora do escopo
+ * gerava registro que a rotina SQL cancela em 24h.
+ */
+export const INPATIENT_SECTOR_GROUPS: HospitalSectorGroup[] = HOSPITAL_SECTOR_GROUPS
+  .map((g) => ({ ...g, items: g.items.filter((i) => !i.outOfInpatientScope) }))
+  .filter((g) => g.items.length > 0);
 
 /** Lookup label por código (com fallback ao próprio código). */
 export const sectorLabelFromCode = (code?: string | null): string => {

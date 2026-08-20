@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { supabase } from "@/integrations/supabase/client";
-import { HOSPITAL_SECTOR_GROUPS, sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { INPATIENT_SECTOR_GROUPS, sectorLabelFromCode } from "@/lib/hospitalSectors";
 import { classifyTransfer, requiresSaps, requiresNewAdmission, classificationLabel } from "@/lib/sectorComplexity";
 import { signalInternalTransfer } from "@/lib/internalTransfer";
 import type { Patient } from "@/types/patient";
@@ -133,7 +133,7 @@ export function SignalInternalTransferDialog({ patient, open, onOpenChange, onSu
             <Select value={targetSector} onValueChange={setTargetSector}>
               <SelectTrigger><SelectValue placeholder="Escolha o setor destino" /></SelectTrigger>
               <SelectContent>
-                {HOSPITAL_SECTOR_GROUPS.map((g) => (
+                {INPATIENT_SECTOR_GROUPS.map((g) => (
                   <SelectGroup key={g.title}>
                     <SelectLabel>{g.title}</SelectLabel>
                     {g.items.filter((i) => i.key !== patient.sector).map((i) => (
