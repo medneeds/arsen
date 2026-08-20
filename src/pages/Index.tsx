@@ -16,7 +16,7 @@ import { PageLoader } from "@/components/PageLoader";
 import { usePageReady } from "@/hooks/usePageReady";
 import { MainLayout } from "@/components/MainLayout";
 import { ShiftReminderDialog } from "@/components/ShiftReminderDialog";
-import { Patient } from "@/types/patient";
+import { Patient, isSectorType, type SectorType } from "@/types/patient";
 import { Printer, Eye, EyeOff, CheckSquare, Trash2, GripVertical, ClipboardCheck, RefreshCw, Maximize2, Minimize2 } from "lucide-react";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
 import { SectorSelector } from "@/components/SectorSelector";
@@ -177,13 +177,19 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
   const { currentDepartment, setCurrentDepartment, currentSectorCode } = useDepartment();
   
   // Active sector derived from department context
-  const [activeSector, setActiveSector] = useState<string>(() => {
-    return localStorage.getItem("selected_sector") || currentSectorCode || "red";
+  // O setor persistido pode ter vindo de versão anterior (ou ter sido editado
+  // à mão); isSectorType descarta o que não existe hoje, evitando que o mapa
+  // abra num setor inválido e que um código errado chegue ao banco.
+  const [activeSector, setActiveSector] = useState<SectorType>(() => {
+    const saved = localStorage.getItem("selected_sector");
+    if (isSectorType(saved)) return saved;
+    if (isSectorType(currentSectorCode)) return currentSectorCode;
+    return "red";
   });
   
   // Sync activeSector when department changes via sidebar
   useEffect(() => {
-    if (currentSectorCode) {
+    if (isSectorType(currentSectorCode)) {
       setActiveSector(currentSectorCode);
     }
   }, [currentSectorCode]);

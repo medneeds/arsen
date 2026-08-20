@@ -1,4 +1,36 @@
-export type SectorType = 'red' | 'yellow' | 'blue' | 'outside' | 'ucc' | 'neuro_01' | 'neuro_02' | 'clinica_cirurgica' | 'enfermaria_transicao' | 'enfermaria_vascular' | 'sala_vermelha' | 'sala_laranja' | 'observacao_clinica' | 'internacao_ue' | 'ue_vertical' | 'ue_horizontal' | 'riv' | 'cc_preparo' | 'cc_bloco' | 'cc_rpa' | string;
+/**
+ * Códigos de setor aceitos pelo banco.
+ *
+ * Espelha a constraint `patients_sector_check`. O tipo é DERIVADO desta lista,
+ * de modo que acrescentar um setor num lugar só já propaga tipo e validação.
+ *
+ * Antes havia um `| string` no fim da união: o TypeScript aceitava qualquer
+ * texto como setor, e um código errado só aparecia como violação de constraint
+ * em produção — foi assim que `cc_bloco_cirurgico` passou pela revisão. Com a
+ * união fechada, o erro passa a ser pego na compilação.
+ *
+ * Ao acrescentar um setor: incluir aqui, na constraint do banco, em
+ * SECTOR_COVERAGE (src/config/sectorCoverage.ts) e em SECTOR_BED_CONFIG
+ * (src/utils/bedNaming.ts).
+ */
+export const SECTOR_TYPES = [
+  'red', 'yellow', 'blue', 'outside',
+  'ucc', 'neuro_01', 'neuro_02', 'clinica_cirurgica',
+  'enfermaria_transicao', 'enfermaria_vascular',
+  'sala_vermelha', 'sala_laranja', 'observacao_clinica', 'internacao_ue',
+  'ue_vertical', 'ue_horizontal', 'riv',
+  'cc_preparo', 'cc_bloco', 'cc_rpa',
+] as const;
+
+export type SectorType = typeof SECTOR_TYPES[number];
+
+/**
+ * Valida um código vindo de fonte não confiável (localStorage, URL, banco
+ * legado). Devolve false para qualquer coisa fora da lista.
+ */
+export function isSectorType(value: unknown): value is SectorType {
+  return typeof value === 'string' && (SECTOR_TYPES as readonly string[]).includes(value);
+}
 
 export type MedicalResponsibilityType =
   | 'rotineiro'
