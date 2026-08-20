@@ -9,6 +9,8 @@ interface Props {
   onChange: (next: NirFilters) => void;
   onRefresh: () => void;
   isLoading?: boolean;
+  /** Acoes que operam sobre o recorte selecionado (ex.: exportar). */
+  actions?: React.ReactNode;
 }
 
 const PERIODS: { key: NirPeriod; label: string }[] = [
@@ -29,7 +31,7 @@ const SCOPES: { key: SectorScope; label: string }[] = [
 ];
 
 
-export function NirGlobalFilters({ filters, onChange, onRefresh, isLoading }: Props) {
+export function NirGlobalFilters({ filters, onChange, onRefresh, isLoading, actions }: Props) {
   return (
     /*
       Encostado nos KPIs de propósito: borda superior removida e cantos de cima
@@ -112,6 +114,7 @@ export function NirGlobalFilters({ filters, onChange, onRefresh, isLoading }: Pr
         <RefreshCw className={cn("h-3.5 w-3.5 mr-1", isLoading && "animate-spin")} />
         Atualizar
       </Button>
+      {actions}
     </div>
   );
 }

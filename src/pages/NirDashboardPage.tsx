@@ -26,7 +26,7 @@ import { NirPdfExport } from "@/components/nir/NirPdfExport";
 import { NirNotificationCenter } from "@/components/nir/NirNotificationCenter";
 import { useDischargePredictions } from "@/hooks/useDischargePredictions";
 import { BedDetailDialog } from "@/components/nir/BedDetailDialog";
-import { sectorLabelFromCode, HOSPITAL_SECTOR_GROUPS } from "@/lib/hospitalSectors";
+import { sectorLabelFromCode, INPATIENT_SECTOR_GROUPS } from "@/lib/hospitalSectors";
 import { SlaBadge } from "@/components/sla/SlaBadge";
 import { NirRequestActions } from "@/components/nir/NirRequestActions";
 
@@ -265,9 +265,11 @@ export default function NirDashboardPage() {
       case "censo_leitos": {
         // Agrupa setores conforme HOSPITAL_SECTOR_GROUPS para reduzir o ruído
         // de filtros e dar uma visão hierárquica institucional.
+        // Blocos de internacao (INPATIENT_SECTOR_GROUPS ja exclui os setores
+        // fora do escopo). Titulos espelham docs/disposicao-setores-leitos.
         const SECTOR_GROUPS = [
           { title: "Todos", codes: null as string[] | null },
-          ...HOSPITAL_SECTOR_GROUPS.map((g) => ({ title: g.title, codes: g.items.map((i) => i.key) })),
+          ...INPATIENT_SECTOR_GROUPS.map((g) => ({ title: g.title, codes: g.items.map((i) => i.key) })),
         ];
         const activeGroup = SECTOR_GROUPS.find((g) => g.title === censusGroup) ?? SECTOR_GROUPS[0];
         const visibleBedsBySector = Object.fromEntries(
@@ -349,19 +351,39 @@ export default function NirDashboardPage() {
               </div>
             )}
 
-            {/* Tabs de grupo de setores (substitui filtro plano) */}
-            <div className="flex flex-wrap gap-1.5">
-              {SECTOR_GROUPS.map((g) => (
-                <Button
-                  key={g.title}
-                  variant={censusGroup === g.title ? "default" : "outline"}
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => setCensusGroup(g.title)}
-                >
-                  {g.title}
-                </Button>
-              ))}
+            {/*
+              Barra de bloco exibido — mesmo padrao da barra "Setor exibido" do
+              mapa de leitos do modulo medico: rotulo discreto a esquerda,
+              controle no meio, contagem a direita. O controle fica onde a acao
+              acontece, e nao no cabecalho da pagina.
+            */}
+            <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border bg-muted/30 px-3 py-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  Bloco exibido
+                </span>
+                <div className="flex rounded-md border overflow-hidden">
+                  {SECTOR_GROUPS.map((g) => (
+                    <button
+                      key={g.title}
+                      onClick={() => setCensusGroup(g.title)}
+                      className={cn(
+                        "px-2.5 py-1 text-[11px] font-medium transition-colors",
+                        censusGroup === g.title
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background hover:bg-accent",
+                      )}
+                    >
+                      {g.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                {Object.values(visibleBedsBySector).reduce((n, arr: any) => n + arr.length, 0)} leitos
+                {" · "}
+                {Object.keys(visibleBedsBySector).length} setores
+              </span>
             </div>
 
             {/* Legenda de status */}
@@ -571,21 +593,20 @@ export default function NirDashboardPage() {
           </>
         }
         /*
-          Seletor hierarquico de setores no cabecalho institucional.
+          SEM seletor de setor no cabecalho.
 
-          `navigateOnSectorSelect={false}`: no painel clinico, escolher um setor
-          significa IR para outro lugar; aqui significa filtrar o que ja esta na
-          tela. Sair da pagina do NIR ao trocar de setor seria o oposto do
-          esperado por quem regula leitos.
+          O NIR regula o hospital INTEIRO: sua pergunta e "onde ha vaga", nao
+          "o que acontece neste setor". Um seletor de setor no topo sugeria um
+          recorte global que nao existe — os filtros de recorte vivem na barra
+          de filtros, e a escolha de bloco vive junto do Censo, onde a acao
+          acontece.
+
+          O cabecalho fica com UMA acao: a central de notificacoes, que e o
+          que exige reacao imediata de quem regula. A exportacao em PDF desceu
+          para a barra de filtros, ao lado de Atualizar: e uma acao sobre o
+          recorte selecionado, nao sobre a pagina.
         */
-        showSectorSelector
-        navigateOnSectorSelect={false}
-        actions={
-          <>
-            <NirNotificationCenter metrics={metrics} />
-            <NirPdfExport metrics={metrics} predictions={predictions} />
-          </>
-        }
+        actions={<NirNotificationCenter metrics={metrics} />}
       />
 
       <div className="space-y-4 p-4 md:p-6 max-w-7xl mx-auto">
@@ -628,7 +649,15 @@ export default function NirDashboardPage() {
       <NirKpiStrip metrics={metrics} />
 
       {/* Controles da faixa de indicadores — período, escopo e prioridade */}
-      <NirGlobalFilters filters={filters} onChange={setFilters} onRefresh={refetch} isLoading={isLoading} />
+      <NirGlobalFilters
+        filters={filters}
+        onChange={setFilters}
+        onRefresh={refetch}
+        isLoading={isLoading}
+        // Exportar age sobre o recorte selecionado (periodo + escopo), entao
+        // pertence a barra de filtros, nao ao cabecalho da pagina.
+        actions={<NirPdfExport metrics={metrics} predictions={predictions} />}
+      />
 
 
       {/* Module Grid */}

@@ -38,7 +38,7 @@ const makeOut = (code: string, fallback?: string): HospitalSectorItem => ({
 
 export const HOSPITAL_SECTOR_GROUPS: HospitalSectorGroup[] = [
   {
-    title: "UTI / UCI",
+    title: "Alta Complexidade",
     items: [
       make("red"),
       make("yellow"),
@@ -47,7 +47,7 @@ export const HOSPITAL_SECTOR_GROUPS: HospitalSectorGroup[] = [
     ],
   },
   {
-    title: "Pronto Socorro",
+    title: "Urgência e Emergência",
     items: [
       makeOut("ue_vertical"),
       makeOut("ue_horizontal"),
@@ -66,7 +66,7 @@ export const HOSPITAL_SECTOR_GROUPS: HospitalSectorGroup[] = [
     ],
   },
   {
-    title: "Clínicas",
+    title: "Enfermarias",
     items: [
       // UCC = Unidade de Cuidados Clínicos: bloco de enfermarias por
       // definição institucional (Direção Clínica, 19/08/2026).
