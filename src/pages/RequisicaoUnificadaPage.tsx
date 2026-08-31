@@ -2345,7 +2345,7 @@ async function buildApacHtmlFromProcedimentoRequest(request: any): Promise<strin
  * Ponto único de impressão para a aba "Solicitados" de Procedimento: mesmo
  * padrão do modal de Imagem — sempre pergunta Guia x APAC.
  */
-async function printProcedimentoRequest(
+export async function printProcedimentoRequest(
   request: any,
   sectorLabel?: (s: string | null) => string,
 ): Promise<void> {
@@ -2414,7 +2414,7 @@ function buildSatDataFromRequest(request: any): SatPrintData {
  * fase 3b), cai na guia — não tem de onde reconstruir sem inventar dado
  * assistencial.
  */
-async function printTerapeuticoRequest(
+export async function printTerapeuticoRequest(
   request: any,
   sectorLabel?: (s: string | null) => string,
 ): Promise<void> {

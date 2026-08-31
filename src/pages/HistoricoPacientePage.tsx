@@ -29,6 +29,10 @@ import { cn } from "@/lib/utils";
 import { SectionLoader } from "@/components/SectionLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { printDischargeDocument, type DischargeDocType, type DischargeDocPayload } from "@/lib/dischargeDocuments";
+import { printEvolution } from "@/lib/printEvolution";
+import type { EvolutionRecord } from "@/hooks/useEvolutions";
+import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
+import { printProcedimentoRequest, printTerapeuticoRequest } from "@/pages/RequisicaoUnificadaPage";
 
 const PRINTABLE_TYPES = new Set<TimelineEventType>([
   "evolution",
@@ -258,46 +262,25 @@ export default function HistoricoPacientePage() {
         </div>
       </div>`;
 
-    const stripHtml = (s: string) =>
-      (s || "").replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim();
-
     try {
       if (e.event_type === "evolution") {
         const { data } = await supabase
           .from("clinical_evolutions")
-          .select("soap_data,vital_signs,diagnostic_hypotheses,validated_by_name,created_by_name,validated_at,created_at,status,evolution_type,cid_primary")
+          .select("*")
           .eq("id", e.event_id)
           .maybeSingle();
         if (!data) { alert("Evolução não encontrada."); setPrintingId(null); return; }
-        const soap = (data.soap_data ?? {}) as any;
-        const vs   = (data.vital_signs ?? {}) as any;
-        const dt   = data.validated_at || data.created_at;
-        const dateStr = dt ? format(new Date(dt), "dd/MM/yyyy 'às' HH:mm") : "";
-        let hypo: any = data.diagnostic_hypotheses ?? "";
-        try {
-          const p = typeof hypo === "string" ? JSON.parse(hypo) : hypo;
-          if (Array.isArray(p)) hypo = p.join("; ");
-        } catch { /* mantém */ }
-        const vsLine = [
-          vs.temperature ? `Temp: ${vs.temperature}°C` : "",
-          vs.heart_rate  ? `FC: ${vs.heart_rate} bpm`  : "",
-          vs.systolic_bp && vs.diastolic_bp ? `PA: ${vs.systolic_bp}/${vs.diastolic_bp} mmHg` : "",
-          vs.spo2        ? `SpO₂: ${vs.spo2}%`         : "",
-          vs.rr          ? `FR: ${vs.rr} irpm`          : "",
-        ].filter(Boolean).join("  ·  ");
-        const html = docHeader("EVOLUÇÃO CLÍNICA") + `
-          <p class="doc-title">Evolução Clínica · ${dateStr}</p>
-          <div class="grid2">
-            <div><div class="section-lbl">Autor</div><div class="section-val">${data.validated_by_name || data.created_by_name || ""}</div></div>
-            <div><div class="section-lbl">Status</div><div class="section-val"><span class="badge">${data.status ?? ""}</span></div></div>
-          </div>
-          ${vsLine ? `<div class="section"><div class="section-lbl">Sinais Vitais</div><div class="section-val">${vsLine}</div></div>` : ""}
-          ${hypo   ? `<div class="section"><div class="section-lbl">Hipóteses Diagnósticas</div><div class="section-val">${hypo}</div></div>` : ""}
-          ${soap.subjective ? `<div class="section"><div class="section-lbl">Evolução</div><div class="section-val">${stripHtml(soap.subjective)}</div></div>` : ""}
-          ${soap.assessment ? `<div class="section"><div class="section-lbl">Avaliação</div><div class="section-val">${stripHtml(soap.assessment)}</div></div>` : ""}
-          ${soap.plan       ? `<div class="section"><div class="section-lbl">Plano / Conduta</div><div class="section-val">${stripHtml(soap.plan)}</div></div>` : ""}
-        </body></html>`;
-        openPrint(html); setPrintingId(null); return;
+        // Reaproveita o mesmo builder usado no EvolutionForm/Timeline — evita
+        // remontar o HTML na mão (a versão anterior tinha, inclusive, nomes
+        // de campo de sinais vitais que não batiam com o schema real, então
+        // a linha de sinais vitais nunca aparecia).
+        await printEvolution(data as unknown as EvolutionRecord, {
+          patientName: patientName ?? undefined,
+          patientBed: patientBed ?? undefined,
+          patientSector: patientSector ?? undefined,
+        });
+        setPrintingId(null);
+        return;
       }
 
       if (e.event_type === "prescription") {
@@ -334,38 +317,24 @@ export default function HistoricoPacientePage() {
       if (e.event_type === "exam_request") {
         const { data } = await supabase
           .from("exam_requests")
-          .select("category,items,clinical_indication,priority,status,requested_by_name,notes,created_at,results")
+          .select("*")
           .eq("id", e.event_id)
           .maybeSingle();
         if (!data) { alert("Requisição não encontrada."); setPrintingId(null); return; }
-        const items = Array.isArray(data.items) ? data.items as any[] : [];
-        const rows  = items.map((it: any) => `
-          <tr>
-            <td>${it.code || ""}</td>
-            <td>${it.name || it.description || ""}</td>
-            <td>${it.quantity ?? 1}</td>
-          </tr>`).join("");
-        const catLabel: Record<string, string> = {
-          lab: "Laboratório", imagem: "Imagem", parecer: "Parecer",
-          cultura: "Cultura", apac: "APAC", hemocomponente: "Hemocomponente",
-          procedimento: "Procedimento", terapeutico: "Terapêutico", regulacao: "Regulação",
-        };
-        const html = docHeader(`REQUISIÇÃO — ${(catLabel[data.category ?? ""] || (data.category ?? "EXAME")).toUpperCase()}`) + `
-          <p class="doc-title">${catLabel[data.category ?? ""] || data.category} · ${format(new Date(data.created_at), "dd/MM/yyyy 'às' HH:mm")}</p>
-          <div class="grid3" style="margin-bottom:14px">
-            <div><div class="section-lbl">Prioridade</div><div class="section-val"><span class="badge">${data.priority ?? ""}</span></div></div>
-            <div><div class="section-lbl">Status</div><div class="section-val"><span class="badge">${data.status ?? ""}</span></div></div>
-            <div><div class="section-lbl">Solicitante</div><div class="section-val">${data.requested_by_name ?? ""}</div></div>
-          </div>
-          ${data.clinical_indication ? `<div class="section"><div class="section-lbl">Indicação Clínica / Observações</div><div class="section-val">${data.clinical_indication}</div></div>` : ""}
-          ${data.notes ? `<div class="section"><div class="section-lbl">Notas</div><div class="section-val">${data.notes}</div></div>` : ""}
-          <table>
-            <thead><tr><th>Código</th><th>Exame / Procedimento</th><th>Qtd</th></tr></thead>
-            <tbody>${rows || "<tr><td colspan='3' style='text-align:center;color:#94a3b8'>Sem itens</td></tr>"}</tbody>
-          </table>
-          ${data.results ? `<div class="section"><div class="section-lbl">Resultado</div><div class="section-val">${data.results}</div></div>` : ""}
-        </body></html>`;
-        openPrint(html); setPrintingId(null); return;
+        // Reaproveita os mesmos despachantes de impressão da Requisição
+        // Unificada — mesmo tratamento de gasometria (Lab), do laudo
+        // formal quando existe document_payload real (Procedimento), e do
+        // impresso interno de Hemocomponente/SAT (Terapêutico) — em vez de
+        // uma guia genérica remontada na mão, que não sabe nada disso.
+        if (data.category === "procedimento") {
+          await printProcedimentoRequest(data, getSectorDisplayLabel);
+        } else if (data.category === "terapeutico") {
+          await printTerapeuticoRequest(data, getSectorDisplayLabel);
+        } else {
+          await printRequisitionGuideWithGasometriaPrompt(data, getSectorDisplayLabel);
+        }
+        setPrintingId(null);
+        return;
       }
 
       if (e.event_type === "admission_history") {
