@@ -28,6 +28,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { SectionLoader } from "@/components/SectionLoader";
 import { supabase } from "@/integrations/supabase/client";
+import { printDischargeDocument, type DischargeDocType, type DischargeDocPayload } from "@/lib/dischargeDocuments";
 
 const PRINTABLE_TYPES = new Set<TimelineEventType>([
   "evolution",
@@ -387,6 +388,24 @@ export default function HistoricoPacientePage() {
           ${data.initial_conduct       ? `<div class="section"><div class="section-lbl">Conduta Inicial</div><div class="section-val">${data.initial_conduct}</div></div>` : ""}
         </body></html>`;
         openPrint(html); setPrintingId(null); return;
+      }
+
+      if (e.event_type === "discharge_document") {
+        const { data } = await supabase
+          .from("discharge_documents")
+          .select("document_type,content")
+          .eq("id", e.event_id)
+          .maybeSingle();
+        if (!data) { alert("Sumário de alta não encontrado."); setPrintingId(null); return; }
+        // Reaproveita o mesmo builder usado na emissão original (Norma Zero) —
+        // em vez de remontar o HTML na mão como os demais tipos acima, garante
+        // que a reimpressão saia idêntica ao documento que foi de fato emitido.
+        await printDischargeDocument(
+          data.document_type as DischargeDocType,
+          data.content as DischargeDocPayload,
+        );
+        setPrintingId(null);
+        return;
       }
 
       const html = docHeader(EVENT_TYPE_LABELS[e.event_type] ?? "EVENTO") + `
