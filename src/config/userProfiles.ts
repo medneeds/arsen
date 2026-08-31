@@ -42,7 +42,6 @@ export type AccessProfile =
   | "laboratorio"
   | "administrativo"
   | "multi"
-  | "classificacao_risco"
   | "coord_medico"
   | "coord_enfermagem"
   | "coord_multi"
@@ -73,7 +72,7 @@ export const SYSTEM_ROLES: RoleConfig[] = [
   {
     value: "porta",
     label: "Médico Porta",
-    description: "Triagem e avaliação inicial na emergência",
+    description: "Avaliação inicial do paciente na entrada da internação",
     icon: Activity,
   },
   {
@@ -174,9 +173,9 @@ export const ACCESS_PROFILES: AccessProfileConfig[] = [
   },
   {
     value: "administrativo",
-    label: "Administrativo / Recepção",
+    label: "Administrativo",
     shortLabel: "Administrativo",
-    description: "Cadastros, recepção e fluxos administrativos",
+    description: "Cadastro de pacientes, registro de entrada e fluxos administrativos",
     defaultRoute: "/recepcao",
     icon: ClipboardList,
     skipSectorSelection: true,
@@ -188,15 +187,6 @@ export const ACCESS_PROFILES: AccessProfileConfig[] = [
     description: "Fluxos da equipe multidisciplinar (enfermagem, nutrição, fisio, etc.)",
     defaultRoute: "/mapa",
     icon: UsersIcon,
-    skipSectorSelection: true,
-  },
-  {
-    value: "classificacao_risco",
-    label: "Classificação de Risco",
-    shortLabel: "Classif. Risco",
-    description: "Acesso exclusivo à fila de triagem e Protocolo de Manchester",
-    defaultRoute: "/triagem-fila",
-    icon: Activity,
     skipSectorSelection: true,
   },
   {
@@ -257,7 +247,6 @@ export const PROFILE_TO_ROLE_HINT: Record<AccessProfile, AppRole> = {
   laboratorio: "medico",
   administrativo: "medico",
   multi: "medico",
-  classificacao_risco: "medico",
   coord_medico: "coordenador",
   coord_enfermagem: "coordenador",
   coord_multi: "coordenador",
@@ -301,16 +290,18 @@ export const SECTOR_GROUPS: SectorGroup[] = [
   },
   {
     id: "emergencia_adulto",
-    label: "Urgência e Emergência — Adulto",
-    description: "Pronto-socorro adulto (vertical, horizontal, salas)",
+    label: "Urgência e Emergência (Horizontal)",
+    description: "Sala Vermelha, Sala Laranja e Posto de Internação",
+    // Guarda-chuva da internacao na urgencia. UE VERTICAL e OBSERVAÇÃO CLÍNICA
+    // ficam FORA: sao atendimento, nao internacao. 'INTERNAÇÃO UE' segue na
+    // lista como alias historico de 'POSTO INTERNAÇÃO' (ver
+    // DEPARTMENT_TO_SECTOR) para nao invalidar acessos ja concedidos.
     departments: [
       "URGÊNCIA E EMERGÊNCIA ADULTO",
-      "UE VERTICAL",
-      "UE HORIZONTAL",
       "SALA VERMELHA",
       "SALA LARANJA",
+      "POSTO INTERNAÇÃO",
       "INTERNAÇÃO UE",
-      "OBSERVAÇÃO CLÍNICA",
     ],
   },
   {

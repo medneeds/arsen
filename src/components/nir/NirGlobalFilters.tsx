@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Calendar, Building2, Flag, RefreshCw, HelpCircle } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Calendar, Building2, RefreshCw } from "lucide-react";
 import type { NirFilters, NirPeriod, SectorScope } from "@/hooks/useNirMetrics";
 
 interface Props {
@@ -10,6 +9,8 @@ interface Props {
   onChange: (next: NirFilters) => void;
   onRefresh: () => void;
   isLoading?: boolean;
+  /** Acoes que operam sobre o recorte selecionado (ex.: exportar). */
+  actions?: React.ReactNode;
 }
 
 const PERIODS: { key: NirPeriod; label: string }[] = [
@@ -18,23 +19,30 @@ const PERIODS: { key: NirPeriod; label: string }[] = [
   { key: "30d", label: "30d" },
 ];
 
+// Recortes espelham os blocos de docs/disposicao-setores-leitos-arsen.pdf.
+// Centro Cirurgico e recorte proprio: permanencia de horas e fluxo proprio
+// (preparo, bloco, recuperacao); antes caia em "Enfermaria" por omissao.
 const SCOPES: { key: SectorScope; label: string }[] = [
   { key: "all", label: "Todos" },
-  { key: "uti", label: "UTI/UCI" },
-  { key: "enfermaria", label: "Enfermaria" },
-  { key: "emergencia", label: "Emergência" },
+  { key: "alta_complexidade", label: "UTI/UCI" },
+  { key: "enfermaria", label: "Enfermarias" },
+  { key: "urgencia_horizontal", label: "Urgência e Emergência" },
+  { key: "centro_cirurgico", label: "Centro Cirúrgico" },
 ];
 
-const PRIORITIES: { key: NirFilters["priority"]; label: string; tone: string; hint: string }[] = [
-  { key: "all", label: "Todas", tone: "", hint: "Sem filtro de prioridade" },
-  { key: "vermelha", label: "P1 · Vermelha", tone: "text-red-600", hint: "Emergente — vaga imediata (UTI, Sala Vermelha, instabilidade hemodinâmica)" },
-  { key: "amarela", label: "P2 · Amarela", tone: "text-amber-600", hint: "Urgente — vaga em até 4h (semi-eletivo, agravamento previsível)" },
-  { key: "verde", label: "P3 · Verde", tone: "text-emerald-600", hint: "Eletiva / agendável (transferência de conforto, alta administrativa)" },
-];
 
-export function NirGlobalFilters({ filters, onChange, onRefresh, isLoading }: Props) {
+export function NirGlobalFilters({ filters, onChange, onRefresh, isLoading, actions }: Props) {
   return (
-    <div className="flex flex-wrap items-center gap-2 px-3 py-2 rounded-lg border bg-card">
+    /*
+      Encostado nos KPIs de propósito: borda superior removida e cantos de cima
+      retos, para ler como o RODAPÉ DE CONTROLE da faixa de indicadores, e não
+      como mais um bloco solto da página. Era isso que fazia os filtros
+      parecerem sem dono.
+    */
+    <div className="flex flex-wrap items-center gap-2 px-3 py-2 rounded-b-lg border border-t-0 bg-card -mt-2">
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden sm:inline">
+        Recortar indicadores:
+      </span>
       {/* Período */}
       <div className="flex items-center gap-1.5">
         <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
@@ -55,6 +63,17 @@ export function NirGlobalFilters({ filters, onChange, onRefresh, isLoading }: Pr
         </div>
       </div>
 
+      {/*
+        Estes controles recortam os INDICADORES acima — não a página.
+
+        A PRIORIDADE saiu: dos oito KPIs, ela tocava apenas "Pendentes"; os
+        outros sete vêm de LEITOS, não de solicitações. Ou seja, mexer nela
+        parecia recortar o painel e quase nada mudava. E a fila de solicitações,
+        que é onde prioridade importa de verdade, já tem abas próprias por tipo.
+
+        Ficam os dois recortes que o gestor descreveu: PERÍODO (comportamento do
+        hospital no tempo) e ESCOPO (por natureza de setor).
+      */}
       {/*
         "Escopo", não "Setor".
 
@@ -84,42 +103,6 @@ export function NirGlobalFilters({ filters, onChange, onRefresh, isLoading }: Pr
         </div>
       </div>
 
-      {/* Prioridade */}
-      <TooltipProvider delayDuration={150}>
-        <div className="flex items-center gap-1.5">
-          <Flag className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Prioridade:</span>
-          <div className="flex rounded-md border overflow-hidden">
-            {PRIORITIES.map((p) => (
-              <Tooltip key={p.key}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => onChange({ ...filters, priority: p.key })}
-                    className={cn(
-                      "px-2.5 py-1 text-[11px] font-medium transition-colors",
-                      filters.priority === p.key ? "bg-primary text-primary-foreground" : cn("bg-background hover:bg-accent", p.tone),
-                    )}
-                  >
-                    {p.label}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-[240px] text-xs">
-                  {p.hint}
-                </TooltipContent>
-              </Tooltip>
-            ))}
-          </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button className="text-muted-foreground hover:text-foreground"><HelpCircle className="h-3.5 w-3.5" /></button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-[280px] text-xs">
-              <p className="font-semibold mb-1">Lógica de Prioridade (Manchester adaptado)</p>
-              <p>Aplicada às <strong>solicitações de regulação</strong> (não aos leitos). Define o tempo-alvo para alocação de vaga conforme gravidade clínica.</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      </TooltipProvider>
 
       <div className="flex-1" />
 
@@ -131,6 +114,7 @@ export function NirGlobalFilters({ filters, onChange, onRefresh, isLoading }: Pr
         <RefreshCw className={cn("h-3.5 w-3.5 mr-1", isLoading && "animate-spin")} />
         Atualizar
       </Button>
+      {actions}
     </div>
   );
 }

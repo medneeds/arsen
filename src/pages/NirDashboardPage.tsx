@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { 
   Building2, ArrowLeftRight, Globe, BedDouble, ClipboardPlus, 
-  Repeat, LogOut, Lock, FileText, BarChart3, Search, RefreshCw, AlertTriangle, Sparkles, Activity, Move, X, LayoutGrid
+  Repeat, LogOut, Lock, FileText, BarChart3, Search, RefreshCw, AlertTriangle, Sparkles, Activity, Move, X, LayoutGrid, Settings2
 } from "lucide-react";
 import BedMapPage from "@/pages/Index";
+import { NirConfigPanel } from "@/components/nir/NirConfigPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,33 +26,49 @@ import { NirPdfExport } from "@/components/nir/NirPdfExport";
 import { NirNotificationCenter } from "@/components/nir/NirNotificationCenter";
 import { useDischargePredictions } from "@/hooks/useDischargePredictions";
 import { BedDetailDialog } from "@/components/nir/BedDetailDialog";
-import { sectorLabelFromCode, HOSPITAL_SECTOR_GROUPS } from "@/lib/hospitalSectors";
+import { sectorLabelFromCode, INPATIENT_SECTOR_GROUPS } from "@/lib/hospitalSectors";
 import { SlaBadge } from "@/components/sla/SlaBadge";
 import { NirRequestActions } from "@/components/nir/NirRequestActions";
 
+/**
+ * Os tipos de solicitação — o que antes eram sete cards separados.
+ *
+ * "Solicitação de Vaga" vem primeiro e é o padrão: o gestor a marcou como
+ * importantíssima, então quem abre o card cai nela.
+ */
+const REQUEST_TYPES = [
+  { key: "solicitacao_vaga", label: "Vaga" },
+  { key: "interna", label: "Regulação interna" },
+  { key: "externa_sisreg", label: "Regulação externa" },
+  { key: "transferencia_interunidade", label: "Interunidade" },
+  { key: "alta_administrativa", label: "Alta administrativa" },
+  { key: "bloqueio_interdicao", label: "Bloqueio" },
+  { key: "parecer_regulatorio", label: "Parecer" },
+  { key: "todos", label: "Todos" },
+] as const;
+
 const NIR_MODULES = [
-  { key: "regulacao_interna", label: "Regulação Interna", subtitle: "Transferências entre setores", icon: ArrowLeftRight, color: "text-blue-500", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/20" },
-  { key: "regulacao_externa", label: "Regulação Externa", subtitle: "SISREG / Central de Regulação", icon: Globe, color: "text-purple-500", bgColor: "bg-purple-500/10", borderColor: "border-purple-500/20" },
-  { key: "censo_leitos", label: "Censo de Leitos", subtitle: "Ocupação em tempo real", icon: BedDouble, color: "text-emerald-500", bgColor: "bg-emerald-500/10", borderColor: "border-emerald-500/20" },
   /*
-    Mapa de Leitos — card NOVO, deliberadamente SEPARADO do Censo.
+    CINCO cards, no lugar de dez.
 
-    Decisão do gestor (10/08/2026): não absorver um no outro. O Censo trabalha
-    com mais detalhamento uma série de questões que o Mapa não traz. Os dois
-    serão sincronizados no futuro e trabalharão em harmonia, mas por ora
-    convivem separados.
+    SETE deles — Regulação Interna, Regulação Externa, Solicitação de Vaga,
+    Transferência Interunidade, Alta Administrativa, Bloqueio/Interdição e
+    Parecer Regulatório — caíam TODOS no mesmo `default` do switch:
+    renderizavam a MESMA lista, mudando apenas o `request_type`. Não eram sete
+    módulos; eram sete filtros da mesma lista, vestidos de módulo.
 
-    Este é o primeiro passo de tirar o mapa do ambiente do usuário médico e
-    levá-lo ao NIR. O mapa NÃO sai do médico agora — passa a existir nos dois
-    lugares, para a migração ser gradual.
+    Agora são o que sempre foram por baixo: um card "Solicitações" com os tipos
+    como filtro interno. Uma porta com sete gavetas, em vez de sete portas para
+    a mesma sala.
+
+    As cinco naturezas: VER (mapa, censo) · FAZER (solicitações) ·
+    ANALISAR (relatórios) · CONFIGURAR (a construir).
   */
   { key: "mapa_leitos", label: "Mapa de Leitos", subtitle: "Visão operacional dos leitos", icon: LayoutGrid, color: "text-sky-500", bgColor: "bg-sky-500/10", borderColor: "border-sky-500/20" },
-  { key: "solicitacao_vaga", label: "Solicitação de Vaga", subtitle: "Pedidos de internação", icon: ClipboardPlus, color: "text-amber-500", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/20" },
-  { key: "transferencia_interunidade", label: "Transferência Interunidade", subtitle: "Movimentação entre hospitais", icon: Repeat, color: "text-cyan-500", bgColor: "bg-cyan-500/10", borderColor: "border-cyan-500/20" },
-  { key: "alta_administrativa", label: "Alta Administrativa", subtitle: "Liberação e desfecho", icon: LogOut, color: "text-rose-500", bgColor: "bg-rose-500/10", borderColor: "border-rose-500/20" },
-  { key: "bloqueio_interdicao", label: "Bloqueio / Interdição", subtitle: "Gestão de leitos bloqueados", icon: Lock, color: "text-red-500", bgColor: "bg-red-500/10", borderColor: "border-red-500/20" },
-  { key: "parecer_regulatorio", label: "Parecer Regulatório", subtitle: "Avaliações e laudos", icon: FileText, color: "text-indigo-500", bgColor: "bg-indigo-500/10", borderColor: "border-indigo-500/20" },
-  { key: "relatorios_nir", label: "Relatórios NIR", subtitle: "Indicadores e métricas", icon: BarChart3, color: "text-teal-500", bgColor: "bg-teal-500/10", borderColor: "border-teal-500/20" },
+  { key: "censo_leitos", label: "Censo de Leitos", subtitle: "Panorama, ocupação e bloqueios", icon: BedDouble, color: "text-emerald-500", bgColor: "bg-emerald-500/10", borderColor: "border-emerald-500/20" },
+  { key: "solicitacoes", label: "Solicitações", subtitle: "Fila de trabalho do NIR", icon: ClipboardPlus, color: "text-amber-500", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/20" },
+  { key: "relatorios_nir", label: "Relatórios NIR", subtitle: "Indicadores, séries e previsões", icon: BarChart3, color: "text-violet-500", bgColor: "bg-violet-500/10", borderColor: "border-violet-500/20" },
+  { key: "configuracao", label: "Configuração", subtitle: "Estrutura e capacidade de leitos", icon: Settings2, color: "text-slate-500", bgColor: "bg-slate-500/10", borderColor: "border-slate-500/20" },
 ];
 
 const BED_STATUS_LABELS: Record<
@@ -122,6 +139,7 @@ export default function NirDashboardPage() {
   const { currentHospital } = useHospital();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeModule, setActiveModule] = useState<string | null>(searchParams.get("modulo"));
+  const [requestType, setRequestType] = useState<string>("solicitacao_vaga");
 
   useEffect(() => {
     const m = searchParams.get("modulo");
@@ -247,9 +265,11 @@ export default function NirDashboardPage() {
       case "censo_leitos": {
         // Agrupa setores conforme HOSPITAL_SECTOR_GROUPS para reduzir o ruído
         // de filtros e dar uma visão hierárquica institucional.
+        // Blocos de internacao (INPATIENT_SECTOR_GROUPS ja exclui os setores
+        // fora do escopo). Titulos espelham docs/disposicao-setores-leitos.
         const SECTOR_GROUPS = [
           { title: "Todos", codes: null as string[] | null },
-          ...HOSPITAL_SECTOR_GROUPS.map((g) => ({ title: g.title, codes: g.items.map((i) => i.key) })),
+          ...INPATIENT_SECTOR_GROUPS.map((g) => ({ title: g.title, codes: g.items.map((i) => i.key) })),
         ];
         const activeGroup = SECTOR_GROUPS.find((g) => g.title === censusGroup) ?? SECTOR_GROUPS[0];
         const visibleBedsBySector = Object.fromEntries(
@@ -260,6 +280,51 @@ export default function NirDashboardPage() {
 
         return (
           <div className="space-y-4">
+            {/*
+              Ocupação por setor (semáforo) — MUDOU DE LUGAR.
+
+              Estava na camada superior da página, competindo com os cards e
+              obrigando a rolar antes de chegar neles. É detalhamento, não
+              panorama: responde "onde tem vaga agora", que é exatamente a
+              pergunta do Censo.
+
+              A versão ANALÍTICA da mesma informação — taxa média, tendência,
+              comparação entre períodos — fica em Relatórios. Mesmo dado, duas
+              perguntas: "onde alocar agora" e "como estamos evoluindo".
+            */}
+            {/* Ocupação por setor (semáforo) */}
+            {metrics.occupancyBySector.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-primary" />
+                    Ocupação por setor
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {metrics.occupancyBySector.map((s) => {
+                      const tone = s.rate >= 95 ? "danger" : s.rate >= 80 ? "warning" : "success";
+                      const colorBar = tone === "danger" ? "bg-red-500" : tone === "warning" ? "bg-amber-500" : "bg-emerald-500";
+                      const colorText = tone === "danger" ? "text-red-600 dark:text-red-400" : tone === "warning" ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400";
+                      return (
+                        <div key={s.sector} className="rounded-lg border p-2.5">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs font-medium truncate">{sectorLabelFromCode(s.sector)}</span>
+                            <span className={cn("text-xs font-bold", colorText)}>{s.rate}%</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div className={cn("h-full rounded-full transition-all", colorBar)} style={{ width: `${s.rate}%` }} />
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-1">{s.occupied}/{s.total} ocupados</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-lg font-semibold text-foreground">Censo de Leitos — Tempo Real</h3>
               <div className="flex items-center gap-2">
@@ -286,19 +351,39 @@ export default function NirDashboardPage() {
               </div>
             )}
 
-            {/* Tabs de grupo de setores (substitui filtro plano) */}
-            <div className="flex flex-wrap gap-1.5">
-              {SECTOR_GROUPS.map((g) => (
-                <Button
-                  key={g.title}
-                  variant={censusGroup === g.title ? "default" : "outline"}
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => setCensusGroup(g.title)}
-                >
-                  {g.title}
-                </Button>
-              ))}
+            {/*
+              Barra de bloco exibido — mesmo padrao da barra "Setor exibido" do
+              mapa de leitos do modulo medico: rotulo discreto a esquerda,
+              controle no meio, contagem a direita. O controle fica onde a acao
+              acontece, e nao no cabecalho da pagina.
+            */}
+            <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border bg-muted/30 px-3 py-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  Bloco exibido
+                </span>
+                <div className="flex rounded-md border overflow-hidden">
+                  {SECTOR_GROUPS.map((g) => (
+                    <button
+                      key={g.title}
+                      onClick={() => setCensusGroup(g.title)}
+                      className={cn(
+                        "px-2.5 py-1 text-[11px] font-medium transition-colors",
+                        censusGroup === g.title
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background hover:bg-accent",
+                      )}
+                    >
+                      {g.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                {Object.values(visibleBedsBySector).reduce((n, arr: any) => n + arr.length, 0)} leitos
+                {" · "}
+                {Object.keys(visibleBedsBySector).length} setores
+              </span>
             </div>
 
             {/* Legenda de status */}
@@ -407,32 +492,39 @@ export default function NirDashboardPage() {
       }
 
 
+      case "configuracao":
+        return <NirConfigPanel bedsBySector={bedsBySector} />;
       case "relatorios_nir":
         return (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-foreground">Relatórios e Indicadores NIR</h3>
             <NirAnalyticsPanel metrics={metrics} historical={historical} heatmap={heatmap} flow={flow} />
+            {/*
+              Previsão de altas — MUDOU DE LUGAR.
+
+              Estava na camada superior, entre os indicadores e os cards. É
+              DETALHAMENTO analítico, não panorama de situação: quem entra no
+              NIR para trabalhar não precisa dela antes de escolher o que fazer,
+              e ela empurrava os cards (e o Mapa de Leitos) para fora da tela.
+            */}
+            <NirDischargeForecast hospitalUnitId={currentHospital?.id} />
           </div>
         );
 
       default: {
-        const typeMap: Record<string, string> = {
-          regulacao_interna: "interna",
-          regulacao_externa: "externa_sisreg",
-          solicitacao_vaga: "solicitacao_vaga",
-          transferencia_interunidade: "transferencia_interunidade",
-          alta_administrativa: "alta_administrativa",
-          bloqueio_interdicao: "bloqueio_interdicao",
-          parecer_regulatorio: "parecer_regulatorio",
-        };
-        const moduleConfig = NIR_MODULES.find(m => m.key === activeModule);
-        const typeFilter = typeMap[activeModule];
-        const moduleRequests = typeFilter ? filteredRequests.filter((r: any) => r.request_type === typeFilter) : filteredRequests;
-
+        /*
+          Os sete tipos que antes eram CARDS agora sao ABAS deste card unico.
+          "Solicitação de Vaga" entra PRE-SELECIONADA: o gestor a marcou como
+          importantissima, entao quem abre cai no que mais usa e os demais
+          ficam a um clique.
+        */
+        const moduleRequests = requestType === "todos"
+          ? filteredRequests
+          : filteredRequests.filter((r: any) => r.request_type === requestType);
         return (
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h3 className="text-lg font-semibold text-foreground">{moduleConfig?.label}</h3>
+              <h3 className="text-lg font-semibold text-foreground">Solicitações</h3>
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -449,10 +541,35 @@ export default function NirDashboardPage() {
               </div>
             </div>
 
+            {/* Tipos como filtro interno — o que antes eram sete cards */}
+            <div className="flex flex-wrap gap-1.5">
+              {REQUEST_TYPES.map((t) => {
+                // Sem `any`: só o campo que interessa, tipado no ponto de uso.
+                const qtd = t.key === "todos"
+                  ? filteredRequests.length
+                  : filteredRequests.filter((r: { request_type?: string }) => r.request_type === t.key).length;
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setRequestType(t.key)}
+                    className={cn(
+                      "px-2.5 py-1 rounded-md text-[11px] font-medium border transition-colors",
+                      requestType === t.key
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background hover:bg-accent border-border text-muted-foreground",
+                    )}
+                  >
+                    {t.label}
+                    {qtd > 0 && <span className="ml-1.5 tabular-nums opacity-80">{qtd}</span>}
+                  </button>
+                );
+              })}
+            </div>
+
             <NirRequestActions
               requests={moduleRequests}
-              typeFilter={typeFilter}
-              defaultRequestType={typeFilter}
+              typeFilter={requestType === "todos" ? undefined : requestType}
+              defaultRequestType={requestType === "todos" ? undefined : requestType}
             />
           </div>
         );
@@ -476,21 +593,20 @@ export default function NirDashboardPage() {
           </>
         }
         /*
-          Seletor hierarquico de setores no cabecalho institucional.
+          SEM seletor de setor no cabecalho.
 
-          `navigateOnSectorSelect={false}`: no painel clinico, escolher um setor
-          significa IR para outro lugar; aqui significa filtrar o que ja esta na
-          tela. Sair da pagina do NIR ao trocar de setor seria o oposto do
-          esperado por quem regula leitos.
+          O NIR regula o hospital INTEIRO: sua pergunta e "onde ha vaga", nao
+          "o que acontece neste setor". Um seletor de setor no topo sugeria um
+          recorte global que nao existe — os filtros de recorte vivem na barra
+          de filtros, e a escolha de bloco vive junto do Censo, onde a acao
+          acontece.
+
+          O cabecalho fica com UMA acao: a central de notificacoes, que e o
+          que exige reacao imediata de quem regula. A exportacao em PDF desceu
+          para a barra de filtros, ao lado de Atualizar: e uma acao sobre o
+          recorte selecionado, nao sobre a pagina.
         */
-        showSectorSelector
-        navigateOnSectorSelect={false}
-        actions={
-          <>
-            <NirNotificationCenter metrics={metrics} />
-            <NirPdfExport metrics={metrics} predictions={predictions} />
-          </>
-        }
+        actions={<NirNotificationCenter metrics={metrics} />}
       />
 
       <div className="space-y-4 p-4 md:p-6 max-w-7xl mx-auto">
@@ -509,6 +625,41 @@ export default function NirDashboardPage() {
         indicadores continuam na página, abaixo — quem quer o panorama rola;
         quem entrou para fazer algo escolhe de cara.
       */}
+      {/*
+        ORDEM DA PÁGINA — situação primeiro, escolha depois.
+
+        Camada 1 (aqui): alertas e os oito KPIs, respondendo "como está o
+        hospital agora" antes de qualquer clique. É onde o gestor pediu que
+        ficassem, e é UMA faixa compacta — o que empurrava os cards para fora
+        da tela eram a ocupação por setor e a previsão de altas, que foram para
+        o Censo e para Relatórios (ea36c43f).
+
+        Camada 2 (abaixo): os cards. Quem já viu a situação escolhe o que fazer.
+
+        Alertas ANTES dos KPIs de propósito: alerta é acionável e pode mudar a
+        decisão; indicador é contexto.
+
+        Os FILTROS GLOBAIS saíram. Eles governam apenas as métricas desta faixa,
+        e apareciam como um bloco do tamanho de um card no meio da página, sem
+        dono aparente. Viraram um controle discreto dentro da própria faixa —
+        ver NirGlobalFilters logo abaixo dos KPIs.
+      */}
+      <NirAlertBar metrics={metrics} onOpenAlert={setActiveAlert} />
+
+      <NirKpiStrip metrics={metrics} />
+
+      {/* Controles da faixa de indicadores — período, escopo e prioridade */}
+      <NirGlobalFilters
+        filters={filters}
+        onChange={setFilters}
+        onRefresh={refetch}
+        isLoading={isLoading}
+        // Exportar age sobre o recorte selecionado (periodo + escopo), entao
+        // pertence a barra de filtros, nao ao cabecalho da pagina.
+        actions={<NirPdfExport metrics={metrics} predictions={predictions} />}
+      />
+
+
       {/* Module Grid */}
       <div>
         <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Módulos de Acesso</h2>
@@ -581,51 +732,6 @@ export default function NirDashboardPage() {
       )}
 
 
-      {/* ── Panorama: indicadores abaixo dos módulos ────────────────────── */}
-      {/* Filtros globais */}
-      <NirGlobalFilters filters={filters} onChange={setFilters} onRefresh={refetch} isLoading={isLoading} />
-
-      {/* Alertas inteligentes */}
-      <NirAlertBar metrics={metrics} onOpenAlert={setActiveAlert} />
-
-      {/* KPIs ricos */}
-      <NirKpiStrip metrics={metrics} />
-
-      {/* Ocupação por setor (semáforo) */}
-      {metrics.occupancyBySector.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Activity className="h-4 w-4 text-primary" />
-              Ocupação por setor
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {metrics.occupancyBySector.map((s) => {
-                const tone = s.rate >= 95 ? "danger" : s.rate >= 80 ? "warning" : "success";
-                const colorBar = tone === "danger" ? "bg-red-500" : tone === "warning" ? "bg-amber-500" : "bg-emerald-500";
-                const colorText = tone === "danger" ? "text-red-600 dark:text-red-400" : tone === "warning" ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400";
-                return (
-                  <div key={s.sector} className="rounded-lg border p-2.5">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-medium truncate">{sectorLabelFromCode(s.sector)}</span>
-                      <span className={cn("text-xs font-bold", colorText)}>{s.rate}%</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div className={cn("h-full rounded-full transition-all", colorBar)} style={{ width: `${s.rate}%` }} />
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">{s.occupied}/{s.total} ocupados</p>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Previsão de altas */}
-      <NirDischargeForecast hospitalUnitId={currentHospital?.id} />
 
       {/* Alert detail dialog */}
       <Dialog open={!!activeAlert} onOpenChange={(o) => !o && setActiveAlert(null)}>

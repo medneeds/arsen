@@ -25,6 +25,12 @@ export const SECTOR_BED_CONFIG: Record<string, SectorBedConfig> = {
   neuro_01: { prefix: 'L', maxRegularBeds: 10, label: 'Neuro 01', startNumber: 1 },
   neuro_02: { prefix: 'L', maxRegularBeds: 10, label: 'Neuro 02', startNumber: 11 },
   clinica_cirurgica: { prefix: 'L', maxRegularBeds: 40, label: 'Clínica Cirúrgica', startNumber: 1 },
+  // ATENÇÃO — sobreposição INTENCIONAL, não é bug.
+  // Clínica Cirúrgica ocupa L01–L40 e Enf. Transição L37–L46: as posições
+  // L37–L40 são compartilhadas. Foge do padrão dos demais pares do bloco, em
+  // que a numeração é contínua (Neuro 01 L01–L10 → Neuro 02 L11–L20). Levantado
+  // em conferência e CONFIRMADO pela Direção Clínica em 19/08/2026.
+  // Ver docs/disposicao-setores-leitos-arsen.pdf, seção 4. Não "corrigir".
   enfermaria_transicao: { prefix: 'L', maxRegularBeds: 10, label: 'Enf. Transição', startNumber: 37 },
   enfermaria_vascular: { prefix: 'L', maxRegularBeds: 95, label: 'Enf. Vascular', startNumber: 1 },
   // Urgência e Emergência
@@ -33,6 +39,16 @@ export const SECTOR_BED_CONFIG: Record<string, SectorBedConfig> = {
   observacao_clinica: { prefix: 'OC', maxRegularBeds: 20, label: 'Obs. Clínica' },
   ue_vertical: { prefix: 'EV', maxRegularBeds: 20, label: 'UE Vertical' },
   ue_horizontal: { prefix: 'EH', maxRegularBeds: 20, label: 'UE Horizontal' },
+  // Posto de Internação — 14 macas fixas (M01–M14). Não são leitos: a estrutura
+  // é de maca, mas o fluxo é de internação. Acima da capacidade, o gerador
+  // atribui EXTRA{n} como em qualquer outro setor.
+  internacao_ue: { prefix: 'M', maxRegularBeds: 14, label: 'Posto de Internação' },
+  // Centro Cirúrgico — leitos virtuais de permanência transitória.
+  // Prefixos iniciados em C para agrupar visualmente o bloco.
+  // ATENÇÃO ao código do bloco: é `cc_bloco`, NÃO `cc_bloco_cirurgico`.
+  cc_preparo: { prefix: 'CP', maxRegularBeds: 14, label: 'CC Preparo' },
+  cc_bloco: { prefix: 'CB', maxRegularBeds: 6, label: 'CC Bloco Cirúrgico' },
+  cc_rpa: { prefix: 'CR', maxRegularBeds: 10, label: 'CC RPA' },
   // RIV
   riv: { prefix: 'RV', maxRegularBeds: 10, label: 'RIV' },
 };

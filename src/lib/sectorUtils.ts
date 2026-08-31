@@ -22,7 +22,7 @@ export const SECTOR_LABELS: Record<string, string> = {
   ue_vertical: "UE Vertical",
   ue_horizontal: "UE Horizontal",
   observacao_clinica: "Observação Clínica",
-  internacao_ue: "Internação UE",
+  internacao_ue: "Posto de Internação",
 };
 
 /** Retorna o label legível do setor ou o próprio código como fallback. */

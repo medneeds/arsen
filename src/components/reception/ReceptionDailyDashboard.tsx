@@ -16,12 +16,11 @@ import { ptBR } from "date-fns/locale";
 import {
   Activity, BedDouble, Clock, FileText, Users, AlertTriangle, RefreshCw, ArrowRight, ListTodo, History,
   CheckCircle2, UserPlus, Play, FileWarning, UserX,
-  Footprints, Ambulance, Trophy, UserCheck, Printer, MoreVertical,
-  CalendarRange, Siren, Volume2,
+  Trophy, UserCheck, Printer, MoreVertical,
+  CalendarRange, Siren,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { ReceptionPoint } from "@/hooks/useReceptionPost";
-import { RECEPTION_POINT_SHORT } from "@/hooks/useReceptionPost";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
 import { printWristband } from "./PatientWristband";
 import { CompletePatientDataDialog } from "./CompletePatientDataDialog";
@@ -124,7 +123,7 @@ interface UserStats {
 interface Props {
   /** Quando usuário clica em "Reatender" / "Selecionar paciente" */
   onPickRegistry: (registryId: string, patientName: string) => void;
-  /** Quando usuário clica em "Triagem Express" */
+  /** Quando usuário clica em "Cadastro Express" */
   onTriageExpress: () => void;
   /** Abre cadastro de novo prontuário */
   onNewRegistration: () => void;
@@ -138,8 +137,8 @@ interface Props {
 
 /**
  * Painel diário da recepção — exibido na aba "Início" antes da busca.
- * - 4 KPIs do balcão hoje
- * - Atendimentos do Dia (abertos pela recepção)
+ * - KPIs de entrada do período
+ * - Entradas do Dia (registradas pelo administrativo)
  * - Aguardando Admissão (pacientes direcionados ainda sem leito)
  * - Histórico de ações do recepcionista logado (24h)
  */
@@ -163,8 +162,6 @@ export function ReceptionDailyDashboard({
   const [deskSessions, setDeskSessions] = useState<DeskSession[]>([]);
   const [monthRegistrations, setMonthRegistrations] = useState(0);
 
-  // Filtro por posto: "all" | "vertical" | "horizontal"
-  const [pointFilter, setPointFilter] = useState<"all" | ReceptionPoint>("all");
   // Filtro de período
   const [periodFilter, setPeriodFilter] = useState<"today" | "7d" | "30d">("today");
 
@@ -327,23 +324,10 @@ export function ReceptionDailyDashboard({
   }, [todayEncounters]);
 
   /** Chama o paciente no painel — atualiza triage_status para "chamado" */
-  const handleCallNext = async (encounterId: string, patientName: string) => {
-    try {
-      const { error } = await supabase
-        .from("patient_encounters")
-        .update({
-          triage_status: "chamado",
-          called_at: new Date().toISOString(),
-          called_by: user?.id,
-        } as any)
-        .eq("id", encounterId);
-      if (error) throw error;
-      toast.success(`📢 ${patientName} chamado no painel da TV`);
-      fetchAll();
-    } catch (err: any) {
-      toast.error("Erro ao chamar paciente", { description: err?.message });
-    }
-  };
+/** Encontro aberto e ainda nao admitido no leito: conta tempo de espera. */
+const COALESCE_STATUS = (e: { status: string | null; triage_status: string | null }) =>
+  (e.status ?? "active") === "active" && (e.triage_status ?? "") !== "admitido";
+
 
   /** Imprime pulseira buscando dados completos do registry */
   const handlePrintWristband = async (registryId: string | null, encounterCode: string) => {
@@ -382,21 +366,13 @@ export function ReceptionDailyDashboard({
     return map;
   }, [deskSessions]);
 
-  // Encounters filtrados pelo posto selecionado
-  const filteredEncounters = useMemo(() => {
-    if (pointFilter === "all") return todayEncounters;
-    return todayEncounters.filter((e) => {
-      const point = e.reception_point || (e.created_by ? userPointMap.get(e.created_by) : null);
-      return point === pointFilter;
-    });
-  }, [todayEncounters, pointFilter, userPointMap]);
+  // Sem filtro por posto: a divisao vertical/horizontal era da recepcao do
+  // pronto-atendimento, fora do escopo de internacao.
+  const filteredEncounters = todayEncounters;
 
-  // KPIs (segmentados pelo filtro) + split comparativo
+  // KPIs do periodo
   const kpis = useMemo(() => {
     const totalToday = filteredEncounters.length;
-    const waitingTriage = filteredEncounters.filter(
-      (e) => e.destination_sector === "triagem" && e.triage_status === "aguardando_chamada"
-    ).length;
     const waitingAdmission = pendingAdmissions.length;
     const docsPending = filteredEncounters.filter(
       (e) => e.documents_pending || e.partial_identification || e.is_unidentified
@@ -405,19 +381,8 @@ export function ReceptionDailyDashboard({
       (a) => a.table_name === "patient_registry" && a.action === "INSERT"
     ).length;
 
-    const splitByPoint = todayEncounters.reduce(
-      (acc, e) => {
-        const point = e.reception_point || (e.created_by ? userPointMap.get(e.created_by) : null);
-        if (point === "vertical") acc.vertical += 1;
-        else if (point === "horizontal") acc.horizontal += 1;
-        else acc.unassigned += 1;
-        return acc;
-      },
-      { vertical: 0, horizontal: 0, unassigned: 0 },
-    );
-
-    return { totalToday, waitingTriage, waitingAdmission, docsPending, myToday, splitByPoint };
-  }, [filteredEncounters, todayEncounters, pendingAdmissions, myActions, userPointMap]);
+    return { totalToday, waitingAdmission, docsPending, myToday };
+  }, [filteredEncounters, pendingAdmissions, myActions]);
 
   // Stats por usuário (recepcionistas com sessão hoje OU que abriram encounters)
   const userStats = useMemo<UserStats[]>(() => {
@@ -493,20 +458,6 @@ export function ReceptionDailyDashboard({
     return `${h}h${m > 0 ? ` ${m}min` : ""}`;
   };
 
-  const pointBadgeClasses = (p: ReceptionPoint | null) =>
-    p === "vertical"
-      ? "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30"
-      : p === "horizontal"
-      ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30"
-      : "bg-muted text-muted-foreground";
-
-  // Próximo paciente da fila de triagem (mais antigo aguardando)
-  const nextInQueue = useMemo(() => {
-    return filteredEncounters
-      .filter((e) => e.destination_sector === "triagem" && e.triage_status === "aguardando_chamada")
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0];
-  }, [filteredEncounters]);
-
   return (
     <div className="space-y-4">
       {/* Filtro de período */}
@@ -533,99 +484,35 @@ export function ReceptionDailyDashboard({
           ))}
         </div>
 
-        {/* Atalho "Chamar próximo da fila" */}
-        {nextInQueue && (
-          <Button
-            size="sm"
-            onClick={() => handleCallNext(nextInQueue.id, nextInQueue.patient_name)}
-            className="bg-primary text-primary-foreground gap-2"
-          >
-            <Volume2 className="h-3.5 w-3.5" />
-            Chamar próximo: <strong>{nextInQueue.patient_name}</strong>
-          </Button>
-        )}
       </div>
 
-      {/* Filtro segmentado por posto */}
-      <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-lg bg-muted/40 w-fit">
-        <button
-          onClick={() => setPointFilter("all")}
-          className={cn(
-            "px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
-            pointFilter === "all"
-              ? "bg-background shadow-sm text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Users className="h-3.5 w-3.5" />
-          Visão geral
-          <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{todayEncounters.length}</Badge>
-        </button>
-        <button
-          onClick={() => setPointFilter("vertical")}
-          className={cn(
-            "px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
-            pointFilter === "vertical"
-              ? "bg-sky-500/15 text-sky-700 dark:text-sky-300 shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Footprints className="h-3.5 w-3.5" />
-          Vertical
-          <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{kpis.splitByPoint.vertical}</Badge>
-        </button>
-        <button
-          onClick={() => setPointFilter("horizontal")}
-          className={cn(
-            "px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
-            pointFilter === "horizontal"
-              ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Ambulance className="h-3.5 w-3.5" />
-          Horizontal
-          <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{kpis.splitByPoint.horizontal}</Badge>
-        </button>
-        {kpis.splitByPoint.unassigned > 0 && (
-          <span className="text-[10px] text-muted-foreground ml-2 italic">
-            {kpis.splitByPoint.unassigned} sem posto
-          </span>
-        )}
-      </div>
+      {/*
+        KPIs do periodo.
 
-      {/* KPIs (segmentados pelo filtro) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        Sao CINCO cards numa grade de quatro colunas: o quinto caia sozinho
+        numa segunda linha, com tres buracos ao lado. Grade de cinco em telas
+        largas resolve; abaixo disso desce para tres e depois dois, sem sobra.
+      */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
         <KpiCard
           icon={ListTodo}
-          label={
-            pointFilter === "all"
-              ? `Atendimentos ${periodFilter === "today" ? "hoje" : periodFilter === "7d" ? "(7 dias)" : "(30 dias)"}`
-              : `Atendimentos ${RECEPTION_POINT_SHORT[pointFilter]}`
-          }
+          label={`Entradas ${periodFilter === "today" ? "hoje" : periodFilter === "7d" ? "(7 dias)" : "(30 dias)"}`}
           value={kpis.totalToday}
-          hint={periodFilter === "today" ? "Abertos no balcão" : `Período: ${periodFilter === "7d" ? "últimos 7 dias" : "últimos 30 dias"}`}
+          hint={periodFilter === "today" ? "Pacientes registrados hoje" : `Período: ${periodFilter === "7d" ? "últimos 7 dias" : "últimos 30 dias"}`}
           tone="default"
-        />
-        <KpiCard
-          icon={Clock}
-          label="Aguardando triagem"
-          value={kpis.waitingTriage}
-          hint="Manchester pendente"
-          tone="warn"
         />
         <KpiCard
           icon={BedDouble}
           label="Aguardando admissão"
           value={kpis.waitingAdmission}
-          hint="Direcionados sem leito"
+          hint="Encaminhados, sem leito efetivado"
           tone="info"
         />
         <KpiCard
           icon={FileWarning}
           label="Documentação pendente"
           value={kpis.docsPending}
-          hint="Express / sem documentos"
+          hint="Cadastro Express ou identificação parcial"
           tone="warn"
         />
         <KpiCard
@@ -639,12 +526,12 @@ export function ReceptionDailyDashboard({
           icon={UserCheck}
           label="Equipe ativa agora"
           value={userStats.filter((u) => u.isOnline).length}
-          hint={`${userStats.length} no dia`}
+          hint={`${userStats.length} atuaram no dia`}
           tone="info"
         />
       </div>
 
-      {/* Botões de ação rápida — Triagem Express */}
+      {/* Botões de ação rápida — Cadastro Express (paciente sem identificação) */}
       {!hideQuickActions && (
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -653,7 +540,7 @@ export function ReceptionDailyDashboard({
             size="sm"
           >
             <AlertTriangle className="h-4 w-4 mr-2" />
-            Triagem Express (NI + Triagem em 1 clique)
+            Cadastro Express (paciente sem identificação)
           </Button>
           <Button onClick={onNewRegistration} variant="outline" size="sm">
             <UserPlus className="h-4 w-4 mr-2" />
@@ -667,11 +554,16 @@ export function ReceptionDailyDashboard({
       )}
 
       {/* Tabs internas */}
-      <Tabs defaultValue={defaultSubTab} className="w-full">
+      {/*
+        `key` amarra a sub-aba ao deep-link: entrar por ?tab=aguardando precisa
+        abrir na aba certa mesmo com o componente ja montado. Sem isso,
+        defaultValue so valeria na primeira renderizacao.
+      */}
+      <Tabs key={defaultSubTab} defaultValue={defaultSubTab} className="w-full">
         <TabsList>
           <TabsTrigger value="dia" className="gap-1.5">
             <Activity className="h-3.5 w-3.5" />
-            Atendimentos do Dia
+            Entradas do Dia
             <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{kpis.totalToday}</Badge>
           </TabsTrigger>
           <TabsTrigger value="aguardando" className="gap-1.5">
@@ -681,7 +573,7 @@ export function ReceptionDailyDashboard({
           </TabsTrigger>
           <TabsTrigger value="equipe" className="gap-1.5">
             <Trophy className="h-3.5 w-3.5" />
-            Por usuário
+            Equipe
             <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{userStats.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="minhas" className="gap-1.5">
@@ -691,7 +583,7 @@ export function ReceptionDailyDashboard({
           </TabsTrigger>
         </TabsList>
 
-        {/* Atendimentos do dia */}
+        {/* Entradas do dia */}
         <TabsContent value="dia" className="mt-3">
           <Card>
             <CardHeader className="pb-2">
@@ -703,17 +595,17 @@ export function ReceptionDailyDashboard({
               {filteredEncounters.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">
                   <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">Nenhum atendimento {pointFilter !== "all" ? `na recepção ${RECEPTION_POINT_SHORT[pointFilter]}` : "no período"}</p>
+                  <p className="text-sm">Nenhuma entrada registrada no período</p>
                 </div>
               ) : (
                 <ScrollArea className="max-h-[420px]">
                   <div className="divide-y">
                     {filteredEncounters.map((e) => {
                       const waitMin = Math.round((Date.now() - new Date(e.created_at).getTime()) / 60000);
-                      const isWaitingTriage =
-                        e.destination_sector === "triagem" && e.triage_status === "aguardando_chamada";
+                      // Tempo de espera pela admissao no setor de destino.
+                      const isAwaitingAdmission = COALESCE_STATUS(e);
                       const slaTone =
-                        !isWaitingTriage ? null : waitMin > 30 ? "danger" : waitMin > 15 ? "warn" : "ok";
+                        !isAwaitingAdmission ? null : waitMin > 30 ? "danger" : waitMin > 15 ? "warn" : "ok";
                       const isRedRoom = e.destination_sector === "sala_vermelha";
                       return (
                         <div
@@ -752,23 +644,12 @@ export function ReceptionDailyDashboard({
                                     identificação parcial
                                   </Badge>
                                 )}
-                                {(() => {
-                                  const point = e.reception_point || (e.created_by ? userPointMap.get(e.created_by) : null);
-                                  if (!point) return null;
-                                  const Icon = point === "vertical" ? Footprints : Ambulance;
-                                  return (
-                                    <Badge variant="outline" className={cn("text-[9px] h-4 gap-1 border", pointBadgeClasses(point))}>
-                                      <Icon className="h-2.5 w-2.5" />
-                                      {RECEPTION_POINT_SHORT[point]}
-                                    </Badge>
-                                  );
-                                })()}
-                                {/* SLA: chegada → chamada de triagem (15/30/60min) */}
-                                {isWaitingTriage && (
+                                {/* SLA: chegada → admissão no leito (15/30/60min) */}
+                                {isAwaitingAdmission && (
                                   <SlaBadge
                                     startAt={e.created_at}
                                     thresholds={[15, 30, 60]}
-                                    label="triagem"
+                                    label="admissão"
                                     compact
                                   />
                                 )}
@@ -786,18 +667,6 @@ export function ReceptionDailyDashboard({
                               </div>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
-                              {isWaitingTriage && (
-                                <Button
-                                  size="sm"
-                                  variant="default"
-                                  className="h-7 text-[10px] gap-1"
-                                  onClick={() => handleCallNext(e.id, e.patient_name)}
-                                  title="Chamar paciente no painel da TV"
-                                >
-                                  <Volume2 className="h-3 w-3" />
-                                  Chamar
-                                </Button>
-                              )}
                               {e.registry_id && (
                                 <Button
                                   size="sm"

@@ -27,6 +27,19 @@ interface Props {
 
 const RED_SECTOR_KEYS = ["sala_vermelha"];
 
+/** Rotulos e marcadores dos grupos de severidade da central. */
+const LEVEL_LABEL: Record<NirNotification["level"], string> = {
+  critical: "Exige ação agora",
+  warning: "Atenção",
+  info: "Acompanhar",
+};
+
+const LEVEL_DOT: Record<NirNotification["level"], string> = {
+  critical: "bg-red-500",
+  warning: "bg-amber-500",
+  info: "bg-blue-500",
+};
+
 function buildNotifications(metrics: any): NirNotification[] {
   const list: NirNotification[] = [];
   const now = Date.now();
@@ -174,8 +187,29 @@ export function NirNotificationCenter({ metrics }: Props) {
               <p className="text-[11px] mt-1">Tudo dentro das metas.</p>
             </div>
           ) : (
-            <ul className="p-2 space-y-1.5">
-              {notifications.map((n) => {
+            <div className="p-2 space-y-3">
+              {/*
+                Agrupado por severidade, nao por ordem de chegada. Quem regula
+                leito abre isto para decidir o que fazer AGORA: critico primeiro,
+                sempre, e nunca misturado com o que pode esperar.
+              */}
+              {(["critical", "warning", "info"] as const).map((level) => {
+                const doNivel = notifications.filter((n) => n.level === level);
+                if (doNivel.length === 0) return null;
+                return (
+                  <div key={level}>
+                    <div className="flex items-center gap-1.5 px-0.5 pb-1">
+                      <span className={cn("h-1.5 w-1.5 rounded-full", LEVEL_DOT[level])} />
+                      <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                        {LEVEL_LABEL[level]}
+                      </span>
+                      <span className="text-[9px] text-muted-foreground/70 tabular-nums">
+                        {doNivel.length}
+                      </span>
+                      <div className="flex-1 h-px bg-border/60" />
+                    </div>
+                    <ul className="space-y-1.5">
+              {doNivel.map((n) => {
                 const Icon = CATEGORY_ICON[n.category];
                 return (
                   <li
@@ -200,7 +234,11 @@ export function NirNotificationCenter({ metrics }: Props) {
                   </li>
                 );
               })}
-            </ul>
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </ScrollArea>
       </PopoverContent>

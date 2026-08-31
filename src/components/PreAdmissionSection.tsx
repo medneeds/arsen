@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PatientSearchActionsDialog, type RegistryPatientLite } from "./PatientSearchActionsDialog";
+import { sectorLabelVariants } from "@/lib/sectorLabelAliases";
 
 interface PreAdmission {
   id: string;
@@ -104,9 +105,11 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
         .in("status", ["pre_admissao", "classificado", "aguardando_leito", "aguardando_leito_uti"])
         .order("created_at", { ascending: false });
 
-      // Filtra por setor de destino (quando estamos visualizando um setor clínico específico)
+      // Filtra por setor de destino (quando estamos visualizando um setor clínico específico).
+      // Usa IN com os rótulos históricos: destination_sector guarda TEXTO, e
+      // registros antigos podem ter o nome anterior do setor (ver sectorLabelAliases).
       if (sectorFilterLabel) {
-        query = query.eq("destination_sector", sectorFilterLabel);
+        query = query.in("destination_sector", sectorLabelVariants(sectorFilterLabel));
       }
 
       const { data, error } = await query;
@@ -132,8 +135,12 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
         .order("updated_at", { ascending: false })
         .limit(30);
       if (sectorFilterLabel) {
-        // Mostra os cancelados deste setor OU aqueles sem destino (para resgate)
-        query = query.or(`destination_sector.eq.${sectorFilterLabel},destination_sector.is.null`);
+        // Mostra os cancelados deste setor (em qualquer rótulo histórico) OU
+        // aqueles sem destino (para resgate)
+        const variants = sectorLabelVariants(sectorFilterLabel)
+          .map((v) => `destination_sector.eq.${v}`)
+          .join(",");
+        query = query.or(`${variants},destination_sector.is.null`);
       }
       const { data, error } = await query;
       if (error) throw error;

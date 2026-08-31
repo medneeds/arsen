@@ -61,7 +61,7 @@ const sectorInfo: Record<string, { title: string; subtitle: string; icon: string
   sala_vermelha: { title: "Sala Vermelha", subtitle: "Urgência - Sala Vermelha", icon: "🚨", gradientClass: "bg-gradient-critical" },
   sala_laranja: { title: "Sala Laranja", subtitle: "Urgência - Sala Laranja", icon: "🟠", gradientClass: "bg-gradient-warning" },
   observacao_clinica: { title: "Obs. Clínica", subtitle: "Observação Clínica", icon: "👁️", gradientClass: "bg-gradient-to-r from-sky-500/20 to-sky-600/10" },
-  internacao_ue: { title: "Internação UE", subtitle: "Internação UE", icon: "🏨", gradientClass: "bg-gradient-to-r from-indigo-500/20 to-indigo-600/10" },
+  internacao_ue: { title: "Posto de Internação", subtitle: "Posto de Internação", icon: "🏨", gradientClass: "bg-gradient-to-r from-indigo-500/20 to-indigo-600/10" },
   ue_vertical: { title: "UE Vertical", subtitle: "UE Vertical", icon: "⬆️", gradientClass: "bg-gradient-to-r from-purple-500/20 to-purple-600/10" },
   ue_horizontal: { title: "UE Horizontal", subtitle: "UE Horizontal", icon: "➡️", gradientClass: "bg-gradient-to-r from-indigo-500/20 to-indigo-600/10" },
   riv: { title: "RIV", subtitle: "Referência de Internação Vascular", icon: "🩸", gradientClass: "bg-gradient-to-r from-rose-500/20 to-rose-600/10" },

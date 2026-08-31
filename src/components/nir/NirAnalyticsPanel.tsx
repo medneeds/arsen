@@ -10,6 +10,7 @@ import {
 import type { NirMetrics } from "@/hooks/useNirMetrics";
 import { TrendingUp, Flame, ArrowRightLeft, PieChart as PieIcon, Lock } from "lucide-react";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
+import { isHighComplexity } from "@/config/sectorCoverage";
 
 interface Props {
   metrics: NirMetrics;
@@ -159,7 +160,7 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
                 <ul className="divide-y">
                   {metrics.stuck24h.map((r: any) => {
                     const hours = Math.round((Date.now() - new Date(r.created_at).getTime()) / 3_600_000);
-                    const isUti = (r.destination_sector || "").toLowerCase().includes("uti");
+                    const isUti = isHighComplexity(r.destination_sector);
                     return (
                       <li key={r.id} className="px-3 py-2 flex items-center justify-between gap-3">
                         <div className="min-w-0">

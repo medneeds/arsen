@@ -213,7 +213,7 @@ export function PatientSearchActionsDialog({
         clinica_cirurgica: "Clínica Cirúrgica", enfermaria_transicao: "Enf. Transição",
         enfermaria_vascular: "Enf. Vascular", sala_vermelha: "Sala Vermelha",
         sala_laranja: "Sala Laranja", observacao_clinica: "Obs. Clínica",
-        internacao_ue: "Internação UE", riv: "RIV", cc_bloco: "Centro Cirúrgico",
+        internacao_ue: "Posto de Internação", riv: "RIV", cc_bloco: "Centro Cirúrgico",
       };
 
       const admStatus = (bedData as any)?.admission_status ?? null;
@@ -256,7 +256,9 @@ export function PatientSearchActionsDialog({
 
   const groupedSectors = useMemo(() => {
     const groups = new Map<string, DestinationSectorOption[]>();
-    DESTINATION_SECTORS.forEach(s => {
+    // legacyOnly fica fora do seletor de NOVOS destinos (fora do escopo de
+    // internação ou agrupamento); lookups por value/mapTitle seguem resolvendo.
+    DESTINATION_SECTORS.filter(s => !s.legacyOnly).forEach(s => {
       if (!groups.has(s.group)) groups.set(s.group, []);
       groups.get(s.group)!.push(s);
     });

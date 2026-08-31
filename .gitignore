@@ -36,3 +36,7 @@ semgrep-report.json
 *-report.json
 security-report-*.md
 security-report-*.html
+
+# Documento institucional de leitos: DERIVADO de scripts/gerar_pdf_leitos.py.
+# Nao versionado porque o repositorio e publico e o binario e reproduzivel.
+docs/disposicao-setores-leitos-arsen.pdf

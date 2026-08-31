@@ -75,7 +75,7 @@ const SECTOR_DISPLAY: Record<string, string> = {
   sala_vermelha: "Sala Vermelha",
   sala_laranja: "Sala Laranja",
   observacao_clinica: "Observação Clínica",
-  internacao_ue: "Internação UE",
+  internacao_ue: "Posto de Internação",
 };
 
 function sectorLabelFromCode(code?: string | null): string {

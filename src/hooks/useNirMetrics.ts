@@ -1,13 +1,44 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getSectorCoverage, type SectorGroup, isHighComplexity } from "@/config/sectorCoverage";
 
 // Sectors classification heuristics — matches existing project structure
-const UTI_KEYWORDS = ["uti", "uci"];
-const EMERGENCY_KEYWORDS = ["sala_vermelha", "sala_laranja", "observacao", "ue_vertical", "ue_horizontal", "emergencia", "red", "yellow", "orange"];
+/**
+ * Escopo de cada setor, por CÓDIGO EXATO.
+ *
+ * BUG QUE ISTO CORRIGE: a classificação era por palavra contida no texto, e a
+ * lista de emergência tinha "red" e "yellow" — que são justamente os códigos
+ * de UTI 1 e UTI 2 no banco. Consequência: filtrar por "UTI/UCI" NÃO devolvia
+ * nenhuma das quatro UTIs. UTI 1 e UTI 2 apareciam em Emergência; UCI 1
+ * (`blue`) e UCI 2 (`outside`) caíam em Enfermaria, porque não continham
+ * "uti"/"uci" no código.
+ *
+ * Mapa explícito em vez de heurística: código de setor não é texto descritivo,
+ * e adivinhar a natureza dele por substring foi o que produziu o erro.
+ */
+/**
+ * Escopo de um setor no NIR — DERIVADO de SECTOR_COVERAGE.
+ *
+ * Antes havia aqui um mapa proprio, a sexta lista paralela de setores do
+ * sistema. Foi ela que classificou o Bloco Cirurgico como enfermaria (por um
+ * codigo inexistente) e a UCC como terapia intensiva. Agora o agrupamento vem
+ * de uma fonte so: src/config/sectorCoverage.ts.
+ *
+ * Os grupos espelham os blocos de docs/disposicao-setores-leitos-arsen.pdf.
+ */
+const GROUP_TO_SCOPE: Record<SectorGroup, Exclude<SectorScope, "all">> = {
+  alta_complexidade: "alta_complexidade",
+  enfermaria: "enfermaria",
+  urgencia_horizontal: "urgencia_horizontal",
+  centro_cirurgico: "centro_cirurgico",
+  // Setores fora do escopo de internacao nao recebem leito novo, mas podem
+  // ter registro historico; caem no recorte de urgencia para nao sumirem.
+  fora_escopo: "urgencia_horizontal",
+};
 
 export type NirPeriod = "today" | "7d" | "30d";
-export type SectorScope = "all" | "uti" | "enfermaria" | "emergencia";
+export type SectorScope = "all" | "alta_complexidade" | "enfermaria" | "urgencia_horizontal" | "centro_cirurgico";
 
 export interface NirFilters {
   period: NirPeriod;
@@ -17,12 +48,11 @@ export interface NirFilters {
 
 const periodToHours = (p: NirPeriod) => (p === "today" ? 24 : p === "7d" ? 24 * 7 : 24 * 30);
 
-const classifySector = (sector: string | null | undefined): "uti" | "emergencia" | "enfermaria" => {
-  if (!sector) return "enfermaria";
-  const s = sector.toLowerCase();
-  if (UTI_KEYWORDS.some((k) => s.includes(k))) return "uti";
-  if (EMERGENCY_KEYWORDS.some((k) => s.includes(k))) return "emergencia";
-  return "enfermaria";
+const classifySector = (sector: string | null | undefined): Exclude<SectorScope, "all"> => {
+  const group = getSectorCoverage((sector ?? "").toLowerCase())?.group;
+  // Setor desconhecido cai em enfermaria — exceção, não regra: os dezenove
+  // setores declarados estão em SECTOR_COVERAGE.
+  return group ? GROUP_TO_SCOPE[group] : "enfermaria";
 };
 
 export function useNirMetrics(hospitalUnitId: string | undefined, filters: NirFilters) {
@@ -194,7 +224,7 @@ export function useNirMetrics(hospitalUnitId: string | undefined, filters: NirFi
     });
     const stuck48hUti = filteredRequests.filter((r: any) => {
       if (r.status !== "pendente" && r.status !== "em_analise") return false;
-      const isUti = (r.destination_sector || "").toLowerCase().includes("uti");
+      const isUti = isHighComplexity(r.destination_sector);
       return isUti && (now - new Date(r.created_at).getTime()) / 3_600_000 > 48;
     });
 
