@@ -870,6 +870,7 @@ export function PatientMovementDialog({
             <DischargeDocumentForm
               key={`${requiredDocType}-${signerProfile.name}-${signerProfile.crm}`}
               type={requiredDocType}
+              patientId={patient.id}
               initial={{
                 patient_name: patient.name,
                 patient_bed: patient.bedNumber,

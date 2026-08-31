@@ -19,6 +19,10 @@ export interface LatestEvolutionSummary {
   validatedAt: string | null;
   /** SOAP "A" (avaliação) ou primeiro trecho útil para preview */
   preview: string;
+  /** SOAP completo (S/O/A/P), formatado em texto — usado para pré-preencher
+   *  o "Resumo da evolução" no Sumário de Alta, por exemplo. Só inclui as
+   *  seções que o médico de fato preencheu. */
+  fullText: string;
   /** Dispositivos invasivos registrados na última evolução (JSONB extra). */
   devices: LatestEvolutionDevice[];
   /** HTML rico com resultados de culturas registrados na última evolução. */
@@ -51,6 +55,20 @@ export function useLatestEvolution(
     const p = soap.plan || soap.P;
     const text = (a || s || p || "").toString().trim();
     return text.length > 110 ? text.slice(0, 107) + "…" : text;
+  };
+
+  const buildFullText = (soap: any): string => {
+    if (!soap) return "";
+    const sections: [string, unknown][] = [
+      ["SUBJETIVO", soap.subjective || soap.S],
+      ["OBJETIVO", soap.objective || soap.O],
+      ["AVALIAÇÃO", soap.assessment || soap.A || soap.avaliacao],
+      ["PLANO", soap.plan || soap.P],
+    ];
+    return sections
+      .filter(([, v]) => typeof v === "string" && v.trim())
+      .map(([label, v]) => `${label}: ${(v as string).trim()}`)
+      .join("\n\n");
   };
 
   const fetch = useCallback(async () => {
@@ -91,6 +109,7 @@ export function useLatestEvolution(
         createdByName: row.created_by_name,
         validatedAt: row.validated_at,
         preview: buildPreview(row.soap_data),
+        fullText: buildFullText(row.soap_data),
         devices: Array.isArray(soap.devices) ? soap.devices : [],
         culturesHtml: typeof soap.culturesHtml === "string" ? soap.culturesHtml : "",
       });

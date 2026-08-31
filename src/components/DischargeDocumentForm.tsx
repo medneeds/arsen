@@ -10,9 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Printer, Skull, Home, FileSignature } from "lucide-react";
+import { Printer, Skull, Home, FileSignature, NotebookPen, Loader2 } from "lucide-react";
 import { ReceituarioForm } from "@/components/ReceituarioForm";
 import { useReceituario } from "@/hooks/useReceituario";
+import { useLatestEvolution } from "@/hooks/useLatestEvolution";
+import { useAdmissionDiagnosis } from "@/hooks/useAdmissionDiagnosis";
+import { useHospital } from "@/contexts/HospitalContext";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   type DischargeDocType,
@@ -55,6 +59,37 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
     setForm((f) => ({ ...f, [k]: v }));
 
   const { save: saveReceituario } = useReceituario(patientId, form.patient_name || undefined);
+  const { currentHospital } = useHospital();
+
+  // Facilita o preenchimento: puxa a última evolução clínica (para o botão
+  // "Evolução") e o diagnóstico registrado na admissão (auto-preenchido,
+  // já que não deveria precisar ser redigitado do zero).
+  const { evolution: latestEvolution, loading: evolutionLoading } = useLatestEvolution(
+    patientId ?? null,
+    form.patient_name || null,
+    currentHospital?.id ?? null,
+  );
+  const { diagnosis: admissionDiagnosis } = useAdmissionDiagnosis(
+    patientId ?? null,
+    currentHospital?.id ?? null,
+  );
+
+  // Auto-preenche o diagnóstico de admissão quando chega — só se o campo
+  // ainda estiver vazio, para nunca sobrescrever o que o médico já digitou.
+  useEffect(() => {
+    if (admissionDiagnosis && !form.admission_diagnosis?.trim()) {
+      setField("admission_diagnosis", admissionDiagnosis.toUpperCase());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [admissionDiagnosis]);
+
+  const handleFillFromEvolution = () => {
+    if (!latestEvolution?.fullText) {
+      toast.info("Nenhuma evolução clínica encontrada para este paciente");
+      return;
+    }
+    setField("evolution_summary", latestEvolution.fullText.toUpperCase());
+  };
 
 
   const isComplete = useMemo(() => {
@@ -145,10 +180,27 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
           placeholder="EX: I50.0 - INSUFICIÊNCIA CARDÍACA CONGESTIVA" />
       </Field>
 
-      <Field label={isDeath ? "Resumo da evolução até o óbito *" : "Resumo da evolução / quadro clínico *"}>
+      <div className="space-y-1">
+        <div className="flex items-center justify-between gap-2">
+          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            {isDeath ? "Resumo da evolução até o óbito *" : "Resumo da evolução / quadro clínico *"}
+          </Label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-[10px] gap-1 text-primary hover:text-primary"
+            onClick={handleFillFromEvolution}
+            disabled={evolutionLoading}
+            title="Preencher com a última evolução clínica registrada"
+          >
+            {evolutionLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <NotebookPen className="h-3 w-3" />}
+            Evolução
+          </Button>
+        </div>
         <Textarea rows={3} className="text-xs" value={form.evolution_summary || ""}
           onChange={(e) => setField("evolution_summary", upper(e.target.value))} />
-      </Field>
+      </div>
 
       <div className="grid grid-cols-2 gap-2">
         <Field label="Procedimentos realizados">
