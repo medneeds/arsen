@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { normalizePatientName } from "@/utils/normalizePatientName";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -83,12 +83,12 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
     setSaving(true);
     try {
       const updates: Record<string, any> = {
-        full_name: fullName.trim().toUpperCase(),
+        full_name: normalizePatientName(fullName),
         cpf: cpf.trim() || null,
         cns: cns.trim() || null,
         birth_date: birthDate || null,
         phone: phone.trim() || null,
-        mother_name: motherName.trim().toUpperCase() || null,
+        mother_name: normalizePatientName(motherName) || null,
       };
 
       // Se forneceu pelo menos 1 documento, marca docs_pending=false

@@ -9,6 +9,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { isExtraBed } from "@/utils/bedNaming";
 import { formatAge } from "@/lib/patientAge";
+import { normalizePatientName } from "@/utils/normalizePatientName";
 
 export const GHOST_PREFIXES = ['ARQ-', 'ARCHIVED-', '_GHOST_'];
 
@@ -211,7 +212,7 @@ export function usePatients(department?: Department, sector?: string) {
       
       // Leito pode mudar apenas por fluxos próprios de transferência/realocação.
       if (updates.bedNumber !== undefined) dbUpdates.bed_number = updates.bedNumber;
-      if (updates.name !== undefined) dbUpdates.name = updates.name;
+      if (updates.name !== undefined) dbUpdates.name = normalizePatientName(updates.name);
       if (updates.age !== undefined) dbUpdates.age = typeof updates.age === 'number' ? updates.age.toString() : updates.age;
       if (updates.sector !== undefined) dbUpdates.sector = updates.sector;
       if (updates.diagnoses !== undefined) dbUpdates.diagnoses = updates.diagnoses.join('\n');
@@ -308,7 +309,7 @@ export function usePatients(department?: Department, sector?: string) {
 
       const dbData: any = {
         bed_number: patient.bedNumber,
-        name: patient.name,
+        name: normalizePatientName(patient.name),
         age: typeof patient.age === 'number' ? patient.age.toString() : patient.age,
         sector: patient.sector,
         diagnoses: patient.diagnoses.join('\n'),

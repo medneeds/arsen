@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { normalizePatientName } from "@/utils/normalizePatientName";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -70,7 +71,7 @@ export function NirRequestActions({ requests, typeFilter, defaultRequestType }: 
     setBusy(true);
     const { error } = await supabase.from("regulation_requests").insert({
       ...form,
-      patient_name: form.patient_name.toUpperCase(),
+      patient_name: normalizePatientName(form.patient_name),
       hospital_unit_id: currentHospital.id,
       state_id: currentState.id,
       department: form.destination_sector || form.origin_sector || "NIR",

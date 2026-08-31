@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { normalizePatientName } from "@/utils/normalizePatientName";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -330,8 +331,8 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
       if (data) {
         setForm(prev => ({
           ...prev,
-          patient_name: (data.patient_name || prev.patient_name).toUpperCase(),
-          mother_name: (data.mother_name || prev.mother_name).toUpperCase(),
+          patient_name: normalizePatientName(data.patient_name || prev.patient_name),
+          mother_name: normalizePatientName(data.mother_name || prev.mother_name),
           birth_date: data.birth_date || prev.birth_date,
           sex: data.sex || prev.sex,
           // CPF e CNS são null em modo imagem (proteção LGPD).
@@ -425,7 +426,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
 
       // Generate NI code if unidentified
       let niCode: string | null = null;
-      let finalName = form.patient_name.trim().toUpperCase();
+      let finalName = normalizePatientName(form.patient_name);
       if (form.is_unidentified) {
         const { data: ni, error: niErr } = await (supabase.rpc as any)("generate_ni_code");
         if (niErr) throw niErr;
@@ -474,7 +475,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
         .insert({
           full_name: finalName,
           social_name: form.social_name?.trim() || null,
-          mother_name: form.mother_name?.trim() || null,
+          mother_name: normalizePatientName(form.mother_name || '') || null,
           birth_date: form.birth_date || null,
           sex: form.sex || null,
           cpf: form.cpf?.replace(/\D/g, "") || null,
@@ -506,7 +507,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
       const { error: paErr } = await supabase.from("pre_admissions").insert({
         patient_name: finalName,
         social_name: form.social_name?.trim() || null,
-        mother_name: form.mother_name?.trim() || null,
+        mother_name: normalizePatientName(form.mother_name || '') || null,
         birth_date: form.birth_date || null,
         sex: form.sex || null,
         cpf: form.cpf?.replace(/\D/g, "") || null,

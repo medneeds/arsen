@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { normalizePatientName } from "@/utils/normalizePatientName";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -103,11 +104,11 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
       const { error: updErr } = await supabase
         .from("patient_registry")
         .update({
-          full_name: fullName.trim().toUpperCase(),
+          full_name: normalizePatientName(fullName),
           cpf: cpf.trim() || null,
           cns: cns.trim() || null,
           birth_date: birthDate || null,
-          mother_name: motherName.trim().toUpperCase() || null,
+          mother_name: normalizePatientName(motherName) || null,
           phone: phone.trim() || null,
           sex,
           is_unidentified: false,
@@ -128,7 +129,7 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
       // 3) Atualiza patient_name nos encounters/movements vinculados
       await supabase
         .from("patient_encounters")
-        .update({ patient_name: fullName.trim().toUpperCase() })
+        .update({ patient_name: normalizePatientName(fullName) })
         .eq("registry_id", niRegistryId);
 
       // 4) Audit no patient_merge_audit (action='promote_ni')
@@ -138,7 +139,7 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
         target_registry_id: niRegistryId,
         source_snapshot: snapshot,
         target_snapshot: {
-          full_name: fullName.trim().toUpperCase(),
+          full_name: normalizePatientName(fullName),
           cpf: cpf.trim() || null,
           cns: cns.trim() || null,
           birth_date: birthDate || null,
