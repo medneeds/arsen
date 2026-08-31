@@ -48,12 +48,39 @@ export function useLatestEvolution(
   // 🔒 Documentação segue o paciente: priorizamos patient_registry_id quando resolvido.
   const { registryId: resolvedRegistryId } = useResolvedRegistryId(patientId);
 
+  /**
+   * O SOAP é digitado num editor rico — os campos vêm como HTML
+   * (<p>, <br>, &nbsp; etc.), não texto puro. Jogar isso direto num
+   * <textarea> mostra as tags cruas ("...VOMITO.<BR></SPAN>...") em vez de
+   * texto legível. Preserva quebras de linha (tags de bloco/<br> viram \n)
+   * antes de descartar as tags e decodificar entidades — diferente de um
+   * strip ingênuo que jogaria tudo numa linha só.
+   */
+  const htmlToPlainText = (html: string): string => {
+    if (!html) return "";
+    const withBreaks = html
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
+      .replace(/<[^>]+>/g, "");
+    // Decodifica entidades (&nbsp;, &amp;, etc.) via DOM — seguro no
+    // navegador, já que este hook só roda client-side.
+    const el = document.createElement("textarea");
+    el.innerHTML = withBreaks;
+    const decoded = el.value;
+    return decoded
+      .split("\n")
+      .map((line) => line.trim())
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  };
+
   const buildPreview = (soap: any): string => {
     if (!soap) return "";
     const a = soap.assessment || soap.A || soap.avaliacao;
     const s = soap.subjective || soap.S;
     const p = soap.plan || soap.P;
-    const text = (a || s || p || "").toString().trim();
+    const text = htmlToPlainText((a || s || p || "").toString()).replace(/\n+/g, " ");
     return text.length > 110 ? text.slice(0, 107) + "…" : text;
   };
 
@@ -67,7 +94,7 @@ export function useLatestEvolution(
     ];
     return sections
       .filter(([, v]) => typeof v === "string" && v.trim())
-      .map(([label, v]) => `${label}: ${(v as string).trim()}`)
+      .map(([label, v]) => `${label}: ${htmlToPlainText(v as string)}`)
       .join("\n\n");
   };
 
