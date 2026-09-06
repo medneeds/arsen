@@ -153,7 +153,7 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
               <Input
                 id="cp-name"
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value.toUpperCase())}
+                onChange={(e) => setFullName(normalizePatientName(e.target.value))}
                 className="font-medium"
               />
               <p className="text-[10px] text-muted-foreground">
@@ -188,7 +188,7 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
 
             <div className="space-y-1.5">
               <Label htmlFor="cp-mom" className="text-xs">Nome da mãe</Label>
-              <Input id="cp-mom" value={motherName} onChange={(e) => setMotherName(e.target.value.toUpperCase())} />
+              <Input id="cp-mom" value={motherName} onChange={(e) => setMotherName(normalizePatientName(e.target.value))} />
             </div>
 
             <div className="space-y-1.5">

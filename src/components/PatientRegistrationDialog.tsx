@@ -705,7 +705,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                   <Label className="text-xs font-semibold">Nome Completo *</Label>
                   <Input
                     value={form.patient_name}
-                    onChange={e => updateField("patient_name", e.target.value.toUpperCase())}
+                    onChange={e => updateField("patient_name", normalizePatientName(e.target.value))}
                     placeholder="NOME COMPLETO COMO NO DOCUMENTO"
                     className="uppercase font-semibold tracking-wide"
                   />
@@ -719,7 +719,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                 </div>
                 <div className="col-span-2">
                   <Label className="text-xs">Nome da Mãe</Label>
-                  <Input value={form.mother_name} onChange={e => updateField("mother_name", e.target.value.toUpperCase())} className="uppercase" />
+                  <Input value={form.mother_name} onChange={e => updateField("mother_name", normalizePatientName(e.target.value))} className="uppercase" />
                 </div>
                 <div>
                   <Label className="text-xs font-semibold">Data de Nascimento *</Label>
