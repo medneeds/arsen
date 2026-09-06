@@ -3219,6 +3219,8 @@ function ExtraPrescriptionDialog({
 }) {
   const [extraItems, setExtraItems] = useState<PrescriptionItem[]>([]);
   const [freeText, setFreeText] = useState("");
+  // Estado do Assistente de Prescrição (ReplacementWizard) dentro da Extra
+  const [extraAssistantOpen, setExtraAssistantOpen] = useState(false);
 
   // Filter catalog by chosen category (if not "all")
   const filteredMedications = useMemo(
@@ -3517,7 +3519,68 @@ function ExtraPrescriptionDialog({
               <Plus className="h-3 w-3" /> Adicionar
             </Button>
           </div>
+          {/* Assistente de Prescrição — porta de entrada para wizards guiados */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full h-8 gap-2 text-xs border-dashed border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-300 dark:hover:bg-violet-950/30"
+            onClick={() => setExtraAssistantOpen(true)}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Assistente de Prescrição — reposições e correções hidroeletrolíticas
+          </Button>
         </div>
+
+        {/* ReplacementWizard conectado à Prescrição Extra */}
+        <ReplacementWizard
+          open={extraAssistantOpen}
+          onOpenChange={setExtraAssistantOpen}
+          onAdd={(entries) => {
+            // Converte MedicationEntry → PrescriptionItem marcado como Extra
+            entries.forEach(e => {
+              const autoUnit = detectQuantityUnit(e.presentation, e.defaultDose);
+              const autoDefaults = detectDiluentDefaults(e.instructions || '');
+              const isIV = isIVRoute(e.defaultRoute);
+              const item: PrescriptionItem = {
+                id: crypto.randomUUID(),
+                name: e.name,
+                presentation: e.presentation,
+                dose: e.defaultDose,
+                route: e.defaultRoute,
+                posology: e.defaultPosology && e.defaultPosology !== '-' ? e.defaultPosology : 'Agora',
+                schedule: '',
+                instructions: '',
+                category: e.category,
+                flags: [],
+                highAlert: e.highAlert || false,
+                status: 'active',
+                isExtra: true,
+                infusionMode: 'BIC',
+                infusionTime: autoDefaults.infusionTime,
+                infusionTimeUnit: (autoDefaults.infusionTimeUnit || 'min') as 'min' | 'h',
+                diluent: autoDefaults.diluent,
+                diluentVolume: autoDefaults.diluentVolume,
+                quantity: e.defaultQuantity || '1',
+                quantityUnit: autoUnit,
+                volumeTotal: (() => {
+                  const dilVol = parseDecimalBR(autoDefaults.diluentVolume || '') || 0;
+                  const doseStr = e.defaultDose || '';
+                  const qtyForVol = parseFloat((e.defaultQuantity || '1').replace(',', '.')) || 1;
+                  const mlMatch = doseStr.match(/^([\d.,]+)\s*mL/i) || doseStr.match(/([\d.,]+)\s*mL/i);
+                  const medVol = mlMatch ? (parseFloat(mlMatch[1].replace(',', '.')) || 0) * qtyForVol : 0;
+                  if (dilVol > 0 && medVol > 0) return String(Math.round(dilVol + medVol));
+                  if (dilVol > 0) return String(dilVol);
+                  if (medVol > 0) return String(medVol);
+                  return '';
+                })(),
+                validated: false,
+                highAlertConfirmed: false,
+              };
+              setExtraItems(prev => [...prev, item]);
+            });
+            toast.success(`${entries.length} ${entries.length === 1 ? 'item adicionado' : 'itens adicionados'} à prescrição extra`);
+          }}
+        />
 
         {/* Items list — usa o MESMO row do corpo principal para respeitar campos
             específicos por categoria (nutrição, hidratação, inalação, MAV, meds IV...) */}
