@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
+import { normalizePatientName } from "@/utils/normalizePatientName";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -188,7 +189,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
     try {
       const { error } = await supabase.rpc("promote_unidentified_patient", {
         p_ni_id: promoteTarget.id,
-        p_full_name: promoteForm.full_name.trim().toUpperCase(),
+        p_full_name: normalizePatientName(promoteForm.full_name),
         p_birth_date: promoteForm.birth_date || null,
         p_sex: promoteForm.sex || null,
         p_cpf: promoteForm.cpf?.trim() || null,
@@ -524,7 +525,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
               <Label>Nome Completo *</Label>
               <Input
                 value={promoteForm.full_name}
-                onChange={(e) => setPromoteForm(f => ({ ...f, full_name: e.target.value.toUpperCase() }))}
+                onChange={(e) => setPromoteForm(f => ({ ...f, full_name: normalizePatientName(e.target.value) }))}
                 placeholder="NOME COMPLETO DO PACIENTE"
               />
             </div>

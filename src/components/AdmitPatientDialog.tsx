@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment, departmentForSector } from "@/contexts/DepartmentContext";
+import { normalizePatientName } from "@/utils/normalizePatientName";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -384,7 +385,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
 
       const patientPayload = {
         // ── Identificação do novo paciente ──────────────────────────────────
-        name: fullData.patient_name,
+        name: normalizePatientName(fullData.patient_name),
         age: age ? `${age}a` : null,
         bed_number: finalBed,
         sector: selectedSector,
