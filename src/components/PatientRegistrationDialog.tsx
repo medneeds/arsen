@@ -375,6 +375,14 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
         toast({ title: "Nome obrigatório", variant: "destructive" });
         return;
       }
+      if (/[^A-Z0-9 -]/.test(form.patient_name)) {
+        toast({ title: "Nome com caracteres inválidos", description: "Remova acentos, cedilha e símbolos do nome do paciente antes de salvar.", variant: "destructive" });
+        return;
+      }
+      if (form.mother_name && /[^A-Z0-9 -]/.test(form.mother_name)) {
+        toast({ title: "Nome da mãe com caracteres inválidos", description: "Remova acentos, cedilha e símbolos do nome da mãe antes de salvar.", variant: "destructive" });
+        return;
+      }
       if (!form.birth_date) {
         toast({ title: "Data de nascimento obrigatória", variant: "destructive" });
         return;
@@ -706,12 +714,23 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                   <Input
                     value={form.patient_name}
                     onChange={e => updateField("patient_name", normalizePatientName(e.target.value))}
+                    onPaste={e => {
+                      e.preventDefault();
+                      const pasted = e.clipboardData.getData("text");
+                      updateField("patient_name", normalizePatientName(pasted));
+                    }}
                     placeholder="NOME COMPLETO COMO NO DOCUMENTO"
-                    className="uppercase font-semibold tracking-wide"
+                    className={`uppercase font-semibold tracking-wide ${/[^A-Z0-9 -]/.test(form.patient_name) ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   />
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Armazenado em CAIXA ALTA. Acentos preservados; busca ignora acentuação.
-                  </p>
+                  {/[^A-Z0-9 -]/.test(form.patient_name) ? (
+                    <p className="text-[10px] text-destructive mt-1">
+                      Nome contém caracteres não permitidos. Remova acentos, cedilha e símbolos especiais.
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Armazenado sem acentos ou caracteres especiais (ex: JOAO SILVA).
+                    </p>
+                  )}
                 </div>
                 <div className="col-span-2">
                   <Label className="text-xs">Nome Social</Label>
@@ -719,7 +738,21 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                 </div>
                 <div className="col-span-2">
                   <Label className="text-xs">Nome da Mãe</Label>
-                  <Input value={form.mother_name} onChange={e => updateField("mother_name", normalizePatientName(e.target.value))} className="uppercase" />
+                  <Input
+                    value={form.mother_name}
+                    onChange={e => updateField("mother_name", normalizePatientName(e.target.value))}
+                    onPaste={e => {
+                      e.preventDefault();
+                      const pasted = e.clipboardData.getData("text");
+                      updateField("mother_name", normalizePatientName(pasted));
+                    }}
+                    className={`uppercase ${/[^A-Z0-9 -]/.test(form.mother_name) ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                  />
+                  {/[^A-Z0-9 -]/.test(form.mother_name) && (
+                    <p className="text-[10px] text-destructive mt-1">
+                      Nome contém caracteres não permitidos.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-xs font-semibold">Data de Nascimento *</Label>
