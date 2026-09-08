@@ -282,56 +282,52 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         onClick={() => setMobileSheetOpen(true)}
         aria-label="Abrir painel do paciente"
         className={cn(
-          "group fixed right-2 top-24 z-50 w-9 print:hidden rounded-xl border-r",
-          "h-[20dvh] min-h-[140px]",
-          "flex flex-col items-center justify-center gap-3 py-4",
-          "rounded-xl border border-[hsl(217,30%,75%)] dark:border-[hsl(217,30%,28%)]",
+          "group fixed right-0 top-28 z-50 print:hidden",
+          "w-8 h-auto min-h-[120px]",
+          "flex flex-col items-center justify-center gap-2 py-3",
+          "rounded-l-xl",
+          "border border-r-0 border-[hsl(217,30%,78%)] dark:border-[hsl(217,30%,25%)]",
           "bg-card dark:bg-card",
-          "shadow-[-2px_0_10px_rgba(10,22,56,0.18)]",
-          "hover:bg-accent/30",
-          "transition-colors duration-200 cursor-pointer overflow-hidden"
+          "shadow-[-3px_2px_12px_rgba(10,22,56,0.14)]",
+          "hover:bg-[hsl(217,55%,97%)] dark:hover:bg-[hsl(217,30%,14%)]",
+          "transition-colors duration-150 cursor-pointer"
         )}
       >
         {/* Borda esquerda institucional */}
         <span
           aria-hidden
-          className="absolute left-0 top-0 bottom-0 w-[3px] pointer-events-none"
+          className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl pointer-events-none"
           style={{
             background: "linear-gradient(to bottom, #94a3b8 0%, #0f2847 40%, #1a3a5c 70%, #0a1628 100%)"
           }}
         />
-        <ChevronLeft className="h-3.5 w-3.5 text-[hsl(217,72%,42%)] group-hover:text-[hsl(217,72%,28%)] shrink-0" />
+
+        {/* Seta indicando abertura */}
+        <ChevronLeft className="h-3 w-3 text-[hsl(217,72%,45%)] group-hover:text-[hsl(217,72%,28%)] shrink-0 transition-colors" />
+
+        {/* Leito — info principal */}
+        {patient.bedNumber && (
+          <span
+            className="text-[10px] font-black text-[hsl(217,72%,32%)] dark:text-[hsl(217,60%,65%)] shrink-0 leading-none"
+            style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
+          >
+            {patient.bedNumber}
+          </span>
+        )}
+
+        {/* Indicador de status */}
         <div className={cn("h-2 w-2 rounded-full shrink-0", status.dot)} title={status.label} />
-        <div
-          className="flex-1 flex items-center justify-center"
-          style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
-        >
-          <div className="flex flex-col items-center gap-3">
-            {patient.bedNumber && (
-              <span className="text-[10px] font-black tracking-[0.18em] text-[hsl(217,72%,30%)]">
-                {patient.bedNumber}
-              </span>
-            )}
-            <span className="text-[7px] font-bold tracking-[0.25em] uppercase text-foreground/50">
-              {sector}
-            </span>
-            {patient.name && (
-              <>
-                <span className="w-3 h-px bg-border" />
-                <span className="text-[8px] font-semibold tracking-wide text-foreground/70">
-                  {patient.name.split(' ').slice(0, 3).join(' ')}
-                </span>
-              </>
-            )}
-          </div>
-        </div>
+
+        {/* Alerta de alergia */}
         {allergies.length > 0 && (
           <span title={`Alergia: ${allergies.join(", ")}`} className="inline-flex shrink-0">
             <ShieldAlert className="h-3 w-3 text-destructive" />
           </span>
         )}
+
+        {/* Label VER */}
         <span
-          className="text-[6px] font-bold tracking-[0.2em] uppercase text-[hsl(217,72%,52%)]/70 shrink-0"
+          className="text-[7px] font-bold tracking-[0.15em] uppercase text-[hsl(217,40%,55%)] dark:text-[hsl(217,40%,50%)] shrink-0"
           style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
         >
           ver
