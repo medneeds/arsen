@@ -41,11 +41,11 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
 
     const { data, error } = await supabase
       .from("prescriptions")
-      .select("patient_name, patient_registry_id, status, items, created_at, updated_at")
+      .select("patient_name, patient_registry_id, status, items, updated_at")
       .eq("hospital_unit_id", hospitalUnitId)
       .gte("created_at", since.toISOString())
       .order("created_at", { ascending: false })
-      .limit(500);
+      .limit(200);
 
     if (error || !data) {
       setValidatedRegistryIds(new Set());
@@ -94,7 +94,7 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
       // Só conta se a prescrição foi criada/atualizada no dia clínico atual
       const active = items.filter((i: any) => i && i.status === "active");
       if (active.length > 0 && active.every((i: any) => !!i.validated)) {
-        const rowDate = row.updated_at || row.created_at;
+        const rowDate = row.updated_at;
         return rowDate ? new Date(rowDate) >= clinicalStart : false;
       }
 

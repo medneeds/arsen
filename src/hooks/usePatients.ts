@@ -85,10 +85,7 @@ export function usePatients(department?: Department, sector?: string) {
 
       if (error) throw error;
 
-      // Busca em lote (1 query, não N+1) o birth_date de todos os
-      // patient_registry vinculados aos pacientes desta página/lista, para
-      // calcular a idade ao vivo em vez de usar patients.age (estático,
-      // congelado no dia da admissão).
+      // Busca birth_date de todos os registry_ids em paralelo com o mapeamento
       const registryIds = Array.from(
         new Set((data || []).map((p: any) => p.patient_registry_id).filter(Boolean)),
       );
