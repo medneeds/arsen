@@ -3219,8 +3219,23 @@ function ExtraPrescriptionDialog({
 }) {
   const [extraItems, setExtraItems] = useState<PrescriptionItem[]>([]);
   const [freeText, setFreeText] = useState("");
-  // Estado do Assistente de Prescrição (ReplacementWizard) dentro da Extra
+  /*
+    DOIS assistentes na prescrição extra, com papéis distintos — não são
+    duplicata, e por isso ambos ficam:
+
+    1. ReplacementWizard (`extraAssistantOpen`) — MONTA itens de reposição do
+       zero, a partir do distúrbio. Botão próprio no corpo do diálogo.
+
+    2. ItemAssistantWizard (`extraAssistantId`) — AJUSTA um item já adicionado:
+       diluente, acesso, modo, tempo e volume de infusão. Vive no botão da
+       barra de busca, que a extra montava sem `onAssistantClick` — o botão nem
+       aparecia aqui, e quem prescrevia um antimicrobiano pelo fluxo extra
+       ficava sem a orientação que o fluxo principal oferece.
+
+    Um responde "o que prescrever"; o outro, "como infundir".
+  */
   const [extraAssistantOpen, setExtraAssistantOpen] = useState(false);
+  const [extraAssistantId, setExtraAssistantId] = useState<string | null>(null);
 
   // Filter catalog by chosen category (if not "all")
   const filteredMedications = useMemo(
@@ -3506,6 +3521,19 @@ function ExtraPrescriptionDialog({
             onSelect={addFromAutocomplete}
             placeholder={categoryConfigLabel ? `Buscar em ${categoryConfigLabel.toLowerCase()}...` : "Buscar medicação para prescrição extra..."}
             category={initialCategory !== 'all' ? initialCategory : undefined}
+            onAssistantClick={() => {
+              const alvos = extraItems.filter(i => !i.suspendedAt);
+              if (alvos.length === 0) {
+                toast.info('Adicione um item primeiro', {
+                  description: 'O assistente ajusta diluição, acesso e tempo de infusão de um item já adicionado.',
+                });
+                return;
+              }
+              // Na extra a lista costuma ser curta: abre no último adicionado,
+              // que é quase sempre o que a pessoa quer ajustar.
+              setExtraAssistantId(alvos[alvos.length - 1].id);
+            }}
+            assistantTooltip="Assistente de diluição e infusão"
           />
           <div className="flex gap-2">
             <Input
@@ -3649,6 +3677,29 @@ function ExtraPrescriptionDialog({
             )}
           </div>
         )}
+
+        {/* Assistente da prescrição extra — opera sobre os itens desta janela */}
+        <ItemAssistantWizard
+          open={!!extraAssistantId}
+          onOpenChange={(o) => { if (!o) setExtraAssistantId(null); }}
+          item={(() => {
+            const it = extraItems.find(i => i.id === extraAssistantId);
+            return it ? {
+              id: it.id, name: it.name, category: it.category,
+              diluent: it.diluent, diluentVolume: it.diluentVolume, volumeTotal: it.volumeTotal,
+              route: it.route, accessType: it.accessType,
+              infusionMode: it.infusionMode, infusionRate: it.infusionRate,
+              infusionTime: it.infusionTime, infusionTimeUnit: it.infusionTimeUnit,
+              posology: it.posology, instructions: it.instructions,
+            } : null;
+          })()}
+          onApply={(patch) => {
+            setExtraItems(prev => prev.map(i => i.id === extraAssistantId ? ({ ...i, ...patch } as PrescriptionItem) : i));
+            setExtraAssistantId(null);
+            toast.success('Parâmetros aplicados ao item');
+          }}
+        />
+
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="outline" size="sm" onClick={handleClose}>Cancelar</Button>
@@ -4348,6 +4399,8 @@ const PrescricaoPage = () => {
   const [hydrationWizardOpen, setHydrationWizardOpen] = useState(false);
   const [replacementWizardOpen, setReplacementWizardOpen] = useState(false);
   const [itemAssistantTargetId, setItemAssistantTargetId] = useState<string | null>(null);
+  // Categoria cujo seletor de item do assistente está aberto (2+ itens candidatos).
+  const [assistantPickerCat, setAssistantPickerCat] = useState<string | null>(null);
   const [compactView, setCompactView] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<PrescriptionCategory>>(new Set());
   // Item recém-adicionado: abre expandido para preenchimento imediato, sem
@@ -8750,15 +8803,43 @@ const PrescricaoPage = () => {
                             cat === 'hydration' ? () => setHydrationWizardOpen(true) :
                             cat === 'replacement' ? () => setReplacementWizardOpen(true) :
                             cat === 'care' ? () => setCareCatalogOpen(true) :
+                            /*
+                              Estas cinco categorias mostravam o botao do
+                              assistente e respondiam "em construcao". O
+                              ItemAssistantWizard ja existia e ja era acionavel
+                              pelo menu de CADA ITEM — so nao estava ligado
+                              aqui, na barra de busca.
+
+                              Diferenca de escopo: os assistentes de hidratacao,
+                              reposicao e cuidados MONTAM itens do zero; o
+                              ItemAssistantWizard AJUSTA um item existente
+                              (diluente, acesso, modo, tempo, volume). Por isso
+                              aqui ele orienta a escolher o item primeiro, em
+                              vez de abrir vazio — abrir sem alvo seria um
+                              formulario sem paciente.
+                            */
                             ['medication','antimicrobial','high_alert','inhalation','hemotherapy'].includes(cat)
-                              ? () => toast.info('Assistente desta categoria em construção.')
+                              ? () => {
+                                  const doCat = items.filter(i => i.category === cat && !i.suspendedAt);
+                                  if (doCat.length === 0) {
+                                    toast.info('Adicione um item primeiro', {
+                                      description: 'O assistente ajusta diluição, acesso e tempo de infusão de um item já prescrito.',
+                                    });
+                                    return;
+                                  }
+                                  // Um item só: abre direto, sem perguntar o óbvio.
+                                  if (doCat.length === 1) { setItemAssistantTargetId(doCat[0].id); return; }
+                                  setAssistantPickerCat(cat);
+                                }
                               : undefined
                           }
                           assistantTooltip={
                             cat === 'hydration' ? 'Assistente de Hidratação' :
                             cat === 'replacement' ? 'Assistente de Reposição / Correção Eletrolítica' :
                             cat === 'care' ? 'Assistente de Cuidados (perfis clínicos)' :
-                            'Assistente — em breve'
+                            ['medication','antimicrobial','high_alert','inhalation','hemotherapy'].includes(cat)
+                              ? 'Assistente de diluição e infusão'
+                              : 'Assistente — em breve'
                           }
                         />
                       )}
@@ -9368,6 +9449,38 @@ const PrescricaoPage = () => {
           toast.success(`${entries.length} ${entries.length === 1 ? 'item de reposição adicionado' : 'itens de reposição adicionados'}`);
         }}
       />
+
+      {/*
+        Seletor de alvo do assistente — aparece só quando a categoria tem 2+
+        itens. Com um item, o assistente abre direto; sem nenhum, o botão
+        orienta a adicionar antes.
+      */}
+      <Dialog open={!!assistantPickerCat} onOpenChange={(o) => { if (!o) setAssistantPickerCat(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base">Assistente de diluição e infusão</DialogTitle>
+            <DialogDescription className="text-xs">
+              Escolha o item que deseja ajustar — diluente, acesso, modo e tempo de infusão.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5 max-h-72 overflow-y-auto">
+            {items
+              .filter(i => i.category === assistantPickerCat && !i.suspendedAt)
+              .map(i => (
+                <button
+                  key={i.id}
+                  onClick={() => { setItemAssistantTargetId(i.id); setAssistantPickerCat(null); }}
+                  className="w-full text-left px-3 py-2 rounded-md border border-border hover:bg-accent hover:border-primary/40 transition-colors"
+                >
+                  <div className="text-xs font-medium text-foreground">{i.name}</div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {[i.dose, i.route, i.posology].filter(Boolean).join(" · ") || "sem parâmetros definidos"}
+                  </div>
+                </button>
+              ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <ItemAssistantWizard
         open={!!itemAssistantTargetId}
