@@ -3547,16 +3547,6 @@ function ExtraPrescriptionDialog({
               <Plus className="h-3 w-3" /> Adicionar
             </Button>
           </div>
-          {/* Assistente de Prescrição — porta de entrada para wizards guiados */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full h-8 gap-2 text-xs border-dashed border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-300 dark:hover:bg-violet-950/30"
-            onClick={() => setExtraAssistantOpen(true)}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            Assistente de Prescrição — reposições e correções hidroeletrolíticas
-          </Button>
         </div>
 
         {/* ReplacementWizard conectado à Prescrição Extra */}
