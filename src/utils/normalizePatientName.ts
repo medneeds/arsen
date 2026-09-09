@@ -16,21 +16,44 @@
  *   "José Antônio"                → "JOSE ANTONIO"
  *   "MARIA D'ÁVILA"               → "MARIA DAVILA"
  */
+/**
+ * Núcleo da normalização, SEM colapsar espaços nem aparar as bordas.
+ *
+ * Existe separado por um motivo prático: aplicar `trim()` a cada tecla impede
+ * digitar nome composto. Ao teclar o espaço de "JOAO SILVA", o valor momentâneo
+ * é "JOAO " — o trim apaga o espaço e a letra seguinte cola no anterior,
+ * produzindo "JOAOSILVA". Colar funcionava; digitar, não.
+ */
+function stripAccentsAndSpecials(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9 -]/g, "")
+    .toUpperCase();
+}
+
+/**
+ * Para uso em `onChange`, enquanto o usuário digita.
+ *
+ * Tira acento, cedilha e caractere especial em tempo real — o usuário vê JOAO
+ * ao digitar João — mas PRESERVA o espaço que ele acabou de teclar, inclusive
+ * no fim do campo. Sem isso não se digita sobrenome.
+ */
+export function normalizePatientNameInput(value: string): string {
+  if (!value) return value;
+  // Colapsa apenas espaços internos repetidos; o espaço final é do usuário.
+  return stripAccentsAndSpecials(value).replace(/ {2,}/g, " ").replace(/^ +/, "");
+}
+
+/**
+ * Para uso na GRAVAÇÃO (submit, payload, RPC).
+ *
+ * Faz o mesmo e ainda apara as bordas: o que vai ao banco nunca tem espaço
+ * sobrando. Continue usando esta no momento de salvar, mesmo que o campo já
+ * use a versão de digitação.
+ */
 export function normalizePatientName(value: string): string {
   if (!value) return value;
 
-  return value
-    // 1. Normaliza unicode: decompõe letras+diacríticos em codepoints separados
-    .normalize("NFD")
-    // 2. Remove os diacríticos (acentos, til, cedilha via decomposição, etc.)
-    .replace(/[\u0300-\u036f]/g, "")
-    // 3. Remove apóstrofos e outros caracteres especiais inadequados
-    //    Preserva: letras (A-Z a-z), números (0-9), espaço, hífen
-    .replace(/[^A-Za-z0-9 -]/g, "")
-    // 4. Remove espaços duplicados
-    .replace(/  +/g, " ")
-    // 5. Remove espaços no início/fim
-    .trim()
-    // 6. Converte para maiúsculas (padrão do sistema)
-    .toUpperCase();
+  return stripAccentsAndSpecials(value).replace(/ {2,}/g, " ").trim();
 }

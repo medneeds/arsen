@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { normalizePatientName } from "@/utils/normalizePatientName";
+import { normalizePatientName, normalizePatientNameInput } from "@/utils/normalizePatientName";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -713,7 +713,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                   <Label className="text-xs font-semibold">Nome Completo *</Label>
                   <Input
                     value={form.patient_name}
-                    onChange={e => updateField("patient_name", normalizePatientName(e.target.value))}
+                    onChange={e => updateField("patient_name", normalizePatientNameInput(e.target.value))}
                     onPaste={e => {
                       e.preventDefault();
                       const pasted = e.clipboardData.getData("text");
@@ -740,7 +740,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                   <Label className="text-xs">Nome da Mãe</Label>
                   <Input
                     value={form.mother_name}
-                    onChange={e => updateField("mother_name", normalizePatientName(e.target.value))}
+                    onChange={e => updateField("mother_name", normalizePatientNameInput(e.target.value))}
                     onPaste={e => {
                       e.preventDefault();
                       const pasted = e.clipboardData.getData("text");

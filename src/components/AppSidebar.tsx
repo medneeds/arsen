@@ -361,7 +361,7 @@ export function AppSidebar() {
           { name: "Aguardando Admissão", link: "/recepcao?tab=aguardando", profiles: ["administrativo"] },
         ]},
         { title: "Documentos", icon: FolderOpen, profiles: ["administrativo"], items: [
-          { name: "Documentos do Paciente", link: "/documentos-paciente", profiles: ["administrativo"] },
+          { name: "Documentos do Paciente", link: "/documentos", profiles: ["administrativo"] },
           { name: "Ficha de Atendimento", link: "/ficha-atendimento", profiles: ["administrativo"] },
           { name: "Histórico de Internações", link: "/internment-history", profiles: ["administrativo"] },
         ]},

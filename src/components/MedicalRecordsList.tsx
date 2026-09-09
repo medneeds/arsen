@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
-import { normalizePatientName } from "@/utils/normalizePatientName";
+import { normalizePatientName, normalizePatientNameInput } from "@/utils/normalizePatientName";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -525,7 +525,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
               <Label>Nome Completo *</Label>
               <Input
                 value={promoteForm.full_name}
-                onChange={(e) => setPromoteForm(f => ({ ...f, full_name: normalizePatientName(e.target.value) }))}
+                onChange={(e) => setPromoteForm(f => ({ ...f, full_name: normalizePatientNameInput(e.target.value) }))}
                 placeholder="NOME COMPLETO DO PACIENTE"
               />
             </div>

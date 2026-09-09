@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { normalizePatientName } from "@/utils/normalizePatientName";
+import { normalizePatientName, normalizePatientNameInput } from "@/utils/normalizePatientName";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -153,7 +153,7 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
               <Input
                 id="cp-name"
                 value={fullName}
-                onChange={(e) => setFullName(normalizePatientName(e.target.value))}
+                onChange={(e) => setFullName(normalizePatientNameInput(e.target.value))}
                 className="font-medium"
               />
               <p className="text-[10px] text-muted-foreground">
@@ -188,7 +188,7 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
 
             <div className="space-y-1.5">
               <Label htmlFor="cp-mom" className="text-xs">Nome da mãe</Label>
-              <Input id="cp-mom" value={motherName} onChange={(e) => setMotherName(normalizePatientName(e.target.value))} />
+              <Input id="cp-mom" value={motherName} onChange={(e) => setMotherName(normalizePatientNameInput(e.target.value))} />
             </div>
 
             <div className="space-y-1.5">
