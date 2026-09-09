@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { formatPresentation } from "@/lib/formatPresentation";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { useUnsavedPrescription } from "@/contexts/UnsavedPrescriptionContext";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
@@ -5220,25 +5220,33 @@ const PrescricaoPage = () => {
   // snapshot do dia anterior (auditoria/CCIH).
   const applyValidation = useCallback((action: { type: 'all' } | { type: 'item'; itemId: string }) => {
     const now = new Date().toISOString();
+    const cutoff = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
+    const isPast = isAfter(new Date(), cutoff);
+
+    // Calcula nextItems FORA do setItems para usar abaixo sem closure stale
     let nextItems: PrescriptionItem[] = [];
     let isRevalidationPostCutoff = false;
-    setItems(prev => {
-      // Detecta revalidação: pelo menos 1 item afetado já tinha validatedAt anterior ao corte 05h de hoje
-      const cutoff = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
-      const isPast = isAfter(new Date(), cutoff);
-      const affected = action.type === 'all'
-        ? prev.filter(i => i.status === 'active')
-        : prev.filter(i => i.id === action.itemId);
-      isRevalidationPostCutoff = isPast && affected.some(i => i.validated && i.validatedAt && new Date(i.validatedAt) <= cutoff);
 
-      nextItems = prev.map(item => {
-        if (action.type === 'all') {
-          return item.status === 'active' ? { ...item, validated: true, validatedAt: now } : item;
-        }
-        return item.id === action.itemId ? { ...item, validated: true, validatedAt: now } : item;
+    // flushSync força o React a processar o setItems SINCRONICAMENTE antes de continuar.
+    // Sem isso: setItems agenda o update, persistItems e o pop-up rodam antes do
+    // render, e o PDF sai com os dados do render anterior (prescrição antiga).
+    flushSync(() => {
+      setItems(prev => {
+        const affected = action.type === 'all'
+          ? prev.filter(i => i.status === 'active')
+          : prev.filter(i => i.id === action.itemId);
+        isRevalidationPostCutoff = isPast && affected.some(i => i.validated && i.validatedAt && new Date(i.validatedAt) <= cutoff);
+
+        nextItems = prev.map(item => {
+          if (action.type === 'all') {
+            return item.status === 'active' ? { ...item, validated: true, validatedAt: now } : item;
+          }
+          return item.id === action.itemId ? { ...item, validated: true, validatedAt: now } : item;
+        });
+        return nextItems;
       });
-      return nextItems;
     });
+    // Após flushSync: items já está atualizado no DOM e no state do React.
 
     // Persistência imediata — best-effort, mas crítico para imutabilidade
     persistItems(nextItems, { mode: isRevalidationPostCutoff ? 'newVersion' : 'update' });
@@ -5250,10 +5258,8 @@ const PrescricaoPage = () => {
             ? "Snapshot do dia anterior preservado no histórico."
             : "Todos os itens ativos foram validados e registrados." }
       );
-      // Abre o pop-up de impressão no próximo render, APÓS setItems ser processado.
-      // Sem isso, o pop-up abria antes do React aplicar os novos items e o PDF
-      // podia sair com os dados da prescrição anterior (estado stale).
-      setPendingValidationPopup(true);
+      // Com flushSync acima, items já está atualizado — abre o pop-up diretamente.
+      setJustValidatedPrescription(new Date());
     } else {
       toast.success(isRevalidationPostCutoff ? "Item revalidado (nova versão)" : "Item validado");
     }
