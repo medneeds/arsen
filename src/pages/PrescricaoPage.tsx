@@ -4843,6 +4843,17 @@ const PrescricaoPage = () => {
   const [validationSessionExpiresAt, setValidationSessionExpiresAt] = useState<number | null>(null);
   // Etapa pós-validação (só na validação TOTAL — por item seria intrusivo)
   const [justValidatedPrescription, setJustValidatedPrescription] = useState<Date | null>(null);
+  // Flag para abrir o pop-up de impressão no próximo render, APÓS setItems ser processado
+  const [pendingValidationPopup, setPendingValidationPopup] = useState(false);
+
+  // Abre o pop-up de impressão somente depois que o React processou o novo state de items
+  // Sem isso, o pop-up abria antes do setItems ser aplicado e o PDF saía com dados antigos
+  useEffect(() => {
+    if (pendingValidationPopup) {
+      setPendingValidationPopup(false);
+      setJustValidatedPrescription(new Date());
+    }
+  }, [pendingValidationPopup, items]);
   const [sessionTick, setSessionTick] = useState(0); // força re-render para countdown
 
   // Tick a cada 30s enquanto a sessão estiver ativa (suficiente p/ countdown em min)
@@ -5239,7 +5250,10 @@ const PrescricaoPage = () => {
             ? "Snapshot do dia anterior preservado no histórico."
             : "Todos os itens ativos foram validados e registrados." }
       );
-      setJustValidatedPrescription(new Date());
+      // Abre o pop-up de impressão no próximo render, APÓS setItems ser processado.
+      // Sem isso, o pop-up abria antes do React aplicar os novos items e o PDF
+      // podia sair com os dados da prescrição anterior (estado stale).
+      setPendingValidationPopup(true);
     } else {
       toast.success(isRevalidationPostCutoff ? "Item revalidado (nova versão)" : "Item validado");
     }
