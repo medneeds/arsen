@@ -234,6 +234,9 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
           patientName: evo.patient_name || "Paciente",
           patientBed: evo.patient_bed || undefined,
           patientSector: evo.patient_sector || undefined,
+          // Preserva CID mesmo no fallback — sem isso o impresso saía sem CID
+          cidPrimary,
+          cidSecondary,
         }, printWin1);
       } catch (e2) {
         console.error("Falha no fallback de impressão:", e2);
@@ -585,6 +588,8 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                               patientName: evo.patient_name || "Paciente",
                               patientBed: evo.patient_bed || undefined,
                               patientSector: evo.patient_sector || undefined,
+                              cidPrimary,
+                              cidSecondary,
                             }, printWinBtn);
                           } catch (e2) {
                             toast.error("Não foi possível gerar o PDF da evolução");

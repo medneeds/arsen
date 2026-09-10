@@ -71,7 +71,8 @@ export function usePatientCid(patientId: string | null) {
         row = regRow as any;
       }
 
-      // Tentativa 2: fallback por patient_id (legado sem registry carimbado)
+      // Tentativa 2: fallback por patient_id — cobre legados sem registry carimbado
+      // e também casos onde registry foi preenchido depois (não filtra IS NULL)
       if (!row) {
         const { data, error } = await supabase
           .from("admission_histories")
@@ -79,7 +80,6 @@ export function usePatientCid(patientId: string | null) {
           .eq("patient_id", safePatientId)
           .eq("hospital_unit_id", currentHospital.id)
           .is("archived_at", null)
-          .is("patient_registry_id", null)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
