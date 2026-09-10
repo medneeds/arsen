@@ -25,6 +25,8 @@ export interface AtmStatusItem {
   name: string;
   presentation?: string;
   dose: string;
+  quantity?: string;
+  quantityUnit?: string;
   route: string;
   posology: string;
   status: 'active' | 'suspended' | string;

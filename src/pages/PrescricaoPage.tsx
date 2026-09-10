@@ -10120,7 +10120,8 @@ const PrescricaoPage = () => {
           .filter(i => i.category === 'antimicrobial' && i.status === 'active')
           .map(i => ({
             id: i.id, name: i.name, presentation: i.presentation,
-            dose: i.dose, route: i.route, posology: i.posology,
+            dose: i.dose, quantity: i.quantity, quantityUnit: i.quantityUnit,
+            route: i.route, posology: i.posology,
             status: i.status, atbStartDate: i.atbStartDate, atbPlannedDays: i.atbPlannedDays,
             atbInfectionSite: i.atbInfectionSite,
           }))
@@ -10141,12 +10142,15 @@ const PrescricaoPage = () => {
               || user?.email
               || '';
             const doctorCrm = digitalSignature?.crm || currentDoctor.crm || '';
+            // Dose legível: usa buildSolutoToken para reconstruir "1 FA (500.000UI)"
+            // quando dose está vazio mas quantity+presentation têm a info.
+            const doseLabel = buildSolutoTokenLabeled(it) || it.dose || '';
             await printAtmGuide({
               patient,
               entries: [{
                 medication: it.name,
                 presentation: it.presentation,
-                dose: it.dose,
+                dose: doseLabel,
                 route: it.route,
                 posology: it.posology,
                 startDate: it.atbStartDate,
@@ -10178,7 +10182,7 @@ const PrescricaoPage = () => {
               entries: its.map(it => ({
                 medication: it.name,
                 presentation: it.presentation,
-                dose: it.dose,
+                dose: buildSolutoTokenLabeled(it) || it.dose || '',
                 route: it.route,
                 posology: it.posology,
                 startDate: it.atbStartDate,

@@ -12,6 +12,7 @@ export interface SolutoFields {
   quantity?: string;
   quantityUnit?: string;
   dose?: string;
+  presentation?: string;
 }
 
 // Siglas hospitalares para forma/unidade (display-only; valor preservado)
@@ -198,7 +199,16 @@ export function buildSolutoToken(item: SolutoFields): string {
 
   // ══════════════════════════════════════════════════════════════════
   // FALLBACK — qty ou dose bruto
+  // Quando dose está vazio mas há presentation (ex: "500.000UI — fr-amp"),
+  // extrai a concentração da presentation para exibição clínica clara.
+  // Evita mostrar apenas "1 fa" quando o correto é "1 fa (500.000UI)".
   // ══════════════════════════════════════════════════════════════════
+  if (!doseRaw && qtyStr && isUnitUnit) {
+    const pres = (item.presentation || '').trim();
+    // Extrai a parte de concentração antes do " — " (ex: "500.000UI" de "500.000UI — fr-amp")
+    const concPart = pres.includes(' — ') ? pres.split(' — ')[0].trim() : pres;
+    if (concPart) return `${qtyStr} (${concPart})`;
+  }
   return qtyStr || doseRaw;
 }
 
