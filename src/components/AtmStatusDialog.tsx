@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 export interface AtmStatusItem {
   id: string;
   name: string;
+  presentation?: string;
   dose: string;
   route: string;
   posology: string;

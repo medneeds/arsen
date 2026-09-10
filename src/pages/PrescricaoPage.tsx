@@ -10106,7 +10106,8 @@ const PrescricaoPage = () => {
         activeItems={items
           .filter(i => i.category === 'antimicrobial' && i.status === 'active')
           .map(i => ({
-            id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology,
+            id: i.id, name: i.name, presentation: i.presentation,
+            dose: i.dose, route: i.route, posology: i.posology,
             status: i.status, atbStartDate: i.atbStartDate, atbPlannedDays: i.atbPlannedDays,
             atbInfectionSite: i.atbInfectionSite,
           }))
@@ -10118,10 +10119,18 @@ const PrescricaoPage = () => {
         onReprintItem={async (it) => {
           try {
             const { printAtmGuide } = await import("@/lib/printAtmGuide");
+            // doctorName: prioriza assinatura digital (médico que validou);
+            // fallback para usuário logado (reimpressão sem validação prévia)
+            const doctorName = digitalSignature?.doctorName
+              || user?.user_metadata?.full_name
+              || user?.email
+              || '';
+            const doctorCrm = digitalSignature?.crm || '';
             await printAtmGuide({
               patient,
               entries: [{
                 medication: it.name,
+                presentation: it.presentation,
                 dose: it.dose,
                 route: it.route,
                 posology: it.posology,
@@ -10129,8 +10138,8 @@ const PrescricaoPage = () => {
                 plannedDuration: it.atbPlannedDays,
                 infectionSite: it.atbInfectionSite,
               }],
-              doctorName: digitalSignature?.doctorName || '',
-              doctorCrm: digitalSignature?.crm || '',
+              doctorName,
+              doctorCrm,
               hospitalName: currentHospital?.name,
               reprint: true,
             });
@@ -10143,10 +10152,16 @@ const PrescricaoPage = () => {
         onReprintAll={async (its) => {
           try {
             const { printAtmGuide } = await import("@/lib/printAtmGuide");
+            const doctorName = digitalSignature?.doctorName
+              || user?.user_metadata?.full_name
+              || user?.email
+              || '';
+            const doctorCrm = digitalSignature?.crm || '';
             await printAtmGuide({
               patient,
               entries: its.map(it => ({
                 medication: it.name,
+                presentation: it.presentation,
                 dose: it.dose,
                 route: it.route,
                 posology: it.posology,
@@ -10154,8 +10169,8 @@ const PrescricaoPage = () => {
                 plannedDuration: it.atbPlannedDays,
                 infectionSite: it.atbInfectionSite,
               })),
-              doctorName: digitalSignature?.doctorName || '',
-              doctorCrm: digitalSignature?.crm || '',
+              doctorName,
+              doctorCrm,
               hospitalName: currentHospital?.name,
               reprint: true,
             });
