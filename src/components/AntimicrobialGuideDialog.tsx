@@ -202,14 +202,22 @@ function createEmptyEntry(
   const isMed = item && 'defaultDose' in item;
   const medicationName = item ? (isMed ? (item as MedicationEntry).name : (item as PrescriptionItem).name) : "";
   const rawDose = item ? (isMed ? (item as MedicationEntry).defaultDose : (item as PrescriptionItem).dose) : "";
+  const presRaw = item && isMed ? (item as MedicationEntry).presentation || "" : "";
+  // Quando defaultDose está vazio mas a presentation tem concentração
+  // (ex: "5.000.000UI — fr-amp"), usa a concentração como dose para que
+  // buildSolutoToken exiba "1 FA (5.000.000UI)" em vez de "1 FA".
+  const concFromPresentation = (!rawDose && presRaw.includes(' — '))
+    ? presRaw.split(' — ')[0].trim()
+    : '';
+  const effectiveDose = rawDose || concFromPresentation;
   // Fase 1: tenta extrair doseValue/doseUnit do legacy. Se não der match, deixa vazio
   // (médico escolhe explicitamente na UI — sem fallback livre, decisão #1 do PO).
-  const parsed = parseDoseLegacy(rawDose);
+  const parsed = parseDoseLegacy(effectiveDose);
   const base: AntimicrobialEntry = {
     id: crypto.randomUUID(),
     medication: medicationName,
     presentation: item && isMed ? (item as MedicationEntry).presentation || "" : "",
-    dose: rawDose,
+    dose: effectiveDose,
     doseValue: parsed?.value ?? "",
     doseUnit: parsed?.unit ?? "",
     route: item ? (isMed ? (item as MedicationEntry).defaultRoute : (item as PrescriptionItem).route) : "",
