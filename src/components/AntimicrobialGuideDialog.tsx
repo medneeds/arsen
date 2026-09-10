@@ -133,7 +133,7 @@ interface Props {
   doctorCrm?: string;
   hospitalName?: string;
   onConfirm?: (entries: Array<{
-    medication: string; dose: string; route: string; posology: string;
+    medication: string; presentation?: string; dose: string; route: string; posology: string;
     startDate?: string; plannedDuration?: string; infectionSite?: string;
     justification?: string; cultureCollected?: string; cultureResult?: string;
     reconSolvent?: string; reconVolume?: string;
@@ -630,7 +630,7 @@ export function AntimicrobialGuideDialog({
       return false;
     }
     onConfirm(valid.map(e => ({
-      medication: e.medication, dose: e.dose, route: e.route, posology: e.posology,
+      medication: e.medication, presentation: e.presentation, dose: e.dose, route: e.route, posology: e.posology,
       startDate: e.startDate, plannedDuration: e.plannedDuration, infectionSite: e.infectionSite,
       justification: e.justification, cultureCollected: e.cultureCollected, cultureResult: e.cultureResult,
       reconSolvent: e.reconSolvent, reconVolume: e.reconVolume,

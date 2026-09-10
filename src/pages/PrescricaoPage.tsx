@@ -6008,7 +6008,7 @@ const PrescricaoPage = () => {
 
   // Callback when antimicrobial guide is confirmed — add both guide entry data and the prescription item
   const handleAntimicrobialConfirm = useCallback((confirmedEntries: Array<{
-    medication: string; dose: string; route: string; posology: string;
+    medication: string; presentation?: string; dose: string; route: string; posology: string;
     startDate?: string; plannedDuration?: string; infectionSite?: string;
     reconSolvent?: string; reconVolume?: string;
     reconFinalDiluent?: string; reconFinalVolume?: string;
@@ -6016,7 +6016,13 @@ const PrescricaoPage = () => {
   }>) => {
     const antimicrobialOptions = UNIFIED_CATALOG['antimicrobial'] || [];
     const newItems: PrescriptionItem[] = confirmedEntries.map(entry => {
-      const matchedMed = antimicrobialOptions.find(m => m.name === entry.medication);
+      // Busca por nome + apresentação para distinguir apresentações do mesmo medicamento
+      // (ex: Penicilina G Cristalina 5.000.000UI vs 10.000.000UI).
+      // Fallback: só nome (compatibilidade com entradas sem presentation).
+      const matchedMed = (entry.presentation
+        ? antimicrobialOptions.find(m => m.name === entry.medication && m.presentation === entry.presentation)
+        : null)
+        ?? antimicrobialOptions.find(m => m.name === entry.medication);
       const base: PrescriptionItem = matchedMed
         ? { ...createItem(matchedMed), instructions: '', dose: entry.dose || createItem(matchedMed).dose, route: entry.route || createItem(matchedMed).route, posology: entry.posology || createItem(matchedMed).posology }
         : {
