@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
+import { normalizePatientNameInput } from "@/utils/normalizePatientName";
 import {
   AlertTriangle, Loader2, UserX, Stethoscope, Clock, Phone, FileWarning,
   ArrowRight, Zap, Cake, CalendarDays, Hash, Siren, Ambulance, Footprints,
@@ -290,7 +291,7 @@ export function TriageExpressDialog({
                     id="te-name"
                     placeholder={isUnidentified ? "— gerado automaticamente como NI —" : "Ex.: JOÃO ou JOÃO DA SILVA SANTOS"}
                     value={partialName}
-                    onChange={(e) => setPartialName(e.target.value.toUpperCase())}
+                    onChange={(e) => setPartialName(normalizePatientNameInput(e.target.value))}
                     autoFocus={!isUnidentified}
                     disabled={isUnidentified}
                     className="font-medium"

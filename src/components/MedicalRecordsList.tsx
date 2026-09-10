@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
-import { normalizePatientName, normalizePatientNameInput } from "@/utils/normalizePatientName";
+import { normalizePatientName, normalizePatientNameInput, normalizeAddressInput } from "@/utils/normalizePatientName";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -558,7 +558,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
             <div className="md:col-span-2">
               <Label>Nome da Mãe</Label>
               <Input value={promoteForm.mother_name}
-                onChange={(e) => setPromoteForm(f => ({ ...f, mother_name: e.target.value.toUpperCase() }))} />
+                onChange={(e) => setPromoteForm(f => ({ ...f, mother_name: normalizePatientNameInput(e.target.value) }))} />
             </div>
             <div>
               <Label>Telefone</Label>
@@ -568,7 +568,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
             <div>
               <Label>Endereço</Label>
               <Input value={promoteForm.address}
-                onChange={(e) => setPromoteForm(f => ({ ...f, address: e.target.value.toUpperCase() }))} />
+                onChange={(e) => setPromoteForm(f => ({ ...f, address: normalizeAddressInput(e.target.value) }))} />
             </div>
           </div>
 

@@ -57,3 +57,30 @@ export function normalizePatientName(value: string): string {
 
   return stripAccentsAndSpecials(value).replace(/ {2,}/g, " ").trim();
 }
+
+/**
+ * Campos de ENDEREÇO do prontuário (logradouro, bairro, cidade, UF).
+ *
+ * Tira acento e cedilha como nos nomes, mas PRESERVA a pontuação que estrutura
+ * um endereço: vírgula, ponto, barra e o sinal de número. "RUA SÃO JOÃO, 123 -
+ * APT. 4/B" precisa continuar legível; removê-la produziria "RUA SAO JOAO 123
+ * APT 4B", que ninguém consegue conferir contra um documento.
+ *
+ * Use no `onChange` — preserva o espaço recém-teclado, como a versão de nome.
+ */
+export function normalizeAddressInput(value: string): string {
+  if (!value) return value;
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9 ,.\-/º°nN]/g, "")
+    .replace(/ {2,}/g, " ")
+    .replace(/^ +/, "")
+    .toUpperCase();
+}
+
+/** Versão de gravação do endereço: mesma limpeza e apara as bordas. */
+export function normalizeAddress(value: string): string {
+  if (!value) return value;
+  return normalizeAddressInput(value).trim();
+}

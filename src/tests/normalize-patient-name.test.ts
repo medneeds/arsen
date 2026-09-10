@@ -9,7 +9,12 @@
  */
 import { test } from "node:test";
 import assert from "node:assert";
-import { normalizePatientName, normalizePatientNameInput } from "@/utils/normalizePatientName";
+import {
+  normalizePatientName,
+  normalizePatientNameInput,
+  normalizeAddress,
+  normalizeAddressInput,
+} from "@/utils/normalizePatientName";
 
 /** Simula digitação tecla a tecla, como o onChange recebe. */
 const digitar = (texto: string) =>
@@ -51,4 +56,38 @@ test("a versão de gravação apara as bordas — banco nunca recebe espaço sol
 test("valor vazio ou nulo atravessa sem quebrar", () => {
   assert.strictEqual(normalizePatientNameInput(""), "");
   assert.strictEqual(normalizePatientName(""), "");
+});
+
+// ── Endereço ────────────────────────────────────────────────────────────────
+
+const digitarEndereco = (texto: string) =>
+  texto.split("").reduce((campo, tecla) => normalizeAddressInput(campo + tecla), "");
+
+test("endereço perde acento e cedilha, como os nomes", () => {
+  assert.strictEqual(normalizeAddressInput("São João"), "SAO JOAO");
+  assert.strictEqual(normalizeAddressInput("Conceição"), "CONCEICAO");
+});
+
+test("endereço PRESERVA a pontuação que o estrutura", () => {
+  // Sem vírgula, ponto e barra o endereço fica impossível de conferir contra
+  // um documento: "RUA SAO JOAO 123 APT 4B".
+  assert.strictEqual(
+    normalizeAddressInput("Rua São João, 123 - Apt. 4/B"),
+    "RUA SAO JOAO, 123 - APT. 4/B",
+  );
+  // "nº" e abreviacao corrente de numero em endereco: o simbolo permanece.
+  assert.strictEqual(normalizeAddressInput("Av. Getúlio Vargas nº 500"), "AV. GETULIO VARGAS Nº 500");
+});
+
+test("endereço bloqueia caractere realmente especial", () => {
+  // O espaco que sobra da remocao e colapsado junto.
+  assert.strictEqual(normalizeAddressInput("Rua X @#$% 10"), "RUA X 10");
+});
+
+test("endereço composto sobrevive à digitação tecla a tecla", () => {
+  assert.strictEqual(digitarEndereco("Rua São Luís, 45"), "RUA SAO LUIS, 45");
+});
+
+test("a versão de gravação do endereço apara as bordas", () => {
+  assert.strictEqual(normalizeAddress("  Rua São João, 12  "), "RUA SAO JOAO, 12");
 });

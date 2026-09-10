@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { normalizePatientName, normalizePatientNameInput } from "@/utils/normalizePatientName";
+import { normalizePatientName, normalizePatientNameInput, normalizeAddress, normalizeAddressInput } from "@/utils/normalizePatientName";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -734,7 +734,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                 </div>
                 <div className="col-span-2">
                   <Label className="text-xs">Nome Social</Label>
-                  <Input value={form.social_name} onChange={e => updateField("social_name", e.target.value.toUpperCase())} className="uppercase" />
+                  <Input value={form.social_name} onChange={e => updateField("social_name", normalizePatientNameInput(e.target.value))} className="uppercase" />
                 </div>
                 <div className="col-span-2">
                   <Label className="text-xs">Nome da Mãe</Label>
@@ -819,22 +819,22 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                 </div>
                 <div className="col-span-2">
                   <Label className="text-xs">Endereço</Label>
-                  <Input value={form.address} onChange={e => updateField("address", e.target.value.toUpperCase())} className="uppercase" />
+                  <Input value={form.address} onChange={e => updateField("address", normalizeAddressInput(e.target.value))} className="uppercase" />
                 </div>
                 <div>
                   <Label className="text-xs">Bairro</Label>
-                  <Input value={form.neighborhood} onChange={e => updateField("neighborhood", e.target.value.toUpperCase())} className="uppercase" />
+                  <Input value={form.neighborhood} onChange={e => updateField("neighborhood", normalizeAddressInput(e.target.value))} className="uppercase" />
                 </div>
                 <div className="grid grid-cols-[1fr_90px] gap-2">
                   <div>
                     <Label className="text-xs">Cidade</Label>
-                    <Input value={form.city} onChange={e => updateField("city", e.target.value.toUpperCase())} className="uppercase" />
+                    <Input value={form.city} onChange={e => updateField("city", normalizeAddressInput(e.target.value))} className="uppercase" />
                   </div>
                   <div>
                     <Label className="text-xs">Estado (UF)</Label>
                     <Input
                       value={form.state}
-                      onChange={e => updateField("state", e.target.value.toUpperCase().slice(0, 2))}
+                      onChange={e => updateField("state", normalizePatientNameInput(e.target.value).slice(0, 2))}
                       maxLength={2}
                       placeholder="UF"
                       className="uppercase"
