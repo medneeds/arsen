@@ -6028,7 +6028,7 @@ const PrescricaoPage = () => {
         : {
             id: crypto.randomUUID(),
             name: entry.medication,
-            presentation: '',
+            presentation: entry.presentation || '',
             dose: entry.dose,
             route: entry.route,
             posology: entry.posology,
@@ -6039,6 +6039,13 @@ const PrescricaoPage = () => {
             highAlert: false,
             status: 'active' as const,
           };
+      // Garante que a apresentação escolhida pelo médico na Guia ATM é sempre
+      // preservada no item — fonte de verdade para reimpressões futuras.
+      // createItem usa med.presentation do catálogo, mas se o médico escolheu
+      // uma apresentação específica (entry.presentation), ela prevalece.
+      if (entry.presentation) {
+        base.presentation = entry.presentation;
+      }
       // Alinha a Qtd. com os demais fluxos: se a dose do guia for apenas uma
       // contagem ("2 comprimido"), move para quantity+quantityUnit e limpa a
       // dose, evitando texto duplicado na linha. (23/07/2026.)
@@ -10126,12 +10133,14 @@ const PrescricaoPage = () => {
           try {
             const { printAtmGuide } = await import("@/lib/printAtmGuide");
             // doctorName: prioriza assinatura digital (médico que validou);
-            // fallback para usuário logado (reimpressão sem validação prévia)
+            // fallback para perfil do médico logado (currentDoctor.fullName da tabela profiles);
+            // último fallback para user_metadata (cadastro do Supabase Auth).
             const doctorName = digitalSignature?.doctorName
+              || currentDoctor.fullName
               || user?.user_metadata?.full_name
               || user?.email
               || '';
-            const doctorCrm = digitalSignature?.crm || '';
+            const doctorCrm = digitalSignature?.crm || currentDoctor.crm || '';
             await printAtmGuide({
               patient,
               entries: [{
@@ -10159,10 +10168,11 @@ const PrescricaoPage = () => {
           try {
             const { printAtmGuide } = await import("@/lib/printAtmGuide");
             const doctorName = digitalSignature?.doctorName
+              || currentDoctor.fullName
               || user?.user_metadata?.full_name
               || user?.email
               || '';
-            const doctorCrm = digitalSignature?.crm || '';
+            const doctorCrm = digitalSignature?.crm || currentDoctor.crm || '';
             await printAtmGuide({
               patient,
               entries: its.map(it => ({
