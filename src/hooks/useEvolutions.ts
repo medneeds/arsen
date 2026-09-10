@@ -357,39 +357,72 @@ export function useEvolutions(
       // Complementares (vespertina/noturna/intercorrência) servem só como registro
       // pontual e NÃO devem sobrescrever os campos do card no Painel Clínico.
       const evoType = (soapData as any)?.type as string | undefined;
-      const isComplementary = evoType === "intercurrence" || evoType === "vespertina" || evoType === "noturna";
+      const isIntercurrence = evoType === "intercurrence";
+      const isComplementaryShift = evoType === "vespertina" || evoType === "noturna";
 
-      if (safePatientId && !isComplementary) {
-        const patientUpdates: Record<string, unknown> = {};
+      if (safePatientId && !isIntercurrence) {
+        // ── Evolução principal: substitui todos os campos ──────────────────
+        if (!isComplementaryShift) {
+          const patientUpdates: Record<string, unknown> = {};
 
-        // Hipóteses → patients.diagnoses
-        if (diagnosticHypotheses !== undefined) {
-          patientUpdates.diagnoses = parseDiagnosesText(diagnosticHypotheses);
+          if (diagnosticHypotheses !== undefined) {
+            patientUpdates.diagnoses = parseDiagnosesText(diagnosticHypotheses);
+          }
+          if (antecedentes && antecedentes.length > 0) {
+            patientUpdates.medical_history = antecedentes.filter(Boolean).join("\n");
+          }
+          if (planItems && planItems.length > 0) {
+            patientUpdates.uti_daily_conducts = planItems.filter(Boolean).join("\n");
+          }
+          if (pendenciasItems && pendenciasItems.length > 0) {
+            patientUpdates.pendencies = pendenciasItems.filter(Boolean).join("\n");
+          }
+
+          if (Object.keys(patientUpdates).length > 0) {
+            try {
+              await supabase
+                .from("patients")
+                .update(patientUpdates as any)
+                .eq("id", safePatientId);
+            } catch (syncErr) {
+              console.warn("[useEvolutions] sync principal error", syncErr);
+            }
+          }
         }
 
-        // Antecedentes → patients.medical_history
-        if (antecedentes && antecedentes.length > 0) {
-          patientUpdates.medical_history = antecedentes.filter(Boolean).join("\n");
-        }
-
-        // Plano Terapêutico → patients.uti_daily_conducts (TEXT join \n)
-        if (planItems && planItems.length > 0) {
-          patientUpdates.uti_daily_conducts = planItems.filter(Boolean).join("\n");
-        }
-
-        // Pendências → patients.pendencies
-        if (pendenciasItems && pendenciasItems.length > 0) {
-          patientUpdates.pendencies = pendenciasItems.filter(Boolean).join("\n");
-        }
-
-        if (Object.keys(patientUpdates).length > 0) {
+        // ── Vespertina / Noturna: só faz append de pendências novas ────────
+        // Plano terapêutico não é sobrescrito — o plano do dia é da evolução
+        // principal da manhã. Pendências novas são acrescentadas sem duplicar.
+        if (isComplementaryShift && pendenciasItems && pendenciasItems.length > 0) {
           try {
-            await supabase
+            const { data: current } = await supabase
               .from("patients")
-              .update(patientUpdates as any)
-              .eq("id", safePatientId);
+              .select("pendencies")
+              .eq("id", safePatientId)
+              .single();
+
+            const existing = current?.pendencies
+              ? (current.pendencies as string).split("\n").filter(Boolean)
+              : [];
+
+            const newItems = pendenciasItems.filter(Boolean);
+            // Append sem duplicar (comparação case-insensitive)
+            const merged = [...existing];
+            for (const item of newItems) {
+              const alreadyExists = existing.some(
+                e => e.trim().toLowerCase() === item.trim().toLowerCase()
+              );
+              if (!alreadyExists) merged.push(item);
+            }
+
+            if (merged.length > existing.length) {
+              await supabase
+                .from("patients")
+                .update({ pendencies: merged.join("\n") })
+                .eq("id", safePatientId);
+            }
           } catch (syncErr) {
-            console.warn("[useEvolutions] sync mapa error", syncErr);
+            console.warn("[useEvolutions] sync complementar error", syncErr);
           }
         }
       }
