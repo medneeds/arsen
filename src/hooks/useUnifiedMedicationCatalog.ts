@@ -143,11 +143,25 @@ function rowsToEntries(
       });
       continue;
     }
+    // Quantas apresentacoes deste farmaco tem forma+concentracao iguais e
+    // diferem SO na via. Quando ha mais de uma, o rotulo precisa exibir a via,
+    // senao a tela mostra duas opcoes visualmente identicas e o medico nao tem
+    // como saber qual e a SC e qual e a IV.
+    const mesmaFormaConc = new Map<string, number>();
     for (const p of list) {
+      const k = `${(p.form ?? "").toLowerCase().trim()}::${(p.concentration ?? "").toLowerCase().trim()}`;
+      mesmaFormaConc.set(k, (mesmaFormaConc.get(k) ?? 0) + 1);
+    }
+
+    for (const p of list) {
+      const chaveFormaConc = `${(p.form ?? "").toLowerCase().trim()}::${(p.concentration ?? "").toLowerCase().trim()}`;
+      const precisaMostrarVia = (mesmaFormaConc.get(chaveFormaConc) ?? 0) > 1 && !!p.route;
       entries.push({
         id: `cat-${row.id}-${p.form ?? ""}-${p.concentration ?? ""}-${p.route ?? ""}`,
         name: row.generic_name,
-        presentation: buildPresentationLabel(p),
+        presentation: precisaMostrarVia
+          ? `${buildPresentationLabel(p)} (${p.route})`
+          : buildPresentationLabel(p),
         // Bug 16/07/2026: defaultDose vinha hardcoded como "" — o campo
         // default_dose já era buscado do banco (PresentationRow) mas nunca
         // usado. Qualquer medicação vinda do catálogo oficial (fonte de
@@ -169,10 +183,19 @@ function rowsToEntries(
 }
 
 function dedupeMerge(local: MedicationEntry[], remote: MedicationEntry[]): MedicationEntry[] {
-  // Chave: nome+apresentação normalizados. Remoto tem prioridade (mais atual).
+  // Chave: nome+apresentação+VIA normalizados. Remoto tem prioridade (mais atual).
+  //
+  // A via faz parte da chave porque o mesmo farmaco, na mesma apresentacao,
+  // pode existir em vias diferentes e cada uma tem preparo proprio. Com a
+  // chave sem via, uma sobrescrevia a outra e o medico so enxergava UMA:
+  //   - Insulina Regular 100UI/mL: SC (uso comum) x IV (bomba, protocolo)
+  //   - Ceftriaxona 1g: IM (reconstituida com lidocaina, NUNCA endovenosa) x EV
+  //   - Cetoprofeno 100mg: IM x EV
+  // Qual sobrevivia dependia da ordem das linhas do banco.
   const norm = (s: string) =>
     s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
-  const key = (m: MedicationEntry) => `${norm(m.name)}::${norm(m.presentation)}`;
+  const key = (m: MedicationEntry) =>
+    `${norm(m.name)}::${norm(m.presentation)}::${norm(m.defaultRoute || "")}`;
 
   const map = new Map<string, MedicationEntry>();
   for (const m of remote) map.set(key(m), m);
@@ -201,9 +224,16 @@ async function fetchCatalogNow() {
       .from("medication_catalog")
       .select("id, generic_name, nome_comercial, therapeutic_class, pharmacological_group, controlled, high_alert, requires_dilution, notes, lista, notification_type")
       .order("generic_name"),
+    // ORDER BY explicito: sem ele o Postgres nao garante a ordem das linhas, e
+    // farmacos com mais de uma apresentacao (ex.: Penicilina G Cristalina
+    // 5.000.000UI e 10.000.000UI) trocavam de posicao entre carregamentos —
+    // o que fazia a mesma tela mostrar ora uma, ora outra.
     supabase
       .from("medication_presentations")
-      .select("medication_id, form, concentration, unit, route, pharmaceutical_form, default_route, default_dose, standard_dilution, max_daily_dose, infusion_time"),
+      .select("medication_id, form, concentration, unit, route, pharmaceutical_form, default_route, default_dose, standard_dilution, max_daily_dose, infusion_time")
+      .order("medication_id")
+      .order("concentration")
+      .order("route"),
   ]);
   if (e1) throw e1;
   if (e2) throw e2;

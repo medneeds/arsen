@@ -117,6 +117,10 @@ interface PatientData {
 interface PrescriptionItem {
   id: string;
   name: string;
+  // A apresentacao e enviada pelo chamador (PrescricaoPage) e lida em
+  // buildEntryFrom; sem declarar aqui, o TS acusava TS2339 e o literal do
+  // chamador batia no excess property check.
+  presentation?: string;
   dose: string;
   route: string;
   posology: string;
