@@ -15,6 +15,9 @@ export interface DocumentoMedicoData {
   patient_name: string;
   patient_bed?: string;
   patient_sector?: string;
+  patient_birth_date?: string | null;
+  patient_medical_record?: string | null;
+  patient_age?: string | null;
   body: string;
   /** Só atestado: dias de afastamento. */
   days?: number | null;

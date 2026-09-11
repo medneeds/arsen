@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -80,6 +81,26 @@ export function MedicalDocumentDialog({
   const { receituarios, save: saveReceituario } = useReceituario(patientId, patientName);
   const { documentos, save: saveDocumentoMedico } = useDocumentoMedico(patientId, patientName);
 
+  // Busca dados cadastrais complementares (data de nascimento e prontuário)
+  const [patientRegistry, setPatientRegistry] = useState<{ birth_date?: string | null; medical_record?: string | null } | null>(null);
+  useEffect(() => {
+    if (!patientId) return;
+    supabase
+      .from("patients")
+      .select("patient_registry_id")
+      .eq("id", patientId)
+      .maybeSingle()
+      .then(({ data: p }) => {
+        if (!p?.patient_registry_id) return;
+        supabase
+          .from("patient_registry")
+          .select("birth_date, medical_record")
+          .eq("id", p.patient_registry_id)
+          .maybeSingle()
+          .then(({ data: r }) => { if (r) setPatientRegistry(r); });
+      });
+  }, [patientId]);
+
   const [kind, setKind] = useState<DocKind | null>(null);
 
   // shared
@@ -127,12 +148,20 @@ export function MedicalDocumentDialog({
     const esc = (s: string) =>
       (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>");
 
+    const birthFmt = patientRegistry?.birth_date
+      ? (() => { try { return new Date(patientRegistry.birth_date + "T12:00:00").toLocaleDateString("pt-BR"); } catch { return patientRegistry.birth_date; } })()
+      : null;
+
     const patientLine = `
       <div style="border:1px solid #cbd5e1;border-radius:4pt;padding:6pt 10pt;margin-bottom:10pt;font-size:9pt;background:#f8fafc">
-        <div><b>PACIENTE:</b> ${esc((patientName || "").toUpperCase())}</div>
-        ${patient?.age ? `<div><b>IDADE:</b> ${esc(String(patient.age))}</div>` : ""}
-        ${patientBed ? `<div><b>LEITO:</b> ${esc(patientBed)} ${displaySector ? `• ${esc(displaySector)}` : ""}</div>` : ""}
-        ${includeCid && cidPrimary ? `<div><b>CID-10:</b> ${esc(cidPrimary)}</div>` : ""}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2pt 16pt">
+          <div><b>PACIENTE:</b> ${esc((patientName || "").toUpperCase())}</div>
+          ${patientBed ? `<div><b>LEITO:</b> ${esc(patientBed)} ${displaySector ? `• ${esc(displaySector)}` : ""}</div>` : "<div></div>"}
+          ${patient?.age ? `<div><b>IDADE:</b> ${esc(String(patient.age))}</div>` : "<div></div>"}
+          ${patientRegistry?.medical_record ? `<div><b>PRONTUÁRIO:</b> ${esc(patientRegistry.medical_record)}</div>` : "<div></div>"}
+          ${birthFmt ? `<div><b>DATA DE NASCIMENTO:</b> ${esc(birthFmt)}</div>` : ""}
+          ${includeCid && cidPrimary ? `<div><b>CID-10:</b> ${esc(cidPrimary)}</div>` : ""}
+        </div>
       </div>`;
 
     if (isRx) {

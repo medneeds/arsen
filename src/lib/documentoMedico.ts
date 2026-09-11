@@ -27,11 +27,20 @@ function buildDocumentoMedicoBody(data: DocumentoMedicoData): string {
     ? `${data.patient_bed || ""}${data.patient_bed && data.patient_sector ? " • " : ""}${data.patient_sector || ""}`
     : "";
 
+  const birthFmt = data.patient_birth_date
+    ? (() => { try { return new Date(data.patient_birth_date + "T12:00:00").toLocaleDateString("pt-BR"); } catch { return data.patient_birth_date; } })()
+    : null;
+
   const patientLine = `
     <div style="border:1px solid #cbd5e1;border-radius:4pt;padding:6pt 10pt;margin-bottom:10pt;font-size:9pt;background:#f8fafc">
-      <div><b>PACIENTE:</b> ${esc((data.patient_name || "").toUpperCase())}</div>
-      ${sector ? `<div><b>LEITO:</b> ${esc(sector)}</div>` : ""}
-      ${data.cid ? `<div><b>CID-10:</b> ${esc(data.cid)}</div>` : ""}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2pt 16pt">
+        <div><b>PACIENTE:</b> ${esc((data.patient_name || "").toUpperCase())}</div>
+        ${sector ? `<div><b>LEITO:</b> ${esc(sector)}</div>` : "<div></div>"}
+        ${data.patient_age ? `<div><b>IDADE:</b> ${esc(data.patient_age)}</div>` : "<div></div>"}
+        ${data.patient_medical_record ? `<div><b>PRONTUÁRIO:</b> ${esc(data.patient_medical_record)}</div>` : "<div></div>"}
+        ${birthFmt ? `<div><b>DATA DE NASCIMENTO:</b> ${esc(birthFmt)}</div>` : ""}
+        ${data.cid ? `<div><b>CID-10:</b> ${esc(data.cid)}</div>` : ""}
+      </div>
     </div>`;
 
   return `${patientLine}
