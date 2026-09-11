@@ -317,11 +317,16 @@ export function AntimicrobialGuideDialog({
   const doctorCrm = doctorCrmProp || currentDoctor.crm;
   const { antimicrobials: unifiedAntimicrobials, refetch: refetchCatalog } = useUnifiedMedicationCatalog();
   const antimicrobialOptions = unifiedAntimicrobials.length > 0 ? unifiedAntimicrobials : ANTIMICROBIAL_OPTIONS;
+  const [catalogReady, setCatalogReady] = useState(false);
 
-  // Revalida o catálogo ao abrir o dialog — garante que novos registros
-  // (ex: apresentação inserida no banco) aparecem sem precisar de F5.
+  // Revalida o catálogo ao abrir o dialog e aguarda antes de mostrar opções.
+  // Sem isso, o médico podia ver o dropdown com cache stale antes do fetch terminar.
   useEffect(() => {
-    if (open) refetchCatalog().catch(() => {});
+    if (!open) { setCatalogReady(false); return; }
+    setCatalogReady(false);
+    refetchCatalog()
+      .catch(() => {})
+      .finally(() => setCatalogReady(true));
   }, [open, refetchCatalog]);
   const [entries, setEntries] = useState<AntimicrobialEntry[]>([]);
   const [loadingImport, setLoadingImport] = useState<Record<string, 'history' | 'evolution' | 'cultures' | null>>({});
@@ -854,14 +859,20 @@ export function AntimicrobialGuideDialog({
                   <div className="grid grid-cols-4 gap-2">
                     <div className="col-span-2">
                       <Label className="text-[10px]">Antimicrobiano (selecionar ou digitar){mode === 'prescribe' && <Req />}</Label>
-                      <AntimicrobialCombobox
-                        value={entry.medication}
-                        onSelectMed={(med) => updateEntryFromMed(entry.id, med)}
-                        onChangeText={(text) => updateEntry(entry.id, "medication", text)}
-                        options={antimicrobialOptions}
-                      />
+                      {!catalogReady ? (
+                        <div className="h-9 flex items-center px-3 text-xs text-muted-foreground border rounded-md bg-muted/30">
+                          Carregando catálogo...
+                        </div>
+                      ) : (
+                        <AntimicrobialCombobox
+                          value={entry.medication}
+                          onSelectMed={(med) => updateEntryFromMed(entry.id, med)}
+                          onChangeText={(text) => updateEntry(entry.id, "medication", text)}
+                          options={antimicrobialOptions}
+                        />
+                      )}
                       {entry.presentation && (
-                        <div className="text-[10px] text-muted-foreground mt-0.5 truncate">📦 {entry.presentation}</div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5 truncate">{entry.presentation}</div>
                       )}
                     </div>
                     {/* Fase 1: Dose = Input numérico + Select de unidade (lista fechada) */}
