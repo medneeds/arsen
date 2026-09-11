@@ -10094,10 +10094,29 @@ const PrescricaoPage = () => {
         patient={patient}
         antimicrobialItems={
           pendingAntimicrobialMed
-            ? [{ id: 'pending', name: pendingAntimicrobialMed.name, dose: pendingAntimicrobialMed.defaultDose, route: pendingAntimicrobialMed.defaultRoute, posology: pendingAntimicrobialMed.defaultPosology, category: 'antimicrobial', status: 'active' }]
+            ? [{
+                id: 'pending',
+                name: pendingAntimicrobialMed.name,
+                presentation: pendingAntimicrobialMed.presentation || '',
+                // Dose: usa defaultDose se preenchido; senão extrai concentração da presentation
+                // (ex: Penicilina G tem defaultDose=null mas presentation="5.000.000UI — fr-amp")
+                dose: pendingAntimicrobialMed.defaultDose
+                  || (pendingAntimicrobialMed.presentation?.includes(' — ')
+                    ? pendingAntimicrobialMed.presentation.split(' — ')[0].trim()
+                    : ''),
+                route: pendingAntimicrobialMed.defaultRoute,
+                posology: pendingAntimicrobialMed.defaultPosology,
+                category: 'antimicrobial',
+                status: 'active',
+              }]
             : pendingAtbMode
               ? [] // Nova ATB do zero (acréscimo / troca / inicial)
-              : items.filter(i => i.category === 'antimicrobial').map(i => ({ id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology, category: i.category, status: i.status }))
+              : items.filter(i => i.category === 'antimicrobial').map(i => ({
+                  id: i.id, name: i.name,
+                  presentation: i.presentation || '', // preserva presentation do item existente
+                  dose: i.dose, route: i.route, posology: i.posology,
+                  category: i.category, status: i.status,
+                }))
         }
         doctorName={digitalSignature?.doctorName}
         doctorCrm={digitalSignature?.crm}
