@@ -683,3 +683,42 @@ export function hasReconstitutionSuggestion(name: string): boolean {
   const n = nfd(name);
   return RECONSTITUTION.some(r => r.rx.test(n));
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Vias PROIBIDAS por farmaco — independe do que estiver no catalogo do banco.
+ *
+ * Motivo: o catalogo e carregado direto no banco e ja chegou a ter Penicilina
+ * Benzatina com via EV. Benzatina por via endovenosa pode causar parada
+ * cardiorrespiratoria. Um cadastro errado nao pode virar prescricao, entao a
+ * regra clinica vive no codigo e nao depende do dado.
+ *
+ * A comparacao cobre os tres vocabularios de via que convivem no projeto:
+ * sigla do catalogo (EV, IV), nome completo do seletor (Intravenosa) e as
+ * variacoes escritas a mao (endovenosa).
+ * ────────────────────────────────────────────────────────────────────────── */
+
+const VIA_ENDOVENOSA = /^\s*(ev|iv)\s*$|intra\s*-?\s*venos|endo\s*-?\s*venos/i;
+
+interface ViaProibida {
+  rx: RegExp;
+  viaVedada: RegExp;
+  motivo: string;
+}
+
+const VIAS_PROIBIDAS: ViaProibida[] = [
+  {
+    // Benzatina e procaina sao suspensoes de deposito: exclusivamente IM.
+    rx: /penicilina\s*g?\s*benzatina|benzetacil|penicilina\s*g?\s*procain/i,
+    viaVedada: VIA_ENDOVENOSA,
+    motivo: 'Suspensão de depósito — exclusivamente intramuscular. A via endovenosa pode causar parada cardiorrespiratória.',
+  },
+];
+
+/** Retorna o motivo do bloqueio, ou null quando a via e aceitavel. */
+export function viaProibidaPara(name?: string, route?: string): string | null {
+  if (!name || !route) return null;
+  for (const regra of VIAS_PROIBIDAS) {
+    if (regra.rx.test(name) && regra.viaVedada.test(route)) return regra.motivo;
+  }
+  return null;
+}

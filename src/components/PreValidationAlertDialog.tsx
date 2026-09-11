@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { AlertTriangle, ShieldAlert, Layers, Check } from "lucide-react";
+import { AlertTriangle, ShieldAlert, Layers, Check, Ban } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,7 @@ const TYPE_META: Record<
   allergy: { label: "Alergia", Icon: ShieldAlert, tone: "text-destructive" },
   interaction: { label: "Interação grave", Icon: AlertTriangle, tone: "text-destructive" },
   duplicate: { label: "Duplicidade", Icon: Layers, tone: "text-warning" },
+  route: { label: "Via incompatível", Icon: Ban, tone: "text-destructive" },
 };
 
 export function PreValidationAlertDialog({
