@@ -192,7 +192,7 @@ export function usePatientDocuments({
       } else if (patientName) {
         receituarioQuery = receituarioQuery.eq("patient_name", patientName);
       }
-      if (encounterOr) receituarioQuery = receituarioQuery.or(encounterOr);
+      // Receituários não filtram por encounter — pertencem ao paciente, não ao atendimento
 
       // ── documentos_medicos (atestado / relatório / termo) ──
       let docMedicoQuery = supabase
@@ -210,7 +210,7 @@ export function usePatientDocuments({
       } else if (patientName) {
         docMedicoQuery = docMedicoQuery.eq("patient_name", patientName);
       }
-      if (encounterOr) docMedicoQuery = docMedicoQuery.or(encounterOr);
+      // Documentos médicos não filtram por encounter — pertencem ao paciente, não ao atendimento
 
       const [examRes, cultureRes, evolRes, receituarioRes, docMedicoRes] = await Promise.all([examQuery, cultureQuery, evolQuery, receituarioQuery, docMedicoQuery]);
 
