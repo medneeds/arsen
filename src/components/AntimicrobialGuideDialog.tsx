@@ -416,8 +416,16 @@ export function AntimicrobialGuideDialog({
     }
   };
 
+  const hasInitializedRef = useRef(false);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open) { hasInitializedRef.current = false; return; }
+    // Só inicializa entries UMA VEZ por abertura do dialog.
+    // antimicrobialItems é recriado a cada render da PrescricaoPage (array inline),
+    // então sem esse guard o useEffect reinicializa os entries quando o catálogo
+    // revalida — descartando dose e presentation que o médico já via/editou.
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
 
     // Limpa chaves legadas (sem versão) que possam existir de versões anteriores
     if (legacyDraftKey) {
