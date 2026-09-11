@@ -146,27 +146,32 @@ export function CidSearchInput({
             onFocus={() => setIsOpen(true)}
             onClick={() => setIsOpen(true)}
             onKeyDown={e => {
-              // Enter com texto digitado: aceitar entrada livre mesmo sem estar no catálogo
               if (e.key === "Enter" && search.trim()) {
                 const exact = catalog.find(c => normalize(c.code) === normalize(search.trim()));
                 if (exact) {
                   handleSelect(exact);
                 } else {
-                  // Aceitar como entrada livre: "CÓDIGO - descrição" ou só o código
-                  onChange(search.trim());
-                  setSearch("");
-                  setIsOpen(false);
+                  // Tenta buscar pelo início do código (ex: "I10" → "I10 - Hipertensão...")
+                  const partial = catalog.find(c => normalize(c.code).startsWith(normalize(search.trim())));
+                  if (partial) {
+                    handleSelect(partial);
+                  }
+                  // Se não encontrar no catálogo, não salva — exige seleção do dropdown
                 }
                 e.preventDefault();
               }
               if (e.key === "Escape") setIsOpen(false);
             }}
             onBlur={() => {
-              // Ao sair do campo sem selecionar: se há texto digitado, aceitar
+              // Ao sair do campo: tenta encontrar no catálogo antes de salvar
               setTimeout(() => {
                 if (search.trim() && !value) {
-                  onChange(search.trim());
-                  setSearch("");
+                  const exact = catalog.find(c => normalize(c.code) === normalize(search.trim()));
+                  if (exact) {
+                    handleSelect(exact);
+                  } else {
+                    setSearch(""); // descarta texto que não está no catálogo
+                  }
                 }
               }, 200);
             }}
