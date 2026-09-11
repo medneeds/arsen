@@ -423,7 +423,10 @@ export function AntimicrobialGuideDialog({
     }
 
     // 1) Tenta restaurar autosave da MESMA sessão (mesmo modo, mesmo paciente).
-    if (autosaveKey) {
+    // Em modo prescribe: NÃO restaura autosave porque pode ter presentation
+    // stale (gravada quando o catálogo só tinha 5.000.000UI). O catálogo
+    // é revalidado ao abrir — médico seleciona com dados frescos.
+    if (autosaveKey && mode === 'review') {
       const saved = readVersionedDraft(autosaveKey);
       if (saved) { setEntries(saved); return; }
     }
