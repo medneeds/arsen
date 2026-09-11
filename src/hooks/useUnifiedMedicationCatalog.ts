@@ -182,6 +182,8 @@ function dedupeMerge(local: MedicationEntry[], remote: MedicationEntry[]): Medic
 }
 
 let cachedRows: { catalog: CatalogRow[]; presentations: PresentationRow[] } | null = null;
+let cachedAt: number = 0;
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos — revalida silenciosamente
 let cachedPromise: Promise<{ catalog: CatalogRow[]; presentations: PresentationRow[] }> | null = null;
 
 /** Subscribers notificados quando o cache é (re)populado — usado para revalidar
@@ -212,7 +214,8 @@ async function fetchCatalogNow() {
 }
 
 async function loadCatalogOnce(force = false) {
-  if (!force && cachedRows && cachedRows.catalog.length > 0) return cachedRows;
+  const isStale = Date.now() - cachedAt > CACHE_TTL_MS;
+  if (!force && !isStale && cachedRows && cachedRows.catalog.length > 0) return cachedRows;
   if (cachedPromise) return cachedPromise;
   cachedPromise = (async () => {
     let result = await fetchCatalogNow();
@@ -226,6 +229,7 @@ async function loadCatalogOnce(force = false) {
     // Só cacheia se tem conteúdo — vazio não vira cache permanente.
     if (result.catalog.length > 0) {
       cachedRows = result;
+      cachedAt = Date.now();
       notifyCacheSubscribers();
     }
     return result;

@@ -6016,15 +6016,18 @@ const PrescricaoPage = () => {
   }>) => {
     const antimicrobialOptions = UNIFIED_CATALOG['antimicrobial'] || [];
     const newItems: PrescriptionItem[] = confirmedEntries.map(entry => {
-      // Busca por nome + apresentação para distinguir apresentações do mesmo medicamento
-      // (ex: Penicilina G Cristalina 5.000.000UI vs 10.000.000UI).
-      // Fallback: só nome (compatibilidade com entradas sem presentation).
-      const matchedMed = (entry.presentation
+      // Busca no catálogo local por nome + apresentação exata.
+      // Sem fallback por nome: se não achar, usa os dados estruturados do entry.
+      // Uma apresentação nunca pode ser silenciosamente substituída por outra.
+      const matchedMed = entry.presentation
         ? antimicrobialOptions.find(m => m.name === entry.medication && m.presentation === entry.presentation)
-        : null)
-        ?? antimicrobialOptions.find(m => m.name === entry.medication);
+        : antimicrobialOptions.find(m => m.name === entry.medication && !m.presentation);
+
       const base: PrescriptionItem = matchedMed
-        ? { ...createItem(matchedMed), instructions: '', dose: entry.dose || createItem(matchedMed).dose, route: entry.route || createItem(matchedMed).route, posology: entry.posology || createItem(matchedMed).posology }
+        ? { ...createItem(matchedMed), instructions: '',
+            dose: entry.dose || createItem(matchedMed).dose,
+            route: entry.route || createItem(matchedMed).route,
+            posology: entry.posology || createItem(matchedMed).posology }
         : {
             id: crypto.randomUUID(),
             name: entry.medication,
@@ -6039,10 +6042,8 @@ const PrescricaoPage = () => {
             highAlert: false,
             status: 'active' as const,
           };
-      // Garante que a apresentação escolhida pelo médico na Guia ATM é sempre
-      // preservada no item — fonte de verdade para reimpressões futuras.
-      // createItem usa med.presentation do catálogo, mas se o médico escolheu
-      // uma apresentação específica (entry.presentation), ela prevalece.
+      // Presentation do entry é sempre fonte de verdade — sobrescreve o que
+      // createItem trouxe do catálogo local (pode estar stale ou diferente).
       if (entry.presentation) {
         base.presentation = entry.presentation;
       }
