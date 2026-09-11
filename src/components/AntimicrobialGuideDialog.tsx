@@ -318,16 +318,26 @@ export function AntimicrobialGuideDialog({
   const { antimicrobials: unifiedAntimicrobials, refetch: refetchCatalog } = useUnifiedMedicationCatalog();
   const antimicrobialOptions = unifiedAntimicrobials.length > 0 ? unifiedAntimicrobials : ANTIMICROBIAL_OPTIONS;
   const [catalogReady, setCatalogReady] = useState(false);
+  const refetchDoneRef = useRef(false);
 
-  // Revalida o catálogo ao abrir o dialog e aguarda antes de mostrar opções.
-  // Sem isso, o médico podia ver o dropdown com cache stale antes do fetch terminar.
+  // Ao abrir: dispara refetch e aguarda as opções serem atualizadas no state React.
+  // Não basta aguardar o fetch terminar (Promise) — o React ainda precisa re-renderizar
+  // com os novos dados antes de liberar o dropdown.
   useEffect(() => {
-    if (!open) { setCatalogReady(false); return; }
+    if (!open) { setCatalogReady(false); refetchDoneRef.current = false; return; }
+    refetchDoneRef.current = false;
     setCatalogReady(false);
     refetchCatalog()
       .catch(() => {})
-      .finally(() => setCatalogReady(true));
+      .finally(() => { refetchDoneRef.current = true; });
   }, [open, refetchCatalog]);
+
+  // Só libera o dropdown quando o fetch terminou E as opções já foram atualizadas no render
+  useEffect(() => {
+    if (refetchDoneRef.current && unifiedAntimicrobials.length > 0) {
+      setCatalogReady(true);
+    }
+  }, [unifiedAntimicrobials]);
   const [entries, setEntries] = useState<AntimicrobialEntry[]>([]);
   const [loadingImport, setLoadingImport] = useState<Record<string, 'history' | 'evolution' | 'cultures' | null>>({});
   const [availableCultures, setAvailableCultures] = useState<Array<{ id: string; culture_type: string; collection_date: string | null; status: string; microorganism: string | null; antibiogram: string | null; sensitivity_profile: string | null; result_text: string | null; created_at: string }>>([]);
