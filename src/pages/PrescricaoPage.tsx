@@ -14,7 +14,7 @@ import {
   Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe, History,
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText, FlaskConical,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
-  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, List, AlignJustify, ChevronUp, Wand2, BedDouble,
+  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, List, AlignJustify, ChevronUp, Wand2, BedDouble, PlusCircle,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -260,6 +260,23 @@ interface PrescriptionItem {
   // Reconstituição (pó liofilizado) — Sprint A
   reconstitutionSolvent?: string;   // Ex.: 'AD', 'SF 0,9%', 'próprio diluente'
   reconstitutionVolume?: string;    // mL adicionados ao frasco-ampola
+  // Substâncias combinadas (Hidratação, Reposição, Inalação)
+  // Permite prescrever ex: SF 0,9% + KCl 10% ou Ipratrópio + Salbutamol como item único
+  combinedItems?: CombinedSubItem[];
+}
+
+interface CombinedSubItem {
+  id: string;
+  name: string;
+  presentation?: string;
+  dose?: string;
+  doseUnit?: string;
+  // Inalação
+  nebDose?: string;
+  nebDoseUnit?: 'mg' | 'gts' | 'mL' | 'mcg';
+  // Hidratação/Reposição
+  quantity?: string;
+  quantityUnit?: string;
 }
 
 // Detect nutrition subtype from wizard-generated item name
@@ -1711,6 +1728,158 @@ function HydrationFields({
 
 
 // --- Sortable Prescription Item Row ---
+// ── CombinedItemsBlock ───────────────────────────────────────────────────────
+// Exibe substâncias combinadas de um item (Hidratação, Reposição, Inalação)
+// e permite adicionar novas via busca no catálogo da mesma categoria.
+function CombinedItemsBlock({
+  item, onUpdate, catalog, categoryLabel,
+}: {
+  item: PrescriptionItem;
+  onUpdate: (id: string, field: string, value: any) => void;
+  catalog: MedicationEntry[];
+  categoryLabel: string;
+}) {
+  const combined = item.combinedItems || [];
+  const [adding, setAdding] = useState(false);
+
+  const addCombined = (med: MedicationEntry) => {
+    const newSub: CombinedSubItem = {
+      id: crypto.randomUUID(),
+      name: med.name,
+      presentation: med.presentation || '',
+      dose: med.defaultDose || '',
+      doseUnit: '',
+      nebDose: '',
+      nebDoseUnit: 'gts',
+      quantity: '1',
+      quantityUnit: med.presentation?.toLowerCase().includes('ampola') ? 'amp' : '',
+    };
+    onUpdate(item.id, 'combinedItems' as any, [...combined, newSub]);
+    setAdding(false);
+  };
+
+  const updateSub = (subId: string, field: string, value: string) => {
+    onUpdate(item.id, 'combinedItems' as any, combined.map(s =>
+      s.id === subId ? { ...s, [field]: value } : s
+    ));
+  };
+
+  const removeSub = (subId: string) => {
+    onUpdate(item.id, 'combinedItems' as any, combined.filter(s => s.id !== subId));
+  };
+
+  const isInhalation = item.category === 'inhalation';
+
+  return (
+    <div className="mt-1 space-y-1.5">
+      {combined.map((sub) => (
+        <div key={sub.id} className="flex items-start gap-2 pl-3 border-l-2 border-dashed border-primary/30 ml-1">
+          <div className="flex-1 space-y-1">
+            {/* Nome da substância combinada */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold text-foreground/80">+</span>
+              <span className="text-[11px] font-semibold">{sub.name}</span>
+              {sub.presentation && (
+                <span className="text-[10px] text-muted-foreground">({sub.presentation})</span>
+              )}
+            </div>
+            {/* Campos específicos por categoria */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {isInhalation ? (
+                <>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground">Dose:</span>
+                    <Input
+                      value={sub.nebDose || ''}
+                      onChange={e => updateSub(sub.id, 'nebDose', e.target.value)}
+                      className="h-6 text-[11px] w-14 text-center"
+                      placeholder="—"
+                    />
+                    <Select value={sub.nebDoseUnit || 'gts'} onValueChange={v => updateSub(sub.id, 'nebDoseUnit', v)}>
+                      <SelectTrigger className="h-6 text-[11px] w-16">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gts" className="text-xs">gts</SelectItem>
+                        <SelectItem value="mg" className="text-xs">mg</SelectItem>
+                        <SelectItem value="mL" className="text-xs">mL</SelectItem>
+                        <SelectItem value="mcg" className="text-xs">mcg</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground">Qtd:</span>
+                    <Input
+                      value={sub.quantity || ''}
+                      onChange={e => updateSub(sub.id, 'quantity', e.target.value)}
+                      className="h-6 text-[11px] w-12 text-center"
+                      placeholder="1"
+                    />
+                    <Input
+                      value={sub.quantityUnit || ''}
+                      onChange={e => updateSub(sub.id, 'quantityUnit', e.target.value)}
+                      className="h-6 text-[11px] w-16"
+                      placeholder="amp/mL"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground">Dose:</span>
+                    <Input
+                      value={sub.dose || ''}
+                      onChange={e => updateSub(sub.id, 'dose', e.target.value)}
+                      className="h-6 text-[11px] w-24"
+                      placeholder="ex: 19,1%"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => removeSub(sub.id)}
+            className="text-muted-foreground/50 hover:text-destructive transition-colors mt-0.5 shrink-0"
+            title="Remover substância combinada"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ))}
+
+      {/* Botão + e busca */}
+      {adding ? (
+        <div className="pl-3 ml-1">
+          <MedicationAutocomplete
+            source={catalog}
+            onSelect={(med) => addCombined(med)}
+            placeholder={`Buscar em ${categoryLabel}...`}
+          />
+          <button
+            type="button"
+            onClick={() => setAdding(false)}
+            className="text-[10px] text-muted-foreground mt-1 hover:text-foreground"
+          >
+            Cancelar
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="flex items-center gap-1 text-[10px] text-primary/70 hover:text-primary transition-colors ml-1 pl-1"
+          title={`Adicionar substância combinada em ${categoryLabel}`}
+        >
+          <PlusCircle className="h-3 w-3" />
+          <span>Adicionar substância combinada</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
 const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItemRow({
   item,
   index,
@@ -2389,6 +2558,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             {item.presentation && item.presentation !== '-' && (
               <span className="font-normal text-muted-foreground normal-case"> ({formatPresentation(item.presentation)})</span>
             )}
+            {item.combinedItems && item.combinedItems.length > 0 && item.combinedItems.map(s => (
+              <span key={s.id} className="font-normal text-muted-foreground normal-case"> + {s.name}{s.presentation ? ` (${formatPresentation(s.presentation)})` : ''}</span>
+            ))}
           </span>
           {compactParts.length > 0 && (
             <span className="text-[10px] text-muted-foreground truncate">
@@ -2564,15 +2736,31 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             <NutritionFields item={item} onUpdate={onUpdate} />
           )}
           {item.status === 'active' && item.category === 'hydration' && (
-            <HydrationFields item={item} onUpdate={onUpdate} />
+            <>
+              <HydrationFields item={item} onUpdate={onUpdate} />
+              <CombinedItemsBlock
+                item={item}
+                onUpdate={onUpdate}
+                catalog={UNIFIED_CATALOG['hydration'] || []}
+                categoryLabel="hidratação"
+              />
+            </>
           )}
           {item.status === 'active' && item.category === 'inhalation' && (
-            <InhalationFields
-              item={item as any}
-              onUpdate={onUpdate}
-              previousInhalationItemId={previousInhalationItem?.id}
-              previousInhalationItemName={previousInhalationItem?.name}
-            />
+            <>
+              <InhalationFields
+                item={item as any}
+                onUpdate={onUpdate}
+                previousInhalationItemId={previousInhalationItem?.id}
+                previousInhalationItemName={previousInhalationItem?.name}
+              />
+              <CombinedItemsBlock
+                item={item}
+                onUpdate={onUpdate}
+                catalog={UNIFIED_CATALOG['inhalation'] || []}
+                categoryLabel="inalação"
+              />
+            </>
           )}
           {item.status === 'active' && item.category !== 'nutrition' && item.category !== 'hydration' && item.category !== 'inhalation' && (() => {
             const ptype = inferPresentationType(item.presentation, item.route, item.name);
@@ -3087,6 +3275,14 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             </>
             );
           })()}
+          {item.status === 'active' && item.category === 'replacement' && (
+            <CombinedItemsBlock
+              item={item}
+              onUpdate={onUpdate}
+              catalog={UNIFIED_CATALOG['replacement'] || []}
+              categoryLabel="reposição"
+            />
+          )}
           {item.status === 'active' && isTabletOrCapsule(item.presentation) && isEnteralRoute(item.route) && (
             <CompoundedTabletFields item={item} onUpdate={onUpdate} />
           )}
