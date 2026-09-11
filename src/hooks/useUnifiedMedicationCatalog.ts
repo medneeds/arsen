@@ -213,6 +213,12 @@ async function fetchCatalogNow() {
   };
 }
 
+/** Invalida o cache imediatamente — útil quando o catálogo pode ter sido
+ *  atualizado externamente (ex: nova apresentação inserida no banco). */
+export function invalidateMedicationCatalog() {
+  cachedAt = 0;
+}
+
 async function loadCatalogOnce(force = false) {
   const isStale = Date.now() - cachedAt > CACHE_TTL_MS;
   if (!force && !isStale && cachedRows && cachedRows.catalog.length > 0) return cachedRows;

@@ -122,7 +122,7 @@ import { getInfusionProfile, applyInfusionProfileDefaults } from "@/lib/ivInfusi
 import { MedicationFlagChips } from "@/components/MedicationFlagChips";
 import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog";
 import { AtmStatusDialog } from "@/components/AtmStatusDialog";
-import { useUnifiedMedicationCatalog } from "@/hooks/useUnifiedMedicationCatalog";
+import { useUnifiedMedicationCatalog, invalidateMedicationCatalog } from "@/hooks/useUnifiedMedicationCatalog";
 import { PsychotropicFormDialog, isPsychotropicMedication } from "@/components/PsychotropicFormDialog";
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { TevProtocolDialog } from "@/components/TevProtocolDialog";
@@ -10087,6 +10087,7 @@ const PrescricaoPage = () => {
       <AntimicrobialGuideDialog
         open={antimicrobialGuideOpen}
         onOpenChange={(open) => {
+          if (open) invalidateMedicationCatalog(); // força revalidação do catálogo
           setAntimicrobialGuideOpen(open);
           if (!open) { setPendingAntimicrobialMed(null); setPendingAtbMode(null); }
         }}
