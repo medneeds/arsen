@@ -4206,6 +4206,11 @@ function getDemoPrescriptionItems(bedNumber: string): PrescriptionItem[] {
 
 const PrescricaoPage = () => {
   const { user, loading: authLoading } = useAuth();
+  // Perfil do medico logado (tabela profiles). Usado como fallback de nome/CRM
+  // na reimpressao da Guia ATM: ate entao o nome so existia dentro do
+  // SignPrescriptionDialog, e a 2a via estourava ReferenceError quando nao
+  // havia assinatura digital no estado.
+  const currentDoctor = useCurrentDoctor();
   const { currentHospital, currentState } = useHospital();
   const [searchParams] = useSearchParams();
   const { getCount: getFavoriteCount, trackUse: trackMedicationUse } = useMedicationFavorites();

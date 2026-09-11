@@ -1904,6 +1904,23 @@ const RequisicaoUnificadaPage = () => {
         {/* Patient Cockpit — fixed right sidebar */}
         <PatientCockpit patient={cockpitPatient} className="print:hidden" />
       </div>
+
+      {/* Validacao obrigatoria para TC. Precisa ficar DENTRO deste componente:
+          tcValidationOpen, setTcValidationOpen e handleSubmitRequest sao
+          declarados aqui. Ja esteve no ApacEmbeddedForm e depois no
+          LabComparativeView — em ambos os nomes nao resolviam, o que deixava
+          o botao "Validar e Solicitar" sem efeito e quebrava a aba Comparativo. */}
+      <PasswordConfirmDialog
+        open={tcValidationOpen}
+        onOpenChange={setTcValidationOpen}
+        title="Validar e Solicitar — TC"
+        description="Solicitações de TC requerem confirmação de identidade. Após confirmar, a solicitação será enviada automaticamente."
+        actionLabel="Confirmar e Solicitar"
+        onConfirmed={async () => {
+          setTcValidationOpen(false);
+          await handleSubmitRequest();
+        }}
+      />
     </div>
   );
 };
@@ -3973,18 +3990,6 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
         </CardContent>
       </Card>
 
-      {/* Validação obrigatória para TC — no componente pai onde tcValidationOpen é declarado */}
-      <PasswordConfirmDialog
-        open={tcValidationOpen}
-        onOpenChange={setTcValidationOpen}
-        title="Validar e Solicitar — TC"
-        description="Solicitações de TC requerem confirmação de identidade. Após confirmar, a solicitação será enviada automaticamente."
-        actionLabel="Confirmar e Solicitar"
-        onConfirmed={async () => {
-          setTcValidationOpen(false);
-          await handleSubmitRequest();
-        }}
-      />
     </div>
   );
 }

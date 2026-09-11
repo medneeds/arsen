@@ -20,6 +20,7 @@ import { useReceituario } from "@/hooks/useReceituario";
 import { printReceituario, type ReceituarioType } from "@/lib/receituario";
 import type { ReceituarioItem } from "@/lib/receituario";
 import { useDocumentoMedico, type DocumentoMedicoType } from "@/hooks/useDocumentoMedico";
+import { printDocumentoMedico } from "@/lib/documentoMedico";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";

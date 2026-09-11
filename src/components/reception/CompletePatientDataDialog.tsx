@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { normalizePatientName, normalizePatientNameInput } from "@/utils/normalizePatientName";
 import { useAuth } from "@/contexts/AuthContext";
 import {
