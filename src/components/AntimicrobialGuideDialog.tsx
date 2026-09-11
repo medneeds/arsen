@@ -332,12 +332,19 @@ export function AntimicrobialGuideDialog({
       .finally(() => { refetchDoneRef.current = true; });
   }, [open, refetchCatalog]);
 
-  // Só libera o dropdown quando o fetch terminou E as opções já foram atualizadas no render
+  // Só libera o dropdown quando o fetch terminou E as opções já foram atualizadas no render.
+  // Fallback de 3s: se dados não mudaram (cache já tinha tudo), libera assim mesmo.
   useEffect(() => {
     if (refetchDoneRef.current && unifiedAntimicrobials.length > 0) {
       setCatalogReady(true);
     }
   }, [unifiedAntimicrobials]);
+
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => { if (!catalogReady) setCatalogReady(true); }, 3000);
+    return () => clearTimeout(t);
+  }, [open, catalogReady]);
   const [entries, setEntries] = useState<AntimicrobialEntry[]>([]);
   const [loadingImport, setLoadingImport] = useState<Record<string, 'history' | 'evolution' | 'cultures' | null>>({});
   const [availableCultures, setAvailableCultures] = useState<Array<{ id: string; culture_type: string; collection_date: string | null; status: string; microorganism: string | null; antibiogram: string | null; sensitivity_profile: string | null; result_text: string | null; created_at: string }>>([]);
