@@ -1,10 +1,36 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { execSync } from "child_process";
 import { componentTagger } from "lovable-tagger";
+
+// Carimbo de build — permite saber QUAL commit esta no ar.
+// Sem isso nao havia como distinguir "o fix nao funciona" de "o fix nao subiu",
+// e deploys silenciosamente cancelados no Dokploy passavam despercebidos.
+// A ordem cobre os diferentes ambientes de build; nenhuma etapa pode derrubar
+// o build, por isso tudo dentro de try/catch.
+function resolveCommit(): string {
+  const doEnv =
+    process.env.SOURCE_COMMIT ||
+    process.env.GIT_COMMIT ||
+    process.env.COMMIT_SHA ||
+    process.env.VERCEL_GIT_COMMIT_SHA;
+  if (doEnv) return doEnv.slice(0, 8);
+  try {
+    return execSync("git rev-parse --short=8 HEAD", { stdio: ["ignore", "pipe", "ignore"] })
+      .toString()
+      .trim();
+  } catch {
+    return "desconhecido";
+  }
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  define: {
+    __ARSEN_COMMIT__: JSON.stringify(resolveCommit()),
+    __ARSEN_BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
   server: {
     host: "::",
     port: 8080,
