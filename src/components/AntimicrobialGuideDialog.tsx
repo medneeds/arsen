@@ -202,7 +202,13 @@ function createEmptyEntry(
   const isMed = item && 'defaultDose' in item;
   const medicationName = item ? (isMed ? (item as MedicationEntry).name : (item as PrescriptionItem).name) : "";
   const rawDose = item ? (isMed ? (item as MedicationEntry).defaultDose : (item as PrescriptionItem).dose) : "";
-  const presRaw = item && isMed ? (item as MedicationEntry).presentation || "" : "";
+  // Preserva presentation do PrescriptionItem existente (modo review)
+  // Antes: isMed=false → presentation sempre "" para PrescriptionItem
+  // Isso fazia a 1ª via confirmar com entry.presentation="" → item híbrido
+  const existingPresentation = item
+    ? (isMed ? (item as MedicationEntry).presentation || "" : (item as PrescriptionItem).presentation || "")
+    : "";
+  const presRaw = existingPresentation;
   // Quando defaultDose está vazio mas a presentation tem concentração
   // (ex: "5.000.000UI — fr-amp"), usa a concentração como dose para que
   // buildSolutoToken exiba "1 FA (5.000.000UI)" em vez de "1 FA".
@@ -216,7 +222,7 @@ function createEmptyEntry(
   const base: AntimicrobialEntry = {
     id: crypto.randomUUID(),
     medication: medicationName,
-    presentation: item && isMed ? (item as MedicationEntry).presentation || "" : "",
+    presentation: existingPresentation,
     dose: effectiveDose,
     doseValue: parsed?.value ?? "",
     doseUnit: parsed?.unit ?? "",
