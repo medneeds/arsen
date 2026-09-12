@@ -17,7 +17,9 @@ export type TimelineEventType =
   | "dhd"
   | "vital_signs"
   | "round"
-  | "discharge_document";
+  | "discharge_document"
+  | "documento_medico"
+  | "receituario";
 
 export interface TimelineEvent {
   event_id: string;
@@ -67,6 +69,8 @@ const TIMELINE_SOURCE_TABLES = [
   "vital_signs",
   "round_sessions",
   "discharge_documents",
+  "documentos_medicos",
+  "receituarios",
 ] as const;
 
 export function usePatientTimeline(opts: UsePatientTimelineOptions) {
@@ -152,6 +156,8 @@ export const EVENT_TYPE_LABELS: Record<TimelineEventType, string> = {
   vital_signs: "Sinais vitais",
   round: "Round multiprofissional",
   discharge_document: "Alta / Óbito",
+  documento_medico: "Documento médico",
+  receituario: "Receituário",
 };
 
 export const EVENT_TYPE_COLORS: Record<TimelineEventType, string> = {
@@ -170,4 +176,6 @@ export const EVENT_TYPE_COLORS: Record<TimelineEventType, string> = {
   vital_signs: "bg-red-500/10 text-red-600 border-red-500/30",
   round: "bg-fuchsia-500/10 text-fuchsia-600 border-fuchsia-500/30",
   discharge_document: "bg-zinc-700/10 text-zinc-700 border-zinc-700/30",
+  documento_medico: "bg-sky-500/10 text-sky-700 border-sky-500/30",
+  receituario: "bg-lime-500/10 text-lime-700 border-lime-500/30",
 };

@@ -41,6 +41,8 @@ const PRINTABLE_TYPES = new Set<TimelineEventType>([
   "admission_history",
   "discharge_document",
   "culture_result",
+  "documento_medico",
+  "receituario",
 ]);
 
 const ICONS: Record<TimelineEventType, React.ElementType> = {
@@ -59,6 +61,8 @@ const ICONS: Record<TimelineEventType, React.ElementType> = {
   vital_signs: HeartPulse,
   round: Users,
   discharge_document: FileCheck,
+  documento_medico: FileText,
+  receituario: FileText,
 };
 
 const ALLOWED_PROFILES = new Set([
@@ -366,13 +370,39 @@ export default function HistoricoPacientePage() {
           .eq("id", e.event_id)
           .maybeSingle();
         if (!data) { alert("Sumário de alta não encontrado."); setPrintingId(null); return; }
-        // Reaproveita o mesmo builder usado na emissão original (Norma Zero) —
-        // em vez de remontar o HTML na mão como os demais tipos acima, garante
-        // que a reimpressão saia idêntica ao documento que foi de fato emitido.
         await printDischargeDocument(
           data.document_type as DischargeDocType,
           data.content as DischargeDocPayload,
         );
+        setPrintingId(null);
+        return;
+      }
+
+      if (e.event_type === "documento_medico") {
+        const { data } = await supabase
+          .from("documentos_medicos")
+          .select("*")
+          .eq("id", e.event_id)
+          .maybeSingle();
+        if (!data) { alert("Documento não encontrado."); setPrintingId(null); return; }
+        const { printDocumentoMedico } = await import("@/lib/documentoMedico");
+        await printDocumentoMedico(data as any, {
+          hospitalName: e.payload?.hospital_unit_id ? undefined : undefined,
+          onPrint: () => {},
+        });
+        setPrintingId(null);
+        return;
+      }
+
+      if (e.event_type === "receituario") {
+        const { data } = await supabase
+          .from("receituarios")
+          .select("*")
+          .eq("id", e.event_id)
+          .maybeSingle();
+        if (!data) { alert("Receituário não encontrado."); setPrintingId(null); return; }
+        const { printReceituario } = await import("@/lib/receituario");
+        await printReceituario(data as any, { onPrint: () => {} });
         setPrintingId(null);
         return;
       }

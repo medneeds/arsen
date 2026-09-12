@@ -107,7 +107,7 @@ export function MedicalDocumentDialog({
   const [body, setBody] = useState("");
   // atestado
   const [days, setDays] = useState("");
-  const [includeCid, setIncludeCid] = useState(true);
+  
   // receituario
   const [rx, setRx] = useState<RxItem[]>([{ name: "", dose: "", route: "VO", freq: "", duration: "" }]);
 
@@ -160,7 +160,7 @@ export function MedicalDocumentDialog({
           ${patient?.age ? `<div><b>IDADE:</b> ${esc(String(patient.age))}</div>` : "<div></div>"}
           ${patientRegistry?.medical_record ? `<div><b>PRONTUÁRIO:</b> ${esc(patientRegistry.medical_record)}</div>` : "<div></div>"}
           ${birthFmt ? `<div><b>DATA DE NASCIMENTO:</b> ${esc(birthFmt)}</div>` : ""}
-          ${includeCid && cidPrimary ? `<div><b>CID-10:</b> ${esc(cidPrimary)}</div>` : ""}
+          ${cidPrimary ? `<div><b>CID-10:</b> ${esc(cidPrimary)}</div>` : ""}
         </div>
       </div>`;
 
@@ -244,9 +244,12 @@ export function MedicalDocumentDialog({
         patient_name: patientName,
         patient_bed: patientBed,
         patient_sector: patientSector,
+        patient_birth_date: patientRegistry?.birth_date || null,
+        patient_medical_record: patientRegistry?.medical_record || null,
+        patient_age: patient?.age ? String(patient.age) : null,
         body,
         days: kind === "atestado" && days ? Number(days) : null,
-        cid: kind === "relatorio" && includeCid ? (cidPrimary || null) : null,
+        cid: cidPrimary || null,
         signed_by_name: doctor.fullName || undefined,
         signed_by_crm: doctor.crm || undefined,
       });
@@ -411,21 +414,7 @@ export function MedicalDocumentDialog({
         {kind && (
           <ScrollArea className="max-h-[60vh] pr-3">
             <div className="space-y-4">
-              {/* Patient summary */}
-              <div className="rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground space-y-0.5">
-                <div><b className="text-foreground">PACIENTE:</b> {(patientName || "").toUpperCase()}</div>
-                {patient?.age && <div><b className="text-foreground">IDADE:</b> {patient.age}</div>}
-                {patientBed && <div><b className="text-foreground">LEITO:</b> {patientBed} {displaySector && `• ${displaySector}`}</div>}
-                {cidPrimary && (
-                  <div className="flex items-center gap-2">
-                    <b className="text-foreground">CID-10:</b> {cidPrimary}
-                    <label className="flex items-center gap-1 ml-auto cursor-pointer">
-                      <input type="checkbox" checked={includeCid} onChange={(e) => setIncludeCid(e.target.checked)} />
-                      <span>incluir no documento</span>
-                    </label>
-                  </div>
-                )}
-              </div>
+              {/* Patient summary removido — info já visível no subtítulo do dialog */}
 
               {kind === "atestado" && (
                 <div className="grid grid-cols-2 gap-3">
