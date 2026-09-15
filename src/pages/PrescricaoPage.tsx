@@ -5402,10 +5402,36 @@ const PrescricaoPage = () => {
     if (!draftStorageKey) return;
     if (currentPrescriptionId) { draftRestoreAttemptedRef.current = true; return; }
     if (items.length > 0) { draftRestoreAttemptedRef.current = true; return; }
+
+    // Limpa todos os drafts antigos do localStorage (de plantões anteriores)
+    // antes de tentar restaurar — evita contaminar o state com dados velhos.
+    const clinicalStart = getClinicalDayWindowSP().start;
+    try {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('rx-draft::'))
+        .forEach(k => {
+          try {
+            const raw = localStorage.getItem(k);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            // Remove se savedAt é anterior ao início do plantão atual
+            if (parsed?.savedAt && new Date(parsed.savedAt) < clinicalStart) {
+              localStorage.removeItem(k);
+            }
+          } catch { localStorage.removeItem(k); }
+        });
+    } catch {}
+
     try {
       const raw = localStorage.getItem(draftStorageKey);
       if (!raw) { draftRestoreAttemptedRef.current = true; return; }
       const parsed = JSON.parse(raw);
+      // Só restaura se o draft foi salvo no plantão atual (após 05h de hoje)
+      if (parsed?.savedAt && new Date(parsed.savedAt) < clinicalStart) {
+        localStorage.removeItem(draftStorageKey);
+        draftRestoreAttemptedRef.current = true;
+        return;
+      }
       if (Array.isArray(parsed?.items) && parsed.items.length > 0) {
         setItems((parsed.items as PrescriptionItem[]).map(normalizeLegacyIntervalFlags));
       }
@@ -5431,6 +5457,29 @@ const PrescricaoPage = () => {
     const now = new Date().toISOString();
     const cutoff = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
     const isPast = isAfter(new Date(), cutoff);
+
+    // Limpa o draft do localStorage imediatamente ao validar.
+    // Sem isso: se o browser tiver draft antigo e houver race condition,
+    // o popup de impressão pode capturar dados velhos do localStorage.
+    if (draftStorageKey) {
+      try { localStorage.removeItem(draftStorageKey); } catch {}
+    }
+    // Limpa também qualquer outro draft expirado
+    try {
+      const clinicalStart = getClinicalDayWindowSP().start;
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('rx-draft::'))
+        .forEach(k => {
+          try {
+            const raw = localStorage.getItem(k);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            if (parsed?.savedAt && new Date(parsed.savedAt) < clinicalStart) {
+              localStorage.removeItem(k);
+            }
+          } catch { localStorage.removeItem(k); }
+        });
+    } catch {}
 
     // Calcula nextItems FORA do setItems para usar abaixo sem closure stale
     let nextItems: PrescriptionItem[] = [];
@@ -7055,6 +7104,9 @@ const PrescricaoPage = () => {
             needsShiftRevalidation: true,
           }));
           if (capturedGeneration !== loadGenerationRef.current) return false;
+          // Atualiza ref antes de setar items — evita dirty state falso após renovação
+          lastPersistedSerializedRef.current = JSON.stringify(renewedItems);
+          isLoadingRef.current = false;
           setItems(renewedItems);
           setDigitalSignature(null);
           setCurrentPrescriptionId(null);
@@ -7062,22 +7114,15 @@ const PrescricaoPage = () => {
           return true;
         };
 
-        // ── QUERY UNIFICADA: sempre carrega o registro mais recente ──────────
-        // Regra: o "último registro" é definido por created_at DESC, independente
-        // de status (draft, signed, validated) ou data. Não há filtro de clinicalStart
-        // nem .neq('status','draft') — qualquer um desses filtros pode descartar o
-        // registro mais recente e carregar um mais antigo.
+        // ── QUERY UNIFICADA com priorização por status após virada de plantão ──
+        // Regra:
+        //   - Draft do plantão ATUAL (criado após as 05h de hoje) → carrega o draft
+        //   - Draft do plantão ANTERIOR (criado antes das 05h de hoje) → ignora,
+        //     busca a última validada/signed
+        //   - Validada → sempre carrega
         //
-        // Cenários cobertos:
-        //   draft → validada → draft posterior → abre o draft posterior ✅
-        //   draft → validada → abre a validada ✅
-        //   só draft → abre o draft ✅
-        //   só validada → abre a validada ✅
-        //   validada ontem (cruzou 05h) → renova para o plantão atual ✅
-        //
-        // O hasCrossedShiftBoundary ainda é usado: se o registro mais recente
-        // cruzou a janela das 05h, o sistema faz a renovação de plantão normal.
-        // Se não cruzou, carrega o registro diretamente.
+        // Isso garante que o médico da tarde não vê rascunho do médico da manhã
+        // que esqueceu de salvar, e que após a virada do plantão a validada prevalece.
 
         if (activeEncounterId && activeEncounterId.length > 10) {
           const { data: rows, error: rowsErr } = await supabase
@@ -7089,13 +7134,30 @@ const PrescricaoPage = () => {
             .eq('encounter_id', activeEncounterId)
             .is('archived_at', null)
             .order('created_at', { ascending: false })
-            .limit(1);
+            .limit(5); // pega mais para poder filtrar por status
           if (rowsErr) throw rowsErr;
           if (capturedGeneration !== loadGenerationRef.current) return;
-          const row = (rows || [])[0];
-          if (row?.id && (row as any).patient_registry_id === patientRegistryId) {
-            if (await loadValidatedPrescription(row as any)) return;
-            // Se loadValidatedPrescription retornou false (items vazio), continua para fallback
+
+          const allRows = rows || [];
+          const clinicalWindowStart = getClinicalDayWindowSP().start;
+
+          // Tenta encontrar o melhor registro:
+          // 1. Draft criado NO plantão atual (após 05h de hoje) → mais recente primeiro
+          // 2. Qualquer validada/signed → mais recente primeiro
+          // 3. Draft do plantão anterior → ignorado (não deve aparecer)
+          const draftThisShift = allRows.find(r =>
+            (r as any).status === 'draft' &&
+            new Date((r as any).created_at) >= clinicalWindowStart
+          );
+          const lastValidated = allRows.find(r =>
+            (r as any).status !== 'draft'
+          );
+
+          // Prefere draft do plantão atual; senão a última validada
+          const best = draftThisShift || lastValidated || null;
+
+          if (best?.id && (best as any).patient_registry_id === patientRegistryId) {
+            if (await loadValidatedPrescription(best as any)) return;
           }
         }
 

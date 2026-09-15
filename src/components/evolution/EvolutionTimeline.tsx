@@ -181,9 +181,26 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     const validatedId = validateDialogId;
     setValidateDialogId(null);
     if (success !== false) {
-      const evo = evolutions.find(e => e.id === validatedId);
-      if (evo) {
-        setJustValidatedEvo(evo);
+      // Busca o evo atualizado diretamente do banco após validação
+      // para garantir que validated_at e validated_by_name estão corretos.
+      // Sem isso: o evo em memória ainda tem os campos vazios (banco não respondeu).
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: freshEvo } = await supabase
+          .from("clinical_evolutions")
+          .select("*")
+          .eq("id", validatedId)
+          .maybeSingle();
+        if (freshEvo) {
+          setJustValidatedEvo(freshEvo as unknown as EvolutionRecord);
+        } else {
+          // Fallback: usa o evo em memória se banco não respondeu
+          const evo = evolutions.find(e => e.id === validatedId);
+          if (evo) setJustValidatedEvo(evo);
+        }
+      } catch {
+        const evo = evolutions.find(e => e.id === validatedId);
+        if (evo) setJustValidatedEvo(evo);
       }
     }
   };
