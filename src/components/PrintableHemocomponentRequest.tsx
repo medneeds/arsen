@@ -27,6 +27,8 @@ import {
 import {
   NormaZeroPrintHeader,
   NormaZeroPrintFooter,
+  getNormaZeroMissingFields,
+  NormaZeroBlockedDocument,
 } from "@/components/NormaZeroPrintHeader";
 
 /* ───────────────────────── Tipos & catálogos ───────────────────────── */
@@ -233,6 +235,19 @@ export function PrintableHemocomponentRequest({
   const createdAt = new Date(request.created_at);
   const createdStr = format(createdAt, "dd/MM/yyyy", { locale: ptBR });
   const createdTime = format(createdAt, "HH:mm", { locale: ptBR });
+
+  // 🔒 Norma Zero — bloqueia a geração se identificação estiver incompleta.
+  // Especialmente crítico aqui: erro de identificação numa transfusão de
+  // hemocomponente é um dos riscos mais graves em segurança do paciente.
+  const missingFields = getNormaZeroMissingFields({
+    name: request.patient_name,
+    birthDate: request.patient_birth_date,
+    sex: request.patient_sex,
+    record: request.patient_record,
+  });
+  if (missingFields.length > 0) {
+    return <NormaZeroBlockedDocument missingFields={missingFields} />;
+  }
 
   return (
     <div

@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { useUnifiedMedicationCatalog, type ControlledCatalogItem } from "@/hooks/useUnifiedMedicationCatalog";
 import { openPrintWindow } from "@/lib/printNormaZero";
+import { getNormaZeroMissingFields, NormaZeroBlockedDocument } from "@/components/NormaZeroPrintHeader";
 
 export type NotificationType = 'Receita Amarela' | 'Receita Azul' | 'Controle Especial 2 vias';
 
@@ -639,6 +640,21 @@ function PrintablePsychotropicForm({
   const groupOrder: NotificationType[] = ['Receita Amarela', 'Receita Azul', 'Controle Especial 2 vias'];
   const pages: Array<{ type: NotificationType; entries: PsychotropicEntry[] }> = [];
   for (const t of groupOrder) if (grouped[t].length > 0) pages.push({ type: t, entries: grouped[t] });
+
+  // 🔒 Norma Zero — bloqueia a geração do formulário de notificação de
+  // psicotrópicos/controlados se identificação estiver incompleta. Este
+  // layout não exibe "data de nascimento", então esse campo é excluído.
+  // Especialmente crítico: notificação de controlados tem exigência legal
+  // de identificação correta do paciente (Portaria 344/98 ANVISA).
+  const missingFields = getNormaZeroMissingFields({
+    name: patient.name,
+    birthDate: "N/A",
+    sex: patient.sex,
+    record: patient.record,
+  });
+  if (missingFields.length > 0) {
+    return <NormaZeroBlockedDocument missingFields={missingFields} />;
+  }
 
   return (
     <div style={{ fontFamily: 'Arial, Helvetica, sans-serif', color: '#0f172a', width: '186mm', margin: '0 auto', lineHeight: 1.3 }}>

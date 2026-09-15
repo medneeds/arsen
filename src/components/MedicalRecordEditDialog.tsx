@@ -586,6 +586,72 @@ export function MedicalRecordEditDialog({
         }
       }
 
+      // ===== Sincroniza prontuário PIS/legado (header/documentos) =====
+      // Mesmo padrão do bloco de nome acima: patients.medical_record é o
+      // campo lido por guias de exame, prescrições e demais documentos —
+      // sem esta sincronização, uma correção em patient_registry.medical_record
+      // fica "presa" lá e os documentos continuam imprimindo o número antigo.
+      const newMedicalRecord = (reg.medical_record || "").toString().trim();
+      if (newMedicalRecord) {
+        const { data: curPatMr } = await supabase
+          .from("patients")
+          .select("medical_record")
+          .eq("id", patientId)
+          .maybeSingle();
+        const prevMedicalRecord = ((curPatMr as any)?.medical_record || "").toString().trim();
+        if (prevMedicalRecord !== newMedicalRecord) {
+          await supabase
+            .from("patients")
+            .update({ medical_record: newMedicalRecord } as any)
+            .eq("id", patientId);
+          // Auditoria do prontuário no histórico (se houver)
+          if (record?.id) {
+            await supabase
+              .from("medical_record_edit_history" as any)
+              .insert({
+                medical_record_id: record.id,
+                patient_id: patientId,
+                field_changed: "patient_medical_record",
+                old_value: prevMedicalRecord || null,
+                new_value: newMedicalRecord,
+                reason: `[Sincronizado da ficha cadastral] ${regReason.trim() || "Atualização cadastral"}`,
+                changed_by: userId,
+                changed_by_email: userEmail,
+              } as any);
+          }
+        }
+      }
+
+      // ===== Sincroniza idade calculada (header/documentos) =====
+      // Mesmo padrão dos blocos acima: patients.age é um campo de TEXTO
+      // separado ("NN anos"), não recalculado automaticamente a partir de
+      // patient_registry.birth_date. Sem esta sincronização, corrigir a
+      // data de nascimento na ficha cadastral não atualiza a idade exibida
+      // nos cards/documentos, que ficam com o valor antigo indefinidamente.
+      const newBirthDate = (reg.birth_date || "").toString().trim();
+      if (newBirthDate) {
+        const d = new Date(newBirthDate);
+        if (!isNaN(d.getTime())) {
+          const now = new Date();
+          let years = now.getFullYear() - d.getFullYear();
+          const m = now.getMonth() - d.getMonth();
+          if (m < 0 || (m === 0 && now.getDate() < d.getDate())) years--;
+          const newAge = `${years} anos`;
+          const { data: curPatAge } = await supabase
+            .from("patients")
+            .select("age")
+            .eq("id", patientId)
+            .maybeSingle();
+          const prevAge = ((curPatAge as any)?.age || "").toString().trim();
+          if (prevAge !== newAge) {
+            await supabase
+              .from("patients")
+              .update({ age: newAge } as any)
+              .eq("id", patientId);
+          }
+        }
+      }
+
       toast({
         title: createdNewRegistry ? "✅ Ficha cadastral criada" : "✅ Ficha cadastral atualizada",
         description: `${regChanges.length} campo(s) ${createdNewRegistry ? "preenchido(s)" : "alterado(s)"}.`,
