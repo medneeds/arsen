@@ -4238,13 +4238,24 @@ function DrugInteractionDialog({
     setError("");
 
     try {
+      // Busca o JWT real da sessão do usuário logado.
+      // Antes usava VITE_SUPABASE_PUBLISHABLE_KEY (chave anon) — a Edge Function
+      // valida o token com auth.getUser() e rejeita chave anon com 401 Unauthorized.
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userToken = sessionData?.session?.access_token;
+      if (!userToken) {
+        setError("Sessão expirada — faça login novamente.");
+        return;
+      }
+
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-interactions`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${userToken}`,
           },
           body: JSON.stringify({ medications, patientContext }),
         }
