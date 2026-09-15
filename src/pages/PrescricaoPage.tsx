@@ -8658,24 +8658,6 @@ const PrescricaoPage = () => {
           >
             <Zap className="h-3 w-3" /> Interações
           </Button>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setAtmStatusOpen(true)}
-                className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
-              >
-                <Shield className="h-3 w-3" /> Guia ATM
-                {hasActiveAtb && (
-                  <span className="ml-0.5 inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs max-w-[240px]">
-              Acompanhe o status dos antibióticos em curso ou inicie uma nova solicitação (acréscimo / troca).
-            </TooltipContent>
-          </Tooltip>
           <Button variant="ghost" size="sm" onClick={() => setTevProtocolOpen(true)} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
             <Droplets className="h-3 w-3" /> TEV
           </Button>
