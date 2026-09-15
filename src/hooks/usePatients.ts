@@ -1065,9 +1065,15 @@ export function usePatients(department?: Department, sector?: string) {
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log('[usePatients] Realtime SUBSCRIBED — mapa atualiza em tempo real');
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.warn('[usePatients] Realtime problema:', status, '— fazendo refetch manual');
+          // Ao reconectar após queda, faz refetch imediato para recuperar
+          // UPDATEs que possam ter sido perdidos durante a instabilidade.
+          // Isso garante que pendências e outros campos atualizados offline
+          // apareçam assim que o WebSocket voltar.
+          fetchPatients();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          // Qualquer falha dispara refetch manual — o canal será recriado
+          // pelo Supabase automaticamente; o refetch garante consistência
+          // enquanto a reconexão não completou.
           fetchPatients();
         }
       });

@@ -42,6 +42,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
+    target: 'es2020', // cobre Chrome/Edge 80+ (2020) — sem isso o build saía ESNext
     // O build estava sendo morto por falta de memória no servidor de deploy
     // (SIGKILL na etapa "rendering chunks" — o momento de maior consumo de
     // RAM do Rollup/esbuild). Vários chunks passavam de 900KB (PrescricaoPage,
