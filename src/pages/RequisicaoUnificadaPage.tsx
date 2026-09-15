@@ -398,6 +398,9 @@ const RequisicaoUnificadaPage = () => {
   const TC_PATTERN = /\b(tc|tomografia|angio-?tc)\b/i;
   const isTcSelected = formSelectedItems.some(item => TC_PATTERN.test(item));
   const [tcValidationOpen, setTcValidationOpen] = useState(false);
+  const [reqValidationOpen, setReqValidationOpen] = useState(false);
+  const [lastSubmittedReqId, setLastSubmittedReqId] = useState<string | null>(null);
+  const [printReqOpen, setPrintReqOpen] = useState(false);
   const [formCustomItem, setFormCustomItem] = useState("");
   // Etapa 2 — busca de exame dentro da categoria (Imagem e demais)
   const [examSearch, setExamSearch] = useState("");
@@ -676,6 +679,11 @@ const RequisicaoUnificadaPage = () => {
 
   const requiresExtraJustification = offQuickLabItems.length > 0;
 
+  // Justificativa principal: sempre exigida exceto quando é laboratório
+  // com apenas exames dos pacotes de rotina (nesse caso só o bloco extra aparece se necessário)
+  const requiresMainJustification =
+    activeCategory !== "laboratorio" || requiresExtraJustification || formSelectedItems.length === 0;
+
   // Limpa SOMENTE os campos da requisição — preserva paciente selecionado para encadear
   // múltiplas solicitações sem perder identificação. (Bug: após submit a identificação sumia.)
   const resetRequestFields = () => {
@@ -702,7 +710,7 @@ const RequisicaoUnificadaPage = () => {
   const handleSubmitRequest = async () => {
     if (!formPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
     if (formSelectedItems.length === 0) { toast.error("Selecione ao menos um item"); return; }
-    if (!richHtmlToPlainText(formIndication).trim()) { toast.error("Informe a justificativa clínica"); return; }
+    if (requiresMainJustification && !richHtmlToPlainText(formIndication).trim()) { toast.error("Informe a justificativa clínica"); return; }
     if (requiresExtraJustification && formExtraJustification.trim().length < 10) {
       toast.error("Itens fora dos pacotes de rotina exigem justificativa específica (mín. 10 caracteres) para liberação da guia");
       return;
@@ -731,7 +739,7 @@ const RequisicaoUnificadaPage = () => {
       // Esta ficha já bloqueava corretamente; o ganho aqui é não haver três
       // montagens diferentes do mesmo payload, que foi como as outras duas
       // acabaram divergindo (AIH nem gravava leito e setor).
-      await registrarSolicitacao({
+      const createdId = await registrarSolicitacao({
         category: activeCategory,
         patientId: formPatientId,
         patientName: formPatientName,
@@ -755,7 +763,11 @@ const RequisicaoUnificadaPage = () => {
         stateId: stateId,
       });
       toast.success(`${CATEGORIES[activeCategory].shortLabel}: ${formSelectedItems.length} item(ns) solicitado(s)`);
-      // Preserva paciente selecionado para encadear novas solicitações sem reabrir o picker.
+      // Abre popup de impressão da guia recém-criada
+      if (createdId) {
+        setLastSubmittedReqId(createdId);
+        setPrintReqOpen(true);
+      }
       resetRequestFields();
       setActiveSubTab("solicitados");
       fetchRequests();
@@ -1324,7 +1336,7 @@ const RequisicaoUnificadaPage = () => {
                 </Card>
               );
             })()
-          ) : (
+          ) : requiresMainJustification ? (
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">
                 Justificativa Clínica <span className="text-red-500">*</span>
@@ -1337,7 +1349,7 @@ const RequisicaoUnificadaPage = () => {
                 className="resize-none text-sm"
               />
             </div>
-          )}
+          ) : null}
 
           {/* ── Cultura: atalho rápido dentro de Laboratório ── */}
           {activeCategory === "laboratorio" && (
@@ -1622,7 +1634,7 @@ const RequisicaoUnificadaPage = () => {
             const missing: string[] = [];
             if (!formPatientName.trim()) missing.push("identificar o paciente");
             if (formSelectedItems.length === 0) missing.push(`selecionar pelo menos 1 ${activeCategory === "parecer" ? "especialidade" : "exame"}`);
-            if (!richHtmlToPlainText(formIndication).trim()) missing.push("preencher a justificativa clínica");
+            if (requiresMainJustification && !richHtmlToPlainText(formIndication).trim()) missing.push("preencher a justificativa clínica");
             if (requiresExtraJustification && formExtraJustification.trim().length < 10) missing.push("justificar exames fora da rotina (mín. 10 caracteres)");
             const blocked = missing.length > 0;
             return (
@@ -1638,13 +1650,13 @@ const RequisicaoUnificadaPage = () => {
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={resetForm} disabled={submitting}>Limpar</Button>
                   <Button
-                    onClick={() => isTcSelected ? setTcValidationOpen(true) : handleSubmitRequest()}
+                    onClick={() => setReqValidationOpen(true)}
                     disabled={submitting || blocked}
                     className="gap-2"
                     title={blocked ? `Falta: ${missing.join(" · ")}` : undefined}
                   >
                     {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    {isTcSelected ? "Validar e Solicitar" : "Solicitar"}
+                    Solicitar
                   </Button>
                 </div>
               </div>
@@ -1921,6 +1933,28 @@ const RequisicaoUnificadaPage = () => {
           await handleSubmitRequest();
         }}
       />
+
+      {/* Assinatura digital para todas as requisições */}
+      <PasswordConfirmDialog
+        open={reqValidationOpen}
+        onOpenChange={setReqValidationOpen}
+        title="Confirmar Solicitação"
+        description="Confirme sua identidade para enviar a requisição."
+        actionLabel="Confirmar e Solicitar"
+        onConfirmed={async () => {
+          setReqValidationOpen(false);
+          await handleSubmitRequest();
+        }}
+      />
+
+      {/* Popup de impressão após submit bem-sucedido */}
+      {printReqOpen && lastSubmittedReqId && (
+        <PrintAfterSubmitReqDialog
+          reqId={lastSubmittedReqId}
+          open={printReqOpen}
+          onClose={() => { setPrintReqOpen(false); setLastSubmittedReqId(null); }}
+        />
+      )}
     </div>
   );
 };
@@ -3991,6 +4025,60 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
       </Card>
 
     </div>
+  );
+}
+
+// ── PrintAfterSubmitReqDialog ────────────────────────────────────────────────
+// Popup de impressão que aparece logo após uma requisição ser submetida.
+// Busca o registro recém-criado pelo ID e oferece impressão da guia.
+function PrintAfterSubmitReqDialog({
+  reqId, open, onClose,
+}: { reqId: string; open: boolean; onClose: () => void }) {
+  const { currentHospital } = useHospital();
+  const [req, setReq] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    if (!open || !reqId) return;
+    supabase.from("exam_requests").select("*").eq("id", reqId).maybeSingle()
+      .then(({ data }) => { if (data) setReq(data); });
+  }, [open, reqId]);
+
+  const handlePrint = async () => {
+    if (!req) return;
+    const getSectorLabel = (s: string) => s || "";
+    const { buildRequisitionGuideHtml } = await import("@/components/PrintableRequisitionGuide");
+    const html = await buildRequisitionGuideHtml(req, getSectorLabel);
+    const w = window.open("", "_blank", "width=900,height=700");
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); }, 400);
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-sm">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            Requisição enviada
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            A requisição foi registrada com sucesso. Deseja imprimir a guia agora?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2 mt-2">
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Fechar
+          </Button>
+          <Button size="sm" onClick={handlePrint} className="gap-1.5" disabled={!req}>
+            <Printer className="h-3.5 w-3.5" /> Imprimir guia
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
