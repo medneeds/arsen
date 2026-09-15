@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { safeSetItem } from "@/lib/safeStorage";
 
 export type Department = 
   | "URGÊNCIA E EMERGÊNCIA ADULTO"
@@ -158,19 +159,19 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
 
   const setCurrentDepartment = (department: Department) => {
     setCurrentDepartmentState(department);
-    localStorage.setItem(STORAGE_KEY, department);
+    safeSetItem(STORAGE_KEY, department);
     // Sync sector code for legacy consumers
     const sectorCode = DEPARTMENT_TO_SECTOR[department];
     if (sectorCode) {
-      localStorage.setItem("selected_sector", sectorCode);
+      safeSetItem("selected_sector", sectorCode);
     }
   };
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, currentDepartment);
+    safeSetItem(STORAGE_KEY, currentDepartment);
     const sectorCode = DEPARTMENT_TO_SECTOR[currentDepartment];
     if (sectorCode) {
-      localStorage.setItem("selected_sector", sectorCode);
+      safeSetItem("selected_sector", sectorCode);
     }
   }, [currentDepartment]);
 

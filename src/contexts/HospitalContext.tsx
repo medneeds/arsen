@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { safeSetItem } from "@/lib/safeStorage";
 
 export interface State {
   id: string;
@@ -81,8 +82,8 @@ export function HospitalProvider({ children }: { children: ReactNode }) {
       if (maState && defaultHospital) {
         setCurrentState(maState);
         setCurrentHospitalState(defaultHospital);
-        localStorage.setItem(STORAGE_KEY_STATE, maState.id);
-        localStorage.setItem(STORAGE_KEY_HOSPITAL, defaultHospital.id);
+        safeSetItem(STORAGE_KEY_STATE, maState.id);
+        safeSetItem(STORAGE_KEY_HOSPITAL, defaultHospital.id);
       }
     } catch (error) {
       console.error('Error fetching states and hospitals:', error);
@@ -93,13 +94,13 @@ export function HospitalProvider({ children }: { children: ReactNode }) {
 
   const setCurrentHospital = (hospital: HospitalUnit) => {
     setCurrentHospitalState(hospital);
-    localStorage.setItem(STORAGE_KEY_HOSPITAL, hospital.id);
+    safeSetItem(STORAGE_KEY_HOSPITAL, hospital.id);
     
     // Update state based on hospital
     const state = states.find(s => s.id === hospital.state_id);
     if (state) {
       setCurrentState(state);
-      localStorage.setItem(STORAGE_KEY_STATE, state.id);
+      safeSetItem(STORAGE_KEY_STATE, state.id);
     }
   };
 

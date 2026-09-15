@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
+import { safeSetItem } from "@/lib/safeStorage";
 
 export type ReceptionPoint = "vertical" | "horizontal";
 
@@ -116,7 +117,7 @@ export function useReceptionPost(): ReceptionPostState {
       // 2) Se for o mesmo ponto e sessão já ativa, só persiste localmente
       if (sessionId && point === next) {
         setPointState(next);
-        localStorage.setItem(`${STORAGE_KEY}:${user.id}`, next);
+        safeSetItem(`${STORAGE_KEY}:${user.id}`, next);
         return;
       }
 
@@ -144,8 +145,8 @@ export function useReceptionPost(): ReceptionPostState {
       setPointState(next);
       setSessionId(row.id);
       setStartedAt(row.started_at);
-      localStorage.setItem(`${STORAGE_KEY}:${user.id}`, next);
-      localStorage.setItem(`${SESSION_KEY}:${user.id}`, row.id);
+      safeSetItem(`${STORAGE_KEY}:${user.id}`, next);
+      safeSetItem(`${SESSION_KEY}:${user.id}`, row.id);
     },
     [user, hospitalId, sessionId, point],
   );

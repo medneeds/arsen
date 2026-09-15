@@ -28,6 +28,7 @@ import { useIsGestor } from "@/hooks/useIsGestor";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
+import { safeSetItem } from "@/lib/safeStorage";
 
 interface AlertItem {
   id: string;
@@ -75,7 +76,7 @@ const ClinicalDashboardPage = () => {
 
   const handleSectorChange = (sector: string) => {
     setActiveSector(sector);
-    localStorage.setItem("selected_sector", sector);
+    safeSetItem("selected_sector", sector);
   };
 
   const fetchDashboardData = async () => {

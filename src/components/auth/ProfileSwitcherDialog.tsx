@@ -14,6 +14,7 @@ import { resolveLandingRoute } from "@/config/profileDefaults";
 import { motion } from "framer-motion";
 import { ArrowRight, Check, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { safeSetItem } from "@/lib/safeStorage";
 
 interface Props {
   open: boolean;
@@ -53,7 +54,7 @@ export function ProfileSwitcherDialog({ open, onOpenChange }: Props) {
 
   const handleSelect = (p: AccessProfile) => {
     const route = resolveLandingRoute(p, role);
-    localStorage.setItem("access_profile", p);
+    safeSetItem("access_profile", p);
     sessionStorage.setItem("active_access_profile", p);
     toast.success(
       `Perfil trocado para ${ACCESS_PROFILES.find((x) => x.value === p)?.shortLabel ?? p}`,

@@ -69,6 +69,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { AccessProfile } from "@/config/userProfiles";
 import { useIsCoordenador } from "@/hooks/useIsCoordenador";
 import { SidebarPatientSearch } from "@/components/SidebarPatientSearch";
+import { safeSetItem } from "@/lib/safeStorage";
 
 function DevConsoleLink({ isCollapsed, onNavigate }: { isCollapsed: boolean; onNavigate: () => void }) {
   const { isDev } = useIsDev();
@@ -158,7 +159,7 @@ export function AppSidebar() {
           sessionStorage.setItem("available_access_profiles", JSON.stringify(profiles));
           if (!sessionStorage.getItem("active_access_profile")) {
             sessionStorage.setItem("active_access_profile", profiles[0]);
-            localStorage.setItem("access_profile", profiles[0]);
+            safeSetItem("access_profile", profiles[0]);
           }
         }
       });

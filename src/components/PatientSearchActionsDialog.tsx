@@ -17,6 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import { closeActiveEncounter } from "@/lib/resolveActiveEncounter";
 import { ADMISSION_STATUS } from "@/lib/admissionStatus";
+import { safeSetItem } from "@/lib/safeStorage";
 import {
   MovementConfirmDialog,
   type MovementSummaryItem,
@@ -610,7 +611,7 @@ export function PatientSearchActionsDialog({
                   className="flex-1 gap-2"
                   onClick={() => {
                     if (activeEncounterInfo?.sectorCode) {
-                      localStorage.setItem("selected_sector", activeEncounterInfo.sectorCode);
+                      safeSetItem("selected_sector", activeEncounterInfo.sectorCode);
                     }
                     handleClose(false);
                     navigate("/painel-clinico");

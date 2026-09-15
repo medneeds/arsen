@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { SECTOR_BED_CONFIG, SectorBedConfig } from "@/utils/bedNaming";
 import { SECTOR_DISPLAY, DEPARTMENT_TO_SECTOR } from "@/contexts/DepartmentContext";
+import { safeSetJSON } from "@/lib/safeStorage";
 
 /**
  * Personalização — Dev Console
@@ -60,14 +61,14 @@ const loadDrafts = (): SectorDraft[] => {
     return JSON.parse(localStorage.getItem(DRAFT_KEY) || "[]");
   } catch { return []; }
 };
-const saveDrafts = (d: SectorDraft[]) => localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+const saveDrafts = (d: SectorDraft[]) => safeSetJSON(DRAFT_KEY, d);
 
 const loadOverrides = (): BedOverride[] => {
   try {
     return JSON.parse(localStorage.getItem(OVERRIDES_KEY) || "[]");
   } catch { return []; }
 };
-const saveOverrides = (o: BedOverride[]) => localStorage.setItem(OVERRIDES_KEY, JSON.stringify(o));
+const saveOverrides = (o: BedOverride[]) => safeSetJSON(OVERRIDES_KEY, o);
 
 export function CustomizationTab() {
   return (

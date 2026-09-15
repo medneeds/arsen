@@ -23,6 +23,7 @@ import { resolveLandingRoute } from "@/config/profileDefaults";
 import { ProfileChooser } from "@/components/auth/ProfileChooser";
 import { FirstAccessSetup } from "@/components/auth/FirstAccessSetup";
 import type { AccessProfile } from "@/config/userProfiles";
+import { safeSetItem } from "@/lib/safeStorage";
 
 /* ─── Shared chrome ─────────────────────────────────────────────── */
 function PageHeader() {
@@ -202,7 +203,7 @@ export default function AuthPage() {
         const route = resolveLandingRoute(chosen, appRole);
         setRedirectRoute(route);
         if (chosen) {
-          localStorage.setItem("access_profile", chosen);
+          safeSetItem("access_profile", chosen);
           sessionStorage.setItem("active_access_profile", chosen);
         }
         toast.success("Login realizado com sucesso");
@@ -242,7 +243,7 @@ export default function AuthPage() {
           }
           const chosen = eff[0] ?? null;
           if (chosen) {
-            localStorage.setItem("access_profile", chosen);
+            safeSetItem("access_profile", chosen);
             sessionStorage.setItem("active_access_profile", chosen);
           }
           setRedirectRoute(resolveLandingRoute(chosen, appRole));

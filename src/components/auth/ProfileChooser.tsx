@@ -13,6 +13,7 @@ import { motion } from "framer-motion";
 import { ACCESS_PROFILES, type AccessProfile } from "@/config/userProfiles";
 import { resolveLandingRoute } from "@/config/profileDefaults";
 import { ShieldCheck, ArrowRight, Sparkles } from "lucide-react";
+import { safeSetItem } from "@/lib/safeStorage";
 
 interface Props {
   userName: string | null;
@@ -26,7 +27,7 @@ interface Props {
 export function ProfileChooser({ userName, profiles, appRole, compact, onChosen }: Props) {
   const handleSelect = (p: AccessProfile) => {
     const route = resolveLandingRoute(p, appRole);
-    localStorage.setItem("access_profile", p);
+    safeSetItem("access_profile", p);
     sessionStorage.setItem("active_access_profile", p);
     sessionStorage.setItem("available_access_profiles", JSON.stringify(profiles));
     onChosen(p, route);

@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { IpRestricted } from "./IpRestricted";
+import { safeSetItem } from "@/lib/safeStorage";
 
 /**
  * Lê o perfil de acesso ativo do usuário (escolhido no ProfileChooser
@@ -44,7 +45,7 @@ export function ProfileIpGate({ children }: { children: ReactNode }) {
         if (chosen && typeof window !== "undefined") {
           sessionStorage.setItem("active_access_profile", chosen);
           sessionStorage.setItem("available_access_profiles", JSON.stringify(profiles));
-          localStorage.setItem("access_profile", chosen);
+          safeSetItem("access_profile", chosen);
         }
         setActiveProfile(chosen);
       });

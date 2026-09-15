@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { safeGetJSON, safeSetJSON } from "@/lib/safeStorage";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,14 +40,14 @@ const NotesTab = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const stored = localStorage.getItem("customTemplates");
-    if (stored) {
-      setSavedTemplates(JSON.parse(stored));
-    }
+    // safeGetJSON em vez de JSON.parse direto: um conteudo corrompido aqui
+    // derrubava a aba inteira de anotacoes (o erro sobe do efeito e, sem
+    // ErrorBoundary, o React desmonta a arvore — tela branca).
+    setSavedTemplates(safeGetJSON<SavedTemplate[]>("customTemplates", []));
   }, []);
 
   const saveTemplatesToStorage = (templates: SavedTemplate[]) => {
-    localStorage.setItem("customTemplates", JSON.stringify(templates));
+    safeSetJSON("customTemplates", templates);
     setSavedTemplates(templates);
   };
 

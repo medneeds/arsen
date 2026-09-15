@@ -29,6 +29,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { safeSetItem } from "@/lib/safeStorage";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend, Area, AreaChart,
@@ -245,7 +246,7 @@ export default function GestorPanelPage() {
   const applyFilter = (next: string) => {
     setSectorFilter(next);
     if (typeof window !== "undefined") {
-      localStorage.setItem("gestor_sector_filter", next);
+      safeSetItem("gestor_sector_filter", next);
     }
     if (next !== "ALL" && !next.startsWith("BLOCK:")) {
       try { setCurrentDepartment(next as any); } catch { /* noop */ }
@@ -761,7 +762,7 @@ export default function GestorPanelPage() {
   useEffect(() => { fetchData(); }, [selectedUnit, sectorFilter, period]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") localStorage.setItem("gestor_period_filter", period);
+    if (typeof window !== "undefined") safeSetItem("gestor_period_filter", period);
   }, [period]);
 
   const occupancyRate = bedStats.total > 0 ? Math.round((bedStats.occupied / bedStats.total) * 100) : 0;

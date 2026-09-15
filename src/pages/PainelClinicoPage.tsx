@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { PageLoader } from "@/components/PageLoader";
 import { usePageReady } from "@/hooks/usePageReady";
+import { safeSetItem } from "@/lib/safeStorage";
 
 const parseTextArray = (input: string | string[] | undefined | null): string[] => {
   if (!input) return [];
@@ -261,7 +262,7 @@ export default function PainelClinicoPage() {
       {/* Search bar below header */}
       <div className="px-4 py-2">
         <div className="flex gap-2 items-center">
-          <Select value={sectorFilter} onValueChange={(val) => { setSectorFilter(val); if (val !== "all") localStorage.setItem("selected_sector", val); }}>
+          <Select value={sectorFilter} onValueChange={(val) => { setSectorFilter(val); if (val !== "all") safeSetItem("selected_sector", val); }}>
             <SelectTrigger className="h-8 w-auto gap-1 text-xs font-medium px-2.5 [&>svg]:h-3 [&>svg]:w-3 rounded-md">
               <SelectValue placeholder="Setor" />
             </SelectTrigger>

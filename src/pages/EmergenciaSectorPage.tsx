@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
+import { safeSetItem } from "@/lib/safeStorage";
 import {
   Dialog,
   DialogContent,
@@ -444,7 +445,7 @@ export default function EmergenciaSectorPage() {
 
   const handleSectorChange = (sector: string) => {
     setActiveSector(sector);
-    localStorage.setItem("selected_emergency_sector", sector);
+    safeSetItem("selected_emergency_sector", sector);
   };
 
   const fetchPatients = async () => {

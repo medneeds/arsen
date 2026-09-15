@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useMemo } from "react";
 import { SECTOR_NAVIGATION, type NavSectorGroup } from "@/config/sectorNavigation";
+import { safeSetItem } from "@/lib/safeStorage";
 
 // Hierarquia vem de src/config/sectorNavigation.ts (fonte unica compartilhada
 // com a AppSidebar). Nao declarar lista local aqui.
@@ -70,7 +71,7 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
       // Para gestor, persistimos o setor escolhido e mantemos a navegação
       // sincronizada entre o Painel do Gestor e o Mapa de Leitos (read-only).
       if (isGestor) {
-        localStorage.setItem("gestor_sector_filter", department);
+        safeSetItem("gestor_sector_filter", department);
       }
     }
     setCurrentDepartment(department);
@@ -85,7 +86,7 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
 
   const handleSelectAll = () => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("gestor_sector_filter", "ALL");
+      safeSetItem("gestor_sector_filter", "ALL");
     }
     // BUG (10/08/2026): este handler ficou de fora quando `navigateOnSelect`
     // foi criado. Resultado: no NIR, clicar em "Todos" navegava para

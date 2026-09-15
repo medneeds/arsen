@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { safeSetItem } from "@/lib/safeStorage";
 
 // Tempo de inatividade em minutos (LGPD/CFM recomenda 15-30 minutos)
 const INACTIVITY_TIMEOUT_MINUTES = 30;
@@ -124,7 +125,7 @@ export function useSessionTimeout() {
 
     // Atualizar localStorage quando houver atividade
     const updateStorage = () => {
-      localStorage.setItem('lastActivity', Date.now().toString());
+      safeSetItem('lastActivity', Date.now().toString());
     };
     document.addEventListener('click', updateStorage, { passive: true });
 
