@@ -1904,6 +1904,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   prescriptionLocked,
   missingFields = [],
   previousInhalationItem,
+  unifiedCatalog,
 }: {
   item: PrescriptionItem;
   index: number;
@@ -1930,6 +1931,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   missingFields?: string[];
   /** Item de inalação imediatamente anterior na lista (mesma categoria), para conjugação. */
   previousInhalationItem?: { id: string; name: string };
+  unifiedCatalog?: Record<string, MedicationEntry[]>;
 }) {
   const [individualExpanded, setIndividualExpanded] = useState(false);
   // Item recém-adicionado nasce expandido, pronto para preenchimento.
@@ -2741,7 +2743,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               <CombinedItemsBlock
                 item={item}
                 onUpdate={onUpdate}
-                catalog={UNIFIED_CATALOG['hydration'] || []}
+                catalog={unifiedCatalog?.['hydration'] || []}
                 categoryLabel="hidratação"
               />
             </>
@@ -2757,7 +2759,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               <CombinedItemsBlock
                 item={item}
                 onUpdate={onUpdate}
-                catalog={UNIFIED_CATALOG['inhalation'] || []}
+                catalog={unifiedCatalog?.['inhalation'] || []}
                 categoryLabel="inalação"
               />
             </>
@@ -3279,7 +3281,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             <CombinedItemsBlock
               item={item}
               onUpdate={onUpdate}
-              catalog={UNIFIED_CATALOG['replacement'] || []}
+              catalog={unifiedCatalog?.['replacement'] || []}
               categoryLabel="reposição"
             />
           )}
@@ -3413,6 +3415,12 @@ function ExtraPrescriptionDialog({
   doctorCrm?: string;
   sectorLabel?: string;
 }) {
+  // 🔒 Fix ReferenceError "UNIFIED_CATALOG is not defined": este diálogo
+  // renderiza <SortablePrescriptionItemRow>, que precisa do catálogo por
+  // categoria para os blocos de itens combinados (hidratação/inalação/
+  // reposição). Antes, o código referenciava a constante UNIFIED_CATALOG
+  // do componente PrescricaoPage (fora de escopo aqui) diretamente.
+  const { byCategory: UNIFIED_CATALOG } = useUnifiedMedicationCatalog();
   const [extraItems, setExtraItems] = useState<PrescriptionItem[]>([]);
   const [freeText, setFreeText] = useState("");
   /*
@@ -3831,7 +3839,7 @@ function ExtraPrescriptionDialog({
                       onToggleSelect={noop}
                       onDuplicate={duplicateExtraItem}
                       onRequestSuspend={noop}
-                      
+                      unifiedCatalog={UNIFIED_CATALOG}
                       onToggleValidation={noop}
                       isPastRenewalTime={false}
                       prescriptionLocked={false}
@@ -9164,7 +9172,7 @@ const PrescricaoPage = () => {
                             onToggleSelect={toggleSelect}
                             onDuplicate={duplicateItem}
                             onRequestSuspend={requestSuspendItem}
-                            
+                            unifiedCatalog={UNIFIED_CATALOG}
                             onAssistant={(id) => setItemAssistantTargetId(id)}
                             onEditInsulin={(id) => { setEditingInsulinItemId(id); setPendingInsulinMed(null); setInsulinDialogOpen(true); }}
                             onUpdateInsulinPlan={updateInsulinPlan}
