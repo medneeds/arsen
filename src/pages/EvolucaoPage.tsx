@@ -8,7 +8,7 @@ import { SectionLoader } from "@/components/SectionLoader";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { NormaZeroPrintHeader, generatePrintDocCode } from "@/components/NormaZeroPrintHeader";
+import { NormaZeroPrintHeader, generatePrintDocCode, getNormaZeroMissingFields, NormaZeroBlockedDocument } from "@/components/NormaZeroPrintHeader";
 import {
   NotebookPen, Plus, Loader2, AlertTriangle, ChevronDown, Sun, Moon, Zap,
 } from "lucide-react";
@@ -880,6 +880,20 @@ const EvolucaoPage = () => {
             '';
           const headerRecord = patient.record || ids.prontuario || '';
           const headerWeight = patient.weight || utiWeightKg || '';
+
+          // 🔒 Norma Zero — bloqueia a geração do layout impresso se a
+          // identificação do paciente estiver incompleta. Usa os mesmos
+          // valores já mesclados (registry + dados vivos) que a tabela
+          // abaixo realmente exibe, não os campos brutos de `patient`.
+          const missingFields = getNormaZeroMissingFields({
+            name: patient.name,
+            birthDate: headerBirthDate,
+            sex: headerSex,
+            record: headerRecord,
+          });
+          if (missingFields.length > 0) {
+            return <NormaZeroBlockedDocument missingFields={missingFields} width="186mm" />;
+          }
 
           return (
             <>

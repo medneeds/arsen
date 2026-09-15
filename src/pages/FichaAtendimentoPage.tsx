@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { formatAge } from "@/lib/patientAge";
+import { getNormaZeroMissingFields, NormaZeroBlockedDocument } from "@/components/NormaZeroPrintHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
@@ -583,6 +584,18 @@ function PrintableFicha({
       <div style={{ flex: 1, backgroundColor: colors.blue }} />
     </div>
   );
+
+  // 🔒 Norma Zero — bloqueia a geração da Ficha de Atendimento se a
+  // identificação do paciente estiver incompleta.
+  const missingFields = getNormaZeroMissingFields({
+    name: patient.name,
+    birthDate: patient.birthDate,
+    sex: patient.sex,
+    record: patient.record,
+  });
+  if (missingFields.length > 0) {
+    return <NormaZeroBlockedDocument missingFields={missingFields} />;
+  }
 
   return (
     <div

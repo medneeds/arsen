@@ -98,6 +98,8 @@ import {
 import {
   NormaZeroPrintHeader,
   NormaZeroPrintFooter,
+  getNormaZeroMissingFields,
+  NormaZeroBlockedDocument,
 } from "@/components/NormaZeroPrintHeader";
 import {
   PrintableCultureRequest,
@@ -305,6 +307,20 @@ export function PrintableRequisitionGuide({
 
   const createdAt = new Date(request.created_at);
   const createdStr = format(createdAt, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+
+  // 🔒 Norma Zero — bloqueia a geração do documento se identificação estiver
+  // incompleta. Este layout não exibe "sexo" no cabeçalho, então esse campo
+  // é excluído da checagem (a validação de sexo fica a cargo dos documentos
+  // que de fato o exibem, como a Prescrição).
+  const missingFields = getNormaZeroMissingFields({
+    name: request.patient_name,
+    birthDate: resolvedBirth,
+    sex: "N/A", // não exibido neste layout — não bloqueia por esse campo
+    record: resolvedRecord,
+  });
+  if (missingFields.length > 0) {
+    return <NormaZeroBlockedDocument missingFields={missingFields} />;
+  }
 
   return (
     <div
