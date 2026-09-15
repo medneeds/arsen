@@ -104,6 +104,17 @@ export const SECTOR_ICONS: Record<string, LucideIcon> = {
   "CC RPA": Timer,
 };
 
+/**
+ * Icone do grupo, usado no cabecalho de cada Card. Segue o mesmo tratamento dos
+ * cabecalhos do painel de inicio (rounded-xl sobre bg-primary/10).
+ */
+export const SECTOR_GROUP_ICONS: Record<string, LucideIcon> = {
+  UTI: Activity,
+  "URGÊNCIA E EMERGÊNCIA ADULTO": Ambulance,
+  ENFERMARIA: BedDouble,
+  "CENTRO CIRÚRGICO": Scissors,
+};
+
 /** Setores com pagina propria — o destino muda conforme o setor escolhido. */
 export const SECTOR_ROUTES: Record<string, string> = {
   "UE VERTICAL": "/ue-vertical",

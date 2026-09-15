@@ -1,6 +1,14 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Check } from "lucide-react";
+import { Building2, Check, LogOut } from "lucide-react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { PageLoader } from "@/components/PageLoader";
+import {
+  PatientQuickSearch,
+  type PacienteEncontrado,
+} from "@/components/PatientQuickSearch";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
@@ -11,30 +19,26 @@ import {
   type Department,
 } from "@/contexts/DepartmentContext";
 import { isDepartmentLocked, LOCKED_TOOLTIP } from "@/config/lockedSectors";
-import { SECTOR_GROUPS, SECTOR_ICONS, SECTOR_ROUTES } from "@/config/clinicalSectors";
+import {
+  SECTOR_GROUPS,
+  SECTOR_GROUP_ICONS,
+  SECTOR_ICONS,
+  SECTOR_ROUTES,
+} from "@/config/clinicalSectors";
 import { whitelabel } from "@/config/whitelabel";
 import { safeGetItem } from "@/lib/safeStorage";
-import { PageLoader } from "@/components/PageLoader";
-import { PatientQuickSearch, type PacienteEncontrado } from "@/components/PatientQuickSearch";
+import { cn } from "@/lib/utils";
 
 /**
- * Tela de entrada do perfil clinico: escolha do setor em que o profissional
- * vai atuar no plantao.
+ * Tela de entrada do perfil clinico: escolha do setor do plantao.
  *
- * Antes: o departamento era fixado no codigo no login (setCurrentDepartment
- * "UTI") e o setor vinha silenciosamente de localStorage, com "red" (UTI 1) de
- * padrao. Quem trabalhava na enfermaria entrava na UTI sem perceber e so
- * descobria ao estranhar a lista de pacientes.
+ * Identidade visual: esta e a PRIMEIRA tela depois do login, entao precisa
+ * parecer o Arsen e nao um portal a parte. Reaproveita o vocabulario das telas
+ * clinicas — faixa institucional com o gradiente navy do BreadcrumbBar, Card
+ * com bg-card/80 e backdrop-blur, icones em rounded-xl sobre bg-primary/10 e a
+ * mesma grade de quatro colunas do painel de inicio.
  *
- * Agora a escolha e explicita e acontece uma vez, logo apos o login.
- *
- * Decisoes de desenho:
- * - Agrupamento pela taxonomia do proprio hospital (a mesma de
- *   user_departments), nao uma grade unica de 20 cards. Estrutura visual que
- *   carrega informacao: o grupo diz que tipo de cuidado se presta ali.
- * - Um unico ponto de destaque: o setor do ultimo plantao. O resto fica quieto.
- * - Nenhuma consulta ao banco. A tela abre instantanea, com dado estatico.
- * - Sem animacao de entrada: movimento so responde a acao de quem usa.
+ * Nenhuma consulta ao banco para montar a tela: abre instantanea.
  */
 export default function SectorLauncherPage() {
   const navigate = useNavigate();
@@ -43,7 +47,7 @@ export default function SectorLauncherPage() {
   const { setCurrentDepartment } = useDepartment();
   const [escolhido, setEscolhido] = useState<Department | null>(null);
 
-  /** Setor do ultimo plantao — o unico elemento em destaque na tela. */
+  /** Setor do ultimo plantao — unico elemento em destaque na grade. */
   const ultimoSetor = useMemo(() => {
     const codigo = safeGetItem("selected_sector", "");
     if (!codigo) return null;
@@ -53,20 +57,6 @@ export default function SectorLauncherPage() {
         | undefined) ?? null
     );
   }, []);
-
-  /**
-   * Todos os setores clinicos, sem filtro por permissao.
-   *
-   * O corpo clinico atua em qualquer setor do hospital: o medico de plantao e
-   * chamado onde precisam dele, e nao ha razao para esconder um destino de quem
-   * pode atender ali. Filtrar por user_departments tambem criava um modo de
-   * falha ruim — usuario com vinculo vazio ou incompleto ficava sem nenhum card
-   * e sem conseguir entrar.
-   *
-   * Setores sem implantacao ativa continuam visiveis, porem desabilitados: e
-   * informacao util saber que existem.
-   */
-  const grupos = SECTOR_GROUPS;
 
   const primeiroNome = (() => {
     const nome =
@@ -83,16 +73,23 @@ export default function SectorLauncherPage() {
     return "Boa noite";
   })();
 
-  /** Abre o setor do paciente encontrado, sem abrir o painel dele. */
+  const entrar = (setor: Department) => {
+    if (isDepartmentLocked(setor)) return;
+    setEscolhido(setor);
+    setCurrentDepartment(setor);
+    // Deixa o contexto assentar antes de trocar de rota.
+    window.setTimeout(() => navigate(SECTOR_ROUTES[setor] ?? "/"), 120);
+  };
+
   const irParaSetorDoPaciente = (p: PacienteEncontrado) => {
     if (!p.department) return;
     entrar(p.department);
   };
 
   /**
-   * Vai direto ao painel clinico do paciente. O setor e ajustado ANTES de
-   * navegar: sem isso o painel abriria com o contexto do setor anterior e as
-   * telas em volta mostrariam a lista de outro lugar.
+   * Painel clinico do paciente. O setor e ajustado ANTES de navegar: sem isso o
+   * painel abriria com o contexto do setor anterior e as telas em volta
+   * mostrariam a lista de outro lugar.
    */
   const irParaPaciente = (p: PacienteEncontrado) => {
     if (p.department) setCurrentDepartment(p.department);
@@ -107,78 +104,86 @@ export default function SectorLauncherPage() {
     window.setTimeout(() => navigate(`/paciente?${params.toString()}`), 120);
   };
 
-  const entrar = (setor: Department) => {
-    if (isDepartmentLocked(setor)) return;
-    setEscolhido(setor);
-    setCurrentDepartment(setor);
-    // Deixa o estado do contexto assentar antes de trocar de rota.
-    window.setTimeout(() => navigate(SECTOR_ROUTES[setor] ?? "/"), 120);
-  };
-
   if (authLoading) {
     return <PageLoader message="Carregando seu acesso" />;
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
-        {/* Cabecalho: quem e a pessoa, onde ela esta, e a pergunta da tela. */}
-        <header className="mb-10 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {saudacao}
-              {primeiroNome ? `, ${primeiroNome}` : ""}
-            </p>
-            <h1 className="preserve-case mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-              Onde você vai atuar hoje?
-            </h1>
-            <p className="mt-2 max-w-prose text-sm text-muted-foreground">
-              {currentHospital?.name ?? whitelabel.institution.hospitalName}
-            </p>
-          </div>
+      <div className="container mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4">
+        {/* Faixa institucional — mesmo gradiente e tratamento do BreadcrumbBar
+            nas telas clinicas, para a entrada pertencer ao mesmo sistema. */}
+        <header
+          className="relative overflow-hidden rounded-lg sm:rounded-xl shadow-sm px-4 py-5 sm:px-6 sm:py-6"
+          style={{
+            backgroundImage:
+              "linear-gradient(110deg, hsl(var(--primary)) 0%, hsl(210 70% 22%) 55%, hsl(210 75% 18%) 100%)",
+          }}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[11px] sm:text-xs font-medium uppercase tracking-wide text-primary-foreground/70">
+                {saudacao}
+                {primeiroNome ? `, ${primeiroNome}` : ""}
+              </p>
+              <h1 className="preserve-case mt-1 text-xl sm:text-2xl font-semibold tracking-tight text-primary-foreground">
+                Onde você vai atuar hoje?
+              </h1>
+              <span className="mt-3 inline-flex max-w-full items-center gap-1.5 rounded-md border border-white/20 bg-white/15 px-2.5 py-1 text-[11px] sm:text-xs font-medium text-primary-foreground backdrop-blur">
+                <Building2 className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
+                <span className="truncate">
+                  {currentHospital?.name ?? whitelabel.institution.hospitalName}
+                </span>
+              </span>
+            </div>
 
-          <button
-            type="button"
-            onClick={() => signOut()}
-            className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <LogOut className="h-4 w-4" aria-hidden />
-            Sair
-          </button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => signOut()}
+              className="h-9 bg-white/10 text-primary-foreground border border-white/20 backdrop-blur hover:bg-white/20 hover:text-primary-foreground"
+            >
+              <LogOut className="h-4 w-4 mr-1.5" aria-hidden />
+              Sair
+            </Button>
+          </div>
         </header>
 
-        <div className="mb-10">
-          <PatientQuickSearch
-            onIrParaSetor={irParaSetorDoPaciente}
-            onIrParaPaciente={irParaPaciente}
-          />
-        </div>
+        <PatientQuickSearch
+          onIrParaSetor={irParaSetorDoPaciente}
+          onIrParaPaciente={irParaPaciente}
+        />
 
-        <div className="space-y-10">
-            {grupos.map((grupo) => (
-              <section key={grupo.macro} aria-labelledby={`grupo-${grupo.macro}`}>
-                {/* O titulo do grupo carrega informacao clinica: que tipo de
-                    cuidado se presta ali. A regra separa sem enfeitar. */}
-                <div className="mb-4 flex items-baseline gap-3">
-                  <h2
-                    id={`grupo-${grupo.macro}`}
-                    className="preserve-case text-sm font-semibold text-foreground"
-                  >
-                    {grupo.label}
-                  </h2>
-                  <span className="h-px flex-1 bg-border" aria-hidden />
-                  <span className="text-xs text-muted-foreground">
-                    {grupo.sectors.length}{" "}
-                    {grupo.sectors.length === 1 ? "setor" : "setores"}
+        {SECTOR_GROUPS.map((grupo) => {
+          const IconeGrupo = SECTOR_GROUP_ICONS[grupo.macro];
+          return (
+            <Card
+              key={grupo.macro}
+              className="border-border/60 bg-card/80 backdrop-blur-sm"
+            >
+              <CardHeader className="pb-3 pt-4 px-4">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  {IconeGrupo && (
+                    <span className="h-8 w-8 rounded-xl flex items-center justify-center bg-primary/10 flex-shrink-0">
+                      <IconeGrupo className="h-4 w-4 text-primary" aria-hidden />
+                    </span>
+                  )}
+                  <span className="preserve-case">{grupo.label}</span>
+                  <span className="ml-auto text-[11px] font-medium text-muted-foreground tracking-wider">
+                    {grupo.sectors.length} setores
                   </span>
-                </div>
-                <p className="mb-4 text-xs text-muted-foreground">{grupo.hint}</p>
+                </CardTitle>
+                <p className="text-[11px] text-muted-foreground pl-10">
+                  {grupo.hint}
+                </p>
+              </CardHeader>
 
-                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <CardContent className="px-4 pb-4">
+                <ul className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   {grupo.sectors.map((setor) => {
                     const Icone = SECTOR_ICONS[setor];
                     const bloqueado = isDepartmentLocked(setor);
-                    const ultimo = setor === ultimoSetor;
+                    const ultimo = setor === ultimoSetor && !bloqueado;
                     const selecionado = setor === escolhido;
                     const rotulo =
                       SECTOR_DISPLAY[DEPARTMENT_TO_SECTOR[setor]] ?? setor;
@@ -190,23 +195,25 @@ export default function SectorLauncherPage() {
                           disabled={bloqueado}
                           title={bloqueado ? LOCKED_TOOLTIP : undefined}
                           onClick={() => entrar(setor)}
-                          className={[
-                            "group flex w-full items-center gap-3 rounded-lg border px-4 py-4 text-left transition-colors",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                          className={cn(
+                            "group flex w-full items-center gap-2.5 rounded-lg border px-3 py-3 text-left transition-all",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
                             bloqueado
-                              ? "cursor-not-allowed border-border bg-muted/40 opacity-60"
+                              ? "cursor-not-allowed border-border/40 bg-muted/30 opacity-60"
                               : ultimo
-                                ? "border-accent bg-accent/10 hover:bg-accent/15"
-                                : "border-border bg-card hover:border-primary/40 hover:bg-secondary",
-                          ].join(" ")}
+                                ? "border-primary/40 bg-primary/5 shadow-sm hover:shadow-md"
+                                : "border-border/60 hover:border-border hover:bg-muted/40 hover:shadow-md",
+                          )}
                         >
                           <span
-                            className={[
-                              "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md",
-                              ultimo
-                                ? "bg-accent text-accent-foreground"
-                                : "bg-secondary text-primary",
-                            ].join(" ")}
+                            className={cn(
+                              "h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors",
+                              bloqueado
+                                ? "bg-muted text-muted-foreground"
+                                : ultimo
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-primary/10 text-primary",
+                            )}
                             aria-hidden
                           >
                             {selecionado ? (
@@ -220,14 +227,14 @@ export default function SectorLauncherPage() {
                             <span className="preserve-case block truncate text-sm font-medium text-foreground">
                               {rotulo}
                             </span>
-                            {ultimo && !bloqueado && (
-                              <span className="block text-xs text-muted-foreground">
-                                Seu último plantão
+                            {ultimo && (
+                              <span className="block text-[10px] font-medium uppercase tracking-wider text-primary">
+                                Último plantão
                               </span>
                             )}
                             {bloqueado && (
-                              <span className="block text-xs text-muted-foreground">
-                                Sem implantação ativa
+                              <span className="block text-[10px] text-muted-foreground">
+                                Sem implantação
                               </span>
                             )}
                           </span>
@@ -236,11 +243,12 @@ export default function SectorLauncherPage() {
                     );
                   })}
                 </ul>
-              </section>
-          ))}
-        </div>
+              </CardContent>
+            </Card>
+          );
+        })}
 
-        <p className="mt-12 max-w-prose text-xs text-muted-foreground">
+        <p className="px-1 pb-2 text-[11px] text-muted-foreground">
           Você pode trocar de setor a qualquer momento pelo seletor no topo das
           telas clínicas.
         </p>

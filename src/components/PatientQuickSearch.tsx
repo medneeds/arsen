@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, Loader2, ArrowRight, BedDouble } from "lucide-react";
+import { Search, Loader2, ArrowRight, BedDouble, UserSearch } from "lucide-react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
@@ -114,27 +118,35 @@ export function PatientQuickSearch({ onIrParaSetor, onIrParaPaciente }: Props) {
   }, [termoLimpo, ativo]);
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
-      <label htmlFor="busca-paciente" className="preserve-case block text-sm font-medium text-foreground">
-        Procurar um paciente
-      </label>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Encontre em qual setor o paciente está internado e vá direto para ele.
-      </p>
+    <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
+      <CardHeader className="pb-3 pt-4 px-4">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <span className="h-8 w-8 rounded-xl flex items-center justify-center bg-primary/10 flex-shrink-0">
+            <UserSearch className="h-4 w-4 text-primary" aria-hidden />
+          </span>
+          <label htmlFor="busca-paciente" className="preserve-case cursor-text">
+            Procurar um paciente
+          </label>
+        </CardTitle>
+        <p className="text-[11px] text-muted-foreground pl-10">
+          Encontre em qual setor ele está internado e vá direto para o leito.
+        </p>
+      </CardHeader>
 
-      <div className="relative mt-3">
+      <CardContent className="px-4 pb-4">
+      <div className="relative">
         <Search
           className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
           aria-hidden
         />
-        <input
+        <Input
           id="busca-paciente"
           type="search"
           value={termo}
           onChange={(e) => setTermo(e.target.value)}
           placeholder="Nome ou prontuário"
           autoComplete="off"
-          className="h-11 w-full rounded-md border border-border bg-background pl-9 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="h-11 pl-9 pr-10"
         />
         {buscando && (
           <Loader2
@@ -154,9 +166,12 @@ export function PatientQuickSearch({ onIrParaSetor, onIrParaPaciente }: Props) {
       )}
 
       {resultados.length > 0 && (
-        <ul className="mt-3 divide-y divide-border rounded-md border border-border">
+        <ul className="mt-3 space-y-2">
           {resultados.map((p) => (
-            <li key={p.id} className="p-3">
+            <li
+              key={p.id}
+              className="rounded-lg border border-border/60 p-3 transition-colors hover:bg-muted/40"
+            >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="preserve-case truncate text-sm font-medium text-foreground">
@@ -179,27 +194,29 @@ export function PatientQuickSearch({ onIrParaSetor, onIrParaPaciente }: Props) {
                 </div>
 
                 <div className="flex shrink-0 gap-2">
-                  <button
-                    type="button"
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
                     onClick={() => onIrParaSetor(p)}
-                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     Abrir {p.sectorLabel}
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-8 text-xs"
                     onClick={() => onIrParaPaciente(p)}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     Painel do paciente
-                    <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-                  </button>
+                    <ArrowRight className="h-3.5 w-3.5 ml-1.5" aria-hidden />
+                  </Button>
                 </div>
               </div>
             </li>
           ))}
         </ul>
       )}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
