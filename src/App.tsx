@@ -24,6 +24,7 @@ import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import LandingPage from "./pages/LandingPage";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 const SetupPage = lazy(() => import("./pages/SetupPage"));
 
 // Demais páginas: lazy para reduzir bundle inicial e uso de memória
@@ -204,7 +205,13 @@ const App = () => {
             <Toaster />
             <Sonner />
             <MaintenanceModeBanner />
+            {/* Contem erros de renderizacao e de efeitos. Sem ele, qualquer
+                excecao nao tratada desmontava a arvore inteira e o usuario via
+                tela branca, sem mensagem nem saida. Fica DENTRO do Suspense e
+                em volta das rotas: cobre todas as telas, mas preserva toasts e
+                provedores, para que a mensagem de erro consiga renderizar. */}
             <Suspense fallback={<PageFallback />}>
+            <ErrorBoundary>
             <Routes>
               <Route path="/welcome" element={<LandingPage />} />
               <Route path="/apresentacao" element={<ApresentacaoPage />} />
@@ -285,6 +292,7 @@ const App = () => {
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </ErrorBoundary>
             </Suspense>
             <HelpTourButton />
             <HelpTourOverlay />
