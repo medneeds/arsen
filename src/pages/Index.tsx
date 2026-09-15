@@ -64,8 +64,11 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { safeSetItem, safeSetJSON, safeGetItem, safeGetJSON, safeRemoveItem } from '@/lib/safeStorage';
 
-const STORAGE_KEY = "hospital_patients_data";
+// "hospital_patients_data" foi removida em 15/09/2026 — ver o comentario no
+// efeito de persistencia mais abaixo. A chave pode sobrar no navegador de quem
+// ja usou o sistema; a limpeza esta no efeito de migracao logo apos os estados.
 const HISTORY_KEY = "hospital_patients_history";
 const REDO_HISTORY_KEY = "hospital_patients_redo_history";
 const NOTES_KEY = "hospital_notes";
@@ -236,23 +239,27 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
   useDischargeAlert(patients);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const preAdmissionRef = useRef<PreAdmissionSectionHandle>(null);
-  const [history, setHistory] = useState<Patient[][]>(() => {
-    const saved = localStorage.getItem(HISTORY_KEY);
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [redoHistory, setRedoHistory] = useState<Patient[][]>(() => {
-    const saved = localStorage.getItem(REDO_HISTORY_KEY);
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [notes, setNotes] = useState<string>(() => {
-    const saved = localStorage.getItem(NOTES_KEY);
-    return saved || "";
-  });
-  const [checklist, setChecklist] = useState<ChecklistItem[]>(() => {
-    const saved = localStorage.getItem(CHECKLIST_KEY);
-    return saved ? JSON.parse(saved) : [];
-  });
+  // Inicializadores rodam DURANTE o render: um JSON.parse que estoura aqui
+  // derruba o componente inteiro (tela branca). safeGetJSON devolve o padrao
+  // e limpa a chave corrompida em vez de lancar.
+  const [history, setHistory] = useState<Patient[][]>(
+    () => safeGetJSON<Patient[][]>(HISTORY_KEY, []),
+  );
+  const [redoHistory, setRedoHistory] = useState<Patient[][]>(
+    () => safeGetJSON<Patient[][]>(REDO_HISTORY_KEY, []),
+  );
+  const [notes, setNotes] = useState<string>(() => safeGetItem(NOTES_KEY, ""));
+  const [checklist, setChecklist] = useState<ChecklistItem[]>(
+    () => safeGetJSON<ChecklistItem[]>(CHECKLIST_KEY, []),
+  );
   const [newChecklistItem, setNewChecklistItem] = useState("");
+
+  // Limpeza unica: remove do navegador a chave morta que estourava a cota.
+  // Sem isso, quem ja a tem gravada continua com vários MB ocupados e volta a
+  // esbarrar no limite ao gravar anotacoes ou checklist.
+  useEffect(() => {
+    safeRemoveItem("hospital_patients_data");
+  }, []);
   const [isOutsideSectionOpen, setIsOutsideSectionOpen] = useState(false);
   const [printingSector, setPrintingSector] = useState<string | null>(null);
   const [printMode, setPrintMode] = useState<'compact' | 'detailed' | null>(null);
@@ -302,10 +309,14 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
     }
   };
 
-  // Persist patients data to localStorage
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(patients));
-  }, [patients]);
+  // A lista de pacientes NAO e mais espelhada em localStorage.
+  //
+  // Essa gravacao existia desde o inicio e nunca teve leitura correspondente:
+  // STORAGE_KEY so aparecia aqui em todo o projeto. Era o maior volume gravado
+  // (a lista inteira, a cada mudanca) e foi o que estourou a cota em 15/09,
+  // derrubando o mapa de leitos e a troca de setor com tela branca.
+  //
+  // A fonte de verdade e o banco, via usePatients.
 
   // Sync database patients to local state
   useEffect(() => {
@@ -314,22 +325,22 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
 
   // Persist history to localStorage
   useEffect(() => {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    safeSetJSON(HISTORY_KEY, history);
   }, [history]);
 
   // Persist redo history to localStorage
   useEffect(() => {
-    localStorage.setItem(REDO_HISTORY_KEY, JSON.stringify(redoHistory));
+    safeSetJSON(REDO_HISTORY_KEY, redoHistory);
   }, [redoHistory]);
 
   // Persist notes to localStorage
   useEffect(() => {
-    localStorage.setItem(NOTES_KEY, notes);
+    safeSetItem(NOTES_KEY, notes);
   }, [notes]);
 
   // Persist checklist to localStorage
   useEffect(() => {
-    localStorage.setItem(CHECKLIST_KEY, JSON.stringify(checklist));
+    safeSetJSON(CHECKLIST_KEY, checklist);
   }, [checklist]);
 
   // Fullscreen API handler
@@ -719,7 +730,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
     }
 
     const previousState = history[history.length - 1];
-    setRedoHistory(prev => [...prev, patients]); // Save current state to redo history
+    setRedoHistory(prev => [...prev.slice(-9), patients]); // mantem os 10 ultimos
     setPatients(previousState);
     setHistory(prev => prev.slice(0, -1));
     toast({
@@ -739,7 +750,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
     }
 
     const nextState = redoHistory[redoHistory.length - 1];
-    setHistory(prev => [...prev, patients]); // Save current state to undo history
+    setHistory(prev => [...prev.slice(-9), patients]); // mantem os 10 ultimos
     setPatients(nextState);
     setRedoHistory(prev => prev.slice(0, -1));
     toast({
