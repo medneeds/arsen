@@ -73,7 +73,10 @@ export const PROFILE_DEFAULTS: Record<AccessProfile, ProfileDefaults> = {
   medico: {
     role: "medico",
     departments: ASSISTENCIAIS_COMPLETO,
-    landingRoute: "/",
+    // Apos o login o medico escolhe o setor do plantao. Antes, caia direto no
+    // painel com o setor herdado do navegador (ou UTI 1 de padrao), sem ter
+    // escolhido nada.
+    landingRoute: "/setores",
     hint: "Médico assistente • acesso a UTIs, UCIs, enfermarias, urgência e centro cirúrgico",
   },
   gestor: {
@@ -121,7 +124,9 @@ export const PROFILE_DEFAULTS: Record<AccessProfile, ProfileDefaults> = {
   multi: {
     role: "medico",
     departments: ASSISTENCIAIS_COMPLETO,
-    landingRoute: "/mapa",
+    // Mesma entrada do medico: a equipe multi tambem atua por setor e caia no
+    // mapa com o setor herdado do navegador.
+    landingRoute: "/setores",
     hint: "Equipe multiprofissional • acesso assistencial amplo",
   },
   coord_medico: {

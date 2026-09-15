@@ -77,6 +77,7 @@ const SetorImagemPage = lazy(() => import("./pages/SetorImagemPage"));
 const SetorLaboratorioPage = lazy(() => import("./pages/SetorLaboratorioPage"));
 const Saps3Page = lazy(() => import("./pages/Saps3Page"));
 const ClinicalDashboardPage = lazy(() => import("./pages/ClinicalDashboardPage"));
+const SectorLauncherPage = lazy(() => import("./pages/SectorLauncherPage"));
 const ProtocolosUtiPage = lazy(() => import("./pages/ProtocolosUtiPage"));
 const CcihDashboardPage = lazy(() => import("./pages/CcihDashboardPage"));
 const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
@@ -224,6 +225,10 @@ const App = () => {
               <Route path="/cadastro" element={<SignupRedirectPage />} />
               <Route path="/pre-cadastro" element={<PreCadastroPage />} />
               <Route path="/" element={<ProtectedRoute><ProfileHomeRedirect /></ProtectedRoute>} />
+              {/* Escolha de setor logo apos o login. Fica FORA do MainLayout:
+                  antes de escolher o setor, a navegacao lateral apontaria para
+                  um setor que a pessoa ainda nao definiu. */}
+              <Route path="/setores" element={<ProtectedRoute><SectorLauncherPage /></ProtectedRoute>} />
               <Route path="/mapa" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/painel-clinico" element={<ProtectedRoute><MainLayout><PainelClinicoPage /></MainLayout></ProtectedRoute>} />
               <Route path="/paciente" element={<ProtectedRoute><MainLayout><PacienteHubPageWrapper /></MainLayout></ProtectedRoute>} />

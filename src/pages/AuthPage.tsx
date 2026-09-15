@@ -15,9 +15,6 @@ import { motion, AnimatePresence } from "framer-motion";
 // IndividualSignUpForm removed — signup público desativado; cadastros agora ficam em /gestao-usuarios.
 import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { useDepartment } from "@/contexts/DepartmentContext";
-import { HospitalSelector } from "@/components/HospitalSelector";
-import { useHospital } from "@/contexts/HospitalContext";
 import { AuthBackgroundFx } from "@/components/auth/AuthBackgroundFx";
 import { resolveLandingRoute } from "@/config/profileDefaults";
 import { ProfileChooser } from "@/components/auth/ProfileChooser";
@@ -68,15 +65,16 @@ function PageFooter() {
 /* ─── Page ──────────────────────────────────────────────────────── */
 export default function AuthPage() {
   const { user, signIn } = useAuth();
-  const { setCurrentDepartment } = useDepartment();
-  const { setCurrentHospital, currentHospital } = useHospital();
+  // Esta instalacao do Arsen atende um unico hospital, entao nao ha escolha de
+  // unidade antes de autenticar: o HospitalContext resolve sozinho (restaura do
+  // navegador ou cai no padrao). Escolher hospital ANTES do login so
+  // acrescentava um passo a quem chega para o plantao.
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
   const [redirectRoute, setRedirectRoute] = useState("/");
   const [screen] = useState<"login">("login");
-  const [selectedHospitalId, setSelectedHospitalId] = useState<string | null>(null);
   const [forgotOpen, setForgotOpen] = useState(false);
 
   // Multi-perfil: estado para a tela de escolha após login
@@ -104,11 +102,6 @@ export default function AuthPage() {
       navigate("/");
     }
   }, [user, navigate, chooserProfiles, showLoadingScreen]);
-
-  const handleHospitalSelect = (hospital: { id: string; name: string; state_id: string; address: string | null }) => {
-    setSelectedHospitalId(hospital.id);
-    setCurrentHospital(hospital);
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,7 +167,11 @@ export default function AuthPage() {
           ? accessProfilesList
           : (accessProfile ? [accessProfile] : []);
 
-        setCurrentDepartment("UTI");
+        // Nao se fixa mais departamento no login. "UTI" (sem numero) nao existe
+        // em DEPARTMENT_TO_SECTOR: gravava STORAGE_KEY com valor invalido e
+        // zerava currentSectorCode, o que o proprio DepartmentContext registra
+        // como causa de travamento no carregamento. O setor passa a ser
+        // escolhido de forma explicita em /setores.
 
         // 🔐 Primeiro acesso: senha padrão 123456 → exige troca + escolha de username
         const mustChange = (profileRow as { must_change_password?: boolean } | null)?.must_change_password === true;
@@ -312,16 +309,6 @@ export default function AuthPage() {
                 >
                   {/* Card top accent bar */}
                   <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-
-                  {/* Hospital Selector */}
-                  <div className="mb-4 sm:mb-5">
-                    <HospitalSelector
-                      selectedHospitalId={selectedHospitalId ?? currentHospital?.id ?? null}
-                      onSelect={handleHospitalSelect}
-                    />
-                  </div>
-
-                  <div className="h-px w-full bg-border/60 mb-4 sm:mb-5" />
 
                   <div className="mb-4 sm:mb-5 flex items-center gap-2.5">
                     <div className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/15">
