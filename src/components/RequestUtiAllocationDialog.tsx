@@ -348,7 +348,7 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
                 </SelectItem>
                 <SelectItem value="UTI 2">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 border border-amber-400/40 bg-amber-500/10 px-1.5 py-0.5 rounded">2</span>
+                    <span className="text-[10px] font-bold text-warning-on-soft border border-warning/40 bg-warning/10 px-1.5 py-0.5 rounded">2</span>
                     <span>UTI 2</span>
                   </div>
                 </SelectItem>
@@ -422,10 +422,10 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
           {/* Clinical Data Grid */}
           <div className="grid grid-cols-2 gap-3">
             {/* Diagnoses */}
-            <div className="space-y-2 p-2 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/30">
+            <div className="space-y-2 p-2 rounded-lg bg-muted/50 border border-border/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <Stethoscope className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                  <Stethoscope className="h-3 w-3 text-foreground" />
                   <span className="text-[10px] font-semibold text-muted-foreground">Hipóteses / Diagnósticos</span>
                 </div>
                 <Button
@@ -456,10 +456,10 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
             </div>
 
             {/* Antecedentes */}
-            <div className="space-y-2 p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30">
+            <div className="space-y-2 p-2 rounded-lg bg-warning-soft/50 border border-warning-border/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <FileText className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                  <FileText className="h-3 w-3 text-warning-on-soft" />
                   <span className="text-[10px] font-semibold text-muted-foreground">Antecedentes / Comorbidades</span>
                 </div>
                 <Button
@@ -490,10 +490,10 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
             </div>
 
             {/* Exams */}
-            <div className="space-y-2 p-2 rounded-lg bg-green-50/50 dark:bg-green-950/20 border border-green-200/50 dark:border-green-800/30">
+            <div className="space-y-2 p-2 rounded-lg bg-released-soft/50 border border-released-border/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <FileText className="h-3 w-3 text-green-600 dark:text-green-400" />
+                  <FileText className="h-3 w-3 text-released-on-soft" />
                   <span className="text-[10px] font-semibold text-muted-foreground">Exames Relevantes</span>
                 </div>
                 <Button
@@ -524,10 +524,10 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
             </div>
 
             {/* Pendencies */}
-            <div className="space-y-2 p-2 rounded-lg bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-800/30">
+            <div className="space-y-2 p-2 rounded-lg bg-muted/50 border border-border/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <FileText className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                  <FileText className="h-3 w-3 text-foreground" />
                   <span className="text-[10px] font-semibold text-muted-foreground">Programações / Pendências</span>
                 </div>
                 <Button

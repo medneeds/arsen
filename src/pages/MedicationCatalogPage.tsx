@@ -48,10 +48,10 @@ interface MedicationCatalogItem {
 }
 
 const routeColors: Record<string, string> = {
-  'VO': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
-  'IV': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-  'IM': 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-  'SC': 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+  'VO': 'bg-released-soft text-released-on-soft',
+  'IV': 'bg-muted text-foreground',
+  'IM': 'bg-warning-soft text-warning-on-soft',
+  'SC': 'bg-muted text-foreground',
 };
 
 export default function MedicationCatalogPage() {
@@ -239,7 +239,7 @@ export default function MedicationCatalogPage() {
         </Card>
         <Card className="border-border">
           <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-amber-600">{stats.controlled}</p>
+            <p className="text-2xl font-bold text-warning-on-soft">{stats.controlled}</p>
             <p className="text-xs text-muted-foreground">Controlados</p>
           </CardContent>
         </Card>
@@ -304,7 +304,7 @@ export default function MedicationCatalogPage() {
                             </Badge>
                           )}
                           {med.controlled && (
-                            <Badge className="text-[10px] px-1.5 py-0 gap-1 bg-amber-500 hover:bg-amber-600">
+                            <Badge className="text-[10px] px-1.5 py-0 gap-1 bg-warning hover:bg-warning">
                               <Shield className="h-3 w-3" /> CONTROLADO
                             </Badge>
                           )}
@@ -455,8 +455,8 @@ export default function MedicationCatalogPage() {
                                         <td className="px-3 py-2 text-foreground text-xs max-w-[200px]">{p.standard_dilution || "—"}</td>
                                         <td className="px-3 py-2 text-foreground text-xs">{p.max_daily_dose || "—"}</td>
                                         <td className="px-3 py-2 text-foreground text-xs">{p.infusion_time || "—"}</td>
-                                        <td className="px-3 py-2 text-center">{p.iv_bolus ? <span className="text-violet-600 font-bold text-xs">✓ Bolus</span> : <span className="text-muted-foreground text-xs">—</span>}</td>
-                                        <td className="px-3 py-2 text-center">{p.pharmacy_suggestion_enabled ? <span className="text-emerald-600 font-bold text-xs">✓ Ativo</span> : <span className="text-muted-foreground text-xs">—</span>}</td>
+                                        <td className="px-3 py-2 text-center">{p.iv_bolus ? <span className="text-foreground font-bold text-xs">✓ Bolus</span> : <span className="text-muted-foreground text-xs">—</span>}</td>
+                                        <td className="px-3 py-2 text-center">{p.pharmacy_suggestion_enabled ? <span className="text-released-on-soft font-bold text-xs">✓ Ativo</span> : <span className="text-muted-foreground text-xs">—</span>}</td>
                                       </>
                                     )}
                                     {canEdit && (

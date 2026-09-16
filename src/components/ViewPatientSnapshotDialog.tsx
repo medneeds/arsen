@@ -27,10 +27,10 @@ const sectorNames = {
 };
 
 const sectorColors = {
-  red: "bg-red-500/10 text-red-600 border-red-500/30",
-  yellow: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
-  blue: "bg-blue-500/10 text-blue-600 border-blue-500/30",
-  outside: "bg-gray-500/10 text-gray-600 border-gray-500/30",
+  red: "bg-critical/10 text-critical-on-soft border-critical/30",
+  yellow: "bg-warning/10 text-warning-on-soft border-warning/30",
+  blue: "bg-primary/10 text-foreground border-border/30",
+  outside: "bg-primary/10 text-foreground border-border/30",
 };
 
 export function ViewPatientSnapshotDialog({

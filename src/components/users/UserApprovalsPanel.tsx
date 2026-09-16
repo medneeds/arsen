@@ -75,10 +75,10 @@ interface AuditEntry {
 }
 
 const STATUS_META: Record<string, { label: string; cls: string; icon: any }> = {
-  pending: { label: "Pendente", cls: "bg-amber-500/10 text-amber-700 border-amber-500/20", icon: Clock },
-  approved: { label: "Aprovado", cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20", icon: CheckCircle2 },
-  rejected: { label: "Recusado", cls: "bg-red-500/10 text-red-700 border-red-500/20", icon: XCircle },
-  suspended: { label: "Suspenso", cls: "bg-gray-500/10 text-gray-700 border-gray-500/20", icon: UserX },
+  pending: { label: "Pendente", cls: "bg-warning/10 text-warning-on-soft border-warning/20", icon: Clock },
+  approved: { label: "Aprovado", cls: "bg-released/10 text-released-on-soft border-released/20", icon: CheckCircle2 },
+  rejected: { label: "Recusado", cls: "bg-critical/10 text-critical-on-soft border-critical/20", icon: XCircle },
+  suspended: { label: "Suspenso", cls: "bg-primary/10 text-foreground border-border/20", icon: UserX },
 };
 
 export function UserApprovalsPanel() {
@@ -278,7 +278,7 @@ export function UserApprovalsPanel() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/10"
+                  className="text-released-on-soft border-released/30 hover:bg-released/10"
                   onClick={() => openDecision(p, "approve")}
                 >
                   <CheckCircle2 className="h-4 w-4 mr-1" />
@@ -287,7 +287,7 @@ export function UserApprovalsPanel() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="text-red-700 border-red-500/30 hover:bg-red-500/10"
+                  className="text-critical-on-soft border-critical/30 hover:bg-critical/10"
                   onClick={() => openDecision(p, "reject")}
                 >
                   <XCircle className="h-4 w-4 mr-1" />
@@ -299,7 +299,7 @@ export function UserApprovalsPanel() {
               <Button
                 size="sm"
                 variant="outline"
-                className="text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/10"
+                className="text-released-on-soft border-released/30 hover:bg-released/10"
                 onClick={() => openDecision(p, "approve")}
               >
                 <CheckCircle2 className="h-4 w-4 mr-1" />
@@ -316,31 +316,31 @@ export function UserApprovalsPanel() {
     <div className="space-y-4">
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="p-4 border-amber-500/20 bg-amber-500/5">
+        <Card className="p-4 border-warning/20 bg-warning/5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-amber-700 font-medium">Pendentes</p>
-              <p className="text-2xl font-bold text-amber-700">{counters.pending}</p>
+              <p className="text-xs text-warning-on-soft font-medium">Pendentes</p>
+              <p className="text-2xl font-bold text-warning-on-soft">{counters.pending}</p>
             </div>
-            <Clock className="h-8 w-8 text-amber-500/50" />
+            <Clock className="h-8 w-8 text-warning/50" />
           </div>
         </Card>
-        <Card className="p-4 border-emerald-500/20 bg-emerald-500/5">
+        <Card className="p-4 border-released/20 bg-released/5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-emerald-700 font-medium">Aprovados</p>
-              <p className="text-2xl font-bold text-emerald-700">{counters.approved}</p>
+              <p className="text-xs text-released-on-soft font-medium">Aprovados</p>
+              <p className="text-2xl font-bold text-released-on-soft">{counters.approved}</p>
             </div>
-            <CheckCircle2 className="h-8 w-8 text-emerald-500/50" />
+            <CheckCircle2 className="h-8 w-8 text-released/50" />
           </div>
         </Card>
-        <Card className="p-4 border-red-500/20 bg-red-500/5">
+        <Card className="p-4 border-critical/20 bg-critical/5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-red-700 font-medium">Recusados</p>
-              <p className="text-2xl font-bold text-red-700">{counters.rejected}</p>
+              <p className="text-xs text-critical-on-soft font-medium">Recusados</p>
+              <p className="text-2xl font-bold text-critical-on-soft">{counters.rejected}</p>
             </div>
-            <XCircle className="h-8 w-8 text-red-500/50" />
+            <XCircle className="h-8 w-8 text-critical/50" />
           </div>
         </Card>
         <Card className="p-4">
@@ -435,12 +435,12 @@ export function UserApprovalsPanel() {
             <DialogTitle className="flex items-center gap-2">
               {decisionType === "approve" ? (
                 <>
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  <CheckCircle2 className="h-5 w-5 text-released-on-soft" />
                   Aprovar cadastro
                 </>
               ) : (
                 <>
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                  <AlertTriangle className="h-5 w-5 text-critical-on-soft" />
                   Recusar cadastro
                 </>
               )}
@@ -478,8 +478,8 @@ export function UserApprovalsPanel() {
               disabled={acting}
               className={
                 decisionType === "approve"
-                  ? "bg-emerald-600 hover:bg-emerald-700"
-                  : "bg-red-600 hover:bg-red-700"
+                  ? "bg-released hover:bg-released"
+                  : "bg-critical hover:bg-critical"
               }
             >
               {acting ? (
@@ -549,10 +549,10 @@ export function UserApprovalsPanel() {
                           Ver detalhes (diff)
                         </summary>
                         <div className="grid grid-cols-2 gap-2 mt-1 text-[10px] font-mono">
-                          <pre className="bg-red-500/5 border border-red-500/10 rounded p-2 overflow-auto">
+                          <pre className="bg-critical/5 border border-critical/10 rounded p-2 overflow-auto">
                             {JSON.stringify(h.old_data || {}, null, 2)}
                           </pre>
-                          <pre className="bg-emerald-500/5 border border-emerald-500/10 rounded p-2 overflow-auto">
+                          <pre className="bg-released/5 border border-released/10 rounded p-2 overflow-auto">
                             {JSON.stringify(h.new_data || {}, null, 2)}
                           </pre>
                         </div>

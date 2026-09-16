@@ -69,9 +69,9 @@ interface PreReq {
 }
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
-  pending: { label: "Pendente", cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
-  approved: { label: "Aprovado", cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
-  rejected: { label: "Recusado", cls: "bg-red-500/10 text-red-700 border-red-500/20" },
+  pending: { label: "Pendente", cls: "bg-warning/10 text-warning-on-soft border-warning/20" },
+  approved: { label: "Aprovado", cls: "bg-released/10 text-released-on-soft border-released/20" },
+  rejected: { label: "Recusado", cls: "bg-critical/10 text-critical-on-soft border-critical/20" },
 };
 
 const formatCpf = (d: string) =>
@@ -300,7 +300,7 @@ export function PreRegistrationApprovalsPanel() {
               <Button
                 size="sm"
                 variant="outline"
-                className="text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/10"
+                className="text-released-on-soft border-released/30 hover:bg-released/10"
                 onClick={() => open(i, "approve")}
               >
                 <CheckCircle2 className="h-4 w-4 mr-1" /> Aprovar
@@ -308,7 +308,7 @@ export function PreRegistrationApprovalsPanel() {
               <Button
                 size="sm"
                 variant="outline"
-                className="text-red-700 border-red-500/30 hover:bg-red-500/10"
+                className="text-critical-on-soft border-critical/30 hover:bg-critical/10"
                 onClick={() => open(i, "reject")}
               >
                 <XCircle className="h-4 w-4 mr-1" /> Recusar
@@ -457,12 +457,12 @@ export function PreRegistrationApprovalsPanel() {
             <DialogTitle className="flex items-center gap-2">
               {decision === "approve" ? (
                 <>
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  <CheckCircle2 className="h-5 w-5 text-released-on-soft" />
                   Aprovar pré-cadastro
                 </>
               ) : (
                 <>
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                  <AlertTriangle className="h-5 w-5 text-critical-on-soft" />
                   Recusar pré-cadastro
                 </>
               )}
@@ -487,13 +487,13 @@ export function PreRegistrationApprovalsPanel() {
               </div>
 
               {decision === "approve" && (
-                <div className="rounded-md border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 p-3 space-y-2">
+                <div className="rounded-md border border-released-border bg-released-soft p-3 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div>
-                      <Label className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                      <Label className="text-xs uppercase tracking-wide text-released-on-soft">
                         Senha de primeiro acesso
                       </Label>
-                      <p className="font-mono text-2xl font-bold tracking-widest text-emerald-700 dark:text-emerald-400">
+                      <p className="font-mono text-2xl font-bold tracking-widest text-released-on-soft">
                         {FIRST_ACCESS_PASSWORD}
                       </p>
                     </div>
@@ -538,7 +538,7 @@ export function PreRegistrationApprovalsPanel() {
             <Button
               onClick={submit}
               disabled={acting}
-              className={decision === "approve" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}
+              className={decision === "approve" ? "bg-released hover:bg-released" : "bg-critical hover:bg-critical"}
             >
               {acting ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> :
                 decision === "approve" ? <CheckCircle2 className="h-4 w-4 mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}

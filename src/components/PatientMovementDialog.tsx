@@ -1082,8 +1082,8 @@ export function PatientMovementDialog({
     <Dialog open={!!signaledInfo} onOpenChange={(o) => { if (!o) setSignaledInfo(null); }}>
       <DialogContent className="sm:max-w-md">
         <div className="flex flex-col items-center text-center gap-2 pt-2 pb-1">
-          <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center">
-            <CheckCircle2 className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+          <div className="h-12 w-12 rounded-full bg-released-soft flex items-center justify-center">
+            <CheckCircle2 className="h-7 w-7 text-released-on-soft" />
           </div>
           <div>
             <p className="font-semibold text-base">
@@ -1120,7 +1120,7 @@ export function PatientMovementDialog({
               </p>
             </div>
             <div className="flex items-start gap-2.5 p-2.5">
-              <Undo2 className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <Undo2 className="h-4 w-4 text-warning-on-soft mt-0.5 shrink-0" />
               <p className="text-[12.5px] leading-snug">
                 Sinalizou por engano? Dá pra <strong>suspender</strong> essa sinalização a qualquer momento, direto no Cockpit do paciente (pede senha + motivo).
               </p>

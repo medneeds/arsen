@@ -80,17 +80,17 @@ export function SapsConfirmationScreen({
   }, [navigate, onComplete, patientId, patientName, bedNumber, sectorCode, age]);
 
   const getMortalityColor = (m: number) => {
-    if (m < 10) return "text-emerald-500";
-    if (m < 25) return "text-yellow-500";
-    if (m < 50) return "text-orange-500";
-    return "text-red-500";
+    if (m < 10) return "text-released";
+    if (m < 25) return "text-warning";
+    if (m < 50) return "text-warning";
+    return "text-critical";
   };
 
   const getMortalityBg = (m: number) => {
-    if (m < 10) return "bg-emerald-500/10 border-emerald-500/20";
-    if (m < 25) return "bg-yellow-500/10 border-yellow-500/20";
-    if (m < 50) return "bg-orange-500/10 border-orange-500/20";
-    return "bg-red-500/10 border-red-500/20";
+    if (m < 10) return "bg-released/10 border-released/20";
+    if (m < 25) return "bg-warning/10 border-warning/20";
+    if (m < 50) return "bg-warning/10 border-warning/20";
+    return "bg-critical/10 border-critical/20";
   };
 
   const getSeverityLabel = (m: number) => {
@@ -132,7 +132,7 @@ export function SapsConfirmationScreen({
             </h2>
             <p className="text-muted-foreground mt-1">{patientName}</p>
             {isValidation && (
-              <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+              <p className="text-xs text-released-on-soft mt-1">
                 Cálculo recalculado · gate clínico liberado
               </p>
             )}

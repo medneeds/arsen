@@ -306,7 +306,7 @@ export function UtiReallocationDialog({
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
-            <ArrowRightLeft className="h-6 w-6 text-blue-600" />
+            <ArrowRightLeft className="h-6 w-6 text-foreground" />
             <DialogTitle className="text-xl">Realocar Paciente</DialogTitle>
           </div>
           <DialogDescription>
@@ -339,7 +339,7 @@ export function UtiReallocationDialog({
               <SelectContent>
                 <SelectItem value="UTI 1">
                   <div className="flex items-center gap-2">
-                    <BedDouble className="h-4 w-4 text-blue-500" />
+                    <BedDouble className="h-4 w-4 text-muted-foreground" />
                     <span>UTI Unidade 1</span>
                     <Badge variant="secondary" className="ml-2 text-xs">
                       {emptyBeds["UTI 1"].length} vago(s)
@@ -348,7 +348,7 @@ export function UtiReallocationDialog({
                 </SelectItem>
                 <SelectItem value="UTI 2">
                   <div className="flex items-center gap-2">
-                    <BedDouble className="h-4 w-4 text-amber-500" />
+                    <BedDouble className="h-4 w-4 text-warning" />
                     <span>UTI Unidade 2</span>
                     <Badge variant="secondary" className="ml-2 text-xs">
                       {emptyBeds["UTI 2"].length} vago(s)
@@ -372,9 +372,9 @@ export function UtiReallocationDialog({
                     {availableBeds.map((bed) => (
                       <SelectItem key={bed.id} value={bed.id}>
                         <div className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-green-500" />
+                          <Check className="h-4 w-4 text-released" />
                           <span>Leito {bed.bedNumber}</span>
-                          <Badge variant="outline" className="ml-2 text-xs text-green-600 border-green-300">
+                          <Badge variant="outline" className="ml-2 text-xs text-released-on-soft border-released-border">
                             Disponível
                           </Badge>
                         </div>
@@ -383,8 +383,8 @@ export function UtiReallocationDialog({
                   </SelectContent>
                 </Select>
               ) : (
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                <div className="p-3 bg-warning-soft border border-warning-border rounded-lg">
+                  <p className="text-sm text-warning-on-soft">
                     Não há leitos vagos disponíveis em {targetUnit}.
                   </p>
                 </div>
@@ -394,8 +394,8 @@ export function UtiReallocationDialog({
 
           {/* Summary of selection */}
           {targetBedPatient && (
-            <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
-              <p className="text-sm text-green-700 dark:text-green-400">
+            <div className="p-3 bg-released-soft border border-released-border rounded-lg">
+              <p className="text-sm text-released-on-soft">
                 <strong>{patient.name}</strong> será realocado para{' '}
                 <strong>{targetUnit} - Leito {targetBedPatient.bedNumber}</strong>
               </p>
@@ -403,8 +403,8 @@ export function UtiReallocationDialog({
           )}
 
           {totalEmptyBeds === 0 && (
-            <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-sm text-red-700 dark:text-red-400">
+            <div className="p-3 bg-critical-soft border border-critical-border rounded-lg">
+              <p className="text-sm text-critical-on-soft">
                 Não há leitos vagos disponíveis em nenhuma unidade de UTI.
               </p>
             </div>

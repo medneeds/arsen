@@ -160,7 +160,7 @@ export function ReceptionGlobalSearch({ open, onOpenChange, onPickRegistry, onPi
                 }}
                 className="flex items-center gap-2"
               >
-                <Activity className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <Activity className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-xs">{e.encounter_code}</span>
@@ -197,7 +197,7 @@ export function ReceptionGlobalSearch({ open, onOpenChange, onPickRegistry, onPi
                 className="flex items-center gap-2"
               >
                 {r.is_unidentified ? (
-                  <Hash className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                  <Hash className="h-3.5 w-3.5 text-warning-on-soft shrink-0" />
                 ) : (
                   <User className="h-3.5 w-3.5 text-primary shrink-0" />
                 )}
@@ -210,7 +210,7 @@ export function ReceptionGlobalSearch({ open, onOpenChange, onPickRegistry, onPi
                   </div>
                 </div>
                 {r.is_unidentified && (
-                  <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[9px] h-4">
+                  <Badge className="bg-warning/15 text-warning-on-soft border border-warning/30 text-[9px] h-4">
                     NI
                   </Badge>
                 )}

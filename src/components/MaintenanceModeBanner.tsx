@@ -43,7 +43,7 @@ export function MaintenanceModeBanner() {
   if (!state.active) return null;
 
   return (
-    <div className="fixed top-0 inset-x-0 z-[9999] bg-amber-500 text-amber-950 shadow-lg border-b-2 border-amber-700">
+    <div className="fixed top-0 inset-x-0 z-[9999] bg-warning text-warning-on-soft shadow-lg border-b-2 border-warning">
       <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center gap-3">
         <AlertTriangle className="h-5 w-5 shrink-0 animate-pulse" />
         <div className="flex-1 text-sm font-medium">

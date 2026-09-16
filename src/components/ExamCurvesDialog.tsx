@@ -23,17 +23,17 @@ interface ExamTemplate {
 }
 
 const EXAM_TEMPLATES: ExamTemplate[] = [
-  { id: 'sodio', name: 'SÓDIO', abbreviation: 'Na', color: 'from-blue-500 to-cyan-500' },
-  { id: 'potassio', name: 'POTÁSSIO', abbreviation: 'K', color: 'from-rose-500 to-pink-500' },
-  { id: 'troponina', name: 'TROPONINA', abbreviation: 'TROP', color: 'from-red-500 to-orange-500' },
-  { id: 'cpk', name: 'CPK', abbreviation: 'CPK', color: 'from-amber-500 to-yellow-500' },
-  { id: 'leucocitos', name: 'LEUCÓCITOS', abbreviation: 'LEUCO', color: 'from-green-500 to-emerald-500' },
-  { id: 'creatinina', name: 'CREATININA', abbreviation: 'Cr', color: 'from-teal-500 to-cyan-500' },
-  { id: 'ureia', name: 'UREIA', abbreviation: 'Ur', color: 'from-indigo-500 to-blue-500' },
-  { id: 'hemoglobina', name: 'HEMOGLOBINA', abbreviation: 'Hb', color: 'from-rose-500 to-red-500' },
-  { id: 'plaquetas', name: 'PLAQUETAS', abbreviation: 'Plaq', color: 'from-sky-500 to-blue-500' },
-  { id: 'pcr', name: 'PCR', abbreviation: 'PCR', color: 'from-orange-500 to-amber-500' },
-  { id: 'lactato', name: 'LACTATO', abbreviation: 'Lac', color: 'from-lime-500 to-green-500' },
+  { id: 'sodio', name: 'SÓDIO', abbreviation: 'Na', color: 'from-muted to-muted' },
+  { id: 'potassio', name: 'POTÁSSIO', abbreviation: 'K', color: 'from-critical-soft to-muted' },
+  { id: 'troponina', name: 'TROPONINA', abbreviation: 'TROP', color: 'from-critical-soft to-warning-soft' },
+  { id: 'cpk', name: 'CPK', abbreviation: 'CPK', color: 'from-warning-soft to-warning-soft' },
+  { id: 'leucocitos', name: 'LEUCÓCITOS', abbreviation: 'LEUCO', color: 'from-released-soft to-released-soft' },
+  { id: 'creatinina', name: 'CREATININA', abbreviation: 'Cr', color: 'from-released-soft to-muted' },
+  { id: 'ureia', name: 'UREIA', abbreviation: 'Ur', color: 'from-muted to-muted' },
+  { id: 'hemoglobina', name: 'HEMOGLOBINA', abbreviation: 'Hb', color: 'from-critical-soft to-critical-soft' },
+  { id: 'plaquetas', name: 'PLAQUETAS', abbreviation: 'Plaq', color: 'from-muted to-muted' },
+  { id: 'pcr', name: 'PCR', abbreviation: 'PCR', color: 'from-warning-soft to-warning-soft' },
+  { id: 'lactato', name: 'LACTATO', abbreviation: 'Lac', color: 'from-released-soft to-released-soft' },
 ];
 
 interface ExamValues {

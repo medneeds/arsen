@@ -37,7 +37,7 @@ export default function HemoderivadosPage() {
       <div className="p-6 md:p-8 space-y-8 max-w-6xl">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-rose-500 to-rose-400 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-critical-soft to-critical-soft bg-clip-text text-transparent">
             Hemoderivados
           </h1>
           <p className="text-muted-foreground text-lg">
@@ -49,10 +49,10 @@ export default function HemoderivadosPage() {
         </div>
 
         {/* CTA — Nova Solicitação Padrão Socorrão I */}
-        <Card className="border-rose-300/40 bg-gradient-to-br from-rose-500/5 via-rose-500/3 to-transparent shadow-lg">
+        <Card className="border-critical-border/40 bg-gradient-to-br from-critical-soft/5 via-critical-soft/3 to-transparent shadow-lg">
           <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-rose-500/15 ring-1 ring-rose-500/30">
-              <Droplet className="h-6 w-6 text-rose-600 dark:text-rose-400" />
+            <div className="p-3 rounded-xl bg-critical/15 ring-1 ring-critical/30">
+              <Droplet className="h-6 w-6 text-critical-on-soft" />
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-base font-semibold text-foreground">Nova Solicitação de Hemocomponentes</h2>
@@ -62,7 +62,7 @@ export default function HemoderivadosPage() {
             </div>
             <Button
               size="lg"
-              className="gap-2 bg-rose-600 hover:bg-rose-700 text-white shadow-md"
+              className="gap-2 bg-critical hover:bg-critical text-white shadow-md"
               onClick={() => setRequestOpen(true)}
             >
               <FileText className="h-4 w-4" />
@@ -110,8 +110,8 @@ export default function HemoderivadosPage() {
                     onClick={() => handleDownload(doc.file)}
                     className="w-full flex items-center gap-4 p-5 text-left transition-colors hover:bg-accent/50"
                   >
-                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-rose-500/10 flex items-center justify-center group-hover:bg-rose-500/20 transition-colors">
-                      <Download className="h-6 w-6 text-rose-500" />
+                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-critical/10 flex items-center justify-center group-hover:bg-critical/20 transition-colors">
+                      <Download className="h-6 w-6 text-critical" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">

@@ -45,9 +45,9 @@ function BedCardMock({
 }) {
   const tarja =
     status === "transferPending"
-      ? { text: "TRANSF. INT", className: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30" }
+      ? { text: "TRANSF. INT", className: "bg-warning/15 text-warning-on-soft border-warning/30" }
       : status === "dischargePending"
-        ? { text: "ALTA SINALIZADA", className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30" }
+        ? { text: "ALTA SINALIZADA", className: "bg-released/15 text-released-on-soft border-released/30" }
         : null;
 
   return (
@@ -60,7 +60,7 @@ function BedCardMock({
         )}
         <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 bg-muted/30">
           <div className="flex items-center gap-2">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-released" />
             <span className="font-semibold text-sm">{bedLabel}</span>
             <span className="text-[10px] text-muted-foreground">UTI 1</span>
           </div>
@@ -68,17 +68,17 @@ function BedCardMock({
             type="button"
             className={cn(
               "h-7 w-7 grid place-items-center rounded-md border border-border/60 bg-background transition-all",
-              highlightMenu && "ring-2 ring-indigo-400 ring-offset-2 ring-offset-background animate-pulse",
+              highlightMenu && "ring-2 ring-ring ring-offset-2 ring-offset-background animate-pulse",
             )}
           >
-            <ArrowLeftRight className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+            <ArrowLeftRight className="h-3.5 w-3.5 text-foreground" />
           </button>
         </div>
         <div className="p-3 space-y-2">
           <div className="text-sm font-medium">JOÃO DA SILVA</div>
           <div className="text-[11px] text-muted-foreground">PRONT. 26-001-000142-7 · ADMITIDO HÁ 3 DIAS</div>
           <div className="flex gap-1.5 pt-1">
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-700 dark:text-blue-300">ADMITIDO</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/15 text-foreground">ADMITIDO</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">SOFA 4</span>
           </div>
         </div>
@@ -114,22 +114,22 @@ function MenuActionsMock({
                 "flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-transparent transition-all",
                 item.emphasis &&
                   (color === "emerald"
-                    ? "border-emerald-300/60 bg-emerald-50/60 dark:bg-emerald-950/30 ring-2 ring-emerald-400/40"
-                    : "border-indigo-300/60 bg-indigo-50/60 dark:bg-indigo-950/30 ring-2 ring-indigo-400/40"),
+                    ? "border-released-border/60 bg-released-soft/60 ring-2 ring-released/40"
+                    : "border-border/60 bg-muted/60 ring-2 ring-ring/40"),
               )}
             >
               <div
                 className={cn(
                   "flex h-7 w-7 items-center justify-center rounded-md",
                   color === "indigo"
-                    ? "bg-indigo-100 dark:bg-indigo-950/60"
-                    : "bg-emerald-100 dark:bg-emerald-950/60",
+                    ? "bg-muted"
+                    : "bg-released-soft",
                 )}
               >
                 <Icon
                   className={cn(
                     "h-3.5 w-3.5",
-                    color === "indigo" ? "text-indigo-700 dark:text-indigo-300" : "text-emerald-700 dark:text-emerald-300",
+                    color === "indigo" ? "text-foreground" : "text-released-on-soft",
                   )}
                 />
               </div>
@@ -175,7 +175,7 @@ function CockpitTabsMock({
                 isActive
                   ? "bg-primary text-primary-foreground font-semibold"
                   : "text-muted-foreground hover:bg-muted",
-                isHighlight && !isActive && "ring-2 ring-emerald-400/50",
+                isHighlight && !isActive && "ring-2 ring-released/50",
                 isHighlight && "shadow-sm",
               )}
             >
@@ -207,17 +207,17 @@ function DialogMock({
 }) {
   const accent =
     tone === "warning"
-      ? "border-amber-500/40 bg-amber-500/5"
+      ? "border-warning/40 bg-warning/5"
       : tone === "danger"
-        ? "border-red-500/40 bg-red-500/5"
+        ? "border-critical/40 bg-critical/5"
         : tone === "success"
-          ? "border-emerald-500/40 bg-emerald-500/5"
+          ? "border-released/40 bg-released/5"
           : "border-border bg-card";
   const primaryColor =
     tone === "warning"
-      ? "bg-amber-600 hover:bg-amber-700 text-white"
+      ? "bg-warning hover:bg-warning text-white"
       : tone === "danger"
-        ? "bg-red-600 hover:bg-red-700 text-white"
+        ? "bg-critical hover:bg-critical text-white"
         : "bg-primary text-primary-foreground";
 
   return (
@@ -250,23 +250,23 @@ function DialogMock({
 function PanelVsMapMock() {
   return (
     <div className="mx-auto w-full max-w-md grid grid-cols-2 gap-3">
-      <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-3 text-center">
-        <div className="text-[10px] font-semibold tracking-wider text-blue-700 dark:text-blue-300 uppercase mb-2">Mapa de Leitos</div>
+      <div className="rounded-xl border border-border/30 bg-primary/5 p-3 text-center">
+        <div className="text-[10px] font-semibold tracking-wider text-foreground uppercase mb-2">Mapa de Leitos</div>
         <div className="grid grid-cols-3 gap-1 mb-2">
           {Array.from({ length: 9 }).map((_, i) => (
-            <div key={i} className={cn("aspect-square rounded border", i === 4 ? "bg-emerald-500/30 border-emerald-500/50" : "bg-background border-border/60")} />
+            <div key={i} className={cn("aspect-square rounded border", i === 4 ? "bg-released/30 border-released/50" : "bg-background border-border/60")} />
           ))}
         </div>
         <div className="text-[10px] text-muted-foreground">Ocupação física</div>
       </div>
-      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-center">
-        <div className="text-[10px] font-semibold tracking-wider text-emerald-700 dark:text-emerald-300 uppercase mb-2">Painel Clínico</div>
+      <div className="rounded-xl border border-released/30 bg-released/5 p-3 text-center">
+        <div className="text-[10px] font-semibold tracking-wider text-released-on-soft uppercase mb-2">Painel Clínico</div>
         <div className="space-y-1 mb-2">
-          <div className="h-1.5 rounded bg-emerald-500/30" />
-          <div className="h-1.5 rounded bg-emerald-500/20" />
-          <div className="h-1.5 rounded bg-emerald-500/30 w-2/3" />
+          <div className="h-1.5 rounded bg-released/30" />
+          <div className="h-1.5 rounded bg-released/20" />
+          <div className="h-1.5 rounded bg-released/30 w-2/3" />
           <div className="flex items-center justify-center pt-1">
-            <FileSignature className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <FileSignature className="h-5 w-5 text-released-on-soft" />
           </div>
         </div>
         <div className="text-[10px] text-muted-foreground">Conduta clínica</div>

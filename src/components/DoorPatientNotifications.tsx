@@ -81,13 +81,13 @@ export function DoorPatientNotifications() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return <Badge className="bg-amber-500/20 text-amber-500">Pendente</Badge>;
+        return <Badge className="bg-warning/20 text-warning">Pendente</Badge>;
       case "approved":
-        return <Badge className="bg-green-500/20 text-green-500">Aprovado</Badge>;
+        return <Badge className="bg-released/20 text-released">Aprovado</Badge>;
       case "discussing":
-        return <Badge className="bg-blue-500/20 text-blue-500">Em Discussão</Badge>;
+        return <Badge className="bg-primary/20 text-muted-foreground">Em Discussão</Badge>;
       case "rejected":
-        return <Badge className="bg-red-500/20 text-red-500">Negado</Badge>;
+        return <Badge className="bg-critical/20 text-critical">Negado</Badge>;
       default:
         return null;
     }
@@ -96,13 +96,13 @@ export function DoorPatientNotifications() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "approved":
-        return <Check className="h-4 w-4 text-green-500" />;
+        return <Check className="h-4 w-4 text-released" />;
       case "discussing":
-        return <Clock className="h-4 w-4 text-blue-500" />;
+        return <Clock className="h-4 w-4 text-muted-foreground" />;
       case "rejected":
-        return <X className="h-4 w-4 text-red-500" />;
+        return <X className="h-4 w-4 text-critical" />;
       default:
-        return <Clock className="h-4 w-4 text-amber-500" />;
+        return <Clock className="h-4 w-4 text-warning" />;
     }
   };
 
@@ -131,7 +131,7 @@ export function DoorPatientNotifications() {
             <Bell className="h-5 w-5" />
             {notificationCount > 0 && (
               <Badge 
-                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-blue-500 text-white text-xs"
+                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-primary text-white text-xs"
               >
                 {notificationCount}
               </Badge>
@@ -166,7 +166,7 @@ export function DoorPatientNotifications() {
                           {request.requested_sector}
                         </p>
                         {request.status === "rejected" && request.rejection_reason && (
-                          <p className="text-xs text-red-500 mt-1">
+                          <p className="text-xs text-critical mt-1">
                             Motivo: {request.rejection_reason}
                           </p>
                         )}

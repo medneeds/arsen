@@ -71,12 +71,12 @@ interface AdmitPatientDialogProps {
 }
 
 const RISK_COLORS: Record<string, string> = {
-  vermelho: "bg-red-600 text-white",
-  laranja: "bg-orange-500 text-white",
-  amarelo: "bg-yellow-500 text-black",
-  verde: "bg-green-600 text-white",
-  azul: "bg-blue-600 text-white",
-  branca: "bg-white text-slate-900 border border-slate-400",
+  vermelho: "bg-critical text-white",
+  laranja: "bg-warning text-white",
+  amarelo: "bg-warning text-black",
+  verde: "bg-released text-white",
+  azul: "bg-primary text-white",
+  branca: "bg-white text-foreground border border-border",
 };
 
 const RISK_LABELS: Record<string, string> = {
@@ -89,11 +89,11 @@ const RISK_LABELS: Record<string, string> = {
 };
 
 const SECTORS = [
-  { value: "red", label: "UTI 1", color: "text-red-500" },
-  { value: "yellow", label: "UTI 2", color: "text-yellow-500" },
-  { value: "blue", label: "UCI 1", color: "text-blue-500" },
-  { value: "outside", label: "UCI 2", color: "text-emerald-500" },
-  { value: "ucc", label: "UCC", color: "text-cyan-600" },
+  { value: "red", label: "UTI 1", color: "text-critical" },
+  { value: "yellow", label: "UTI 2", color: "text-warning" },
+  { value: "blue", label: "UCI 1", color: "text-muted-foreground" },
+  { value: "outside", label: "UCI 2", color: "text-released" },
+  { value: "ucc", label: "UCC", color: "text-foreground" },
 ];
 
 export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess }: AdmitPatientDialogProps) {
@@ -596,7 +596,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
             <Card>
               <CardContent className="p-3">
                 <p className="text-xs font-semibold flex items-center gap-1 mb-1">
-                  <Brain className="h-3.5 w-3.5 text-purple-500" /> Glasgow
+                  <Brain className="h-3.5 w-3.5 text-muted-foreground" /> Glasgow
                 </p>
                 <p className="text-lg font-bold">{pa.glasgow_score}<span className="text-xs font-normal text-muted-foreground">/15</span></p>
                 <div className="text-[10px] text-muted-foreground">
@@ -617,7 +617,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                     <div><span className="text-muted-foreground">Dor:</span> <span className="font-semibold">{pa.pain_scale}/10</span></div>
                   )}
                   {pa.allergies && <div><span className="text-muted-foreground">Alergias:</span> {pa.allergies}</div>}
-                  {pa.flu_symptoms && <div className="flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-orange-500" /> Sintomas gripais{pa.flu_symptoms_detail ? `: ${pa.flu_symptoms_detail}` : ""}</div>}
+                  {pa.flu_symptoms && <div className="flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-warning" /> Sintomas gripais{pa.flu_symptoms_detail ? `: ${pa.flu_symptoms_detail}` : ""}</div>}
                   {pa.oxygen_therapy && <div><span className="text-muted-foreground">O₂:</span> {pa.oxygen_therapy_detail || "Sim"}</div>}
                 </div>
               </CardContent>
@@ -645,7 +645,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
               {bedsLoaded && (() => {
                 const freeCount = availableBeds.filter(b => b !== "EXTRA" && !occupiedBeds.includes(b)).length;
                 return freeCount > 0 ? (
-                  <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30">
+                  <Badge variant="outline" className="text-xs text-released-on-soft border-released-border bg-released-soft">
                     {freeCount} {freeCount === 1 ? "leito livre" : "leitos livres"}
                   </Badge>
                 ) : (
@@ -675,7 +675,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 text-xs gap-1.5 border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+                      className="h-7 text-xs gap-1.5 border-warning/50 text-warning-on-soft hover:bg-warning/10"
                       onClick={() => {
                         setExtraBedRequested(true);
                         setSelectedBed("EXTRA");
@@ -704,11 +704,11 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
 
           {/* Extra bed confirmed */}
           {bedsLoaded && sectorFullAlert && extraBedRequested && (
-            <Card className="border-amber-500/40 bg-amber-500/10">
+            <Card className="border-warning/40 bg-warning/10">
               <CardContent className="p-3 flex items-start gap-2.5">
-                <BedDouble className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                <BedDouble className="h-5 w-5 text-warning-on-soft mt-0.5 shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Maca extra solicitada</p>
+                  <p className="text-sm font-semibold text-warning-on-soft">Maca extra solicitada</p>
                   <p className="text-muted-foreground mt-1 text-xs">
                     O paciente será alocado provisoriamente em maca extra no setor <span className="font-medium">{SECTORS.find(s => s.value === selectedSector)?.label}</span>.
                     Transfira para leito regular assim que houver disponibilidade.
@@ -750,8 +750,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                           className={cn(
                             "rounded-md border px-1.5 py-1.5 text-[10px] font-semibold transition-all flex flex-col items-center gap-0.5",
                             isSel
-                              ? "border-amber-500 bg-amber-500/15 text-amber-700 dark:text-amber-400 ring-2 ring-amber-500/30"
-                              : "border-dashed border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+                              ? "border-warning bg-warning/15 text-warning-on-soft ring-2 ring-warning/30"
+                              : "border-dashed border-warning/40 text-warning-on-soft hover:bg-warning/10"
                           )}
                         >
                           <BedDouble className="h-3 w-3" />
@@ -772,8 +772,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                           isOccupied
                             ? "border-destructive/30 bg-destructive/10 text-destructive/70 cursor-not-allowed"
                             : isSel
-                              ? "border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 ring-2 ring-emerald-500/30"
-                              : "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/15"
+                              ? "border-released bg-released/15 text-released-on-soft ring-2 ring-released/30"
+                              : "border-released/30 bg-released/5 text-released-on-soft hover:bg-released/15"
                         )}
                       >
                         <BedDouble className="h-3 w-3" />

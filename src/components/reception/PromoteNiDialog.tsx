@@ -167,7 +167,7 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserCheck className="h-5 w-5 text-emerald-600" />
+            <UserCheck className="h-5 w-5 text-released-on-soft" />
             Identificar paciente NI
           </DialogTitle>
           <DialogDescription>
@@ -182,21 +182,21 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
         ) : (
           <div className="space-y-3">
             {/* Cabeçalho do NI atual */}
-            <div className="rounded-lg border border-slate-500/30 bg-slate-500/5 p-3 flex items-center gap-3">
-              <UserX className="h-4 w-4 text-slate-600 shrink-0" />
+            <div className="rounded-lg border border-border/30 bg-primary/5 p-3 flex items-center gap-3">
+              <UserX className="h-4 w-4 text-foreground shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold">{niName}</p>
                 {niCode && <p className="text-[10px] text-muted-foreground font-mono">{niCode}</p>}
               </div>
-              <ArrowRight className="h-4 w-4 text-emerald-600" />
-              <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">
+              <ArrowRight className="h-4 w-4 text-released-on-soft" />
+              <div className="text-[10px] text-released-on-soft font-medium">
                 identificado
               </div>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="pn-name" className="text-xs">
-                Nome completo <span className="text-rose-600">*</span>
+                Nome completo <span className="text-critical-on-soft">*</span>
               </Label>
               <Input
                 id="pn-name"
@@ -206,7 +206,7 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
                 autoFocus
               />
               {fullName.trim() && !fullNameOk && (
-                <Badge variant="outline" className="text-[9px] h-4 border-amber-500/40 text-amber-700">
+                <Badge variant="outline" className="text-[9px] h-4 border-warning/40 text-warning-on-soft">
                   Informe nome e sobrenome
                 </Badge>
               )}
@@ -264,8 +264,8 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
               />
             </div>
 
-            <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2.5 flex items-start gap-2">
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+            <div className="rounded-md border border-warning/30 bg-warning/5 p-2.5 flex items-start gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 text-warning-on-soft mt-0.5 shrink-0" />
               <p className="text-[11px] text-muted-foreground">
                 Esta ação é registrada no histórico de auditoria. Caso o paciente já possua outro prontuário com este CPF, use o fluxo de merge no painel administrativo.
               </p>
@@ -280,7 +280,7 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
           <Button
             onClick={handlePromote}
             disabled={saving || loading || !fullNameOk}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="bg-released hover:bg-released"
           >
             {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserCheck className="h-4 w-4 mr-2" />}
             Confirmar identificação

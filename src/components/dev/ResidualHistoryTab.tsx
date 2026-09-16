@@ -103,13 +103,13 @@ export function ResidualHistoryTab() {
 
   return (
     <div className="space-y-4">
-      <Card className="border-amber-200 bg-amber-50/40 dark:bg-amber-950/20 dark:border-amber-900/40">
+      <Card className="border-warning-border bg-warning-soft/40">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2 text-amber-900 dark:text-amber-200">
+          <CardTitle className="text-sm flex items-center gap-2 text-warning-on-soft">
             <ShieldAlert className="h-4 w-4" /> Como funciona
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-xs text-amber-900/80 dark:text-amber-100/80 space-y-1.5">
+        <CardContent className="text-xs text-warning-on-soft/80 space-y-1.5">
           <p>
             Detecta <strong>evoluções clínicas</strong> cujo <code className="font-mono">(setor, leito)</code> corresponde
             a um leito <strong>atualmente ocupado por outro paciente</strong> (ou com <code className="font-mono">patient_id</code> nulo).
@@ -181,7 +181,7 @@ export function ResidualHistoryTab() {
                       <div className="flex flex-wrap gap-1">
                         {b.originPatients.map((o, i) => (
                           <Badge key={i} variant="outline" className="text-[10px] font-normal">
-                            {o.name} {o.patient_id ? "" : <span className="ml-1 text-amber-600">(NULL)</span>} · {o.count}
+                            {o.name} {o.patient_id ? "" : <span className="ml-1 text-warning-on-soft">(NULL)</span>} · {o.count}
                           </Badge>
                         ))}
                       </div>
@@ -260,7 +260,7 @@ export function ResidualHistoryTab() {
             <AlertDialogAction
               onClick={(e) => { e.preventDefault(); execute(); }}
               disabled={executing}
-              className="bg-amber-600 hover:bg-amber-700"
+              className="bg-warning hover:bg-warning"
             >
               {executing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Archive className="h-3.5 w-3.5 mr-1" />}
               Confirmar e arquivar

@@ -209,16 +209,16 @@ export default function PreCadastroPage() {
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-32 -left-24 h-96 w-96 rounded-full bg-primary/20 blur-3xl animate-pulse" />
         <div
-          className="absolute top-1/3 -right-32 h-[28rem] w-[28rem] rounded-full bg-blue-500/15 blur-3xl animate-pulse"
+          className="absolute top-1/3 -right-32 h-[28rem] w-[28rem] rounded-full bg-primary/15 blur-3xl animate-pulse"
           style={{ animationDelay: "1.2s", animationDuration: "6s" }}
         />
         <div
-          className="absolute -bottom-40 left-1/4 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl animate-pulse"
+          className="absolute -bottom-40 left-1/4 h-96 w-96 rounded-full bg-released/10 blur-3xl animate-pulse"
           style={{ animationDelay: "0.6s", animationDuration: "7s" }}
         />
       </div>
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.025] dark:opacity-[0.05]"
+        className="pointer-events-none absolute inset-0 opacity-[0.025]"
         style={{
           backgroundImage:
             "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
@@ -230,13 +230,13 @@ export default function PreCadastroPage() {
 
   if (submitted) {
     return (
-      <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center p-6">
+      <div className="relative min-h-screen bg-gradient-to-br from-muted via-white to-muted flex items-center justify-center p-6">
         <Backdrop />
         <div className="relative w-full max-w-lg space-y-5 animate-in fade-in zoom-in-95 duration-500">
           <NormaZeroHeader />
           <Card className="p-8 text-center space-y-4 backdrop-blur-xl bg-card/70 border-border/60 shadow-2xl shadow-emerald-500/10">
-            <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-emerald-400/20 to-emerald-600/10 ring-1 ring-emerald-500/30 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-              <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+            <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-released-soft/20 to-released-soft/10 ring-1 ring-released/30 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <CheckCircle2 className="h-8 w-8 text-released" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight">PRÉ-CADASTRO ENVIADO!</h1>
             <p className="text-muted-foreground">
@@ -257,12 +257,12 @@ export default function PreCadastroPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 py-8 px-4">
+    <div className="relative min-h-screen bg-gradient-to-br from-muted via-white to-muted py-8 px-4">
       <Backdrop />
       <div className="relative max-w-2xl mx-auto space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <NormaZeroHeader />
         <div className="text-center space-y-2">
-          <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/30 via-primary/15 to-blue-500/20 ring-1 ring-primary/30 flex items-center justify-center shadow-xl shadow-primary/20">
+          <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/30 via-primary/15 to-muted/20 ring-1 ring-primary/30 flex items-center justify-center shadow-xl shadow-primary/20">
             <ShieldCheck className="h-7 w-7 text-primary drop-shadow" />
           </div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent">

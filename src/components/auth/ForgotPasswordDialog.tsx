@@ -101,11 +101,11 @@ export function ForgotPasswordDialog({
 
         {submitted ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+            <div className="flex items-center gap-3 rounded-lg border border-released/20 bg-released/5 p-3">
+              <CheckCircle2 className="h-5 w-5 text-released-on-soft shrink-0" />
               <div className="text-sm">
-                <p className="font-medium text-emerald-700 preserve-case">E-mail enviado</p>
-                <p className="text-xs text-emerald-700/80 preserve-case">
+                <p className="font-medium text-released-on-soft preserve-case">E-mail enviado</p>
+                <p className="text-xs text-released-on-soft/80 preserve-case">
                   Não esqueça de checar a caixa de spam.
                 </p>
               </div>

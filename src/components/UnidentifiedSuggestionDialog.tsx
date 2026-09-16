@@ -53,7 +53,7 @@ export function UnidentifiedSuggestionDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            <AlertTriangle className="h-5 w-5 text-warning" />
             Paciente possivelmente NÃO IDENTIFICADO
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -81,12 +81,12 @@ export function UnidentifiedSuggestionDialog({
             <button
               type="button"
               onClick={onConfirmPure}
-              className="w-full text-left rounded-md border-2 border-amber-500/30 bg-amber-500/10 hover:border-amber-500 hover:bg-amber-500/20 transition px-3 py-2.5 group"
+              className="w-full text-left rounded-md border-2 border-warning/30 bg-warning/10 hover:border-warning hover:bg-warning/20 transition px-3 py-2.5 group"
             >
               <div className="flex items-start gap-2">
-                <UserX className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <UserX className="h-4 w-4 text-warning-on-soft mt-0.5 shrink-0" />
                 <div className="flex-1">
-                  <div className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                  <div className="text-xs font-semibold text-warning-on-soft">
                     NI puro — apenas código institucional
                   </div>
                   <p className="text-[10.5px] text-foreground/80 mt-0.5">

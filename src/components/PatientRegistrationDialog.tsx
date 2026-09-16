@@ -590,7 +590,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
         {/* NI toggle - sempre visível no topo */}
         <Card className={cn(
           "border-2 transition-colors",
-          form.is_unidentified ? "border-amber-500 bg-amber-500/10" : "border-dashed border-muted"
+          form.is_unidentified ? "border-warning bg-warning/10" : "border-dashed border-muted"
         )}>
           <CardContent className="p-3 flex items-center gap-3">
             <Checkbox
@@ -600,7 +600,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
             />
             <label htmlFor="ni-toggle" className="flex-1 cursor-pointer">
               <div className="flex items-center gap-2 font-semibold text-sm">
-                <UserX className="h-4 w-4 text-amber-600" />
+                <UserX className="h-4 w-4 text-warning-on-soft" />
                 Paciente NÃO IDENTIFICADO
               </div>
               <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -637,8 +637,8 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
           <TabsContent value="dados" className="space-y-3 mt-4">
             {form.is_unidentified ? (
               <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2 p-3 rounded-md bg-amber-500/10 border border-amber-500/30 text-xs flex items-start gap-2">
-                  <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="col-span-2 p-3 rounded-md bg-warning/10 border border-warning/30 text-xs flex items-start gap-2">
+                  <ShieldAlert className="h-4 w-4 text-warning-on-soft shrink-0 mt-0.5" />
                   <div>
                     <strong>Modo Não Identificado:</strong> ao salvar, será gerado um código <code>NI-AAAA-NNNNNN</code> + prontuário oficial.
                     Preencha apenas as características visíveis para auxiliar identificação posterior.
@@ -805,7 +805,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                     value={form.medical_record}
                     onChange={e => updateField("medical_record", e.target.value)}
                     placeholder={mrMode === "legacy" ? "Obrigatório — nº do sistema antigo" : "Auto: AA-UUU-SSSSSS-DV"}
-                    className={cn(mrMode === "legacy" && !form.medical_record.trim() && "border-amber-500/60")}
+                    className={cn(mrMode === "legacy" && !form.medical_record.trim() && "border-warning/60")}
                   />
                   <p className="text-[10px] text-muted-foreground mt-1">
                     {mrMode === "legacy"

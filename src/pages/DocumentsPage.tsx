@@ -31,8 +31,8 @@ export default function DocumentsPage() {
       description: "Protocolo institucional para manejo de sepse e choque séptico",
       route: "/sepsis-protocol",
       icon: Biohazard,
-      color: "text-red-500",
-      bgColor: "bg-red-500/10"
+      color: "text-critical",
+      bgColor: "bg-critical/10"
     },
     { 
       id: "controle-glicemico", 
@@ -40,8 +40,8 @@ export default function DocumentsPage() {
       description: "Protocolo de insulina e controle glicêmico",
       route: "/documents/controle-glicemico",
       icon: Activity,
-      color: "text-emerald-500",
-      bgColor: "bg-emerald-500/10"
+      color: "text-released",
+      bgColor: "bg-released/10"
     },
     { 
       id: "cuidados-paliativos", 
@@ -49,8 +49,8 @@ export default function DocumentsPage() {
       description: "Termo de aceite de tratamento em cuidados paliativos",
       route: "/documents/cuidados-paliativos",
       icon: Heart,
-      color: "text-pink-500",
-      bgColor: "bg-pink-500/10"
+      color: "text-muted-foreground",
+      bgColor: "bg-primary/10"
     },
     { 
       id: "fluxo-paliativacao", 
@@ -58,8 +58,8 @@ export default function DocumentsPage() {
       description: "Orientações sobre paliativação e transferência UTI",
       route: "/documents/fluxo-paliativacao",
       icon: Workflow,
-      color: "text-violet-500",
-      bgColor: "bg-violet-500/10"
+      color: "text-muted-foreground",
+      bgColor: "bg-primary/10"
     },
     { 
       id: "tomografias", 
@@ -67,8 +67,8 @@ export default function DocumentsPage() {
       description: "Questionários e documentos para exames tomográficos",
       route: "/documents/tomografias",
       icon: Radar,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10"
+      color: "text-muted-foreground",
+      bgColor: "bg-primary/10"
     },
     { 
       id: "hemoderivados", 
@@ -76,8 +76,8 @@ export default function DocumentsPage() {
       description: "Solicitações e termos de hemotransfusão",
       route: "/documents/hemoderivados",
       icon: Droplet,
-      color: "text-rose-500",
-      bgColor: "bg-rose-500/10"
+      color: "text-critical",
+      bgColor: "bg-critical/10"
     },
     { 
       id: "regulacoes", 
@@ -85,8 +85,8 @@ export default function DocumentsPage() {
       description: "Documentos para regulação e solicitações SUS",
       route: "/documents/regulacoes",
       icon: FileCheck,
-      color: "text-green-500",
-      bgColor: "bg-green-500/10"
+      color: "text-released",
+      bgColor: "bg-released/10"
     },
     { 
       id: "priorizacao-cirurgica", 
@@ -94,8 +94,8 @@ export default function DocumentsPage() {
       description: "Classificação de procedimentos cirúrgicos por prioridade",
       route: "/documents/priorizacao-cirurgica",
       icon: Scissors,
-      color: "text-orange-500",
-      bgColor: "bg-orange-500/10"
+      color: "text-warning",
+      bgColor: "bg-warning/10"
     },
     { 
       id: "apac", 
@@ -103,8 +103,8 @@ export default function DocumentsPage() {
       description: "Laudo para solicitação de TC, RM, Doppler e outros exames de alta complexidade (SUS)",
       route: "/documents/apac",
       icon: ScanLine,
-      color: "text-sky-500",
-      bgColor: "bg-sky-500/10"
+      color: "text-muted-foreground",
+      bgColor: "bg-primary/10"
     },
   ];
 

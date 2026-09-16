@@ -25,13 +25,13 @@ import { BedReleasePreAdmissionDialog } from "./BedReleasePreAdmissionDialog";
 
 // Clinical status options with refined colors - only critical ones are vibrant
 const CLINICAL_STATUS_OPTIONS = [
-  { value: "gravissimo", label: "GRAVÍSSIMO", color: "bg-red-600 text-white", borderColor: "border-red-600" },
-  { value: "grave", label: "GRAVE", color: "bg-red-500 text-white", borderColor: "border-red-500" },
-  { value: "grave_estavel", label: "GRAVE, PORÉM ESTÁVEL", color: "bg-amber-600 text-white", borderColor: "border-amber-600" },
-  { value: "potencialmente_grave", label: "POTENCIALMENTE GRAVE", color: "bg-amber-500 text-white", borderColor: "border-amber-500" },
-  { value: "regular", label: "REGULAR", color: "bg-slate-500 text-white", borderColor: "border-slate-500" },
-  { value: "paliativado", label: "CUIDADOS PALIATIVOS", color: "bg-violet-600 text-white", borderColor: "border-violet-600" },
-  { value: "protocolo_me", label: "EM PROTOCOLO DE ME", color: "bg-gray-800 text-white", borderColor: "border-gray-800" },
+  { value: "gravissimo", label: "GRAVÍSSIMO", color: "bg-critical text-white", borderColor: "border-critical" },
+  { value: "grave", label: "GRAVE", color: "bg-critical text-white", borderColor: "border-critical" },
+  { value: "grave_estavel", label: "GRAVE, PORÉM ESTÁVEL", color: "bg-warning text-white", borderColor: "border-warning" },
+  { value: "potencialmente_grave", label: "POTENCIALMENTE GRAVE", color: "bg-warning text-white", borderColor: "border-warning" },
+  { value: "regular", label: "REGULAR", color: "bg-primary text-white", borderColor: "border-border" },
+  { value: "paliativado", label: "CUIDADOS PALIATIVOS", color: "bg-primary text-white", borderColor: "border-border" },
+  { value: "protocolo_me", label: "EM PROTOCOLO DE ME", color: "bg-primary text-white", borderColor: "border-border" },
 ] as const;
 
 // Text inputs no longer forced to uppercase
@@ -170,28 +170,28 @@ function SortableItem({ id, index, value, onEdit, onDelete, showDragHandle = tru
   // Highlight color styles based on variant
   const highlightStyles: Record<string, { bg: string; number: string; text: string; star: string }> = {
     blue: {
-      bg: "bg-blue-100/60 dark:bg-blue-800/30 border-l-2 border-l-blue-500 dark:border-l-blue-400 pl-1.5",
-      number: "text-blue-600 dark:text-blue-300",
-      text: "text-blue-800 dark:text-blue-100",
-      star: "fill-blue-500 text-blue-500"
+      bg: "bg-muted/60 border-l-2 border-l-blue-500 pl-1.5",
+      number: "text-foreground",
+      text: "text-foreground",
+      star: "fill-blue-500 text-muted-foreground"
     },
     yellow: {
-      bg: "bg-amber-100/60 dark:bg-amber-800/30 border-l-2 border-l-amber-500 dark:border-l-amber-400 pl-1.5",
-      number: "text-amber-600 dark:text-amber-300",
-      text: "text-amber-800 dark:text-amber-100",
-      star: "fill-amber-500 text-amber-500"
+      bg: "bg-warning-soft/60 border-l-2 border-l-amber-500 pl-1.5",
+      number: "text-warning-on-soft",
+      text: "text-warning-on-soft",
+      star: "fill-amber-500 text-warning"
     },
     red: {
-      bg: "bg-red-100/60 dark:bg-red-800/30 border-l-2 border-l-red-500 dark:border-l-red-400 pl-1.5",
-      number: "text-red-600 dark:text-red-300",
-      text: "text-red-800 dark:text-red-100",
-      star: "fill-red-500 text-red-500"
+      bg: "bg-critical-soft/60 border-l-2 border-l-red-500 pl-1.5",
+      number: "text-critical-on-soft",
+      text: "text-critical-on-soft",
+      star: "fill-red-500 text-critical"
     },
     green: {
-      bg: "bg-emerald-100/60 dark:bg-emerald-800/30 border-l-2 border-l-emerald-500 dark:border-l-emerald-400 pl-1.5",
-      number: "text-emerald-600 dark:text-emerald-300",
-      text: "text-emerald-800 dark:text-emerald-100",
-      star: "fill-emerald-500 text-emerald-500"
+      bg: "bg-released-soft/60 border-l-2 border-l-emerald-500 pl-1.5",
+      number: "text-released-on-soft",
+      text: "text-released-on-soft",
+      star: "fill-emerald-500 text-released"
     }
   };
   const hStyles = highlightStyles[highlightColorVariant];
@@ -578,7 +578,7 @@ function InlineEditableArray({
               onBlur={() => handleAddItem(false)}
             />
             <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => handleAddItem(false)}>
-              <Check className="h-3 w-3 text-green-600" />
+              <Check className="h-3 w-3 text-released-on-soft" />
             </Button>
             <Button 
               size="icon" 
@@ -774,56 +774,56 @@ export function UtiPatientCard({
   // Color schemes based on variant
   const colorSchemes: Record<ColorVariant, Record<string, string>> = {
     blue: {
-      card: "bg-slate-100 dark:bg-slate-900/80 border-primary/20",
+      card: "bg-muted border-primary/20",
       bedBg: "bg-primary/10 border-primary/20",
       bedText: "text-primary",
-      col1: "bg-blue-100/70 dark:bg-blue-900/35 border-blue-300/50 dark:border-blue-700/45",
-      col1Icon: "text-blue-500 dark:text-blue-300",
-      col2: "bg-blue-100/70 dark:bg-blue-900/35 border-blue-300/50 dark:border-blue-700/45",
-      col2Icon: "text-blue-500 dark:text-blue-300",
-      col3: "bg-blue-100/70 dark:bg-blue-900/35 border-blue-300/50 dark:border-blue-700/45",
-      col3Icon: "text-blue-500 dark:text-blue-300",
-      col4: "bg-blue-100/70 dark:bg-blue-900/35 border-blue-300/50 dark:border-blue-700/45",
-      col4Icon: "text-blue-500 dark:text-blue-300",
+      col1: "bg-muted/70 border-border/50",
+      col1Icon: "text-muted-foreground",
+      col2: "bg-muted/70 border-border/50",
+      col2Icon: "text-muted-foreground",
+      col3: "bg-muted/70 border-border/50",
+      col3Icon: "text-muted-foreground",
+      col4: "bg-muted/70 border-border/50",
+      col4Icon: "text-muted-foreground",
     },
     yellow: {
-      card: "bg-amber-50/50 dark:bg-amber-950/30 border-amber-400/30",
-      bedBg: "bg-amber-100 dark:bg-amber-900/40 border-amber-300/50 dark:border-amber-700/40",
-      bedText: "text-amber-700 dark:text-amber-400",
-      col1: "bg-amber-100/50 dark:bg-amber-900/30 border-amber-200/50 dark:border-amber-700/40",
-      col1Icon: "text-amber-500 dark:text-amber-300",
-      col2: "bg-amber-100/50 dark:bg-amber-900/30 border-amber-200/50 dark:border-amber-700/40",
-      col2Icon: "text-amber-500 dark:text-amber-300",
-      col3: "bg-amber-100/50 dark:bg-amber-900/30 border-amber-200/50 dark:border-amber-700/40",
-      col3Icon: "text-amber-500 dark:text-amber-300",
-      col4: "bg-amber-100/50 dark:bg-amber-900/30 border-amber-200/50 dark:border-amber-700/40",
-      col4Icon: "text-amber-500 dark:text-amber-300",
+      card: "bg-warning-soft/50 border-warning/30",
+      bedBg: "bg-warning-soft border-warning-border/50",
+      bedText: "text-warning-on-soft",
+      col1: "bg-warning-soft/50 border-warning-border/50",
+      col1Icon: "text-warning",
+      col2: "bg-warning-soft/50 border-warning-border/50",
+      col2Icon: "text-warning",
+      col3: "bg-warning-soft/50 border-warning-border/50",
+      col3Icon: "text-warning",
+      col4: "bg-warning-soft/50 border-warning-border/50",
+      col4Icon: "text-warning",
     },
     red: {
-      card: "bg-red-50/50 dark:bg-red-950/30 border-red-400/30",
-      bedBg: "bg-red-100 dark:bg-red-900/40 border-red-300/50 dark:border-red-700/40",
-      bedText: "text-red-700 dark:text-red-400",
-      col1: "bg-red-100/50 dark:bg-red-900/30 border-red-200/50 dark:border-red-700/40",
-      col1Icon: "text-red-500 dark:text-red-300",
-      col2: "bg-red-100/50 dark:bg-red-900/30 border-red-200/50 dark:border-red-700/40",
-      col2Icon: "text-red-500 dark:text-red-300",
-      col3: "bg-red-100/50 dark:bg-red-900/30 border-red-200/50 dark:border-red-700/40",
-      col3Icon: "text-red-500 dark:text-red-300",
-      col4: "bg-red-100/50 dark:bg-red-900/30 border-red-200/50 dark:border-red-700/40",
-      col4Icon: "text-red-500 dark:text-red-300",
+      card: "bg-critical-soft/50 border-critical/30",
+      bedBg: "bg-critical-soft border-critical-border/50",
+      bedText: "text-critical-on-soft",
+      col1: "bg-critical-soft/50 border-critical-border/50",
+      col1Icon: "text-critical",
+      col2: "bg-critical-soft/50 border-critical-border/50",
+      col2Icon: "text-critical",
+      col3: "bg-critical-soft/50 border-critical-border/50",
+      col3Icon: "text-critical",
+      col4: "bg-critical-soft/50 border-critical-border/50",
+      col4Icon: "text-critical",
     },
     green: {
-      card: "bg-emerald-50/50 dark:bg-emerald-950/30 border-emerald-400/30",
-      bedBg: "bg-emerald-100 dark:bg-emerald-900/40 border-emerald-300/50 dark:border-emerald-700/40",
-      bedText: "text-emerald-700 dark:text-emerald-400",
-      col1: "bg-emerald-100/50 dark:bg-emerald-900/30 border-emerald-200/50 dark:border-emerald-700/40",
-      col1Icon: "text-emerald-500 dark:text-emerald-300",
-      col2: "bg-emerald-100/50 dark:bg-emerald-900/30 border-emerald-200/50 dark:border-emerald-700/40",
-      col2Icon: "text-emerald-500 dark:text-emerald-300",
-      col3: "bg-emerald-100/50 dark:bg-emerald-900/30 border-emerald-200/50 dark:border-emerald-700/40",
-      col3Icon: "text-emerald-500 dark:text-emerald-300",
-      col4: "bg-emerald-100/50 dark:bg-emerald-900/30 border-emerald-200/50 dark:border-emerald-700/40",
-      col4Icon: "text-emerald-500 dark:text-emerald-300",
+      card: "bg-released-soft/50 border-released/30",
+      bedBg: "bg-released-soft border-released-border/50",
+      bedText: "text-released-on-soft",
+      col1: "bg-released-soft/50 border-released-border/50",
+      col1Icon: "text-released",
+      col2: "bg-released-soft/50 border-released-border/50",
+      col2Icon: "text-released",
+      col3: "bg-released-soft/50 border-released-border/50",
+      col3Icon: "text-released",
+      col4: "bg-released-soft/50 border-released-border/50",
+      col4Icon: "text-released",
     }
   };
 
@@ -911,10 +911,10 @@ export function UtiPatientCard({
         className={cn(
           "relative border rounded-lg shadow-md hover:shadow-lg transition-all duration-200",
           colors.card,
-          patient.admissionStatus === 'alta_dada' && "ring-1 ring-emerald-400/40 bg-emerald-50/30 dark:bg-emerald-950/10 grayscale-[15%] opacity-95",
-          patient.admissionStatus === 'obito' && "ring-1 ring-slate-500/50 bg-slate-100/50 dark:bg-slate-900/30 grayscale-[35%] opacity-90",
-          patient.admissionStatus === 'transferencia_interna_pendente' && "ring-1 ring-sky-400/50 bg-sky-50/30 dark:bg-sky-950/10",
-          patient.admissionStatus === 'transferencia_externa_pendente' && "ring-1 ring-indigo-400/50 bg-indigo-50/30 dark:bg-indigo-950/10",
+          patient.admissionStatus === 'alta_dada' && "ring-1 ring-released/40 bg-released-soft/30 grayscale-[15%] opacity-95",
+          patient.admissionStatus === 'obito' && "ring-1 ring-ring/50 bg-muted/50 grayscale-[35%] opacity-90",
+          patient.admissionStatus === 'transferencia_interna_pendente' && "ring-1 ring-ring/50 bg-muted/30",
+          patient.admissionStatus === 'transferencia_externa_pendente' && "ring-1 ring-ring/50 bg-muted/30",
         )}
         data-patient-id={patient.id}
       >
@@ -938,7 +938,7 @@ export function UtiPatientCard({
               <button
                 type="button"
                 onClick={() => setIsDeleteExtraOpen(true)}
-                className="inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground/60 hover:text-white hover:bg-red-600 hover:scale-110 transition-all duration-150"
+                className="inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground/60 hover:text-white hover:bg-critical hover:scale-110 transition-all duration-150"
                 title="Excluir leito extra"
                 aria-label="Excluir leito extra"
               >
@@ -1016,16 +1016,16 @@ export function UtiPatientCard({
                       daysInUti <= 7 ? "green" : daysInUti <= 10 ? "yellow" : "red";
                     const containerCls =
                       dihLevel === "red"
-                        ? "bg-red-100 dark:bg-red-900/40 border-red-400/50 dark:border-red-600/50"
+                        ? "bg-critical-soft border-critical/50"
                         : dihLevel === "yellow"
-                        ? "bg-amber-100 dark:bg-amber-900/30 border-amber-300/50 dark:border-amber-600/40"
-                        : "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-400/50 dark:border-emerald-600/40";
+                        ? "bg-warning-soft border-warning-border/50"
+                        : "bg-released-soft border-released/50";
                     const textCls =
                       dihLevel === "red"
-                        ? "text-red-700 dark:text-red-300"
+                        ? "text-critical-on-soft"
                         : dihLevel === "yellow"
-                        ? "text-amber-700 dark:text-amber-400"
-                        : "text-emerald-700 dark:text-emerald-400";
+                        ? "text-warning-on-soft"
+                        : "text-released-on-soft";
                     return (
                       <div
                         className={cn(
@@ -1161,7 +1161,7 @@ export function UtiPatientCard({
                 <button
                   type="button"
                   onClick={() => setIsDeleteExtraOpen(true)}
-                  className="inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground/60 hover:text-white hover:bg-red-600 hover:scale-110 transition-all duration-150"
+                  className="inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground/60 hover:text-white hover:bg-critical hover:scale-110 transition-all duration-150"
                   title="Excluir leito extra"
                   aria-label="Excluir leito extra"
                 >
@@ -1197,13 +1197,13 @@ export function UtiPatientCard({
                       {/* MONITORAMENTO DE SINAIS (acesso direto — antes indisponivel na UTI) */}
                       <DropdownMenuItem
                         onClick={() => navigate(`/monitoramento?patientId=${patient.id}`)}
-                        className="group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-teal-300/60 dark:hover:border-teal-700/60 hover:bg-gradient-to-r hover:from-teal-50 hover:to-transparent dark:hover:from-teal-950/40 transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm"
+                        className="group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-released-border/60 hover:bg-gradient-to-r hover:from-released-soft hover:to-transparent transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm"
                       >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-teal-100 dark:bg-teal-950/60 group-hover/item:bg-teal-200 dark:group-hover/item:bg-teal-900/80 transition-colors">
-                          <Activity className="h-3.5 w-3.5 text-teal-700 dark:text-teal-300" />
+                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-released-soft group-hover/item:bg-released transition-colors">
+                          <Activity className="h-3.5 w-3.5 text-released-on-soft" />
                         </div>
                         <div className="flex flex-col items-start min-w-0">
-                          <span className="text-teal-800 dark:text-teal-200 leading-tight">
+                          <span className="text-released-on-soft leading-tight">
                             Monitoramento de sinais
                           </span>
                           <span className="text-[10px] font-normal text-muted-foreground leading-tight">
@@ -1215,14 +1215,14 @@ export function UtiPatientCard({
                       {/* REMANEJAR LEITO (mesmo setor) */}
                       <DropdownMenuItem
                         onClick={() => setIsReallocationDialogOpen(true)}
-                        className="group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-indigo-300/60 dark:hover:border-indigo-700/60 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-transparent dark:hover:from-indigo-950/40 transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm"
+                        className="group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-border/60 hover:bg-gradient-to-r hover:from-muted hover:to-transparent transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm"
                       >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 dark:bg-indigo-950/60 group-hover/item:bg-indigo-200 dark:group-hover/item:bg-indigo-900/80 transition-colors">
-                          <ArrowLeftRight className="h-3.5 w-3.5 text-indigo-700 dark:text-indigo-300" />
+                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted group-hover/item:bg-secondary transition-colors">
+                          <ArrowLeftRight className="h-3.5 w-3.5 text-foreground" />
                         </div>
                         <div className="flex flex-col items-start min-w-0">
-                          <span className="text-indigo-800 dark:text-indigo-200 leading-tight">
-                            Remanejar leito <span className="text-[10px] font-normal text-indigo-600/70 dark:text-indigo-400/70">(mesmo setor)</span>
+                          <span className="text-foreground leading-tight">
+                            Remanejar leito <span className="text-[10px] font-normal text-foreground/70">(mesmo setor)</span>
                           </span>
                           <span className="text-[10px] font-normal text-muted-foreground leading-tight">
                             Realocar ou permutar entre leitos da unidade
@@ -1255,24 +1255,24 @@ export function UtiPatientCard({
                                 ? "cursor-not-allowed opacity-50"
                                 : "cursor-pointer hover:translate-x-0.5 hover:shadow-sm",
                               !isDisabled && (tone === 'emerald'
-                                ? "hover:border-emerald-300/60 dark:hover:border-emerald-700/60 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-transparent dark:hover:from-emerald-950/40"
-                                : "hover:border-amber-300/60 dark:hover:border-amber-700/60 hover:bg-gradient-to-r hover:from-amber-50 hover:to-transparent dark:hover:from-amber-950/40")
+                                ? "hover:border-released-border/60 hover:bg-gradient-to-r hover:from-released-soft hover:to-transparent"
+                                : "hover:border-warning-border/60 hover:bg-gradient-to-r hover:from-warning-soft hover:to-transparent")
                             )}
                           >
                             <div className={cn(
                               "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
                               tone === 'emerald'
-                                ? "bg-emerald-100 dark:bg-emerald-950/60 group-hover/item:bg-emerald-200"
-                                : "bg-amber-100 dark:bg-amber-950/60 group-hover/item:bg-amber-200"
+                                ? "bg-released-soft group-hover/item:bg-released"
+                                : "bg-warning-soft group-hover/item:bg-warning"
                             )}>
                               {tone === 'emerald'
-                                ? <Check className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300" />
-                                : <UserMinus className="h-3.5 w-3.5 text-amber-700 dark:text-amber-300" />}
+                                ? <Check className="h-3.5 w-3.5 text-released-on-soft" />
+                                : <UserMinus className="h-3.5 w-3.5 text-warning-on-soft" />}
                             </div>
                             <div className="flex flex-col items-start min-w-0">
                               <span className={cn(
                                 "leading-tight",
-                                tone === 'emerald' ? "text-emerald-800 dark:text-emerald-200" : "text-amber-800 dark:text-amber-200"
+                                tone === 'emerald' ? "text-released-on-soft" : "text-warning-on-soft"
                               )}>
                                 Desalocar leito
                               </span>
@@ -1317,29 +1317,29 @@ export function UtiPatientCard({
               {/* 🔴 CRÍTICO - Patient safety items */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-                  <span className="text-[10px] font-bold text-red-600 tracking-wider">Crítico</span>
+                  <AlertTriangle className="h-3.5 w-3.5 text-critical" />
+                  <span className="text-[10px] font-bold text-critical-on-soft tracking-wider">Crítico</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <InlineEditableArray
                     items={dispositivos}
                     onUpdate={(items) => handleUpdateField("utiDevices", items)}
                     label="Dispositivos"
-                    colorClass="bg-red-50/50 dark:bg-red-900/10 border border-red-200/30 dark:border-red-800/20"
+                    colorClass="bg-critical-soft/50 border border-critical-border/30"
                     alwaysShowAll
                   />
                   <ReadOnlyArray
                     items={alergias}
                     label="Alergias"
                     placeholder="Sincronizadas com a prescrição"
-                    colorClass="bg-red-50/50 dark:bg-red-900/10 border border-red-200/30 dark:border-red-800/20"
+                    colorClass="bg-critical-soft/50 border border-critical-border/30"
                   />
                   <InlineEditableArray
                     items={culturasAtb}
                     onUpdate={(items) => handleUpdateField("utiCulturesAntibiotics", items)}
                     label="Culturas / ATB"
-                    icon={<Pill className="h-3 w-3 text-red-400" />}
-                    colorClass="bg-red-50/50 dark:bg-red-900/10 border border-red-200/30 dark:border-red-800/20"
+                    icon={<Pill className="h-3 w-3 text-critical" />}
+                    colorClass="bg-critical-soft/50 border border-critical-border/30"
                     alwaysShowAll
                   />
                 </div>
@@ -1348,8 +1348,8 @@ export function UtiPatientCard({
               {/* 🔵 CLÍNICO - Clinical evolution */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Stethoscope className="h-3.5 w-3.5 text-slate-500" />
-                  <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 tracking-wider">Clínico</span>
+                  <Stethoscope className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-[10px] font-bold text-foreground tracking-wider">Clínico</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <InlineEditableArray
@@ -1372,8 +1372,8 @@ export function UtiPatientCard({
               {/* 📝 HISTÓRIA - Admission history */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-3.5 w-3.5 text-slate-400" />
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-500 tracking-wider">História admissional</span>
+                  <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-[10px] font-bold text-muted-foreground tracking-wider">História admissional</span>
                 </div>
                 <div className="bg-muted/30 border border-border/30 rounded-md p-2">
                   <ReadOnlyTextarea
@@ -1386,8 +1386,8 @@ export function UtiPatientCard({
               {/* 📁 ADMINISTRATIVO */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <FolderOpen className="h-3.5 w-3.5 text-slate-400" />
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-500 tracking-wider">Administrativo</span>
+                  <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-[10px] font-bold text-muted-foreground tracking-wider">Administrativo</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                   <ReadOnlyArray
@@ -1413,7 +1413,7 @@ export function UtiPatientCard({
                     <span className="text-sm font-medium block min-h-[20px]">
                       {previsaoAltaDate || "—"}
                     {isWithin24h(previsaoAlta[0]) && (
-                      <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/40 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700 dark:text-amber-300">
+                      <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-warning/15 border border-warning/40 px-1.5 py-0.5 text-[9px] font-semibold text-warning-on-soft">
                         ⚠ Alta amanhã
                       </span>
                     )}

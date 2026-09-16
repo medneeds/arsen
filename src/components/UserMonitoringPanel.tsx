@@ -61,22 +61,22 @@ interface HourlyLoginData {
 const ROLE_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   admin: { 
     label: "Coordenador", 
-    color: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+    color: "bg-primary/10 text-foreground border-border/20",
     icon: <Shield className="h-3 w-3" />
   },
   medico: { 
     label: "Médico", 
-    color: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    color: "bg-primary/10 text-foreground border-border/20",
     icon: <Stethoscope className="h-3 w-3" />
   },
   porta: { 
     label: "Porta", 
-    color: "bg-teal-500/10 text-teal-600 border-teal-500/20",
+    color: "bg-released/10 text-released-on-soft border-released/20",
     icon: <DoorOpen className="h-3 w-3" />
   },
   visitante: { 
     label: "Visitante", 
-    color: "bg-gray-500/10 text-gray-600 border-gray-500/20",
+    color: "bg-primary/10 text-foreground border-border/20",
     icon: <User className="h-3 w-3" />
   },
 };
@@ -112,7 +112,7 @@ export function UserMonitoringPanel() {
         
         toast.info(`${userName} entrou no sistema`, {
           description: roleConfig ? `Papel: ${roleConfig.label}` : undefined,
-          icon: <LogIn className="h-4 w-4 text-green-500" />,
+          icon: <LogIn className="h-4 w-4 text-released" />,
           duration: 5000,
         });
       });
@@ -247,14 +247,14 @@ export function UserMonitoringPanel() {
 
   const getActionLabel = (action: string) => {
     const labels: Record<string, { label: string; color: string }> = {
-      INSERT: { label: "Criou", color: "text-green-600" },
-      UPDATE: { label: "Editou", color: "text-blue-600" },
-      DELETE: { label: "Excluiu", color: "text-red-600" },
-      SELECT: { label: "Visualizou", color: "text-gray-600" },
-      LOGIN: { label: "Login", color: "text-purple-600" },
-      LOGOUT: { label: "Logout", color: "text-orange-600" },
+      INSERT: { label: "Criou", color: "text-released-on-soft" },
+      UPDATE: { label: "Editou", color: "text-foreground" },
+      DELETE: { label: "Excluiu", color: "text-critical-on-soft" },
+      SELECT: { label: "Visualizou", color: "text-foreground" },
+      LOGIN: { label: "Login", color: "text-foreground" },
+      LOGOUT: { label: "Logout", color: "text-warning-on-soft" },
     };
-    return labels[action] || { label: action, color: "text-gray-600" };
+    return labels[action] || { label: action, color: "text-foreground" };
   };
 
   const getTableLabel = (tableName: string) => {
@@ -276,19 +276,19 @@ export function UserMonitoringPanel() {
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow">
+            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-released-soft to-released-soft flex items-center justify-center shadow">
               <Activity className="h-5 w-5 text-white" />
             </div>
             <div>
               <CardTitle className="flex items-center gap-2">
                 Monitoramento em Tempo Real
                 {isTracking ? (
-                  <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20 gap-1">
+                  <Badge variant="outline" className="bg-released/10 text-released-on-soft border-released/20 gap-1">
                     <Wifi className="h-3 w-3" />
                     Conectado
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20 gap-1">
+                  <Badge variant="outline" className="bg-critical/10 text-critical-on-soft border-critical/20 gap-1">
                     <WifiOff className="h-3 w-3" />
                     Desconectado
                   </Badge>
@@ -300,10 +300,10 @@ export function UserMonitoringPanel() {
             </div>
           </div>
           
-          <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-2">
-            <Users className="h-5 w-5 text-green-600" />
-            <span className="text-2xl font-bold text-green-600">{onlineCount}</span>
-            <span className="text-sm text-green-600">online</span>
+          <div className="flex items-center gap-2 bg-released/10 border border-released/20 rounded-lg px-4 py-2">
+            <Users className="h-5 w-5 text-released-on-soft" />
+            <span className="text-2xl font-bold text-released-on-soft">{onlineCount}</span>
+            <span className="text-sm text-released-on-soft">online</span>
           </div>
         </div>
       </CardHeader>
@@ -376,7 +376,7 @@ export function UserMonitoringPanel() {
                             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                               <User className="h-5 w-5 text-primary" />
                             </div>
-                            <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
+                            <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-released border-2 border-background" />
                           </div>
                           <div>
                             <p className="font-medium text-sm">
@@ -424,48 +424,48 @@ export function UserMonitoringPanel() {
           {/* Statistics Tab */}
           <TabsContent value="stats" className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
+              <Card className="bg-gradient-to-br from-muted/10 to-muted/5 border-border/20">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <LogIn className="h-8 w-8 text-blue-600" />
+                    <LogIn className="h-8 w-8 text-foreground" />
                     <div>
-                      <p className="text-3xl font-bold text-blue-600">{loginStats.todayLogins}</p>
+                      <p className="text-3xl font-bold text-foreground">{loginStats.todayLogins}</p>
                       <p className="text-xs text-muted-foreground">Logins hoje</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
+              <Card className="bg-gradient-to-br from-muted/10 to-muted/5 border-border/20">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <UserCheck className="h-8 w-8 text-purple-600" />
+                    <UserCheck className="h-8 w-8 text-foreground" />
                     <div>
-                      <p className="text-3xl font-bold text-purple-600">{loginStats.uniqueUsersToday}</p>
+                      <p className="text-3xl font-bold text-foreground">{loginStats.uniqueUsersToday}</p>
                       <p className="text-xs text-muted-foreground">Usuários únicos hoje</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
+              <Card className="bg-gradient-to-br from-released-soft/10 to-released-soft/5 border-released/20">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <TrendingUp className="h-8 w-8 text-green-600" />
+                    <TrendingUp className="h-8 w-8 text-released-on-soft" />
                     <div>
-                      <p className="text-3xl font-bold text-green-600">{loginStats.weekLogins}</p>
+                      <p className="text-3xl font-bold text-released-on-soft">{loginStats.weekLogins}</p>
                       <p className="text-xs text-muted-foreground">Logins na semana</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
+              <Card className="bg-gradient-to-br from-warning-soft/10 to-warning-soft/5 border-warning/20">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <Clock className="h-8 w-8 text-orange-600" />
+                    <Clock className="h-8 w-8 text-warning-on-soft" />
                     <div>
-                      <p className="text-xl font-bold text-orange-600">{loginStats.peakHour}</p>
+                      <p className="text-xl font-bold text-warning-on-soft">{loginStats.peakHour}</p>
                       <p className="text-xs text-muted-foreground">Horário de pico</p>
                     </div>
                   </div>

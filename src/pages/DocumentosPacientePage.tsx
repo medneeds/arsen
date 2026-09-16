@@ -198,36 +198,36 @@ const DocumentosPacientePage = () => {
             <QuickCta
               icon={Droplet}
               label="Hemocomponentes"
-              tone="text-rose-600 dark:text-rose-400"
-              bg="bg-rose-500/10"
+              tone="text-critical-on-soft"
+              bg="bg-critical/10"
               onClick={() => setHemoOpen(true)}
             />
             <QuickCta
               icon={Microscope}
               label="Cultura"
-              tone="text-emerald-600 dark:text-emerald-400"
-              bg="bg-emerald-500/10"
+              tone="text-released-on-soft"
+              bg="bg-released/10"
               onClick={() => handleNewByType("cultura")}
             />
             <QuickCta
               icon={FileCheck}
               label="APAC"
-              tone="text-orange-600 dark:text-orange-400"
-              bg="bg-orange-500/10"
+              tone="text-warning-on-soft"
+              bg="bg-warning/10"
               onClick={() => handleNewByType("apac")}
             />
             <QuickCta
               icon={Syringe}
               label="SAT"
-              tone="text-amber-600 dark:text-amber-400"
-              bg="bg-amber-500/10"
+              tone="text-warning-on-soft"
+              bg="bg-warning/10"
               onClick={() => setSatOpen(true)}
             />
             <QuickCta
               icon={FileText}
               label="AIH"
-              tone="text-indigo-600 dark:text-indigo-400"
-              bg="bg-indigo-500/10"
+              tone="text-foreground"
+              bg="bg-primary/10"
               badge="via internação"
               onClick={() => handleNewByType("aih")}
             />

@@ -447,7 +447,7 @@ export default function MergeRegistriesPage() {
                     const divergent = (wv || "") !== (lv || "");
                     const choice = fieldChoices[f.key as string] || "winner";
                     return (
-                      <tr key={f.key as string} className={`border-b ${divergent ? "bg-amber-50/40 dark:bg-amber-900/10" : ""}`}>
+                      <tr key={f.key as string} className={`border-b ${divergent ? "bg-warning-soft/40" : ""}`}>
                         <td className="py-2 pr-3 text-muted-foreground">{f.label}</td>
                         <td className="py-2 pr-3 font-mono text-xs">{fmtVal(wv)}</td>
                         <td className="py-2 pr-3 font-mono text-xs">{fmtVal(lv)}</td>

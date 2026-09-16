@@ -350,7 +350,7 @@ export function SatRequestDialog({
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Syringe className="h-5 w-5 text-amber-600" />
+            <Syringe className="h-5 w-5 text-warning-on-soft" />
             Solicitação de SAT / Imunização Antitetânica
           </DialogTitle>
           <DialogDescription>
@@ -459,8 +459,8 @@ export function SatRequestDialog({
           </div>
 
           {/* Recomendação automática */}
-          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-amber-700 dark:text-amber-400">
+          <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-semibold text-warning-on-soft">
               <AlertTriangle className="h-3.5 w-3.5" />
               Conduta sugerida (PNI/MS)
             </div>
@@ -468,7 +468,7 @@ export function SatRequestDialog({
             <div className="flex flex-wrap gap-2 pt-1">
               {recommendation.vat && <Badge variant="outline" className="text-[10px]">Vacina dT</Badge>}
               {recommendation.sat && (
-                <Badge variant="outline" className="text-[10px] border-amber-500/40">
+                <Badge variant="outline" className="text-[10px] border-warning/40">
                   {allergyHistory === "sim" ? "IGHAT 250 UI IM" : "SAT 5.000 UI IM"}
                 </Badge>
               )}

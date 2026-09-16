@@ -48,9 +48,9 @@ const formatAvgSec = (sec: number | null) => {
 
 const pointBadgeClasses = (p: ReceptionPoint | null) =>
   p === "vertical"
-    ? "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30"
+    ? "bg-primary/15 text-foreground border-border/30"
     : p === "horizontal"
-    ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30"
+    ? "bg-critical/15 text-critical-on-soft border-critical/30"
     : "bg-muted text-muted-foreground border-border";
 
 /**
@@ -87,7 +87,7 @@ export function UserStatsPanel({ stats, currentUserId }: Props) {
         <div className="rounded-lg border bg-card p-2.5">
           <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Equipe ativa</p>
           <p className="text-lg font-bold flex items-center gap-1">
-            <CircleDot className="h-3 w-3 text-emerald-500 animate-pulse" />
+            <CircleDot className="h-3 w-3 text-released animate-pulse" />
             {totals.onlineCount}
             <span className="text-[10px] text-muted-foreground font-normal">/ {stats.length}</span>
           </p>
@@ -104,7 +104,7 @@ export function UserStatsPanel({ stats, currentUserId }: Props) {
         </div>
         <div className="rounded-lg border bg-card p-2.5">
           <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Pendências</p>
-          <p className="text-lg font-bold text-amber-600">{totals.totalPending}</p>
+          <p className="text-lg font-bold text-warning-on-soft">{totals.totalPending}</p>
         </div>
       </div>
 
@@ -135,9 +135,9 @@ export function UserStatsPanel({ stats, currentUserId }: Props) {
                       <div
                         className={cn(
                           "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
-                          idx === 0 && "bg-amber-500/20 text-amber-700 dark:text-amber-300",
-                          idx === 1 && "bg-slate-400/20 text-slate-600 dark:text-slate-300",
-                          idx === 2 && "bg-orange-700/20 text-orange-700 dark:text-orange-400",
+                          idx === 0 && "bg-warning/20 text-warning-on-soft",
+                          idx === 1 && "bg-primary/20 text-foreground",
+                          idx === 2 && "bg-warning/20 text-warning-on-soft",
                           idx > 2 && "bg-muted text-muted-foreground",
                         )}
                       >
@@ -152,7 +152,7 @@ export function UserStatsPanel({ stats, currentUserId }: Props) {
                             </Badge>
                           )}
                           {s.isOnline && (
-                            <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
+                            <span className="flex items-center gap-1 text-[10px] text-released-on-soft">
                               <CircleDot className="h-2.5 w-2.5 animate-pulse" />
                               online
                             </span>
@@ -179,14 +179,14 @@ export function UserStatsPanel({ stats, currentUserId }: Props) {
                     {/* Linha 3 — Métricas */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
                       <div className="flex items-center gap-1.5">
-                        <Timer className="h-3 w-3 text-sky-600" />
+                        <Timer className="h-3 w-3 text-foreground" />
                         <div>
                           <p className="text-muted-foreground">Tempo médio</p>
                           <p className="font-semibold text-foreground">{formatAvgSec(s.avgRegistrationSec)}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Zap className="h-3 w-3 text-rose-600" />
+                        <Zap className="h-3 w-3 text-critical-on-soft" />
                         <div>
                           <p className="text-muted-foreground">Express</p>
                           <p className="font-semibold text-foreground">
@@ -195,14 +195,14 @@ export function UserStatsPanel({ stats, currentUserId }: Props) {
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <FileWarning className="h-3 w-3 text-amber-600" />
+                        <FileWarning className="h-3 w-3 text-warning-on-soft" />
                         <div>
                           <p className="text-muted-foreground">Pendentes</p>
                           <p className="font-semibold text-foreground">{s.pendingDocsCount}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Clock className="h-3 w-3 text-emerald-600" />
+                        <Clock className="h-3 w-3 text-released-on-soft" />
                         <div>
                           <p className="text-muted-foreground">Logado</p>
                           <p className="font-semibold text-foreground">{formatActiveTime(s.activeMinutes)}</p>

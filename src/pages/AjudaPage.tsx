@@ -8,11 +8,11 @@ import { HelpSlideshowDialog } from "@/components/help/HelpSlideshowDialog";
 import { cn } from "@/lib/utils";
 
 const TONE_BG: Record<SlideTone, string> = {
-  neutral: "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20",
-  info: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20",
-  warning: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
-  success: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
-  danger: "bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/20",
+  neutral: "bg-primary/10 text-foreground border-border/20",
+  info: "bg-primary/10 text-foreground border-border/20",
+  warning: "bg-warning/10 text-warning-on-soft border-warning/20",
+  success: "bg-released/10 text-released-on-soft border-released/20",
+  danger: "bg-critical/10 text-critical-on-soft border-critical/20",
 };
 
 export default function AjudaPage() {

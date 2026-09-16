@@ -101,10 +101,10 @@ export function SapsPendingAlert({
       className={cn(
         "rounded-xl border-l-4 p-3 mb-3 shadow-sm flex items-center gap-3 print:hidden animate-pulse-slow",
         elapsed.over
-          ? "border-red-600 bg-red-50 dark:bg-red-950/30"
+          ? "border-critical bg-critical-soft"
           : elapsed.criticalSoon
-          ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30"
-          : "border-amber-500 bg-amber-50 dark:bg-amber-950/30",
+          ? "border-warning bg-warning-soft"
+          : "border-warning bg-warning-soft",
         className,
       )}
       role="alert"
@@ -112,13 +112,13 @@ export function SapsPendingAlert({
       <AlertTriangle
         className={cn(
           "h-5 w-5 shrink-0",
-          elapsed.over ? "text-red-600" : elapsed.criticalSoon ? "text-orange-600" : "text-amber-600",
+          elapsed.over ? "text-critical-on-soft" : elapsed.criticalSoon ? "text-warning-on-soft" : "text-warning-on-soft",
         )}
       />
       <div className="flex-1 min-w-0">
         <p className={cn(
           "text-sm font-semibold",
-          elapsed.over ? "text-red-800 dark:text-red-200" : "text-amber-900 dark:text-amber-100",
+          elapsed.over ? "text-critical-on-soft" : "text-warning-on-soft",
         )}>
           SAPS 3 PENDENTE — {pending.patient_name}
         </p>
@@ -128,7 +128,7 @@ export function SapsPendingAlert({
           </span>
           <span className={cn(
             "inline-flex items-center gap-1 font-medium",
-            elapsed.over ? "text-red-700" : elapsed.criticalSoon ? "text-orange-700" : "text-amber-700",
+            elapsed.over ? "text-critical-on-soft" : elapsed.criticalSoon ? "text-warning-on-soft" : "text-warning-on-soft",
           )}>
             {elapsed.over ? "Prazo de 24h vencido — fluxo será travado" : `Faltam ${elapsed.remaining} (limite 24h)`}
           </span>

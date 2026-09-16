@@ -40,12 +40,12 @@ interface PreAdmission {
 }
 
 const RISK_COLORS: Record<string, string> = {
-  vermelho: "bg-red-600 text-white",
-  laranja: "bg-orange-500 text-white",
-  amarelo: "bg-yellow-500 text-black",
-  verde: "bg-green-600 text-white",
-  azul: "bg-blue-600 text-white",
-  branca: "bg-white text-slate-900 border border-slate-400",
+  vermelho: "bg-critical text-white",
+  laranja: "bg-warning text-white",
+  amarelo: "bg-warning text-black",
+  verde: "bg-released text-white",
+  azul: "bg-primary text-white",
+  branca: "bg-white text-foreground border border-border",
 };
 
 const RISK_LABELS: Record<string, string> = {
@@ -405,7 +405,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                           <Button
                             size="sm"
                             variant="outline"
-                            className="flex-1 h-6 text-[10px] gap-1 text-orange-600 border-orange-300 hover:bg-orange-50"
+                            className="flex-1 h-6 text-[10px] gap-1 text-warning-on-soft border-warning-border hover:bg-warning-soft"
                             onClick={() => setClassifyTarget(pa)}
                           >
                             <Shield className="h-3 w-3" />
@@ -549,7 +549,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                           <Button
                             size="sm"
                             variant="outline"
-                            className="w-full h-6 text-[10px] gap-1 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+                            className="w-full h-6 text-[10px] gap-1 border-released/40 text-released-on-soft hover:bg-released/10"
                             onClick={() => setReopenTarget(pa)}
                           >
                             <RotateCcw className="h-3 w-3" />
@@ -613,8 +613,8 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                 <p className="text-foreground">
                   Esta ação <strong>retira o paciente de todas as filas de alocação</strong> (NIR, UTI, UCI, enfermaria).
                 </p>
-                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-[12px] space-y-1">
-                  <p className="font-semibold text-amber-700 dark:text-amber-400">O que acontece:</p>
+                <div className="rounded-md border border-warning/30 bg-warning/10 p-2 text-[12px] space-y-1">
+                  <p className="font-semibold text-warning-on-soft">O que acontece:</p>
                   <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
                     <li>O card some do painel "Aguardando Alocação".</li>
                     <li>Nenhum leito será marcado como ocupado por este paciente.</li>
@@ -642,16 +642,16 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <RotateCcw className="h-5 w-5 text-emerald-600" />
-              Reabrir pré-admissão de <span className="text-emerald-700 dark:text-emerald-400">{reopenTarget?.patient_name}</span>?
+              <RotateCcw className="h-5 w-5 text-released-on-soft" />
+              Reabrir pré-admissão de <span className="text-released-on-soft">{reopenTarget?.patient_name}</span>?
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
                 <p className="text-foreground">
                   O paciente voltará para a fila <strong>"Aguardando Alocação em Leito"</strong> com status <code className="text-[11px] px-1 py-0.5 rounded bg-muted">aguardando_leito</code>.
                 </p>
-                <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-2 text-[12px] space-y-1">
-                  <p className="font-semibold text-emerald-700 dark:text-emerald-400">O que acontece:</p>
+                <div className="rounded-md border border-released/30 bg-released/10 p-2 text-[12px] space-y-1">
+                  <p className="font-semibold text-released-on-soft">O que acontece:</p>
                   <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
                     <li>O cadastro e o prontuário <strong>são preservados</strong> (mesmo registry e mesmo número de prontuário).</li>
                     <li>Destino original: <strong>{reopenTarget?.destination_sector || "—"}</strong>. Você poderá trocar o setor ao admitir.</li>
@@ -667,7 +667,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
             <AlertDialogAction
               onClick={(e) => { e.preventDefault(); handleReopen(); }}
               disabled={isReopening}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-released hover:bg-released text-white"
             >
               {isReopening ? "Reabrindo..." : "Sim, reabrir e enviar para a fila"}
             </AlertDialogAction>

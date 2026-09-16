@@ -225,11 +225,11 @@ export function BedAllocationNotifications() {
   const getSectorColor = (sector: string) => {
     switch (sector) {
       case "Cuidados Especiais":
-        return "bg-red-500/20 text-red-500 border-red-500/30";
+        return "bg-critical/20 text-critical border-critical/30";
       case "Observação Amarela":
-        return "bg-yellow-500/20 text-yellow-500 border-yellow-500/30";
+        return "bg-warning/20 text-warning border-warning/30";
       case "Observação Azul":
-        return "bg-blue-500/20 text-blue-500 border-blue-500/30";
+        return "bg-primary/20 text-muted-foreground border-border/30";
       default:
         return "bg-muted text-muted-foreground";
     }
@@ -262,8 +262,8 @@ export function BedAllocationNotifications() {
       <Dialog open={showPopup} onOpenChange={setShowPopup}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader className="text-center pb-2">
-            <div className="mx-auto mb-3 h-14 w-14 rounded-full bg-amber-500/20 flex items-center justify-center">
-              <Bed className="h-7 w-7 text-amber-500 animate-pulse" />
+            <div className="mx-auto mb-3 h-14 w-14 rounded-full bg-warning/20 flex items-center justify-center">
+              <Bed className="h-7 w-7 text-warning animate-pulse" />
             </div>
             <DialogTitle className="text-lg">
               Nova Solicitação de Alocação
@@ -272,10 +272,10 @@ export function BedAllocationNotifications() {
           
           <div className="space-y-3 py-2">
             {/* Where the patient is */}
-            <div className="bg-gray-500/10 rounded-lg p-3 border border-gray-500/20">
+            <div className="bg-primary/10 rounded-lg p-3 border border-border/20">
               <div className="flex items-start gap-3">
-                <div className="h-6 w-6 rounded-full bg-gray-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <User className="h-3.5 w-3.5 text-gray-500" />
+                <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <User className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
                 <p className="text-sm">
                   Um médico da porta registrou um novo paciente. O paciente está atualmente na seção{" "}
@@ -285,13 +285,13 @@ export function BedAllocationNotifications() {
             </div>
 
             {/* What the leader can do */}
-            <div className="bg-amber-500/10 rounded-lg p-3 border border-amber-500/20">
+            <div className="bg-warning/10 rounded-lg p-3 border border-warning/20">
               <div className="flex items-start gap-3">
-                <div className="h-6 w-6 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <Clock className="h-3.5 w-3.5 text-amber-500" />
+                <div className="h-6 w-6 rounded-full bg-warning/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <Clock className="h-3.5 w-3.5 text-warning" />
                 </div>
                 <p className="text-sm">
-                  Você pode <span className="font-semibold text-amber-600 dark:text-amber-400">aguardar a discussão do caso</span> antes de decidir, ou <span className="font-semibold text-green-600 dark:text-green-400">aprovar diretamente</span> a alocação para o setor solicitado.
+                  Você pode <span className="font-semibold text-warning-on-soft">aguardar a discussão do caso</span> antes de decidir, ou <span className="font-semibold text-released-on-soft">aprovar diretamente</span> a alocação para o setor solicitado.
                 </p>
               </div>
             </div>
@@ -329,7 +329,7 @@ export function BedAllocationNotifications() {
             <Bed className="h-4 w-4" />
             {pendingCount > 0 && (
               <Badge 
-                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-amber-500 text-white text-xs animate-pulse"
+                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-warning text-white text-xs animate-pulse"
               >
                 {pendingCount}
               </Badge>
@@ -371,7 +371,7 @@ export function BedAllocationNotifications() {
                           </Badge>
                         </div>
                         {request.requesting_doctor_name && (
-                          <div className="flex items-center gap-1.5 mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+                          <div className="flex items-center gap-1.5 mt-1 text-xs text-released-on-soft">
                             <Stethoscope className="h-3 w-3" />
                             <span>{request.requesting_doctor_name}</span>
                             {request.requesting_office_number && (
@@ -386,7 +386,7 @@ export function BedAllocationNotifications() {
                           <SlaBadge startAt={request.created_at} thresholds={[60, 120, 180]} compact />
                         </div>
                       </div>
-                      <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30 shrink-0">
+                      <Badge className="bg-warning/20 text-warning border-warning/30 shrink-0">
                         Pendente
                       </Badge>
                     </div>
@@ -413,7 +413,7 @@ export function BedAllocationNotifications() {
                           </Badge>
                         </div>
                         {request.requesting_doctor_name && (
-                          <div className="flex items-center gap-1.5 mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+                          <div className="flex items-center gap-1.5 mt-1 text-xs text-released-on-soft">
                             <Stethoscope className="h-3 w-3" />
                             <span>{request.requesting_doctor_name}</span>
                             {request.requesting_office_number && (
@@ -428,7 +428,7 @@ export function BedAllocationNotifications() {
                           <SlaBadge startAt={request.created_at} thresholds={[60, 120, 180]} compact />
                         </div>
                       </div>
-                      <Badge className="bg-blue-500/20 text-blue-500 border-blue-500/30 shrink-0">
+                      <Badge className="bg-primary/20 text-muted-foreground border-border/30 shrink-0">
                         Em Discussão
                       </Badge>
                     </div>
@@ -474,19 +474,19 @@ export function BedAllocationNotifications() {
                 
                 {/* Requesting Doctor Info */}
                 {(selectedRequest.requesting_doctor_name || selectedRequest.requesting_office_number) && (
-                  <div className="mt-3 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <div className="mt-3 p-2.5 rounded-lg bg-released/10 border border-released/20">
                     <div className="flex items-center gap-3 text-sm flex-wrap">
-                      <Stethoscope className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <Stethoscope className="h-4 w-4 text-released-on-soft shrink-0" />
                       <span className="text-muted-foreground">Solicitante:</span>
-                      <span className="font-semibold text-emerald-700 dark:text-emerald-300">
+                      <span className="font-semibold text-released-on-soft">
                         {selectedRequest.requesting_doctor_name || "Não informado"}
                       </span>
                       {selectedRequest.requesting_office_number && (
                         <>
                           <span className="text-muted-foreground">|</span>
-                          <Building className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <Building className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
                           <span className="text-muted-foreground">Consultório:</span>
-                          <span className="font-semibold text-emerald-700 dark:text-emerald-300">
+                          <span className="font-semibold text-released-on-soft">
                             {selectedRequest.requesting_office_number}
                           </span>
                         </>
@@ -514,7 +514,7 @@ export function BedAllocationNotifications() {
                       variants={itemVariants}
                       className="text-center py-6 px-4 rounded-lg border-2 border-dashed border-muted-foreground/20"
                     >
-                      <AlertCircle className="h-8 w-8 mx-auto mb-2 text-amber-500/60" />
+                      <AlertCircle className="h-8 w-8 mx-auto mb-2 text-warning/60" />
                       <p className="text-sm text-muted-foreground font-medium">
                         Nenhuma informação clínica cadastrada
                       </p>
@@ -543,13 +543,13 @@ export function BedAllocationNotifications() {
                     >
                       <InlineClinicalList
                         title="Hipóteses / Diagnósticos"
-                        icon={<Activity className="h-3.5 w-3.5 text-amber-500" />}
+                        icon={<Activity className="h-3.5 w-3.5 text-warning" />}
                         content={selectedRequest.patient?.diagnoses}
                         accentColor="amber-500"
                       />
                       <InlineClinicalList
                         title="Antecedentes / Comorbidades"
-                        icon={<ClipboardList className="h-3.5 w-3.5 text-purple-500" />}
+                        icon={<ClipboardList className="h-3.5 w-3.5 text-muted-foreground" />}
                         content={selectedRequest.patient?.medical_history}
                         accentColor="purple-500"
                       />
@@ -562,13 +562,13 @@ export function BedAllocationNotifications() {
                     >
                       <InlineClinicalList
                         title="Plano Terapêutico"
-                        icon={<FlaskConical className="h-3.5 w-3.5 text-cyan-500" />}
+                        icon={<FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />}
                         content={selectedRequest.patient?.relevant_exams}
                         accentColor="cyan-500"
                       />
                       <InlineClinicalList
                         title="Programações / Pendências"
-                        icon={<AlertCircle className="h-3.5 w-3.5 text-orange-500" />}
+                        icon={<AlertCircle className="h-3.5 w-3.5 text-warning" />}
                         content={selectedRequest.patient?.pendencies}
                         accentColor="orange-500"
                       />
@@ -590,14 +590,14 @@ export function BedAllocationNotifications() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="flex-1 h-11 border-blue-500/30 text-blue-500 hover:bg-blue-500/10 hover:border-blue-500/50"
+                    className="flex-1 h-11 border-border/30 text-muted-foreground hover:bg-primary/10 hover:border-border/50"
                     onClick={() => handleDiscussing(selectedRequest)}
                   >
                     <Clock className="h-4 w-4 mr-2" />
                     Aguardando Discussão
                   </Button>
                   <Button
-                    className="flex-1 h-11 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/20"
+                    className="flex-1 h-11 bg-released hover:bg-released text-white shadow-lg shadow-green-600/20"
                     onClick={() => handleApprove(selectedRequest)}
                   >
                     <Check className="h-4 w-4 mr-2" />

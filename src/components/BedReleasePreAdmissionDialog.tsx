@@ -217,8 +217,8 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
         <AlertDialogContent className="w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] sm:max-w-md max-h-[92vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
           <AlertDialogHeader>
             <div className="flex items-start gap-2 mb-1 min-w-0">
-              <div className="rounded-full bg-amber-100 dark:bg-amber-950/40 p-2">
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <div className="rounded-full bg-warning-soft p-2">
+                <AlertTriangle className="h-5 w-5 text-warning-on-soft" />
               </div>
               <AlertDialogTitle className="text-base leading-snug break-words">
                 {isExceptional
@@ -287,7 +287,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                     ) : (
                       /* ── GESTOR/ADMIN: fluxo excepcional com aviso ── */
                       <>
-                        <div className="rounded-md border-2 border-amber-500/70 bg-amber-50 dark:bg-amber-950/40 p-3 text-amber-900 dark:text-amber-100">
+                        <div className="rounded-md border-2 border-warning/70 bg-warning-soft p-3 text-warning-on-soft">
                           <p className="font-bold text-sm flex items-center gap-1.5">
                             <AlertTriangle className="h-4 w-4" />
                             Pare — este paciente ainda NÃO foi sinalizado
@@ -328,7 +328,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                             type="button"
                             size="sm"
                             variant="outline"
-                            className="mt-2 w-full gap-1.5 border-amber-500 text-amber-700 hover:bg-amber-50"
+                            className="mt-2 w-full gap-1.5 border-warning text-warning-on-soft hover:bg-warning-soft"
                             onClick={goToFormStep}
                           >
                             <UserMinus className="h-4 w-4" />

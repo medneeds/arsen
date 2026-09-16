@@ -167,7 +167,7 @@ export function TriageExpressDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl p-0 overflow-hidden">
         {/* Header com gradiente de urgência */}
-        <div className="bg-gradient-to-r from-rose-600 to-red-600 text-white px-5 py-4">
+        <div className="bg-gradient-to-r from-critical-soft to-critical-soft text-white px-5 py-4">
           <DialogHeader className="space-y-1">
             <DialogTitle className="flex items-center gap-2 text-white">
               <Zap className="h-5 w-5" />
@@ -182,7 +182,7 @@ export function TriageExpressDialog({
                 </Badge>
               )}
             </DialogTitle>
-            <DialogDescription className="text-rose-50/90 text-xs">
+            <DialogDescription className="text-critical/90 text-xs">
               {isHorizontal
                 ? "Maca/ambulância — destino prioritário sugerido: Sala Vermelha. Tudo é opcional."
                 : "Pergunte rapidamente o que conseguir. Tudo é opcional. Direcionamento padrão: Triagem."}
@@ -194,10 +194,10 @@ export function TriageExpressDialog({
           <div className="px-5 py-4 space-y-4">
             {/* ========== ATALHO PRIORITÁRIO — só na horizontal ========== */}
             {isHorizontal && salaVermelha && (
-              <section className="rounded-lg border-2 border-red-600/40 bg-red-600/5 p-3">
+              <section className="rounded-lg border-2 border-critical/40 bg-critical/5 p-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <Siren className="h-4 w-4 text-red-600 animate-pulse" />
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-red-700 dark:text-red-400">
+                  <Siren className="h-4 w-4 text-critical-on-soft animate-pulse" />
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-critical-on-soft">
                     Direcionamento prioritário (Recepção Horizontal)
                   </h3>
                 </div>
@@ -207,10 +207,10 @@ export function TriageExpressDialog({
                     onClick={() => setDestinationValue(triagemSector?.value || "triagem")}
                     className={cn(
                       "flex items-center gap-2 p-2.5 rounded-md border text-left transition-all hover:bg-accent/50",
-                      destinationValue === (triagemSector?.value || "triagem") && "ring-2 ring-emerald-500 bg-emerald-500/10 border-emerald-500/40"
+                      destinationValue === (triagemSector?.value || "triagem") && "ring-2 ring-released bg-released/10 border-released/40"
                     )}
                   >
-                    <div className="h-3 w-3 rounded-full bg-emerald-500 shrink-0" />
+                    <div className="h-3 w-3 rounded-full bg-released shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-semibold">Triagem</div>
                       <div className="text-[10px] text-muted-foreground">classificação de risco</div>
@@ -222,15 +222,15 @@ export function TriageExpressDialog({
                     onClick={() => setDestinationValue("sala_vermelha")}
                     className={cn(
                       "flex items-center gap-2 p-2.5 rounded-md border text-left transition-all hover:bg-accent/50",
-                      destinationValue === "sala_vermelha" && "ring-2 ring-red-600 bg-red-600/10 border-red-600/40"
+                      destinationValue === "sala_vermelha" && "ring-2 ring-critical bg-critical/10 border-critical/40"
                     )}
                   >
-                    <div className="h-3 w-3 rounded-full bg-red-700 shrink-0" />
+                    <div className="h-3 w-3 rounded-full bg-critical shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-semibold">Sala Vermelha</div>
                       <div className="text-[10px] text-muted-foreground">emergência crítica</div>
                     </div>
-                    <Siren className="h-3 w-3 text-red-600" />
+                    <Siren className="h-3 w-3 text-critical-on-soft" />
                   </button>
                 </div>
               </section>
@@ -244,12 +244,12 @@ export function TriageExpressDialog({
                   Identificação rápida (opcional)
                 </h3>
                 {isUnidentified && (
-                  <Badge variant="outline" className="text-[9px] h-4 border-slate-500/50 bg-slate-500/10 text-slate-700 dark:text-slate-300 gap-1">
+                  <Badge variant="outline" className="text-[9px] h-4 border-border/50 bg-primary/10 text-foreground gap-1">
                     <UserX className="h-2.5 w-2.5" /> NI — código automático
                   </Badge>
                 )}
                 {!isUnidentified && !isFullyIdentified && partialName.trim() && (
-                  <Badge variant="outline" className="text-[9px] h-4 border-amber-500/40 text-amber-700 dark:text-amber-400">
+                  <Badge variant="outline" className="text-[9px] h-4 border-warning/40 text-warning-on-soft">
                     parcial
                   </Badge>
                 )}
@@ -260,7 +260,7 @@ export function TriageExpressDialog({
                 className={cn(
                   "flex items-start gap-3 rounded-lg border p-2.5 cursor-pointer transition-all",
                   isUnidentified
-                    ? "border-slate-500/50 bg-slate-500/10"
+                    ? "border-border/50 bg-primary/10"
                     : "border-border hover:bg-accent/40"
                 )}
               >
@@ -275,7 +275,7 @@ export function TriageExpressDialog({
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <UserX className="h-3.5 w-3.5 text-slate-600 dark:text-slate-300" />
+                    <UserX className="h-3.5 w-3.5 text-foreground" />
                     <span className="text-xs font-semibold">Paciente NÃO IDENTIFICADO (NI)</span>
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -422,7 +422,7 @@ export function TriageExpressDialog({
             </section>
 
             {/* Bloco 3 — Pendência */}
-            <section className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+            <section className="rounded-lg border border-warning/30 bg-warning/5 p-3">
               <label className="flex items-start gap-3 cursor-pointer">
                 <Checkbox
                   checked={documentsPending}
@@ -431,7 +431,7 @@ export function TriageExpressDialog({
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <FileWarning className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <FileWarning className="h-4 w-4 text-warning-on-soft" />
                     <span className="text-sm font-medium">Marcar como documentação pendente</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -482,7 +482,7 @@ export function TriageExpressDialog({
               </div>
 
               {selectedSector && !selectedSector.isTriage && (
-                <div className="text-[11px] rounded-md bg-sky-500/10 border border-sky-500/30 p-2 flex items-start gap-2 text-sky-700 dark:text-sky-300">
+                <div className="text-[11px] rounded-md bg-primary/10 border border-border/30 p-2 flex items-start gap-2 text-foreground">
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                   <span>
                     Direcionamento direto para <strong>{selectedSector.label}</strong> — gera pré-admissão e pula a fila de triagem.
@@ -512,7 +512,7 @@ export function TriageExpressDialog({
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className="bg-rose-600 hover:bg-rose-700 text-white"
+            className="bg-critical hover:bg-critical text-white"
           >
             {loading ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Gerando…</>

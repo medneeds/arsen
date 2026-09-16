@@ -118,7 +118,7 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
           {DISCHARGE_DOC_LABELS[type]} <span className="text-destructive">*</span>
         </span>
         <span className={cn("ml-auto text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full",
-          isComplete ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-warning/10 text-warning")}>
+          isComplete ? "bg-released/10 text-released-on-soft" : "bg-warning/10 text-warning")}>
           {isComplete ? "Pronto" : "Preencher campos *"}
         </span>
       </div>

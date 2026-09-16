@@ -164,14 +164,14 @@ export function EditPatientDialog({
             <div className="space-y-4 py-3">
               {/* Banner: PIS divergente (sincronização pendente) */}
               {pisDiffCount > 0 && registryId && pisSource && (
-                <section className="p-3 rounded-lg border border-amber-400/70 bg-amber-50/80 dark:bg-amber-950/30">
+                <section className="p-3 rounded-lg border border-warning/70 bg-warning-soft/80">
                   <div className="flex items-start gap-2.5">
-                    <RefreshCw className="h-4 w-4 text-amber-700 mt-0.5 shrink-0" />
+                    <RefreshCw className="h-4 w-4 text-warning-on-soft mt-0.5 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-amber-900 dark:text-amber-100">
+                      <p className="text-xs font-semibold text-warning-on-soft">
                         {pisDiffCount} campo(s) do PIS pendentes de sincronização
                       </p>
-                      <p className="text-[11px] text-amber-800/90 dark:text-amber-200/80 mt-0.5 leading-snug">
+                      <p className="text-[11px] text-warning-on-soft/90 mt-0.5 leading-snug">
                         Os dados vindos da pré-admissão (PIS) divergem do prontuário central.
                         Revise e sincronize para manter o cadastro 100% alinhado.
                       </p>
@@ -180,7 +180,7 @@ export function EditPatientDialog({
                       type="button"
                       size="sm"
                       onClick={() => setPisSyncOpen(true)}
-                      className="h-8 text-[11px] gap-1.5 bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+                      className="h-8 text-[11px] gap-1.5 bg-warning hover:bg-warning text-white shrink-0"
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
                       Revisar e sincronizar
@@ -375,11 +375,11 @@ export function EditPatientDialog({
 
               {/* Banner: decisões clínicas migraram para o Painel Clínico */}
               {patient.name && (
-                <section className="space-y-2 p-3 rounded-lg border border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/20">
+                <section className="space-y-2 p-3 rounded-lg border border-warning-border/60 bg-warning-soft/60">
                   <div className="flex items-start gap-2 text-xs leading-relaxed">
-                    <ClipboardList className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                    <ClipboardList className="h-4 w-4 text-warning-on-soft mt-0.5 shrink-0" />
                     <div>
-                      <p className="font-semibold text-amber-900 dark:text-amber-200">
+                      <p className="font-semibold text-warning-on-soft">
                         Decisões clínicas migraram para o Painel Clínico
                       </p>
                       <p className="mt-1 text-muted-foreground">

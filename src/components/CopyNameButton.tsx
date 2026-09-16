@@ -45,7 +45,7 @@ export function CopyNameButton({ value, className, label = "Copiar nome do pacie
         className,
       )}
     >
-      {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+      {copied ? <Check className="h-3 w-3 text-released" /> : <Copy className="h-3 w-3" />}
     </button>
   );
 }

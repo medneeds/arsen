@@ -47,10 +47,10 @@ import {
 
 // Emergency sectors config
 const EMERGENCY_SECTORS = [
-  { key: "sala_vermelha", label: "Sala Vermelha", color: "bg-red-600", description: "Estabilização" },
-  { key: "sala_laranja", label: "Sala Laranja", color: "bg-orange-500", description: "Observação clínica completa" },
-  { key: "ue_vertical", label: "UE Vertical", color: "bg-purple-600", description: "Atendimento rápido" },
-  { key: "ue_horizontal", label: "UE Horizontal", color: "bg-indigo-600", description: "Observação estendida" },
+  { key: "sala_vermelha", label: "Sala Vermelha", color: "bg-critical", description: "Estabilização" },
+  { key: "sala_laranja", label: "Sala Laranja", color: "bg-warning", description: "Observação clínica completa" },
+  { key: "ue_vertical", label: "UE Vertical", color: "bg-primary", description: "Atendimento rápido" },
+  { key: "ue_horizontal", label: "UE Horizontal", color: "bg-primary", description: "Observação estendida" },
 ];
 
 // Sectors with full clinical logic (like UTI)
@@ -175,10 +175,10 @@ function SimplifiedPatientCard({ patient, onView }: { patient: EmergencyPatient;
             {patient.clinical_status && (
               <Badge
                 className={cn("text-[9px] py-0 px-1.5", {
-                  "bg-red-500/20 text-red-600 border-red-500/30": patient.clinical_status === "gravissimo" || patient.clinical_status === "grave",
-                  "bg-yellow-500/20 text-yellow-600 border-yellow-500/30": patient.clinical_status === "grave_estavel" || patient.clinical_status === "potencialmente_grave",
-                  "bg-green-500/20 text-green-600 border-green-500/30": patient.clinical_status === "regular",
-                  "bg-purple-500/20 text-purple-600 border-purple-500/30": patient.clinical_status === "paliativado",
+                  "bg-critical/20 text-critical-on-soft border-critical/30": patient.clinical_status === "gravissimo" || patient.clinical_status === "grave",
+                  "bg-warning/20 text-warning-on-soft border-warning/30": patient.clinical_status === "grave_estavel" || patient.clinical_status === "potencialmente_grave",
+                  "bg-released/20 text-released-on-soft border-released/30": patient.clinical_status === "regular",
+                  "bg-primary/20 text-foreground border-border/30": patient.clinical_status === "paliativado",
                 })}
                 variant="outline"
               >
@@ -247,7 +247,7 @@ function FullPatientCard({ patient, onView }: { patient: EmergencyPatient; onVie
         <CollapsibleTrigger className="w-full">
           <div className="p-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[10px] font-bold px-1.5 py-0.5 bg-orange-500/10 text-orange-600 border-orange-500/30">
+              <Badge variant="outline" className="text-[10px] font-bold px-1.5 py-0.5 bg-warning/10 text-warning-on-soft border-warning/30">
                 {patient.bed_number}
               </Badge>
               <span className="patient-id text-xs font-semibold text-foreground">{patient.name}</span>
@@ -255,9 +255,9 @@ function FullPatientCard({ patient, onView }: { patient: EmergencyPatient; onVie
               {patient.clinical_status && (
                 <Badge
                   className={cn("text-[9px] py-0 px-1.5", {
-                    "bg-red-500/20 text-red-600": patient.clinical_status === "gravissimo" || patient.clinical_status === "grave",
-                    "bg-yellow-500/20 text-yellow-600": patient.clinical_status === "grave_estavel",
-                    "bg-green-500/20 text-green-600": patient.clinical_status === "regular",
+                    "bg-critical/20 text-critical-on-soft": patient.clinical_status === "gravissimo" || patient.clinical_status === "grave",
+                    "bg-warning/20 text-warning-on-soft": patient.clinical_status === "grave_estavel",
+                    "bg-released/20 text-released-on-soft": patient.clinical_status === "regular",
                   })}
                   variant="outline"
                 >
@@ -325,7 +325,7 @@ function FullPatientCard({ patient, onView }: { patient: EmergencyPatient; onVie
                   <ul className="mt-1 space-y-0.5">
                     {pendencies.map((p, i) => (
                       <li key={i} className="text-[10px] text-foreground flex items-start gap-1">
-                        <AlertTriangle className="h-2.5 w-2.5 mt-0.5 text-amber-500 flex-shrink-0" />
+                        <AlertTriangle className="h-2.5 w-2.5 mt-0.5 text-warning flex-shrink-0" />
                         {p}
                       </li>
                     ))}
@@ -577,7 +577,7 @@ export default function EmergenciaSectorPage() {
                 <Card className="bg-card/80">
                   <CardContent className="p-3">
                     <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Vagos</p>
-                    <p className="text-2xl font-bold text-emerald-600 mt-1">{vacant}</p>
+                    <p className="text-2xl font-bold text-released-on-soft mt-1">{vacant}</p>
                   </CardContent>
                 </Card>
               </div>

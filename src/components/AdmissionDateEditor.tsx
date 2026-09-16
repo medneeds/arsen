@@ -238,7 +238,7 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <AlertTriangle className="h-4 w-4 text-warning" />
               Editar data de admissão?
             </DialogTitle>
             <DialogDescription className="text-xs">
@@ -272,7 +272,7 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-[11px] text-amber-900 dark:text-amber-200">
+            <div className="rounded-md border border-warning-border bg-warning-soft px-3 py-2 text-[11px] text-warning-on-soft">
               <strong>Padrão Brasileiro:</strong> Dia / Mês / Ano. Ex.: <strong>14/05/2026</strong> = 14 de MAIO de 2026.
               Os campos só aceitam números — as barras são inseridas automaticamente.
             </div>

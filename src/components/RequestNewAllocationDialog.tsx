@@ -379,18 +379,18 @@ export function RequestNewAllocationDialog({
 
   const getSectorColor = () => {
     switch (targetSector) {
-      case "Cuidados Especiais": return "text-red-500";
-      case "Observação Amarela": return "text-yellow-500";
-      case "Observação Azul": return "text-blue-500";
+      case "Cuidados Especiais": return "text-critical";
+      case "Observação Amarela": return "text-warning";
+      case "Observação Azul": return "text-muted-foreground";
       default: return "";
     }
   };
 
   const getSectorBgColor = () => {
     switch (targetSector) {
-      case "Cuidados Especiais": return "bg-red-500/10 border-red-500/30";
-      case "Observação Amarela": return "bg-yellow-500/10 border-yellow-500/30";
-      case "Observação Azul": return "bg-blue-500/10 border-blue-500/30";
+      case "Cuidados Especiais": return "bg-critical/10 border-critical/30";
+      case "Observação Amarela": return "bg-warning/10 border-warning/30";
+      case "Observação Azul": return "bg-primary/10 border-border/30";
       default: return "bg-muted/50";
     }
   };

@@ -42,14 +42,14 @@ export type ScanGroup = {
 };
 
 const RULE_LABEL: Record<ScanGroup["rule"], { text: string; tone: string }> = {
-  R1: { text: "CPF idêntico (normalizado)", tone: "bg-emerald-600 text-white" },
-  R2: { text: "CNS idêntico (normalizado)", tone: "bg-emerald-600 text-white" },
-  R3: { text: "Nome + DOB + Mãe", tone: "bg-blue-600 text-white" },
-  R4: { text: "Nome + DOB", tone: "bg-amber-600 text-white" },
-  R5: { text: "Prontuário legado igual", tone: "bg-violet-600 text-white" },
-  R6: { text: "Similaridade fonética", tone: "bg-slate-600 text-white" },
-  R7: { text: "Prontuário (só dígitos) igual", tone: "bg-teal-600 text-white" },
-  R8: { text: "Homônimo/familiar (sem DOB)", tone: "bg-orange-600 text-white" },
+  R1: { text: "CPF idêntico (normalizado)", tone: "bg-released text-white" },
+  R2: { text: "CNS idêntico (normalizado)", tone: "bg-released text-white" },
+  R3: { text: "Nome + DOB + Mãe", tone: "bg-primary text-white" },
+  R4: { text: "Nome + DOB", tone: "bg-warning text-white" },
+  R5: { text: "Prontuário legado igual", tone: "bg-primary text-white" },
+  R6: { text: "Similaridade fonética", tone: "bg-primary text-white" },
+  R7: { text: "Prontuário (só dígitos) igual", tone: "bg-released text-white" },
+  R8: { text: "Homônimo/familiar (sem DOB)", tone: "bg-warning text-white" },
 };
 
 const COMPARE_FIELDS: { key: keyof ScanMember; label: string }[] = [
@@ -129,8 +129,8 @@ export function DuplicateGroupCard({ group, selectedPair, onSelectPair, onMergeN
       {open && (
         <div className="border-t border-border p-3 space-y-3 bg-muted/10">
           {group.requires_human_review && (
-            <div className="text-xs bg-orange-50 dark:bg-orange-950/20 border border-orange-400/40 rounded p-2 flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-orange-600 shrink-0 mt-0.5" />
+            <div className="text-xs bg-warning-soft border border-warning/40 rounded p-2 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-warning-on-soft shrink-0 mt-0.5" />
               <div>
                 <b>Revisão humana obrigatória.</b>{" "}
                 {group.rule === "R8"
@@ -168,7 +168,7 @@ export function DuplicateGroupCard({ group, selectedPair, onSelectPair, onMergeN
                   const vals = group.members.map((m) => (m as any)[f.key] || "—");
                   const allSame = vals.every((v) => v === vals[0]);
                   return (
-                    <tr key={f.key as string} className={`border-b border-border/40 ${!allSame ? "bg-amber-50/40 dark:bg-amber-950/10" : ""}`}>
+                    <tr key={f.key as string} className={`border-b border-border/40 ${!allSame ? "bg-warning-soft/40" : ""}`}>
                       <td className="p-1.5 text-muted-foreground">{f.label}</td>
                       {group.members.map((m) => (
                         <td key={m.id} className="p-1.5 font-mono">{(m as any)[f.key] || "—"}</td>
@@ -207,7 +207,7 @@ export function DuplicateGroupCard({ group, selectedPair, onSelectPair, onMergeN
           </div>
 
           {needsPairPick && (
-            <div className="text-xs bg-amber-50 dark:bg-amber-950/20 border border-amber-300/40 rounded p-2">
+            <div className="text-xs bg-warning-soft border border-warning-border/40 rounded p-2">
               Este grupo tem {group.member_count} registros. A mesclagem é feita 2 a 2 — escolha o par no botão abaixo ou abra um par específico.
             </div>
           )}

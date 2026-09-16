@@ -213,7 +213,7 @@ export function CidSearchInput({
 
             {!isLoading && grouped.map(([cat, items]) => (
               <div key={cat}>
-                <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500 bg-slate-50 sticky top-0">
+                <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground bg-muted sticky top-0">
                   {cat}
                 </div>
                 {items.map(item => (

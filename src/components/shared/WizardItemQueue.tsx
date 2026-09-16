@@ -13,7 +13,7 @@ interface Props<T> {
   /** Texto do botão "+ Acrescentar" quando não está editando. */
   addLabel?: string;
   /** Texto/cores específicos de cada wizard. */
-  accentClassName?: string; // ex: "border-blue-300 bg-blue-50/40 text-blue-700"
+  accentClassName?: string; // ex: "border-border bg-muted/40 text-foreground"
   /** Texto explicativo curto. */
   hint?: string;
   /** Bloqueia adicionar (ex: form inválido). */
@@ -67,7 +67,7 @@ export function WizardItemQueue<T>({
                 key={it.uid}
                 className={cn(
                   "flex items-start gap-2 rounded border bg-background/70 px-2 py-1.5 text-xs",
-                  isCurrent ? "border-amber-400 ring-1 ring-amber-400/40" : "border-border/60"
+                  isCurrent ? "border-warning ring-1 ring-warning/40" : "border-border/60"
                 )}
               >
                 <span className="text-[10px] font-bold text-muted-foreground mt-0.5 shrink-0 w-4">
@@ -79,7 +79,7 @@ export function WizardItemQueue<T>({
                     <p className="text-[10px] text-muted-foreground truncate">{it.sublabel}</p>
                   )}
                   {isCurrent && (
-                    <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">
+                    <p className="text-[10px] text-warning-on-soft mt-0.5">
                       ✎ Editando — ajuste no formulário acima e clique em "Salvar e continuar".
                     </p>
                   )}
@@ -100,7 +100,7 @@ export function WizardItemQueue<T>({
                     variant="ghost"
                     size="sm"
                     onClick={() => onRemove(it.uid)}
-                    className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                    className="h-6 w-6 p-0 text-critical-on-soft hover:text-critical-on-soft"
                     aria-label="Remover item"
                   >
                     <X className="h-3 w-3" />

@@ -520,12 +520,12 @@ export default function PacienteHubPage() {
 
           {/* Banner pré-admissão */}
           {isPreAdmitted && !statusLoading && (
-            <div className="bg-amber-50/80 border border-amber-200 rounded-lg p-4 flex items-center gap-4 shadow-sm">
+            <div className="bg-warning-soft/80 border border-warning-border rounded-lg p-4 flex items-center gap-4 shadow-sm">
               <span className="relative flex h-2.5 w-2.5 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-warning"></span>
               </span>
-              <p className="text-amber-900 text-sm tracking-wide">
+              <p className="text-warning-on-soft text-sm tracking-wide">
                 <span className="font-bold uppercase text-xs">Paciente Pré-Admitido.</span>{" "}
                 Conclua a <span className="font-semibold underline decoration-amber-300 decoration-2 underline-offset-2">admissão hospitalar</span> para liberar prescrição, evolução, requisições, docs e histórico.
               </p>
@@ -537,25 +537,25 @@ export default function PacienteHubPage() {
             <div className={cn(
               "rounded-lg border p-4 flex flex-col sm:flex-row sm:items-center gap-3 shadow-sm",
               sapsExpired
-                ? "bg-red-50/80 border-red-300"
-                : "bg-amber-50/80 border-amber-300"
+                ? "bg-critical-soft/80 border-critical-border"
+                : "bg-warning-soft/80 border-warning-border"
             )}>
               <div className={cn(
                 "flex h-10 w-10 items-center justify-center rounded-md shrink-0",
-                sapsExpired ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                sapsExpired ? "bg-critical-soft text-critical-on-soft" : "bg-warning-soft text-warning-on-soft"
               )}>
                 {sapsExpired ? <AlertTriangle className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className={cn(
                   "text-sm font-bold uppercase tracking-wide",
-                  sapsExpired ? "text-red-800" : "text-amber-900"
+                  sapsExpired ? "text-critical-on-soft" : "text-warning-on-soft"
                 )}>
                   Ficha SAPS 3 — {sapsExpired ? "PRAZO EXPIRADO" : "Pendente"}
                 </p>
                 <p className={cn(
                   "text-xs flex items-center gap-1.5 mt-0.5",
-                  sapsExpired ? "text-red-700" : "text-amber-800"
+                  sapsExpired ? "text-critical-on-soft" : "text-warning-on-soft"
                 )}>
                   <Timer className="h-3.5 w-3.5" />
                   {sapsExpired ? (
@@ -568,7 +568,7 @@ export default function PacienteHubPage() {
               <Button size="sm" onClick={handleGoSaps}
                 className={cn(
                   "gap-1.5 uppercase tracking-wide text-xs",
-                  sapsExpired ? "bg-red-600 hover:bg-red-700" : "bg-amber-600 hover:bg-amber-700",
+                  sapsExpired ? "bg-critical hover:bg-critical" : "bg-warning hover:bg-warning",
                   "text-white"
                 )}>
                 <ShieldCheck className="h-3.5 w-3.5" /> Finalizar SAPS 3
@@ -606,29 +606,29 @@ export default function PacienteHubPage() {
                 className="relative w-full text-left disabled:cursor-wait"
               >
                 {isPreAdmitted && (
-                  <span className="absolute -inset-0.5 bg-amber-400 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-700 animate-pulse pointer-events-none" />
+                  <span className="absolute -inset-0.5 bg-warning rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-700 animate-pulse pointer-events-none" />
                 )}
                 <div className={cn(
                   "relative flex flex-col items-center justify-center aspect-square rounded-lg overflow-hidden transition-transform",
                   "bg-card",
                   isPreAdmitted
-                    ? "border-2 border-amber-400 shadow-lg group-hover:scale-[1.02]"
+                    ? "border-2 border-warning shadow-lg group-hover:scale-[1.02]"
                     : isAdmitted
-                    ? "border border-emerald-300 group-hover:scale-[1.02] group-hover:shadow-md"
+                    ? "border border-released-border group-hover:scale-[1.02] group-hover:shadow-md"
                     : "border border-border group-hover:scale-[1.02] group-hover:shadow-md",
                 )}>
                   <span className={cn(
                     "absolute top-0 left-0 right-0 h-1",
-                    isPreAdmitted ? "bg-amber-400" : isAdmitted ? "bg-emerald-400" : "bg-muted-foreground/30",
+                    isPreAdmitted ? "bg-warning" : isAdmitted ? "bg-released" : "bg-muted-foreground/30",
                   )} />
                   <div className={cn(
                     "p-3 rounded-xl mb-3",
-                    isPreAdmitted ? "bg-amber-50" : isAdmitted ? "bg-emerald-50" : "bg-muted",
+                    isPreAdmitted ? "bg-warning-soft" : isAdmitted ? "bg-released-soft" : "bg-muted",
                   )}>
                     <AdmissionIcon
                       className={cn(
                         "w-7 h-7",
-                        isPreAdmitted ? "text-amber-600" : isAdmitted ? "text-emerald-600" : "text-muted-foreground",
+                        isPreAdmitted ? "text-warning-on-soft" : isAdmitted ? "text-released-on-soft" : "text-muted-foreground",
                       )}
                       strokeWidth={1.75}
                     />
@@ -637,12 +637,12 @@ export default function PacienteHubPage() {
                     Admissão
                   </span>
                   {isPreAdmitted && (
-                    <span className="text-[9px] font-semibold text-amber-600 tracking-widest uppercase mt-1">
+                    <span className="text-[9px] font-semibold text-warning-on-soft tracking-widest uppercase mt-1">
                       {hasDraft ? "Rascunho em andamento" : "Pendente"}
                     </span>
                   )}
                   {isAdmitted && (
-                    <span className="text-[9px] font-semibold text-emerald-600 tracking-widest uppercase mt-1">
+                    <span className="text-[9px] font-semibold text-released-on-soft tracking-widest uppercase mt-1">
                       Concluída
                     </span>
                   )}
@@ -656,7 +656,7 @@ export default function PacienteHubPage() {
                   onClick={(e) => { e.stopPropagation(); handlePrintAdmission(); }}
                   title="Imprimir admissão (Norma Zero)"
                   aria-label="Imprimir admissão"
-                  className="absolute top-2 right-2 z-10 inline-flex items-center justify-center h-7 w-7 rounded-md bg-card/95 border border-emerald-200 text-emerald-700 shadow-sm hover:bg-emerald-50 hover:scale-105 transition"
+                  className="absolute top-2 right-2 z-10 inline-flex items-center justify-center h-7 w-7 rounded-md bg-card/95 border border-released-border text-released-on-soft shadow-sm hover:bg-released-soft hover:scale-105 transition"
                 >
                   <Printer className="h-3.5 w-3.5" />
                 </button>
@@ -714,17 +714,17 @@ export default function PacienteHubPage() {
                     ruido, o oposto do que uma passagem de plantao precisa.
                   */}
                   {!locked && key === "prescricao" && prescribedToday === true && (
-                    <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-widest uppercase mt-1">
+                    <span className="text-[9px] font-semibold text-released-on-soft tracking-widest uppercase mt-1">
                       Validada hoje
                     </span>
                   )}
                   {!locked && key === "evolucao" && evolvedToday === true && (
-                    <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-widest uppercase mt-1">
+                    <span className="text-[9px] font-semibold text-released-on-soft tracking-widest uppercase mt-1">
                       Evoluída hoje
                     </span>
                   )}
                   {!locked && key === "requisicoes" && pendingRequests > 0 && (
-                    <span className="text-[9px] font-semibold text-amber-600 dark:text-amber-500 tracking-widest uppercase mt-1">
+                    <span className="text-[9px] font-semibold text-warning-on-soft tracking-widest uppercase mt-1">
                       {pendingRequests} pendente{pendingRequests > 1 ? "s" : ""}
                     </span>
                   )}
@@ -760,18 +760,18 @@ export default function PacienteHubPage() {
                   ? "opacity-40 grayscale border-border cursor-not-allowed"
                   : [
                       "cursor-pointer hover:scale-[1.02] hover:shadow-md",
-                      signalState?.tone === "danger" && "border-red-300 dark:border-red-500/40",
-                      signalState?.tone === "info" && "border-sky-300 dark:border-sky-500/40",
-                      signalState?.tone === "warn" && "border-amber-300 dark:border-amber-500/40",
+                      signalState?.tone === "danger" && "border-critical-border",
+                      signalState?.tone === "info" && "border-border",
+                      signalState?.tone === "warn" && "border-warning-border",
                       !signalState && "border-border",
                     ],
               )}>
                 <span className={cn(
                   "absolute top-0 left-0 right-0 h-1",
                   locked ? "bg-muted-foreground/30"
-                    : signalState?.tone === "danger" ? "bg-red-400"
-                    : signalState?.tone === "info" ? "bg-sky-400"
-                    : signalState?.tone === "warn" ? "bg-amber-400"
+                    : signalState?.tone === "danger" ? "bg-critical"
+                    : signalState?.tone === "info" ? "bg-primary"
+                    : signalState?.tone === "warn" ? "bg-warning"
                     : "bg-primary/70",
                 )} />
                 {locked && (
@@ -782,9 +782,9 @@ export default function PacienteHubPage() {
                 <div className={cn(
                   "p-3 rounded-xl mb-3 transition-colors",
                   locked ? "bg-transparent"
-                    : signalState?.tone === "danger" ? "bg-red-50 dark:bg-red-950/30"
-                    : signalState?.tone === "info" ? "bg-sky-50 dark:bg-sky-950/30"
-                    : signalState?.tone === "warn" ? "bg-amber-50 dark:bg-amber-950/30"
+                    : signalState?.tone === "danger" ? "bg-critical-soft"
+                    : signalState?.tone === "info" ? "bg-muted"
+                    : signalState?.tone === "warn" ? "bg-warning-soft"
                     : "bg-muted group-hover:bg-primary/10",
                 )}>
                   <ArrowLeftRight
@@ -792,9 +792,9 @@ export default function PacienteHubPage() {
                       "w-7 h-7 transition-transform duration-200",
                       !locked && "group-hover:translate-x-0.5",
                       locked ? "text-muted-foreground/40"
-                        : signalState?.tone === "danger" ? "text-red-600 dark:text-red-400"
-                        : signalState?.tone === "info" ? "text-sky-600 dark:text-sky-400"
-                        : signalState?.tone === "warn" ? "text-amber-600 dark:text-amber-500"
+                        : signalState?.tone === "danger" ? "text-critical-on-soft"
+                        : signalState?.tone === "info" ? "text-foreground"
+                        : signalState?.tone === "warn" ? "text-warning-on-soft"
                         : "text-muted-foreground group-hover:text-primary",
                     )}
                     strokeWidth={1.5}
@@ -809,9 +809,9 @@ export default function PacienteHubPage() {
                 {signalState && !locked && (
                   <span className={cn(
                     "text-[9px] font-semibold tracking-widest uppercase mt-1 text-center px-1 leading-tight",
-                    signalState.tone === "danger" && "text-red-600 dark:text-red-400",
-                    signalState.tone === "info" && "text-sky-600 dark:text-sky-400",
-                    signalState.tone === "warn" && "text-amber-600 dark:text-amber-500",
+                    signalState.tone === "danger" && "text-critical-on-soft",
+                    signalState.tone === "info" && "text-foreground",
+                    signalState.tone === "warn" && "text-warning-on-soft",
                   )}>
                     {signalState.label}
                   </span>

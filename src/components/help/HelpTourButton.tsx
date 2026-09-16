@@ -44,10 +44,10 @@ export function HelpTourButton() {
           aria-label="Abrir ajuda desta página"
           className={cn(
             "fixed bottom-16 right-4 z-[60] flex h-10 w-10 items-center justify-center",
-            "rounded-full border border-border bg-slate-200/80 text-slate-700",
+            "rounded-full border border-border bg-secondary/80 text-foreground",
             "shadow-md backdrop-blur-sm transition-all",
-            "opacity-60 hover:opacity-100 hover:bg-slate-300 hover:scale-105",
-            "dark:bg-slate-700/80 dark:text-slate-200 dark:hover:bg-slate-600",
+            "opacity-60 hover:opacity-100 hover:bg-secondary hover:scale-105",
+            "700/80",
             "print:hidden"
           )}
         >

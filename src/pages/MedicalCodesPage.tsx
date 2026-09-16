@@ -194,8 +194,8 @@ export default function MedicalCodesPage() {
       {/* Page Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/10 flex items-center justify-center">
-            <FileCode className="h-6 w-6 text-cyan-600" />
+          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-muted/20 to-muted/10 flex items-center justify-center">
+            <FileCode className="h-6 w-6 text-foreground" />
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">

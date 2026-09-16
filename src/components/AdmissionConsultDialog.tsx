@@ -71,8 +71,8 @@ const fmtDateTime = (iso?: string | null) => {
 const Field = ({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) =>
   value && value.trim() ? (
     <div>
-      <div className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">{label}</div>
-      <div className={cn("text-sm text-slate-800 whitespace-pre-wrap leading-relaxed mt-0.5", mono && "font-mono")}>
+      <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{label}</div>
+      <div className={cn("text-sm text-foreground whitespace-pre-wrap leading-relaxed mt-0.5", mono && "font-mono")}>
         {value}
       </div>
     </div>
@@ -85,21 +85,21 @@ const Section = ({
   tone?: "slate" | "blue" | "emerald" | "amber" | "red";
 }) => {
   const tones = {
-    slate: "border-slate-200 bg-slate-50/40",
-    blue: "border-blue-200 bg-blue-50/40",
-    emerald: "border-emerald-200 bg-emerald-50/40",
-    amber: "border-amber-200 bg-amber-50/40",
-    red: "border-red-200 bg-red-50/40",
+    slate: "border-border bg-muted/40",
+    blue: "border-border bg-muted/40",
+    emerald: "border-released-border bg-released-soft/40",
+    amber: "border-warning-border bg-warning-soft/40",
+    red: "border-critical-border bg-critical-soft/40",
   } as const;
   const iconTones = {
-    slate: "text-slate-500", blue: "text-blue-600",
-    emerald: "text-emerald-600", amber: "text-amber-600", red: "text-red-600",
+    slate: "text-muted-foreground", blue: "text-foreground",
+    emerald: "text-released-on-soft", amber: "text-warning-on-soft", red: "text-critical-on-soft",
   } as const;
   return (
     <section className={cn("rounded-lg border p-3.5 space-y-2.5", tones[tone])}>
       <header className="flex items-center gap-2">
         <Icon className={cn("h-3.5 w-3.5", iconTones[tone])} />
-        <h4 className="text-[11px] font-semibold uppercase tracking-wide text-slate-700">{title}</h4>
+        <h4 className="text-[11px] font-semibold uppercase tracking-wide text-foreground">{title}</h4>
       </header>
       <div className="space-y-2">{children}</div>
     </section>
@@ -319,31 +319,31 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
           <DialogHeader className={cn(
             "px-6 pt-5 pb-4 border-b",
             isSuspended
-              ? "bg-gradient-to-r from-red-50/70 via-white to-white"
-              : "bg-gradient-to-r from-emerald-50/70 via-white to-white",
+              ? "bg-gradient-to-r from-critical-soft/70 via-white to-white"
+              : "bg-gradient-to-r from-released-soft/70 via-white to-white",
           )}>
-            <DialogTitle className="flex items-center gap-2 uppercase text-slate-800">
+            <DialogTitle className="flex items-center gap-2 uppercase text-foreground">
               <span className={cn(
                 "inline-flex h-8 w-8 items-center justify-center rounded-md",
-                isSuspended ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700",
+                isSuspended ? "bg-critical-soft text-critical-on-soft" : "bg-released-soft text-released-on-soft",
               )}>
                 <Stethoscope className="h-4 w-4" />
               </span>
               Admissão Hospitalar — {patient.name}
               {isSuspended ? (
-                <Badge className="ml-2 bg-red-100 text-red-700 border border-red-300 uppercase">
+                <Badge className="ml-2 bg-critical-soft text-critical-on-soft border border-critical-border uppercase">
                   <Ban className="h-3 w-3 mr-1" /> Suspensa
                 </Badge>
               ) : (
-                <Badge className="ml-2 bg-emerald-100 text-emerald-700 border border-emerald-300 uppercase">
+                <Badge className="ml-2 bg-released-soft text-released-on-soft border border-released-border uppercase">
                   <CheckCircle2 className="h-3 w-3 mr-1" /> Validada (D0)
                 </Badge>
               )}
-              <Badge variant="outline" className="ml-1 border-slate-300 bg-white text-slate-700">
+              <Badge variant="outline" className="ml-1 border-border bg-white text-foreground">
                 {isUti ? "UTI / UCI" : "ENFERMARIA"}
               </Badge>
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-600">
+            <DialogDescription className="text-xs text-foreground">
               Leito <strong>{patient.bed}</strong> •{" "}
               {d0 ? (
                 <>
@@ -358,11 +358,11 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
           <ScrollArea className="max-h-[68vh]">
             <div className="px-6 py-5 space-y-4">
               {loading ? (
-                <div className="flex items-center justify-center py-10 text-slate-400 gap-2">
+                <div className="flex items-center justify-center py-10 text-muted-foreground gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" /> Carregando admissão…
                 </div>
               ) : !d0 ? (
-                <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-4 text-sm text-amber-800 flex items-center gap-2">
+                <div className="rounded-lg border border-warning-border bg-warning-soft/60 p-4 text-sm text-warning-on-soft flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" /> Nenhuma admissão registrada para este paciente.
                 </div>
               ) : (
@@ -407,8 +407,8 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
 
                   {isUti && (
                     <Section icon={ShieldCheck} title="Ficha SAPS 3" tone={sapsPending ? "amber" : "emerald"}>
-                      <p className="text-xs text-slate-700">
-                        Status: <strong className={sapsPending ? "text-amber-700" : "text-emerald-700"}>
+                      <p className="text-xs text-foreground">
+                        Status: <strong className={sapsPending ? "text-warning-on-soft" : "text-released-on-soft"}>
                           {sapsPending ? "PENDENTE (24 h)" : "Concluída"}
                         </strong>
                       </p>
@@ -419,16 +419,16 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
                     <Section icon={History} title={`Adendos (${addenda.length})`} tone="blue">
                       <div className="space-y-2">
                         {addenda.map((a) => (
-                          <div key={a.id} className="rounded-md border border-blue-200 bg-white p-3">
-                            <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-slate-500 mb-1.5">
-                              <FilePlus2 className="h-3 w-3 text-blue-600" />
+                          <div key={a.id} className="rounded-md border border-border bg-white p-3">
+                            <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                              <FilePlus2 className="h-3 w-3 text-foreground" />
                               <span>Adendo</span>
                               <span>•</span>
                               <span>{fmtDateTime(a.validated_at || a.created_at)}</span>
                               <span>•</span>
-                              <span className="font-semibold text-slate-700">{a.validated_by_name || a.created_by_name || "—"}</span>
+                              <span className="font-semibold text-foreground">{a.validated_by_name || a.created_by_name || "—"}</span>
                             </div>
-                            <p className="text-sm text-slate-800 whitespace-pre-wrap">
+                            <p className="text-sm text-foreground whitespace-pre-wrap">
                               {(a.soap_data as any)?.addendum || ""}
                             </p>
                           </div>
@@ -442,7 +442,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
           </ScrollArea>
 
           {/* Footer */}
-          <DialogFooter className="px-6 py-3.5 border-t bg-slate-50/70 gap-2 sm:justify-between">
+          <DialogFooter className="px-6 py-3.5 border-t bg-muted/70 gap-2 sm:justify-between">
             <Button variant="outline" onClick={handlePrint} disabled={!d0} className="gap-2">
               <Printer className="h-4 w-4" /> Imprimir (Norma Zero)
             </Button>
@@ -451,7 +451,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
                 variant="outline"
                 onClick={() => setAdendoOpen(true)}
                 disabled={!d0 || isSuspended}
-                className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                className="gap-2 border-border text-foreground hover:bg-muted hover:text-foreground"
               >
                 <FilePlus2 className="h-4 w-4" /> Adendo
               </Button>
@@ -459,7 +459,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
                 variant="outline"
                 onClick={() => setSuspendOpen(true)}
                 disabled={!d0 || isSuspended}
-                className="gap-2 border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800"
+                className="gap-2 border-critical-border text-critical-on-soft hover:bg-critical-soft hover:text-critical-on-soft"
               >
                 <Ban className="h-4 w-4" /> Suspender
               </Button>
@@ -472,8 +472,8 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
       <Dialog open={adendoOpen} onOpenChange={setAdendoOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 uppercase text-slate-800">
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-blue-100 text-blue-700">
+            <DialogTitle className="flex items-center gap-2 uppercase text-foreground">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-foreground">
                 <FilePlus2 className="h-3.5 w-3.5" />
               </span>
               Adendo à Admissão
@@ -489,7 +489,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
           </div>
           <DialogFooter className="gap-2">
             <Button variant="ghost" onClick={() => setAdendoOpen(false)} disabled={savingAdendo}>Cancelar</Button>
-            <Button onClick={submitAdendo} disabled={savingAdendo} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+            <Button onClick={submitAdendo} disabled={savingAdendo} className="gap-2 bg-primary hover:bg-primary text-white">
               {savingAdendo ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus2 className="h-4 w-4" />}
               Salvar Adendo
             </Button>
@@ -501,8 +501,8 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
       <AlertDialog open={suspendOpen} onOpenChange={setSuspendOpen}>
         <AlertDialogContent className="max-w-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 uppercase text-red-800">
-              <ShieldAlert className="h-5 w-5 text-red-600" /> Suspender Admissão
+            <AlertDialogTitle className="flex items-center gap-2 uppercase text-critical-on-soft">
+              <ShieldAlert className="h-5 w-5 text-critical-on-soft" /> Suspender Admissão
             </AlertDialogTitle>
             <AlertDialogDescription className="text-xs">
               A suspensão <strong>invalida o D0</strong>. O paciente voltará para o estado{" "}
@@ -511,14 +511,14 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2 py-2">
-            <Label className="text-xs">Justificativa clínica * <span className="text-slate-400">(mín. 10 caracteres)</span></Label>
+            <Label className="text-xs">Justificativa clínica * <span className="text-muted-foreground">(mín. 10 caracteres)</span></Label>
             <Textarea rows={4} value={suspendReason} onChange={(e) => setSuspendReason(e.target.value)}
               placeholder="Ex.: erro de identificação do paciente, admissão duplicada..." />
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={savingSuspend}>Cancelar</AlertDialogCancel>
             <AlertDialogAction asChild>
-              <Button onClick={submitSuspend} disabled={savingSuspend} className="gap-2 bg-red-600 hover:bg-red-700 text-white">
+              <Button onClick={submitSuspend} disabled={savingSuspend} className="gap-2 bg-critical hover:bg-critical text-white">
                 {savingSuspend ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className="h-4 w-4" />}
                 Confirmar Suspensão
               </Button>

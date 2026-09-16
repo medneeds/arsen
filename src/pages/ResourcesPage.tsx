@@ -391,8 +391,8 @@ const ResourcesPage = () => {
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30 border border-border/50">
-              <div className="h-10 w-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                <Database className="h-5 w-5 text-cyan-600" />
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Database className="h-5 w-5 text-foreground" />
               </div>
               <div>
                 <p className="text-sm font-semibold uppercase">Banco de Dados</p>
@@ -400,8 +400,8 @@ const ResourcesPage = () => {
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30 border border-border/50">
-              <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-amber-600" />
+              <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center">
+                <FileText className="h-5 w-5 text-warning-on-soft" />
               </div>
               <div>
                 <p className="text-sm font-semibold uppercase">Templates</p>
@@ -556,7 +556,7 @@ const ResourcesPage = () => {
       <AlertDialog open={isConfirmationDialogOpen} onOpenChange={setIsConfirmationDialogOpen}>
         <AlertDialogContent className="sm:max-w-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="uppercase flex items-center gap-2 text-green-600">
+            <AlertDialogTitle className="uppercase flex items-center gap-2 text-released-on-soft">
               <Database className="h-6 w-6" />
               Solicitação Registrada com Sucesso
             </AlertDialogTitle>
@@ -575,11 +575,11 @@ const ResourcesPage = () => {
                 </div>
               </div>
               
-              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <p className="text-sm text-blue-900 dark:text-blue-100 font-medium uppercase">
+              <div className="bg-muted border border-border rounded-lg p-4">
+                <p className="text-sm text-foreground font-medium uppercase">
                   📋 Informação Importante
                 </p>
-                <p className="text-xs text-blue-800 dark:text-blue-200 mt-2 uppercase leading-relaxed">
+                <p className="text-xs text-foreground mt-2 uppercase leading-relaxed">
                   A solicitação foi salva com sucesso no banco de dados. Você pode visualizar, editar ou imprimir a solicitação completa a qualquer momento acessando o <strong>Histórico de Solicitações</strong>.
                 </p>
               </div>

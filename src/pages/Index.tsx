@@ -1042,7 +1042,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button variant="destructive" size="icon" onClick={handleDeleteSelected}
-                                className="h-8 w-8 bg-red-600 text-white hover:bg-red-700 border-0">
+                                className="h-8 w-8 bg-critical text-white hover:bg-critical border-0">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>

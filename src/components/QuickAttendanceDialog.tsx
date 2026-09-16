@@ -76,7 +76,7 @@ export function QuickAttendanceDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
         <DialogHeader className="px-5 pt-5 pb-3 border-b">
           <DialogTitle className="flex items-center gap-2 text-base">
-            <Zap className="h-4 w-4 text-amber-500" />
+            <Zap className="h-4 w-4 text-warning" />
             Atendimento Rápido
             <Badge variant="outline" className="text-[10px] ml-1">{patientBed}</Badge>
             <span className="text-sm font-normal text-muted-foreground truncate">— {patientName}</span>

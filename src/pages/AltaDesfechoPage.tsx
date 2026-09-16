@@ -934,10 +934,10 @@ function BrainDeathProtocolSection() {
 
   return (
     <div className="space-y-4">
-      <Card className="border-red-500/30 bg-red-500/5">
+      <Card className="border-critical/30 bg-critical/5">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-red-500" />
+            <AlertTriangle className="h-4 w-4 text-critical" />
             Protocolo de Morte Encefálica — Resolução CFM 2.173/2017
           </CardTitle>
           <CardDescription className="text-xs">
@@ -1018,7 +1018,7 @@ function BrainDeathProtocolSection() {
 
       <div className="flex gap-3 justify-end">
         <Button variant="outline" className="text-xs h-9"><Printer className="h-3.5 w-3.5 mr-1.5" />Imprimir Termo</Button>
-        <Button className="text-xs h-9 bg-red-600 hover:bg-red-700" onClick={() => toast.success("Protocolo de ME registrado. CIHDOTT será notificada.")}><Save className="h-3.5 w-3.5 mr-1.5" />Concluir Protocolo ME</Button>
+        <Button className="text-xs h-9 bg-critical hover:bg-critical" onClick={() => toast.success("Protocolo de ME registrado. CIHDOTT será notificada.")}><Save className="h-3.5 w-3.5 mr-1.5" />Concluir Protocolo ME</Button>
       </div>
     </div>
   );
@@ -1076,10 +1076,10 @@ function CihdottSection() {
 
   return (
     <div className="space-y-4">
-      <Card className="border-emerald-500/30 bg-emerald-500/5">
+      <Card className="border-released/30 bg-released/5">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Heart className="h-4 w-4 text-emerald-600" />
+            <Heart className="h-4 w-4 text-released-on-soft" />
             Notificação CIHDOTT — Comissão Intra-Hospitalar de Doação de Órgãos e Tecidos
           </CardTitle>
           <CardDescription className="text-xs">
@@ -1139,7 +1139,7 @@ function CihdottSection() {
             </div>
           </div>
           <Separator />
-          <Label className="text-xs font-medium text-red-500">Contraindicações absolutas</Label>
+          <Label className="text-xs font-medium text-critical">Contraindicações absolutas</Label>
           <div className="grid grid-cols-2 gap-2">
             {[
               { key: "hasHIV", label: "HIV positivo" },
@@ -1265,7 +1265,7 @@ function CihdottSection() {
 
       <div className="flex gap-3 justify-end">
         <Button variant="outline" className="text-xs h-9"><Printer className="h-3.5 w-3.5 mr-1.5" />Imprimir Notificação</Button>
-        <Button className="text-xs h-9 bg-emerald-600 hover:bg-emerald-700" onClick={() => toast.success("Notificação CIHDOTT registrada com sucesso")}><Save className="h-3.5 w-3.5 mr-1.5" />Registrar Notificação</Button>
+        <Button className="text-xs h-9 bg-released hover:bg-released" onClick={() => toast.success("Notificação CIHDOTT registrada com sucesso")}><Save className="h-3.5 w-3.5 mr-1.5" />Registrar Notificação</Button>
       </div>
     </div>
   );

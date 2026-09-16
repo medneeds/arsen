@@ -70,9 +70,9 @@ export function useSignalingStatus(
 
 const TONE = {
   transfer: {
-    box: "border-sky-500/40 bg-sky-50 dark:bg-sky-950/30",
-    title: "text-sky-800 dark:text-sky-200",
-    body: "text-sky-900/80 dark:text-sky-100/80",
+    box: "border-border/40 bg-muted",
+    title: "text-foreground",
+    body: "text-foreground/80",
     Icon: ArrowLeftRight,
   },
   death: {
@@ -82,9 +82,9 @@ const TONE = {
     Icon: Skull,
   },
   discharge: {
-    box: "border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/30",
-    title: "text-emerald-800 dark:text-emerald-200",
-    body: "text-emerald-900/80 dark:text-emerald-100/80",
+    box: "border-released/40 bg-released-soft",
+    title: "text-released-on-soft",
+    body: "text-released-on-soft/80",
     Icon: LogOut,
   },
 } as const;
@@ -192,7 +192,7 @@ export function SignalingStatusPanel({
         {status.kind === "transfer" ? (
           <Button
             size="sm" variant="outline"
-            className="h-8 text-[11px] gap-1.5 border-sky-500/50 text-sky-700 dark:text-sky-300 hover:bg-sky-500/10"
+            className="h-8 text-[11px] gap-1.5 border-border/50 text-foreground hover:bg-primary/10"
             onClick={onChangeDestination}
             disabled={!onChangeDestination}
           >
@@ -205,7 +205,7 @@ export function SignalingStatusPanel({
               "h-8 text-[11px] gap-1.5",
               status.kind === "death"
                 ? "border-destructive/40 text-destructive hover:bg-destructive/10"
-                : "border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10",
+                : "border-released/40 text-released-on-soft hover:bg-released/10",
             )}
             onClick={() => status.doc && printDischargeDocument(status.doc.document_type, status.doc.content)}
           >
@@ -217,7 +217,7 @@ export function SignalingStatusPanel({
 
         <Button
           size="sm" variant="outline"
-          className="h-8 text-[11px] gap-1.5 border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+          className="h-8 text-[11px] gap-1.5 border-warning/50 text-warning-on-soft hover:bg-warning/10"
           onClick={() => (status.kind === "transfer" ? setCancelTransferOpen(true) : setSuspendOpen(true))}
         >
           <Ban className="h-3 w-3" />

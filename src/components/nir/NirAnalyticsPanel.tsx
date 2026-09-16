@@ -25,10 +25,10 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const heatmapColor = (value: number, max: number) => {
   if (!max || value === 0) return "bg-muted/40";
   const ratio = value / max;
-  if (ratio > 0.75) return "bg-red-500/80";
-  if (ratio > 0.5) return "bg-orange-500/70";
-  if (ratio > 0.25) return "bg-amber-500/60";
-  return "bg-emerald-500/40";
+  if (ratio > 0.75) return "bg-critical/80";
+  if (ratio > 0.5) return "bg-warning/70";
+  if (ratio > 0.25) return "bg-warning/60";
+  return "bg-released/40";
 };
 
 const PIE_COLORS = ["hsl(var(--chart-1, 142 71% 45%))", "hsl(var(--chart-2, 217 91% 60%))", "hsl(var(--chart-3, 0 84% 60%))", "hsl(var(--chart-4, 38 92% 50%))", "hsl(var(--chart-5, 271 81% 56%))"];
@@ -133,10 +133,10 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
             <div className="flex items-center gap-2 mt-3 text-[10px] text-muted-foreground">
               <span>Menos</span>
               <span className="h-2 w-3 rounded-sm bg-muted/40" />
-              <span className="h-2 w-3 rounded-sm bg-emerald-500/40" />
-              <span className="h-2 w-3 rounded-sm bg-amber-500/60" />
-              <span className="h-2 w-3 rounded-sm bg-orange-500/70" />
-              <span className="h-2 w-3 rounded-sm bg-red-500/80" />
+              <span className="h-2 w-3 rounded-sm bg-released/40" />
+              <span className="h-2 w-3 rounded-sm bg-warning/60" />
+              <span className="h-2 w-3 rounded-sm bg-warning/70" />
+              <span className="h-2 w-3 rounded-sm bg-critical/80" />
               <span>Mais</span>
             </div>
           </CardContent>
@@ -203,7 +203,7 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
                         <p className="patient-id text-xs font-semibold truncate">Leito {b.bed_number} — {getSectorDisplayLabel(b.sector) || b.sector}</p>
                         <p className="text-[10px] text-muted-foreground truncate">{b.block_reason || "Sem motivo registrado"}</p>
                       </div>
-                      <Badge variant="outline" className="text-[10px] shrink-0 border-red-500/40 text-red-600">
+                      <Badge variant="outline" className="text-[10px] shrink-0 border-critical/40 text-critical-on-soft">
                         {Math.round(b.blockedHours / 24)}d
                       </Badge>
                     </li>

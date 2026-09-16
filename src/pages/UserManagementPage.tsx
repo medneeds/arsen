@@ -95,31 +95,31 @@ interface UserWithRole extends UserProfile {
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   pending: { 
     label: "Pendente", 
-    color: "bg-amber-500/10 text-amber-600 border-amber-500/20", 
+    color: "bg-warning/10 text-warning-on-soft border-warning/20", 
     icon: <Clock className="h-3 w-3" /> 
   },
   approved: { 
     label: "Aprovado", 
-    color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20", 
+    color: "bg-released/10 text-released-on-soft border-released/20", 
     icon: <CheckCircle className="h-3 w-3" /> 
   },
   rejected: { 
     label: "Rejeitado", 
-    color: "bg-red-500/10 text-red-600 border-red-500/20", 
+    color: "bg-critical/10 text-critical-on-soft border-critical/20", 
     icon: <XCircle className="h-3 w-3" /> 
   },
   suspended: { 
     label: "Suspenso", 
-    color: "bg-gray-500/10 text-gray-600 border-gray-500/20", 
+    color: "bg-primary/10 text-foreground border-border/20", 
     icon: <Ban className="h-3 w-3" /> 
   },
 };
 
 const ROLE_CONFIG: Record<string, { label: string; color: string }> = {
-  admin: { label: "Coordenador", color: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
-  medico: { label: "Médico", color: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
-  porta: { label: "Porta", color: "bg-teal-500/10 text-teal-600 border-teal-500/20" },
-  visitante: { label: "Visitante", color: "bg-gray-500/10 text-gray-600 border-gray-500/20" },
+  admin: { label: "Coordenador", color: "bg-primary/10 text-foreground border-border/20" },
+  medico: { label: "Médico", color: "bg-primary/10 text-foreground border-border/20" },
+  porta: { label: "Porta", color: "bg-released/10 text-released-on-soft border-released/20" },
+  visitante: { label: "Visitante", color: "bg-primary/10 text-foreground border-border/20" },
 };
 
 export default function UserManagementPage() {
@@ -423,9 +423,9 @@ export default function UserManagementPage() {
           </div>
 
           {pendingCount > 0 && (
-            <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-2">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
-              <span className="text-sm font-medium text-amber-600">
+            <div className="flex items-center gap-2 bg-warning/10 border border-warning/20 rounded-lg px-4 py-2">
+              <AlertTriangle className="h-4 w-4 text-warning-on-soft" />
+              <span className="text-sm font-medium text-warning-on-soft">
                 {pendingCount} usuário{pendingCount > 1 ? "s" : ""} aguardando aprovação
               </span>
             </div>
@@ -624,7 +624,7 @@ export default function UserManagementPage() {
                                       setChangeEmailOpen(true);
                                     }}
                                   >
-                                    <Mail className="h-4 w-4 mr-2 text-blue-600" />
+                                    <Mail className="h-4 w-4 mr-2 text-foreground" />
                                     Alterar e-mail
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
@@ -632,7 +632,7 @@ export default function UserManagementPage() {
                                       setUserToResetPassword(u);
                                       setResetPasswordOpen(true);
                                     }}
-                                    className="text-amber-700 focus:text-amber-700"
+                                    className="text-warning-on-soft focus:text-warning-on-soft"
                                   >
                                     <KeyRound className="h-4 w-4 mr-2" />
                                     Redefinir senha
@@ -780,7 +780,7 @@ export default function UserManagementPage() {
                 {/* Password Reset Button - Always visible */}
                 <Button
                   variant="outline"
-                  className="w-full text-amber-600 border-amber-600 hover:bg-amber-50"
+                  className="w-full text-warning-on-soft border-warning hover:bg-warning-soft"
                   onClick={() => {
                     setUserToResetPassword(selectedUser);
                     setResetPasswordOpen(true);
@@ -795,7 +795,7 @@ export default function UserManagementPage() {
                   {selectedUser.status === "pending" && (
                     <>
                       <Button
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                        className="flex-1 bg-released hover:bg-released"
                         onClick={() => handleApprove(selectedUser.id)}
                         disabled={actionLoading}
                       >
@@ -817,7 +817,7 @@ export default function UserManagementPage() {
                   {selectedUser.status === "approved" && (
                     <Button
                       variant="outline"
-                      className="flex-1 text-gray-600 border-gray-400 hover:bg-gray-50"
+                      className="flex-1 text-foreground border-border hover:bg-muted"
                       onClick={() => handleSuspend(selectedUser.id)}
                       disabled={actionLoading}
                     >
@@ -829,7 +829,7 @@ export default function UserManagementPage() {
                   {(selectedUser.status === "suspended" || selectedUser.status === "rejected") && (
                     <Button
                       variant="outline"
-                      className="flex-1 text-emerald-600 border-emerald-600 hover:bg-emerald-50"
+                      className="flex-1 text-released-on-soft border-released hover:bg-released-soft"
                       onClick={() => handleReactivate(selectedUser.id)}
                       disabled={actionLoading}
                     >

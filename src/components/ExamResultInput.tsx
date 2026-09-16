@@ -199,8 +199,8 @@ const ExamResultInput: React.FC<ExamResultInputProps> = ({
                     />
                   </div>
                 ) : (
-                  <div className="h-10 w-10 rounded border flex items-center justify-center shrink-0 bg-red-50 dark:bg-red-500/10">
-                    <File className="h-5 w-5 text-red-500" />
+                  <div className="h-10 w-10 rounded border flex items-center justify-center shrink-0 bg-critical-soft">
+                    <File className="h-5 w-5 text-critical" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">

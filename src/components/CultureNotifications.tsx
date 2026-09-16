@@ -126,13 +126,13 @@ export function CultureNotifications() {
           <div
             key={notif.id}
             className={cn(
-              "bg-background border-2 border-violet-400 rounded-xl p-3 shadow-2xl",
+              "bg-background border-2 border-border rounded-xl p-3 shadow-2xl",
               "animate-in slide-in-from-right-5 fade-in-0 duration-300"
             )}
           >
             <div className="flex items-start gap-2">
-              <div className="p-1.5 rounded-lg bg-violet-500/10 shrink-0 mt-0.5">
-                <Microscope className="h-4 w-4 text-violet-600" />
+              <div className="p-1.5 rounded-lg bg-primary/10 shrink-0 mt-0.5">
+                <Microscope className="h-4 w-4 text-foreground" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1">
@@ -154,14 +154,14 @@ export function CultureNotifications() {
                   <span>{CULTURE_TYPES[notif.culture_type] || notif.culture_type}</span>
                 </div>
                 {notif.microorganism && (
-                  <p className="text-[10px] text-red-600 font-semibold mt-1">
+                  <p className="text-[10px] text-critical-on-soft font-semibold mt-1">
                     🦠 {notif.microorganism}
                   </p>
                 )}
                 <Button
                   size="sm"
                   variant="outline"
-                  className="mt-2 h-6 text-[10px] gap-1 w-full border-violet-200 text-violet-700 hover:bg-violet-50"
+                  className="mt-2 h-6 text-[10px] gap-1 w-full border-border text-foreground hover:bg-muted"
                   onClick={() => handleView(notif)}
                 >
                   <Eye className="h-3 w-3" /> Ver resultado completo
@@ -177,7 +177,7 @@ export function CultureNotifications() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Microscope className="h-5 w-5 text-violet-600" />
+              <Microscope className="h-5 w-5 text-foreground" />
               Resultado de cultura — CCIH
             </DialogTitle>
             <DialogDescription>Registrado pela comissão de controle de infecção</DialogDescription>
@@ -197,15 +197,15 @@ export function CultureNotifications() {
               </div>
 
               {viewDetail.microorganism && (
-                <div className="p-3 rounded-lg bg-red-50/50 border border-red-200 dark:bg-red-500/5 dark:border-red-500/20">
-                  <p className="text-xs font-semibold text-red-700 dark:text-red-400 mb-0.5">Microrganismo</p>
+                <div className="p-3 rounded-lg bg-critical-soft/50 border border-critical-border">
+                  <p className="text-xs font-semibold text-critical-on-soft mb-0.5">Microrganismo</p>
                   <p className="text-sm font-medium text-foreground">{viewDetail.microorganism}</p>
                 </div>
               )}
 
               {viewDetail.antibiogram && (
-                <div className="p-3 rounded-lg bg-violet-50/50 border border-violet-200 dark:bg-violet-500/5 dark:border-violet-500/20">
-                  <p className="text-xs font-semibold text-violet-700 dark:text-violet-400 mb-0.5">Antibiograma</p>
+                <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-xs font-semibold text-foreground mb-0.5">Antibiograma</p>
                   <p className="text-sm text-foreground whitespace-pre-wrap">{viewDetail.antibiogram}</p>
                 </div>
               )}

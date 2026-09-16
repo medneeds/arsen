@@ -74,31 +74,31 @@ const DESTINATION_SECTORS: DestinationSector[] = [
   // atendimento fica fora do sistema. O paciente e encaminhado direto ao setor
   // de internacao de destino.
   // Urgência e Emergência (admissão direta sem leito clínico fixo)
-  { value: "sala_vermelha", label: "Sala Vermelha", group: "Urgência e Emergência (Horizontal)", color: "bg-red-700", sectorKey: "sala_vermelha" },
-  { value: "sala_laranja", label: "Sala Laranja", group: "Urgência e Emergência (Horizontal)", color: "bg-orange-500", sectorKey: "sala_laranja" },
-  { value: "ue_vertical", label: "UE Vertical", group: "Legado", color: "bg-purple-500", sectorKey: "ue_vertical", legacyOnly: true },
-  { value: "ue_horizontal", label: "UE Horizontal", group: "Legado", color: "bg-indigo-500", sectorKey: "ue_horizontal", legacyOnly: true },
-  { value: "observacao_clinica", label: "Observação Clínica", group: "Legado", color: "bg-sky-500", sectorKey: "observacao_clinica", legacyOnly: true },
-  { value: "internacao_ue", label: "Posto de Internação", group: "Urgência e Emergência (Horizontal)", color: "bg-indigo-600", sectorKey: "internacao_ue" },
+  { value: "sala_vermelha", label: "Sala Vermelha", group: "Urgência e Emergência (Horizontal)", color: "bg-critical", sectorKey: "sala_vermelha" },
+  { value: "sala_laranja", label: "Sala Laranja", group: "Urgência e Emergência (Horizontal)", color: "bg-warning", sectorKey: "sala_laranja" },
+  { value: "ue_vertical", label: "UE Vertical", group: "Legado", color: "bg-primary", sectorKey: "ue_vertical", legacyOnly: true },
+  { value: "ue_horizontal", label: "UE Horizontal", group: "Legado", color: "bg-primary", sectorKey: "ue_horizontal", legacyOnly: true },
+  { value: "observacao_clinica", label: "Observação Clínica", group: "Legado", color: "bg-primary", sectorKey: "observacao_clinica", legacyOnly: true },
+  { value: "internacao_ue", label: "Posto de Internação", group: "Urgência e Emergência (Horizontal)", color: "bg-primary", sectorKey: "internacao_ue" },
   // UTI/UCI num bloco so, como no menu de setores
-  { value: "red", label: "UTI 1", group: "UTI/UCI", color: "bg-red-500", sectorKey: "red" },
-  { value: "yellow", label: "UTI 2", group: "UTI/UCI", color: "bg-yellow-500", sectorKey: "yellow" },
-  { value: "blue", label: "UCI 1", group: "UTI/UCI", color: "bg-blue-500", sectorKey: "blue" },
-  { value: "outside", label: "UCI 2", group: "UTI/UCI", color: "bg-emerald-500", sectorKey: "outside" },
+  { value: "red", label: "UTI 1", group: "UTI/UCI", color: "bg-critical", sectorKey: "red" },
+  { value: "yellow", label: "UTI 2", group: "UTI/UCI", color: "bg-warning", sectorKey: "yellow" },
+  { value: "blue", label: "UCI 1", group: "UTI/UCI", color: "bg-primary", sectorKey: "blue" },
+  { value: "outside", label: "UCI 2", group: "UTI/UCI", color: "bg-released", sectorKey: "outside" },
   // Enfermarias — inclui a UCC (Unidade de Cuidados CLÍNICOS): bloco de
   // enfermarias por definição institucional (Direção Clínica, 19/08/2026).
-  { value: "ucc", label: "UCC — Unidade Cuidados Clínicos", group: "Enfermarias", color: "bg-violet-500", sectorKey: "ucc" },
-  { value: "neuro_01", label: "Enfermaria Neuro 01", group: "Enfermarias", color: "bg-cyan-500", sectorKey: "neuro_01" },
-  { value: "neuro_02", label: "Enfermaria Neuro 02", group: "Enfermarias", color: "bg-cyan-600", sectorKey: "neuro_02" },
-  { value: "clinica_cirurgica", label: "Clínica Cirúrgica", group: "Enfermarias", color: "bg-teal-500", sectorKey: "clinica_cirurgica" },
-  { value: "enfermaria_transicao", label: "Enfermaria de Transição", group: "Enfermarias", color: "bg-amber-500", sectorKey: "enfermaria_transicao" },
-  { value: "enfermaria_vascular", label: "Enfermaria Vascular", group: "Enfermarias", color: "bg-pink-500", sectorKey: "enfermaria_vascular" },
+  { value: "ucc", label: "UCC — Unidade Cuidados Clínicos", group: "Enfermarias", color: "bg-primary", sectorKey: "ucc" },
+  { value: "neuro_01", label: "Enfermaria Neuro 01", group: "Enfermarias", color: "bg-primary", sectorKey: "neuro_01" },
+  { value: "neuro_02", label: "Enfermaria Neuro 02", group: "Enfermarias", color: "bg-primary", sectorKey: "neuro_02" },
+  { value: "clinica_cirurgica", label: "Clínica Cirúrgica", group: "Enfermarias", color: "bg-released", sectorKey: "clinica_cirurgica" },
+  { value: "enfermaria_transicao", label: "Enfermaria de Transição", group: "Enfermarias", color: "bg-warning", sectorKey: "enfermaria_transicao" },
+  { value: "enfermaria_vascular", label: "Enfermaria Vascular", group: "Enfermarias", color: "bg-primary", sectorKey: "enfermaria_vascular" },
   // Centro Cirúrgico
-  { value: "cc_preparo", label: "CC — Preparo", group: "Centro Cirúrgico", color: "bg-slate-500", sectorKey: "cc_preparo" },
-  { value: "cc_bloco", label: "CC — Bloco Cirúrgico", group: "Centro Cirúrgico", color: "bg-slate-600", sectorKey: "cc_bloco" },
-  { value: "cc_rpa", label: "CC — RPA", group: "Centro Cirúrgico", color: "bg-slate-700", sectorKey: "cc_rpa" },
+  { value: "cc_preparo", label: "CC — Preparo", group: "Centro Cirúrgico", color: "bg-primary", sectorKey: "cc_preparo" },
+  { value: "cc_bloco", label: "CC — Bloco Cirúrgico", group: "Centro Cirúrgico", color: "bg-primary", sectorKey: "cc_bloco" },
+  { value: "cc_rpa", label: "CC — RPA", group: "Centro Cirúrgico", color: "bg-primary", sectorKey: "cc_rpa" },
   // RIV: fora do escopo de internação — mantido só para dado legado.
-  { value: "riv", label: "RIV — Ref. Internação Vascular", group: "Centro Cirúrgico", color: "bg-rose-500", sectorKey: "riv", legacyOnly: true },
+  { value: "riv", label: "RIV — Ref. Internação Vascular", group: "Centro Cirúrgico", color: "bg-critical", sectorKey: "riv", legacyOnly: true },
 ];
 
 // Mapa sectorKey → título EXATO usado no mapa de leitos (Index.tsx SECTOR_VISUAL.title).
@@ -811,7 +811,7 @@ const AdminDashboardPage = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setGlobalSearchOpen(true)}
-                className="gap-2 text-xs h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground dark:bg-background dark:text-foreground"
+                className="gap-2 text-xs h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground"
               >
                 <Search className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Buscar paciente / atendimento</span>
@@ -830,7 +830,7 @@ const AdminDashboardPage = () => {
         <div className="flex-1 overflow-auto p-4">
           <div className="max-w-6xl mx-auto space-y-6">
             {/* HERO superior — ações primárias e consulta de prontuário (sempre visível, acima das tabs) */}
-            <Card className="border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-rose-500/5 shadow-sm">
+            <Card className="border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-critical-soft/5 shadow-sm">
               <CardContent className="p-4 space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-stretch">
                   {/* Novo Cadastro Completo — prevalente (col-span-2) */}
@@ -846,7 +846,7 @@ const AdminDashboardPage = () => {
                   <Button
                     variant="outline"
                     onClick={openTriageExpress}
-                    className="h-12 border-rose-300 text-rose-700 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-900/60 dark:text-rose-400 dark:hover:bg-rose-950/40 font-medium"
+                    className="h-12 border-critical-border text-critical-on-soft hover:bg-critical-soft hover:text-critical-on-soft font-medium"
                   >
                     <AlertTriangle className="h-4 w-4" />
                     Cadastro Express
@@ -1025,8 +1025,8 @@ const AdminDashboardPage = () => {
                           className="flex items-center justify-between p-3 rounded-lg border bg-card"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
-                              <FileText className="h-4 w-4 text-blue-500" />
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
@@ -1109,7 +1109,7 @@ const AdminDashboardPage = () => {
           {/* Toggle Paciente Não Identificado — sempre visível no topo */}
           <Card className={cn(
             "border-2 transition-colors",
-            registerForm.is_unidentified ? "border-amber-500 bg-amber-500/10" : "border-dashed border-muted"
+            registerForm.is_unidentified ? "border-warning bg-warning/10" : "border-dashed border-muted"
           )}>
             <CardContent className="p-3 flex items-center gap-3">
               <Checkbox
@@ -1119,7 +1119,7 @@ const AdminDashboardPage = () => {
               />
               <label htmlFor="ni-toggle-recepcao" className="flex-1 cursor-pointer">
                 <div className="flex items-center gap-2 font-semibold text-sm">
-                  <UserX className="h-4 w-4 text-amber-600" />
+                  <UserX className="h-4 w-4 text-warning-on-soft" />
                   Paciente NÃO IDENTIFICADO
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -1134,8 +1134,8 @@ const AdminDashboardPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
             {registerForm.is_unidentified ? (
               <>
-                <div className="md:col-span-2 p-3 rounded-md bg-amber-500/10 border border-amber-500/30 text-xs flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="md:col-span-2 p-3 rounded-md bg-warning/10 border border-warning/30 text-xs flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-warning-on-soft shrink-0 mt-0.5" />
                   <div>
                     O nome será cadastrado automaticamente como
                     <span className="font-mono font-semibold"> NÃO IDENTIFICADO (NI-AAAA-NNNNNN)</span>.
@@ -1231,7 +1231,7 @@ const AdminDashboardPage = () => {
                     placeholder={mrMode === "legacy" ? "Obrigatório — nº do sistema antigo" : "Auto: AA-UUU-SSSSSS-DV (deixe vazio para gerar)"}
                     value={registerForm.medical_record}
                     onChange={(e) => setRegisterForm(prev => ({ ...prev, medical_record: e.target.value }))}
-                    className={cn(mrMode === "legacy" && !registerForm.medical_record.trim() && "border-amber-500/60")}
+                    className={cn(mrMode === "legacy" && !registerForm.medical_record.trim() && "border-warning/60")}
                   />
                   <p className="text-[10px] text-muted-foreground mt-1">
                     {mrMode === "legacy"
@@ -1347,7 +1347,7 @@ const AdminDashboardPage = () => {
             <Button
               onClick={handleRegister}
               disabled={isRegistering || (!registerForm.is_unidentified && !registerForm.full_name.trim()) || isHighConfidenceDuplicate}
-              className={cn(registerForm.is_unidentified && "bg-amber-600 hover:bg-amber-700 text-white")}
+              className={cn(registerForm.is_unidentified && "bg-warning hover:bg-warning text-white")}
             >
               {isRegistering
                 ? <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -1424,8 +1424,8 @@ const AdminDashboardPage = () => {
               </div>
 
               {selectedPatient.allergies && (
-                <div className="p-2 rounded bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
-                  <p className="text-xs font-medium text-red-600 flex items-center gap-1">
+                <div className="p-2 rounded bg-critical-soft border border-critical-border">
+                  <p className="text-xs font-medium text-critical-on-soft flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" /> Alergias
                   </p>
                   <p className="text-sm">{selectedPatient.allergies}</p>
@@ -1506,7 +1506,7 @@ const AdminDashboardPage = () => {
                   const def = DESTINATION_SECTORS.find(s => s.value === destinationSector);
                   if (!def) return null;
                   return (
-                    <div className="mt-3 p-2.5 rounded-md bg-blue-500/10 border border-blue-500/30 text-xs text-blue-700 dark:text-blue-300">
+                    <div className="mt-3 p-2.5 rounded-md bg-primary/10 border border-border/30 text-xs text-foreground">
                       ✓ Paciente entrará em <strong>"Aguardando Admissão"</strong> de{" "}
                       <strong>{def.label}</strong>. NIR ou médico do setor poderá efetivar a admissão no leito.
                     </div>

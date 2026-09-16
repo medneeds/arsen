@@ -544,7 +544,7 @@ export function CreateUserForm({ onCreated }: Props) {
     if (draftStatus === "saved" || draftStatus === "restored") {
       const when = draftSavedAt ? new Date(draftSavedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
       return (
-        <span className="preserve-case inline-flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400">
+        <span className="preserve-case inline-flex items-center gap-1.5 text-[11px] text-released-on-soft">
           <CheckCircle2 className="h-3 w-3" /> Rascunho salvo{when ? ` às ${when}` : ""}
         </span>
       );
@@ -671,7 +671,7 @@ export function CreateUserForm({ onCreated }: Props) {
               <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
             )}
             {!cpfChecking && cpf && !cpfError && cpf.replace(/\D/g, "").length === 11 && (
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-released" aria-hidden />
             )}
           </div>
           <p
@@ -822,7 +822,7 @@ export function CreateUserForm({ onCreated }: Props) {
                     {hasError ? (
                       <XCircle className="h-4 w-4 text-destructive" />
                     ) : pct === 100 ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                      <CheckCircle2 className="h-4 w-4 text-released" />
                     ) : (
                       <Loader2 className="h-4 w-4 animate-spin text-primary" />
                     )}
@@ -845,7 +845,7 @@ export function CreateUserForm({ onCreated }: Props) {
                   {submitSteps.map((s) => (
                     <li key={s.key} className="flex items-start gap-2 text-[12px]">
                       <span className="mt-0.5 shrink-0">
-                        {s.status === "done" && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
+                        {s.status === "done" && <CheckCircle2 className="h-3.5 w-3.5 text-released" />}
                         {s.status === "running" && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />}
                         {s.status === "pending" && <Circle className="h-3.5 w-3.5 text-muted-foreground/40" />}
                         {s.status === "error" && <XCircle className="h-3.5 w-3.5 text-destructive" />}

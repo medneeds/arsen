@@ -209,8 +209,8 @@ const InternmentHistoryPage = () => {
       {/* Page Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-500/10 flex items-center justify-center">
-            <History className="h-6 w-6 text-amber-600" />
+          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-warning-soft/20 to-warning-soft/10 flex items-center justify-center">
+            <History className="h-6 w-6 text-warning-on-soft" />
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">

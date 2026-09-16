@@ -229,8 +229,8 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
         </Card>
         <Card>
           <CardContent className="p-3 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-              <UserCheck className="h-4 w-4 text-emerald-600" />
+            <div className="h-9 w-9 rounded-lg bg-released/10 flex items-center justify-center">
+              <UserCheck className="h-4 w-4 text-released-on-soft" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Identificados (página)</p>
@@ -240,8 +240,8 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
         </Card>
         <Card>
           <CardContent className="p-3 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-amber-500/10 flex items-center justify-center">
-              <UserX className="h-4 w-4 text-amber-600" />
+            <div className="h-9 w-9 rounded-lg bg-warning/10 flex items-center justify-center">
+              <UserX className="h-4 w-4 text-warning-on-soft" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">NI (página)</p>
@@ -400,13 +400,13 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
                   </TableRow>
                 ) : (
                   rows.map((p) => (
-                    <TableRow key={p.id} className={cn(p.is_unidentified && "bg-amber-500/5")}>
+                    <TableRow key={p.id} className={cn(p.is_unidentified && "bg-warning/5")}>
                       <TableCell>
                         <Badge variant="outline" className="font-mono text-[10px]">
                           {p.medical_record || "—"}
                         </Badge>
                         {p.is_unidentified && (
-                          <Badge className="ml-1 bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[9px] font-mono">
+                          <Badge className="ml-1 bg-warning/15 text-warning-on-soft border border-warning/30 text-[9px] font-mono">
                             {p.unidentified_code || "NI"}
                           </Badge>
                         )}
@@ -430,7 +430,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
                           {p.is_unidentified && (
                             <Button
                               size="sm" variant="outline"
-                              className="h-7 text-[10px] border-amber-500/40 text-amber-700 hover:bg-amber-500/10"
+                              className="h-7 text-[10px] border-warning/40 text-warning-on-soft hover:bg-warning/10"
                               onClick={() => openPromote(p)}
                             >
                               <UserCheck className="h-3 w-3 mr-1" /> Identificar
@@ -508,7 +508,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-emerald-600" />
+              <UserCheck className="h-5 w-5 text-released-on-soft" />
               Identificar Paciente
             </DialogTitle>
             <DialogDescription>
@@ -575,7 +575,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
           <DialogFooter>
             <Button variant="outline" onClick={() => setPromoteTarget(null)}>Cancelar</Button>
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-released hover:bg-released text-white"
               onClick={handlePromote}
               disabled={isPromoting || !promoteForm.full_name.trim()}
             >

@@ -48,12 +48,12 @@ const sectorLabels: Record<string, { label: string; className: string }> = {
 };
 
 const clinicalStatusLabels: Record<string, { label: string; color: string }> = {
-  gravissimo: { label: "Gravíssimo", color: "bg-red-600 text-white" },
-  grave: { label: "Grave", color: "bg-orange-500 text-white" },
-  grave_estavel: { label: "Grave Estável", color: "bg-amber-500 text-white" },
-  potencialmente_grave: { label: "Potencialmente Grave", color: "bg-yellow-500 text-black" },
-  regular: { label: "Regular", color: "bg-green-500 text-white" },
-  paliativado: { label: "Paliativado", color: "bg-purple-500 text-white" },
+  gravissimo: { label: "Gravíssimo", color: "bg-critical text-white" },
+  grave: { label: "Grave", color: "bg-warning text-white" },
+  grave_estavel: { label: "Grave Estável", color: "bg-warning text-white" },
+  potencialmente_grave: { label: "Potencialmente Grave", color: "bg-warning text-black" },
+  regular: { label: "Regular", color: "bg-released text-white" },
+  paliativado: { label: "Paliativado", color: "bg-primary text-white" },
 };
 
 function StayDuration({ admissionDate }: { admissionDate?: string }) {
@@ -268,7 +268,7 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
           <AlertDialogContent className="max-w-sm">
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2 text-sm">
-                <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
                 {cap(dirtyLabel)} com alterações não salvas
               </AlertDialogTitle>
               <AlertDialogDescription className="text-xs text-muted-foreground">

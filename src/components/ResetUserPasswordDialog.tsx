@@ -146,7 +146,7 @@ export function ResetUserPasswordDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <KeyRound className="h-5 w-5 text-amber-600" />
+            <KeyRound className="h-5 w-5 text-warning-on-soft" />
             Redefinir Senha do Usuário
           </DialogTitle>
           <DialogDescription>
@@ -156,28 +156,28 @@ export function ResetUserPasswordDialog({
 
         {success ? (
           <div className="py-8 text-center">
-            <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-emerald-100 mx-auto mb-4">
-              <CheckCircle className="h-8 w-8 text-emerald-600" />
+            <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-released-soft mx-auto mb-4">
+              <CheckCircle className="h-8 w-8 text-released-on-soft" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900">Senha Redefinida!</h3>
-            <p className="text-sm text-gray-600 mt-2">
+            <h3 className="text-lg font-bold text-foreground">Senha Redefinida!</h3>
+            <p className="text-sm text-foreground mt-2">
               A nova senha foi configurada com sucesso.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* User Info */}
-            <div className="bg-gray-50 rounded-lg p-3 border">
-              <p className="text-xs text-gray-500 font-semibold mb-1">Usuário</p>
+            <div className="bg-muted rounded-lg p-3 border">
+              <p className="text-xs text-muted-foreground font-semibold mb-1">Usuário</p>
               <p className="font-medium">{userName || "—"}</p>
-              <p className="text-xs text-gray-500">{userEmail?.replace("@sistema.local", "") || "—"}</p>
+              <p className="text-xs text-muted-foreground">{userEmail?.replace("@sistema.local", "") || "—"}</p>
             </div>
 
             {/* Warning */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <div className="bg-warning-soft border border-warning-border rounded-lg p-3">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-amber-800">
+                <AlertTriangle className="h-4 w-4 text-warning-on-soft mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-warning-on-soft">
                   A nova senha precisa ter <strong>pelo menos 6 caracteres</strong>.
                 </p>
               </div>
@@ -190,7 +190,7 @@ export function ResetUserPasswordDialog({
             {/* Password Fields */}
             <div className="space-y-3">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600">Nova Senha *</Label>
+                <Label className="text-xs font-semibold text-foreground">Nova Senha *</Label>
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
@@ -200,7 +200,7 @@ export function ResetUserPasswordDialog({
                       newPassword: e.target.value.slice(0, 72)
                     })}
                     placeholder="Mínimo 6 caracteres"
-                    className="h-10 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono tracking-widest"
+                    className="h-10 pr-10 bg-muted border border-border rounded-lg text-sm font-mono tracking-widest"
                     disabled={loading}
                     maxLength={72}
                   />
@@ -214,13 +214,13 @@ export function ResetUserPasswordDialog({
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
-                <p className="text-[9px] text-gray-400">
+                <p className="text-[9px] text-muted-foreground">
                   {formData.newPassword.length}/72 caracteres (mínimo 6)
                 </p>
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600">Confirmar Nova Senha *</Label>
+                <Label className="text-xs font-semibold text-foreground">Confirmar Nova Senha *</Label>
                 <div className="relative">
                   <Input
                     type={showConfirmPassword ? "text" : "password"}
@@ -230,7 +230,7 @@ export function ResetUserPasswordDialog({
                       confirmPassword: e.target.value.slice(0, 72)
                     })}
                     placeholder="REPITA A SENHA"
-                    className="h-10 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono tracking-widest"
+                    className="h-10 pr-10 bg-muted border border-border rounded-lg text-sm font-mono tracking-widest"
                     disabled={loading}
                     maxLength={72}
                   />
@@ -261,7 +261,7 @@ export function ResetUserPasswordDialog({
               <Button
                 type="submit"
                 disabled={loading || formData.newPassword.length < 6 || formData.newPassword.length > 72}
-                className="flex-1 bg-amber-600 hover:bg-amber-700"
+                className="flex-1 bg-warning hover:bg-warning"
               >
                 {loading ? (
                   <div className="flex items-center gap-2">
@@ -278,7 +278,7 @@ export function ResetUserPasswordDialog({
             </div>
 
             {/* LGPD Notice */}
-            <div className="flex items-center gap-2 text-xs text-gray-400 pt-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">
               <Shield className="h-3 w-3" />
               <span>Esta ação será registrada na trilha de auditoria</span>
             </div>

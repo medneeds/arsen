@@ -105,10 +105,10 @@ function calculateNEWS2(params: {
 }
 
 const riskLabels: Record<string, { label: string; className: string }> = {
-  low: { label: "Baixo", className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" },
-  low_key: { label: "Baixo (monitorar)", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" },
-  medium: { label: "Médio", className: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300" },
-  high: { label: "Alto", className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" },
+  low: { label: "Baixo", className: "bg-released-soft text-released-on-soft" },
+  low_key: { label: "Baixo (monitorar)", className: "bg-warning-soft text-warning-on-soft" },
+  medium: { label: "Médio", className: "bg-warning-soft text-warning-on-soft" },
+  high: { label: "Alto", className: "bg-critical-soft text-critical-on-soft" },
 };
 
 interface VitalRecord {

@@ -286,7 +286,7 @@ Gerado pelo sistema ARSen em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-5 pb-3 border-b">
           <DialogTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-orange-500" />
+            <Package className="h-5 w-5 text-warning" />
             Registro de OPME
           </DialogTitle>
           <DialogDescription className="text-xs">

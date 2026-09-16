@@ -551,13 +551,13 @@ export function PatientSearchActionsDialog({
                   </div>
                 </div>
               ) : (
-                <div className="flex items-start gap-3 rounded-lg border-2 border-amber-400/50 bg-amber-50 dark:bg-amber-950/20 p-3">
-                  <Lock className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                <div className="flex items-start gap-3 rounded-lg border-2 border-warning/50 bg-warning-soft p-3">
+                  <Lock className="h-5 w-5 text-warning-on-soft mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+                    <p className="text-sm font-bold text-warning-on-soft">
                       Atendimento ativo encontrado
                     </p>
-                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5 leading-relaxed">
+                    <p className="text-xs text-warning-on-soft mt-0.5 leading-relaxed">
                       Este paciente já possui um atendimento em aberto. Para admiti-lo em um novo setor,
                       é necessário encerrar o atendimento atual (alta, transferência externa ou óbito)
                       antes de abrir um novo.
@@ -587,7 +587,7 @@ export function PatientSearchActionsDialog({
                   </div>
                 )}
                 {activeEncounterInfo.isTransitInternal && (
-                  <Badge variant="outline" className="text-[10px] border-sky-400 text-sky-600">
+                  <Badge variant="outline" className="text-[10px] border-border text-foreground">
                     Em transferência interna — aguardando alocação no setor destino
                   </Badge>
                 )}

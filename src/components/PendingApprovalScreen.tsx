@@ -20,12 +20,12 @@ export function PendingApprovalScreen() {
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Usuário';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-muted via-muted to-muted flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Gradient orbs */}
         <motion.div
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"
+          className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl"
           animate={{
             scale: [1, 1.2, 1],
             opacity: [0.3, 0.5, 0.3],
@@ -37,7 +37,7 @@ export function PendingApprovalScreen() {
           }}
         />
         <motion.div
-          className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl"
+          className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-primary/10 rounded-full blur-3xl"
           animate={{
             scale: [1.2, 1, 1.2],
             opacity: [0.5, 0.3, 0.5],
@@ -88,14 +88,14 @@ export function PendingApprovalScreen() {
             className="text-center mb-8"
           >
             <div className="flex items-center justify-center gap-2 mb-3">
-              <span className="text-4xl font-black bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent tracking-tight">
+              <span className="text-4xl font-black bg-gradient-to-r from-muted via-muted to-muted bg-clip-text text-transparent tracking-tight">
                 {whitelabel.platform.name}
               </span>
-              <span className="text-xs font-medium text-cyan-400 bg-cyan-400/20 px-2 py-0.5 rounded-full">
+              <span className="text-xs font-medium text-muted-foreground bg-primary/20 px-2 py-0.5 rounded-full">
                 {whitelabel.platform.version}
               </span>
             </div>
-            <p className="text-sm text-blue-200/80 italic">
+            <p className="text-sm text-muted-foreground/80 italic">
               {whitelabel.platform.slogan}
             </p>
             <p className="text-[11px] text-white/50 mt-2 uppercase tracking-wider">
@@ -111,11 +111,11 @@ export function PendingApprovalScreen() {
             className="flex justify-center mb-6"
           >
             <div className="relative">
-              <div className="h-24 w-24 rounded-full bg-gradient-to-br from-amber-400/20 to-orange-500/20 flex items-center justify-center border-2 border-amber-400/50">
-                <Clock className="h-12 w-12 text-amber-400" />
+              <div className="h-24 w-24 rounded-full bg-gradient-to-br from-warning-soft/20 to-warning-soft/20 flex items-center justify-center border-2 border-warning/50">
+                <Clock className="h-12 w-12 text-warning" />
               </div>
               <motion.div
-                className="absolute inset-0 rounded-full border-2 border-amber-400/30"
+                className="absolute inset-0 rounded-full border-2 border-warning/30"
                 animate={{
                   scale: [1, 1.3, 1],
                   opacity: [0.5, 0, 0.5],
@@ -137,7 +137,7 @@ export function PendingApprovalScreen() {
             className="text-center mb-6"
           >
             <h2 className="text-xl font-bold text-white mb-2">
-              Olá, <span className="text-cyan-400">{username}</span>!
+              Olá, <span className="text-muted-foreground">{username}</span>!
             </h2>
             <p className="text-white/70 text-sm">
               Seu cadastro foi recebido com sucesso
@@ -149,14 +149,14 @@ export function PendingApprovalScreen() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-5 mb-6"
+            className="bg-warning/10 border border-warning/30 rounded-xl p-5 mb-6"
           >
             <div className="flex items-start gap-4">
-              <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-                <UserCheck className="h-5 w-5 text-amber-400" />
+              <div className="h-10 w-10 rounded-full bg-warning/20 flex items-center justify-center flex-shrink-0">
+                <UserCheck className="h-5 w-5 text-warning" />
               </div>
               <div>
-                <h3 className="text-amber-300 font-semibold mb-1">
+                <h3 className="text-warning font-semibold mb-1">
                   Aguardando Aprovação
                 </h3>
                 <p className="text-white/70 text-sm leading-relaxed">
@@ -175,15 +175,15 @@ export function PendingApprovalScreen() {
             className="space-y-3 mb-8"
           >
             <div className="flex items-center gap-3 text-white/60 text-sm">
-              <div className="h-6 w-6 rounded-full bg-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400">1</div>
+              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-muted-foreground">1</div>
               <span>Aguarde o contato do administrador</span>
             </div>
             <div className="flex items-center gap-3 text-white/60 text-sm">
-              <div className="h-6 w-6 rounded-full bg-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400">2</div>
+              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-muted-foreground">2</div>
               <span>Após aprovação, faça login novamente</span>
             </div>
             <div className="flex items-center gap-3 text-white/60 text-sm">
-              <div className="h-6 w-6 rounded-full bg-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400">3</div>
+              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-muted-foreground">3</div>
               <span>Acesse todas as funcionalidades do sistema</span>
             </div>
           </motion.div>
@@ -224,7 +224,7 @@ export function PendingApprovalScreen() {
           className="text-center mt-6"
         >
           <p className="text-white/30 text-xs">
-            {whitelabel.credits.developerLabel} <span className="text-cyan-400/60 font-medium">{whitelabel.credits.developerName}</span>
+            {whitelabel.credits.developerLabel} <span className="text-muted-foreground/60 font-medium">{whitelabel.credits.developerName}</span>
           </p>
           <p className="text-white/20 text-[10px] mt-1">
             {currentTime.toLocaleDateString('pt-BR')} • {currentTime.toLocaleTimeString('pt-BR')}

@@ -51,24 +51,24 @@ const SECTION_ICONS: Record<string, typeof Stethoscope> = {
 };
 
 const SECTION_COLORS: Record<string, string> = {
-  medico_ccih_farm: "from-blue-500/20 to-blue-600/5 border-blue-500/30",
-  fisio_to: "from-emerald-500/20 to-emerald-600/5 border-emerald-500/30",
-  enfermagem: "from-pink-500/20 to-pink-600/5 border-pink-500/30",
-  nutricao: "from-amber-500/20 to-amber-600/5 border-amber-500/30",
-  fono: "from-cyan-500/20 to-cyan-600/5 border-cyan-500/30",
-  odonto: "from-indigo-500/20 to-indigo-600/5 border-indigo-500/30",
-  servico_social: "from-violet-500/20 to-violet-600/5 border-violet-500/30",
-  psico: "from-rose-500/20 to-rose-600/5 border-rose-500/30",
-  medico_alta: "from-green-500/20 to-green-600/5 border-green-500/30",
+  medico_ccih_farm: "from-muted/20 to-muted/5 border-border/30",
+  fisio_to: "from-released-soft/20 to-released-soft/5 border-released/30",
+  enfermagem: "from-muted/20 to-muted/5 border-border/30",
+  nutricao: "from-warning-soft/20 to-warning-soft/5 border-warning/30",
+  fono: "from-muted/20 to-muted/5 border-border/30",
+  odonto: "from-muted/20 to-muted/5 border-border/30",
+  servico_social: "from-muted/20 to-muted/5 border-border/30",
+  psico: "from-critical-soft/20 to-critical-soft/5 border-critical/30",
+  medico_alta: "from-released-soft/20 to-released-soft/5 border-released/30",
 };
 
 const STATUS_BADGE_COLORS: Record<string, string> = {
-  S: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
-  N: "bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/30",
-  CI: "bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30",
+  S: "bg-released/20 text-released-on-soft border-released/30",
+  N: "bg-critical/20 text-critical-on-soft border-critical/30",
+  CI: "bg-warning/20 text-warning-on-soft border-warning/30",
   NA: "bg-muted text-muted-foreground border-border",
-  O: "bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500/30",
-  D: "bg-violet-500/20 text-violet-700 dark:text-violet-400 border-violet-500/30",
+  O: "bg-primary/20 text-foreground border-border/30",
+  D: "bg-primary/20 text-foreground border-border/30",
 };
 
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
@@ -518,7 +518,7 @@ export default function RoundPage() {
                   <div className="font-semibold text-foreground truncate">
                     {selectedPatient.name}
                     {selectedPatient.id.startsWith("manual_") && (
-                      <Badge variant="outline" className="ml-2 text-[9px] px-1.5 py-0 align-middle border-amber-500/30 text-amber-600 dark:text-amber-400">Avulso</Badge>
+                      <Badge variant="outline" className="ml-2 text-[9px] px-1.5 py-0 align-middle border-warning/30 text-warning-on-soft">Avulso</Badge>
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">

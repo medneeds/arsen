@@ -56,7 +56,7 @@ export default function ProtocolosUtiPage() {
       <div className="p-6 md:p-8 space-y-8 max-w-6xl">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-released-soft to-muted bg-clip-text text-transparent">
             Protocolos Assistenciais UTI
           </h1>
           <p className="text-muted-foreground text-lg">
@@ -110,7 +110,7 @@ export default function ProtocolosUtiPage() {
                 <div className="flex items-center justify-between">
                   <Badge variant="outline" className="text-xs">{protocol.category}</Badge>
                   {protocol.status === "atualizado" ? (
-                    <span className="text-xs text-emerald-500 font-medium">Atualizado {protocol.year}</span>
+                    <span className="text-xs text-released font-medium">Atualizado {protocol.year}</span>
                   ) : (
                     <span className="text-xs text-muted-foreground italic">Em breve</span>
                   )}

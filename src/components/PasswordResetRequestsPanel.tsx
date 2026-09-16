@@ -359,8 +359,8 @@ export function PasswordResetRequestsPanel() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-xs text-blue-800">
+              <div className="bg-muted border border-border rounded-lg p-3">
+                <p className="text-xs text-foreground">
                   <strong>Política de Senha:</strong> mínimo de 6 caracteres.
                 </p>
               </div>

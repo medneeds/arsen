@@ -69,8 +69,8 @@ export default function SetupPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <Card className="w-full max-w-md p-8">
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="h-16 w-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
-            <Shield className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+          <div className="h-16 w-16 rounded-full bg-released-soft flex items-center justify-center mb-4">
+            <Shield className="h-8 w-8 text-released-on-soft" />
           </div>
           <h1 className="text-2xl font-bold">SETUP INICIAL</h1>
           <p className="text-sm text-muted-foreground mt-1">CONFIGURE O ADMINISTRADOR DO SISTEMA</p>
@@ -104,7 +104,7 @@ export default function SetupPage() {
               <Label htmlFor="password">Senha</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} autoComplete="new-password" />
             </div>
-            <Button type="submit" disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Button type="submit" disabled={submitting} className="w-full bg-released hover:bg-released text-white">
               {submitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Criando...</> : "Criar Administrador"}
             </Button>
             <p className="text-xs text-center text-muted-foreground">

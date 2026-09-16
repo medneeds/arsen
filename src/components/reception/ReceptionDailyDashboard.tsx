@@ -38,9 +38,9 @@ interface KpiCardProps {
 
 const toneMap = {
   default: "bg-primary/10 text-primary",
-  warn: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-  success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-  info: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
+  warn: "bg-warning/10 text-warning-on-soft",
+  success: "bg-released/10 text-released-on-soft",
+  info: "bg-primary/10 text-foreground",
 };
 
 function KpiCard({ icon: Icon, label, value, hint, tone = "default" }: KpiCardProps) {
@@ -536,7 +536,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
         <div className="flex flex-wrap items-center gap-2">
           <Button
             onClick={onTriageExpress}
-            className="bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
+            className="bg-critical hover:bg-critical text-white shadow-sm"
             size="sm"
           >
             <AlertTriangle className="h-4 w-4 mr-2" />
@@ -612,35 +612,35 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
                           key={e.id}
                           className={cn(
                             "p-3 hover:bg-accent/40 transition-colors",
-                            isRedRoom && "bg-red-500/5 border-l-2 border-l-red-600",
-                            slaTone === "danger" && "bg-rose-500/5",
+                            isRedRoom && "bg-critical/5 border-l-2 border-l-red-600",
+                            slaTone === "danger" && "bg-critical/5",
                           )}
                         >
                           <div className="flex items-center justify-between gap-2">
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
-                                {isRedRoom && <Siren className="h-3.5 w-3.5 text-red-600 animate-pulse shrink-0" />}
+                                {isRedRoom && <Siren className="h-3.5 w-3.5 text-critical-on-soft animate-pulse shrink-0" />}
                                 <span className="font-medium text-sm truncate">{e.patient_name}</span>
                                 <Badge variant="outline" className="text-[10px] font-mono h-4">{e.encounter_code}</Badge>
                                 {e.status === "active" ? (
-                                  <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-[9px] h-4">
+                                  <Badge className="bg-released/15 text-released-on-soft border border-released/30 text-[9px] h-4">
                                     ativo
                                   </Badge>
                                 ) : (
                                   <Badge variant="outline" className="text-[9px] h-4">{e.status}</Badge>
                                 )}
                                 {e.is_unidentified && (
-                                  <Badge className="bg-slate-500/15 text-slate-700 dark:text-slate-300 border border-slate-500/30 text-[9px] h-4 gap-1">
+                                  <Badge className="bg-primary/15 text-foreground border border-border/30 text-[9px] h-4 gap-1">
                                     <UserX className="h-2.5 w-2.5" /> NI
                                   </Badge>
                                 )}
                                 {e.documents_pending && (
-                                  <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[9px] h-4 gap-1" title="Documentação pendente">
+                                  <Badge className="bg-warning/15 text-warning-on-soft border border-warning/30 text-[9px] h-4 gap-1" title="Documentação pendente">
                                     <FileWarning className="h-2.5 w-2.5" /> docs pendentes
                                   </Badge>
                                 )}
                                 {e.partial_identification && !e.is_unidentified && (
-                                  <Badge className="bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/30 text-[9px] h-4">
+                                  <Badge className="bg-warning/15 text-warning-on-soft border border-warning/30 text-[9px] h-4">
                                     identificação parcial
                                   </Badge>
                                 )}
@@ -695,7 +695,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
                                       <DropdownMenuItem
                                         onClick={() => setCompleteTarget({ registryId: e.registry_id!, name: e.patient_name })}
                                       >
-                                        <FileWarning className="h-3.5 w-3.5 mr-2 text-amber-600" />
+                                        <FileWarning className="h-3.5 w-3.5 mr-2 text-warning-on-soft" />
                                         Completar pendências
                                       </DropdownMenuItem>
                                     )}
@@ -709,7 +709,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
                                           })
                                         }
                                       >
-                                        <UserCheck className="h-3.5 w-3.5 mr-2 text-emerald-600" />
+                                        <UserCheck className="h-3.5 w-3.5 mr-2 text-released-on-soft" />
                                         Identificar paciente (NI → real)
                                       </DropdownMenuItem>
                                     )}
@@ -760,14 +760,14 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
                       const waitMin = Math.round((Date.now() - new Date(p.created_at).getTime()) / 60000);
                       const slow = waitMin > 60;
                       return (
-                        <div key={p.id} className={cn("p-3 hover:bg-accent/40", slow && "bg-amber-500/5")}>
+                        <div key={p.id} className={cn("p-3 hover:bg-accent/40", slow && "bg-warning/5")}>
                           <div className="flex items-center justify-between gap-2">
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-medium text-sm truncate">{p.patient_name}</span>
                                 <Badge variant="outline" className="text-[10px] h-4">{p.destination_sector}</Badge>
                                 {slow && (
-                                  <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[9px] h-4">
+                                  <Badge className="bg-warning/15 text-warning-on-soft border border-warning/30 text-[9px] h-4">
                                     {waitMin}min
                                   </Badge>
                                 )}
@@ -822,9 +822,9 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
                             variant="outline"
                             className={cn(
                               "text-[9px] h-4 shrink-0",
-                              a.action === "INSERT" && "border-emerald-500/40 text-emerald-700 dark:text-emerald-400",
-                              a.action === "UPDATE" && "border-sky-500/40 text-sky-700 dark:text-sky-400",
-                              a.action === "DELETE" && "border-rose-500/40 text-rose-700 dark:text-rose-400",
+                              a.action === "INSERT" && "border-released/40 text-released-on-soft",
+                              a.action === "UPDATE" && "border-border/40 text-foreground",
+                              a.action === "DELETE" && "border-critical/40 text-critical-on-soft",
                             )}
                           >
                             {a.action}

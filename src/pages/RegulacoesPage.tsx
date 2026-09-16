@@ -35,7 +35,7 @@ export default function RegulacoesPage() {
       <div className="p-6 md:p-8 space-y-8 max-w-6xl">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-green-500 to-green-400 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-released-soft to-released-soft bg-clip-text text-transparent">
             Regulações SUS
           </h1>
           <p className="text-muted-foreground text-lg">
@@ -85,8 +85,8 @@ export default function RegulacoesPage() {
                     onClick={() => handleDownload(doc.file)}
                     className="w-full flex items-center gap-4 p-5 text-left transition-colors hover:bg-accent/50"
                   >
-                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
-                      <Download className="h-6 w-6 text-green-500" />
+                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-released/10 flex items-center justify-center group-hover:bg-released/20 transition-colors">
+                      <Download className="h-6 w-6 text-released" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">

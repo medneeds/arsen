@@ -11,11 +11,11 @@ interface Props {
 }
 
 const BUCKET_META: Record<DischargePrediction["bucket"], { label: string; tone: string; order: number }> = {
-  today: { label: "Hoje", tone: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30", order: 0 },
-  tomorrow: { label: "Amanhã", tone: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/30", order: 1 },
-  "48_72h": { label: "48–72h", tone: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30", order: 2 },
-  week: { label: "Esta semana", tone: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30", order: 3 },
-  later: { label: "Mais tarde", tone: "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30", order: 4 },
+  today: { label: "Hoje", tone: "bg-released/10 text-released-on-soft border-released/30", order: 0 },
+  tomorrow: { label: "Amanhã", tone: "bg-primary/10 text-foreground border-border/30", order: 1 },
+  "48_72h": { label: "48–72h", tone: "bg-primary/10 text-foreground border-border/30", order: 2 },
+  week: { label: "Esta semana", tone: "bg-primary/10 text-foreground border-border/30", order: 3 },
+  later: { label: "Mais tarde", tone: "bg-primary/10 text-foreground border-border/30", order: 4 },
   unparsed: { label: "Sem data", tone: "bg-muted text-muted-foreground border-border", order: 5 },
 };
 

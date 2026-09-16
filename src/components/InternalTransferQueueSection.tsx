@@ -110,12 +110,12 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
   return (
     <>
       <Collapsible open={open} onOpenChange={setOpen} className="print:hidden">
-        <Card className="border-sky-300 dark:border-sky-700 bg-sky-50/50 dark:bg-sky-950/20">
+        <Card className="border-border bg-muted/50">
           <CollapsibleTrigger asChild>
             <button className="w-full flex items-center justify-between px-4 py-3 text-left">
               <div className="flex items-center gap-2">
-                <ArrowRightLeft className="h-4 w-4 text-sky-700 dark:text-sky-300" />
-                <span className="text-sm font-semibold text-sky-900 dark:text-sky-100">
+                <ArrowRightLeft className="h-4 w-4 text-foreground" />
+                <span className="text-sm font-semibold text-foreground">
                   AGUARDANDO ALOCAÇÃO POR TRANSFERÊNCIA INTERNA
                 </span>
                 <Badge variant="secondary" className="ml-1">{rows.length}</Badge>
@@ -136,7 +136,7 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                       <Badge variant="outline" className="text-[10px]">{classificationLabel(r.classification)}</Badge>
                       {r.requires_saps && (
-                        <Badge className="text-[10px] bg-amber-500 hover:bg-amber-500/90"><AlertTriangle className="h-3 w-3 mr-0.5" />SAPS após alocação</Badge>
+                        <Badge className="text-[10px] bg-warning hover:bg-warning/90"><AlertTriangle className="h-3 w-3 mr-0.5" />SAPS após alocação</Badge>
                       )}
                       <Badge variant="outline" className="text-[10px]"><Clock className="h-3 w-3 mr-0.5" />{new Date(r.signaled_at).toLocaleString("pt-BR")}</Badge>
                     </div>

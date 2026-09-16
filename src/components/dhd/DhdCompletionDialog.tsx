@@ -28,8 +28,8 @@ export function DhdCompletionDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <div className="flex items-center gap-3 mb-2">
-            <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
-              <CheckCircle2 className="h-6 w-6 text-green-600" />
+            <div className="h-12 w-12 rounded-full bg-released/10 flex items-center justify-center">
+              <CheckCircle2 className="h-6 w-6 text-released-on-soft" />
             </div>
             <AlertDialogTitle className="text-xl">
               Programa DHD Concluído!
@@ -46,7 +46,7 @@ export function DhdCompletionDialog({
           <AlertDialogCancel>Manter no Dashboard</AlertDialogCancel>
           <AlertDialogAction
             onClick={onComplete}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-released hover:bg-released"
           >
             Finalizar Programa
           </AlertDialogAction>

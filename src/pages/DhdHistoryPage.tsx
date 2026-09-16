@@ -146,7 +146,7 @@ export default function DhdHistoryPage() {
                       {format(parseISO(patient.end_date), "dd/MM/yyyy", { locale: ptBR })}
                     </CardDescription>
                   </div>
-                  <Badge variant="secondary" className="bg-green-500/10 text-green-700 border-green-200">
+                  <Badge variant="secondary" className="bg-released/10 text-released-on-soft border-released-border">
                     Finalizado
                   </Badge>
                 </div>

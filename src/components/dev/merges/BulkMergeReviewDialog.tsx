@@ -75,7 +75,7 @@ export function BulkMergeReviewDialog({ open, pairs, onClose, onCompleted }: Pro
           <DialogTitle className="uppercase">Revisar lote de mesclagem · {pairs.length} pares</DialogTitle>
         </DialogHeader>
 
-        <Alert variant="destructive" className="border-amber-500/40 bg-amber-50 dark:bg-amber-950/20 text-foreground">
+        <Alert variant="destructive" className="border-warning/40 bg-warning-soft text-foreground">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             Esta ação <b>arquiva permanentemente</b> o cadastro perdedor de cada par. O snapshot completo é preservado em
@@ -103,7 +103,7 @@ export function BulkMergeReviewDialog({ open, pairs, onClose, onCompleted }: Pro
                     <td className="p-2 font-mono truncate max-w-[220px]">{p.loserLabel}</td>
                     <td className="p-2">
                       {running && !res && i === results.length && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                      {res?.ok && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />}
+                      {res?.ok && <CheckCircle2 className="h-3.5 w-3.5 text-released-on-soft" />}
                       {res && !res.ok && (
                         <span className="flex items-center gap-1 text-destructive" title={res.message}>
                           <XCircle className="h-3.5 w-3.5" /> falha

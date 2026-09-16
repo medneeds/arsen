@@ -223,8 +223,8 @@ export default function IAPage() {
   }) => {
     const toneActive: Record<string, string> = {
       primary: "bg-primary/15 border-primary/40 text-primary",
-      amber: "bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400",
-      blue: "bg-blue-500/15 border-blue-500/40 text-blue-600 dark:text-blue-400",
+      amber: "bg-warning/15 border-warning/40 text-warning-on-soft",
+      blue: "bg-primary/15 border-border/40 text-foreground",
       neutral: "bg-foreground/10 border-foreground/30 text-foreground",
       danger: "bg-destructive/15 border-destructive/40 text-destructive",
     };
@@ -397,7 +397,7 @@ export default function IAPage() {
                               className="h-7 px-2 text-[10px] uppercase shadow-md"
                               onClick={() => copyToClipboard(message.content, `n-${index}`)}
                             >
-                              {copiedIndex === `n-${index}` ? <Check className="h-3 w-3 mr-1 text-green-500" /> : <Copy className="h-3 w-3 mr-1" />}
+                              {copiedIndex === `n-${index}` ? <Check className="h-3 w-3 mr-1 text-released" /> : <Copy className="h-3 w-3 mr-1" />}
                               Copiar
                             </Button>
                             <Button
@@ -405,7 +405,7 @@ export default function IAPage() {
                               className="h-7 px-2 text-[10px] uppercase shadow-md"
                               onClick={() => copyToClipboard(message.content, `u-${index}`, true)}
                             >
-                              {copiedIndex === `u-${index}` ? <Check className="h-3 w-3 mr-1 text-green-500" /> : <CaseUpper className="h-3 w-3 mr-1" />}
+                              {copiedIndex === `u-${index}` ? <Check className="h-3 w-3 mr-1 text-released" /> : <CaseUpper className="h-3 w-3 mr-1" />}
                               CX. Alta
                             </Button>
                           </div>

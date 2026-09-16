@@ -107,8 +107,8 @@ export function SuspendDischargeDialog({
             // ═══════ TELA DE CONFIRMAÇÃO ═══════
             <div className="py-2">
               <div className="flex flex-col items-center text-center gap-3 py-4">
-                <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center">
-                  <CheckCircle2 className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+                <div className="h-12 w-12 rounded-full bg-released-soft flex items-center justify-center">
+                  <CheckCircle2 className="h-7 w-7 text-released-on-soft" />
                 </div>
                 <div>
                   <p className="font-semibold text-base">
@@ -136,7 +136,7 @@ export function SuspendDischargeDialog({
           ) : (
             <>
               <DialogHeader>
-                <DialogTitle className={isObito ? "flex items-center gap-2 text-destructive" : "flex items-center gap-2 text-amber-700 dark:text-amber-400"}>
+                <DialogTitle className={isObito ? "flex items-center gap-2 text-destructive" : "flex items-center gap-2 text-warning-on-soft"}>
                   {isObito ? <Skull className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
                   {isObito ? "Suspender óbito sinalizado" : "Suspender alta"} — {patientName}
                 </DialogTitle>
@@ -152,7 +152,7 @@ export function SuspendDischargeDialog({
               <div className="space-y-3 text-sm">
                 <div className={isObito
                   ? "rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-1.5 text-[12.5px] text-destructive"
-                  : "rounded-md border border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/30 p-3 space-y-1.5 text-[12.5px] text-amber-900 dark:text-amber-200"}>
+                  : "rounded-md border border-warning-border/60 bg-warning-soft/60 p-3 space-y-1.5 text-[12.5px] text-warning-on-soft"}>
                   <p className="font-semibold">O que vai acontecer:</p>
                   <ul className="list-disc pl-5 space-y-0.5">
                     <li>

@@ -28,9 +28,9 @@ interface GNotification {
 }
 
 const LEVEL_STYLES: Record<GNotification["level"], string> = {
-  critical: "border-red-500/40 bg-red-500/5",
-  warning: "border-amber-500/40 bg-amber-500/5",
-  info: "border-blue-500/40 bg-blue-500/5",
+  critical: "border-critical/40 bg-critical/5",
+  warning: "border-warning/40 bg-warning/5",
+  info: "border-border/40 bg-primary/5",
 };
 
 function buildNotifications(d: GestorMetricsForNotifications): GNotification[] {
@@ -125,8 +125,8 @@ export function GestorNotificationCenter({ data }: Props) {
   return (
     <Popover open={autoOpen || undefined} onOpenChange={(o) => { if (!o) setAutoOpen(false); }}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="relative h-9 gap-2 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground dark:bg-background dark:text-foreground">
-          <Bell className={cn("h-4 w-4", criticalCount > 0 && "text-red-500 animate-pulse")} />
+        <Button variant="outline" size="sm" className="relative h-9 gap-2 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground">
+          <Bell className={cn("h-4 w-4", criticalCount > 0 && "text-critical animate-pulse")} />
           <span className="text-xs font-medium hidden md:inline">Notificações</span>
           {total > 0 && (
             <Badge
@@ -166,9 +166,9 @@ export function GestorNotificationCenter({ data }: Props) {
                     <Icon
                       className={cn(
                         "h-4 w-4 mt-0.5 shrink-0",
-                        n.level === "critical" && "text-red-500",
-                        n.level === "warning" && "text-amber-500",
-                        n.level === "info" && "text-blue-500",
+                        n.level === "critical" && "text-critical",
+                        n.level === "warning" && "text-warning",
+                        n.level === "info" && "text-muted-foreground",
                       )}
                     />
                     <div className="min-w-0">

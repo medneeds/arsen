@@ -30,8 +30,8 @@ const RISK_LEVELS = [
     value: "vermelho",
     label: "EMERGÊNCIA",
     description: "Risco de morte imediato. Atendimento imediato.",
-    color: "bg-red-600 hover:bg-red-700 text-white border-red-700",
-    selectedColor: "ring-4 ring-red-400 bg-red-600 text-white",
+    color: "bg-critical hover:bg-critical text-white border-critical",
+    selectedColor: "ring-4 ring-critical bg-critical text-white",
     icon: AlertTriangle,
     time: "0 min",
   },
@@ -39,8 +39,8 @@ const RISK_LEVELS = [
     value: "laranja",
     label: "MUITO URGENTE",
     description: "Risco de deterioração rápida. Até 10 minutos.",
-    color: "bg-orange-500 hover:bg-orange-600 text-white border-orange-600",
-    selectedColor: "ring-4 ring-orange-300 bg-orange-500 text-white",
+    color: "bg-warning hover:bg-warning text-white border-warning",
+    selectedColor: "ring-4 ring-warning bg-warning text-white",
     icon: AlertTriangle,
     time: "10 min",
   },
@@ -48,8 +48,8 @@ const RISK_LEVELS = [
     value: "amarelo",
     label: "URGENTE",
     description: "Condição grave, sem risco imediato. Até 60 minutos.",
-    color: "bg-yellow-500 hover:bg-yellow-600 text-black border-yellow-600",
-    selectedColor: "ring-4 ring-yellow-300 bg-yellow-500 text-black",
+    color: "bg-warning hover:bg-warning text-black border-warning",
+    selectedColor: "ring-4 ring-warning bg-warning text-black",
     icon: Clock,
     time: "60 min",
   },
@@ -57,8 +57,8 @@ const RISK_LEVELS = [
     value: "verde",
     label: "POUCO URGENTE",
     description: "Condição estável. Até 120 minutos.",
-    color: "bg-green-600 hover:bg-green-700 text-white border-green-700",
-    selectedColor: "ring-4 ring-green-300 bg-green-600 text-white",
+    color: "bg-released hover:bg-released text-white border-released",
+    selectedColor: "ring-4 ring-released bg-released text-white",
     icon: CheckCircle,
     time: "120 min",
   },
@@ -66,8 +66,8 @@ const RISK_LEVELS = [
     value: "azul",
     label: "NÃO URGENTE",
     description: "Sem risco. Até 240 minutos.",
-    color: "bg-blue-600 hover:bg-blue-700 text-white border-blue-700",
-    selectedColor: "ring-4 ring-blue-300 bg-blue-600 text-white",
+    color: "bg-primary hover:bg-primary text-white border-border",
+    selectedColor: "ring-4 ring-ring bg-primary text-white",
     icon: Info,
     time: "240 min",
   },
@@ -75,8 +75,8 @@ const RISK_LEVELS = [
     value: "branca",
     label: "FICHA BRANCA",
     description: "Eletivo — sem critério de risco imediato. Fluxo Socorrão I (atendimento por ordem de chegada, sem temporalidade Manchester).",
-    color: "bg-white hover:bg-slate-50 text-slate-900 border-slate-400",
-    selectedColor: "ring-4 ring-slate-400 bg-white text-slate-900 border-slate-500",
+    color: "bg-white hover:bg-muted text-foreground border-border",
+    selectedColor: "ring-4 ring-ring bg-white text-foreground border-border",
     icon: Info,
     time: "ELETIVO",
   },
@@ -259,7 +259,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
     ? Math.floor((Date.now() - new Date(preAdmission.birth_date + "T12:00:00").getTime()) / (365.25 * 24 * 60 * 60 * 1000))
     : null;
 
-  const painColor = form.pain_scale <= 3 ? "text-green-600" : form.pain_scale <= 6 ? "text-yellow-600" : "text-red-600";
+  const painColor = form.pain_scale <= 3 ? "text-released-on-soft" : form.pain_scale <= 6 ? "text-warning-on-soft" : "text-critical-on-soft";
 
   return (
     <Dialog open={open} onOpenChange={resetAndClose}>
@@ -469,7 +469,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
               {/* Glasgow */}
               <div>
                 <Label className="text-xs font-semibold mb-2 block">
-                  Escala de Glasgow (ECG) — Total: <span className={cn("font-bold", glasgowTotal <= 8 ? "text-red-600" : glasgowTotal <= 12 ? "text-yellow-600" : "text-green-600")}>{glasgowTotal}</span>
+                  Escala de Glasgow (ECG) — Total: <span className={cn("font-bold", glasgowTotal <= 8 ? "text-critical-on-soft" : glasgowTotal <= 12 ? "text-warning-on-soft" : "text-released-on-soft")}>{glasgowTotal}</span>
                 </Label>
                 <div className="grid grid-cols-3 gap-3">
                   <div>

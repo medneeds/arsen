@@ -597,8 +597,8 @@ const DashboardPage = () => {
           <div className={cn(
             "text-xs flex items-center gap-1.5 font-medium px-2 py-1 rounded-full w-fit",
             isPositive 
-              ? "bg-released/10 text-green-700 dark:text-green-400" 
-              : "bg-critical/10 text-red-700 dark:text-red-400"
+              ? "bg-released/10 text-released-on-soft" 
+              : "bg-critical/10 text-critical-on-soft"
           )}>
             <TrendingUp className={cn("h-3.5 w-3.5", !isPositive && "rotate-180")} />
             <span>{Math.abs(change)}%</span>
@@ -825,7 +825,7 @@ const DashboardPage = () => {
                           alert.level === 'info' && "bg-primary/10",
                         )}>
                           {alert.level === 'critical' && <AlertTriangle className="h-3.5 w-3.5 text-destructive" />}
-                          {alert.level === 'warning' && <Clock className="h-3.5 w-3.5 text-amber-500" />}
+                          {alert.level === 'warning' && <Clock className="h-3.5 w-3.5 text-warning" />}
                           {alert.level === 'info' && <Bell className="h-3.5 w-3.5 text-primary" />}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -838,7 +838,7 @@ const DashboardPage = () => {
                         <Badge variant="outline" className={cn(
                           "text-[10px] shrink-0",
                           alert.level === 'critical' && "border-destructive/30 text-destructive",
-                          alert.level === 'warning' && "border-warning/30 text-amber-600",
+                          alert.level === 'warning' && "border-warning/30 text-warning-on-soft",
                           alert.level === 'info' && "border-primary/30 text-primary",
                         )}>
                           {alert.level === 'critical' ? 'CRÍTICO' : alert.level === 'warning' ? 'ATENÇÃO' : 'PENDÊNCIA'}
@@ -886,9 +886,9 @@ const DashboardPage = () => {
                           activity.type === 'admission' ? "bg-warning/10" :
                           "bg-muted"
                         )}>
-                          {activity.type === 'discharge' && <LogOut className="h-3 w-3 text-green-600" />}
+                          {activity.type === 'discharge' && <LogOut className="h-3 w-3 text-released-on-soft" />}
                           {activity.type === 'prescription' && <Pill className="h-3 w-3 text-primary" />}
-                          {activity.type === 'admission' && <UserPlus className="h-3 w-3 text-amber-600" />}
+                          {activity.type === 'admission' && <UserPlus className="h-3 w-3 text-warning-on-soft" />}
                           {activity.type === 'movement' && <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />}
                         </div>
                         <div className="flex-1 min-w-0">

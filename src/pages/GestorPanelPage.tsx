@@ -824,12 +824,12 @@ export default function GestorPanelPage() {
 
   // ── KPIs (key habilita drill-down) ──
   const kpiCards = [
-    { key: "occupancy", title: "Taxa de Ocupação", value: `${occupancyRate}%`, sub: `${bedStats.occupied}/${bedStats.total} leitos`, icon: Bed, color: occupancyRate > 85 ? "text-destructive" : occupancyRate > 70 ? "text-amber-600" : "text-emerald-600", bg: occupancyRate > 85 ? "bg-destructive/10" : occupancyRate > 70 ? "bg-amber-500/10" : "bg-emerald-500/10" },
+    { key: "occupancy", title: "Taxa de Ocupação", value: `${occupancyRate}%`, sub: `${bedStats.occupied}/${bedStats.total} leitos`, icon: Bed, color: occupancyRate > 85 ? "text-destructive" : occupancyRate > 70 ? "text-warning-on-soft" : "text-released-on-soft", bg: occupancyRate > 85 ? "bg-destructive/10" : occupancyRate > 70 ? "bg-warning/10" : "bg-released/10" },
     { key: "vacant", title: "Leitos Vagos", value: bedStats.vacant.toString(), sub: "Disponíveis", icon: ArrowUpDown, color: "text-primary", bg: "bg-primary/10" },
-    { key: "door", title: "Pacientes Porta", value: bedStats.doorPatients.toString(), sub: "Aguardando leito", icon: Users, color: bedStats.doorPatients > 0 ? "text-amber-600" : "text-muted-foreground", bg: bedStats.doorPatients > 0 ? "bg-amber-500/10" : "bg-muted/30" },
+    { key: "door", title: "Pacientes Porta", value: bedStats.doorPatients.toString(), sub: "Aguardando leito", icon: Users, color: bedStats.doorPatients > 0 ? "text-warning-on-soft" : "text-muted-foreground", bg: bedStats.doorPatients > 0 ? "bg-warning/10" : "bg-muted/30" },
     { key: "alerts", title: "Alertas Críticos", value: criticalAlerts.filter(a => a.severity === "critical").length.toString(), sub: `${criticalAlerts.length} totais`, icon: AlertTriangle, color: criticalAlerts.length > 0 ? "text-destructive" : "text-muted-foreground", bg: criticalAlerts.length > 0 ? "bg-destructive/10" : "bg-muted/30" },
     { key: "prescriptions", title: "Prescrições", value: prescriptionStats.total.toString(), sub: `${prescriptionStats.validated} validadas`, icon: FileText, color: "text-primary", bg: "bg-primary/10" },
-    { key: "requests", title: "Solicitações", value: pendingRequests.toString(), sub: "Alocação pendente", icon: Clock, color: pendingRequests > 0 ? "text-amber-600" : "text-muted-foreground", bg: pendingRequests > 0 ? "bg-amber-500/10" : "bg-muted/30" },
+    { key: "requests", title: "Solicitações", value: pendingRequests.toString(), sub: "Alocação pendente", icon: Clock, color: pendingRequests > 0 ? "text-warning-on-soft" : "text-muted-foreground", bg: pendingRequests > 0 ? "bg-warning/10" : "bg-muted/30" },
     { key: "tmp", title: "Tempo Médio Perm.", value: tmpDisplay, sub: `${tmpOverall.samples} altas no período`, icon: Hourglass, color: "text-primary", bg: "bg-primary/10" },
   ];
 
@@ -905,11 +905,11 @@ export default function GestorPanelPage() {
               data={{ occupancyRate, bedStats, criticalAlerts, pendingRequests, prescriptionStats }}
             />
             <span className="hidden md:block w-px h-6 bg-white/20 mx-1" />
-            <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="gap-1.5 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground dark:bg-background dark:text-foreground">
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="gap-1.5 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground">
               {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               <span className="hidden md:inline">Exportar</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => { fetchData(); toast.success("Dados atualizados"); }} disabled={loading} className="gap-1.5 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground dark:bg-background dark:text-foreground">
+            <Button variant="outline" size="sm" onClick={() => { fetchData(); toast.success("Dados atualizados"); }} disabled={loading} className="gap-1.5 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground">
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
               <span className="hidden md:inline">Atualizar</span>
             </Button>
@@ -944,12 +944,12 @@ export default function GestorPanelPage() {
               </span>
               <span className="hidden md:inline opacity-30">·</span>
               <span className="hidden sm:flex items-center gap-1.5 font-semibold text-foreground">
-                <Clock className={cn("h-3.5 w-3.5", pendingRequests > 0 ? "text-amber-600" : "text-muted-foreground")} />
+                <Clock className={cn("h-3.5 w-3.5", pendingRequests > 0 ? "text-warning-on-soft" : "text-muted-foreground")} />
                 {pendingRequests} solicitações pendentes
               </span>
               <span className="hidden md:inline opacity-30">·</span>
               <span className="hidden sm:flex items-center gap-1.5 font-semibold text-foreground">
-                <Users className={cn("h-3.5 w-3.5", bedStats.doorPatients > 0 ? "text-amber-600" : "text-muted-foreground")} />
+                <Users className={cn("h-3.5 w-3.5", bedStats.doorPatients > 0 ? "text-warning-on-soft" : "text-muted-foreground")} />
                 {bedStats.doorPatients} pacientes porta
               </span>
             </div>
@@ -1164,7 +1164,7 @@ export default function GestorPanelPage() {
             const delta = kpiDeltas[kpi.key];
             const isWorse = delta && delta.trend !== "flat" &&
               ((delta.goodIsDown && delta.trend === "up") || (!delta.goodIsDown && delta.trend === "down"));
-            const trendColor = delta?.trend === "flat" ? "text-muted-foreground" : isWorse ? "text-destructive" : "text-emerald-600";
+            const trendColor = delta?.trend === "flat" ? "text-muted-foreground" : isWorse ? "text-destructive" : "text-released-on-soft";
             const TrendIcon = delta?.trend === "flat" ? Minus : delta?.trend === "up" ? TrendingUp : TrendingDown;
             return (
               <motion.div key={kpi.title} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
@@ -1314,9 +1314,9 @@ export default function GestorPanelPage() {
                       row.beds === 0
                         ? "bg-muted text-muted-foreground border-border"
                         : row.turnover >= 2
-                          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                          ? "bg-released/15 text-released-on-soft border-released/30"
                           : row.turnover >= 1
-                            ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
+                            ? "bg-warning/15 text-warning-on-soft border-warning/30"
                             : "bg-muted text-muted-foreground border-border";
                     const displayTurnover = row.beds > 0
                       ? `${row.turnover.toFixed(1).replace(".", ",")}×`
@@ -1359,7 +1359,7 @@ export default function GestorPanelPage() {
               </div>
               {mortalityTotal === 0 ? (
                 <div className="flex flex-col items-center justify-center py-6 gap-2">
-                  <Heart className="h-8 w-8 text-emerald-500" />
+                  <Heart className="h-8 w-8 text-released" />
                   <p className="text-xs text-muted-foreground text-center">
                     Nenhum óbito registrado no período.
                   </p>
@@ -1417,12 +1417,12 @@ export default function GestorPanelPage() {
                       <div key={row.name} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/40 transition-colors">
                         <span className={cn(
                           "text-[10px] font-bold tabular-nums w-6 text-center shrink-0",
-                          isFirst ? "text-amber-500" : "text-muted-foreground",
+                          isFirst ? "text-warning" : "text-muted-foreground",
                         )}>
                           {idx + 1}º
                         </span>
                         {isFirst && (
-                          <Trophy className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                          <Trophy className="h-3.5 w-3.5 text-warning shrink-0" />
                         )}
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-medium text-foreground truncate">{row.name}</p>
@@ -1430,7 +1430,7 @@ export default function GestorPanelPage() {
                             <div
                               className={cn(
                                 "h-full rounded-full transition-all duration-500",
-                                isFirst ? "bg-amber-500" : "bg-primary",
+                                isFirst ? "bg-warning" : "bg-primary",
                               )}
                               style={{ width: `${pct}%` }}
                             />
@@ -1628,9 +1628,9 @@ export default function GestorPanelPage() {
             {(() => {
               const statusConfig: Record<DischargePreviewItem['status'], { label: string; bg: string; border: string; text: string; dot: string; solidBg: string; solidText: string; activeBorder: string }> = {
                 overdue:   { label: 'VENCIDA',    bg: 'bg-destructive/10', border: 'border-destructive/30', text: 'text-destructive',      dot: 'bg-destructive',      solidBg: 'bg-destructive',   solidText: 'text-destructive-foreground', activeBorder: 'border-destructive' },
-                today:     { label: 'HOJE',       bg: 'bg-amber-500/10',   border: 'border-amber-500/30',   text: 'text-amber-600',        dot: 'bg-amber-500',        solidBg: 'bg-amber-500',     solidText: 'text-white',                  activeBorder: 'border-amber-500' },
-                tomorrow:  { label: 'AMANHÃ',     bg: 'bg-blue-500/10',    border: 'border-blue-500/30',    text: 'text-blue-600',         dot: 'bg-blue-500',         solidBg: 'bg-blue-500',      solidText: 'text-white',                  activeBorder: 'border-blue-500' },
-                this_week: { label: 'ESTA SEMANA',bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-600',      dot: 'bg-emerald-500',      solidBg: 'bg-emerald-500',   solidText: 'text-white',                  activeBorder: 'border-emerald-500' },
+                today:     { label: 'HOJE',       bg: 'bg-warning/10',   border: 'border-warning/30',   text: 'text-warning-on-soft',        dot: 'bg-warning',        solidBg: 'bg-warning',     solidText: 'text-white',                  activeBorder: 'border-warning' },
+                tomorrow:  { label: 'AMANHÃ',     bg: 'bg-primary/10',    border: 'border-border/30',    text: 'text-foreground',         dot: 'bg-primary',         solidBg: 'bg-primary',      solidText: 'text-white',                  activeBorder: 'border-border' },
+                this_week: { label: 'ESTA SEMANA',bg: 'bg-released/10', border: 'border-released/30', text: 'text-released-on-soft',      dot: 'bg-released',      solidBg: 'bg-released',   solidText: 'text-white',                  activeBorder: 'border-released' },
                 future:    { label: 'FUTURO',     bg: 'bg-muted/30',       border: 'border-border',         text: 'text-muted-foreground', dot: 'bg-muted-foreground', solidBg: 'bg-muted-foreground', solidText: 'text-background',          activeBorder: 'border-muted-foreground' },
                 unknown:   { label: 'SEM DATA',   bg: 'bg-muted/30',       border: 'border-border',         text: 'text-muted-foreground', dot: 'bg-muted-foreground', solidBg: 'bg-muted-foreground', solidText: 'text-background',          activeBorder: 'border-muted-foreground' },
               };
@@ -1643,9 +1643,9 @@ export default function GestorPanelPage() {
               const filterButtons: { key: DischargePreviewItem['status'] | 'all'; label: string; count: number; activeBg: string; activeText: string; idleBorder: string; idleText: string; dot?: string }[] = [
                 { key: 'all',       label: 'Todos',       count: dischargePreviews.length, activeBg: 'bg-primary',     activeText: 'text-primary-foreground',      idleBorder: 'border-primary/40',     idleText: 'text-primary' },
                 { key: 'overdue',   label: 'Vencida',     count: counts.overdue   || 0,    activeBg: 'bg-destructive', activeText: 'text-destructive-foreground',  idleBorder: 'border-destructive/40', idleText: 'text-destructive',   dot: 'bg-destructive' },
-                { key: 'today',     label: 'Hoje',        count: counts.today     || 0,    activeBg: 'bg-amber-500',   activeText: 'text-white',                   idleBorder: 'border-amber-500/40',   idleText: 'text-amber-600',     dot: 'bg-amber-500' },
-                { key: 'tomorrow',  label: 'Amanhã',      count: counts.tomorrow  || 0,    activeBg: 'bg-blue-500',    activeText: 'text-white',                   idleBorder: 'border-blue-500/40',    idleText: 'text-blue-600',      dot: 'bg-blue-500' },
-                { key: 'this_week', label: 'Esta semana', count: counts.this_week || 0,    activeBg: 'bg-emerald-500', activeText: 'text-white',                   idleBorder: 'border-emerald-500/40', idleText: 'text-emerald-600',   dot: 'bg-emerald-500' },
+                { key: 'today',     label: 'Hoje',        count: counts.today     || 0,    activeBg: 'bg-warning',   activeText: 'text-white',                   idleBorder: 'border-warning/40',   idleText: 'text-warning-on-soft',     dot: 'bg-warning' },
+                { key: 'tomorrow',  label: 'Amanhã',      count: counts.tomorrow  || 0,    activeBg: 'bg-primary',    activeText: 'text-white',                   idleBorder: 'border-border/40',    idleText: 'text-foreground',      dot: 'bg-primary' },
+                { key: 'this_week', label: 'Esta semana', count: counts.this_week || 0,    activeBg: 'bg-released', activeText: 'text-white',                   idleBorder: 'border-released/40', idleText: 'text-released-on-soft',   dot: 'bg-released' },
               ];
 
               const filteredDischarges = dischargeFilter === 'all'
@@ -1700,7 +1700,7 @@ export default function GestorPanelPage() {
                     </div>
                   ) : filteredDischarges.length === 0 ? (
                     <div className="flex flex-col items-center py-10 gap-2">
-                      <Check className="h-8 w-8 text-emerald-500 opacity-60" />
+                      <Check className="h-8 w-8 text-released opacity-60" />
                       <p className="text-sm font-medium text-muted-foreground">
                         Nenhum paciente {emptyLabel}
                       </p>
@@ -1872,8 +1872,8 @@ export default function GestorPanelPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               {[
-                { label: "Aprovadas", value: prescriptionStats.validated, total: prescriptionStats.total, color: "bg-emerald-500" },
-                { label: "Pendentes", value: prescriptionStats.pending, total: prescriptionStats.total, color: "bg-amber-500" },
+                { label: "Aprovadas", value: prescriptionStats.validated, total: prescriptionStats.total, color: "bg-released" },
+                { label: "Pendentes", value: prescriptionStats.pending, total: prescriptionStats.total, color: "bg-warning" },
                 { label: "Rejeitadas", value: prescriptionStats.rejected, total: prescriptionStats.total, color: "bg-destructive" },
               ].map(item => (
                 <div key={item.label} className="space-y-1">
@@ -1900,14 +1900,14 @@ export default function GestorPanelPage() {
             <CardContent>
               {criticalAlerts.length === 0 ? (
                 <div className="text-center py-6">
-                  <HeartPulse className="h-8 w-8 mx-auto mb-2 text-emerald-500 opacity-50" />
+                  <HeartPulse className="h-8 w-8 mx-auto mb-2 text-released opacity-50" />
                   <p className="text-xs text-muted-foreground">Nenhum alerta crítico</p>
                 </div>
               ) : (
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {criticalAlerts.slice(0, 6).map(alert => (
-                    <div key={alert.id} className={cn("flex items-center gap-3 p-2.5 rounded-lg border", alert.severity === "critical" ? "border-destructive/30 bg-destructive/5" : "border-amber-300/30 bg-amber-50/50 dark:bg-amber-950/10")}>
-                      <AlertTriangle className={cn("h-3.5 w-3.5 shrink-0", alert.severity === "critical" ? "text-destructive" : "text-amber-600")} />
+                    <div key={alert.id} className={cn("flex items-center gap-3 p-2.5 rounded-lg border", alert.severity === "critical" ? "border-destructive/30 bg-destructive/5" : "border-warning-border/30 bg-warning-soft/50")}>
+                      <AlertTriangle className={cn("h-3.5 w-3.5 shrink-0", alert.severity === "critical" ? "text-destructive" : "text-warning-on-soft")} />
                       <div className="flex-1 min-w-0">
                         <p className="patient-id text-xs font-semibold text-foreground truncate">{alert.patientName}</p>
                         <p className="text-[10px] text-muted-foreground">{getSectorDisplayLabel(alert.sector) || alert.sector} · L{alert.bed} — {alert.detail}</p>
@@ -1942,11 +1942,11 @@ export default function GestorPanelPage() {
                   <motion.div key={mov.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}>
                     <div className="flex items-center gap-3 p-2.5 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors">
                       <div className={cn("h-7 w-7 rounded-lg flex items-center justify-center shrink-0",
-                        mov.movement_type?.toUpperCase().includes("ALTA") ? "bg-emerald-500/10" :
+                        mov.movement_type?.toUpperCase().includes("ALTA") ? "bg-released/10" :
                         mov.movement_type?.toUpperCase().includes("ÓBITO") ? "bg-destructive/10" : "bg-primary/10"
                       )}>
                         <Activity className={cn("h-3.5 w-3.5",
-                          mov.movement_type?.toUpperCase().includes("ALTA") ? "text-emerald-600" :
+                          mov.movement_type?.toUpperCase().includes("ALTA") ? "text-released-on-soft" :
                           mov.movement_type?.toUpperCase().includes("ÓBITO") ? "text-destructive" : "text-primary"
                         )} />
                       </div>

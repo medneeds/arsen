@@ -64,11 +64,11 @@ const NIR_MODULES = [
     As cinco naturezas: VER (mapa, censo) · FAZER (solicitações) ·
     ANALISAR (relatórios) · CONFIGURAR (a construir).
   */
-  { key: "mapa_leitos", label: "Mapa de Leitos", subtitle: "Visão operacional dos leitos", icon: LayoutGrid, color: "text-sky-500", bgColor: "bg-sky-500/10", borderColor: "border-sky-500/20" },
-  { key: "censo_leitos", label: "Censo de Leitos", subtitle: "Panorama, ocupação e bloqueios", icon: BedDouble, color: "text-emerald-500", bgColor: "bg-emerald-500/10", borderColor: "border-emerald-500/20" },
-  { key: "solicitacoes", label: "Solicitações", subtitle: "Fila de trabalho do NIR", icon: ClipboardPlus, color: "text-amber-500", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/20" },
-  { key: "relatorios_nir", label: "Relatórios NIR", subtitle: "Indicadores, séries e previsões", icon: BarChart3, color: "text-violet-500", bgColor: "bg-violet-500/10", borderColor: "border-violet-500/20" },
-  { key: "configuracao", label: "Configuração", subtitle: "Estrutura e capacidade de leitos", icon: Settings2, color: "text-slate-500", bgColor: "bg-slate-500/10", borderColor: "border-slate-500/20" },
+  { key: "mapa_leitos", label: "Mapa de Leitos", subtitle: "Visão operacional dos leitos", icon: LayoutGrid, color: "text-muted-foreground", bgColor: "bg-primary/10", borderColor: "border-border/20" },
+  { key: "censo_leitos", label: "Censo de Leitos", subtitle: "Panorama, ocupação e bloqueios", icon: BedDouble, color: "text-released", bgColor: "bg-released/10", borderColor: "border-released/20" },
+  { key: "solicitacoes", label: "Solicitações", subtitle: "Fila de trabalho do NIR", icon: ClipboardPlus, color: "text-warning", bgColor: "bg-warning/10", borderColor: "border-warning/20" },
+  { key: "relatorios_nir", label: "Relatórios NIR", subtitle: "Indicadores, séries e previsões", icon: BarChart3, color: "text-muted-foreground", bgColor: "bg-primary/10", borderColor: "border-border/20" },
+  { key: "configuracao", label: "Configuração", subtitle: "Estrutura e capacidade de leitos", icon: Settings2, color: "text-muted-foreground", bgColor: "bg-primary/10", borderColor: "border-border/20" },
 ];
 
 const BED_STATUS_LABELS: Record<
@@ -77,59 +77,59 @@ const BED_STATUS_LABELS: Record<
 > = {
   vago: {
     label: "Vago",
-    dot: "bg-emerald-500",
-    icon: "text-emerald-600 dark:text-emerald-400",
-    ring: "border-emerald-500/40",
-    bg: "bg-emerald-500/10 hover:bg-emerald-500/15",
+    dot: "bg-released",
+    icon: "text-released-on-soft",
+    ring: "border-released/40",
+    bg: "bg-released/10 hover:bg-released/15",
   },
   ocupado: {
     label: "Ocupado",
-    dot: "bg-red-500",
-    icon: "text-red-600 dark:text-red-400",
-    ring: "border-red-500/40",
-    bg: "bg-red-500/10 hover:bg-red-500/15",
+    dot: "bg-critical",
+    icon: "text-critical-on-soft",
+    ring: "border-critical/40",
+    bg: "bg-critical/10 hover:bg-critical/15",
   },
   bloqueado: {
     label: "Bloqueado",
-    dot: "bg-zinc-700",
-    icon: "text-zinc-700 dark:text-zinc-300",
-    ring: "border-zinc-500/40",
-    bg: "bg-zinc-500/10 hover:bg-zinc-500/15",
+    dot: "bg-primary",
+    icon: "text-foreground",
+    ring: "border-border/40",
+    bg: "bg-primary/10 hover:bg-primary/15",
   },
   higienizacao: {
     label: "Higienização",
-    dot: "bg-sky-500",
-    icon: "text-sky-600 dark:text-sky-400",
-    ring: "border-sky-500/40",
-    bg: "bg-sky-500/10 hover:bg-sky-500/15",
+    dot: "bg-primary",
+    icon: "text-foreground",
+    ring: "border-border/40",
+    bg: "bg-primary/10 hover:bg-primary/15",
   },
   reservado: {
     label: "Reservado",
-    dot: "bg-purple-500",
-    icon: "text-purple-600 dark:text-purple-400",
-    ring: "border-purple-500/40",
-    bg: "bg-purple-500/10 hover:bg-purple-500/15",
+    dot: "bg-primary",
+    icon: "text-foreground",
+    ring: "border-border/40",
+    bg: "bg-primary/10 hover:bg-primary/15",
   },
   manutencao: {
     label: "Manutenção",
-    dot: "bg-orange-500",
-    icon: "text-orange-600 dark:text-orange-400",
-    ring: "border-orange-500/40",
-    bg: "bg-orange-500/10 hover:bg-orange-500/15",
+    dot: "bg-warning",
+    icon: "text-warning-on-soft",
+    ring: "border-warning/40",
+    bg: "bg-warning/10 hover:bg-warning/15",
   },
   interditado: {
     label: "Interditado",
-    dot: "bg-red-800",
-    icon: "text-red-800 dark:text-red-300",
-    ring: "border-red-700/40",
-    bg: "bg-red-700/10 hover:bg-red-700/15",
+    dot: "bg-critical",
+    icon: "text-critical-on-soft",
+    ring: "border-critical/40",
+    bg: "bg-critical/10 hover:bg-critical/15",
   },
   alta_medica_dada: {
     label: "Alta Médica",
-    dot: "bg-amber-500",
-    icon: "text-amber-600 dark:text-amber-400",
-    ring: "border-amber-500/40",
-    bg: "bg-amber-500/10 hover:bg-amber-500/15",
+    dot: "bg-warning",
+    icon: "text-warning-on-soft",
+    ring: "border-warning/40",
+    bg: "bg-warning/10 hover:bg-warning/15",
   },
 };
 
@@ -305,8 +305,8 @@ export default function NirDashboardPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     {metrics.occupancyBySector.map((s) => {
                       const tone = s.rate >= 95 ? "danger" : s.rate >= 80 ? "warning" : "success";
-                      const colorBar = tone === "danger" ? "bg-red-500" : tone === "warning" ? "bg-amber-500" : "bg-emerald-500";
-                      const colorText = tone === "danger" ? "text-red-600 dark:text-red-400" : tone === "warning" ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400";
+                      const colorBar = tone === "danger" ? "bg-critical" : tone === "warning" ? "bg-warning" : "bg-released";
+                      const colorText = tone === "danger" ? "text-critical-on-soft" : tone === "warning" ? "text-warning-on-soft" : "text-released-on-soft";
                       return (
                         <div key={s.sector} className="rounded-lg border p-2.5">
                           <div className="flex items-center justify-between mb-1.5">
@@ -452,9 +452,9 @@ export default function NirDashboardPage() {
                                   ? "opacity-40 cursor-not-allowed"
                                   : "cursor-pointer hover:shadow-md hover:scale-[1.03]",
                                 isOrigin && "ring-2 ring-primary border-primary scale-[1.05] shadow-md",
-                                isSwapTarget && "ring-2 ring-amber-500/70 border-amber-500/70",
+                                isSwapTarget && "ring-2 ring-warning/70 border-warning/70",
                                 reallocMode && !reallocOrigin && bed.status === "ocupado" && "ring-1 ring-primary/40",
-                                reallocMode && !!reallocOrigin && !isOrigin && bed.status === "vago" && "ring-1 ring-emerald-500/60",
+                                reallocMode && !!reallocOrigin && !isOrigin && bed.status === "vago" && "ring-1 ring-released/60",
                               )}
                               title={
                                 reallocDisabled
@@ -738,10 +738,10 @@ export default function NirDashboardPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {activeAlert === "stuck24h" && <AlertTriangle className="h-5 w-5 text-red-500" />}
-              {activeAlert === "saturated" && <Activity className="h-5 w-5 text-amber-500" />}
-              {activeAlert === "cleaning" && <Sparkles className="h-5 w-5 text-orange-500" />}
-              {activeAlert === "sisreg" && <Globe className="h-5 w-5 text-purple-500" />}
+              {activeAlert === "stuck24h" && <AlertTriangle className="h-5 w-5 text-critical" />}
+              {activeAlert === "saturated" && <Activity className="h-5 w-5 text-warning" />}
+              {activeAlert === "cleaning" && <Sparkles className="h-5 w-5 text-warning" />}
+              {activeAlert === "sisreg" && <Globe className="h-5 w-5 text-muted-foreground" />}
               {alertList?.title}
             </DialogTitle>
           </DialogHeader>

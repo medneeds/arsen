@@ -274,8 +274,8 @@ export const NotificationCenter = () => {
             {checklistItems.length > 0 && (
               <div className="animate-fade-in">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-600/10 flex items-center justify-center">
-                    <ListChecks className="h-4 w-4 text-blue-600" />
+                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-muted/10 to-muted/10 flex items-center justify-center">
+                    <ListChecks className="h-4 w-4 text-foreground" />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-sm font-bold tracking-tight">Check-list</h3>
@@ -306,8 +306,8 @@ export const NotificationCenter = () => {
                             className={cn(
                               "h-5 w-5 transition-all duration-300",
                               item.completed 
-                                ? "text-green-500 fill-green-500" 
-                                : "text-muted-foreground hover:text-green-500"
+                                ? "text-released fill-green-500" 
+                                : "text-muted-foreground hover:text-released"
                             )}
                           />
                         </Button>
@@ -332,7 +332,7 @@ export const NotificationCenter = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => markAsRead(item.id)}
-                              className="h-7 w-7 p-0 hover:bg-blue-500/10 hover:text-blue-600 rounded-full transition-all"
+                              className="h-7 w-7 p-0 hover:bg-primary/10 hover:text-foreground rounded-full transition-all"
                               title="Marcar como lida"
                             >
                               <CheckCircle2 className="h-3.5 w-3.5" />
@@ -359,8 +359,8 @@ export const NotificationCenter = () => {
               <div className="animate-fade-in">
                 <Separator className="my-5" />
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-amber-500/10 to-orange-500/10 flex items-center justify-center">
-                    <Clock className="h-4 w-4 text-amber-600" />
+                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-warning-soft/10 to-warning-soft/10 flex items-center justify-center">
+                    <Clock className="h-4 w-4 text-warning-on-soft" />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-sm font-bold tracking-tight">Lembretes Programados</h3>
@@ -374,7 +374,7 @@ export const NotificationCenter = () => {
                     <Card 
                       key={item.id} 
                       className={cn(
-                        "group border border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-orange-500/5 hover:border-amber-500/50 transition-all duration-300 hover:shadow-md relative",
+                        "group border border-warning/30 bg-gradient-to-br from-warning-soft/5 to-warning-soft/5 hover:border-warning/50 transition-all duration-300 hover:shadow-md relative",
                         !item.read && "border-l-4 border-l-amber-600"
                       )}
                       style={{ animationDelay: `${index * 50}ms` }}
@@ -382,7 +382,7 @@ export const NotificationCenter = () => {
                       <CardContent className="p-3 space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-2 flex-1 min-w-0">
-                            <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                            <AlertCircle className="h-4 w-4 text-warning-on-soft mt-0.5 flex-shrink-0" />
                             <p className="text-sm font-medium leading-tight break-words">{item.content}</p>
                           </div>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
@@ -391,7 +391,7 @@ export const NotificationCenter = () => {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => markAsRead(item.id)}
-                                className="h-7 w-7 p-0 hover:bg-blue-500/10 hover:text-blue-600 rounded-full transition-all"
+                                className="h-7 w-7 p-0 hover:bg-primary/10 hover:text-foreground rounded-full transition-all"
                                 title="Marcar como lida"
                               >
                                 <CheckCircle2 className="h-3.5 w-3.5" />
@@ -423,8 +423,8 @@ export const NotificationCenter = () => {
               <div className="animate-fade-in">
                 <Separator className="my-5" />
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-orange-500/10 to-amber-500/10 flex items-center justify-center">
-                    <FileText className="h-4 w-4 text-orange-600" />
+                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-warning-soft/10 to-warning-soft/10 flex items-center justify-center">
+                    <FileText className="h-4 w-4 text-warning-on-soft" />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-sm font-bold tracking-tight">Anotações Salvas</h3>
@@ -456,7 +456,7 @@ export const NotificationCenter = () => {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => markAsRead(item.id)}
-                                className="h-7 w-7 p-0 hover:bg-blue-500/10 hover:text-blue-600 rounded-full transition-all"
+                                className="h-7 w-7 p-0 hover:bg-primary/10 hover:text-foreground rounded-full transition-all"
                                 title="Marcar como lida"
                               >
                                 <CheckCircle2 className="h-3.5 w-3.5" />

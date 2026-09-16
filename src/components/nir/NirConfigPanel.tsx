@@ -113,8 +113,8 @@ export function NirConfigPanel({ bedsBySector }: NirConfigPanelProps) {
                   </td>
                   <td className={cn(
                     "py-2 px-2 text-right tabular-nums font-medium",
-                    faltando && "text-amber-600 dark:text-amber-500",
-                    sobrando && "text-sky-600 dark:text-sky-400",
+                    faltando && "text-warning-on-soft",
+                    sobrando && "text-foreground",
                   )}>
                     {l.reais}
                   </td>
@@ -124,15 +124,15 @@ export function NirConfigPanel({ bedsBySector }: NirConfigPanelProps) {
                         <AlertTriangle className="h-3 w-3" /> Sem configuração
                       </span>
                     ) : faltando ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-500">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-warning-on-soft">
                         <AlertTriangle className="h-3 w-3" /> Faltam {Math.abs(l.diferenca!)}
                       </span>
                     ) : sobrando ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-sky-600 dark:text-sky-400">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-foreground">
                         +{l.diferenca} além do previsto
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-released-on-soft">
                         <CheckCircle2 className="h-3 w-3" /> Confere
                       </span>
                     )}

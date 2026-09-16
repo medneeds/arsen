@@ -111,13 +111,13 @@ export function DuplicatePatientWarning({ fullName, birthDate, cpf, onUseExistin
       "rounded-lg border-2 p-3 space-y-2",
       isHighConfidence
         ? "border-destructive/50 bg-destructive/5"
-        : "border-amber-500/40 bg-amber-500/5"
+        : "border-warning/40 bg-warning/5"
     )}>
       <div className="flex items-center gap-2">
-        <AlertTriangle className={cn("h-4 w-4 shrink-0", isHighConfidence ? "text-destructive" : "text-amber-600")} />
+        <AlertTriangle className={cn("h-4 w-4 shrink-0", isHighConfidence ? "text-destructive" : "text-warning-on-soft")} />
         <p className={cn(
           "text-xs font-semibold",
-          isHighConfidence ? "text-destructive" : "text-amber-700 dark:text-amber-400"
+          isHighConfidence ? "text-destructive" : "text-warning-on-soft"
         )}>
           {isHighConfidence
             ? "Cadastro bloqueado — paciente já existe com mesmo nome e data de nascimento"
@@ -142,7 +142,7 @@ export function DuplicatePatientWarning({ fullName, birthDate, cpf, onUseExistin
               "flex items-center justify-between gap-2 rounded-md border bg-card p-2 transition-colors",
               isHighConfidence
                 ? "hover:border-destructive/40"
-                : "hover:border-amber-500/60"
+                : "hover:border-warning/60"
             )}
           >
             <div className="flex items-center gap-2 min-w-0">
@@ -165,7 +165,7 @@ export function DuplicatePatientWarning({ fullName, birthDate, cpf, onUseExistin
                 "h-7 text-[10px] shrink-0",
                 isHighConfidence
                   ? ""
-                  : "border-amber-500/40 text-amber-700 hover:bg-amber-500/10"
+                  : "border-warning/40 text-warning-on-soft hover:bg-warning/10"
               )}
               type="button"
               onClick={() => {

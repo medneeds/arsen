@@ -168,13 +168,13 @@ export function PatientOpsTab() {
 
   return (
     <div className="space-y-4">
-      <Card className="border-sky-200 bg-sky-50/40 dark:bg-sky-950/20 dark:border-sky-900/40">
+      <Card className="border-border bg-muted/40">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2 text-sky-900 dark:text-sky-200">
+          <CardTitle className="text-sm flex items-center gap-2 text-foreground">
             <ShieldAlert className="h-4 w-4" /> Correção de pacientes com transferência travada
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-xs text-sky-900/80 dark:text-sky-100/80 space-y-1.5">
+        <CardContent className="text-xs text-foreground/80 space-y-1.5">
           <p>
             Use esta aba <strong>apenas</strong> para destravar casos onde a transferência interna deixou o paciente em estado inconsistente
             (ex.: leito de origem vazio + fila virtual pendente sem alocação, encounter fechado por engano, leito órfão com dados clínicos).
@@ -222,7 +222,7 @@ export function PatientOpsTab() {
                     <div className="flex items-center gap-2">
                       <span className="font-medium truncate flex-1">{p.name || <em className="text-muted-foreground">(leito vago)</em>}</span>
                       {p.hasPendingTransfer && (
-                        <Badge variant="outline" className="text-[9px] gap-1 border-amber-400 text-amber-700 bg-amber-50 dark:bg-amber-950/40">
+                        <Badge variant="outline" className="text-[9px] gap-1 border-warning text-warning-on-soft bg-warning-soft">
                           <ArrowRightLeft className="h-2.5 w-2.5" /> TRANSF. PENDENTE
                         </Badge>
                       )}
@@ -392,11 +392,11 @@ export function PatientOpsTab() {
                           <button
                             key={b.id}
                             onClick={() => setSelectedBedId(b.id)}
-                            className={`w-full text-left px-2 py-1 text-[11px] hover:bg-muted/40 flex items-center gap-2 ${selectedBedId === b.id ? "bg-emerald-50 dark:bg-emerald-950/30" : ""}`}
+                            className={`w-full text-left px-2 py-1 text-[11px] hover:bg-muted/40 flex items-center gap-2 ${selectedBedId === b.id ? "bg-released-soft" : ""}`}
                           >
                             <span className="font-mono w-14">{b.bed_number ?? "—"}</span>
                             <span className="text-muted-foreground truncate flex-1">{b.sector ?? "—"}</span>
-                            {selectedBedId === b.id && <Badge variant="outline" className="text-[9px] border-emerald-500 text-emerald-700">selecionado</Badge>}
+                            {selectedBedId === b.id && <Badge variant="outline" className="text-[9px] border-released text-released-on-soft">selecionado</Badge>}
                           </button>
                         ))}
                       </div>
@@ -407,7 +407,7 @@ export function PatientOpsTab() {
                     <Button
                       size="sm"
                       variant="default"
-                      className="h-7 text-[11px] gap-1 bg-emerald-600 hover:bg-emerald-700"
+                      className="h-7 text-[11px] gap-1 bg-released hover:bg-released"
                       disabled={!inspection.patient || !inspection.patient.name || !selectedBedId}
                       onClick={() => {
                         const bed = vacantBeds.find((b) => b.id === selectedBedId);
@@ -478,7 +478,7 @@ export function PatientOpsTab() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <ShieldAlert className="h-4 w-4 text-amber-600" /> {pending?.title}
+              <ShieldAlert className="h-4 w-4 text-warning-on-soft" /> {pending?.title}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3 text-xs">
@@ -514,7 +514,7 @@ export function PatientOpsTab() {
                     </p>
                   </div>
                 )}
-                <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                <p className="text-[11px] text-warning-on-soft">
                   A execução é auditada em <code className="font-mono">audit_logs</code> (action <code className="font-mono">DEV_FIX_TRANSFER</code>).
                 </p>
               </div>

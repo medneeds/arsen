@@ -103,8 +103,8 @@ export default function PriorizacaoCirurgicaPage() {
           
           <div className="flex-1 space-y-3">
             <div className="flex items-center gap-3">
-              <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-orange-500/10 flex items-center justify-center">
-                <Scissors className="h-7 w-7 text-orange-500" />
+              <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-warning/10 flex items-center justify-center">
+                <Scissors className="h-7 w-7 text-warning" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
@@ -163,10 +163,10 @@ export default function PriorizacaoCirurgicaPage() {
 
           {/* Emergency Procedures */}
           <TabsContent value="emergency" className="space-y-4">
-            <Card className="border-red-500/20 shadow-lg">
-              <CardHeader className="bg-red-500/5">
+            <Card className="border-critical/20 shadow-lg">
+              <CardHeader className="bg-critical/5">
                 <div className="flex items-center gap-3">
-                  <AlertCircle className="h-6 w-6 text-red-500" />
+                  <AlertCircle className="h-6 w-6 text-critical" />
                   <div>
                     <CardTitle className="text-2xl">
                       Procedimentos Cirúrgicos de Emergência
@@ -202,9 +202,9 @@ export default function PriorizacaoCirurgicaPage() {
                         filteredEmergencyProcedures.map((item, index) => (
                         <TableRow 
                           key={index}
-                          className="hover:bg-red-500/5 transition-colors"
+                          className="hover:bg-critical/5 transition-colors"
                         >
-                          <TableCell className="font-semibold text-red-600 align-top">
+                          <TableCell className="font-semibold text-critical-on-soft align-top">
                             {item.specialty}
                           </TableCell>
                           <TableCell>
@@ -220,7 +220,7 @@ export default function PriorizacaoCirurgicaPage() {
             </Card>
 
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground pt-2">
-              <AlertCircle className="h-4 w-4 text-red-500" />
+              <AlertCircle className="h-4 w-4 text-critical" />
               <span>
                 {searchQuery
                   ? `Exibindo ${filteredEmergencyProcedures.length} de ${emergencyProcedures.length} procedimentos`
@@ -231,10 +231,10 @@ export default function PriorizacaoCirurgicaPage() {
 
           {/* Urgency Procedures */}
           <TabsContent value="urgency" className="space-y-4">
-            <Card className="border-amber-500/20 shadow-lg">
-              <CardHeader className="bg-amber-500/5">
+            <Card className="border-warning/20 shadow-lg">
+              <CardHeader className="bg-warning/5">
                 <div className="flex items-center gap-3">
-                  <Clock className="h-6 w-6 text-amber-500" />
+                  <Clock className="h-6 w-6 text-warning" />
                   <div>
                     <CardTitle className="text-2xl">
                       Procedimentos Cirúrgicos de Urgência
@@ -270,9 +270,9 @@ export default function PriorizacaoCirurgicaPage() {
                         filteredUrgencyProcedures.map((item, index) => (
                         <TableRow 
                           key={index}
-                          className="hover:bg-amber-500/5 transition-colors"
+                          className="hover:bg-warning/5 transition-colors"
                         >
-                          <TableCell className="font-semibold text-amber-600 align-top">
+                          <TableCell className="font-semibold text-warning-on-soft align-top">
                             {item.specialty}
                           </TableCell>
                           <TableCell>
@@ -288,7 +288,7 @@ export default function PriorizacaoCirurgicaPage() {
             </Card>
 
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground pt-2">
-              <Clock className="h-4 w-4 text-amber-500" />
+              <Clock className="h-4 w-4 text-warning" />
               <span>
                 {searchQuery
                   ? `Exibindo ${filteredUrgencyProcedures.length} de ${urgencyProcedures.length} procedimentos`

@@ -324,8 +324,8 @@ export function OperationalRelocationDialog({
               />
             </div>
 
-            <div className="flex items-start gap-2 p-2.5 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+            <div className="flex items-start gap-2 p-2.5 rounded-md bg-warning-soft border border-warning-border">
+              <AlertTriangle className="h-4 w-4 text-warning-on-soft mt-0.5 shrink-0" />
               <p className="text-[11px] text-foreground leading-relaxed">
                 Esta ação <strong>não substitui</strong> transferência clínica.
                 Para mudanças por decisão médica, use o <strong>Painel Clínico</strong> do paciente.

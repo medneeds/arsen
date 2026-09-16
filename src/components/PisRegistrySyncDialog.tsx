@@ -251,7 +251,7 @@ export function PisRegistrySyncDialog({
           </div>
         ) : diff.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2 text-center">
-            <ShieldCheck className="h-8 w-8 text-emerald-600" />
+            <ShieldCheck className="h-8 w-8 text-released-on-soft" />
             <p className="text-sm font-semibold">Prontuário já está 100% sincronizado com o PIS.</p>
             <p className="text-xs text-muted-foreground">Nenhuma ação necessária.</p>
           </div>
@@ -292,14 +292,14 @@ export function PisRegistrySyncDialog({
                       <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center mt-1 text-xs">
                         <div className="min-w-0">
                           <p className="text-[9px] text-muted-foreground">Atual</p>
-                          <p className="truncate font-medium text-rose-700 dark:text-rose-300 line-through decoration-rose-400/50">
+                          <p className="truncate font-medium text-critical-on-soft line-through decoration-rose-400/50">
                             {d.current || <span className="italic text-muted-foreground no-underline">(vazio)</span>}
                           </p>
                         </div>
                         <ArrowRight className="h-3.5 w-3.5 text-primary shrink-0" />
                         <div className="min-w-0">
                           <p className="text-[9px] text-muted-foreground">PIS</p>
-                          <p className="truncate font-semibold text-emerald-700 dark:text-emerald-300">
+                          <p className="truncate font-semibold text-released-on-soft">
                             {d.incoming}
                           </p>
                         </div>

@@ -63,23 +63,23 @@ export default function DevConsolePage() {
   if (!isDev) return <Navigate to="/" replace />;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-muted">
       {/* Cabeçalho gradiente azul escuro — padrão dev */}
-      <header className="relative overflow-hidden border-b border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 text-slate-100 shadow-lg">
+      <header className="relative overflow-hidden border-b border-border bg-gradient-to-r from-muted via-muted to-muted text-muted-foreground shadow-lg">
         <div className="absolute inset-0 opacity-40 pointer-events-none"
              style={{ backgroundImage: "radial-gradient(circle at 20% 30%, hsl(217 91% 60% / 0.15), transparent 50%), radial-gradient(circle at 80% 70%, hsl(217 91% 50% / 0.12), transparent 55%)" }} />
         <div className="relative max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <SidebarTrigger className="h-9 w-9 text-slate-300 hover:text-white hover:bg-white/10" />
-            <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 grid place-items-center shadow-md ring-1 ring-white/10">
+            <SidebarTrigger className="h-9 w-9 text-muted-foreground hover:text-white hover:bg-white/10" />
+            <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-muted to-muted grid place-items-center shadow-md ring-1 ring-white/10">
               <Terminal className="h-5 w-5 text-white" />
             </div>
             <div>
               <h1 className="text-lg font-semibold tracking-tight text-white">DEV CONSOLE</h1>
-              <p className="text-xs text-slate-400">Painel de operação técnica · acesso restrito</p>
+              <p className="text-xs text-muted-foreground">Painel de operação técnica · acesso restrito</p>
             </div>
           </div>
-          <Badge variant="outline" className="gap-1.5 border-blue-500/40 bg-blue-500/10 text-blue-300 backdrop-blur">
+          <Badge variant="outline" className="gap-1.5 border-border/40 bg-primary/10 text-muted-foreground backdrop-blur">
             <ShieldAlert className="h-3 w-3" /> ACESSO DEV
           </Badge>
         </div>
@@ -88,7 +88,7 @@ export default function DevConsolePage() {
       <main className="max-w-7xl mx-auto px-6 py-6">
         <Tabs defaultValue="pendencies" className="space-y-5">
           {/* Faixa de navegação dark elevada */}
-          <div className="rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 p-1.5 shadow-md ring-1 ring-slate-700/50">
+          <div className="rounded-xl bg-gradient-to-r from-muted to-muted p-1.5 shadow-md ring-1 ring-ring/50">
             <TabsList className="bg-transparent gap-1 h-auto p-0 w-full justify-start flex-wrap">
               {[
                 { v: "pendencies", icon: ListChecks, label: "Pendências" },
@@ -107,7 +107,7 @@ export default function DevConsolePage() {
                 <TabsTrigger
                   key={v}
                   value={v}
-                  className="gap-1.5 px-4 py-2 text-slate-300 hover:text-white data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-blue-700 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                  className="gap-1.5 px-4 py-2 text-muted-foreground hover:text-white data-[state=active]:bg-gradient-to-br data-[state=active]:from-muted data-[state=active]:to-muted data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
                 >
                   <Icon className="h-4 w-4" /> {label}
                 </TabsTrigger>

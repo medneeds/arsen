@@ -129,7 +129,7 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileWarning className="h-5 w-5 text-amber-600" />
+            <FileWarning className="h-5 w-5 text-warning-on-soft" />
             Complementar dados do paciente
           </DialogTitle>
           <DialogDescription>
@@ -144,7 +144,7 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
         ) : row ? (
           <div className="space-y-3">
             {row.is_unidentified && (
-              <Badge variant="outline" className="text-[10px] border-slate-500/40">
+              <Badge variant="outline" className="text-[10px] border-border/40">
                 Paciente NI — para promover, use "Identificar paciente" (merge).
               </Badge>
             )}

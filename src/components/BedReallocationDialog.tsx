@@ -201,7 +201,7 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
         </DialogHeader>
 
         {!sectorConfig && (
-          <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+          <div className="flex items-center gap-2 rounded-md border border-warning-border bg-warning-soft p-3 text-sm text-warning-on-soft">
             <AlertCircle className="h-4 w-4" />
             Setor sem configuração de leitos disponível para realocação interna.
           </div>
@@ -245,7 +245,7 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
                               : "border-border bg-background"
                           )}
                         >
-                          <BedDouble className="mx-auto mb-1 h-4 w-4 text-emerald-600" />
+                          <BedDouble className="mx-auto mb-1 h-4 w-4 text-released-on-soft" />
                           {t.bed_number}
                         </button>
                       );
@@ -288,7 +288,7 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
                             {occupied ? (
                               <span className="font-medium uppercase truncate">{s.name}</span>
                             ) : (
-                              <span className="text-emerald-700 dark:text-emerald-400 text-xs uppercase font-semibold">Leito vago</span>
+                              <span className="text-released-on-soft text-xs uppercase font-semibold">Leito vago</span>
                             )}
                           </div>
                           <ArrowRightLeft className="h-4 w-4 text-muted-foreground shrink-0" />

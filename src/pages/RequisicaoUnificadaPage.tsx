@@ -76,9 +76,9 @@ const UTI_COMBOS: UtiCombo[] = [
     description: "Painel completo de admissão — inclui sorologias e coagulograma",
     icon: Clock,
     scope: "uti",
-    color: "text-red-600",
-    bg: "bg-red-500/10",
-    border: "border-red-300",
+    color: "text-critical-on-soft",
+    bg: "bg-critical/10",
+    border: "border-critical-border",
     categories: {
       laboratorio: [
         "Hemograma Completo",
@@ -96,9 +96,9 @@ const UTI_COMBOS: UtiCombo[] = [
     description: "Rotina diária — paciente crítico sem ventilação mecânica",
     icon: Clock,
     scope: "uti",
-    color: "text-blue-600",
-    bg: "bg-blue-500/10",
-    border: "border-blue-300",
+    color: "text-foreground",
+    bg: "bg-primary/10",
+    border: "border-border",
     categories: {
       laboratorio: [
         "Hemograma Completo",
@@ -113,9 +113,9 @@ const UTI_COMBOS: UtiCombo[] = [
     description: "Rotina diária — paciente em ventilação mecânica (+gasometria)",
     icon: Clock,
     scope: "uti",
-    color: "text-indigo-600",
-    bg: "bg-indigo-500/10",
-    border: "border-indigo-300",
+    color: "text-foreground",
+    bg: "bg-primary/10",
+    border: "border-border",
     categories: {
       laboratorio: [
         "Hemograma Completo",
@@ -131,9 +131,9 @@ const UTI_COMBOS: UtiCombo[] = [
     description: "Controle laboratorial diário — hemograma, função renal, eletrólitos, PCR",
     icon: Clock,
     scope: "enfermaria",
-    color: "text-emerald-600",
-    bg: "bg-emerald-500/10",
-    border: "border-emerald-300",
+    color: "text-released-on-soft",
+    bg: "bg-released/10",
+    border: "border-released-border",
     categories: {
       laboratorio: [
         "Hemograma Completo", "Ureia", "Creatinina", "Sódio", "Potássio", "PCR",
@@ -152,8 +152,8 @@ const CATEGORIES = {
     label: "Exames Laboratoriais",
     shortLabel: "Laboratório",
     icon: TestTubes,
-    color: "text-blue-600",
-    bg: "bg-blue-500/10",
+    color: "text-foreground",
+    bg: "bg-primary/10",
     presets: [
       { group: "Hemograma", items: ["Hemograma Completo", "Hemoglobina", "Hematócrito", "Plaquetas", "Leucograma", "Reticulócitos", "VHS", "Ferritina", "Ferro Sérico", "Transferrina", "Saturação de Transferrina", "Vitamina B12", "Ácido Fólico", "Eletroforese de Hemoglobina", "Coombs Direto", "Coombs Indireto"] },
       { group: "Bioquímica", items: ["Glicemia", "Glicemia Pós-prandial", "Hemoglobina Glicada (HbA1c)", "Ureia", "Creatinina", "Sódio", "Potássio", "Cloro", "Cálcio", "Cálcio Iônico", "Magnésio", "Fósforo", "TGO", "TGP", "Gama-GT", "Fosfatase Alcalina", "Bilirrubina Total e Frações", "Albumina", "Proteínas Totais e Frações", "PCR", "Amilase", "Lipase", "DHL", "CPK", "CK-MB", "Ácido Úrico", "Colesterol Total", "HDL", "LDL", "Triglicerídeos", "Osmolaridade Sérica"] },
@@ -171,8 +171,8 @@ const CATEGORIES = {
     label: "Exames de Imagem",
     shortLabel: "Imagem",
     icon: ScanLine,
-    color: "text-violet-600",
-    bg: "bg-violet-500/10",
+    color: "text-foreground",
+    bg: "bg-primary/10",
     presets: [
       { group: "Radiografia", items: ["RX Tórax PA", "RX Tórax AP (leito)", "RX Abdome", "RX Coluna Cervical", "RX Seios da Face"] },
       { group: "Tomografia", items: ["TC Crânio s/ contraste", "TC Crânio c/ contraste", "TC Tórax", "TC Abdome Total", "TC Coluna", "Angio-TC Tórax (TEP)", "Angio-TC Crânio (AVC)"] },
@@ -186,8 +186,8 @@ const CATEGORIES = {
     label: "Pareceres",
     shortLabel: "Pareceres",
     icon: UserCheck,
-    color: "text-emerald-600",
-    bg: "bg-emerald-500/10",
+    color: "text-released-on-soft",
+    bg: "bg-released/10",
     presets: [
       { group: "Especialidades Médicas", items: ["Anestesiologia", "Cabeça e Pescoço", "Cardiologia", "Cirurgia Bucomaxilofacial", "Cirurgia Geral", "Cirurgia Plástica", "Cirurgia Torácica", "Cirurgia Vascular", "Clínica Médica", "Coloproctologia", "Endocrinologia", "Hematologia", "Infectologia", "Medicina Intensiva", "Nefrologia", "Neurocirurgia", "Neurologia", "Ortopedia", "Otorrinolaringologia", "Urologia"] },
       { group: "Apoio", items: ["Fisioterapia", "Fonoaudiologia", "Nutrição", "Psicologia", "Assistência Social", "Farmácia Clínica", "Cuidados Paliativos"] },
@@ -197,24 +197,24 @@ const CATEGORIES = {
     label: "Procedimentos",
     shortLabel: "Procedimento",
     icon: FileCheck,
-    color: "text-orange-600",
-    bg: "bg-orange-500/10",
+    color: "text-warning-on-soft",
+    bg: "bg-warning/10",
     presets: [],
   },
   terapeutico: {
     label: "Terapêutico",
     shortLabel: "Terapêutico",
     icon: Heart,
-    color: "text-rose-600",
-    bg: "bg-rose-500/10",
+    color: "text-critical-on-soft",
+    bg: "bg-critical/10",
     presets: [],
   },
   regulacao: {
     label: "Regulação",
     shortLabel: "Regulação",
     icon: Navigation2,
-    color: "text-amber-600",
-    bg: "bg-amber-500/10",
+    color: "text-warning-on-soft",
+    bg: "bg-warning/10",
     presets: [],
   },
 } as const;
@@ -314,16 +314,16 @@ const APAC_OVERRIDE_REASONS = [
 ];
 
 const PRIORITY_OPTIONS = [
-  { value: "programado", label: "Programado", color: "text-blue-600" },
-  { value: "rotina", label: "Rotina", color: "text-cyan-600" },
-  { value: "urgente", label: "Urgente", color: "text-red-600" },
+  { value: "programado", label: "Programado", color: "text-foreground" },
+  { value: "rotina", label: "Rotina", color: "text-foreground" },
+  { value: "urgente", label: "Urgente", color: "text-critical-on-soft" },
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock; dotColor: string; pulsing: boolean }> = {
-  pending: { label: "Pendente", color: "bg-amber-500/15 text-amber-700 border-amber-300", icon: Clock, dotColor: "bg-amber-500", pulsing: true },
-  acknowledged: { label: "Ciência", color: "bg-indigo-500/15 text-indigo-700 border-indigo-300", icon: Eye, dotColor: "bg-indigo-500", pulsing: true },
-  in_progress: { label: "Em Andamento", color: "bg-blue-500/15 text-blue-700 border-blue-300", icon: Loader2, dotColor: "bg-blue-500", pulsing: true },
-  completed: { label: "Concluído", color: "bg-emerald-500/15 text-emerald-700 border-emerald-300", icon: CheckCircle2, dotColor: "bg-emerald-500", pulsing: false },
+  pending: { label: "Pendente", color: "bg-warning/15 text-warning-on-soft border-warning-border", icon: Clock, dotColor: "bg-warning", pulsing: true },
+  acknowledged: { label: "Ciência", color: "bg-primary/15 text-foreground border-border", icon: Eye, dotColor: "bg-primary", pulsing: true },
+  in_progress: { label: "Em Andamento", color: "bg-primary/15 text-foreground border-border", icon: Loader2, dotColor: "bg-primary", pulsing: true },
+  completed: { label: "Concluído", color: "bg-released/15 text-released-on-soft border-released-border", icon: CheckCircle2, dotColor: "bg-released", pulsing: false },
   cancelled: { label: "Cancelado", color: "bg-muted text-muted-foreground border-border", icon: XCircle, dotColor: "bg-muted-foreground", pulsing: false },
 };
 
@@ -964,7 +964,7 @@ const RequisicaoUnificadaPage = () => {
                   "flex items-center gap-2.5 px-4 py-3 rounded-xl border transition-all duration-200 min-w-fit",
                   isActive
                     ? isRegulacao
-                      ? "border-amber-500 bg-amber-50/60 dark:bg-amber-500/10 shadow-sm ring-1 ring-amber-500/30"
+                      ? "border-warning bg-warning-soft/60 shadow-sm ring-1 ring-warning/30"
                       : "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
                     : "border-border hover:bg-muted/50 hover:border-border"
                 )}
@@ -1030,7 +1030,7 @@ const RequisicaoUnificadaPage = () => {
             <div className="border rounded-lg p-3 bg-muted/20">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Package className="h-4 w-4 text-orange-500" />
+                  <Package className="h-4 w-4 text-warning" />
                   <div>
                     <p className="text-sm font-medium">Registro de OPME</p>
                     <p className="text-[11px] text-muted-foreground">Órtese, Prótese e Material Especial — complementar ao laudo</p>
@@ -1085,10 +1085,10 @@ const RequisicaoUnificadaPage = () => {
             <button
               type="button"
               onClick={() => setHemoDialogOpen(true)}
-              className="flex items-center gap-4 p-4 rounded-xl border-2 border-sky-200 bg-sky-50/60 dark:bg-sky-500/5 dark:border-sky-500/20 hover:border-sky-400 hover:bg-sky-100/60 transition-all text-left"
+              className="flex items-center gap-4 p-4 rounded-xl border-2 border-border bg-muted/60 hover:border-border hover:bg-muted/60 transition-all text-left"
             >
-              <div className="p-3 rounded-xl bg-sky-500/15 shrink-0">
-                <Droplet className="h-6 w-6 text-sky-600 dark:text-sky-400" />
+              <div className="p-3 rounded-xl bg-primary/15 shrink-0">
+                <Droplet className="h-6 w-6 text-foreground" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">Hemocomponentes</p>
@@ -1098,10 +1098,10 @@ const RequisicaoUnificadaPage = () => {
             <button
               type="button"
               onClick={() => setSatDialogOpen(true)}
-              className="flex items-center gap-4 p-4 rounded-xl border-2 border-indigo-200 bg-indigo-50/60 dark:bg-indigo-500/5 dark:border-indigo-500/20 hover:border-indigo-400 hover:bg-indigo-100/60 transition-all text-left"
+              className="flex items-center gap-4 p-4 rounded-xl border-2 border-border bg-muted/60 hover:border-border hover:bg-muted/60 transition-all text-left"
             >
-              <div className="p-3 rounded-xl bg-indigo-500/15 shrink-0">
-                <Syringe className="h-6 w-6 text-indigo-700 dark:text-indigo-300" />
+              <div className="p-3 rounded-xl bg-primary/15 shrink-0">
+                <Syringe className="h-6 w-6 text-foreground" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">SAT / IGHAT</p>
@@ -1134,18 +1134,18 @@ const RequisicaoUnificadaPage = () => {
                   className={cn(
                     "flex flex-col gap-3 p-4 rounded-xl border-2 text-left transition-all",
                     regulacaoType === key
-                      ? `border-${color}-400 bg-${color}-50/60 dark:bg-${color}-500/10 ring-1 ring-${color}-400/40`
-                      : "border-border hover:border-amber-300 hover:bg-amber-50/30 dark:hover:bg-amber-500/5"
+                      ? `border-${color}-400 bg-${color}-50/60${color}-500/10 ring-1 ring-${color}-400/40`
+                      : "border-border hover:border-warning-border hover:bg-warning-soft/30"
                   )}
                 >
                   <div className={`p-2.5 rounded-lg bg-${color}-500/15 w-fit`}>
-                    <Icon className={`h-5 w-5 text-${color}-600 dark:text-${color}-400`} />
+                    <Icon className={`h-5 w-5 text-${color}-600${color}-400`} />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-foreground">{label}</p>
                     <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{desc}</p>
                   </div>
-                  <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 mt-auto">
+                  <span className="text-[10px] font-semibold text-warning-on-soft mt-auto">
                     Abre formulário AIH →
                   </span>
                 </button>
@@ -1207,8 +1207,8 @@ const RequisicaoUnificadaPage = () => {
                 className={cn(
                   "flex-1 gap-2 h-12 text-sm font-semibold transition-all",
                   formPriority === "urgente"
-                    ? "bg-red-600 hover:bg-red-700 text-white border-red-600 shadow-lg shadow-red-500/20"
-                    : "border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
+                    ? "bg-critical hover:bg-critical text-white border-critical shadow-lg shadow-red-500/20"
+                    : "border-critical-border text-critical-on-soft hover:bg-critical-soft"
                 )}
                 onClick={() => setFormPriority("urgente")}
               >
@@ -1221,8 +1221,8 @@ const RequisicaoUnificadaPage = () => {
                 className={cn(
                   "flex-1 gap-2 h-12 text-sm font-semibold transition-all",
                   formPriority === "rotina"
-                    ? "bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-600 shadow-lg shadow-cyan-500/20"
-                    : "border-cyan-300 text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-500/10"
+                    ? "bg-primary hover:bg-primary text-white border-border shadow-lg shadow-cyan-500/20"
+                    : "border-border text-foreground hover:bg-muted"
                 )}
                 onClick={() => setFormPriority("rotina")}
               >
@@ -1235,8 +1235,8 @@ const RequisicaoUnificadaPage = () => {
                 className={cn(
                   "flex-1 gap-2 h-12 text-sm font-semibold transition-all",
                   formPriority === "programado"
-                    ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600 shadow-lg shadow-blue-500/20"
-                    : "border-blue-300 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10"
+                    ? "bg-primary hover:bg-primary text-white border-border shadow-lg shadow-blue-500/20"
+                    : "border-border text-foreground hover:bg-muted"
                 )}
                 onClick={() => setFormPriority("programado")}
               >
@@ -1247,9 +1247,9 @@ const RequisicaoUnificadaPage = () => {
 
             {/* Scheduled date/time for programado */}
             {formPriority === "programado" && (
-              <div className="grid grid-cols-2 gap-3 p-3 rounded-lg border border-blue-200 bg-blue-50/50 dark:bg-blue-500/5 dark:border-blue-500/20">
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-lg border border-border bg-muted/50">
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-blue-700 dark:text-blue-400">Data Programada *</Label>
+                  <Label className="text-xs text-foreground">Data Programada *</Label>
                   <Input
                     type="date"
                     value={formScheduledDate}
@@ -1259,7 +1259,7 @@ const RequisicaoUnificadaPage = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-blue-700 dark:text-blue-400">Horário (opcional)</Label>
+                  <Label className="text-xs text-foreground">Horário (opcional)</Label>
                   <Input
                     type="time"
                     value={formScheduledTime}
@@ -1309,7 +1309,7 @@ const RequisicaoUnificadaPage = () => {
                       <div
                         className={cn(
                           "h-full transition-all duration-200",
-                          overHard ? "bg-destructive" : nearLimit ? "bg-amber-500" : "bg-primary"
+                          overHard ? "bg-destructive" : nearLimit ? "bg-warning" : "bg-primary"
                         )}
                         style={{ width: `${Math.min(100, (used / PARECER_HARD) * 100)}%` }}
                       />
@@ -1321,7 +1321,7 @@ const RequisicaoUnificadaPage = () => {
                       </span>
                       <span className={cn(
                         "font-mono tabular-nums",
-                        overHard ? "text-destructive font-bold" : nearLimit ? "text-amber-700 font-semibold" : "text-muted-foreground"
+                        overHard ? "text-destructive font-bold" : nearLimit ? "text-warning-on-soft font-semibold" : "text-muted-foreground"
                       )}>
                         {PARECER_HARD - used} restantes
                       </span>
@@ -1339,7 +1339,7 @@ const RequisicaoUnificadaPage = () => {
           ) : requiresMainJustification ? (
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">
-                Justificativa Clínica <span className="text-red-500">*</span>
+                Justificativa Clínica <span className="text-critical">*</span>
               </Label>
               <Textarea
                 placeholder="Descreva a justificativa clínica para esta requisição..."
@@ -1356,16 +1356,16 @@ const RequisicaoUnificadaPage = () => {
             <button
               type="button"
               onClick={() => setCultureDialogOpen(true)}
-              className="w-full flex items-center gap-4 p-3 rounded-xl border-2 border-blue-200 bg-blue-50/50 dark:bg-blue-500/5 dark:border-blue-500/20 hover:border-blue-400 hover:bg-blue-100/50 transition-all text-left"
+              className="w-full flex items-center gap-4 p-3 rounded-xl border-2 border-border bg-muted/50 hover:border-border hover:bg-muted/50 transition-all text-left"
             >
-              <div className="p-2.5 rounded-xl bg-blue-500/15 shrink-0">
-                <Microscope className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-2.5 rounded-xl bg-primary/15 shrink-0">
+                <Microscope className="h-5 w-5 text-foreground" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-foreground">Cultura Microbiológica</p>
                 <p className="text-[11px] text-muted-foreground">Hemocultura · Urinocultura · Secreção · LCR — formulário próprio</p>
               </div>
-              <Badge variant="outline" className="text-[10px] shrink-0 border-blue-300 text-blue-700 dark:text-blue-300">Formulário específico</Badge>
+              <Badge variant="outline" className="text-[10px] shrink-0 border-border text-foreground">Formulário específico</Badge>
             </button>
           )}
 
@@ -1407,7 +1407,7 @@ const RequisicaoUnificadaPage = () => {
                         </div>
                         <div className="flex items-center gap-1.5">
                           {partiallySelected && (
-                            <Badge variant="outline" className="text-[9px] h-5 border-amber-300 text-amber-600">Parcial</Badge>
+                            <Badge variant="outline" className="text-[9px] h-5 border-warning-border text-warning-on-soft">Parcial</Badge>
                           )}
                           <Button
                             size="sm"
@@ -1522,7 +1522,7 @@ const RequisicaoUnificadaPage = () => {
                             selected
                               ? "border-primary bg-primary/10 text-primary font-medium shadow-sm"
                               : isApac
-                                ? "border-amber-300/70 bg-amber-50/60 text-foreground hover:bg-amber-100/60 dark:bg-amber-500/10 dark:border-amber-500/30"
+                                ? "border-warning-border/70 bg-warning-soft/60 text-foreground hover:bg-warning-soft/60"
                                 : "border-border bg-background text-foreground hover:bg-muted/50"
                           )}
                         >
@@ -1533,7 +1533,7 @@ const RequisicaoUnificadaPage = () => {
                           )}
                           {item}
                           {isApac && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-500 text-white text-[9px] font-bold tracking-wide">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-warning text-white text-[9px] font-bold tracking-wide">
                               APAC
                             </span>
                           )}
@@ -1589,13 +1589,13 @@ const RequisicaoUnificadaPage = () => {
 
           {/* Justificativa extra para exames laboratoriais fora dos pacotes rápidos */}
           {requiresExtraJustification && (
-            <Card className="border-amber-300 bg-amber-50/60 dark:bg-amber-950/20">
+            <Card className="border-warning-border bg-warning-soft/60">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-amber-800 dark:text-amber-300">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-warning-on-soft">
                   <AlertTriangle className="h-4 w-4" />
                   Liberação condicionada — exame fora da rotina
                 </CardTitle>
-                <p className="text-[11px] text-amber-700/90 dark:text-amber-400/80 mt-1">
+                <p className="text-[11px] text-warning-on-soft/90 mt-1">
                   Os itens abaixo não fazem parte dos pacotes rápidos (Rotina UTI / Enfermaria) e exigem
                   justificativa clínica específica para liberação da guia pelo laboratório.
                 </p>
@@ -1603,13 +1603,13 @@ const RequisicaoUnificadaPage = () => {
               <CardContent className="space-y-2">
                 <div className="flex flex-wrap gap-1.5">
                   {offQuickLabItems.map(it => (
-                    <Badge key={it} variant="outline" className="text-[11px] border-amber-400 text-amber-800 dark:text-amber-300 bg-amber-100/60">
+                    <Badge key={it} variant="outline" className="text-[11px] border-warning text-warning-on-soft bg-warning-soft/60">
                       {it}
                     </Badge>
                   ))}
                 </div>
-                <Label className="text-xs font-semibold text-amber-900 dark:text-amber-200">
-                  Justificativa específica <span className="text-red-600">*</span>
+                <Label className="text-xs font-semibold text-warning-on-soft">
+                  Justificativa específica <span className="text-critical-on-soft">*</span>
                 </Label>
                 <Textarea
                   placeholder="Ex.: suspeita de hipotireoidismo subclínico — solicito TSH e T4 livre..."
@@ -1640,7 +1640,7 @@ const RequisicaoUnificadaPage = () => {
             return (
               <div className="flex flex-col items-end gap-2 pt-2">
                 {blocked && (
-                  <div className="w-full rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/30 px-3 py-2 text-[11px] text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                  <div className="w-full rounded-md border border-warning-border bg-warning-soft px-3 py-2 text-[11px] text-warning-on-soft flex items-start gap-2">
                     <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                     <span>
                       Para enviar, falta: <strong>{missing.join(" · ")}</strong>.
@@ -1851,15 +1851,15 @@ const RequisicaoUnificadaPage = () => {
       <Dialog open={apacBlock.open} onOpenChange={(o) => !o && setApacBlock({ open: false, examName: "", label: "" })}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/15">
-              <ShieldAlert className="h-6 w-6 text-amber-600" />
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-warning-soft">
+              <ShieldAlert className="h-6 w-6 text-warning-on-soft" />
             </div>
             <DialogTitle className="text-center text-base">
               Exame de alta complexidade
             </DialogTitle>
             <DialogDescription className="text-center">
               <span className="font-semibold text-foreground">{apacBlock.examName}</span>
-              {" "}é um exame de <span className="font-semibold text-amber-700 dark:text-amber-500">{apacBlock.label}</span> e deve ser solicitado pelo <span className="font-semibold text-foreground">fluxo de Procedimento (APAC)</span>, não como requisição comum.
+              {" "}é um exame de <span className="font-semibold text-warning-on-soft">{apacBlock.label}</span> e deve ser solicitado pelo <span className="font-semibold text-foreground">fluxo de Procedimento (APAC)</span>, não como requisição comum.
             </DialogDescription>
           </DialogHeader>
 
@@ -1897,7 +1897,7 @@ const RequisicaoUnificadaPage = () => {
                 variant="outline"
                 size="sm"
                 onClick={confirmApacOverride}
-                className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-500/40 dark:text-amber-500"
+                className="w-full border-warning-border text-warning-on-soft hover:bg-warning-soft"
               >
                 Continuar como comum (registrar exceção)
               </Button>
@@ -3104,7 +3104,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                     <button key={proc.code} className={`w-full text-left px-3 py-2 text-sm hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 ${isSelected ? "bg-primary/5 opacity-60" : ""}`} onClick={() => addProcedure(proc)} disabled={isSelected}>
                       <div className="min-w-0 flex-1"><span className="font-mono text-xs text-muted-foreground mr-2">{proc.code}</span><span className="text-foreground">{proc.name}</span></div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <Badge variant="outline" className={`text-[10px] font-bold ${proc.instrumento === "AIH" ? "border-purple-400 text-purple-700 bg-purple-50 dark:bg-purple-500/10" : "border-orange-400 text-orange-700 bg-orange-50 dark:bg-orange-500/10"}`}>{proc.instrumento}</Badge>
+                        <Badge variant="outline" className={`text-[10px] font-bold ${proc.instrumento === "AIH" ? "border-border text-foreground bg-muted" : "border-warning text-warning-on-soft bg-warning-soft"}`}>{proc.instrumento}</Badge>
                         <Badge variant="outline" className="text-[10px]">{proc.category}</Badge>
                       </div>
                     </button>
@@ -3169,9 +3169,9 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                         <Badge variant="secondary" className="shrink-0 font-mono text-[10px]">{idx === 0 ? "Princ." : `Sec.${idx}`}</Badge>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1 mb-0.5">
-                            {proc.instrumento === "AIH" && <Badge className="text-[9px] h-4 px-1.5 bg-purple-600 hover:bg-purple-600">AIH</Badge>}
-                            {proc.instrumento === "APAC" && <Badge className="text-[9px] h-4 px-1.5 bg-orange-500 hover:bg-orange-500">APAC</Badge>}
-                            {proc.instrumento === null && <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-amber-400 text-amber-700">SEM CÓDIGO</Badge>}
+                            {proc.instrumento === "AIH" && <Badge className="text-[9px] h-4 px-1.5 bg-primary hover:bg-primary">AIH</Badge>}
+                            {proc.instrumento === "APAC" && <Badge className="text-[9px] h-4 px-1.5 bg-warning hover:bg-warning">APAC</Badge>}
+                            {proc.instrumento === null && <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-warning text-warning-on-soft">SEM CÓDIGO</Badge>}
                           </div>
                           <p className="text-xs font-medium text-foreground truncate">{proc.name}</p>
                           <p className="text-[10px] font-mono text-muted-foreground">{proc.code}</p>
@@ -3204,7 +3204,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                   <div className="flex items-center gap-1.5">
                     <Label className="text-xs text-muted-foreground">Observações / Justificativa</Label>
                     {observationsAutoFilled && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/30">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-muted text-foreground border border-border">
                         ✦ Preenchido automaticamente · Editável
                       </span>
                     )}
@@ -3246,10 +3246,10 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           >
             <div className="space-y-3">
               {needsPicker && (
-                <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 space-y-2">
+                <div className="rounded-md border border-warning-border bg-warning-soft p-3 space-y-2">
                   <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-600" />
-                    <Label className="text-xs font-semibold text-amber-800 dark:text-amber-300">Selecione o paciente para sincronizar prontuário, CPF, CNS, mãe e endereço</Label>
+                    <AlertTriangle className="h-4 w-4 text-warning-on-soft" />
+                    <Label className="text-xs font-semibold text-warning-on-soft">Selecione o paciente para sincronizar prontuário, CPF, CNS, mãe e endereço</Label>
                   </div>
                   <Input
                     value={pickerSearch}
@@ -3977,7 +3977,7 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
         <Card>
           <CardContent className="p-6">
             <div className="text-center space-y-2">
-              <AlertTriangle className="h-8 w-8 mx-auto text-amber-500/60" />
+              <AlertTriangle className="h-8 w-8 mx-auto text-warning/60" />
               <p className="text-sm font-medium text-foreground">Dados numéricos não encontrados</p>
               <p className="text-xs text-muted-foreground max-w-md mx-auto">
                 Para gerar gráficos comparativos, os resultados devem conter valores numéricos no formato: 
@@ -4062,7 +4062,7 @@ function PrintAfterSubmitReqDialog({
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-sm">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <CheckCircle2 className="h-4 w-4 text-released-on-soft" />
             Requisição enviada
           </DialogTitle>
           <DialogDescription className="text-xs">

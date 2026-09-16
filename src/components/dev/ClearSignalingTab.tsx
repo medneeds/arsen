@@ -114,13 +114,13 @@ export function ClearSignalingTab() {
 
   return (
     <div className="space-y-4">
-      <Card className="border-amber-200 bg-amber-50/40 dark:bg-amber-950/20 dark:border-amber-900/40">
+      <Card className="border-warning-border bg-warning-soft/40">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2 text-amber-900 dark:text-amber-200">
+          <CardTitle className="text-sm flex items-center gap-2 text-warning-on-soft">
             <ShieldAlert className="h-4 w-4" /> Como funciona
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-xs text-amber-900/80 dark:text-amber-100/80 space-y-1.5">
+        <CardContent className="text-xs text-warning-on-soft/80 space-y-1.5">
           <p>
             Esta ação remove <strong>somente</strong> as sinalizações de saída ainda pendentes:
             movimentações <code className="font-mono">ALTA</code> / <code className="font-mono">ÓBITO</code> / <code className="font-mono">TRANSFERÊNCIA</code> com <code className="font-mono">release_status='pending_release'</code> e documentos de alta/óbito.

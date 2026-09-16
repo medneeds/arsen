@@ -20,10 +20,10 @@ interface AlertItem {
 }
 
 const toneStyles: Record<AlertItem["tone"], string> = {
-  red: "bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300 hover:bg-red-500/15",
-  amber: "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/15",
-  orange: "bg-orange-500/10 border-orange-500/30 text-orange-700 dark:text-orange-300 hover:bg-orange-500/15",
-  purple: "bg-purple-500/10 border-purple-500/30 text-purple-700 dark:text-purple-300 hover:bg-purple-500/15",
+  red: "bg-critical/10 border-critical/30 text-critical-on-soft hover:bg-critical/15",
+  amber: "bg-warning/10 border-warning/30 text-warning-on-soft hover:bg-warning/15",
+  orange: "bg-warning/10 border-warning/30 text-warning-on-soft hover:bg-warning/15",
+  purple: "bg-primary/10 border-border/30 text-foreground hover:bg-primary/15",
 };
 
 export function NirAlertBar({ metrics, onOpenAlert }: Props) {
@@ -81,7 +81,7 @@ export function NirAlertBar({ metrics, onOpenAlert }: Props) {
   const visible = alerts.filter((a) => a.count > 0 || (a.key === "saturated" && (a.count as number) > 0));
   if (visible.length === 0) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-xs text-emerald-700 dark:text-emerald-300">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-released/20 bg-released/5 text-xs text-released-on-soft">
         <Sparkles className="h-3.5 w-3.5" />
         Nenhum alerta crítico no momento — fluxo regulatório dentro do SLA.
       </div>

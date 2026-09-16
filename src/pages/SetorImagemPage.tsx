@@ -53,11 +53,11 @@ const classifyExam = (examName: string): string => {
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock; dotColor: string; pulsing: boolean }> = {
-  pending: { label: "Pendente", color: "bg-amber-500/15 text-amber-700 border-amber-300", icon: Clock, dotColor: "bg-amber-500", pulsing: true },
-  acknowledged: { label: "Ciência", color: "bg-indigo-500/15 text-indigo-700 border-indigo-300", icon: Eye, dotColor: "bg-indigo-500", pulsing: true },
-  in_progress: { label: "Em Execução", color: "bg-blue-500/15 text-blue-700 border-blue-300", icon: Loader2, dotColor: "bg-blue-500", pulsing: true },
-  completed: { label: "Concluído", color: "bg-emerald-500/15 text-emerald-700 border-emerald-300", icon: CheckCircle2, dotColor: "bg-emerald-500", pulsing: false },
-  cancelled: { label: "Cancelado", color: "bg-red-500/15 text-red-700 border-red-300", icon: XCircle, dotColor: "bg-red-500", pulsing: false },
+  pending: { label: "Pendente", color: "bg-warning/15 text-warning-on-soft border-warning-border", icon: Clock, dotColor: "bg-warning", pulsing: true },
+  acknowledged: { label: "Ciência", color: "bg-primary/15 text-foreground border-border", icon: Eye, dotColor: "bg-primary", pulsing: true },
+  in_progress: { label: "Em Execução", color: "bg-primary/15 text-foreground border-border", icon: Loader2, dotColor: "bg-primary", pulsing: true },
+  completed: { label: "Concluído", color: "bg-released/15 text-released-on-soft border-released-border", icon: CheckCircle2, dotColor: "bg-released", pulsing: false },
+  cancelled: { label: "Cancelado", color: "bg-critical/15 text-critical-on-soft border-critical-border", icon: XCircle, dotColor: "bg-critical", pulsing: false },
 };
 
 interface ExamRequest {
@@ -252,17 +252,17 @@ const SetorImagemPage = () => {
 
   const getPriorityBadge = (priority: string) => {
     if (priority === "urgente") return (
-      <Badge className="bg-red-500/15 text-red-700 border-red-300 text-[10px] font-bold animate-pulse">
+      <Badge className="bg-critical/15 text-critical-on-soft border-critical-border text-[10px] font-bold animate-pulse">
         <AlertTriangle className="h-3 w-3 mr-1" /> URGENTE
       </Badge>
     );
     if (priority === "rotina") return (
-      <Badge variant="outline" className="text-[10px] text-cyan-600 border-cyan-300 bg-cyan-500/10">
+      <Badge variant="outline" className="text-[10px] text-foreground border-border bg-primary/10">
         <Clock className="h-3 w-3 mr-1" /> Rotina
       </Badge>
     );
     return (
-      <Badge variant="outline" className="text-[10px] text-blue-600 border-blue-300 bg-blue-500/10">
+      <Badge variant="outline" className="text-[10px] text-foreground border-border bg-primary/10">
         <CalendarIcon className="h-3 w-3 mr-1" /> Programado
       </Badge>
     );
@@ -281,7 +281,7 @@ const SetorImagemPage = () => {
             variant="outline"
             size="sm"
             onClick={fetchRequests}
-            className="gap-2 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground dark:bg-background dark:text-foreground"
+            className="gap-2 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground"
           >
             <RefreshCw className="h-3.5 w-3.5" /> Atualizar
           </Button>
@@ -292,39 +292,39 @@ const SetorImagemPage = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-500/5">
+        <Card className="border-warning-border bg-warning-soft/50">
           <CardContent className="p-3 flex items-center gap-3">
-            <Clock className="h-8 w-8 text-amber-500" />
+            <Clock className="h-8 w-8 text-warning" />
             <div>
-              <p className="text-2xl font-bold text-amber-700">{stats.pending}</p>
-              <p className="text-[10px] text-amber-600 uppercase tracking-wider font-medium">Pendentes</p>
+              <p className="text-2xl font-bold text-warning-on-soft">{stats.pending}</p>
+              <p className="text-[10px] text-warning-on-soft uppercase tracking-wider font-medium">Pendentes</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-500/5">
+        <Card className="border-border bg-muted/50">
           <CardContent className="p-3 flex items-center gap-3">
-            <Loader2 className="h-8 w-8 text-blue-500" />
+            <Loader2 className="h-8 w-8 text-muted-foreground" />
             <div>
-              <p className="text-2xl font-bold text-blue-700">{stats.inProgress}</p>
-              <p className="text-[10px] text-blue-600 uppercase tracking-wider font-medium">Em Execução</p>
+              <p className="text-2xl font-bold text-foreground">{stats.inProgress}</p>
+              <p className="text-[10px] text-foreground uppercase tracking-wider font-medium">Em Execução</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-emerald-200 bg-emerald-50/50 dark:bg-emerald-500/5">
+        <Card className="border-released-border bg-released-soft/50">
           <CardContent className="p-3 flex items-center gap-3">
-            <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+            <CheckCircle2 className="h-8 w-8 text-released" />
             <div>
-              <p className="text-2xl font-bold text-emerald-700">{stats.completed}</p>
-              <p className="text-[10px] text-emerald-600 uppercase tracking-wider font-medium">Concluídos</p>
+              <p className="text-2xl font-bold text-released-on-soft">{stats.completed}</p>
+              <p className="text-[10px] text-released-on-soft uppercase tracking-wider font-medium">Concluídos</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-red-200 bg-red-50/50 dark:bg-red-500/5">
+        <Card className="border-critical-border bg-critical-soft/50">
           <CardContent className="p-3 flex items-center gap-3">
-            <AlertTriangle className="h-8 w-8 text-red-500" />
+            <AlertTriangle className="h-8 w-8 text-critical" />
             <div>
-              <p className="text-2xl font-bold text-red-700">{stats.urgent}</p>
-              <p className="text-[10px] text-red-600 uppercase tracking-wider font-medium">Urgentes</p>
+              <p className="text-2xl font-bold text-critical-on-soft">{stats.urgent}</p>
+              <p className="text-[10px] text-critical-on-soft uppercase tracking-wider font-medium">Urgentes</p>
             </div>
           </CardContent>
         </Card>
@@ -394,7 +394,7 @@ const SetorImagemPage = () => {
             onClick={() => setSelectedModality(mod.key)}
             className={cn(
               "gap-1.5 text-xs whitespace-nowrap shrink-0",
-              selectedModality === mod.key && "bg-rose-500 hover:bg-rose-600 text-white"
+              selectedModality === mod.key && "bg-critical hover:bg-critical text-white"
             )}
           >
             <mod.icon className="h-3.5 w-3.5" />
@@ -440,7 +440,7 @@ const SetorImagemPage = () => {
           <TabsContent key={tab} value={tab} className="mt-4 space-y-2">
             {loading ? (
               <div className="flex items-center justify-center py-16">
-                <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
+                <Loader2 className="h-8 w-8 animate-spin text-critical" />
               </div>
             ) : filteredRequests.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
@@ -465,7 +465,7 @@ const SetorImagemPage = () => {
                     key={req.id}
                     className={cn(
                       "cursor-pointer hover:shadow-md transition-all border",
-                      req.priority === "urgente" && req.status === "pending" && "border-red-300 bg-red-50/30 dark:bg-red-500/5"
+                      req.priority === "urgente" && req.status === "pending" && "border-critical-border bg-critical-soft/30"
                     )}
                     onClick={() => openDetail(req)}
                   >
@@ -544,7 +544,7 @@ const SetorImagemPage = () => {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ScanLine className="h-5 w-5 text-rose-500" />
+              <ScanLine className="h-5 w-5 text-critical" />
               Detalhes da Requisição
             </DialogTitle>
             <DialogDescription>
@@ -565,14 +565,14 @@ const SetorImagemPage = () => {
                   {selectedRequest.patient_bed && <span>Leito: {selectedRequest.patient_bed}</span>}
                 </div>
                 {selectedRequest.clinical_indication && (
-                  <div className="text-xs mt-1 p-2 rounded-md bg-amber-50/50 border border-amber-200 dark:bg-amber-500/5 dark:border-amber-500/20">
-                    <strong className="text-amber-700 dark:text-amber-400">Justificativa Clínica:</strong>{" "}
+                  <div className="text-xs mt-1 p-2 rounded-md bg-warning-soft/50 border border-warning-border">
+                    <strong className="text-warning-on-soft">Justificativa Clínica:</strong>{" "}
                     <span className="text-foreground">{selectedRequest.clinical_indication}</span>
                   </div>
                 )}
                 {selectedRequest.notes && selectedRequest.notes.includes("[PROGRAMADO:") && (
-                  <div className="text-xs p-2 rounded-md bg-blue-50/50 border border-blue-200 dark:bg-blue-500/5 dark:border-blue-500/20">
-                    <strong className="text-blue-700 dark:text-blue-400">📅 Agendamento:</strong>{" "}
+                  <div className="text-xs p-2 rounded-md bg-muted/50 border border-border">
+                    <strong className="text-foreground">📅 Agendamento:</strong>{" "}
                     <span className="text-foreground">
                       {selectedRequest.notes.match(/\[PROGRAMADO: ([^\]]+)\]/)?.[1] || ""}
                     </span>
@@ -598,7 +598,7 @@ const SetorImagemPage = () => {
                     const modConfig = MODALITIES.find(m => m.key === modality);
                     return (
                       <div key={idx} className="flex items-center gap-2 p-2 rounded-md bg-background border text-sm">
-                        {modConfig && <modConfig.icon className="h-4 w-4 text-rose-500 shrink-0" />}
+                        {modConfig && <modConfig.icon className="h-4 w-4 text-critical shrink-0" />}
                         <span>{name}</span>
                       </div>
                     );
@@ -608,7 +608,7 @@ const SetorImagemPage = () => {
 
               {/* Notes */}
               {selectedRequest.notes && (
-                <div className="p-3 rounded-lg bg-amber-50/50 border border-amber-200 text-xs">
+                <div className="p-3 rounded-lg bg-warning-soft/50 border border-warning-border text-xs">
                   <strong>Observações:</strong> {selectedRequest.notes}
                 </div>
               )}
@@ -652,14 +652,14 @@ const SetorImagemPage = () => {
                   variant="outline"
                   onClick={() => handleUpdateStatus(selectedRequest.id, "cancelled")}
                   disabled={updatingStatus}
-                  className="text-red-600 border-red-200 hover:bg-red-50"
+                  className="text-critical-on-soft border-critical-border hover:bg-critical-soft"
                 >
                   <XCircle className="h-4 w-4 mr-1" /> Recusar
                 </Button>
                 <Button
                   onClick={() => handleUpdateStatus(selectedRequest.id, "acknowledged")}
                   disabled={updatingStatus}
-                  className="bg-indigo-500 hover:bg-indigo-600 text-white"
+                  className="bg-primary hover:bg-primary text-white"
                 >
                   <Eye className="h-4 w-4 mr-1" /> Declarar Ciência
                 </Button>
@@ -669,7 +669,7 @@ const SetorImagemPage = () => {
               <Button
                 onClick={() => handleUpdateStatus(selectedRequest.id, "in_progress")}
                 disabled={updatingStatus}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
+                className="bg-primary hover:bg-primary text-white"
               >
                 <Loader2 className="h-4 w-4 mr-1" /> Iniciar Execução
               </Button>
@@ -678,7 +678,7 @@ const SetorImagemPage = () => {
               <Button
                 onClick={() => handleUpdateStatus(selectedRequest.id, "completed")}
                 disabled={updatingStatus}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                className="bg-released hover:bg-released text-white"
               >
                 <CheckCircle2 className="h-4 w-4 mr-1" /> Concluir Exame
               </Button>

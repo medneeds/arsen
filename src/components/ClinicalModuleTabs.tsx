@@ -96,7 +96,7 @@ export function ClinicalModuleTabs({ variant = "dark" }: ClinicalModuleTabsProps
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-sm">
-              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+              <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
               {cap(dirtyLabel)} com alterações não salvas
             </AlertDialogTitle>
             <AlertDialogDescription className="text-xs text-muted-foreground">

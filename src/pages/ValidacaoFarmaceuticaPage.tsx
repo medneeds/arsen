@@ -63,10 +63,10 @@ interface PrescriptionWithValidation {
 }
 
 const STATUS_CONFIG = {
-  pending: { label: "Pendente", color: "bg-amber-500/15 text-amber-700 border-amber-300", icon: Clock },
-  approved: { label: "Aprovada", color: "bg-emerald-500/15 text-emerald-700 border-emerald-300", icon: CheckCircle2 },
+  pending: { label: "Pendente", color: "bg-warning/15 text-warning-on-soft border-warning-border", icon: Clock },
+  approved: { label: "Aprovada", color: "bg-released/15 text-released-on-soft border-released-border", icon: CheckCircle2 },
   rejected: { label: "Rejeitada", color: "bg-destructive/15 text-destructive border-destructive/30", icon: XCircle },
-  requires_changes: { label: "Requer Ajustes", color: "bg-orange-500/15 text-orange-700 border-orange-300", icon: AlertTriangle },
+  requires_changes: { label: "Requer Ajustes", color: "bg-warning/15 text-warning-on-soft border-warning-border", icon: AlertTriangle },
 };
 
 const ValidacaoFarmaceuticaPage = () => {
@@ -280,10 +280,10 @@ const ValidacaoFarmaceuticaPage = () => {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { key: "pending", label: "Pendentes", icon: Clock, color: "text-amber-600" },
-          { key: "approved", label: "Aprovadas", icon: CheckCircle2, color: "text-emerald-600" },
+          { key: "pending", label: "Pendentes", icon: Clock, color: "text-warning-on-soft" },
+          { key: "approved", label: "Aprovadas", icon: CheckCircle2, color: "text-released-on-soft" },
           { key: "rejected", label: "Rejeitadas", icon: XCircle, color: "text-destructive" },
-          { key: "requires_changes", label: "Ajustes", icon: AlertTriangle, color: "text-orange-600" },
+          { key: "requires_changes", label: "Ajustes", icon: AlertTriangle, color: "text-warning-on-soft" },
         ].map((kpi) => (
           <Card key={kpi.key} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab(kpi.key)}>
             <CardContent className="p-4 flex items-center gap-3">
@@ -412,13 +412,13 @@ const ValidacaoFarmaceuticaPage = () => {
                       key={check.id}
                       className={cn(
                         "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
-                        check.state ? "bg-emerald-50 border-emerald-300 dark:bg-emerald-950/30" : "bg-background border-border"
+                        check.state ? "bg-released-soft border-released-border" : "bg-background border-border"
                       )}
                       onClick={() => check.setter(!check.state)}
                     >
                       <Checkbox checked={check.state} onCheckedChange={(v) => check.setter(!!v)} />
-                      <check.icon className={cn("h-4 w-4", check.state ? "text-emerald-600" : "text-muted-foreground")} />
-                      <span className={cn("text-sm", check.state ? "text-emerald-700 dark:text-emerald-400" : "text-foreground")}>
+                      <check.icon className={cn("h-4 w-4", check.state ? "text-released-on-soft" : "text-muted-foreground")} />
+                      <span className={cn("text-sm", check.state ? "text-released-on-soft" : "text-foreground")}>
                         {check.label}
                       </span>
                     </div>
@@ -457,7 +457,7 @@ const ValidacaoFarmaceuticaPage = () => {
                         className={cn(
                           "p-3 rounded-lg border transition-colors",
                           st === "ok" && "border-border",
-                          st === "alert" && "border-orange-300 bg-orange-50 dark:bg-orange-950/20",
+                          st === "alert" && "border-warning-border bg-warning-soft",
                           st === "rejected" && "border-destructive/40 bg-destructive/5"
                         )}
                       >

@@ -198,8 +198,8 @@ export default function VersionsPage() {
       {/* Page Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-500/10 flex items-center justify-center">
-            <History className="h-6 w-6 text-purple-600" />
+          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-muted/20 to-muted/10 flex items-center justify-center">
+            <History className="h-6 w-6 text-foreground" />
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
@@ -420,7 +420,7 @@ export default function VersionsPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleRestore(version.id)}
-                      className="gap-2 hover:bg-green-500/10 hover:text-green-600"
+                      className="gap-2 hover:bg-released/10 hover:text-released-on-soft"
                     >
                       <RotateCcw className="h-4 w-4" />
                       Restaurar

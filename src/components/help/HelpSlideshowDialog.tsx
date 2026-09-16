@@ -18,19 +18,19 @@ interface Props {
 }
 
 const TONE_ACCENT: Record<SlideTone, string> = {
-  neutral: "from-slate-500/10 to-transparent",
-  info: "from-blue-500/10 to-transparent",
-  warning: "from-amber-500/10 to-transparent",
-  success: "from-emerald-500/10 to-transparent",
-  danger: "from-red-500/10 to-transparent",
+  neutral: "from-muted/10 to-transparent",
+  info: "from-muted/10 to-transparent",
+  warning: "from-warning-soft/10 to-transparent",
+  success: "from-released-soft/10 to-transparent",
+  danger: "from-critical-soft/10 to-transparent",
 };
 
 const TONE_DOT: Record<SlideTone, string> = {
-  neutral: "bg-slate-500",
-  info: "bg-blue-500",
-  warning: "bg-amber-500",
-  success: "bg-emerald-500",
-  danger: "bg-red-500",
+  neutral: "bg-primary",
+  info: "bg-primary",
+  warning: "bg-warning",
+  success: "bg-released",
+  danger: "bg-critical",
 };
 
 export function HelpSlideshowDialog({ entry, open, onOpenChange }: Props) {

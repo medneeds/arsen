@@ -107,7 +107,7 @@ export function NirGlobalFilters({ filters, onChange, onRefresh, isLoading, acti
       <div className="flex-1" />
 
       <Badge variant="outline" className="text-[10px] gap-1">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="h-1.5 w-1.5 rounded-full bg-released animate-pulse" />
         Atualização automática 60s
       </Badge>
       <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading} className="h-7">

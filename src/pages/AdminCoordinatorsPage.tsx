@@ -410,9 +410,9 @@ export default function AdminCoordinatorsPage() {
         </div>
 
         {(availableUsers.length === 0 || units.length === 0) && !loading && (
-          <Card className="mb-6 border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+          <Card className="mb-6 border-warning-border bg-warning-soft">
             <CardContent className="pt-6">
-              <p className="text-amber-800 dark:text-amber-200">
+              <p className="text-warning-on-soft">
                 ⚠️ {availableUsers.length === 0
                   ? "Não há usuários admin aprovados para atribuir como coordenadores."
                   : "Cadastre unidades hospitalares antes de atribuir coordenadores."}

@@ -268,16 +268,16 @@ const ClinicalDashboardPage = () => {
   const infoAlerts = alerts.filter((a) => a.severity === "info");
 
   const severityConfig = {
-    critical: { bg: "bg-red-500/10 border-red-500/30", text: "text-red-600 dark:text-red-400", icon: AlertTriangle, badge: "bg-red-500/20 text-red-700 dark:text-red-300" },
-    warning: { bg: "bg-amber-500/10 border-amber-500/30", text: "text-amber-600 dark:text-amber-400", icon: Clock, badge: "bg-amber-500/20 text-amber-700 dark:text-amber-300" },
-    info: { bg: "bg-blue-500/10 border-blue-500/30", text: "text-blue-600 dark:text-blue-400", icon: CalendarClock, badge: "bg-blue-500/20 text-blue-700 dark:text-blue-300" },
+    critical: { bg: "bg-critical/10 border-critical/30", text: "text-critical-on-soft", icon: AlertTriangle, badge: "bg-critical/20 text-critical-on-soft" },
+    warning: { bg: "bg-warning/10 border-warning/30", text: "text-warning-on-soft", icon: Clock, badge: "bg-warning/20 text-warning-on-soft" },
+    info: { bg: "bg-primary/10 border-border/30", text: "text-foreground", icon: CalendarClock, badge: "bg-primary/20 text-foreground" },
   };
 
   const movementTypeLabels: Record<string, { label: string; color: string }> = {
-    admission: { label: "Admissão", color: "text-emerald-600 dark:text-emerald-400" },
-    discharge: { label: "Alta", color: "text-blue-600 dark:text-blue-400" },
-    transfer: { label: "Transferência", color: "text-amber-600 dark:text-amber-400" },
-    death: { label: "Óbito", color: "text-red-600 dark:text-red-400" },
+    admission: { label: "Admissão", color: "text-released-on-soft" },
+    discharge: { label: "Alta", color: "text-foreground" },
+    transfer: { label: "Transferência", color: "text-warning-on-soft" },
+    death: { label: "Óbito", color: "text-critical-on-soft" },
   };
 
   return (
@@ -330,11 +330,11 @@ const ClinicalDashboardPage = () => {
                         </div>
                         <div className={cn(
                           "h-10 w-10 rounded-xl flex items-center justify-center",
-                          occupancyRate > 85 ? "bg-red-500/15" : occupancyRate > 60 ? "bg-amber-500/15" : "bg-emerald-500/15"
+                          occupancyRate > 85 ? "bg-critical/15" : occupancyRate > 60 ? "bg-warning/15" : "bg-released/15"
                         )}>
                           <BedDouble className={cn(
                             "h-5 w-5",
-                            occupancyRate > 85 ? "text-red-500" : occupancyRate > 60 ? "text-amber-500" : "text-emerald-500"
+                            occupancyRate > 85 ? "text-critical" : occupancyRate > 60 ? "text-warning" : "text-released"
                           )} />
                         </div>
                       </div>
@@ -353,11 +353,11 @@ const ClinicalDashboardPage = () => {
                         </div>
                         <div className={cn(
                           "h-10 w-10 rounded-xl flex items-center justify-center",
-                          criticalAlerts.length > 0 ? "bg-red-500/15" : "bg-emerald-500/15"
+                          criticalAlerts.length > 0 ? "bg-critical/15" : "bg-released/15"
                         )}>
                           <AlertTriangle className={cn(
                             "h-5 w-5",
-                            criticalAlerts.length > 0 ? "text-red-500" : "text-emerald-500"
+                            criticalAlerts.length > 0 ? "text-critical" : "text-released"
                           )} />
                         </div>
                       </div>
@@ -391,8 +391,8 @@ const ClinicalDashboardPage = () => {
                           <p className="text-2xl font-bold text-foreground mt-1">{recentMovements.length}</p>
                           <p className="text-[10px] text-muted-foreground">últimas registradas</p>
                         </div>
-                        <div className="h-10 w-10 rounded-xl flex items-center justify-center bg-violet-500/15">
-                          <ArrowRightLeft className="h-5 w-5 text-violet-500" />
+                        <div className="h-10 w-10 rounded-xl flex items-center justify-center bg-primary/15">
+                          <ArrowRightLeft className="h-5 w-5 text-muted-foreground" />
                         </div>
                       </div>
                     </CardContent>
@@ -416,7 +416,7 @@ const ClinicalDashboardPage = () => {
                         <span className="text-xs font-semibold text-foreground">{activeSectorOcc.occupied} de {activeSectorOcc.total} leitos ocupados</span>
                         <span className={cn(
                           "text-sm font-bold",
-                          occupancyRate > 85 ? "text-red-500" : occupancyRate > 60 ? "text-amber-500" : "text-emerald-500"
+                          occupancyRate > 85 ? "text-critical" : occupancyRate > 60 ? "text-warning" : "text-released"
                         )}>{occupancyRate}%</span>
                       </div>
                       <div className="h-3 bg-muted rounded-full overflow-hidden">
@@ -426,7 +426,7 @@ const ClinicalDashboardPage = () => {
                           transition={{ duration: 0.8, delay: 0.4 }}
                           className={cn(
                             "h-full rounded-full transition-colors",
-                            occupancyRate > 85 ? "bg-red-500" : occupancyRate > 60 ? "bg-amber-500" : "bg-emerald-500"
+                            occupancyRate > 85 ? "bg-critical" : occupancyRate > 60 ? "bg-warning" : "bg-released"
                           )}
                         />
                       </div>
@@ -462,8 +462,8 @@ const ClinicalDashboardPage = () => {
                     <CardContent className="px-4 pb-4">
                       {alerts.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-8 text-center">
-                          <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center mb-3">
-                            <Activity className="h-6 w-6 text-emerald-500" />
+                          <div className="h-12 w-12 rounded-full bg-released/10 flex items-center justify-center mb-3">
+                            <Activity className="h-6 w-6 text-released" />
                           </div>
                           <p className="text-sm font-medium text-foreground">Tudo sob controle</p>
                           <p className="text-xs text-muted-foreground mt-1">Nenhum alerta clínico no momento</p>

@@ -114,7 +114,7 @@ export default function ResetPasswordPage() {
         </p>
 
         {done ? (
-          <div className="mt-6 flex items-center gap-2 justify-center text-emerald-600">
+          <div className="mt-6 flex items-center gap-2 justify-center text-released-on-soft">
             <CheckCircle2 className="h-5 w-5" />
             <span className="preserve-case text-sm">Tudo certo!</span>
           </div>

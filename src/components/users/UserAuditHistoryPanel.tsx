@@ -59,16 +59,16 @@ type AuditRow = {
 };
 
 const ACTION_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  "user.created.password": { label: "Cadastro c/ senha", icon: <UserPlus className="h-3 w-3" />, color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
-  "user.created.invite": { label: "Convite enviado", icon: <Mail className="h-3 w-3" />, color: "bg-sky-500/10 text-sky-600 border-sky-500/20" },
-  "user.role.updated": { label: "Role alterada", icon: <Shield className="h-3 w-3" />, color: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
-  "user.permissions.updated": { label: "Permissões/setores", icon: <UserCog className="h-3 w-3" />, color: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" },
-  "user.password.reset": { label: "Senha redefinida", icon: <KeyRound className="h-3 w-3" />, color: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
-  "user.status.approved": { label: "Aprovado", icon: <CheckCircle2 className="h-3 w-3" />, color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
-  "user.status.rejected": { label: "Rejeitado", icon: <XCircle className="h-3 w-3" />, color: "bg-red-500/10 text-red-600 border-red-500/20" },
-  "user.status.suspended": { label: "Suspenso", icon: <Ban className="h-3 w-3" />, color: "bg-gray-500/10 text-gray-600 border-gray-500/20" },
-  "user.status.reactivated": { label: "Reativado", icon: <CheckCircle2 className="h-3 w-3" />, color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
-  "user.hospital.updated": { label: "Unidade alterada", icon: <Building2 className="h-3 w-3" />, color: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+  "user.created.password": { label: "Cadastro c/ senha", icon: <UserPlus className="h-3 w-3" />, color: "bg-released/10 text-released-on-soft border-released/20" },
+  "user.created.invite": { label: "Convite enviado", icon: <Mail className="h-3 w-3" />, color: "bg-primary/10 text-foreground border-border/20" },
+  "user.role.updated": { label: "Role alterada", icon: <Shield className="h-3 w-3" />, color: "bg-primary/10 text-foreground border-border/20" },
+  "user.permissions.updated": { label: "Permissões/setores", icon: <UserCog className="h-3 w-3" />, color: "bg-primary/10 text-foreground border-border/20" },
+  "user.password.reset": { label: "Senha redefinida", icon: <KeyRound className="h-3 w-3" />, color: "bg-warning/10 text-warning-on-soft border-warning/20" },
+  "user.status.approved": { label: "Aprovado", icon: <CheckCircle2 className="h-3 w-3" />, color: "bg-released/10 text-released-on-soft border-released/20" },
+  "user.status.rejected": { label: "Rejeitado", icon: <XCircle className="h-3 w-3" />, color: "bg-critical/10 text-critical-on-soft border-critical/20" },
+  "user.status.suspended": { label: "Suspenso", icon: <Ban className="h-3 w-3" />, color: "bg-primary/10 text-foreground border-border/20" },
+  "user.status.reactivated": { label: "Reativado", icon: <CheckCircle2 className="h-3 w-3" />, color: "bg-released/10 text-released-on-soft border-released/20" },
+  "user.hospital.updated": { label: "Unidade alterada", icon: <Building2 className="h-3 w-3" />, color: "bg-primary/10 text-foreground border-border/20" },
 };
 
 function actionMeta(a: string) {

@@ -175,9 +175,9 @@ export default function HandoversPage() {
   };
 
   const getShiftTypeBadgeColor = (shiftType: string | null) => {
-    if (shiftType === "MATUTINO") return "bg-amber-500/10 text-amber-500 border-amber-500/20";
-    if (shiftType === "VESPERTINO") return "bg-orange-500/10 text-orange-500 border-orange-500/20";
-    if (shiftType === "NOTURNO") return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+    if (shiftType === "MATUTINO") return "bg-warning/10 text-warning border-warning/20";
+    if (shiftType === "VESPERTINO") return "bg-warning/10 text-warning border-warning/20";
+    if (shiftType === "NOTURNO") return "bg-primary/10 text-muted-foreground border-border/20";
     return "bg-muted text-muted-foreground";
   };
 

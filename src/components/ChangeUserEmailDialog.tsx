@@ -83,8 +83,8 @@ export function ChangeUserEmailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <div className="mx-auto h-12 w-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-2">
-            <Mail className="h-6 w-6 text-blue-600" />
+          <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+            <Mail className="h-6 w-6 text-foreground" />
           </div>
           <DialogTitle className="text-center">Alterar e-mail</DialogTitle>
           <DialogDescription className="text-center preserve-case">
@@ -101,7 +101,7 @@ export function ChangeUserEmailDialog({
             <div className="font-mono text-sm break-all preserve-case">
               {currentEmail || "—"}
             </div>
-            <div className="flex items-center gap-2 mt-2 text-blue-600 text-xs">
+            <div className="flex items-center gap-2 mt-2 text-foreground text-xs">
               <ArrowRight className="h-3 w-3" />
               <span className="preserve-case">Novo e-mail abaixo</span>
             </div>
@@ -140,9 +140,9 @@ export function ChangeUserEmailDialog({
             />
           </div>
 
-          <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
-            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-amber-700 preserve-case leading-relaxed">
+          <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3">
+            <AlertTriangle className="h-4 w-4 text-warning-on-soft shrink-0 mt-0.5" />
+            <p className="text-[11px] text-warning-on-soft preserve-case leading-relaxed">
               O e-mail novo será marcado como verificado automaticamente.
               O usuário deverá usar o novo e-mail no próximo login.
             </p>

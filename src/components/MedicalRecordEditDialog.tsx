@@ -870,9 +870,9 @@ export function MedicalRecordEditDialog({
               <TabsContent value="prontuario" className="flex-1 mt-3 min-h-0">
                 <ScrollArea className="h-[58vh] pr-2">
                   {!record ? (
-                    <div className="rounded-md border border-dashed border-amber-500/40 bg-amber-500/5 p-4 text-sm space-y-3">
+                    <div className="rounded-md border border-dashed border-warning/40 bg-warning/5 p-4 text-sm space-y-3">
                       <div className="flex items-start gap-2">
-                        <span className="text-amber-700 dark:text-amber-400 font-semibold text-xs uppercase tracking-wide">
+                        <span className="text-warning-on-soft font-semibold text-xs uppercase tracking-wide">
                           Sem prontuário vinculado
                         </span>
                       </div>
@@ -931,9 +931,9 @@ export function MedicalRecordEditDialog({
                         </div>
                       </section>
 
-                      <section className="space-y-2 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10">
+                      <section className="space-y-2 p-3 rounded-lg border border-warning/30 bg-warning/10">
                         <Label className="text-xs font-semibold flex items-center gap-1.5">
-                          <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                          <AlertTriangle className="h-3.5 w-3.5 text-warning-on-soft" />
                           Motivo da alteração do prontuário (obrigatório)
                         </Label>
                         <Textarea value={mrReason} onChange={(e) => setMrReason(e.target.value)} rows={2}
@@ -957,22 +957,22 @@ export function MedicalRecordEditDialog({
                   {(
                     <div className="space-y-3">
                       {!registry && (
-                        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-[11px] flex items-start gap-2">
-                          <FileWarning className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="rounded-md border border-warning/40 bg-warning/10 p-2.5 text-[11px] flex items-start gap-2">
+                          <FileWarning className="h-4 w-4 text-warning-on-soft shrink-0 mt-0.5" />
                           <div>
-                            <div className="font-semibold text-amber-800 dark:text-amber-300">
+                            <div className="font-semibold text-warning-on-soft">
                               Sem ficha cadastral vinculada
                             </div>
-                            <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">
+                            <p className="text-[10px] text-warning-on-soft mt-0.5">
                               Este paciente foi admitido sem cadastro central (comum em leitos legados da UTI). Ative <strong>"Atualizar cadastro"</strong> para preencher os campos manualmente ou importar do PIS — ao salvar, a ficha será criada e vinculada automaticamente ao prontuário.
                             </p>
                           </div>
                         </div>
                       )}
                       {/* Cabeçalho com botão Atualizar cadastro */}
-                      <div className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border ${cadastroEditMode ? "border-emerald-500/40 bg-emerald-500/5" : "border-muted bg-muted/30"}`}>
+                      <div className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border ${cadastroEditMode ? "border-released/40 bg-released/5" : "border-muted bg-muted/30"}`}>
                         <div className="text-[11px] leading-snug flex items-center gap-2">
-                          {cadastroEditMode ? <Pencil className="h-3.5 w-3.5 text-emerald-600" /> : <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
+                          {cadastroEditMode ? <Pencil className="h-3.5 w-3.5 text-released-on-soft" /> : <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
                           <div>
                             <div className="font-semibold">
                               {cadastroEditMode ? "Modo edição ativo" : "Cadastro bloqueado"}
@@ -1003,9 +1003,9 @@ export function MedicalRecordEditDialog({
 
                       {/* Captura PIS (anexar / arrastar / colar) — só em modo edição */}
                       {cadastroEditMode && (
-                        <section className="p-3 rounded-lg border border-blue-500/30 bg-blue-500/5 space-y-2.5">
+                        <section className="p-3 rounded-lg border border-border/30 bg-primary/5 space-y-2.5">
                           <div className="flex items-center gap-1.5 text-xs font-semibold">
-                            <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+                            <Sparkles className="h-3.5 w-3.5 text-foreground" />
                             Captura automática do PIS
                             <span className="text-[10px] font-normal text-muted-foreground">(anexar arquivo, arrastar ou colar texto)</span>
                           </div>
@@ -1015,7 +1015,7 @@ export function MedicalRecordEditDialog({
                             onDragLeave={() => setIsDragging(false)}
                             onDrop={handleDrop}
                             className={`rounded-md border-2 border-dashed p-3 text-center text-[11px] transition-colors ${
-                              isDragging ? "border-blue-500 bg-blue-500/10" : "border-muted-foreground/30 bg-background/50"
+                              isDragging ? "border-border bg-primary/10" : "border-muted-foreground/30 bg-background/50"
                             }`}
                           >
                             <FileUp className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
@@ -1057,7 +1057,7 @@ export function MedicalRecordEditDialog({
                       )}
 
                       {registry?.is_unidentified && (
-                        <Badge variant="outline" className="text-[10px] border-amber-500/40">
+                        <Badge variant="outline" className="text-[10px] border-warning/40">
                           <FileWarning className="h-3 w-3 mr-1" />
                           Paciente Não Identificado — para promover, use a função dedicada (merge).
                         </Badge>
@@ -1097,9 +1097,9 @@ export function MedicalRecordEditDialog({
 
                       {cadastroEditMode && (
                         <>
-                          <section className="space-y-2 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10">
+                          <section className="space-y-2 p-3 rounded-lg border border-warning/30 bg-warning/10">
                             <Label className="text-xs font-semibold flex items-center gap-1.5">
-                              <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                              <AlertTriangle className="h-3.5 w-3.5 text-warning-on-soft" />
                               Motivo da atualização cadastral (obrigatório)
                             </Label>
                             <Textarea value={regReason} onChange={(e) => setRegReason(e.target.value)} rows={2}
@@ -1281,7 +1281,7 @@ export function MedicalRecordEditDialog({
         <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="h-5 w-5 text-blue-600" />
+              <Sparkles className="h-5 w-5 text-foreground" />
               Revisar dados reconhecidos do PIS
             </DialogTitle>
             <DialogDescription className="text-xs leading-relaxed">
@@ -1304,7 +1304,7 @@ export function MedicalRecordEditDialog({
                     className={`flex items-start gap-2 p-2 rounded border text-[11px] ${
                       !hasNew ? "bg-muted/30 opacity-60" :
                       same ? "bg-muted/40 border-muted" :
-                      "bg-blue-500/5 border-blue-500/30"
+                      "bg-primary/5 border-border/30"
                     }`}
                   >
                     <Checkbox
@@ -1318,8 +1318,8 @@ export function MedicalRecordEditDialog({
                         {REG_FIELD_LABEL[regKey as string] || pisKey}
                         {!hasNew && <Badge variant="outline" className="text-[9px]">Não reconhecido</Badge>}
                         {hasNew && same && <Badge variant="outline" className="text-[9px]">Já está igual</Badge>}
-                        {hasNew && !same && oldStr === "" && <Badge variant="secondary" className="text-[9px] bg-emerald-500/15 text-emerald-700">Novo</Badge>}
-                        {hasNew && !same && oldStr !== "" && <Badge variant="secondary" className="text-[9px] bg-amber-500/15 text-amber-700">Será substituído</Badge>}
+                        {hasNew && !same && oldStr === "" && <Badge variant="secondary" className="text-[9px] bg-released/15 text-released-on-soft">Novo</Badge>}
+                        {hasNew && !same && oldStr !== "" && <Badge variant="secondary" className="text-[9px] bg-warning/15 text-warning-on-soft">Será substituído</Badge>}
                       </div>
                       <div className="grid grid-cols-2 gap-2 mt-1">
                         <div className="min-w-0">
@@ -1349,7 +1349,7 @@ export function MedicalRecordEditDialog({
               </Button>
               <Button size="sm" onClick={applyPisAccepted}
                 disabled={!Object.values(pisAccepted).some(Boolean)}
-                className="gap-1.5 bg-blue-600 hover:bg-blue-700">
+                className="gap-1.5 bg-primary hover:bg-primary">
                 <Check className="h-3.5 w-3.5" /> Aplicar selecionados ({Object.values(pisAccepted).filter(Boolean).length})
               </Button>
             </div>
@@ -1382,7 +1382,7 @@ function FieldInput({
     <div className={fullWidth ? "col-span-2" : ""}>
       <Label className="text-[11px] flex items-center gap-1">
         {label}
-        {highlight && <Badge variant="secondary" className="text-[8px] uppercase h-3.5 px-1 bg-blue-500/15 text-blue-700 dark:text-blue-300">PIS</Badge>}
+        {highlight && <Badge variant="secondary" className="text-[8px] uppercase h-3.5 px-1 bg-primary/15 text-foreground">PIS</Badge>}
       </Label>
       <Input
         type={type}
@@ -1390,7 +1390,7 @@ function FieldInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         disabled={disabled}
-        className={`h-9 text-xs ${highlight ? "border-blue-500/40 bg-blue-500/5" : ""} ${disabled ? "bg-muted/40 cursor-not-allowed" : ""}`}
+        className={`h-9 text-xs ${highlight ? "border-border/40 bg-primary/5" : ""} ${disabled ? "bg-muted/40 cursor-not-allowed" : ""}`}
       />
     </div>
   );

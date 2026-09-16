@@ -206,7 +206,7 @@ export function DiagnosticPanel() {
               </div>
               <div className="flex items-center gap-1.5">
                 <Switch id="hom" checked={includeHomonym} onCheckedChange={setIncludeHomonym} />
-                <Label htmlFor="hom" className="text-xs text-orange-700 dark:text-orange-400">
+                <Label htmlFor="hom" className="text-xs text-warning-on-soft">
                   R8 homônimo/familiar (nome+mãe sem DOB · só revisão humana)
                 </Label>
               </div>

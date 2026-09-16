@@ -280,7 +280,7 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
             {/* Actions */}
             <div className="flex items-center justify-between pt-2 border-t border-border">
               {existingId && (
-                <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                <div className="flex items-center gap-1.5 text-xs text-released-on-soft">
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Registro existente
                 </div>

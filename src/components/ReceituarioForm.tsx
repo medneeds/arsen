@@ -270,7 +270,7 @@ export function ReceituarioForm({
         </Button>
 
         {/* Aviso sobre controlados */}
-        <div className="flex items-start gap-1.5 mt-1.5 text-[10px] text-amber-700 dark:text-amber-500">
+        <div className="flex items-start gap-1.5 mt-1.5 text-[10px] text-warning-on-soft">
           <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
           Medicamentos controlados (Receita Azul/Especial) não podem ser incluídos aqui — use o formulário de Prescrição Controlada.
         </div>
