@@ -234,10 +234,27 @@ interface PrescriptionItem {
   atbStartDate?: string;      // YYYY-MM-DD
   atbPlannedDays?: string;    // ex: "7"
   atbInfectionSite?: string;
+  // Dados que a CCIH exige para autorizar antimicrobiano. O medico preenche na
+  // Guia ATM e o AtmStatusDialog ja os consumia, mas o item nunca os declarou e
+  // handleAntimicrobialConfirm nunca os copiava — o preenchimento era perdido.
+  atbJustification?: string;
+  atbCultureCollected?: string;  // "sim" | "nao"
+  atbCultureResult?: string;
   nutConsistency?: string;    // IDDSI / textura (oral)
   nutAccess?: string;         // NPT: CVC / PICC / Periférico
   nutComposition?: string;    // NPT: composição resumida
   nutMonitoring?: string;     // NPT: monitorização
+  // Configuração completa do Assistente de Terapia Nutricional. Guardar o plano
+  // inteiro (e não apenas a projeção achatada nos campos abaixo) é o que
+  // permite reabrir o assistente preenchido e o que impede a familia de bugs em
+  // que um campo novo do assistente nunca chega ao item.
+  nutritionPlan?: NutritionPlan;
+  /**
+   * Orientação derivada da configuração do assistente. DIFERENTE de
+   * `instructions`, que é a observação do médico: guidance se atualiza quando a
+   * configuração muda, instructions nunca é sobrescrito.
+   */
+  guidance?: string;
   nutWaterVolPerAdmin?: string; // Água: mL por administração
   nutWaterFreq?: string;      // Água: frequência
   nutZeroReason?: string;     // Motivo do jejum
@@ -307,6 +324,10 @@ import {
   ENTERAL_DILUTION_DEFAULT_ML, quantityUnitShort, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital, parseDecimalBR, isIVRoute, isOralLikeRoute } from "@/lib/solutoToken";
 import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydration";
 import { buildAtbDayLine, buildAtbLineParts } from "@/lib/atbLine";
+import { NUTRITION_STRUCTURED_KEYS } from "@/components/NutritionWizard";
+import { ENTERAL_ROUTE_VALUES, SUPPLEMENT_ROUTE_OPTIONS, normalizeEnteralRoute } from "@/lib/enteralRoutes";
+import { readNutritionPlan, type NutritionPlan } from "@/lib/nutritionPlan";
+import { DEFAULT_WATER_STATE } from "@/components/shared/WaterOfferingFields";
 
 // Compose dose token combining `dose` (texto livre, geralmente do preset do wizard)
 // e `quantity`+`quantityUnit` (campos editados inline pelo médico).
@@ -1233,8 +1254,10 @@ function NutritionFields({
   const ENTERAL_DIET_TYPES = ['Polimérica padrão', 'Polimérica hipercalórica', 'Oligomérica', 'Específica diabético', 'Específica renal', 'Específica hepatopata', 'Imunomoduladora', 'Pediátrica'];
   const SUPPLEMENT_TYPES = ['Hiperproteico', 'Hipercalórico', 'Específico diabético', 'Específico renal', 'Espessante', 'Módulo de proteína', 'Módulo de fibra'];
   const DIET_PROFILES = ['Geral', 'Diabético', 'Cardiopata/Hipertenso', 'Renal', 'Hepatopata', 'Anêmico', 'Gastrointestinal', 'Pós-operatório', 'Oncológico', 'Pediátrico', 'Idoso'];
-  const ENTERAL_ROUTES = ['Nasogástrica (NGT)', 'Nasoenteral (NET)', 'Orogástrica (OGT)', 'Gastrostomia', 'Jejunostomia'];
-  const SUPPLEMENT_ROUTES = ['Oral', 'Nasogástrica (NGT)', 'Nasoenteral (NET)', 'Gastrostomia'];
+  // Vocabulario unico com o assistente — ver src/lib/enteralRoutes.ts. Antes
+  // cada lado escrevia a via de um jeito e o seletor abria vazio.
+  const ENTERAL_ROUTES = ENTERAL_ROUTE_VALUES;
+  const SUPPLEMENT_ROUTES = SUPPLEMENT_ROUTE_OPTIONS;
   const DIET_INTERVALS = ['2/2h', '3/3h', '4/4h', '6/6h', '8/8h', '12/12h', '24h', 'Contínua'];
   const DIET_STEPS = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
@@ -1307,8 +1330,30 @@ function NutritionFields({
     </div>
   );
 
-  // Bloco "Correr em" (switch mL/h ↔ gts/min)
+  // Bloco "Correr em" (switch mL/h ↔ gts/min).
+  //
+  // So faz sentido em infusao CONTINUA. Em dieta intermitente ou em bolus o
+  // que a equipe precisa saber e o volume POR TOMADA — uma vazao horaria ali
+  // nao corresponde a nada que se administre, e o placeholder "62" fazia o
+  // campo parecer preenchido. Quando nao e continua, mostra-se o volume por
+  // tomada, derivado do volume/dia e do numero de tomadas.
   const rateMode: 'mlh' | 'gtt' = item.nutRateMode ?? 'mlh';
+  const modoContinuo = !item.dietInterval
+    || /cont[ií]nu|bic|24\s*h/i.test(item.dietInterval || '');
+  const volPorTomada = (() => {
+    const vd = parseFloat((item.nutVolDay || '').replace(',', '.'));
+    const n = parseInt((item.nutFraction || '').replace(/\D/g, ''), 10);
+    if (!Number.isFinite(vd) || vd <= 0 || !Number.isFinite(n) || n <= 0) return null;
+    return Math.round(vd / n);
+  })();
+  const PerIntake = (
+    <div className="flex items-center gap-1.5">
+      <NutFieldLabel>Por tomada:</NutFieldLabel>
+      <span className="text-[12px] font-semibold text-emerald-700 dark:text-emerald-300 whitespace-nowrap">
+        {volPorTomada !== null ? `≈ ${volPorTomada} mL` : '—'}
+      </span>
+    </div>
+  );
   const RateSwitch = (
     <div className="flex items-center gap-1.5">
       <NutFieldLabel>Correr em:</NutFieldLabel>
@@ -1326,8 +1371,21 @@ function NutritionFields({
     </div>
   );
 
+  // Orientacao do assistente: derivada da configuracao, nao editavel. Fica
+  // ACIMA das recomendacoes para deixar claro quem escreveu o que — o medico
+  // reconhece de imediato o que e dele e o que o sistema deduziu.
+  const GuidanceBlock = item.guidance ? (
+    <div className="space-y-1">
+      <NutFieldLabel>Orientação do assistente:</NutFieldLabel>
+      <p className="rounded-md border border-emerald-200/70 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/20 px-2.5 py-2 text-[11px] leading-relaxed text-emerald-900 dark:text-emerald-200">
+        {item.guidance}
+      </p>
+    </div>
+  ) : null;
+
   const RecommendationsField = (
     <div className="space-y-1">
+      {GuidanceBlock}
       <NutFieldLabel>Recomendações:</NutFieldLabel>
       <Textarea
         value={item.instructions}
@@ -1418,7 +1476,7 @@ function NutritionFields({
             <div className="flex items-center gap-2 flex-wrap">
               <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
               <SelectField label="Tipo" value={item.dietType} options={ENTERAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
-              <SelectField label="Via" value={item.route && item.route !== '-' ? item.route : ''} options={ENTERAL_ROUTES} onChange={(v) => onUpdate(item.id, 'route', v)} width="w-44" />
+              <SelectField label="Via" value={normalizeEnteralRoute(item.route)} options={ENTERAL_ROUTES} onChange={(v) => onUpdate(item.id, 'route', v)} width="w-44" />
               <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -1433,7 +1491,7 @@ function NutritionFields({
                 return null;
               })()}
               {ScheduleSwitch}
-              {RateSwitch}
+              {modoContinuo ? RateSwitch : PerIntake}
             </div>
           </div>
           {RecommendationsField}
@@ -1465,7 +1523,7 @@ function NutritionFields({
                 return null;
               })()}
               {ScheduleSwitch}
-              {RateSwitch}
+              {modoContinuo ? RateSwitch : PerIntake}
             </div>
           </div>
           {RecommendationsField}
@@ -1495,7 +1553,7 @@ function NutritionFields({
             <div className="flex items-center gap-2 flex-wrap">
               <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
               <SelectField label="Tipo" value={item.dietType} options={SUPPLEMENT_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
-              <SelectField label="Via" value={item.route && item.route !== '-' ? item.route : ''} options={SUPPLEMENT_ROUTES} onChange={(v) => onUpdate(item.id, 'route', v)} width="w-44" />
+              <SelectField label="Via" value={item.route === 'Oral' ? 'Oral' : normalizeEnteralRoute(item.route)} options={SUPPLEMENT_ROUTES} onChange={(v) => onUpdate(item.id, 'route', v)} width="w-44" />
               <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -3673,6 +3731,9 @@ function ExtraPrescriptionDialog({
           nutResidualCheck: i.nutResidualCheck,
           nutWaterVolPerAdmin: i.nutWaterVolPerAdmin,
           nutWaterFreq: i.nutWaterFreq,
+          // Orientação do assistente. Sem este repasse o impresso declara o
+          // campo e recebe vazio — o mesmo elo que rompia nos demais casos.
+          guidance: i.guidance,
           nutZeroReason: i.nutZeroReason,
           // Nutrição — novos campos (sync PDF ↔ tela compacta)
           dietType: i.dietType,
@@ -6037,17 +6098,24 @@ const PrescricaoPage = () => {
     // a entry (NutritionStructured). Sem esta cópia, o item nascia só com o
     // texto (dose/instructions) e o editor inline + resumo compacto + impressos
     // mostravam a dieta vazia — "como se a configuração não persistisse".
+    //
+    // A lista de chaves vem do PROPRIO assistente (NUTRITION_STRUCTURED_KEYS).
+    // Ate 16/09/2026 havia aqui uma copia manual que ficou para tras: o
+    // assistente passou a emitir dietProfile (perfil da dieta oral, sistema da
+    // enteral) e nutAccess (via enteral, acesso parenteral central x
+    // periferico), o corpo do item passou a ler os dois, mas a copia nunca foi
+    // atualizada. O medico configurava e o dado sumia — na tela e no impresso.
     {
-      const NUT_STRUCT_KEYS = [
-        'nutritionType', 'dietType', 'nutConsistency', 'dietInterval',
-        'nutScheduleMode', 'nutVolDay', 'nutMode', 'nutFraction',
-        'infusionRate', 'nutProgression', 'nutBedHead', 'nutZeroReason',
-        'nutWaterVolPerAdmin', 'nutWaterFreq',
-      ] as const;
-      for (const k of NUT_STRUCT_KEYS) {
+      for (const k of NUTRITION_STRUCTURED_KEYS) {
         const v = (med as unknown as Record<string, unknown>)[k];
         if (v !== undefined && v !== null && v !== '') (baseItem as unknown as Record<string, unknown>)[k] = v;
       }
+      // O plano completo viaja como UM campo. Campo novo no assistente entra
+      // aqui sozinho — nao ha lista para manter em sincronia.
+      const plano = (med as unknown as { nutritionPlan?: NutritionPlan }).nutritionPlan;
+      if (plano) baseItem.nutritionPlan = plano;
+      const orientacao = (med as unknown as { guidance?: string }).guidance;
+      if (orientacao) baseItem.guidance = orientacao;
     }
     // Autofills clínicos IV — FONTE ÚNICA (applyIvClinicalAutofills, definida
     // no nível do módulo). Extraída em 21/07/2026: o import de template
@@ -6267,6 +6335,7 @@ const PrescricaoPage = () => {
   const handleAntimicrobialConfirm = useCallback((confirmedEntries: Array<{
     medication: string; presentation?: string; dose: string; route: string; posology: string;
     startDate?: string; plannedDuration?: string; infectionSite?: string;
+    justification?: string; cultureCollected?: string; cultureResult?: string;
     reconSolvent?: string; reconVolume?: string;
     reconFinalDiluent?: string; reconFinalVolume?: string;
     reconInfusionTime?: string;
@@ -6317,6 +6386,12 @@ const PrescricaoPage = () => {
       base.atbStartDate = entry.startDate || format(new Date(), 'yyyy-MM-dd');
       base.atbPlannedDays = entry.plannedDuration || '';
       base.atbInfectionSite = entry.infectionSite || '';
+      // Justificativa e cultura: o medico ja preenchia na Guia ATM e o dado
+      // parava ali. Sao os campos que a CCIH exige para autorizar o
+      // antimicrobiano, e o AtmStatusDialog os exibe.
+      base.atbJustification = entry.justification || '';
+      base.atbCultureCollected = entry.cultureCollected || 'nao';
+      base.atbCultureResult = entry.cultureResult || '';
 
       // Migração Guia ATM → corpo da prescrição (NÃO sobrescrever campos já preenchidos)
       // RECONSTITUIÇÃO (solvente + volume do frasco-ampola) — o guia grava em
@@ -9208,6 +9283,15 @@ const PrescricaoPage = () => {
         open={nutritionWizardOpen}
         onOpenChange={setNutritionWizardOpen}
         patientWeight={patient.weight}
+        // Reabre PREENCHIDO quando ja existe dieta prescrita. Sem isto o
+        // assistente era de uso unico: ajustar a via de uma dieta ja lancada
+        // exigia refazer o fluxo do zero, e por isso ninguem reabria.
+        initialPlan={
+          readNutritionPlan(
+            items.find(i => i.category === 'nutrition' && i.nutritionPlan)?.nutritionPlan,
+            DEFAULT_WATER_STATE,
+          )
+        }
         onAdd={(entries) => {
           // Substitui qualquer item de nutrição existente para evitar duplicidade conflitante
           setItems(prev => {
@@ -10332,6 +10416,12 @@ const PrescricaoPage = () => {
             route: i.route, posology: i.posology,
             status: i.status, atbStartDate: i.atbStartDate, atbPlannedDays: i.atbPlannedDays,
             atbInfectionSite: i.atbInfectionSite,
+            // Terceiro elo da mesma corrente: o dialogo declara estes campos
+            // desde sempre, mas a prescricao parava de repassar no
+            // atbInfectionSite. Justificativa e cultura chegavam vazias.
+            atbJustification: i.atbJustification,
+            atbCultureCollected: i.atbCultureCollected,
+            atbCultureResult: i.atbCultureResult,
           }))
         }
         onSuspendItem={(id) => {

@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MedicationEntry } from "@/data/medicationsDatabase";
+import { normalizeEnteralRoute } from "@/lib/enteralRoutes";
+import type { NutritionPlan, ProteinOverride, ProteinRouteKind } from "@/lib/nutritionPlan";
 import {
   WaterOfferingFields,
   DEFAULT_WATER_STATE,
@@ -23,6 +25,7 @@ import {
   WATER_ROUTES,
   buildWaterEntryName,
   buildWaterInstruction,
+  computeWaterTotal24h,
   type WaterOfferingState,
 } from "@/components/shared/WaterOfferingFields";
 
@@ -106,7 +109,6 @@ function enteralRouteLabel(via: string): string {
 // Módulos = aditivos em pó/sachê para enriquecer dieta oral OU diluir e
 // administrar pela sonda enteral.
 // ──────────────────────────────────────────────
-type ProteinRouteKind = "oral" | "enteral" | "parenteral";
 interface ProteinSupplementDef {
   key: string;
   label: string;
@@ -235,6 +237,8 @@ function uid() { return crypto.randomUUID(); }
 export interface NutritionStructured {
   nutritionType?: string;
   dietType?: string;
+  /** Perfil da dieta oral (livre, sem açúcar…) e sistema da enteral. */
+  dietProfile?: string;
   nutConsistency?: string;
   dietInterval?: string;
   nutScheduleMode?: string;
@@ -244,20 +248,74 @@ export interface NutritionStructured {
   infusionRate?: string;
   nutProgression?: string;
   nutBedHead?: string;
+  /** Via enteral (SNE/SNG/GTT) ou acesso parenteral (central/periférico). */
+  nutAccess?: string;
   nutZeroReason?: string;
   nutWaterVolPerAdmin?: string;
   nutWaterFreq?: string;
 }
-export type NutritionWizardEntry = MedicationEntry & NutritionStructured;
+
+/**
+ * Chaves de NutritionStructured em tempo de execucao.
+ *
+ * FONTE UNICA. Antes o PrescricaoPage mantinha uma copia manual desta lista
+ * (NUT_STRUCT_KEYS) para decidir o que copiar do entry para o item. A copia
+ * nao acompanhou o crescimento do assistente: dietProfile e nutAccess passaram
+ * a ser emitidos aqui e lidos pelo corpo do item, mas nunca eram copiados —
+ * o perfil da dieta oral, a via enteral e o tipo de acesso parenteral
+ * desapareciam entre o assistente e o item, na tela e no impresso.
+ *
+ * Acrescentou um campo na interface acima? Acrescente aqui, ao lado. Sao os
+ * dois unicos lugares, e ficam a cinco linhas de distancia.
+ *
+ * Coberto por src/tests/nutricao-campos-estruturados.test.ts, que compara esta
+ * lista com o que o corpo do item consome e falha quando divergem.
+ */
+export const NUTRITION_STRUCTURED_KEYS = [
+  "nutritionType",
+  "dietType",
+  "dietProfile",
+  "nutConsistency",
+  "dietInterval",
+  "nutScheduleMode",
+  "nutVolDay",
+  "nutMode",
+  "nutFraction",
+  "infusionRate",
+  "nutProgression",
+  "nutBedHead",
+  "nutAccess",
+  "nutZeroReason",
+  "nutWaterVolPerAdmin",
+  "nutWaterFreq",
+] as const satisfies ReadonlyArray<keyof NutritionStructured>;
+export type NutritionWizardEntry = MedicationEntry & NutritionStructured & {
+  /** Configuração completa do assistente, viaja junto com a entry. */
+  nutritionPlan?: NutritionPlan;
+  /**
+   * Orientação DERIVADA da configuração (sistema fechado, cabeceira elevada,
+   * checar resíduo, comorbidades…). Campo separado de `instructions`, que
+   * pertence ao médico.
+   */
+  guidance?: string;
+};
 
 interface NutritionWizardProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onAdd: (entries: NutritionWizardEntry[]) => void;
   patientWeight?: string;
+  /**
+   * Plano ja existente na prescricao. Quando presente, o assistente abre
+   * PREENCHIDO com ele — deixa de ser gerador de uso unico e vira editor.
+   * Antes, ajustar a via de uma dieta ja prescrita exigia refazer o fluxo
+   * inteiro do zero, e por isso ninguem reabria: editava-se campo solto no
+   * item, sem o raciocinio clinico que o fluxo carrega.
+   */
+  initialPlan?: NutritionPlan | null;
 }
 
-export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: NutritionWizardProps) {
+export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, initialPlan }: NutritionWizardProps) {
   const [step, setStep] = useState(0);
   const [modalities, setModalities] = useState<Set<NutritionModality>>(new Set(["oral"]));
   const [comorbs, setComorbs] = useState<Set<ComorbKey>>(new Set());
@@ -304,7 +362,6 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
   const [zeroCustom, setZeroCustom] = useState("");
 
   // Aporte proteico (multi-select com overrides por item)
-  interface ProteinOverride { dose: string; posology: string; route: ProteinRouteKind }
   const [proteinSelected, setProteinSelected] = useState<Set<string>>(new Set());
   const [proteinOverrides, setProteinOverrides] = useState<Record<string, ProteinOverride>>({});
 
@@ -428,10 +485,23 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
       .filter(Boolean)
       .join(", ");
     const comorbSuffix = comorbStr ? ` — Comorbidades: ${comorbStr}` : "";
-    const withCustom = (parts: (string | null | undefined)[], custom: string) => {
-      const all = [...parts.filter(Boolean), custom ? `Personalização: ${custom}` : null, notes];
-      return all.filter(Boolean).join(" · ");
-    };
+    /**
+     * Orientação DERIVADA da configuração — sistema fechado, cabeceira elevada,
+     * checagem de resíduo, comorbidades. É consequência do que foi escolhido no
+     * fluxo e se atualiza quando a configuração muda.
+     *
+     * Vai para `guidance`, NÃO para `instructions`. Os dois textos disputavam o
+     * mesmo campo, e a saída encontrada tinha sido apagar o do assistente na
+     * conversão — o médico configurava e a orientação sumia do item e do
+     * impresso. Separados, cada um tem dono: guidance é do sistema,
+     * instructions é do médico e nunca é sobrescrito.
+     */
+    const buildGuidance = (parts: (string | null | undefined)[]) =>
+      parts.filter(Boolean).join(" · ");
+
+    /** Texto do MÉDICO: personalização da modalidade e observações gerais. */
+    const doctorNote = (custom: string) =>
+      [custom || null, notes || null].filter(Boolean).join(" · ");
 
     if (modalities.has("zero")) {
       const reason = ZERO_REASONS.find(r => r.key === zeroReason)?.label || "";
@@ -445,12 +515,13 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
         defaultRoute: "-",
         defaultPosology: "Contínuo",
         defaultSchedule: "-",
-        instructions: withCustom([
+        guidance: buildGuidance([
           `Motivo: ${reason}`,
           zeroSince ? `Em jejum desde: ${zeroSince}` : null,
           "Reavaliar reintrodução de dieta a cada 12-24h",
           comorbSuffix.trim(),
-        ], zeroCustom),
+        ]),
+        instructions: doctorNote(zeroCustom),
         category: "nutrition",
       });
       if (zeroHydrate) {
@@ -462,7 +533,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
           defaultRoute: "Intravenosa",
           defaultPosology: "Contínuo",
           defaultSchedule: "ACM",
-          instructions: "Ajustar conforme balanço hídrico, função renal e cardiopatia",
+          guidance: "Ajustar conforme balanço hídrico, função renal e cardiopatia",
           category: "hydration",
         });
       }
@@ -491,11 +562,12 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
         defaultRoute: "Oral",
         defaultPosology: oralFraction,
         defaultSchedule: "07h, 10h, 12h, 15h, 18h, 21h",
-        instructions: withCustom([
+        guidance: buildGuidance([
           "Ofertar conforme aceitação; observar resíduo e tolerância",
           isMixed && modalities.has("enteral") ? "Em progressão de dieta oral — acompanhar com fonoterapia/nutrição" : null,
           comorbSuffix.trim(),
-        ], oralCustom),
+        ]),
+        instructions: doctorNote(oralCustom),
         category: "nutrition",
       });
       if (oralWaterFree) {
@@ -508,7 +580,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
           defaultRoute: "Oral",
           defaultPosology: "Livre demanda",
           defaultSchedule: "ACM",
-          instructions: comorbs.has("ic") ? "Atenção: restrição hídrica em cardiopata — limitar a 1000-1500 mL/dia" : "Estimular ingesta hídrica",
+          guidance: comorbs.has("ic") ? "Atenção: restrição hídrica em cardiopata — limitar a 1000-1500 mL/dia" : "Estimular ingesta hídrica",
           category: "nutrition",
         });
       }
@@ -543,10 +615,13 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
         name: isMixed ? "Dieta mista" : "Dieta enteral",
         presentation: "-",
         defaultDose: dose,
-        defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : via === "SOG" ? "Sonda orogástrica" : "Enteral (SNE/SNG)",
+        // Sigla canonica: e o que o seletor do editor espera. Antes saia
+        // "Enteral (SNE/SNG)", que nao existia na lista do editor — a via
+        // escolhida aqui chegava ao item e o campo abria vazio.
+        defaultRoute: normalizeEnteralRoute(via) || via,
         defaultPosology: mode,
         defaultSchedule: entMode === "continua" ? "Contínua 24h" : "06h, 10h, 14h, 18h, 22h, 02h",
-        instructions: withCustom([
+        guidance: buildGuidance([
           entSystem === "aberto"
             ? "Sistema aberto: trocar equipo e frasco a cada 4h; lavar utensílios entre tomadas; manipulação asséptica"
             : "Sistema fechado: bolsa pré-pronta pendura até 24h; programar BIC; trocar equipo conforme rotina (24-72h)",
@@ -555,7 +630,8 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
           "Avaliar resíduo gástrico a cada 6h (suspender se > 250 mL)",
           comorbs.has("uti") ? "Meta: 25-30 kcal/kg/dia + 1,2-2 g/kg/dia de proteína" : null,
           comorbSuffix.trim(),
-        ], entCustom),
+        ]),
+        instructions: doctorNote(entCustom),
         category: "nutrition",
       });
       // Água via sonda — flush
@@ -563,14 +639,17 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
         entries.push({
           id: `nut-ent-flush-${uid()}`,
         nutritionType: "water",
-          nutWaterVolPerAdmin: "30 mL",
+          nutWaterVolPerAdmin: "30",
           name: "Água via sonda — flush de manutenção",
           presentation: "-",
           defaultDose: "30 mL",
-          defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : via === "SOG" ? "Sonda orogástrica" : "Enteral (SNE/SNG)",
+          // Sigla canonica: e o que o seletor do editor espera. Antes saia
+        // "Enteral (SNE/SNG)", que nao existia na lista do editor — a via
+        // escolhida aqui chegava ao item e o campo abria vazio.
+        defaultRoute: normalizeEnteralRoute(via) || via,
           defaultPosology: "Antes/após dieta e medicações",
           defaultSchedule: "ACM",
-          instructions: "Manter pérvia a sonda; usar água potável/filtrada à temperatura ambiente",
+          guidance: "Manter pérvia a sonda; usar água potável/filtrada à temperatura ambiente",
           category: "nutrition",
         });
       }
@@ -579,15 +658,18 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
         entries.push({
           id: `nut-ent-water-${uid()}`,
         nutritionType: "water",
-          nutWaterVolPerAdmin: `${waterVol} mL`,
+          nutWaterVolPerAdmin: `${waterVol}`,
           nutWaterFreq: waterFreq,
           name: "Água via sonda — hidratação programada",
           presentation: "-",
           defaultDose: `${waterVol} mL`,
-          defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : via === "SOG" ? "Sonda orogástrica" : "Enteral (SNE/SNG)",
+          // Sigla canonica: e o que o seletor do editor espera. Antes saia
+        // "Enteral (SNE/SNG)", que nao existia na lista do editor — a via
+        // escolhida aqui chegava ao item e o campo abria vazio.
+        defaultRoute: normalizeEnteralRoute(via) || via,
           defaultPosology: waterFreq,
           defaultSchedule: "Conforme aprazamento",
-          instructions: "Hidratação enteral programada — checar aceitação e balanço hídrico",
+          guidance: "Hidratação enteral programada — checar aceitação e balanço hídrico",
           category: "nutrition",
         });
       }
@@ -599,10 +681,13 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
           name: "Água via sonda — correção de distúrbio hidroeletrolítico",
           presentation: "-",
           defaultDose: `${waterCorrectionVol || "—"} mL/dia`,
-          defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : via === "SOG" ? "Sonda orogástrica" : "Enteral (SNE/SNG)",
+          // Sigla canonica: e o que o seletor do editor espera. Antes saia
+        // "Enteral (SNE/SNG)", que nao existia na lista do editor — a via
+        // escolhida aqui chegava ao item e o campo abria vazio.
+        defaultRoute: normalizeEnteralRoute(via) || via,
           defaultPosology: "Fracionado conforme prescrição",
           defaultSchedule: "Conforme aprazamento",
-          instructions: [
+          guidance: [
             "Esquema de correção de DHE — ofertar conforme balanço hídrico, Na sérico e diurese",
             waterCorrectionObs,
           ].filter(Boolean).join(" · "),
@@ -627,7 +712,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
         defaultRoute: "Intravenosa",
         defaultPosology: "Contínuo",
         defaultSchedule: "Infusão contínua 24h",
-        instructions: withCustom([
+        guidance: buildGuidance([
           parType === "central" ? "Acesso venoso central exclusivo (PICC/CVC) — não infundir junto com medicações" : "Acesso periférico — osmolaridade ≤ 900 mOsm/L",
           parRate ? `Vazão: ${parRate} mL/h (BIC)` : "Programar BIC",
           "Monitorar glicemia 6/6h, ionograma diário, função hepática 2x/sem",
@@ -635,7 +720,8 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
           parObs,
           isMixed && modalities.has("enteral") ? "NPT complementar à enteral — ajustar oferta calórica conforme aceitação enteral" : null,
           comorbSuffix.trim(),
-        ], parCustom),
+        ]),
+        instructions: doctorNote(parCustom),
         category: "nutrition",
       });
     }
@@ -659,7 +745,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
         defaultRoute: route,
         defaultPosology: ov.posology,
         defaultSchedule: ov.route === "enteral" ? "Conforme aprazamento" : "10h, 16h, 22h",
-        instructions: [
+        guidance: [
           def.note,
           ov.route === "enteral"
             ? "Diluir em 50-100 mL de água potável; lavar a sonda com 20-30 mL antes e após a administração."
@@ -673,19 +759,29 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
     // ── OFERTA HÍDRICA AMPLIADA (catálogo de águas) ──
     if (waterOfferEnabled) {
       const routeLabel = WATER_ROUTES.find(r => r.key === waterOffer.route)?.label || "VO";
+      // Meta/24h do item le nutVolDay. O total ja era calculado e exibido na
+      // revisao ("Total estimado 1000mL/24h"), mas nao seguia na entry: o campo
+      // chegava vazio ao item e o editor mostrava so o placeholder.
+      const totalDia = computeWaterTotal24h(waterOffer);
       const isEnteralRoute = ["sng", "sne", "sog", "gtt", "jtt"].includes(waterOffer.route);
       entries.push({
         id: `nut-water-offer-${uid()}`,
         nutritionType: "water",
-        nutWaterVolPerAdmin: `${waterOffer.volumePerOffering} mL`,
+        // Sem unidade: o campo guarda o NUMERO. O editor inline usa
+        // NutSuffixInput com suffix="mL" e buildNutritionParts concatena " mL".
+        // Com "250 mL" aqui, a unidade saía duplicada ("250 mL mL") e o campo
+        // numerico do editor nao aceitava o valor.
+        nutWaterVolPerAdmin: `${waterOffer.volumePerOffering}`,
         nutWaterFreq: waterOffer.fraction,
+        ...(totalDia !== null ? { nutVolDay: `${totalDia}` } : {}),
+        nutAccess: routeLabel,
         name: buildWaterEntryName(waterOffer),
         presentation: WATER_TYPES.find(t => t.key === waterOffer.type)?.label || "Água",
         defaultDose: `${waterOffer.volumePerOffering} mL/oferta`,
         defaultRoute: routeLabel,
         defaultPosology: waterOffer.fraction,
         defaultSchedule: "Conforme aprazamento",
-        instructions: [
+        guidance: [
           buildWaterInstruction(waterOffer),
           isEnteralRoute ? "Lavar a sonda com 20-30 mL antes e após a oferta" : null,
           waterOffer.type === "destilada" ? "⚠ Água destilada — uso APENAS para manutenção de pérvio (não ingerir)" : null,
@@ -709,8 +805,93 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
     waterOfferEnabled, waterOffer,
   ]);
 
+  /** Estado atual do assistente como plano persistivel. */
+  const buildPlan = (): NutritionPlan => ({
+    v: 1,
+    modalities: [...modalities],
+    comorbs: [...comorbs],
+    oral: {
+      consistency: oralConsist, profiles: [...oralProfiles], fraction: oralFraction,
+      waterFree: oralWaterFree, custom: oralCustom,
+    },
+    enteral: {
+      system: entSystem, via: entVia, formula: entFormula, mode: entMode,
+      rate: entRate, volDay: entVolDay, fractions: entFractions,
+      progression: entProgression, custom: entCustom,
+    },
+    water: {
+      flush: waterFlush, scheduled: waterScheduled, vol: waterVol, freq: waterFreq,
+      correction: waterCorrection, correctionVol: waterCorrectionVol,
+      correctionObs: waterCorrectionObs,
+    },
+    waterOffer: { enabled: waterOfferEnabled, state: waterOffer },
+    parenteral: {
+      type: parType, volume: parVolume, kcal: parKcal, rate: parRate,
+      obs: parObs, custom: parCustom,
+    },
+    zero: { reason: zeroReason, since: zeroSince, hydrate: zeroHydrate, custom: zeroCustom },
+    protein: { selected: [...proteinSelected], overrides: proteinOverrides },
+    notes,
+  });
+
+  /** Aplica um plano salvo ao estado — o caminho inverso de buildPlan. */
+  const applyPlan = (p: NutritionPlan) => {
+    setModalities(new Set(p.modalities));
+    setComorbs(new Set(p.comorbs as ComorbKey[]));
+    setOralConsist(p.oral.consistency);
+    setOralProfiles(new Set(p.oral.profiles));
+    setOralFraction(p.oral.fraction);
+    setOralWaterFree(p.oral.waterFree);
+    setOralCustom(p.oral.custom);
+    setEntSystem(p.enteral.system);
+    setEntVia(p.enteral.via);
+    setEntFormula(p.enteral.formula);
+    setEntMode(p.enteral.mode);
+    setEntRate(p.enteral.rate);
+    setEntVolDay(p.enteral.volDay);
+    setEntFractions(p.enteral.fractions);
+    setEntProgression(p.enteral.progression);
+    setEntCustom(p.enteral.custom);
+    setWaterFlush(p.water.flush);
+    setWaterScheduled(p.water.scheduled);
+    setWaterVol(p.water.vol);
+    setWaterFreq(p.water.freq);
+    setWaterCorrection(p.water.correction);
+    setWaterCorrectionVol(p.water.correctionVol);
+    setWaterCorrectionObs(p.water.correctionObs);
+    setWaterOfferEnabled(p.waterOffer.enabled);
+    setWaterOffer(p.waterOffer.state);
+    setParType(p.parenteral.type);
+    setParVolume(p.parenteral.volume);
+    setParKcal(p.parenteral.kcal);
+    setParRate(p.parenteral.rate);
+    setParObs(p.parenteral.obs);
+    setParCustom(p.parenteral.custom);
+    setZeroReason(p.zero.reason);
+    setZeroSince(p.zero.since);
+    setZeroHydrate(p.zero.hydrate);
+    setZeroCustom(p.zero.custom);
+    setProteinSelected(new Set(p.protein.selected));
+    setProteinOverrides(p.protein.overrides);
+    setNotes(p.notes);
+  };
+
+  // Hidrata ao abrir sobre uma prescricao que ja tem plano. So no ABRIR: durante
+  // a edicao o estado local manda, senao cada tecla seria sobrescrita.
+  useEffect(() => {
+    if (open && initialPlan) applyPlan(initialPlan);
+  }, [open, initialPlan]);
+
   const handleConfirm = () => {
-    onAdd(entries);
+    // O plano vai junto de CADA entry: o item passa a carregar a configuracao
+    // inteira, e nao uma projecao achatada dela. Persiste sozinho — items e
+    // JSONB no banco.
+    const plan = buildPlan();
+    // Cada entry ja traz guidance (orientacao derivada, do sistema) e
+    // instructions (nota do medico) separados na origem — ver buildGuidance e
+    // doctorNote. Nao se remapeia nada aqui: fazer isso sobrescreveria a nota
+    // do medico com a orientacao do sistema.
+    onAdd(entries.map(e => ({ ...e, nutritionPlan: plan })));
     reset();
     onOpenChange(false);
   };

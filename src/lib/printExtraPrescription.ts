@@ -67,6 +67,8 @@ export interface ExtraPrintItem {
   nutComposition?: string;
   nutMonitoring?: string;
   nutResidualCheck?: string;
+  /** Orientação derivada do assistente — distinta das recomendações do médico. */
+  guidance?: string;
   nutWaterVolPerAdmin?: string;
   nutWaterFreq?: string;
   nutZeroReason?: string;
@@ -300,6 +302,7 @@ export async function printExtraPrescription(opts: ExtraPrintOptions) {
               ).join('');
               return `<div style="font-size:7pt;color:#1e293b;line-height:1.3;margin-top:3pt;padding:3pt 6pt 3pt 8pt;border-left:2pt solid #991b1b;background:#fef2f2;border-radius:0 2pt 2pt 0"><div style="font-weight:800;font-size:7pt;color:#991b1b;text-transform:uppercase;letter-spacing:0.3pt;margin-bottom:1pt">${escape(insulinDesc.headline)}</div>${lines}</div>`;
             })() : ''}
+            ${it.guidance ? `<div style="font-size:8pt;color:#334155;line-height:1.4;margin-top:2pt">${escape(it.guidance)}</div>` : ''}
             ${it.insulinPlan ? '' : (it.instructions ? `<div style="font-size:8pt;font-style:italic;color:#444;line-height:1.4;margin-top:2pt">Recomendações: ${escape(it.instructions)}</div>` : '')}
           </td>
           <td style="border:0.5pt solid #cbd5e1;width:170pt;vertical-align:top;background:#fff;padding:4pt 6pt">
