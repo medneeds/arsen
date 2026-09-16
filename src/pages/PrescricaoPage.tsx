@@ -1578,6 +1578,7 @@ const HYDRATION_PHASE_OPTIONS: Array<{ phases: number; interval: string; label?:
   { phases: 12, interval: '2/2h' },
   { phases: 24, interval: '1/1h' },
   { phases: 1, interval: 'Dose única', label: 'Dose única' },
+  { phases: 1, interval: 'Contínuo', label: 'Contínuo' },
 ];
 const HYDRATION_DRIP_FACTOR = DRIP_FACTOR_MACRO; // macrogotas/mL — fonte única (solutoToken)
 
