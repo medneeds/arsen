@@ -6,7 +6,7 @@ import { useUnsavedPrescription } from "@/contexts/UnsavedPrescriptionContext";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import ReactMarkdown from "react-markdown";
 import { format, addDays, isAfter, setHours, setMinutes, setSeconds, startOfDay } from "date-fns";
-import arsenLogo from "@/assets/arsen-logo.png";
+import { ArsenMark } from "@/components/brand/ArsenMark";
 import { NormaZeroPrintHeader, NormaZeroPrintFooter, generatePrintDocCode } from "@/components/NormaZeroPrintHeader";
 import { ptBR } from "date-fns/locale";
 import {
@@ -8167,7 +8167,7 @@ const PrescricaoPage = () => {
       <div className="max-w-6xl mx-auto p-4 sm:p-6 flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
         <div className="flex flex-col items-center gap-6">
           <div className="animate-pulse">
-            <img src={arsenLogo} alt="Arsen" className="h-16 w-16 object-contain" />
+            <ArsenMark size={56} className="text-primary" />
           </div>
           <div className="flex flex-col items-center gap-2">
             <div className="flex items-center gap-2 text-muted-foreground">

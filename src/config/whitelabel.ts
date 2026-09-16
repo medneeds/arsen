@@ -3,7 +3,6 @@
  * Baseada na Norma Zero (MAN.05-001) do HMDM – Socorrão I
  */
 
-import arsenLogo from "@/assets/arsen-logo.png";
 import socorraoLogo from "@/assets/socorrao-logo.jpg";
 
 export const whitelabel = {
@@ -19,7 +18,7 @@ export const whitelabel = {
     /** Hierarquia institucional conforme Norma Zero */
     prefeitura: "Prefeitura de São Luís",
     secretaria: "Secretaria Municipal de Saúde",
-    hospitalFullName: "Hospital Municipal Djalma Marques – Socorrão I",
+    hospitalFullName: "Hospital Municipal Djalma Marques — Socorrão I",
     hospitalShortName: "Socorrão I",
     hospitalAbbreviation: "HMDM",
     hospitalCode: "HMDM",
@@ -37,14 +36,19 @@ export const whitelabel = {
     /** Compatibilidade legado */
     networkName: "Arsen",
     networkShortName: "Arsen",
-    hospitalName: "Hospital Mun. Djalma Marques — Socorrão I",
+    // Nome por extenso, sem abreviar: este campo alimenta rodape de impresso e
+    // titulo de documento clinico, onde "Mun." nao e aceitavel. Para espacos
+    // estreitos use hospitalShortName ou hospitalAbbreviation.
+    hospitalName: "Hospital Municipal Djalma Marques",
     networkLogoAlt: "Arsen",
     hospitalLogoAlt: "Socorrão I",
   },
 
   logos: {
-    networkFull: arsenLogo,
-    networkCompact: arsenLogo,
+    // SVG estatico em /public: os layouts de impressao consomem via <img src>,
+    // que nao aceita componente React. O mono e para papel preto e branco.
+    networkFull: "/arsen-mark.svg",
+    networkCompact: "/arsen-mark.svg",
     hospital: socorraoLogo,
     /** Logo institucional para cabeçalhos de documentos (padrão Norma Zero) */
     institutionalHeader: socorraoLogo,
