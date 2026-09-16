@@ -2,11 +2,24 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface FavoriteRow {
-  medication_id: string;
-  medication_name: string;
-  category: string;
-  use_count: number;
-  last_used_at: string;
+  medicamento_id: string;
+  contagem_uso: number;
+  ultimo_uso_em: string;
+}
+
+/** Resolve profissionais.id a partir do auth user id (profissional_id ≠ auth.uid). */
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from("profissionais")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -29,16 +42,24 @@ export function useMedicationFavorites() {
         setLoaded(true);
         return;
       }
+      // MIGRAÇÃO: medication_favorites → medicamentos_favoritos.
+      // Vínculo por profissional_id (≠ auth.uid) resolvido em profissionais.
+      // DEGRADADO: medication_name/category não têm coluna no schema novo.
+      const profissionalId = await resolveProfissionalId(auth.user.id);
+      if (!profissionalId) {
+        if (!cancelled) setLoaded(true);
+        return;
+      }
       const { data, error } = await supabase
-        .from("medication_favorites")
-        .select("medication_id, medication_name, category, use_count, last_used_at")
-        .eq("user_id", auth.user.id)
-        .order("use_count", { ascending: false })
+        .from("medicamentos_favoritos")
+        .select("medicamento_id, contagem_uso, ultimo_uso_em")
+        .eq("profissional_id", profissionalId)
+        .order("contagem_uso", { ascending: false })
         .limit(500);
       if (cancelled) return;
       if (!error && data) {
         const map = new Map<string, number>();
-        (data as FavoriteRow[]).forEach(r => map.set(r.medication_id, r.use_count));
+        (data as FavoriteRow[]).forEach(r => map.set(r.medicamento_id, r.contagem_uso));
         setFavorites(map);
       }
       setLoaded(true);
@@ -58,7 +79,10 @@ export function useMedicationFavorites() {
       return next;
     });
     try {
-      await supabase.rpc("track_medication_use", {
+      // MIGRAÇÃO: RPC custom desconhecida no schema novo → chamada via
+      // (supabase.rpc as any). A persistência depende de a RPP existir no
+      // backend novo; medication_name/category não têm mais coluna (best-effort).
+      await (supabase.rpc as any)("track_medication_use", {
         p_medication_id: id,
         p_medication_name: name,
         p_category: category,

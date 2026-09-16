@@ -27,7 +27,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
-import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
+// MIGRAÇÃO: resolveActiveEncounterId removido — resultados_cultura chaveia por
+// internacao_id (a internação já é o "encounter").
 import { formatAge } from "@/lib/patientAge";
 
 const SECTORS = ["red", "yellow", "blue", "outside", "ucc"] as const;
@@ -102,6 +103,54 @@ interface CultureResult {
   created_at: string;
 }
 
+// MIGRAÇÃO: resultados_cultura não tem colunas denormalizadas de paciente
+// (patient_name/sector/bed) nem uploaded_by_name → reconstruídas via join
+// internacoes→pacientes/leitos/setores e enviado_por→profissionais.nome.
+const CULTURE_SELECT = `id, tipo_cultura, data_coleta, resultado_texto, arquivos_resultado,
+  microorganismo, antibiograma, perfil_sensibilidade, status, lido_pelo_medico, criado_em, internacao_id,
+  enviado:profissionais!resultados_cultura_enviado_por_fkey(nome),
+  internacao:internacoes(id, paciente:pacientes(nome_completo, nome_social),
+    leito:leitos(numero), setor:setores(tipo))`;
+
+const mapInternacaoToBasic = (r: any): PatientBasic => {
+  const pac = r.paciente || {};
+  return {
+    id: r.id,
+    name: pac.nome_social || pac.nome_completo || "",
+    bed_number: r.leito?.numero || "",
+    sector: r.setor?.tipo || "",
+    age: formatAge(pac.data_nascimento) || null,
+    diagnoses: r.hipotese_diagnostica || null,
+    admission_date: r.data_entrada || null,
+    // MIGRAÇÃO: bloco uti_* não existe no schema novo → sempre null.
+    uti_cultures_antibiotics: null,
+    uti_devices: null,
+  };
+};
+
+const mapCulture = (r: any): CultureResult => {
+  const inter = r.internacao || {};
+  const pac = inter.paciente || {};
+  return {
+    id: r.id,
+    patient_id: r.internacao_id ?? null,
+    patient_name: pac.nome_social || pac.nome_completo || "",
+    patient_sector: inter.setor?.tipo || "",
+    patient_bed: inter.leito?.numero || null,
+    culture_type: r.tipo_cultura,
+    collection_date: r.data_coleta ?? null,
+    result_text: r.resultado_texto ?? null,
+    result_files: r.arquivos_resultado ?? [],
+    microorganism: r.microorganismo ?? null,
+    antibiogram: r.antibiograma ?? null,
+    sensitivity_profile: r.perfil_sensibilidade ?? null,
+    status: r.status,
+    uploaded_by_name: r.enviado?.nome ?? null,
+    read_by_doctor: !!r.lido_pelo_medico,
+    created_at: r.criado_em,
+  };
+};
+
 const CcihDashboardPage = () => {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
@@ -143,47 +192,31 @@ const CcihDashboardPage = () => {
     if (!hospitalId || !stateId) return;
     setLoading(true);
     try {
+      // MIGRAÇÃO: patients→internacoes(+pacientes/leitos/setores) e
+      // culture_results→resultados_cultura. Sem colunas hospital_unit_id/state_id/
+      // is_vacant no schema novo → filtros de hospital/estado/leito-vago removidos
+      // (degradado). Internação ativa aproximada por data_alta IS NULL.
       const [patientsRes, culturesRes] = await Promise.all([
         supabase
-          .from("patients")
-          .select("id, name, bed_number, sector, age, diagnoses, admission_date, uti_cultures_antibiotics, uti_devices, patient_registry_id")
-          .eq("hospital_unit_id", hospitalId)
-          .eq("state_id", stateId)
-          .eq("is_vacant", false)
-          .neq("name", "")
-          .order("sector")
-          .order("bed_number"),
+          .from("internacoes")
+          .select(`id, hipotese_diagnostica, data_entrada,
+            paciente:pacientes(nome_completo, nome_social, data_nascimento),
+            leito:leitos(numero),
+            setor:setores(tipo)`)
+          .is("data_alta", null),
         supabase
-          .from("culture_results")
-          .select("*")
-          .eq("hospital_unit_id", hospitalId)
-          .eq("state_id", stateId)
-          .order("created_at", { ascending: false })
+          .from("resultados_cultura")
+          .select(CULTURE_SELECT)
+          .order("criado_em", { ascending: false })
           .limit(200),
       ]);
 
       if (patientsRes.error) throw patientsRes.error;
       if (culturesRes.error) throw culturesRes.error;
 
-      // Idade ao vivo a partir de patient_registry.birth_date — patients.age
-      // é estático (congelado na admissão). Busca em lote (1 query), não N+1.
-      const patientRows = (patientsRes.data as (PatientBasic & { patient_registry_id?: string | null })[]) || [];
-      const registryIds = Array.from(new Set(patientRows.map(p => p.patient_registry_id).filter(Boolean))) as string[];
-      const birthDateByRegistryId = new Map<string, string | null>();
-      if (registryIds.length > 0) {
-        const { data: registryRows } = await supabase
-          .from("patient_registry")
-          .select("id, birth_date")
-          .in("id", registryIds);
-        for (const r of registryRows || []) birthDateByRegistryId.set(r.id, r.birth_date);
-      }
-      const patientsWithLiveAge = patientRows.map(p => ({
-        ...p,
-        age: (p.patient_registry_id && formatAge(birthDateByRegistryId.get(p.patient_registry_id))) || p.age,
-      }));
-
-      setPatients(patientsWithLiveAge as PatientBasic[]);
-      setCultureResults((culturesRes.data as CultureResult[]) || []);
+      const patientRows = (patientsRes.data || []).map(mapInternacaoToBasic).filter(p => p.name.trim());
+      setPatients(patientRows);
+      setCultureResults((culturesRes.data || []).map(mapCulture));
     } catch (err) {
       console.error(err);
       toast.error("Erro ao carregar dados");
@@ -197,13 +230,13 @@ const CcihDashboardPage = () => {
   // Realtime subscription for culture_results
   useEffect(() => {
     if (!hospitalId) return;
+    // MIGRAÇÃO: realtime em resultados_cultura; sem coluna hospital_unit_id para filtrar.
     const channel = supabase
       .channel("ccih-cultures")
       .on("postgres_changes", {
         event: "*",
         schema: "public",
-        table: "culture_results",
-        filter: `hospital_unit_id=eq.${hospitalId}`,
+        table: "resultados_cultura",
       }, () => fetchData())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -251,28 +284,49 @@ const CcihDashboardPage = () => {
     setDetailPrescriptions([]);
 
     try {
-      // Fetch culture-related exam requests and prescriptions in parallel
+      // MIGRAÇÃO: exam_requests→solicitacoes_exame (items→itens, priority→prioridade,
+      // created_at→criado_em, results→resultado_texto, category→categoria,
+      // requested_by_name→join solicitado_por→profissionais.nome), filtro por
+      // internacao_id. prescriptions→prescricoes (items→itens, version→versao,
+      // filtro por internacao_id em vez de patient_name; sem coluna patient_name).
+      // Filtros hospital_unit_id/state_id removidos (colunas inexistentes).
       const [examRes, prescRes] = await Promise.all([
         supabase
-          .from("exam_requests")
-          .select("id, items, status, priority, created_at, requested_by_name, results, category")
-          .eq("hospital_unit_id", hospitalId!)
-          .eq("state_id", stateId!)
-          .eq("patient_id", patient.id)
-          .order("created_at", { ascending: false }),
+          .from("solicitacoes_exame")
+          .select("id, itens, status, prioridade, criado_em, resultado_texto, categoria, solicitado:profissionais!solicitacoes_exame_solicitado_por_fkey(nome)")
+          .eq("internacao_id", patient.id)
+          .order("criado_em", { ascending: false }),
         supabase
-          .from("prescriptions")
-          .select("id, patient_name, items, status, created_at, version")
-          .eq("hospital_unit_id", hospitalId!)
-          .eq("state_id", stateId!)
-          .eq("patient_name", patient.name)
-          .order("created_at", { ascending: false })
+          .from("prescricoes")
+          .select("id, itens, status, criado_em, versao")
+          .eq("internacao_id", patient.id)
+          .order("criado_em", { ascending: false })
           .limit(20),
       ]);
 
+      // Normaliza para as formas usadas pela UI (nomes de campo antigos).
+      const examRows = (examRes.data || []).map((r: any) => ({
+        id: r.id,
+        items: r.itens,
+        status: r.status,
+        priority: r.prioridade,
+        created_at: r.criado_em,
+        requested_by_name: r.solicitado?.nome ?? null,
+        results: r.resultado_texto ?? null,
+        category: r.categoria,
+      }));
+      const prescRows = (prescRes.data || []).map((r: any) => ({
+        id: r.id,
+        patient_name: patient.name,
+        items: r.itens,
+        status: r.status,
+        created_at: r.criado_em,
+        version: r.versao,
+      }));
+
       // Filter exam requests that contain culture-related items
       const cultureKeywords = ["cultura", "hemocultura", "urocultura", "antibiograma", "gram", "microbiologia"];
-      const cultureExams = (examRes.data || []).filter((req: any) => {
+      const cultureExams = examRows.filter((req: any) => {
         const items = Array.isArray(req.items) ? req.items : [];
         return items.some((item: any) => {
           const name = (item.name || item || "").toString().toLowerCase();
@@ -282,7 +336,7 @@ const CcihDashboardPage = () => {
       setDetailCultureRequests(cultureExams as CultureExamRequest[]);
 
       // Separate lab and imaging exams (non-culture)
-      const allExams = examRes.data || [];
+      const allExams = examRows;
       const labExams = allExams.filter((req: any) => (req.category === "laboratorio") && !cultureExams.some((c: any) => c.id === req.id));
       const imagingExams = allExams.filter((req: any) => req.category === "imagem");
       setDetailLabExams(labExams as CultureExamRequest[]);
@@ -300,7 +354,7 @@ const CcihDashboardPage = () => {
         "fluconazol", "anfotericina", "micafungina", "anidulafungina", "caspofungina",
         "aciclovir", "oseltamivir", "colistina", "tigeciclina", "rifampicina",
       ];
-      const abxPrescriptions = (prescRes.data || []).filter((rx: any) => {
+      const abxPrescriptions = prescRows.filter((rx: any) => {
         const items = Array.isArray(rx.items) ? rx.items : [];
         return items.some((item: any) => {
           const name = (item.name || item.medication || "").toString().toLowerCase();
@@ -331,37 +385,29 @@ const CcihDashboardPage = () => {
     if (!selectedPatient || !hospitalId || !stateId) return;
     setSaving(true);
     try {
-      const profileRes = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", user?.id)
-        .single();
-      const uploaderName = profileRes.data?.full_name || user?.email || "CCIH";
+      // MIGRAÇÃO: profissionais.id ≠ auth.uid — resolve o profissional via user_id.
+      const { data: profRow } = await supabase
+        .from("profissionais").select("id").eq("user_id", user?.id).maybeSingle();
+      const profissionalId = (profRow as any)?.id ?? null;
 
-      // encounter ativo carimbado (helper canônico via registry) — resultado de
-      // cultura pertence ao atendimento, não ao leito. Auditoria 22/07/2026.
-      const encounterId = await resolveActiveEncounterId(selectedPatient.id);
+      // MIGRAÇÃO: culture_results→resultados_cultura, chaveado por internacao_id
+      // (a internação é o "encounter"). Colunas denormalizadas do paciente
+      // (patient_name/sector/bed), uploaded_by/uploaded_by_name, hospital_unit_id
+      // e state_id não existem no schema novo → removidas (degradado).
       const { error } = await supabase
-        .from("culture_results")
+        .from("resultados_cultura")
         .insert({
-          patient_id: selectedPatient.id,
-          encounter_id: encounterId,
-          patient_name: selectedPatient.name,
-          patient_sector: selectedPatient.sector,
-          patient_bed: selectedPatient.bed_number,
-          culture_type: cultureType,
-          collection_date: collectionDate || null,
-          result_text: resultText || null,
-          result_files: resultFiles.length > 0 ? resultFiles : [],
-          microorganism: microorganism || null,
-          antibiogram: antibiogram || null,
-          sensitivity_profile: sensitivityProfile || null,
+          internacao_id: selectedPatient.id,
+          tipo_cultura: cultureType,
+          data_coleta: collectionDate || null,
+          resultado_texto: resultText || null,
+          arquivos_resultado: resultFiles.length > 0 ? resultFiles : [],
+          microorganismo: microorganism || null,
+          antibiograma: antibiogram || null,
+          perfil_sensibilidade: sensitivityProfile || null,
           status: "completed",
-          uploaded_by: user?.id,
-          uploaded_by_name: uploaderName,
-          notified_at: new Date().toISOString(),
-          hospital_unit_id: hospitalId,
-          state_id: stateId,
+          enviado_por: profissionalId,
+          notificado_em: new Date().toISOString(),
         } as any);
 
       if (error) throw error;

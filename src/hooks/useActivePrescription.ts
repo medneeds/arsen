@@ -1,7 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
-import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
 
 export interface ActivePrescriptionSummary {
   id: string;
@@ -13,80 +11,56 @@ export interface ActivePrescriptionSummary {
 }
 
 /**
- * Subscribes to the latest prescription of a given patient (matched by name + hospital).
- * Used by the clinical Cockpit to surface a real-time chip with the active
- * prescription status (rascunho, validada, assinada, etc.).
+ * Subscribes to the latest prescription of a given patient.
  *
- * Fase B.2 — quando recebe `patientId` e há encounter ativo resolvido,
- * filtra adicionalmente por `encounter_id` (igual ao ativo OU NULL legado),
- * evitando que prescrições do ocupante anterior do leito apareçam para
- * o novo paciente após transferência interna.
+ * MIGRAÇÃO: prescriptions → prescricoes (ancorada por internacao_id). O
+ * `patientId` já é `internacoes.id`. patient_registry/patient_encounters
+ * mortos → removidos os filtros por registry/encounter e o fallback por
+ * patient_name (prescricoes não tem coluna de nome). Sem patientId não há
+ * como resolver a prescrição → retorna null. Colunas: version→versao,
+ * items→itens, digital_signature→assinatura_digital, updated_at→atualizado_em,
+ * created_at→criado_em. archived_at não existe → filtro removido.
+ * `patientName`/`hospitalUnitId` mantidos na assinatura por compatibilidade.
  */
 export function useActivePrescription(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   patientName: string | null,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   hospitalUnitId: string | null,
   patientId?: string | null,
 ) {
   const [data, setData] = useState<ActivePrescriptionSummary | null>(null);
   const [loading, setLoading] = useState(false);
-  const { encounterId: activeEncounterId } = useActiveEncounterId(patientId ?? null);
-  const { registryId: resolvedRegistryId } = useResolvedRegistryId(patientId ?? null);
 
   const fetch = useCallback(async () => {
-    if (!patientName || !hospitalUnitId) {
+    if (!patientId) {
       setData(null);
       return;
     }
     setLoading(true);
-    let query: any = supabase
-      .from("prescriptions")
-      .select("id, status, version, items, digital_signature, updated_at, created_at")
-      .eq("hospital_unit_id", hospitalUnitId)
-      .is("archived_at", null)
-      .neq("status", "draft");
-
-    if (resolvedRegistryId && activeEncounterId && patientId) {
-      // Caminho ideal: registry + encounter + patient_id.
-      // OR duplo cobre prescrições legadas (patient_registry_id=NULL ou encounter=NULL).
-      query = query
-        .or(`patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${patientId})`)
-        .or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
-    } else if (resolvedRegistryId && patientId) {
-      // Sem encounter: cobre registry + legados sem registry
-      query = query.or(
-        `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${patientId})`
-      );
-    } else if (resolvedRegistryId) {
-      query = query.eq("patient_registry_id", resolvedRegistryId);
-    } else if (patientId && activeEncounterId) {
-      // Sem registry: aceita encounter ativo OU legado sem carimbo do mesmo bed.
-      query = query
-        .eq("patient_id", patientId)
-        .or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
-    } else {
-      // Fallback legado: busca por patient_name (prescrições anteriores ao
-      // linking de registry/encounter ainda devem aparecer no cockpit).
-      query = query.eq("patient_name", patientName.trim());
-    }
-    const { data: rows, error } = await query
-      .order("created_at", { ascending: false })
+    const { data: rows, error } = await supabase
+      .from("prescricoes")
+      .select("id, status, versao, itens, assinatura_digital, criado_em, atualizado_em")
+      .eq("internacao_id", patientId)
+      .neq("status", "draft")
+      .order("criado_em", { ascending: false })
       .limit(1);
     if (!error && rows && rows.length > 0) {
       const row: any = rows[0];
-      const items = Array.isArray(row.items) ? row.items : [];
+      const items = Array.isArray(row.itens) ? row.itens : [];
       setData({
         id: row.id,
         status: row.status || "draft",
-        version: row.version || 1,
+        version: row.versao || 1,
         itemsCount: items.length,
-        updatedAt: row.updated_at || row.created_at,
-        signed: Boolean(row.digital_signature),
+        updatedAt: row.atualizado_em || row.criado_em,
+        signed: Boolean(row.assinatura_digital),
       });
     } else {
       setData(null);
     }
     setLoading(false);
-  }, [patientName, hospitalUnitId, patientId, activeEncounterId, resolvedRegistryId]);
+  }, [patientId]);
 
   const fetchRef = useRef(fetch);
   useEffect(() => { fetchRef.current = fetch; }, [fetch]);
@@ -96,33 +70,27 @@ export function useActivePrescription(
   }, [fetch]);
 
   useEffect(() => {
-    if (!patientName || !hospitalUnitId) return;
+    if (!patientId) return;
+    // MIGRAÇÃO: realtime em "prescricoes" filtrado por internacao_id.
     const channel = supabase
-      .channel(`prescription-live-${hospitalUnitId}-${patientName}`)
+      .channel(`prescription-live-${patientId}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
-          table: "prescriptions",
-          filter: `hospital_unit_id=eq.${hospitalUnitId}`,
+          table: "prescricoes",
+          filter: `internacao_id=eq.${patientId}`,
         },
-        (payload) => {
-          const row: any = payload.new || payload.old;
-          if (
-            (resolvedRegistryId && row?.patient_registry_id === resolvedRegistryId) ||
-            (patientId && row?.patient_id === patientId) ||
-            (!resolvedRegistryId && !patientId && row?.patient_name?.trim() === patientName.trim())
-          ) {
-            fetchRef.current();
-          }
+        () => {
+          fetchRef.current();
         },
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [patientName, hospitalUnitId, resolvedRegistryId]);
+  }, [patientId]);
 
   return { prescription: data, loading, refresh: fetch };
 }

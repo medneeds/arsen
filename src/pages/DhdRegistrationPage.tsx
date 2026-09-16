@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
-import { useDepartment } from "@/contexts/DepartmentContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,9 +15,8 @@ import { format } from "date-fns";
 export default function DhdRegistrationPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { currentState, currentHospital } = useHospital();
-  const { currentDepartment } = useDepartment();
-  
+  const { currentHospital } = useHospital();
+
   const [formData, setFormData] = useState({
     patient_name: "",
     patient_age: "",
@@ -33,33 +31,36 @@ export default function DhdRegistrationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user || !currentState || !currentHospital) {
+    if (!user || !currentHospital) {
       toast.error("Erro: Dados de autenticação não encontrados");
       return;
     }
 
-    if (!formData.patient_name || !formData.start_date || !formData.medication_schedule) {
-      toast.error("Por favor, preencha todos os campos obrigatórios");
+    // MIGRAÇÃO: data_fim (end_date) virou coluna NOT NULL em pacientes_dhd, então
+    // agora é obrigatória. patient_name/medication_schedule não têm coluna no schema
+    // novo (ver abaixo) — a validação passa a exigir início/fim/diagnóstico.
+    if (!formData.start_date || !formData.end_date) {
+      toast.error("Por favor, preencha as datas de início e finalização");
       return;
     }
 
     try {
       setSaving(true);
-      
-      const { error } = await supabase.from("dhd_patients").insert({
-        patient_name: formData.patient_name,
-        patient_age: formData.patient_age || null,
-        diagnosis: formData.diagnosis || null,
-        start_date: formData.start_date,
-        end_date: formData.end_date || null,
-        medication_schedule: formData.medication_schedule,
-        dhd_report: formData.dhd_report || null,
-        medication_days: [],
+
+      // MIGRAÇÃO: pacientes_dhd não possui colunas para patient_name, patient_age,
+      // medication_schedule, state_id, hospital_unit_id nem department. Esses campos
+      // do formulário legado NÃO são persistidos (removidos do payload). A identidade
+      // do paciente, quando houver, é dada por internacao_id (não capturado por este
+      // formulário livre). hospital_unit_id → hospital_id; created_by → criado_por.
+      const { error } = await supabase.from("pacientes_dhd").insert({
+        diagnostico: formData.diagnosis || null,
+        data_inicio: formData.start_date,
+        data_fim: formData.end_date,
+        relatorio_dhd: formData.dhd_report || null,
+        dias_medicacao: [],
         status: "active",
-        state_id: currentState.id,
-        hospital_unit_id: currentHospital.id,
-        department: currentDepartment,
-        created_by: user.id,
+        hospital_id: currentHospital.id,
+        criado_por: user.id,
       });
 
       if (error) throw error;

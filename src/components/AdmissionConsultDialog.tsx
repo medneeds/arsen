@@ -62,6 +62,21 @@ interface AdmissionHistory {
 
 const UTI_SECTORS = ["red", "yellow", "outside", "uti_01", "uti_02", "uci_02"];
 
+/** MIGRAÇÃO: profissionais.id ≠ auth.uid → resolve via profissionais.user_id. */
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from("profissionais")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 const fmtDateTime = (iso?: string | null) => {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -133,25 +148,33 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
     if (!patient.id) return;
     setLoading(true);
     try {
-      // Blindagem contra reuso de leito: leitura por prontuário permanente.
-      // Nunca usamos apenas patient_id aqui, pois essa linha de leito é reutilizada.
-      if (!registryId) {
-        setD0(null);
-        setAddenda([]);
-        setHistory(null);
-        return;
-      }
+      // MIGRAÇÃO: clinical_evolutions → evolucoes (ancorada por internacao_id).
+      // evolution_type='admission' vive em soap.__evolution_type; parent_id (adendo)
+      // em soap.parent_id. Campos dedicados antigos remapeados do JSON `soap`.
       const { data: evs } = await supabase
-        .from("clinical_evolutions")
-        .select("id, status, validated_at, validated_by_name, created_at, created_by_name, soap_data, vital_signs, physical_exam, suspension_reason, suspended_at, encounter_id, hospital_unit_id, state_id")
-        .eq("patient_registry_id", registryId)
-        .eq("evolution_type", "admission")
-        .is("archived_at", null)
-        .order("created_at", { ascending: false });
+        .from("evolucoes")
+        .select("id, status, soap, exame_fisico, motivo_suspensao, data_hora, criado_em")
+        .eq("internacao_id", patient.id)
+        .order("data_hora", { ascending: false });
 
-      const list = (evs || []) as AdmissionRow[];
-      // Pega a admissão raiz MAIS RECENTE (validada, sem parent_id) — blindagem contra
-      // reuso de patient_id que deixa admissões antigas de outro paciente coladas ao leito.
+      const list: AdmissionRow[] = ((evs as any[]) || [])
+        .filter((e) => (e.soap as any)?.__evolution_type === "admission")
+        .map((e): AdmissionRow => {
+          const soap: any = e.soap || {};
+          return {
+            id: e.id,
+            status: e.status,
+            validated_at: soap.__validated_at ?? null,
+            validated_by_name: soap.__validated_by_name ?? null,
+            created_at: e.criado_em || e.data_hora,
+            created_by_name: soap.__created_by_name ?? null,
+            soap_data: soap,
+            vital_signs: soap.__vital_signs ?? {},
+            physical_exam: e.exame_fisico ?? {},
+            suspension_reason: e.motivo_suspensao ?? null,
+            suspended_at: soap.__suspended_at ?? null,
+          };
+        });
       const root =
         list.find(e => e.status === "validated" && !(e.soap_data as any)?.parent_id) ||
         list.find(e => !(e.soap_data as any)?.parent_id) ||
@@ -164,23 +187,24 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
       setD0(root);
       setAddenda(adds);
 
-      // Blindagem contra reuso de leito: história admissional apenas do registry atual.
-      const { data: ah } = await supabase
-        .from("admission_histories")
-        .select("cid_primary, cid_secondary, clinical_history, initial_conduct")
-        .eq("patient_registry_id", registryId)
-        .is("archived_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      setHistory((ah as any) ?? null);
-
-      const { data: pat } = await supabase
-        .from("patients")
-        .select("saps_pending, saps_completed_at")
+      // MIGRAÇÃO: admission_histories → internacoes (clinical_history→historia_clinica,
+      // initial_conduct→conduta_inicial). CID primário/secundário sem coluna → null.
+      const { data: inter } = await supabase
+        .from("internacoes")
+        .select("historia_clinica, conduta_inicial, hipotese_diagnostica")
         .eq("id", patient.id)
         .maybeSingle();
-      setSapsPending(!!(pat as any)?.saps_pending && !(pat as any)?.saps_completed_at);
+      const i: any = inter || {};
+      setHistory({
+        cid_primary: null,
+        cid_secondary: null,
+        clinical_history: i.historia_clinica ?? null,
+        initial_conduct: i.conduta_inicial ?? null,
+      });
+
+      // MIGRAÇÃO: patients.saps_pending/saps_completed_at sem coluna → SAPS
+      // pendente degradado para false (o gate de SAPS não persiste no schema novo).
+      setSapsPending(false);
     } finally {
       setLoading(false);
     }
@@ -248,25 +272,34 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
     try {
       const doctor = user.user_metadata?.full_name || user.email || "Médico Assistente";
       const now = new Date().toISOString();
-      const { error } = await supabase.from("clinical_evolutions").insert({
-        patient_id: patient.id,
-        patient_name: patient.name,
-        patient_bed: patient.bed,
-        patient_sector: patient.sector,
-        patient_registry_id: registryId,
-        encounter_id: (d0 as any).encounter_id ?? null,
-        evolution_type: "admission",
+      // MIGRAÇÃO: clinical_evolutions → evolucoes. Adendo = nova evolução com
+      // soap.parent_id apontando para o D0. Campos dedicados no JSON `soap` (`__`).
+      // profissional_id resolvido via profissionais.user_id (≠ auth.uid).
+      const profissionalId = await resolveProfissionalId(user.id);
+      if (!profissionalId) {
+        toast.error("Profissional não encontrado para o usuário atual");
+        setSavingAdendo(false);
+        return;
+      }
+      const { error } = await supabase.from("evolucoes").insert({
+        internacao_id: patient.id,
+        profissional_id: profissionalId,
+        data_hora: now,
         status: "validated",
-        soap_data: { addendum: adendoText, parent_id: d0.id },
-        vital_signs: {},
-        physical_exam: {},
-        validated_at: now,
-        validated_by: user.id,
-        validated_by_name: doctor,
-        created_by: user.id,
-        created_by_name: doctor,
-        hospital_unit_id: (d0 as any).hospital_unit_id ?? currentHospital?.id ?? null,
-        state_id: (d0 as any).state_id ?? null,
+        exame_fisico: {},
+        soap: {
+          addendum: adendoText,
+          parent_id: d0.id,
+          __evolution_type: "admission",
+          __patient_name: patient.name,
+          __patient_bed: patient.bed,
+          __patient_sector: patient.sector,
+          __validated_at: now,
+          __validated_by: user.id,
+          __validated_by_name: doctor,
+          __created_by: user.id,
+          __created_by_name: doctor,
+        },
       } as any);
       if (error) throw error;
       toast.success("Adendo registrado e vinculado ao D0");
@@ -287,13 +320,22 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
     setSavingSuspend(true);
     try {
       const now = new Date().toISOString();
+      // MIGRAÇÃO: evolucoes tem `motivo_suspensao` (coluna real); suspended_at/by
+      // vão no JSON `soap` (`__`). Lê o soap atual para não sobrescrever chaves.
+      const { data: existing } = await supabase
+        .from("evolucoes")
+        .select("soap")
+        .eq("id", d0.id)
+        .maybeSingle();
+      const mergedSoap: any = { ...(((existing as any)?.soap as any) || {}) };
+      mergedSoap.__suspended_at = now;
+      mergedSoap.__suspended_by = user.id;
       const { error } = await supabase
-        .from("clinical_evolutions")
+        .from("evolucoes")
         .update({
           status: "suspended",
-          suspension_reason: suspendReason,
-          suspended_by: user.id,
-          suspended_at: now,
+          motivo_suspensao: suspendReason,
+          soap: mergedSoap,
         } as any)
         .eq("id", d0.id);
       if (error) throw error;

@@ -93,29 +93,52 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
   const { currentDepartment } = useDepartment();
 
 
+  // MIGRAÇÃO: pre_admissions → pre_admissoes. A tabela nova só tem nome_paciente, cpf,
+  // cns, data_nascimento, classificacao_risco, setor_destino_id, dados_extraidos_ia (Json),
+  // status, data_hora. Colunas antigas sem equivalente (sex, medical_record,
+  // patient_registry_id, destination_sector como TEXTO, notes, hospital_unit_id, state_id,
+  // destination_bed) são DEGRADADAS — lidas de `dados_extraidos_ia` quando presentes. O
+  // filtro por hospital/estado foi REMOVIDO (escopo por RLS) e o filtro por setor (que era
+  // por texto) vira best-effort client-side por rótulo salvo em dados_extraidos_ia.
+  // Ver MIGRACAO_DEGRADACOES.md.
+  const mapPreAdmissao = (r: any): PreAdmission => {
+    const dn = (r.dados_extraidos_ia ?? {}) as Record<string, any>;
+    return {
+      id: r.id,
+      patient_name: r.nome_paciente,
+      birth_date: r.data_nascimento ?? null,
+      sex: dn.sex ?? null,
+      medical_record: dn.medical_record ?? null,
+      cpf: r.cpf ?? null,
+      patient_registry_id: null,
+      destination_sector: dn.target_sector_label ?? dn.target_uti ?? null,
+      status: r.status,
+      risk_classification: r.classificacao_risco ?? null,
+      created_at: r.data_hora ?? r.criado_em,
+      notes: dn.notes ?? null,
+    };
+  };
+
+  const matchesSectorFilter = (pa: PreAdmission): boolean => {
+    if (!sectorFilterLabel) return true;
+    // Best-effort: casa pelo rótulo histórico salvo; registros sem rótulo passam (resgate).
+    if (!pa.destination_sector) return true;
+    return sectorLabelVariants(sectorFilterLabel).includes(pa.destination_sector);
+  };
+
   const fetchPreAdmissions = async () => {
     if (!currentHospital?.id || !currentState?.id) return;
     setIsLoading(true);
     try {
-      let query = supabase
-        .from("pre_admissions")
+      const { data, error } = await supabase
+        .from("pre_admissoes")
         .select("*")
-        .eq("hospital_unit_id", currentHospital.id)
-        .eq("state_id", currentState.id)
-        .in("status", ["pre_admissao", "classificado", "aguardando_leito", "aguardando_leito_uti"])
-        .order("created_at", { ascending: false });
-
-      // Filtra por setor de destino (quando estamos visualizando um setor clínico específico).
-      // Usa IN com os rótulos históricos: destination_sector guarda TEXTO, e
-      // registros antigos podem ter o nome anterior do setor (ver sectorLabelAliases).
-      if (sectorFilterLabel) {
-        query = query.in("destination_sector", sectorLabelVariants(sectorFilterLabel));
-      }
-
-      const { data, error } = await query;
+        .in("status", ["pre_admissao", "classificado"])
+        .order("data_hora", { ascending: false });
 
       if (error) throw error;
-      setPreAdmissions((data as PreAdmission[]) || []);
+      const mapped = ((data || []) as any[]).map(mapPreAdmissao).filter(matchesSectorFilter);
+      setPreAdmissions(mapped);
     } catch (err) {
       console.error("Fetch pre-admissions error:", err);
     } finally {
@@ -126,25 +149,15 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
   const fetchCancelled = async () => {
     if (!currentHospital?.id || !currentState?.id) return;
     try {
-      let query = supabase
-        .from("pre_admissions")
+      const { data, error } = await supabase
+        .from("pre_admissoes")
         .select("*")
-        .eq("hospital_unit_id", currentHospital.id)
-        .eq("state_id", currentState.id)
         .eq("status", "cancelado")
-        .order("updated_at", { ascending: false })
+        .order("atualizado_em", { ascending: false })
         .limit(30);
-      if (sectorFilterLabel) {
-        // Mostra os cancelados deste setor (em qualquer rótulo histórico) OU
-        // aqueles sem destino (para resgate)
-        const variants = sectorLabelVariants(sectorFilterLabel)
-          .map((v) => `destination_sector.eq.${v}`)
-          .join(",");
-        query = query.or(`${variants},destination_sector.is.null`);
-      }
-      const { data, error } = await query;
       if (error) throw error;
-      setCancelledList((data as PreAdmission[]) || []);
+      const mapped = ((data || []) as any[]).map(mapPreAdmissao).filter(matchesSectorFilter);
+      setCancelledList(mapped);
     } catch (err) {
       console.error("Fetch cancelled error:", err);
     }
@@ -154,13 +167,10 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
     if (!reopenTarget) return;
     setIsReopening(true);
     try {
+      // MIGRAÇÃO: pre_admissoes. `destination_bed` não existe → removido do payload.
       const { error } = await supabase
-        .from("pre_admissions")
-        .update({
-          status: "aguardando_leito",
-          destination_bed: null,
-          // mantém destination_sector original; usuário pode trocar no AdmitPatientDialog
-        })
+        .from("pre_admissoes")
+        .update({ status: "classificado" })
         .eq("id", reopenTarget.id);
       if (error) throw error;
       toast({
@@ -191,11 +201,13 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
   // Realtime: novo cadastro/alteração em pre_admissions já reflete na lista, sem refresh manual
   useEffect(() => {
     if (!currentHospital?.id || !currentState?.id) return;
+    // MIGRAÇÃO: realtime pre_admissions → pre_admissoes. Sem coluna hospital_unit_id →
+    // filtro por hospital REMOVIDO (escopo por RLS).
     const channel = supabase
-      .channel(`pre_admissions_${currentHospital.id}_${sectorFilterLabel || "all"}`)
+      .channel(`pre_admissoes_${currentHospital.id}_${sectorFilterLabel || "all"}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "pre_admissions", filter: `hospital_unit_id=eq.${currentHospital.id}` },
+        { event: "*", schema: "public", table: "pre_admissoes" },
         () => {
           fetchPreAdmissions();
           if (showCancelled) fetchCancelled();
@@ -217,24 +229,38 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
     setIsSearchingRegistry(true);
     const handle = setTimeout(async () => {
       try {
+        // MIGRA\u00c7\u00c3O: patient_registry \u2192 pacientes. Sem `full_name_normalized` (busca
+        // acento-sens\u00edvel em nome_completo), sem `merged_into_registry_id`/hospital_unit_id
+        // (filtros removidos). Colunas mapeadas: full_name\u2190nome_completo,
+        // social_name\u2190nome_social, mother_name\u2190nome_mae, birth_date\u2190data_nascimento,
+        // sex\u2190sexo, medical_record\u2190prontuario, phone\u2190telefone. Ver MIGRACAO_DEGRADACOES.md.
         const qDigits = q.replace(/\D/g, "");
-        const qNorm = q.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        const ors: string[] = [`full_name_normalized.ilike.%${qNorm}%`];
+        const ors: string[] = [`nome_completo.ilike.%${q}%`];
         if (qDigits) {
           ors.push(`cpf.ilike.%${qDigits}%`);
-          ors.push(`medical_record.ilike.%${qDigits}%`);
+          ors.push(`prontuario.ilike.%${qDigits}%`);
           ors.push(`cns.ilike.%${qDigits}%`);
         }
         const { data, error } = await supabase
-          .from("patient_registry")
-          .select("id, full_name, social_name, mother_name, birth_date, sex, cpf, cns, medical_record, phone")
-          .eq("hospital_unit_id", currentHospital.id)
-          .is("merged_into_registry_id", null)
+          .from("pacientes")
+          .select("id, nome_completo, nome_social, nome_mae, data_nascimento, sexo, cpf, cns, prontuario, telefone")
           .or(ors.join(","))
-          .order("full_name", { ascending: true })
+          .order("nome_completo", { ascending: true })
           .limit(10);
         if (error) throw error;
-        setRegistryResults((data as RegistryPatientLite[]) || []);
+        const mapped = ((data || []) as any[]).map((p) => ({
+          id: p.id,
+          full_name: p.nome_completo,
+          social_name: p.nome_social ?? null,
+          mother_name: p.nome_mae ?? null,
+          birth_date: p.data_nascimento ?? null,
+          sex: p.sexo ?? null,
+          cpf: p.cpf ?? null,
+          cns: p.cns ?? null,
+          medical_record: p.prontuario ?? null,
+          phone: p.telefone ?? null,
+        })) as RegistryPatientLite[];
+        setRegistryResults(mapped);
       } catch (err) {
         console.error("Registry search error:", err);
         setRegistryResults([]);
@@ -249,7 +275,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
     if (!deleteTarget) return;
     try {
       const { error } = await supabase
-        .from("pre_admissions")
+        .from("pre_admissoes")
         .update({ status: "cancelado" })
         .eq("id", deleteTarget.id);
       if (error) throw error;

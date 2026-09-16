@@ -52,39 +52,45 @@ export class SolicitacaoError extends Error {
 }
 
 /**
- * Monta a linha de exam_requests a partir da entrada das três fichas.
+ * Monta a linha de solicitacoes_exame a partir da entrada das três fichas.
+ *
+ * MIGRAÇÃO (Wave3): exam_requests → solicitacoes_exame. A tabela nova pendura em
+ * `internacao_id` (o patientId das telas) e só tem campos clínicos. As colunas
+ * antigas de paciente/unidade/solicitante/snapshot NÃO existem no schema novo e
+ * foram DEGRADADAS (removidas do payload):
+ *   - patient_registry_id, patient_name, patient_bed, patient_sector → sem coluna
+ *   - hospital_unit_id, state_id → sem coluna (escopo passa a ser via RLS)
+ *   - requested_by_name → sem coluna (nome vem por join profissionais na leitura)
+ *   - document_payload → sem coluna (snapshot de reimpressão indisponível)
+ * Mapeamento: category→categoria, items→itens, clinical_indication→
+ * indicacao_clinica, priority→prioridade, notes→observacoes.
+ *
+ * `solicitado_por` é FK de profissionais.id (≠ auth.uid) e NÃO é resolvido aqui:
+ * esta função é PURA (sem I/O). registrarSolicitacao resolve o profissional a
+ * partir de input.requestedBy e mescla o campo antes do insert.
  *
  * Vive separado de registrarSolicitacao porque ali há I/O: aquele módulo
  * importa o client do Supabase, que lê import.meta.env e não carrega sob tsx.
  * Aqui é função pura — dá para testar as normalizações (trim, null, default de
  * prioridade, UUID) sem tocar em banco nenhum.
- *
- * `document_payload` só entra na linha quando informado. Isso importa: a
- * migration que cria a coluna pode ainda não ter sido aplicada, e mandar a
- * chave à toa faria toda solicitação falhar.
  */
 export function buildSolicitacaoRow(
   input: SolicitacaoInput,
 ): Record<string, unknown> {
   const row: Record<string, unknown> = {
-    category: input.category,
-    // Só persiste vínculo quando o ID for UUID real (evita mocks tipo "uti2-01")
-    patient_id: asUuidOrNull(input.patientId),
-    patient_registry_id: input.patientRegistryId ?? null,
-    patient_name: input.patientName.trim(),
-    patient_bed: (input.patientBed || "").trim() || null,
-    patient_sector: (input.patientSector || "").trim() || null,
-    items: input.items,
-    clinical_indication: input.clinicalIndication?.trim() || null,
-    priority: input.priority || "rotina",
-    notes: input.notes?.trim() || null,
-    requested_by: input.requestedBy,
-    requested_by_name: input.requestedByName,
-    hospital_unit_id: input.hospitalUnitId,
-    state_id: input.stateId,
+    categoria: input.category,
+    // internacao_id é NOT NULL. Só persiste UUID real (evita mocks tipo "uti2-01");
+    // sem UUID, o insert falha por constraint — comportamento esperado (não há
+    // mais colunas de paciente avulso para pendurar a solicitação).
+    internacao_id: asUuidOrNull(input.patientId),
+    itens: input.items,
+    indicacao_clinica: input.clinicalIndication?.trim() || null,
+    prioridade: input.priority || "rotina",
+    observacoes: input.notes?.trim() || null,
     status: "pending",
   };
-  if (input.documentPayload) row.document_payload = input.documentPayload;
+  // MIGRAÇÃO: document_payload não tem coluna em solicitacoes_exame → NÃO emitido.
+  // isMissingDocumentPayloadColumn permanece como guarda defensiva nos callers.
   return row;
 }
 

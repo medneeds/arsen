@@ -6,13 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -40,41 +33,35 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Plus, Pencil, Trash2, Building2, Loader2 } from "lucide-react";
 
-interface State {
-  id: string;
-  name: string;
-  abbreviation: string;
-}
-
+// MIGRAÇÃO: `hospital_units` (morta) → `hospitais`. Mapeamento: name←nome,
+// address←endereco, created_at←criado_em. `states`/`state_id` NÃO têm tabela
+// nem coluna equivalente no schema novo (mesma degradação de
+// AdminCoordinatorsPage/HospitalContext) → o conceito de UF foi REMOVIDO
+// (seletor de estado, coluna "Estado", filtro por estado e o aviso "cadastre um
+// estado antes").
 interface HospitalUnit {
   id: string;
   name: string;
   address: string | null;
-  state_id: string;
   created_at: string;
-  state?: State;
 }
 
 export default function AdminUnitsPage() {
   const [units, setUnits] = useState<HospitalUnit[]>([]);
-  const [states, setStates] = useState<State[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUnit, setEditingUnit] = useState<HospitalUnit | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     address: "",
-    state_id: "",
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [filterState, setFilterState] = useState<string>("all");
 
   useEffect(() => {
     fetchData();
@@ -82,29 +69,21 @@ export default function AdminUnitsPage() {
 
   const fetchData = async () => {
     try {
-      // Buscar estados
-      const { data: statesData } = await supabase
-        .from("states")
-        .select("*")
-        .order("name");
-
-      setStates(statesData || []);
-
-      // Buscar unidades com estado
       const { data: unitsData, error } = await supabase
-        .from("hospital_units")
-        .select("*")
-        .order("name");
+        .from("hospitais")
+        .select("id, nome, endereco, criado_em")
+        .order("nome");
 
       if (error) throw error;
 
-      // Mapear estados para unidades
-      const unitsWithState = (unitsData || []).map((unit) => ({
-        ...unit,
-        state: statesData?.find((s) => s.id === unit.state_id),
+      const mapped: HospitalUnit[] = (unitsData || []).map((u) => ({
+        id: u.id,
+        name: u.nome,
+        address: u.endereco,
+        created_at: u.criado_em,
       }));
 
-      setUnits(unitsWithState);
+      setUnits(mapped);
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
       toast.error("Erro ao carregar dados");
@@ -119,17 +98,16 @@ export default function AdminUnitsPage() {
       setFormData({
         name: unit.name,
         address: unit.address || "",
-        state_id: unit.state_id,
       });
     } else {
       setEditingUnit(null);
-      setFormData({ name: "", address: "", state_id: "" });
+      setFormData({ name: "", address: "" });
     }
     setIsDialogOpen(true);
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim() || !formData.state_id) {
+    if (!formData.name.trim()) {
       toast.error("Preencha os campos obrigatórios");
       return;
     }
@@ -137,14 +115,13 @@ export default function AdminUnitsPage() {
     setIsSaving(true);
     try {
       const dataToSave = {
-        name: formData.name.trim(),
-        address: formData.address.trim() || null,
-        state_id: formData.state_id,
+        nome: formData.name.trim(),
+        endereco: formData.address.trim() || null,
       };
 
       if (editingUnit) {
         const { error } = await supabase
-          .from("hospital_units")
+          .from("hospitais")
           .update(dataToSave)
           .eq("id", editingUnit.id);
 
@@ -152,7 +129,7 @@ export default function AdminUnitsPage() {
         toast.success("Unidade atualizada com sucesso!");
       } else {
         const { error } = await supabase
-          .from("hospital_units")
+          .from("hospitais")
           .insert(dataToSave);
 
         if (error) throw error;
@@ -176,7 +153,7 @@ export default function AdminUnitsPage() {
   const handleDelete = async (unitId: string) => {
     try {
       const { error } = await supabase
-        .from("hospital_units")
+        .from("hospitais")
         .delete()
         .eq("id", unitId);
 
@@ -193,10 +170,6 @@ export default function AdminUnitsPage() {
     }
   };
 
-  const filteredUnits = filterState === "all"
-    ? units
-    : units.filter((u) => u.state_id === filterState);
-
   return (
     <MainLayout>
       <div className="container mx-auto py-6 px-4 max-w-5xl">
@@ -212,7 +185,7 @@ export default function AdminUnitsPage() {
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => handleOpenDialog()} disabled={states.length === 0}>
+              <Button onClick={() => handleOpenDialog()}>
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Unidade
               </Button>
@@ -229,26 +202,6 @@ export default function AdminUnitsPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="state">Estado *</Label>
-                  <Select
-                    value={formData.state_id}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, state_id: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {states.map((state) => (
-                        <SelectItem key={state.id} value={state.id}>
-                          {state.name} ({state.abbreviation})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="name">Nome da Unidade *</Label>
                   <Input
@@ -294,48 +247,19 @@ export default function AdminUnitsPage() {
           </Dialog>
         </div>
 
-        {states.length === 0 && !loading && (
-          <Card className="mb-6 border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
-            <CardContent className="pt-6">
-              <p className="text-amber-800 dark:text-amber-200">
-                ⚠️ Cadastre pelo menos um estado antes de criar unidades hospitalares.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Unidades Cadastradas</CardTitle>
-                <CardDescription>
-                  Total de {filteredUnits.length} unidade(s)
-                </CardDescription>
-              </div>
-              <div className="w-48">
-                <Select value={filterState} onValueChange={setFilterState}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filtrar por estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os estados</SelectItem>
-                    {states.map((state) => (
-                      <SelectItem key={state.id} value={state.id}>
-                        {state.abbreviation}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            <CardTitle>Unidades Cadastradas</CardTitle>
+            <CardDescription>
+              Total de {units.length} unidade(s)
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-            ) : filteredUnits.length === 0 ? (
+            ) : units.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 Nenhuma unidade cadastrada
               </div>
@@ -344,21 +268,15 @@ export default function AdminUnitsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
-                    <TableHead>Estado</TableHead>
                     <TableHead>Endereço</TableHead>
                     <TableHead>Cadastrada em</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUnits.map((unit) => (
+                  {units.map((unit) => (
                     <TableRow key={unit.id}>
                       <TableCell className="font-medium">{unit.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {unit.state?.abbreviation || "N/A"}
-                        </Badge>
-                      </TableCell>
                       <TableCell className="max-w-xs truncate">
                         {unit.address || "-"}
                       </TableCell>

@@ -4,7 +4,31 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { getNextBedNumber } from "@/utils/bedNaming";
+
+// MIGRAÇÃO: bed_allocation_requests → solicitacoes_leito.
+// Colunas novas: id, internacao_id, setor_solicitado_id, status, motivo_rejeicao,
+// data_hora, solicitado_por, avaliado_por, criado_em, atualizado_em.
+// Vários campos do modelo antigo (requested_bed, requesting_doctor_name,
+// requesting_office_number, reviewed_at, state_id, hospital_unit_id, department)
+// NÃO têm coluna equivalente e foram degradados — ver MIGRACAO_DEGRADACOES.md.
+// `patient_id` do modelo antigo passa a ser `internacao_id` (patientId == internacao.id).
+// `requested_sector` passa a carregar o `setor_solicitado_id`.
+// `*_por` referenciam profissionais.id (≠ auth.uid) — resolvidos via lookup.
+
+/** Resolve profissionais.id a partir do auth user id (profissional_id ≠ auth.uid). */
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from("profissionais")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export interface BedAllocationRequest {
   id: string;
@@ -38,6 +62,46 @@ export interface BedAllocationRequest {
   };
 }
 
+/** Converte uma linha de solicitacoes_leito (+ internacao embutida) no view-model estável. */
+function mapRequest(row: any): BedAllocationRequest {
+  const inter = row.internacao ?? null;
+  const paciente = inter?.paciente ?? null;
+  const patient = inter
+    ? {
+        id: inter.id,
+        name: paciente?.nome_social || paciente?.nome_completo || "",
+        age: null, // MIGRAÇÃO: idade não é coluna; derivar de data_nascimento no consumidor se necessário
+        diagnoses: inter.hipotese_diagnostica ?? null,
+        medical_history: inter.historia_clinica ?? null,
+        relevant_exams: inter.exames_relevantes ?? null,
+        pendencies: inter.pendencias ?? null,
+        admission_history: null, // MIGRAÇÃO: sem coluna equivalente
+        bed_number: inter.leito?.numero ?? "",
+        sector: inter.setor?.nome ?? "",
+      }
+    : undefined;
+
+  return {
+    id: row.id,
+    patient_id: row.internacao_id,
+    requested_by: row.solicitado_por ?? "",
+    requested_sector: row.setor_solicitado_id ?? "",
+    requested_bed: null, // MIGRAÇÃO: sem coluna
+    status: row.status,
+    rejection_reason: row.motivo_rejeicao ?? null,
+    reviewed_by: row.avaliado_por ?? null,
+    reviewed_at: row.atualizado_em ?? null, // MIGRAÇÃO: sem reviewed_at dedicado; usa atualizado_em
+    state_id: "", // MIGRAÇÃO: sem coluna
+    hospital_unit_id: "", // MIGRAÇÃO: sem coluna
+    department: "", // MIGRAÇÃO: sem coluna
+    created_at: row.criado_em,
+    updated_at: row.atualizado_em,
+    requesting_doctor_name: null, // MIGRAÇÃO: sem coluna
+    requesting_office_number: null, // MIGRAÇÃO: sem coluna
+    patient,
+  };
+}
+
 export function useBedAllocationRequests() {
   const [requests, setRequests] = useState<BedAllocationRequest[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
@@ -47,24 +111,29 @@ export function useBedAllocationRequests() {
   const { user } = useAuth();
 
   const fetchRequests = useCallback(async () => {
+    // MIGRAÇÃO: solicitacoes_leito não tem hospital_unit_id/state_id/department;
+    // o escopo por hospital/estado/setor foi degradado (traz todas as solicitações).
     if (!currentHospital?.id || !currentState?.id) return;
 
     try {
       const { data, error } = await supabase
-        .from("bed_allocation_requests")
+        .from("solicitacoes_leito")
         .select(`
           *,
-          patient:patients(id, name, age, diagnoses, medical_history, relevant_exams, pendencies, admission_history, bed_number, sector)
+          internacao:internacoes(
+            id, hipotese_diagnostica, historia_clinica, exames_relevantes, pendencias,
+            leito:leitos(numero),
+            setor:setores(nome),
+            paciente:pacientes(nome_completo, nome_social, data_nascimento)
+          )
         `)
-        .eq("hospital_unit_id", currentHospital.id)
-        .eq("state_id", currentState.id)
-        .eq("department", currentDepartment)
-        .order("created_at", { ascending: false });
+        .order("criado_em", { ascending: false });
 
       if (error) throw error;
 
-      setRequests((data as unknown as BedAllocationRequest[]) || []);
-      setPendingCount(data?.filter(r => r.status === "pending").length || 0);
+      const mapped = ((data as any) || []).map(mapRequest);
+      setRequests(mapped);
+      setPendingCount(mapped.filter((r) => r.status === "pending").length);
     } catch (error) {
       console.error("Error fetching bed allocation requests:", error);
     } finally {
@@ -79,6 +148,7 @@ export function useBedAllocationRequests() {
   useEffect(() => {
     if (!currentHospital?.id) return;
 
+    // MIGRAÇÃO: sem hospital_unit_id em solicitacoes_leito → sem filtro no realtime.
     const channel = supabase
       .channel("bed-allocation-requests-realtime")
       .on(
@@ -86,8 +156,7 @@ export function useBedAllocationRequests() {
         {
           event: "*",
           schema: "public",
-          table: "bed_allocation_requests",
-          filter: `hospital_unit_id=eq.${currentHospital.id}`,
+          table: "solicitacoes_leito",
         },
         (payload) => {
           console.log("Realtime update:", payload);
@@ -106,8 +175,8 @@ export function useBedAllocationRequests() {
   }, [fetchRequests]);
 
   const createRequest = async (
-    patientId: string, 
-    requestedSector: string, 
+    patientId: string,
+    requestedSector: string,
     requestedBed?: string,
     doctorName?: string,
     officeNumber?: string
@@ -122,29 +191,26 @@ export function useBedAllocationRequests() {
     }
 
     try {
+      const solicitadoPor = await resolveProfissionalId(user.id);
+      // MIGRAÇÃO: requested_bed / requesting_doctor_name / requesting_office_number /
+      // state_id / hospital_unit_id / department não têm coluna e foram removidos do payload.
+      // `requestedSector` é gravado como setor_solicitado_id (id do setor destino).
       const { data, error } = await supabase
-        .from("bed_allocation_requests")
+        .from("solicitacoes_leito")
         .insert({
-          patient_id: patientId,
-          requested_by: user.id,
-          requested_sector: requestedSector,
-          requested_bed: requestedBed || null,
-          requesting_doctor_name: doctorName || null,
-          requesting_office_number: officeNumber || null,
-          state_id: currentState.id,
-          hospital_unit_id: currentHospital.id,
-          department: currentDepartment,
-        })
+          internacao_id: patientId,
+          setor_solicitado_id: requestedSector,
+          solicitado_por: solicitadoPor,
+          status: "pending",
+        } as any)
         .select()
         .single();
 
       if (error) throw error;
 
-      // Update patient allocation status
-      await supabase
-        .from("patients")
-        .update({ allocation_status: "pending" })
-        .eq("id", patientId);
+      // MIGRAÇÃO: patients.allocation_status não existe no schema novo (campo
+      // degradado — ver MIGRACAO_DEGRADACOES.md). Atualização de status do
+      // paciente removida.
 
       toast({
         title: "Solicitação enviada",
@@ -167,86 +233,54 @@ export function useBedAllocationRequests() {
     if (!user?.id || !currentHospital?.id) return false;
 
     try {
-      // First try to find in local state, otherwise fetch from database
-      let request = requests.find(r => r.id === requestId);
-      
+      let request = requests.find((r) => r.id === requestId);
+
       if (!request) {
-        // Fetch from database if not in local state
         const { data, error } = await supabase
-          .from("bed_allocation_requests")
+          .from("solicitacoes_leito")
           .select("*")
           .eq("id", requestId)
           .single();
-        
+
         if (error || !data) {
           throw new Error("Solicitação não encontrada");
         }
-        request = data as unknown as BedAllocationRequest;
+        request = mapRequest(data);
       }
 
-      // Map sector name to db sector value
-      const sectorMap: Record<string, string> = {
-        "Cuidados Especiais": "red",
-        "Observação Amarela": "yellow",
-        "Observação Azul": "blue",
-      };
-      const dbSector = sectorMap[request.requested_sector] || request.requested_sector;
-
-      // Calculate next available bed number in destination sector
-      const { data: existingPatients } = await supabase
-        .from("patients")
-        .select("bed_number, display_order")
-        .eq("hospital_unit_id", currentHospital.id)
-        // Sem filtro por department: com ele, leitos gravados sob outro
-        // department ficavam invisiveis e o gerador devolvia um numero ja
-        // usado, colidindo com a unicidade (unidade, setor, numero).
-        .eq("sector", dbSector);
-
-      let maxDisplayOrder = 0;
-      const existingBedNumbers: string[] = [];
-      if (existingPatients) {
-        existingPatients.forEach((p) => {
-          existingBedNumbers.push(p.bed_number);
-          if (p.display_order && p.display_order > maxDisplayOrder) {
-            maxDisplayOrder = p.display_order;
-          }
-        });
-      }
-      const newBedNumber = getNextBedNumber(dbSector, existingBedNumbers, currentDepartment);
-      const newDisplayOrder = maxDisplayOrder + 1;
+      const avaliadoPor = await resolveProfissionalId(user.id);
 
       // Update request status
       const { error: updateError } = await supabase
-        .from("bed_allocation_requests")
+        .from("solicitacoes_leito")
         .update({
           status: "approved",
-          reviewed_by: user.id,
-          reviewed_at: new Date().toISOString(),
-        })
+          avaliado_por: avaliadoPor,
+        } as any)
         .eq("id", requestId);
 
       if (updateError) throw updateError;
 
-      // Move patient to official sector with new bed number and display order at the end
-      const { error: patientError } = await supabase
-        .from("patients")
-        .update({
-          is_door_patient: false,
-          allocation_status: "approved",
-          sector: dbSector,
-          bed_number: newBedNumber,
-          display_order: newDisplayOrder,
-        })
-        .eq("id", request.patient_id);
-
-      if (patientError) throw patientError;
+      // MIGRAÇÃO: no schema antigo a aprovação calculava o próximo número de leito
+      // (getNextBedNumber, lendo `patients`) e movia o paciente para setor+leito.
+      // `patients` não existe mais; a alocação física (leito_id) é responsabilidade
+      // de outro fluxo. Aqui apenas registramos o setor de classificação aprovado.
+      if (request?.patient_id && request?.requested_sector) {
+        try {
+          await supabase
+            .from("internacoes")
+            .update({ setor_classificacao_id: request.requested_sector } as any)
+            .eq("id", request.patient_id);
+        } catch (e) {
+          console.warn("[useBedAllocationRequests] falha ao atualizar setor da internação:", e);
+        }
+      }
 
       toast({
         title: "✓ Alocação aprovada",
-        description: `Paciente alocado no leito ${newBedNumber} - ${request.requested_sector}.`,
+        description: `Solicitação aprovada para ${request?.requested_sector ?? "o setor destino"}.`,
       });
 
-      // Trigger immediate refetch to update UI
       await fetchRequests();
 
       return true;
@@ -265,45 +299,24 @@ export function useBedAllocationRequests() {
     if (!user?.id) return false;
 
     try {
-      // First try to find in local state, otherwise fetch from database
-      let request = requests.find(r => r.id === requestId);
-      
-      if (!request) {
-        const { data, error: fetchError } = await supabase
-          .from("bed_allocation_requests")
-          .select("*")
-          .eq("id", requestId)
-          .single();
-        
-        if (fetchError || !data) {
-          throw new Error("Solicitação não encontrada");
-        }
-        request = data as unknown as BedAllocationRequest;
-      }
-
+      const avaliadoPor = await resolveProfissionalId(user.id);
       const { error } = await supabase
-        .from("bed_allocation_requests")
+        .from("solicitacoes_leito")
         .update({
           status: "discussing",
-          reviewed_by: user.id,
-          reviewed_at: new Date().toISOString(),
-        })
+          avaliado_por: avaliadoPor,
+        } as any)
         .eq("id", requestId);
 
       if (error) throw error;
 
-      // Update patient allocation status
-      await supabase
-        .from("patients")
-        .update({ allocation_status: "discussing" })
-        .eq("id", request.patient_id);
+      // MIGRAÇÃO: patients.allocation_status removido (campo degradado).
 
       toast({
         title: "Em discussão",
         description: "Médico da porta será notificado sobre a discussão do caso.",
       });
 
-      // Trigger immediate refetch
       await fetchRequests();
 
       return true;
@@ -322,46 +335,25 @@ export function useBedAllocationRequests() {
     if (!user?.id) return false;
 
     try {
-      // First try to find in local state, otherwise fetch from database
-      let request = requests.find(r => r.id === requestId);
-      
-      if (!request) {
-        const { data, error: fetchError } = await supabase
-          .from("bed_allocation_requests")
-          .select("*")
-          .eq("id", requestId)
-          .single();
-        
-        if (fetchError || !data) {
-          throw new Error("Solicitação não encontrada");
-        }
-        request = data as unknown as BedAllocationRequest;
-      }
-
+      const avaliadoPor = await resolveProfissionalId(user.id);
       const { error } = await supabase
-        .from("bed_allocation_requests")
+        .from("solicitacoes_leito")
         .update({
           status: "rejected",
-          rejection_reason: reason || null,
-          reviewed_by: user.id,
-          reviewed_at: new Date().toISOString(),
-        })
+          motivo_rejeicao: reason || null,
+          avaliado_por: avaliadoPor,
+        } as any)
         .eq("id", requestId);
 
       if (error) throw error;
 
-      // Update patient allocation status
-      await supabase
-        .from("patients")
-        .update({ allocation_status: "rejected" })
-        .eq("id", request.patient_id);
+      // MIGRAÇÃO: patients.allocation_status removido (campo degradado).
 
       toast({
         title: "Solicitação negada",
         description: "Médico da porta será notificado sobre a negação.",
       });
 
-      // Trigger immediate refetch
       await fetchRequests();
 
       return true;

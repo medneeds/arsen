@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
+import { cn, asUuidOrNull } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
@@ -375,6 +375,16 @@ function clearSapsDraft(key: string) {
   try { localStorage.removeItem(sapsDraftKeyFor(key)); } catch {}
 }
 
+// MIGRAÇÃO: resolve profissionais.id a partir do auth user id, para criado_por
+// (FK profissionais) em avaliacoes_saps3.
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase.from("profissionais").select("id").eq("user_id", userId).maybeSingle();
+    return (data as { id?: string } | null)?.id ?? null;
+  } catch { return null; }
+}
+
 export default function Saps3Page() {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
@@ -536,39 +546,64 @@ export default function Saps3Page() {
 
   // ─── Data Loading ───
   const loadPendingRequests = async () => {
-    if (!hospitalId || !stateId) return;
+    // MIGRAÇÃO: pre_admissions → pre_admissoes. Colunas renomeadas
+    // (patient_name→nome_paciente, birth_date→data_nascimento, created_at→data_hora,
+    // destination_sector→setor_destino_id[id]). Sem colunas: sex, notes,
+    // medical_record, patient_registry_id, hospital_unit_id/state_id → degradados
+    // (filtro por unidade removido; a RLS deve escopar por hospital do profissional).
     const { data } = await supabase
-      .from("pre_admissions")
-      .select("id, patient_name, birth_date, sex, destination_sector, notes, created_at, medical_record, patient_registry_id")
-      .eq("hospital_unit_id", hospitalId)
-      .eq("state_id", stateId)
+      .from("pre_admissoes")
+      .select("id, nome_paciente, data_nascimento, setor_destino_id, internacao_id, data_hora")
       .eq("status", "aguardando_leito_uti")
-      .order("created_at", { ascending: true });
-    if (data) setPendingRequests(data);
+      .order("data_hora", { ascending: true });
+    if (data) {
+      setPendingRequests((data as any[]).map((r) => ({
+        id: r.id,
+        patient_name: r.nome_paciente,
+        birth_date: r.data_nascimento ?? null,
+        sex: null,                              // MIGRAÇÃO: sem coluna
+        destination_sector: r.setor_destino_id ?? null, // MIGRAÇÃO: id do setor (não label)
+        notes: null,                            // MIGRAÇÃO: sem coluna
+        created_at: r.data_hora,
+        medical_record: null,                   // MIGRAÇÃO: sem coluna
+        patient_registry_id: null,              // MIGRAÇÃO: sem coluna
+        patient_id: r.internacao_id ?? null,
+      })));
+    }
   };
 
   const loadRecords = async () => {
-    if (!hospitalId || !stateId) return;
+    // MIGRAÇÃO: saps3_assessments → avaliacoes_saps3. Sem colunas patient_name/
+    // status/pending_since e sem hospital_unit_id/state_id. Nome do paciente vem
+    // do join internacao → pacientes; status/pending_since degradados. Filtro por
+    // unidade removido (RLS escopa por hospital do profissional).
     const { data } = await supabase
-      .from("saps3_assessments" as any)
-      .select("id, patient_name, total_score, predicted_mortality, created_at, status, pending_since")
-      .eq("hospital_unit_id", hospitalId)
-      .eq("state_id", stateId)
-      .order("created_at", { ascending: false })
+      .from("avaliacoes_saps3")
+      .select("id, escore_total, mortalidade_prevista, criado_em, internacao:internacoes(paciente:pacientes(nome_completo, nome_social))")
+      .order("criado_em", { ascending: false })
       .limit(200);
-    if (data) setRecords(data as any);
+    if (data) {
+      setRecords((data as any[]).map((r) => {
+        const pac = r.internacao?.paciente;
+        return {
+          id: r.id,
+          patient_name: pac?.nome_social || pac?.nome_completo || "—", // MIGRAÇÃO: via join
+          total_score: r.escore_total ?? null,
+          predicted_mortality: r.mortalidade_prevista ?? null,
+          created_at: r.criado_em,
+          status: "completed",   // MIGRAÇÃO: sem coluna status → sempre "completed"
+          pending_since: null,   // MIGRAÇÃO: sem coluna
+        };
+      }));
+    }
   };
 
   const loadOccupiedBeds = async () => {
-    if (!hospitalId || !stateId || !selectedSector) { setOccupiedBeds([]); return; }
-    const { data } = await supabase
-      .from("patients")
-      .select("bed_number")
-      .eq("hospital_unit_id", hospitalId)
-      .eq("state_id", stateId)
-      .eq("sector", selectedSector)
-      .eq("is_vacant", false);
-    if (data) setOccupiedBeds(data.map(p => p.bed_number));
+    // MIGRAÇÃO: a ocupação vinha de patients(sector, is_vacant). No schema novo
+    // leitos usa setor_id (uuid) — não há bridge do código interno de setor
+    // (red/yellow/…) para setor_id aqui. Degradado para vazio (leitos aparecem
+    // todos como disponíveis no seletor).
+    setOccupiedBeds([]);
   };
 
   useEffect(() => {
@@ -603,8 +638,9 @@ export default function Saps3Page() {
       setCompletingPatientId(patientIdParam || null);
 
       (async () => {
+        // MIGRAÇÃO: saps3_assessments → avaliacoes_saps3 (colunas em português).
         const { data: sapsRow, error } = await supabase
-          .from("saps3_assessments" as any)
+          .from("avaliacoes_saps3")
           .select("*")
           .eq("id", completeSapsIdParam)
           .maybeSingle();
@@ -615,12 +651,11 @@ export default function Saps3Page() {
         }
 
         const r: any = sapsRow;
-        const namePref = patientNameFromContext || r.patient_name || "";
-        // Fallback crítico: se a URL não trouxe patientId, usa o patient_id gravado na ficha SAPS.
-        // Sem isso, o UPDATE em patients.saps_pending no handleSave nunca dispara
-        // e o status do paciente permanece "SAPS pendente" mesmo após validar.
-        if (!patientIdParam && r.patient_id) {
-          setCompletingPatientId(r.patient_id);
+        // MIGRAÇÃO: avaliacoes_saps3 não tem patient_name → nome vem do contexto.
+        const namePref = patientNameFromContext || "";
+        // MIGRAÇÃO: patient_id → internacao_id (o "paciente" alvo é a internação).
+        if (!patientIdParam && r.internacao_id) {
+          setCompletingPatientId(r.internacao_id);
         }
         setSelectedRequest({
           id: completeSapsIdParam,
@@ -629,69 +664,37 @@ export default function Saps3Page() {
           sex: null,
           destination_sector: destinationSectorFromContext || patientSectorParam || null,
           notes: null,
-          created_at: r.created_at || new Date().toISOString(),
+          created_at: r.criado_em || new Date().toISOString(),
           medical_record: null,
-          patient_id: patientIdParam || null,
+          patient_id: patientIdParam || r.internacao_id || null,
           allocation_request_id: null,
         });
 
         setPatientName(namePref);
-        setAge(r.age != null ? String(r.age) : (patientAgeFromContext ? String(patientAgeFromContext).replace(/\D/g, "") : ""));
-        setComorbidities(Array.isArray(r.comorbidities) ? r.comorbidities : []);
-        // Hidrata seções opcionais (não pontuam)
-        const ch = r.clinical_history || {};
-        setClinicalHistory({
-          selected: Array.isArray(ch.selected) ? ch.selected : [],
-          livre: typeof ch.livre === "string" ? ch.livre : "",
-        });
-        const lh = r.lifestyle_habits || {};
-        setLifestyleHabits({
-          tabagismo: lh.tabagismo || "",
-          macos_ano: lh.macos_ano || "",
-          etilismo: lh.etilismo || "",
-          drogas: lh.drogas || "",
-          drogas_detalhe: lh.drogas_detalhe || "",
-        });
-        const vd = r.vasoactive_drugs || {};
-        setVasoactiveOnAdmission(!!vd.on_admission);
-        setVasoactiveDrugs(Array.isArray(vd.entries) ? vd.entries : []);
-        setLosBeforeIcu(r.hospital_los_before_icu != null ? String(r.hospital_los_before_icu) : "");
-        setAdmissionSource(r.icu_admission_source || "");
-        setPlannedAdmission(!!r.planned_admission);
-        setAdmissionReason(r.admission_reason || "");
-        setAdmissionReasonDetail(r.admission_reason_detail || "");
-        setSurgicalStatus(r.surgical_status || "");
-        setSurgeryType(r.surgery_type || "");
-        setInfectionAtAdmission(r.infection_at_admission || "");
+        setAge(r.idade != null ? String(r.idade) : (patientAgeFromContext ? String(patientAgeFromContext).replace(/\D/g, "") : ""));
+        setComorbidities(Array.isArray(r.comorbidades) ? r.comorbidades : []);
+        // MIGRAÇÃO: clinical_history, lifestyle_habits, vasoactive_drugs e
+        // escala_consciencia NÃO têm colunas em avaliacoes_saps3 → não hidratam
+        // (seções opcionais e avaliação de consciência voltam ao estado inicial).
+        setLosBeforeIcu(r.dias_hospital_antes_uti != null ? String(r.dias_hospital_antes_uti) : "");
+        setAdmissionSource(r.origem_admissao || "");
+        setPlannedAdmission(!!r.admissao_planejada);
+        setAdmissionReason(r.motivo_admissao || "");
+        setAdmissionReasonDetail(r.motivo_admissao_detalhe || "");
+        setSurgicalStatus(r.status_cirurgico || "");
+        setSurgeryType(r.tipo_cirurgia || "");
+        setInfectionAtAdmission(r.infeccao_na_admissao || "");
 
-        // Hidrata avaliação de consciência a partir de escala_consciencia se disponível
-        const ec = r.escala_consciencia || {};
-        if (ec?.tipo === "RASS") {
-          setSedationStatus("sedated");
-          setRassScore(ec.rass_score != null ? String(ec.rass_score) : "");
-          setConsciousnessReason(ec.motivo || "");
-          setGcsPreSedation(ec.gcs_pre_sedacao != null ? String(ec.gcs_pre_sedacao) : "");
-        } else if (ec?.tipo === "GCS-T") {
-          setSedationStatus("intubated_no_sedation");
-          setGcsO(ec.glasgow_parciais?.O != null ? String(ec.glasgow_parciais.O) : "");
-          setGcsM(ec.glasgow_parciais?.M != null ? String(ec.glasgow_parciais.M) : "");
-        } else if (ec?.tipo === "GCS") {
-          setSedationStatus("no");
-          setGcsO(ec.glasgow_parciais?.O != null ? String(ec.glasgow_parciais.O) : "");
-          setGcsV(ec.glasgow_parciais?.V != null ? String(ec.glasgow_parciais.V) : "");
-          setGcsM(ec.glasgow_parciais?.M != null ? String(ec.glasgow_parciais.M) : "");
-        }
-
-        setHrHighest(r.heart_rate_highest != null ? String(r.heart_rate_highest) : "");
-        setSbpLowest(r.systolic_bp_lowest != null ? String(r.systolic_bp_lowest) : "");
-        setBilirubinHighest(r.bilirubin_highest != null ? String(r.bilirubin_highest) : "");
-        setTempLowest(r.temperature_lowest != null ? String(r.temperature_lowest) : "");
-        setCreatinineHighest(r.creatinine_highest != null ? String(r.creatinine_highest) : "");
-        setLeukocytes(r.leukocytes != null ? String(r.leukocytes) : "");
-        setPhLowest(r.ph_lowest != null ? String(r.ph_lowest) : "");
-        setPlateletsLowest(r.platelets_lowest != null ? String(r.platelets_lowest) : "");
-        setPao2Fio2(r.oxygenation_pao2_fio2 != null ? String(r.oxygenation_pao2_fio2) : "");
-        setIsVentilated(!!r.is_mechanically_ventilated);
+        setHrHighest(r.fc_mais_alta != null ? String(r.fc_mais_alta) : "");
+        setSbpLowest(r.pas_mais_baixa != null ? String(r.pas_mais_baixa) : "");
+        setBilirubinHighest(r.bilirrubina_mais_alta != null ? String(r.bilirrubina_mais_alta) : "");
+        setTempLowest(r.temperatura_mais_baixa != null ? String(r.temperatura_mais_baixa) : "");
+        setCreatinineHighest(r.creatinina_mais_alta != null ? String(r.creatinina_mais_alta) : "");
+        setLeukocytes(r.leucocitos != null ? String(r.leucocitos) : "");
+        setPhLowest(r.ph_mais_baixo != null ? String(r.ph_mais_baixo) : "");
+        setPlateletsLowest(r.plaquetas_mais_baixas != null ? String(r.plaquetas_mais_baixas) : "");
+        setPao2Fio2(r.relacao_pao2_fio2 != null ? String(r.relacao_pao2_fio2) : "");
+        setIsVentilated(!!r.ventilacao_mecanica);
 
         setSelectedSector(resolveSectorFromContext(patientSectorParam, currentSectorCode || currentDepartment));
         setSelectedBed(patientBedParam || "");
@@ -714,31 +717,10 @@ export default function Saps3Page() {
     // o paciente ainda não existe em `patients` — auto-resume sequestraria o fluxo para
     // "completar SAPS" e o handleSave cairia no early-return que só faz UPDATE no
     // saps3_assessments, sem inserir o paciente no leito nem marcar a pré-admissão.
-    (async () => {
-      if (!hospitalId || !stateId) return;
-      if (!patientIdParam) return;
-      let resumeQuery = supabase
-        .from("saps3_assessments" as any)
-        .select("id")
-        .eq("hospital_unit_id", hospitalId)
-        .eq("state_id", stateId)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (patientIdParam) {
-        resumeQuery = resumeQuery.eq("patient_id", patientIdParam);
-      } else {
-        resumeQuery = resumeQuery.ilike("patient_name", patientNameFromContext.trim());
-      }
-      const { data: pendingHit } = await resumeQuery.maybeSingle();
-      const hitId = (pendingHit as any)?.id;
-      if (hitId) {
-        const params = new URLSearchParams(searchParams);
-        params.set("completeSapsId", hitId);
-        navigate(`/saps3?${params.toString()}`, { replace: true });
-        toast.info(`Retomando ficha SAPS 3 pendente de ${patientNameFromContext}`);
-      }
-    })();
+    // MIGRAÇÃO: avaliacoes_saps3 não tem coluna `status` (nem patient_name/
+    // hospital_unit_id/state_id) → não há como identificar uma ficha "pendente"
+    // do paciente. O auto-resume da ficha pendente fica degradado (desativado);
+    // a retomada explícita segue funcionando via ?completeSapsId=.
 
 
     setCompletingSapsId(null);
@@ -961,44 +943,39 @@ export default function Saps3Page() {
   };
 
   // ─── Build SAPS payload ───
-  const buildSapsPayload = (statusVal: 'completed' | 'pending') => ({
-    patient_name: patientName,
-    hospital_unit_id: hospitalId,
-    state_id: stateId,
-    created_by: user?.id,
-    age: age ? parseInt(age) : null,
-    comorbidities,
-    // Seções opcionais (não pontuam SAPS) — perfil epidemiológico/hemodinâmico
-    clinical_history: { selected: clinicalHistory.selected, livre: clinicalHistory.livre || "" },
-    lifestyle_habits: { ...lifestyleHabits },
-    vasoactive_drugs: { on_admission: vasoactiveOnAdmission, entries: vasoactiveOnAdmission ? vasoactiveDrugs : [] },
-    hospital_los_before_icu: losBeforeIcu ? parseInt(losBeforeIcu) : null,
-    icu_admission_source: admissionSource || null,
-    planned_admission: plannedAdmission,
-    admission_reason: admissionReason || null,
-    admission_reason_detail: admissionReasonDetail || null,
-    surgical_status: surgicalStatus || null,
-    surgery_type: surgeryType || null,
-    infection_at_admission: infectionAtAdmission || null,
-    gcs_score: gcs ? parseInt(gcs) : (sedationStatus === "sedated" && gcsPreSedation ? parseInt(gcsPreSedation) : null),
-    escala_consciencia: buildEscalaConsciencia(),
-    heart_rate_highest: hrHighest ? parseInt(hrHighest) : null,
-    systolic_bp_lowest: sbpLowest ? parseInt(sbpLowest) : null,
-    bilirubin_highest: bilirubinHighest ? parseFloat(bilirubinHighest) : null,
-    temperature_lowest: tempLowest ? parseFloat(tempLowest) : null,
-    creatinine_highest: creatinineHighest ? parseFloat(creatinineHighest) : null,
-    leukocytes: leukocytes ? parseFloat(leukocytes) : null,
-    ph_lowest: phLowest ? parseFloat(phLowest) : null,
-    platelets_lowest: plateletsLowest ? parseInt(plateletsLowest) : null,
-    oxygenation_pao2_fio2: pao2Fio2 ? parseFloat(pao2Fio2) : null,
-    is_mechanically_ventilated: isVentilated,
-    box1_score: scores.box1,
-    box2_score: scores.box2,
-    box3_score: scores.box3,
-    total_score: scores.total,
-    predicted_mortality: scores.mortality,
-    status: statusVal,
-    pending_since: statusVal === 'pending' ? new Date().toISOString() : null,
+  // MIGRAÇÃO: saps3_assessments → avaliacoes_saps3 (colunas em português).
+  // Requer internacao_id. Degradados por falta de coluna: patient_name,
+  // hospital_unit_id/state_id, status/pending_since (workflow "pendente" não
+  // persiste), clinical_history/lifestyle_habits/vasoactive_drugs/escala_consciencia.
+  const buildSapsPayload = (internacaoId: string, criadoPor: string | null) => ({
+    internacao_id: internacaoId,
+    criado_por: criadoPor,
+    idade: age ? parseInt(age) : null,
+    comorbidades: comorbidities,
+    dias_hospital_antes_uti: losBeforeIcu ? parseInt(losBeforeIcu) : null,
+    origem_admissao: admissionSource || null,
+    admissao_planejada: plannedAdmission,
+    motivo_admissao: admissionReason || null,
+    motivo_admissao_detalhe: admissionReasonDetail || null,
+    status_cirurgico: surgicalStatus || null,
+    tipo_cirurgia: surgeryType || null,
+    infeccao_na_admissao: infectionAtAdmission || null,
+    escore_glasgow: gcs ? parseInt(gcs) : (sedationStatus === "sedated" && gcsPreSedation ? parseInt(gcsPreSedation) : null),
+    fc_mais_alta: hrHighest ? parseInt(hrHighest) : null,
+    pas_mais_baixa: sbpLowest ? parseInt(sbpLowest) : null,
+    bilirrubina_mais_alta: bilirubinHighest ? parseFloat(bilirubinHighest) : null,
+    temperatura_mais_baixa: tempLowest ? parseFloat(tempLowest) : null,
+    creatinina_mais_alta: creatinineHighest ? parseFloat(creatinineHighest) : null,
+    leucocitos: leukocytes ? parseFloat(leukocytes) : null,
+    ph_mais_baixo: phLowest ? parseFloat(phLowest) : null,
+    plaquetas_mais_baixas: plateletsLowest ? parseInt(plateletsLowest) : null,
+    relacao_pao2_fio2: pao2Fio2 ? parseFloat(pao2Fio2) : null,
+    ventilacao_mecanica: isVentilated,
+    escore_box1: scores.box1,
+    escore_box2: scores.box2,
+    escore_box3: scores.box3,
+    escore_total: scores.total,
+    mortalidade_prevista: scores.mortality,
   });
 
   // ─── Checklist de validação (tempo real) ───
@@ -1054,54 +1031,21 @@ export default function Saps3Page() {
     if (completingSapsId) {
       setSaving(true);
       try {
-        const sapsPayload = buildSapsPayload(asPending ? 'pending' : 'completed');
-        // Em update preservamos created_at original
-        delete (sapsPayload as any).created_by;
+        // MIGRAÇÃO: update em avaliacoes_saps3. internacao_id e criado_por são
+        // preservados (removidos do payload de update).
+        const sapsPayload: any = buildSapsPayload(completingPatientId || "", null);
+        delete sapsPayload.internacao_id;
+        delete sapsPayload.criado_por;
         const { error: updErr } = await supabase
-          .from("saps3_assessments" as any)
-          .update(sapsPayload as any)
+          .from("avaliacoes_saps3")
+          .update(sapsPayload)
           .eq("id", completingSapsId);
         if (updErr) throw updErr;
 
-        if (!asPending) {
-          // Resolve o patient_id alvo com fallbacks para evitar status "SAPS pendente" preso:
-          // 1) completingPatientId (URL ou hidratado do registro SAPS)
-          // 2) patient_id gravado na própria ficha SAPS
-          // 3) busca por nome + saps_pending=true no hospital/estado atual
-          let targetPatientId: string | null = completingPatientId;
-          if (!targetPatientId) {
-            const { data: sapsRow2 } = await supabase
-              .from("saps3_assessments" as any)
-              .select("patient_id, patient_name")
-              .eq("id", completingSapsId)
-              .maybeSingle();
-            targetPatientId = (sapsRow2 as any)?.patient_id ?? null;
-            if (!targetPatientId && (sapsRow2 as any)?.patient_name && hospitalId && stateId) {
-              const { data: patRow } = await supabase
-                .from("patients")
-                .select("id")
-                .eq("hospital_unit_id", hospitalId)
-                .eq("state_id", stateId)
-                .ilike("name", (sapsRow2 as any).patient_name)
-                .eq("saps_pending", true as any)
-                .order("admission_date", { ascending: false })
-                .limit(1)
-                .maybeSingle();
-              targetPatientId = (patRow as any)?.id ?? null;
-            }
-          }
-          if (targetPatientId) {
-            await supabase
-              .from("patients")
-              .update({
-                saps_pending: false,
-                saps_completed_at: new Date().toISOString(),
-              } as any)
-              .eq("id", targetPatientId);
-          } else {
-            console.warn("[SAPS] handleSave: não foi possível resolver patient_id para liberar gate clínico", { completingSapsId });
-          }
-        }
+        // MIGRAÇÃO: o "gate clínico SAPS pendente" vivia em patients.saps_pending /
+        // saps_completed_at — colunas inexistentes no schema novo (patients é
+        // tabela morta). Sem coluna de destino, a liberação do gate é degradada
+        // (não há o que atualizar); a ficha validada já reflete a conclusão.
 
         const sectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector || "—";
 
@@ -1148,154 +1092,54 @@ export default function Saps3Page() {
     setSaving(true);
     let createdSapsId: string | null = null;
     try {
-      const sapsPayload = buildSapsPayload(asPending ? 'pending' : 'completed');
+      // MIGRAÇÃO: avaliacoes_saps3 exige internacao_id (uuid real). No schema novo
+      // a ficha SAPS pendura na internação — não há mais a criação da "linha de
+      // paciente no leito" (patients é tabela morta; leitos/internacoes/setores
+      // formam outro fluxo). Resolve a internação a partir do contexto.
+      const internacaoId =
+        asUuidOrNull(selectedRequest?.patient_id) ||
+        asUuidOrNull(searchParams.get("patientId"));
+      if (!internacaoId) {
+        // Fluxo de pré-admissão SEM internação criada ainda não tem onde ancorar
+        // a ficha (a alocação física em leito foi degradada). Aborta com aviso.
+        toast.error(
+          "Sem internação vinculada — a criação de leito/admissão pelo SAPS foi degradada nesta migração. Admita o paciente no leito e complete o SAPS pela internação.",
+          { duration: 8000 },
+        );
+        return;
+      }
+
+      const criadoPor = await resolveProfissionalId(user?.id);
+      const sapsPayload = buildSapsPayload(internacaoId, criadoPor);
       const { data: sapsRecord, error: sapsError } = await supabase
-        .from("saps3_assessments" as any)
+        .from("avaliacoes_saps3")
         .insert(sapsPayload as any)
         .select("id")
         .single();
       if (sapsError) throw sapsError;
       createdSapsId = (sapsRecord as any)?.id || null;
 
-      const sectorMeta = UTI_SECTORS.find((sector) => sector.value === selectedSector);
-      const destinationSectorLabel = sectorMeta?.label || selectedSector;
-      const destinationDepartment = sectorMeta?.department || "UTI";
+      // MIGRAÇÃO: alocação física do paciente no leito REMOVIDA (degradada) —
+      // dependia de patients(bed rows)/bed_allocation_requests, tabelas mortas.
+      // A movimentação para o leito é responsabilidade de outro fluxo (leitos/
+      // solicitacoes_leito/internacoes). Aqui grava-se apenas a ficha SAPS.
 
-      // Carrega dados clínicos da pré-admissão (queixa/alergias) quando aplicável
-      let diagnoses: string | null = null;
-      let medicalHistory: string | null = null;
+      // Origem: pré-admissão → marca como admitida (pre_admissions → pre_admissoes).
+      // MIGRAÇÃO: destination_bed/destination_sector não existem em pre_admissoes;
+      // apenas o status é atualizado.
       if (selectedRequest?.id && !selectedRequest.allocation_request_id) {
-        const { data: preAdmissionData } = await supabase
-          .from("pre_admissions")
-          .select("chief_complaint, allergies")
-          .eq("id", selectedRequest.id)
-          .maybeSingle();
-        diagnoses = preAdmissionData?.chief_complaint || null;
-        medicalHistory = preAdmissionData?.allergies ? `Alergias: ${preAdmissionData.allergies}` : null;
-      }
-
-      // Modelo de leitos fixos: o leito alvo já existe como linha "vaga" em patients.
-      // Buscamos por setor+leito e normalizamos o department canônico no UPDATE.
-      const { data: bedRows, error: bedLookupError } = await supabase
-        .from("patients")
-        .select("id, department, is_vacant, name")
-        .eq("hospital_unit_id", hospitalId)
-        .eq("state_id", stateId)
-        .eq("sector", selectedSector)
-        .eq("bed_number", selectedBed);
-
-      if (bedLookupError) throw bedLookupError;
-
-      const existingBedRow = bedRows?.find((row) => row.department === destinationDepartment) ||
-        bedRows?.find((row) => row.is_vacant !== false) ||
-        bedRows?.[0] ||
-        null;
-
-      if (existingBedRow && existingBedRow.is_vacant === false) {
-        throw new Error(`Leito ${selectedBed} já está ocupado. Atualize o mapa e selecione outro leito.`);
-      }
-
-      const patientPayload: Record<string, any> = {
-        name: patientName,
-        bed_number: selectedBed,
-        sector: selectedSector,
-        department: destinationDepartment,
-        age: age ? `${age} anos` : null,
-        hospital_unit_id: hospitalId,
-        state_id: stateId,
-        created_by: user?.id,
-        admission_date: new Date().toISOString(),
-        uti_admission_date: new Date().toISOString(),
-        clinical_status: "grave",
-        is_vacant: false,
-        is_door_patient: false,
-        allocation_status: "approved",
-        diagnoses,
-        medical_history: medicalHistory,
-        // Fluxo Pré-admissão → Admissão Hospitalar:
-        // SAPS3 finalizado aloca o paciente no leito UTI/UCI mas a admissão clínica
-        // (HDA, exame físico, plano) ainda é feita pelo Painel Clínico.
-        admission_status: 'pre_admitido',
-        admitted_at: null,
-        patient_registry_id: selectedRequest?.patient_registry_id ?? null,
-      };
-
-      let admittedPatientId: string | null = null;
-      if (existingBedRow?.id) {
-        const { error: updateBedError } = await supabase
-          .from("patients")
-          .update(patientPayload)
-          .eq("id", existingBedRow.id);
-        if (updateBedError) throw updateBedError;
-        admittedPatientId = existingBedRow.id;
-      } else {
-        const { data: insertedRow, error: insertBedError } = await supabase
-          .from("patients")
-          .insert(patientPayload as any)
-          .select("id")
-          .single();
-        if (insertBedError) throw insertBedError;
-        admittedPatientId = (insertedRow as any)?.id ?? null;
-      }
-
-      // Repointa patient_id na ficha SAPS recém-criada — essencial para que o
-      // "Finalizar SAPS 3" no Painel/Hub consiga encontrar a ficha pendente
-      // pelo patient_id (e não cair em fluxo de pré-admissão de novo).
-      if (createdSapsId && admittedPatientId) {
-        await supabase
-          .from("saps3_assessments" as any)
-          .update({ patient_id: admittedPatientId } as any)
-          .eq("id", createdSapsId);
-      }
-
-      // Origem 1: solicitação de leito (door patient) → marca aprovada e remove a linha "porta"
-      if (selectedRequest?.allocation_request_id) {
-        await supabase
-          .from("bed_allocation_requests")
-          .update({
-            status: "approved",
-            reviewed_by: user?.id,
-            reviewed_at: new Date().toISOString(),
-          })
-          .eq("id", selectedRequest.allocation_request_id);
-
-        if (selectedRequest.patient_id && selectedRequest.patient_id !== existingBedRow?.id) {
-          await supabase.from("patients").delete().eq("id", selectedRequest.patient_id);
-        }
-      }
-
-      // Origem 2: pré-admissão → marca como admitida
-      if (selectedRequest?.id && !selectedRequest.allocation_request_id) {
-        const { error: updatePreAdmissionError } = await supabase
-          .from("pre_admissions")
-          .update({
-            status: "admitido",
-            destination_bed: selectedBed,
-            destination_sector: destinationSectorLabel,
-          })
-          .eq("id", selectedRequest.id);
-        if (updatePreAdmissionError) throw updatePreAdmissionError;
-      }
-
-      // Caso paciente já admitido com SAPS pendente: libera o gate clínico
-      if (!asPending) {
-        const targetPatientId =
-          admittedPatientId ||
-          (selectedRequest as any)?.patient_id ||
-          searchParams.get("patientId");
-        if (targetPatientId) {
-          await supabase
-            .from("patients")
-            .update({
-              saps_pending: false,
-              saps_completed_at: new Date().toISOString(),
-            } as any)
-            .eq("id", targetPatientId);
+        const preId = asUuidOrNull(selectedRequest.id);
+        if (preId) {
+          const { error: updatePreAdmissionError } = await supabase
+            .from("pre_admissoes")
+            .update({ status: "admitido" })
+            .eq("id", preId);
+          if (updatePreAdmissionError) throw updatePreAdmissionError;
         }
       }
 
       if (asPending) {
-        toast.success(`Paciente pré-admitido no leito ${selectedBed}. SAPS 3 ficou como pendente — aguardando resultados laboratoriais.`);
+        toast.success(`SAPS 3 registrado. A conclusão pode ser feita depois pela internação.`);
       }
 
       const sectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector;
@@ -1305,7 +1149,7 @@ export default function Saps3Page() {
         sectorLabel,
         totalScore: asPending ? 0 : scores.total,
         predictedMortality: asPending ? 0 : scores.mortality,
-        patientId: admittedPatientId,
+        patientId: internacaoId,
         sectorCode: selectedSector,
         age: age ? `${age} anos` : null,
       });
@@ -1316,7 +1160,7 @@ export default function Saps3Page() {
       loadOccupiedBeds();
     } catch (err: any) {
       if (createdSapsId) {
-        await supabase.from("saps3_assessments" as any).delete().eq("id", createdSapsId);
+        await supabase.from("avaliacoes_saps3").delete().eq("id", createdSapsId);
       }
       toast.error(humanizeSaveError(err), { duration: 7000 });
     } finally {
@@ -1326,7 +1170,7 @@ export default function Saps3Page() {
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    const { error } = await supabase.from("saps3_assessments" as any).delete().eq("id", deleteId);
+    const { error } = await supabase.from("avaliacoes_saps3").delete().eq("id", deleteId);
     if (error) toast.error("Erro ao excluir");
     else { toast.success("Registro excluído"); loadRecords(); }
     setDeleteId(null);

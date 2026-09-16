@@ -24,7 +24,7 @@ const LEGACY_GENERIC_USERS = [
 ];
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, status } = useAuth();
+  const { user, loading, status, role } = useAuth();
   const navigate = useNavigate();
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
   const [hasShownLoading, setHasShownLoading] = useState(false);
@@ -46,20 +46,26 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   // Verificar se usuário já aceitou os termos
   useEffect(() => {
     const checkTermsAcceptance = async () => {
-      if (!user || isLegacyGenericUser) {
+      // super_admin não passa pelo fluxo de termos (tabela profiles não existe mais no schema novo).
+      if (!user || isLegacyGenericUser || role === "super_admin") {
         setCheckingTerms(false);
         setTermsAccepted(true);
         return;
       }
 
       try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("terms_version, terms_accepted_at")
-          .eq("id", user.id)
-          .single();
-
-        if (profile?.terms_version === CURRENT_TERMS_VERSION && profile?.terms_accepted_at) {
+        // Schema refatorado: consentimento vive em consentimentos_usuario
+        // (antes: profiles.terms_version + user_consents).
+        const { data: consents, error } = await supabase
+          .from("consentimentos_usuario")
+          .select("tipo_consentimento")
+          .eq("usuario_id", user.id)
+          .eq("versao_consentimento", CURRENT_TERMS_VERSION)
+          .is("revogado_em", null);
+        if (error) throw error;
+        const tipos = new Set((consents ?? []).map((c) => c.tipo_consentimento));
+        const aceitouTudo = ["terms_of_use", "privacy_policy", "data_processing"].every((t) => tipos.has(t));
+        if (aceitouTudo) {
           setTermsAccepted(true);
         } else {
           setShowTermsDialog(true);
@@ -75,7 +81,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     if (user && !loading) {
       checkTermsAcceptance();
     }
-  }, [user, loading, isLegacyGenericUser]);
+  }, [user, loading, isLegacyGenericUser, role]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -107,6 +113,11 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return null;
+  }
+
+  // super_admin: sem hospital, setor, termos, fila de aprovação nem IP-gate — acesso direto.
+  if (role === "super_admin") {
+    return <SessionTimeoutProvider>{children}</SessionTimeoutProvider>;
   }
 
   if (showLoadingScreen) {

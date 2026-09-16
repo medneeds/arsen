@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
  * panel, but cannot edit clinical data nor open the Painel Clínico tab.
  *
  * Security: localStorage `access_profile` is UI-only. We additionally validate
- * the server-side role (`user_roles` table) so that a tampered localStorage
+ * the server-side role (`profissionais.papel`) so that a tampered localStorage
  * value cannot grant elevated capabilities. Admin always bypasses gestor mode.
  */
 export function useIsGestor(): boolean {
@@ -22,16 +22,17 @@ export function useIsGestor(): boolean {
       return;
     }
     // Server-side check: does this user have any role assignment that justifies
-    // gestor view? We treat 'admin' and 'medico' as legitimate viewers; other
-    // roles cannot escalate to gestor UI even if localStorage says so.
+    // gestor view? We treat 'admin', 'medico' and 'coordenador' as legitimate
+    // viewers; other roles cannot escalate to gestor UI even if localStorage says so.
+    // MIGRAÇÃO: user_roles não existe mais; o papel único vive em profissionais.papel.
     supabase
-      .from("user_roles")
-      .select("role")
+      .from("profissionais")
+      .select("papel")
       .eq("user_id", user.id)
       .then(({ data }) => {
         if (cancelled) return;
         const allowed = (data ?? []).some((r) =>
-          ["admin", "medico"].includes(r.role as string),
+          ["admin", "medico", "coordenador"].includes(r.papel as string),
         );
         setServerHasGestor(allowed);
       });

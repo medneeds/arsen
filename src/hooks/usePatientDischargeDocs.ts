@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 import type { DischargeDocType, DischargeDocPayload } from "@/lib/dischargeDocuments";
 
 export interface DischargeDocRow {
@@ -13,31 +12,41 @@ export interface DischargeDocRow {
   content: DischargeDocPayload;
 }
 
-export function usePatientDischargeDocs(patientId?: string | null, patientName?: string | null) {
-  // Fase B.3 — filtra pelo encounter ativo (NULL = legado, segue visível)
-  const { encounterId: activeEncounterId } = useActiveEncounterId(patientId ?? null);
+// MIGRAÇÃO: discharge_documents → altas. `patientId` é `internacoes.id` →
+// filtra por internacao_id. Colunas: document_type→tipo, signed_at→data_hora,
+// content→conteudo, signed_by_crm→crm_assinatura. Filtra apenas tipos de
+// desfecho (alta/óbito) — altas também guarda atestado/relatório/termo.
+// DEGRADADO (sem coluna no schema novo): patient_name (recuperado do conteudo
+// quando existir), signed_by_name (assinado_por é FK profissionais.id, não nome
+// → null), suspended_at/archived_at/encounter_id (filtros removidos).
+const DISCHARGE_TIPOS = ["alta_hospitalar", "alta_pedido", "obito"];
 
+export function usePatientDischargeDocs(patientId?: string | null, patientName?: string | null) {
   return useQuery({
-    queryKey: ["discharge-docs", patientId, patientName, activeEncounterId],
-    enabled: !!(patientId || patientName),
+    queryKey: ["discharge-docs", patientId, patientName],
+    enabled: !!patientId,
     queryFn: async (): Promise<DischargeDocRow[]> => {
-      let q = supabase
-        .from("discharge_documents")
-        .select("id, document_type, patient_name, signed_by_name, signed_by_crm, signed_at, content")
-        .is("suspended_at", null)
-        .is("archived_at", null) // defesa: nunca mostrar doc arquivado (bed vacate)
-        .order("signed_at", { ascending: false })
+      if (!patientId) return [];
+      const { data, error } = await supabase
+        .from("altas")
+        .select("id, tipo, conteudo, crm_assinatura, data_hora")
+        .eq("internacao_id", patientId)
+        .in("tipo", DISCHARGE_TIPOS)
+        .order("data_hora", { ascending: false })
         .limit(10);
-      if (patientId) q = q.eq("patient_id", patientId);
-      else if (patientName) q = q.eq("patient_name", patientName);
-      // Com encounter ativo, exige match estrito (sem fallback is.null) —
-      // bloqueia herança de doc órfão em caso de reuso de patient_id.
-      if (patientId && activeEncounterId) {
-        q = q.eq("encounter_id", activeEncounterId);
-      }
-      const { data, error } = await q;
       if (error) throw error;
-      return (data ?? []) as any;
+      return (data ?? []).map((r: any): DischargeDocRow => {
+        const conteudo = (r.conteudo ?? {}) as DischargeDocPayload;
+        return {
+          id: r.id,
+          document_type: r.tipo as DischargeDocType,
+          patient_name: conteudo?.patient_name ?? patientName ?? "",
+          signed_by_name: null, // MIGRAÇÃO: sem coluna de nome do assinante em altas
+          signed_by_crm: r.crm_assinatura ?? null,
+          signed_at: r.data_hora,
+          content: conteudo,
+        };
+      });
     },
   });
 }

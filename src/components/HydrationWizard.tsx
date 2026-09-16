@@ -112,7 +112,7 @@ function enteralSnapshotToEntry(s: EnteralSnapshot): MedicationEntry {
       ? "Hipodermóclise"
       : routeKey === "gtt"
         ? "Gastrostomia"
-        : routeKey === "jjt" || routeKey === "jej"
+        : routeKey === "jtt"
           ? "Jejunostomia"
           : routeKey === "sog"
             ? "Sonda orogástrica"

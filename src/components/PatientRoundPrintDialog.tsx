@@ -56,15 +56,25 @@ export function PatientRoundPrintDialog({
     let cancelled = false;
     (async () => {
       setLoadingSessions(true);
+      // MIGRAÇÃO: round_sessions→sessoes_visita. patient_id→internacao_id (patientId
+      // é o id da internação no schema novo), round_date→data_visita,
+      // observations→observacoes, updated_at→atualizado_em. SessionRow mantido estável.
       const { data } = await supabase
-        .from("round_sessions")
-        .select("id, round_date, observations, updated_at")
-        .eq("patient_id", patientId)
-        .order("round_date", { ascending: false })
-        .order("updated_at", { ascending: false })
+        .from("sessoes_visita")
+        .select("id, data_visita, observacoes, atualizado_em")
+        .eq("internacao_id", patientId)
+        .order("data_visita", { ascending: false })
+        .order("atualizado_em", { ascending: false })
         .limit(50);
       if (!cancelled) {
-        setSessions((data as SessionRow[]) || []);
+        setSessions(
+          ((data as any[]) || []).map((s) => ({
+            id: s.id,
+            round_date: s.data_visita,
+            observations: s.observacoes,
+            updated_at: s.atualizado_em,
+          })),
+        );
         setLoadingSessions(false);
       }
     })();
@@ -88,19 +98,22 @@ export function PatientRoundPrintDialog({
     setSelectedSessionId(sessionId);
     const session = sessions.find((s) => s.id === sessionId);
     if (!session) { setLoadingFilled(false); return; }
+    // MIGRAÇÃO: round_responses→respostas_visita, round_section_goals→
+    // metas_secao_visita. session_id→sessao_id, section_code→codigo_secao,
+    // observation→observacao, goal→meta.
     const [{ data: respData }, { data: goalData }] = await Promise.all([
-      supabase.from("round_responses").select("*").eq("session_id", sessionId),
-      supabase.from("round_section_goals").select("*").eq("session_id", sessionId),
+      supabase.from("respostas_visita").select("*").eq("sessao_id", sessionId),
+      supabase.from("metas_secao_visita").select("*").eq("sessao_id", sessionId),
     ]);
     const responses: Record<string, { status: RoundStatus | null; observation: string }> = {};
     (respData as any[] | null)?.forEach((r) => {
-      responses[`${r.section_code}_${r.item_id}`] = {
+      responses[`${r.codigo_secao}_${r.item_id}`] = {
         status: r.status as RoundStatus,
-        observation: r.observation || "",
+        observation: r.observacao || "",
       };
     });
     const goals: Record<string, string> = {};
-    (goalData as any[] | null)?.forEach((g) => { goals[g.section_code] = g.goal || ""; });
+    (goalData as any[] | null)?.forEach((g) => { goals[g.codigo_secao] = g.meta || ""; });
     const item: RoundPrintItem = {
       patientName, patientSector, patientBed, patientAge: ageStr,
       roundDate: session.round_date,

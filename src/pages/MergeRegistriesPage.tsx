@@ -74,21 +74,61 @@ function fmtVal(v: any): string {
   return String(v);
 }
 
-async function fetchCounts(registryId: string): Promise<CountsRow> {
-  const [pats, evos, prescs, exams, encs] = await Promise.all([
-    supabase.from("patients").select("id, bed_number, sector", { count: "exact" }).eq("patient_registry_id", registryId),
-    supabase.from("clinical_evolutions").select("id", { count: "exact", head: true }).eq("patient_registry_id", registryId),
-    supabase.from("prescriptions").select("id", { count: "exact", head: true }).filter("patient_data->>id", "in", `(${(await supabase.from("patients").select("id").eq("patient_registry_id", registryId)).data?.map((p: any) => `"${p.id}"`).join(",") || '""'})`),
-    supabase.from("exam_requests").select("id", { count: "exact", head: true }).eq("patient_registry_id", registryId),
-    supabase.from("patient_encounters").select("id", { count: "exact", head: true }).eq("registry_id", registryId),
-  ]);
-  const activeBed = (pats.data || []).find((p: any) => p.bed_number)?.bed_number || null;
+// MIGRAÇÃO: patient_registry→pacientes. Mapeia colunas pt-BR para a RegistryRow.
+// Sem coluna no schema novo (degradados): neighborhood/city/state (pacientes.endereco
+// é campo único), is_unidentified e merged_into_registry_id.
+function mapPaciente(p: any): RegistryRow {
   return {
-    patients: pats.count || 0,
-    evolutions: evos.count || 0,
-    prescriptions: prescs.count || 0,
-    exams: exams.count || 0,
-    encounters: encs.count || 0,
+    id: p.id,
+    full_name: p.nome_completo ?? null,
+    social_name: p.nome_social ?? null,
+    birth_date: p.data_nascimento ?? null,
+    sex: p.sexo ?? null,
+    mother_name: p.nome_mae ?? null,
+    cpf: p.cpf ?? null,
+    cns: p.cns ?? null,
+    phone: p.telefone ?? null,
+    address: p.endereco ?? null,
+    neighborhood: null,
+    city: null,
+    state: null,
+    medical_record: p.prontuario ?? null,
+    is_unidentified: false,
+    merged_into_registry_id: null,
+    created_at: p.criado_em,
+    updated_at: p.atualizado_em,
+  };
+}
+
+async function fetchCounts(registryId: string): Promise<CountsRow> {
+  // MIGRAÇÃO: registryId agora é pacientes.id. patients/patient_encounters→internacoes
+  // (por paciente_id); clinical_evolutions→evolucoes, prescriptions→prescricoes,
+  // exam_requests→solicitacoes_exame (todas por internacao_id). "Atendimentos" =
+  // internações. Leito ativo = internação sem data_alta → leitos.numero.
+  const { data: inters } = await supabase
+    .from("internacoes")
+    .select("id, data_alta, leito:leitos(numero)")
+    .eq("paciente_id", registryId);
+  const internacaoIds = (inters || []).map((i: any) => i.id);
+  const activeBed = (inters || []).find((i: any) => !i.data_alta)?.leito?.numero || null;
+
+  let evolutions = 0, prescriptions = 0, exams = 0;
+  if (internacaoIds.length > 0) {
+    const [evos, prescs, exs] = await Promise.all([
+      supabase.from("evolucoes").select("id", { count: "exact", head: true }).in("internacao_id", internacaoIds),
+      supabase.from("prescricoes").select("id", { count: "exact", head: true }).in("internacao_id", internacaoIds),
+      supabase.from("solicitacoes_exame").select("id", { count: "exact", head: true }).in("internacao_id", internacaoIds),
+    ]);
+    evolutions = evos.count || 0;
+    prescriptions = prescs.count || 0;
+    exams = exs.count || 0;
+  }
+  return {
+    patients: internacaoIds.length,
+    evolutions,
+    prescriptions,
+    exams,
+    encounters: internacaoIds.length,
     active_bed: activeBed,
   };
 }
@@ -103,11 +143,11 @@ export default function MergeRegistriesPage() {
   useEffect(() => {
     (async () => {
       if (!user) { setAuthorized(false); return; }
-      const { data: roleRow } = await supabase.from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
-      const { data: prof } = await supabase.from("profiles").select("access_profile").eq("id", user.id).maybeSingle();
-      const role = (roleRow as any)?.role;
-      const ap = (prof as any)?.access_profile;
-      setAuthorized(role === "admin" || ["gestor", "recepcao", "recepcionista", "administrativo"].includes(ap || ""));
+      // MIGRAÇÃO: user_roles/profiles → profissionais.papel (não há user_roles nem
+      // access_profile). Recepção/gestão ≈ nir/porta/coordenador.
+      const { data: prof } = await supabase.from("profissionais").select("papel").eq("user_id", user.id).maybeSingle();
+      const papel = (prof as any)?.papel;
+      setAuthorized(["super_admin", "admin", "coordenador", "nir", "porta"].includes(papel || ""));
     })();
   }, [user]);
 
@@ -135,11 +175,11 @@ export default function MergeRegistriesPage() {
     try {
       const q = search.trim();
       const digits = q.replace(/\D/g, "");
+      // MIGRAÇÃO: patient_registry→pacientes; filtro merged_into removido (sem coluna).
       let query = supabase
-        .from("patient_registry")
+        .from("pacientes")
         .select("*")
-        .is("merged_into_registry_id", null)
-        .order("created_at", { ascending: false })
+        .order("criado_em", { ascending: false })
         .limit(20);
 
       if (digits.length >= 11) {
@@ -147,12 +187,12 @@ export default function MergeRegistriesPage() {
       } else if (q) {
         // nome ou prontuário
         query = query.or(
-          `full_name.ilike.%${q}%,medical_record.ilike.%${q}%,social_name.ilike.%${q}%`
+          `nome_completo.ilike.%${q}%,prontuario.ilike.%${q}%,nome_social.ilike.%${q}%`
         );
       }
       const { data, error } = await query;
       if (error) throw error;
-      setResults((data || []) as RegistryRow[]);
+      setResults((data || []).map(mapPaciente));
     } catch (e: any) {
       toast({ title: "Erro na busca", description: e.message, variant: "destructive" });
     } finally {
@@ -173,16 +213,22 @@ export default function MergeRegistriesPage() {
     const a = results.find((r) => r.id === selectedIds[0])!;
     const b = results.find((r) => r.id === selectedIds[1])!;
     setPair({ a, b });
-    const [ca, cb, mra, mrb] = await Promise.all([
+    const [ca, cb] = await Promise.all([
       fetchCounts(a.id),
       fetchCounts(b.id),
-      supabase.from("medical_records").select("id, numero_prontuario, is_primary, created_at, patient_registry_id").eq("patient_registry_id", a.id),
-      supabase.from("medical_records").select("id, numero_prontuario, is_primary, created_at, patient_registry_id").eq("patient_registry_id", b.id),
     ]);
     setACounts(ca);
     setBCounts(cb);
-    setARecords((mra.data || []) as MedicalRecordRow[]);
-    setBRecords((mrb.data || []) as MedicalRecordRow[]);
+    // MIGRAÇÃO: medical_records morta; o prontuário é campo único em pacientes.
+    // Sintetiza uma "linha" de prontuário por lado a partir de pacientes.prontuario
+    // apenas para a escolha do predominante (não há múltiplos prontuários formais).
+    const synth = (r: RegistryRow): MedicalRecordRow[] => r.medical_record
+      ? [{ id: `pac_${r.id}`, numero_prontuario: r.medical_record, is_primary: true, created_at: r.created_at, patient_registry_id: r.id }]
+      : [];
+    const mraData = synth(a);
+    const mrbData = synth(b);
+    setARecords(mraData);
+    setBRecords(mrbData);
 
     // Sugestão: vencedor = quem tem leito ativo, ou quem tem mais histórico
     let suggested: "a" | "b" = "a";
@@ -205,8 +251,8 @@ export default function MergeRegistriesPage() {
     setFieldChoices(init);
 
     // Predominant MR: o do vencedor primary, senão o primeiro
-    const winMrs = suggested === "a" ? (mra.data || []) : (mrb.data || []);
-    const primary = (winMrs as any[]).find((m) => m.is_primary) || (winMrs as any[])[0];
+    const winMrs = suggested === "a" ? mraData : mrbData;
+    const primary = winMrs.find((m) => m.is_primary) || winMrs[0];
     setPredominantMrId(primary?.id || null);
   };
 
@@ -225,14 +271,14 @@ export default function MergeRegistriesPage() {
     if (results.length > 0 && results.some((r) => r.id === a) && results.some((r) => r.id === b)) return;
     (async () => {
       const { data, error } = await supabase
-        .from("patient_registry")
+        .from("pacientes")
         .select("*")
         .in("id", [a, b]);
       if (error || !data || data.length < 2) {
         toast({ title: "Não foi possível carregar o par", description: error?.message || "Registros não encontrados", variant: "destructive" });
         return;
       }
-      setResults(data as RegistryRow[]);
+      setResults(data.map(mapPaciente));
       setSelectedIds([a, b]);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -255,20 +301,59 @@ export default function MergeRegistriesPage() {
   const allMedicalRecords = [...aRecords, ...bRecords];
 
   const executeMerge = async () => {
-    if (!winnerRow || !loserRow || !predominantMrId) return;
+    if (!winnerRow || !loserRow) return;
     setExecuting(true);
     try {
-      const { data, error } = await (supabase as any).rpc("merge_patient_registries", {
-        p_winner_id: winnerRow.id,
-        p_loser_id: loserRow.id,
-        p_predominant_medical_record_id: predominantMrId,
-        p_field_choices: fieldChoices,
-        p_reason: reason.trim(),
-      });
-      if (error) throw error;
+      // MIGRAÇÃO: não existe RPC merge_patient_registries no backend novo. A fusão
+      // passa a ser feita direto contra o schema novo (patient_merge_audit→
+      // logs_auditoria, tipo_evento='fusao_pacientes'):
+      //   1) aplica os campos escolhidos no cadastro vencedor (pacientes);
+      //   2) repoint das internações do perdedor→vencedor (histórico segue junto);
+      //   3) grava a auditoria imutável da mesclagem.
+      // DEGRADADO (sem coluna/tabela no schema novo): arquivamento do perdedor
+      // (merged_into_registry_id), reatribuição do prontuário predominante
+      // (pacientes.prontuario é único), liberação de CPF/CNS e o histórico formal
+      // de edição por campo. O cadastro perdedor permanece (não é apagado).
+      const FIELD_TO_COL: Record<string, string> = {
+        full_name: "nome_completo", social_name: "nome_social", birth_date: "data_nascimento",
+        sex: "sexo", mother_name: "nome_mae", cpf: "cpf", cns: "cns",
+        phone: "telefone", address: "endereco",
+      };
+      const updatePayload: Record<string, any> = {};
+      for (const f of COMPARABLE_FIELDS) {
+        const col = FIELD_TO_COL[f.key as string];
+        if (!col) continue; // neighborhood/city/state sem coluna → degradado
+        const choice = fieldChoices[f.key as string] || "winner";
+        const value = choice === "winner" ? (winnerRow as any)[f.key]
+          : choice === "loser" ? (loserRow as any)[f.key]
+          : null;
+        updatePayload[col] = value ?? null;
+      }
+      if (Object.keys(updatePayload).length > 0) {
+        const { error: upErr } = await supabase.from("pacientes").update(updatePayload).eq("id", winnerRow.id);
+        if (upErr) throw upErr;
+      }
+
+      const { error: repErr } = await supabase
+        .from("internacoes").update({ paciente_id: winnerRow.id }).eq("paciente_id", loserRow.id);
+      if (repErr) throw repErr;
+
+      await supabase.from("logs_auditoria").insert({
+        tipo_evento: "fusao_pacientes",
+        nome_tabela: "pacientes",
+        registro_id: winnerRow.id,
+        paciente_id: winnerRow.id,
+        paciente_relacionado_id: loserRow.id,
+        dados_antigos: loserRow as any,
+        dados_novos: { ...winnerRow, ...updatePayload } as any,
+        campos_alterados: Object.keys(updatePayload),
+        motivo: reason.trim(),
+        ator_user_id: user?.id ?? null,
+      } as any);
+
       toast({
         title: "Mesclagem concluída",
-        description: `Cadastro arquivado. ${Object.entries((data?.counts as any) || {}).map(([k, v]) => `${k}: ${v}`).join(" · ")}`,
+        description: "Internações e histórico repontados para o cadastro vencedor.",
       });
       // Reset
       setPair(null); setSelectedIds([]); setResults([]); setSearch("");
@@ -409,7 +494,7 @@ export default function MergeRegistriesPage() {
             </div>
             <RadioGroup value={predominantMrId || ""} onValueChange={setPredominantMrId} className="space-y-2">
               {allMedicalRecords.length === 0 && (
-                <div className="text-xs text-muted-foreground italic">Nenhum prontuário formal — apenas o legado de patient_registry.medical_record será mantido.</div>
+                <div className="text-xs text-muted-foreground italic">Nenhum prontuário formal — o número em pacientes.prontuario será mantido.</div>
               )}
               {allMedicalRecords.map((mr) => {
                 const fromWinner = mr.patient_registry_id === winnerRow.id;
@@ -497,7 +582,7 @@ export default function MergeRegistriesPage() {
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => { setPair(null); setSelectedIds([]); }}>Cancelar</Button>
             <Button
-              disabled={!!blockingReason || reason.trim().length < 10 || !predominantMrId}
+              disabled={!!blockingReason || reason.trim().length < 10}
               onClick={() => setConfirmOpen(true)}
             >
               <GitMerge className="h-4 w-4 mr-2" />Revisar e mesclar

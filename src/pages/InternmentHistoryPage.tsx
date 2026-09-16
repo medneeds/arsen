@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { calculateAgeYears } from "@/lib/patientAge";
 import { format, subDays, subMonths, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -70,11 +71,20 @@ const InternmentHistoryPage = () => {
   }, [searchName, appliedStartDate, appliedEndDate, requests]);
 
   const loadRequests = async () => {
+    // MIGRAÇÃO: internment_requests morto → internacoes (a internação É o
+    // "encontro"). O modelo antigo tinha colunas denormalizadas
+    // (patient_name/age/sex/record, destination, content, department) que não
+    // existem em internacoes → reconstruídas via join pacientes/leitos/setores.
+    // `content` é sintetizado de queixa/hipótese/conduta (dado real, não inventado).
+    // Filtro por `department` REMOVIDO (sem coluna; RLS escopa por hospital).
     const { data, error } = await supabase
-      .from("internment_requests")
-      .select("*")
-      .eq("department", currentDepartment)
-      .order("created_at", { ascending: false });
+      .from("internacoes")
+      .select(`
+        id, data_entrada, atualizado_em, queixa_principal, hipotese_diagnostica, conduta_inicial,
+        paciente:pacientes ( nome_completo, nome_social, sexo, data_nascimento, prontuario ),
+        leito:leitos ( setor:setores ( nome ) )
+      `)
+      .order("data_entrada", { ascending: false });
 
     if (error) {
       if (import.meta.env.DEV) {
@@ -88,7 +98,26 @@ const InternmentHistoryPage = () => {
       return;
     }
 
-    setRequests(data || []);
+    const mapped: InternmentRequest[] = ((data as any[]) || []).map((i) => {
+      const pac = i.paciente || {};
+      const content = [
+        i.queixa_principal && `QUEIXA: ${i.queixa_principal}`,
+        i.hipotese_diagnostica && `HIPÓTESE DIAGNÓSTICA: ${i.hipotese_diagnostica}`,
+        i.conduta_inicial && `CONDUTA INICIAL: ${i.conduta_inicial}`,
+      ].filter(Boolean).join("\n") || "—";
+      return {
+        id: i.id,
+        destination: i.leito?.setor?.nome || "—",
+        content,
+        patient_name: pac.nome_social || pac.nome_completo || "—",
+        patient_age: calculateAgeYears(pac.data_nascimento),
+        patient_sex: pac.sexo ?? null,
+        patient_record: pac.prontuario ?? null,
+        created_at: i.data_entrada,
+        updated_at: i.atualizado_em || i.data_entrada,
+      };
+    });
+    setRequests(mapped);
   };
 
   const handlePeriodChange = (period: string) => {
@@ -173,30 +202,16 @@ const InternmentHistoryPage = () => {
     setIsViewDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase
-      .from("internment_requests")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      if (import.meta.env.DEV) {
-        console.error("Erro ao excluir:", error);
-      }
-      toast({
-        title: "ERRO",
-        description: "NÃO FOI POSSÍVEL EXCLUIR A SOLICITAÇÃO",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const handleDelete = async (_id: string) => {
+    // MIGRAÇÃO: internment_requests morto. Como agora cada linha É uma
+    // internação real (internacoes), excluí-la aqui apagaria um registro
+    // clínico do prontuário — comportamento inaceitável para uma tela de
+    // "histórico de solicitações". A exclusão foi DEGRADADA para no-op seguro.
     toast({
-      title: "EXCLUÍDO",
-      description: "SOLICITAÇÃO REMOVIDA DO BANCO",
+      title: "AÇÃO INDISPONÍVEL",
+      description:
+        "A exclusão de solicitações foi desativada na migração — cada registro é uma internação real e não pode ser removido por aqui.",
     });
-
-    loadRequests();
   };
 
   const formatDate = (dateString: string) => {

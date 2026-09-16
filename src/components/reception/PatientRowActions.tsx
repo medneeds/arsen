@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useHospital } from "@/contexts/HospitalContext";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
@@ -31,7 +30,6 @@ interface Props {
  * - Reabrir último atendimento (se ativo OU criado nas últimas 4h)
  */
 export function PatientRowActions({ patient, onReopenEncounter }: Props) {
-  const { currentHospital } = useHospital();
   const [checking, setChecking] = useState(false);
 
   const handleCopy = async () => {
@@ -58,17 +56,19 @@ export function PatientRowActions({ patient, onReopenEncounter }: Props) {
   };
 
   const handleReopen = async () => {
-    if (!currentHospital?.id) return;
     setChecking(true);
     try {
+      // MIGRAÇÃO: patient_encounters→internacoes. registry_id→paciente_id,
+      // created_at→criado_em. Não há hospital_unit_id em internacoes (filtro
+      // removido) nem encounter_code (o código do atendimento é degradado para
+      // string vazia — o callback em MedicalRecordsList ignora esse argumento).
       const fourHoursAgo = new Date(Date.now() - 4 * 3600 * 1000).toISOString();
       const { data, error } = await supabase
-        .from("patient_encounters")
-        .select("id, encounter_code, status, created_at")
-        .eq("registry_id", patient.id)
-        .eq("hospital_unit_id", currentHospital.id)
-        .gte("created_at", fourHoursAgo)
-        .order("created_at", { ascending: false })
+        .from("internacoes")
+        .select("id, status, criado_em")
+        .eq("paciente_id", patient.id)
+        .gte("criado_em", fourHoursAgo)
+        .order("criado_em", { ascending: false })
         .limit(1)
         .maybeSingle();
       if (error) throw error;
@@ -78,8 +78,8 @@ export function PatientRowActions({ patient, onReopenEncounter }: Props) {
         });
         return;
       }
-      onReopenEncounter((data as any).encounter_code, patient.id, patient.full_name);
-      toast.success("Atendimento reaberto", { description: (data as any).encounter_code });
+      onReopenEncounter("", patient.id, patient.full_name);
+      toast.success("Atendimento reaberto");
     } catch (err: any) {
       toast.error("Erro ao verificar atendimento", { description: err?.message });
     } finally {

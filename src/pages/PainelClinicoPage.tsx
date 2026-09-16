@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { usePatients } from "@/hooks/usePatients";
+import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 import { useTodaysPrescriptions, type TodaysPrescriptionStatus } from "@/hooks/useTodaysPrescriptions";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
@@ -149,6 +150,7 @@ export default function PainelClinicoPage() {
   const scopedDepartment = currentSectorCode ? undefined : currentDepartment;
   const scopedSector = currentSectorCode || undefined;
   const { patients: dbPatients, isLoading, updatePatient } = usePatients(scopedDepartment, scopedSector);
+  const { sectors: dbSectors } = useSectorNavigation(); // MIGRAÇÃO: setores do banco (alas→setores)
   const { currentHospital } = useHospital();
   const { getStatus: getTodaysPrescriptionStatus } = useTodaysPrescriptions(currentHospital?.id ?? null);
   const navigate = useNavigate();
@@ -176,15 +178,17 @@ export default function PainelClinicoPage() {
   // Fetch SAPS 3 scores for all patients
   useEffect(() => {
     const fetchSaps = async () => {
+      // MIGRAÇÃO: saps3_assessments → avaliacoes_saps3 (keyed by internacao_id = patient.id).
+      // DEGRADADO: sem colunas status/pending_since no schema novo → sempre 'completed'.
       const { data } = await supabase
-        .from("saps3_assessments" as any)
-        .select("id, patient_name, total_score, predicted_mortality, status, pending_since")
-        .order("created_at", { ascending: false });
+        .from("avaliacoes_saps3")
+        .select("id, internacao_id, escore_total, mortalidade_prevista, criado_em")
+        .order("criado_em", { ascending: false });
       if (data) {
         const map: Record<string, { id: string; score: number; mortality: number; status: string; pending_since: string | null }> = {};
         (data as any[]).forEach((r: any) => {
-          if (!map[r.patient_name]) {
-            map[r.patient_name] = { id: r.id, score: r.total_score ?? 0, mortality: r.predicted_mortality ?? 0, status: r.status ?? 'completed', pending_since: r.pending_since ?? null };
+          if (r.internacao_id && !map[r.internacao_id]) {
+            map[r.internacao_id] = { id: r.id, score: r.escore_total ?? 0, mortality: r.mortalidade_prevista ?? 0, status: 'completed', pending_since: null };
           }
         });
         setSapsScores(map);
@@ -200,7 +204,7 @@ export default function PainelClinicoPage() {
   const filteredPatients = useMemo(() => {
     return patients
       .filter(p => !p.isVacant && p.name && p.name.trim() !== "")
-      .filter(p => sectorFilter === "all" || p.sector === sectorFilter)
+      .filter(p => sectorFilter === "all" || p.sector === sectorFilter || p.sectorName === sectorFilter)
       .filter(p => {
         if (!search) return true;
         const q = search.toLowerCase();
@@ -267,11 +271,12 @@ export default function PainelClinicoPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os setores</SelectItem>
-              <SelectItem value="red">UTI 1</SelectItem>
-              <SelectItem value="yellow">UTI 2</SelectItem>
-              <SelectItem value="blue">UCI 1</SelectItem>
-              <SelectItem value="outside">UCI 2</SelectItem>
-              <SelectItem value="ucc">UCC</SelectItem>
+              {/* MIGRAÇÃO: setores vêm do banco (alas→setores); value = setores.nome (casa com p.sectorName). */}
+              {dbSectors.map((s) => (
+                <SelectItem key={s.id} value={s.nome}>
+                  {s.alaNome ? `${s.alaNome} · ${s.nome}` : s.nome}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <div className="relative flex-1 max-w-sm">
@@ -306,19 +311,24 @@ export default function PainelClinicoPage() {
                 const days = calcDaysInternment(patient.admissionDate);
                 const prescStatus = getPrescriptionStatus(getTodaysPrescriptionStatus(patient.name, patient.registryId));
                 const pendencies = parseTextArray(patient.pendencies);
-                const saps = sapsScores[patient.name];
+                const saps = sapsScores[patient.id];
                 return (
-                  <button
+                  // MIGRAÇÃO/FIX: era <button> e continha outro <button> (Eye) → nesting inválido.
+                  // Vira div com role=button + teclado para manter acessibilidade sem aninhar botões.
+                  <div
                     key={patient.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => goToPatientPanel(patient)}
-                    className="text-left rounded-xl border border-border bg-card p-3 active:scale-[0.99] transition-transform shadow-sm"
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goToPatientPanel(patient); } }}
+                    className="text-left rounded-xl border border-border bg-card p-3 active:scale-[0.99] transition-transform shadow-sm cursor-pointer"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono font-bold text-sm text-foreground">{patient.bedNumber}</span>
                           <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", getSectorColor(patient.sector))}>
-                            {getSectorLabel(patient.sector)}
+                            {patient.sectorName || getSectorLabel(patient.sector)}
                           </Badge>
                           <span className={cn("inline-block h-2 w-2 rounded-full", prescStatus.dotColor, prescStatus.pulsing && "animate-pulse-soft")} />
                           <span className="text-[10px] text-muted-foreground">{prescStatus.label}</span>
@@ -346,7 +356,7 @@ export default function PainelClinicoPage() {
                         <Eye className="h-4 w-4" />
                       </Button>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -383,7 +393,7 @@ export default function PainelClinicoPage() {
                         <div className="flex items-center gap-2">
                           <span className="patient-id font-mono font-bold text-foreground">{patient.bedNumber}</span>
                           <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 whitespace-nowrap", getSectorColor(patient.sector))}>
-                            {getSectorLabel(patient.sector)}
+                            {patient.sectorName || getSectorLabel(patient.sector)}
                           </Badge>
                         </div>
                       </TableCell>
@@ -401,14 +411,14 @@ export default function PainelClinicoPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        {sapsScores[patient.name] ? (
-                          sapsScores[patient.name].status === 'pending' ? (
+                        {sapsScores[patient.id] ? (
+                          sapsScores[patient.id].status === 'pending' ? (
                             <div className="flex flex-col items-center gap-1">
                               <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                                 <Clock className="h-3.5 w-3.5 animate-pulse" />
                                 <span className="text-[10px] font-semibold">Pendente</span>
                               </div>
-                              <SapsPendingMiniTimer pendingSince={sapsScores[patient.name].pending_since} />
+                              <SapsPendingMiniTimer pendingSince={sapsScores[patient.id].pending_since} />
                               <Button
                                 size="sm"
                                 variant="default"
@@ -416,7 +426,7 @@ export default function PainelClinicoPage() {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const params = new URLSearchParams();
-                                  params.set("completeSapsId", sapsScores[patient.name].id);
+                                  params.set("completeSapsId", sapsScores[patient.id].id);
                                   params.set("fromAllocation", "true");
                                   params.set("patientName", patient.name);
                                   if (patient.id) params.set("patientId", patient.id);
@@ -432,14 +442,14 @@ export default function PainelClinicoPage() {
                             </div>
                           ) : (
                             <div className="flex flex-col items-center gap-0.5">
-                              <span className="font-mono font-bold text-sm text-foreground">{sapsScores[patient.name].score}</span>
+                              <span className="font-mono font-bold text-sm text-foreground">{sapsScores[patient.id].score}</span>
                               <Badge variant="outline" className={cn("text-[10px] px-1.5",
-                                sapsScores[patient.name].mortality < 10 ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400" :
-                                sapsScores[patient.name].mortality < 25 ? "text-yellow-600 border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400" :
-                                sapsScores[patient.name].mortality < 50 ? "text-orange-600 border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400" :
+                                sapsScores[patient.id].mortality < 10 ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400" :
+                                sapsScores[patient.id].mortality < 25 ? "text-yellow-600 border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400" :
+                                sapsScores[patient.id].mortality < 50 ? "text-orange-600 border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400" :
                                 "text-red-600 border-red-200 bg-red-50 dark:bg-red-900/20 dark:text-red-400"
                               )}>
-                                {sapsScores[patient.name].mortality}%
+                                {sapsScores[patient.id].mortality}%
                               </Badge>
                             </div>
                           )

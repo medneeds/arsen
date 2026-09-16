@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useHospital } from "@/contexts/HospitalContext";
-import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
 import { toast } from "sonner";
-import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
 
 export type DocumentoMedicoType = "atestado" | "relatorio" | "termo";
 
@@ -27,80 +24,122 @@ export interface DocumentoMedicoData {
 
 /**
  * Hook para criar e listar atestados / relatórios / termos de um paciente.
- * Mesmo modelo de useReceituario — busca por patient_registry_id (vínculo
- * estável, segue o paciente entre leitos) com fallback para patient_id.
  *
- * Ao contrário de useReceituario, não precisa do fallback defensivo contra
- * "coluna ainda não existe" — documentos_medicos nasceu com
- * patient_registry_id desde o início (migration 20260819140000), sem linhas
- * legadas para migrar.
+ * MIGRAÇÃO: `documentos_medicos` não existe no schema novo → mapeado para
+ * `altas` (per de-para). `patientId` é `internacoes.id` → vínculo por
+ * internacao_id. Colunas de altas: tipo (atestado/relatorio/termo),
+ * conteudo(Json), crm_assinatura, assinado_por(FK profissionais.id), data_hora.
+ *
+ * Como `altas` não tem colunas dedicadas para body, days, cid, patient e nome do
+ * assinante, esses campos são preservados dentro de `conteudo` (Json). Filtra os
+ * documentos pelos três tipos deste hook — `altas` também guarda desfechos
+ * (alta_hospitalar/obito), tratados por usePatientDischargeDocs.
+ *
+ * DEGRADADO:
+ * - Vínculo estável por paciente (patient_registry_id/paciente_id) removido:
+ *   `altas` só referencia internacao_id → cross-internação não é possível aqui.
+ * - Salvar exige internação ativa (altas.internacao_id NOT NULL); sem patientId
+ *   não é possível emitir (antes documentos_medicos aceitava só patient_name).
+ * - encounter_id / hospital_unit_id / created_by descontinuados (sem coluna).
  */
+
+/** Resolve profissionais.id a partir do auth user id (assinado_por ≠ auth.uid). */
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from("profissionais")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const DOC_MEDICO_TIPOS = ["atestado", "relatorio", "termo"];
+
+function mapRow(r: any, fallbackName?: string | null): DocumentoMedicoData {
+  const c = (r.conteudo ?? {}) as Record<string, any>;
+  return {
+    id: r.id,
+    type: r.tipo,
+    patient_id: r.internacao_id ?? null,
+    patient_name: c.patient_name ?? fallbackName ?? "",
+    patient_bed: c.patient_bed ?? undefined,
+    patient_sector: c.patient_sector ?? undefined,
+    body: c.body ?? "",
+    days: c.days ?? null,
+    cid: c.cid ?? null,
+    signed_by_name: c.signed_by_name ?? undefined,
+    signed_by_crm: r.crm_assinatura ?? undefined,
+    created_at: r.criado_em ?? r.data_hora,
+  };
+}
+
 export function useDocumentoMedico(
   patientId?: string | null,
   patientName?: string | null,
 ) {
   const { user } = useAuth();
-  const { currentHospital } = useHospital();
-  const { registryId: resolvedRegistryId } = useResolvedRegistryId(patientId || null);
   const [documentos, setDocumentos] = useState<DocumentoMedicoData[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetch = useCallback(async () => {
-    if (!patientId && !patientName) return;
+    if (!patientId) {
+      setDocumentos([]);
+      return;
+    }
     setLoading(true);
     try {
-      let q = supabase
-        .from("documentos_medicos")
+      const { data, error } = await supabase
+        .from("altas")
         .select("*")
-        .order("created_at", { ascending: false });
-      if (resolvedRegistryId && patientId) {
-        q = q.or(`patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${patientId})`);
-      } else if (patientId) {
-        q = q.eq("patient_id", patientId);
-      } else if (patientName) {
-        q = q.ilike("patient_name", `%${patientName}%`);
-      }
-      const { data, error } = await q;
+        .eq("internacao_id", patientId)
+        .in("tipo", DOC_MEDICO_TIPOS)
+        .order("criado_em", { ascending: false });
       if (error) throw error;
-      setDocumentos((data ?? []) as unknown as DocumentoMedicoData[]);
+      setDocumentos((data ?? []).map((r) => mapRow(r, patientName)));
     } catch (err: any) {
       toast.error("Erro ao carregar documentos médicos", { description: err.message });
     } finally {
       setLoading(false);
     }
-  }, [patientId, patientName, resolvedRegistryId]);
+  }, [patientId, patientName]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
   /** Salva um novo documento (atestado/relatório/termo). Retorna o id criado. */
   const save = useCallback(async (data: DocumentoMedicoData): Promise<string | null> => {
     try {
-      if (!currentHospital?.id) {
-        toast.error("Selecione a unidade hospitalar antes de salvar o documento");
+      const internacaoId = data.patient_id ?? patientId ?? null;
+      if (!internacaoId) {
+        // MIGRAÇÃO: altas.internacao_id é NOT NULL — sem internação ativa não há
+        // onde vincular o documento.
+        toast.error("Selecione um paciente internado antes de salvar o documento");
         return null;
       }
+      const assinadoPor = await resolveProfissionalId(user?.id);
       const payload: Record<string, any> = {
-        type: data.type,
-        hospital_unit_id: currentHospital.id,
-        patient_id: data.patient_id ?? null,
-        patient_name: data.patient_name,
-        patient_bed: data.patient_bed ?? null,
-        patient_sector: data.patient_sector ?? null,
-        body: data.body,
-        days: data.days ?? null,
-        cid: data.cid ?? null,
-        signed_by_name: data.signed_by_name ?? null,
-        signed_by_crm: data.signed_by_crm ?? null,
-        created_by: user?.id ?? null,
+        internacao_id: internacaoId,
+        tipo: data.type,
+        crm_assinatura: data.signed_by_crm ?? null,
+        assinado_por: assinadoPor,
+        // Campos sem coluna dedicada em altas → preservados no conteudo (Json).
+        conteudo: {
+          body: data.body,
+          days: data.days ?? null,
+          cid: data.cid ?? null,
+          patient_name: data.patient_name,
+          patient_bed: data.patient_bed ?? null,
+          patient_sector: data.patient_sector ?? null,
+          signed_by_name: data.signed_by_name ?? null,
+        },
       };
-      if (resolvedRegistryId) payload.patient_registry_id = resolvedRegistryId;
-      if (data.patient_id) {
-        const encId = await resolveActiveEncounterId(data.patient_id);
-        if (encId) payload.encounter_id = encId;
-      }
 
       const { data: row, error } = await supabase
-        .from("documentos_medicos")
+        .from("altas")
         .insert(payload as any)
         .select("id")
         .single();
@@ -113,7 +152,7 @@ export function useDocumentoMedico(
       toast.error("Erro ao salvar documento", { description: err.message });
       return null;
     }
-  }, [user, currentHospital, resolvedRegistryId, fetch]);
+  }, [user, patientId, fetch]);
 
   return { documentos, loading, save, refresh: fetch };
 }

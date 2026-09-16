@@ -4,9 +4,12 @@ import { AlertTriangle } from "lucide-react";
 
 /**
  * Banner global de "Modo Manutenção".
- * Lê o singleton public.system_maintenance_mode (id=1) e ouve realtime para
+ * Lê o singleton public.modo_manutencao (id=1) e ouve realtime para
  * refletir mudanças instantaneamente em toda a aplicação. Aparece para
- * QUALQUER usuário (autenticado ou não) sempre que `is_active = true`.
+ * QUALQUER usuário (autenticado ou não) sempre que `ativo = true`.
+ *
+ * MIGRAÇÃO: `system_maintenance_mode` (morta) → `modo_manutencao`.
+ * Mapeamento: is_active→ativo, reason→motivo, started_at→iniciado_em.
  */
 export function MaintenanceModeBanner() {
   const [state, setState] = useState<{ active: boolean; reason: string | null; startedAt: string | null }>({
@@ -17,23 +20,23 @@ export function MaintenanceModeBanner() {
     let cancelled = false;
     const load = async () => {
       const { data } = await supabase
-        .from("system_maintenance_mode")
-        .select("is_active, reason, started_at")
+        .from("modo_manutencao")
+        .select("ativo, motivo, iniciado_em")
         .eq("id", 1)
         .maybeSingle();
       if (cancelled || !data) return;
-      setState({ active: !!data.is_active, reason: data.reason ?? null, startedAt: data.started_at ?? null });
+      setState({ active: !!data.ativo, reason: data.motivo ?? null, startedAt: data.iniciado_em ?? null });
     };
     load();
     const ch = supabase
-      .channel("system_maintenance_mode_banner")
+      .channel("modo_manutencao_banner")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "system_maintenance_mode", filter: "id=eq.1" },
+        { event: "*", schema: "public", table: "modo_manutencao", filter: "id=eq.1" },
         (payload: any) => {
           const row = payload.new ?? payload.old;
           if (!row) return;
-          setState({ active: !!row.is_active, reason: row.reason ?? null, startedAt: row.started_at ?? null });
+          setState({ active: !!row.ativo, reason: row.motivo ?? null, startedAt: row.iniciado_em ?? null });
         },
       )
       .subscribe();

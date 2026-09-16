@@ -2,6 +2,22 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+/**
+ * MIGRAÇÃO: field_text_templates → modelos (tipo='texto_campo').
+ * Mapeamento de colunas:
+ *   name→nome, body→conteudo, scope→escopo_campo, is_shared→escopo
+ *   ('global' quando compartilhado, senão 'pessoal'), hospital_unit_id→hospital_id,
+ *   use_count→contagem_uso, last_used_at→ultimo_uso_em, created_at→criado_em,
+ *   updated_at→atualizado_em, created_by→criado_por/profissional_id (profissionais.id,
+ *   resolvido via user_id).
+ * DEGRADADO: `user_id` (antes auth.uid) não tem coluna equivalente — modelos usa
+ *   `criado_por` (= profissionais.id, ≠ auth.uid), que é o que expomos no campo
+ *   `user_id`. A visibilidade "meus + compartilhados" fica a cargo da RLS.
+ * A interface exportada `FieldTemplate` é preservada.
+ */
+
+const TIPO_MODELO = "texto_campo";
+
 export interface FieldTemplate {
   id: string;
   user_id: string;
@@ -16,9 +32,40 @@ export interface FieldTemplate {
   updated_at: string;
 }
 
+/** Resolve profissionais.id a partir do auth user id (criado_por ≠ auth.uid). */
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from("profissionais")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function mapModelo(m: any): FieldTemplate {
+  return {
+    id: m.id,
+    user_id: m.criado_por ?? "", // MIGRAÇÃO: profissionais.id (não mais auth.uid)
+    scope: m.escopo_campo ?? "",
+    name: m.nome,
+    body: m.conteudo ?? "",
+    is_shared: m.escopo === "global",
+    hospital_unit_id: m.hospital_id ?? null,
+    use_count: m.contagem_uso ?? 0,
+    last_used_at: m.ultimo_uso_em ?? null,
+    created_at: m.criado_em,
+    updated_at: m.atualizado_em,
+  };
+}
+
 /**
  * Modelos de texto por campo (escopo livre, ex.: "evolution.subjective").
- * Cada usuário vê seus próprios + os marcados como compartilhados.
+ * Cada usuário vê seus próprios + os marcados como compartilhados (via RLS).
  */
 export function useFieldTemplates(scope: string) {
   const qc = useQueryClient();
@@ -27,13 +74,14 @@ export function useFieldTemplates(scope: string) {
     queryKey: ["field-templates", scope],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("field_text_templates")
+        .from("modelos")
         .select("*")
-        .eq("scope", scope)
-        .order("use_count", { ascending: false })
-        .order("name", { ascending: true });
+        .eq("tipo", TIPO_MODELO)
+        .eq("escopo_campo", scope)
+        .order("contagem_uso", { ascending: false })
+        .order("nome", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as FieldTemplate[];
+      return (data ?? []).map(mapModelo);
     },
     enabled: !!scope,
   });
@@ -43,14 +91,17 @@ export function useFieldTemplates(scope: string) {
       const { data: auth } = await supabase.auth.getUser();
       const uid = auth.user?.id;
       if (!uid) throw new Error("Sem sessão");
-      const { error } = await supabase.from("field_text_templates").insert({
-        user_id: uid,
-        scope,
-        name: input.name.trim(),
-        body: input.body,
-        is_shared: !!input.is_shared,
-        hospital_unit_id: input.hospital_unit_id ?? null,
-      });
+      const criadoPor = await resolveProfissionalId(uid);
+      const { error } = await supabase.from("modelos").insert({
+        tipo: TIPO_MODELO,
+        escopo_campo: scope,
+        nome: input.name.trim(),
+        conteudo: input.body,
+        escopo: input.is_shared ? "global" : "pessoal",
+        hospital_id: input.hospital_unit_id ?? null,
+        criado_por: criadoPor,
+        profissional_id: criadoPor,
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -62,7 +113,7 @@ export function useFieldTemplates(scope: string) {
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("field_text_templates").delete().eq("id", id);
+      const { error } = await supabase.from("modelos").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -76,8 +127,8 @@ export function useFieldTemplates(scope: string) {
     mutationFn: async (t: FieldTemplate) => {
       // Apenas o dono pode atualizar (RLS bloqueia outros). Silencioso em caso de erro.
       const { error } = await supabase
-        .from("field_text_templates")
-        .update({ use_count: (t.use_count ?? 0) + 1, last_used_at: new Date().toISOString() })
+        .from("modelos")
+        .update({ contagem_uso: (t.use_count ?? 0) + 1, ultimo_uso_em: new Date().toISOString() })
         .eq("id", t.id);
       if (error) {
         // ignora 401/permissão para modelos compartilhados de outros usuários

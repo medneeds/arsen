@@ -11,15 +11,19 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardList, Save, Loader2, CheckCircle2, Clock, Stethoscope } from "lucide-react";
+import { ClipboardList, Save, Loader2, CheckCircle2, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useHospital } from "@/contexts/HospitalContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CidSearchInput } from "./CidSearchInput";
+
+// MIGRAÇÃO: admission_histories morto. A história admissional agora É a própria
+// internação — `patient.id` é `internacoes.id`. Mapeamento:
+//   chief_complaint→queixa_principal, clinical_history→historia_clinica,
+//   diagnostic_hypothesis→hipotese_diagnostica, initial_conduct→conduta_inicial.
+// DEGRADADO (sem coluna em internacoes): cid_primary/cid_secondary/macro_diagnosis
+// → a seção CID-10/Macrodiagnóstico e o gate de "CID obrigatório" foram removidos.
+// patient_registry_id/hospital_unit_id/state_id/updated_by também não têm destino.
 
 interface AdmissionHistoryDialogProps {
   patient: Patient;
@@ -28,69 +32,45 @@ interface AdmissionHistoryDialogProps {
 }
 
 export function AdmissionHistoryDialog({ patient, open, onOpenChange }: AdmissionHistoryDialogProps) {
-  const { currentHospital, currentState } = useHospital();
-  const { user } = useAuth();
-  const { registryId: resolvedRegistryId } = useResolvedRegistryId(patient.id);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [existingId, setExistingId] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   const [chiefComplaint, setChiefComplaint] = useState("");
   const [clinicalHistory, setClinicalHistory] = useState("");
   const [diagnosticHypothesis, setDiagnosticHypothesis] = useState("");
   const [initialConduct, setInitialConduct] = useState("");
-  const [cidPrimary, setCidPrimary] = useState("");
-  const [cidSecondary, setCidSecondary] = useState("");
-  const [macroDiagnosis, setMacroDiagnosis] = useState("");
 
   useEffect(() => {
     if (open && patient.id) {
       fetchAdmissionHistory();
     }
-  }, [open, patient.id, resolvedRegistryId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, patient.id]);
 
   const fetchAdmissionHistory = async () => {
     setLoading(true);
     try {
-      // Blindagem contra reuso de leito: sempre archived_at IS NULL.
-      // Quando há registry conhecido, prioriza por registry (precisão);
-      // fallback por patient_id cobre legados sem registry carimbado.
-      let query = supabase
-        .from("admission_histories")
-        .select("*")
-        .is("archived_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-      query = resolvedRegistryId
-        ? query.eq("patient_registry_id", resolvedRegistryId)
-        : query.eq("patient_id", patient.id);
-
-      const { data: rows, error } = await query;
-      const data = rows?.[0] || null;
+      const { data, error } = await supabase
+        .from("internacoes")
+        .select("queixa_principal, historia_clinica, hipotese_diagnostica, conduta_inicial, atualizado_em")
+        .eq("id", patient.id)
+        .maybeSingle();
 
       if (error) throw error;
 
       if (data) {
-        setExistingId(data.id);
-        setChiefComplaint(data.chief_complaint || "");
-        setClinicalHistory(data.clinical_history || "");
-        setDiagnosticHypothesis(data.diagnostic_hypothesis || "");
-        setInitialConduct(data.initial_conduct || "");
-        setCidPrimary((data as any).cid_primary || "");
-        setCidSecondary((data as any).cid_secondary || "");
-        setMacroDiagnosis((data as any).macro_diagnosis || "");
-        setLastUpdated(data.updated_at);
+        const d: any = data;
+        setChiefComplaint(d.queixa_principal || "");
+        setClinicalHistory(d.historia_clinica || "");
+        setDiagnosticHypothesis(d.hipotese_diagnostica || "");
+        setInitialConduct(d.conduta_inicial || "");
+        setLastUpdated(d.atualizado_em ?? null);
       } else {
-        setExistingId(null);
         setChiefComplaint("");
         setClinicalHistory("");
         setDiagnosticHypothesis("");
         setInitialConduct("");
-        setCidPrimary("");
-        setCidSecondary("");
-        setMacroDiagnosis("");
         setLastUpdated(null);
       }
     } catch (err) {
@@ -102,52 +82,20 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
   };
 
   const handleSave = async () => {
-    if (!currentHospital || !currentState) return;
-    
-    if (!cidPrimary) {
-      toast.error("CID Primário é obrigatório");
-      return;
-    }
-
     setSaving(true);
-
     try {
-      const payload = {
-        patient_id: patient.id,
-        patient_registry_id: resolvedRegistryId ?? (patient as any).patient_registry_id ?? null,
-        hospital_unit_id: currentHospital.id,
-        state_id: currentState.id,
-        chief_complaint: chiefComplaint || null,
-        clinical_history: clinicalHistory || null,
-        diagnostic_hypothesis: diagnosticHypothesis || null,
-        initial_conduct: initialConduct || null,
-        cid_primary: cidPrimary || null,
-        cid_secondary: cidSecondary || null,
-        macro_diagnosis: macroDiagnosis || null,
-        updated_by: user?.id || null,
-      };
-
-      if (existingId) {
-        const { error } = await supabase
-          .from("admission_histories")
-          .update(payload)
-          .eq("id", existingId);
-        if (error) throw error;
-      } else {
-        const { data, error } = await supabase
-          .from("admission_histories")
-          .insert({ ...payload, created_by: user?.id || null })
-          .select("id, updated_at")
-          .single();
-        if (error) throw error;
-        if (data) {
-          setExistingId(data.id);
-          setLastUpdated(data.updated_at);
-        }
-      }
+      const { error } = await supabase
+        .from("internacoes")
+        .update({
+          queixa_principal: chiefComplaint || null,
+          historia_clinica: clinicalHistory || null,
+          hipotese_diagnostica: diagnosticHypothesis || null,
+          conduta_inicial: initialConduct || null,
+        } as any)
+        .eq("id", patient.id);
+      if (error) throw error;
 
       toast.success("História admissional salva com sucesso");
-      // Refresh to get updated_at
       await fetchAdmissionHistory();
     } catch (err) {
       console.error("Error saving admission history:", err);
@@ -221,48 +169,8 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
               />
             </div>
 
-            {/* CID e Macrodiagnóstico */}
-            <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
-              <p className="text-sm font-semibold flex items-center gap-2 text-foreground">
-                <Stethoscope className="h-4 w-4 text-primary" />
-                Classificação CID-10
-              </p>
-              
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-foreground">
-                  CID Primário <span className="text-destructive">*</span>
-                </Label>
-                <CidSearchInput
-                  value={cidPrimary}
-                  onChange={setCidPrimary}
-                  placeholder="Buscar CID primário (obrigatório)..."
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs text-foreground">
-                  CID Secundário
-                </Label>
-                <CidSearchInput
-                  value={cidSecondary}
-                  onChange={setCidSecondary}
-                  placeholder="Buscar CID secundário (opcional)..."
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs text-foreground">
-                  Macrodiagnóstico
-                </Label>
-                <Textarea
-                  value={macroDiagnosis}
-                  onChange={(e) => setMacroDiagnosis(e.target.value)}
-                  placeholder="Descrição macro do diagnóstico (ex: Politrauma, Sepse abdominal, ICC descompensada)..."
-                  className="min-h-[50px] text-sm"
-                />
-              </div>
-            </div>
+            {/* MIGRAÇÃO: bloco "Classificação CID-10" (CID primário/secundário +
+                macrodiagnóstico) removido — internacoes não tem colunas de CID. */}
 
             {/* Conduta Inicial */}
             <div className="space-y-2">
@@ -279,12 +187,10 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
 
             {/* Actions */}
             <div className="flex items-center justify-between pt-2 border-t border-border">
-              {existingId && (
-                <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  Registro existente
-                </div>
-              )}
+              <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Vinculada à internação atual
+              </div>
               <div className="flex gap-2 ml-auto">
                 <Button variant="outline" onClick={() => onOpenChange(false)}>
                   Fechar

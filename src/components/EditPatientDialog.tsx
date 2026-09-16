@@ -84,54 +84,17 @@ export function EditPatientDialog({
     if (open) setFormData(patient);
   }, [open, patient]);
 
-  // Detecta divergências PIS × patient_registry (não-bloqueante)
+  // MIGRAÇÃO: detecção de divergências PIS × patient_registry DEGRADADA.
+  // As tabelas de origem (patients.patient_registry_id, pre_admissions e
+  // patient_registry) estão mortas: pre_admissoes não tem os campos
+  // denormalizados que computePisDiff compara e o registro cadastral agora é
+  // a própria linha de `pacientes`. Sem fonte confiável de "PIS divergente",
+  // o banner de sincronização fica sempre oculto (pisDiffCount=0), igual ao
+  // que foi feito em AdmitPatientDialog (PisRegistrySyncDialog removido).
   useEffect(() => {
-    if (!open || !patient?.id) {
-      setPisDiffCount(0);
-      setPisSource(null);
-      setRegistryId(null);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        // 1) Descobre o patient_registry_id deste paciente
-        const { data: pat } = await supabase
-          .from("patients")
-          .select("patient_registry_id")
-          .eq("id", patient.id)
-          .maybeSingle();
-        const regId = (pat as any)?.patient_registry_id ?? null;
-        if (!regId) {
-          if (!cancelled) { setPisDiffCount(0); setRegistryId(null); setPisSource(null); }
-          return;
-        }
-        // 2) Busca a pré-admissão mais recente vinculada (fonte PIS)
-        const { data: preAdm } = await supabase
-          .from("pre_admissions")
-          .select("patient_name, social_name, mother_name, birth_date, sex, cpf, cns, phone, address, neighborhood, city, state, medical_record")
-          .eq("patient_registry_id", regId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        // 3) Busca registry atual
-        const { data: reg } = await supabase
-          .from("patient_registry")
-          .select("id, full_name, social_name, mother_name, birth_date, sex, cpf, cns, phone, address, neighborhood, city, state, medical_record")
-          .eq("id", regId)
-          .maybeSingle();
-        const src: PisSourceRow | null = preAdm ? (preAdm as any) : null;
-        const diff = computePisDiff(reg as any, src);
-        if (!cancelled) {
-          setRegistryId(regId);
-          setPisSource(src);
-          setPisDiffCount(diff.length);
-        }
-      } catch (e) {
-        console.warn("[edit-pis-check] ignorado:", e);
-      }
-    })();
-    return () => { cancelled = true; };
+    setPisDiffCount(0);
+    setPisSource(null);
+    setRegistryId(null);
   }, [open, patient?.id, checkNonce]);
 
   const sectorLabel = getSectorDisplayLabel(patient.sector) || patient.sector;

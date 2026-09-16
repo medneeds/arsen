@@ -33,6 +33,21 @@ import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
 const UTI_SECTORS = ["red", "yellow", "outside", "uti_01", "uti_02", "uci_02"];
 
+/** MIGRAÇÃO: profissionais.id ≠ auth.uid → resolve via profissionais.user_id. */
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from("profissionais")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Chave do rascunho local por prontuário — nunca por leito/linha reutilizável. */
 const draftKeyFor = (registryId: string) => `admission_draft:v2:${registryId}`;
 
@@ -496,87 +511,41 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     setAttempted(true);
     const err = validate();
     if (err) { toast.error(err); return; }
-    if (!currentHospital || !currentState || !user) { toast.error("Contexto não disponível"); return; }
-    if (!registryId) { toast.error("Prontuário não resolvido. Reabra o paciente e tente novamente."); return; }
+    if (!user) { toast.error("Contexto não disponível"); return; }
 
     setSubmitting(true);
     try {
       const doctorName = user.user_metadata?.full_name || user.email || "Médico Assistente";
       const now = new Date().toISOString();
+      // MIGRAÇÃO: profissional_id ≠ auth.uid.
+      const profissionalId = await resolveProfissionalId(user.id);
 
-      const { data: encounter } = await supabase
-        .from("patient_encounters")
-        .select("id")
-        .eq("registry_id", registryId)
-        .eq("patient_id", patient.id)
-        .neq("status", "closed")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      const encounterId = (encounter as any)?.id ?? null;
-
-      const admissionPayload = {
-        clinical_history: hda,
-        chief_complaint: hda.split("\n")[0]?.slice(0, 200) || null,
-        diagnostic_hypothesis: cidPrimary,
-        cid_primary: cidPrimary,
-        cid_secondary: cidSecondary || null,
-        macro_diagnosis: cidPrimary,
-        initial_conduct: plan,
-        department: currentDepartment || patient.department || "URGÊNCIA E EMERGÊNCIA ADULTO",
-        hospital_unit_id: currentHospital.id,
-        state_id: currentState.id,
-        patient_id: patient.id,
-        patient_registry_id: registryId,
-        encounter_id: encounterId,
-        created_by: user.id,
-        updated_by: user.id,
-      };
-
-      // Idempotente: se já existe admissão p/ este leito+prontuário, atualiza; senão insere.
-      // Evita colisão com a antiga UNIQUE(patient_id) e suporta reuso do leito por novos pacientes.
-      let ahError: any = null;
-      if (admissionPayload.patient_registry_id) {
-        const { data: existing } = await supabase
-          .from("admission_histories")
-          .select("id")
-          .eq("patient_id", admissionPayload.patient_id)
-          .eq("patient_registry_id", admissionPayload.patient_registry_id)
-          .is("archived_at", null)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (existing?.id) {
-          const { error } = await supabase
-            .from("admission_histories")
-            .update(admissionPayload as any)
-            .eq("id", existing.id);
-          ahError = error;
-        } else {
-          const { error } = await supabase
-            .from("admission_histories")
-            .insert(admissionPayload as any);
-          ahError = error;
-        }
-      } else {
-        const { error } = await supabase
-          .from("admission_histories")
-          .insert(admissionPayload as any);
-        ahError = error;
-      }
-      if (ahError) {
-        console.error("admission_histories upsert failed:", ahError);
-        throw new Error(`Falha ao gravar história admissional: ${ahError.message}`);
+      // MIGRAÇÃO: admission_histories morto → a admissão É a internação
+      // (patient.id === internacoes.id). Gravamos os campos clínicos direto em
+      // `internacoes` e marcamos status='admitido'. CID primário/secundário,
+      // macro_diagnosis, department, hospital_unit_id, state_id, encounter_id,
+      // patient_registry_id NÃO têm coluna → degradados (só ficam no impresso e
+      // no JSON da evolução). parseDiagnosesText mantido para normalizar hipóteses.
+      const parsedDiagnoses = parseDiagnosesText(diagnosticHypotheses);
+      const { error: interErr } = await supabase
+        .from("internacoes")
+        .update({
+          queixa_principal: hda.split("\n")[0]?.slice(0, 200) || null,
+          historia_clinica: hda || null,
+          hipotese_diagnostica:
+            parsedDiagnoses.length > 0
+              ? parsedDiagnoses.join("\n")
+              : (diagnosticHypotheses.trim() || cidPrimary || null),
+          conduta_inicial: plan || null,
+          status: "ativa",
+        } as any)
+        .eq("id", patient.id);
+      if (interErr) {
+        console.error("internacoes update failed:", interErr);
+        throw new Error(`Falha ao gravar admissão na internação: ${interErr.message}`);
       }
 
       const imcLine = imc ? ` | IMC ${imc.value} (${imc.label})` : "";
-      const admissionHistoryText = [
-        `QUEIXA PRINCIPAL: ${hda.split("\n")[0]?.slice(0, 200) || "—"}`,
-        `HISTÓRIA CLÍNICA: ${hda}`,
-        cidPrimary && `HIPÓTESE DIAGNÓSTICA: ${cidPrimary}`,
-        `CONDUTA INICIAL: ${plan}`,
-      ].filter(Boolean).join("\n");
-
       const soapAdmission = {
         subjective: `HDA:\n${hda}\n\nAMP: ${amp || "—"}\nMUC: ${muc || "—"}\nAlergias: ${allergies || "Nega"}`,
         objective: `Antropometria: peso ${weight || "—"} kg, altura ${height || "—"} m${imcLine}\n` +
@@ -592,69 +561,49 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         abdomen: physAbd, neurological: physNeuro, extremities: physExt, skin: "", other: "",
       };
 
-      const { error: evError } = await supabase
-        .from("clinical_evolutions")
-        .insert({
-          patient_id: patient.id,
-          patient_name: patient.name,
-          patient_bed: patient.bed,
-          patient_sector: patient.sector,
-          patient_registry_id: registryId,
-          encounter_id: encounterId,
-          soap_data: soapAdmission,
-          vital_signs: { pa, fc, fr, temp: tax, spo2, glasgow: "", diurese: "", dor: "" },
-          physical_exam: physicalExam,
-          status: "validated",
-          validated_at: now,
-          validated_by: user.id,
-          validated_by_name: doctorName,
-          created_by: user.id,
-          created_by_name: doctorName,
-          hospital_unit_id: currentHospital.id,
-          state_id: currentState.id,
-          department: currentDepartment || patient.department || "URGÊNCIA E EMERGÊNCIA ADULTO",
-          evolution_type: "admission",
-          diagnostic_hypotheses: diagnosticHypotheses.trim() || null,
-        } as any);
-      if (evError) throw evError;
-
-      // Busca o início da pré-admissão para cravar o cronômetro do SAPS
-      let sapsStart: string = now;
-      if (isUti) {
-        const { data: pRow } = await supabase
-          .from("patients")
-          .select("created_at")
-          .eq("id", patient.id)
-          .maybeSingle();
-        sapsStart = (pRow as any)?.created_at || now;
-      }
-
-      const parsedDiagnoses = parseDiagnosesText(diagnosticHypotheses);
-      const baseUpdate: Record<string, any> = {
-        admission_status: "admitido",
-        admitted_at: now,
-        uti_discharge_prediction: dischargePredictionLabel,
-        admission_history: admissionHistoryText,
-        ...(parsedDiagnoses.length > 0 ? { diagnoses: parsedDiagnoses } : {}),
-      };
-      if (isUti) {
-        Object.assign(baseUpdate, {
-          uti_admission_reason: admissionReason || null,
-          uti_origin_sector: originSector || null,
-          uti_devices: devices || null,
-          uti_cultures_antibiotics: culturesAtb || null,
-          uti_specialties: specialties || null,
-          uti_allergies: allergies || null,
-          saps_pending: true,
-          saps_pending_since: sapsStart,
-          saps_acknowledged_by: user.id,
-          saps_acknowledged_at: now,
-          saps_completed_at: null,
-        });
+      // MIGRAÇÃO: clinical_evolutions → evolucoes. Colunas dedicadas do modelo
+      // antigo (patient_name/bed/sector, vital_signs, cid_*, validated_*,
+      // created_by*, evolution_type, diagnostic_hypotheses) preservadas dentro do
+      // JSON `soap` (prefixo `__`, convenção de useEvolutions.mapEvolution).
+      // Sem profissional resolvido não é possível gravar (FK obrigatória) → a
+      // admissão fica só em `internacoes` (a timeline sintetiza a evolução virtual).
+      if (profissionalId) {
+        const soapPayload = {
+          ...soapAdmission,
+          __patient_name: patient.name,
+          __patient_bed: patient.bed,
+          __patient_sector: patient.sector,
+          __vital_signs: { pa, fc, fr, temp: tax, spo2, glasgow: "", diurese: "", dor: "" },
+          __diagnostic_hypotheses: diagnosticHypotheses.trim() || null,
+          __cid_primary: cidPrimary || null,
+          __cid_secondary: cidSecondary || null,
+          __validated_at: now,
+          __validated_by: user.id,
+          __validated_by_name: doctorName,
+          __created_by: user.id,
+          __created_by_name: doctorName,
+          __evolution_type: "admission",
+        };
+        const { error: evError } = await supabase
+          .from("evolucoes")
+          .insert({
+            internacao_id: patient.id,
+            profissional_id: profissionalId,
+            data_hora: now,
+            soap: soapPayload,
+            exame_fisico: physicalExam,
+            status: "validated",
+          } as any);
+        if (evError) throw evError;
       } else {
-        baseUpdate.hospital_discharge_prediction = null;
+        console.warn("[AdmissionDialog] profissional não resolvido — evolução de admissão não gravada");
       }
-      await supabase.from("patients").update(baseUpdate as any).eq("id", patient.id);
+
+      // MIGRAÇÃO: bloco patients.update DEGRADADO por completo — admission_status/
+      // admitted_at/uti_*/saps_*/uti_discharge_prediction/admission_history/diagnoses
+      // não têm coluna no schema novo. O estado da admissão vive em
+      // internacoes.status='admitido'; previsão de alta/UTI só no impresso e no
+      // JSON `soap`. A busca de patients.created_at para o cronômetro SAPS caiu.
 
       // Admissão persistida com sucesso — agora a impressão é segura.
       setIsSaved(true);

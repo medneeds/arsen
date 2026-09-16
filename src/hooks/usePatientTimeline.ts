@@ -48,25 +48,18 @@ export interface UsePatientTimelineOptions {
 }
 
 /**
- * Tabelas-fonte que alimentam a view patient_timeline.
- * Subscritas via realtime para invalidar o cache da timeline.
+ * Tabelas-fonte da timeline no schema novo. Subscritas via realtime para
+ * invalidar o cache. MIGRAÇÃO: repontadas das tabelas antigas para as novas
+ * (todas chaveadas por internacao_id).
  */
 const TIMELINE_SOURCE_TABLES = [
-  "pre_admissions",
-  "patient_encounters",
-  "admission_histories",
-  "clinical_evolutions",
-  "prescriptions",
-  "exam_requests",
-  "culture_results",
-  "patient_movements",
-  "conduct_history",
-  "bed_status_history",
-  "dispensations",
-  "dhd_patients",
-  "vital_signs",
-  "round_sessions",
-  "discharge_documents",
+  "internacoes",
+  "evolucoes",
+  "prescricoes",
+  "solicitacoes_exame",
+  "resultados_cultura",
+  "transferencias",
+  "altas",
 ] as const;
 
 export function usePatientTimeline(opts: UsePatientTimelineOptions) {
@@ -121,17 +114,108 @@ export function usePatientTimeline(opts: UsePatientTimelineOptions) {
     queryKey,
     enabled: enabled && (!!patientRegistryId || !!patientId),
     queryFn: async (): Promise<TimelineEvent[]> => {
-      const { data, error } = await supabase.rpc("get_patient_timeline", {
-        p_patient_registry_id: patientRegistryId ?? undefined,
-        p_patient_id: patientId ?? undefined,
-        p_event_types: eventTypes && eventTypes.length > 0 ? eventTypes : undefined,
-        p_from_date: fromDate ?? undefined,
-        p_to_date: toDate ?? undefined,
-        p_search: search && search.trim() ? search.trim() : undefined,
-        p_limit: limit,
-      });
-      if (error) throw error;
-      return (data ?? []) as TimelineEvent[];
+      // MIGRAÇÃO: a RPC get_patient_timeline e a view patient_timeline não
+      // existem no schema novo. DEGRADADO: a timeline é montada no cliente a
+      // partir das tabelas-fonte (todas chaveadas por internacao_id).
+      //
+      // `patientId` é internacoes.id; `patientRegistryId` é pacientes.id
+      // (identidade permanente). Resolvemos a lista de internações-alvo:
+      // - com patientId → [patientId]
+      // - só com patientRegistryId → todas as internações desse paciente
+      let internacaoIds: string[] = [];
+      if (patientId) {
+        internacaoIds = [patientId];
+      } else if (patientRegistryId) {
+        const { data: internacoes } = await supabase
+          .from("internacoes")
+          .select("id")
+          .eq("paciente_id", patientRegistryId);
+        internacaoIds = (internacoes ?? []).map((r: any) => r.id);
+      }
+      if (internacaoIds.length === 0) return [];
+
+      const events: TimelineEvent[] = [];
+      const base = {
+        // DEGRADADO: colunas de identidade/escopo sem equivalente nas tabelas novas.
+        patient_registry_id: patientRegistryId ?? null,
+        patient_name: null as string | null,
+        author_id: null as string | null,
+        author_email: null as string | null,
+        hospital_unit_id: null as string | null,
+        state_id: null as string | null,
+        department: null as string | null,
+      };
+      const push = (
+        type: TimelineEventType,
+        row: any,
+        eventAt: string | null | undefined,
+        internacaoId: string,
+        summary: string | null,
+      ) => {
+        if (!eventAt) return;
+        events.push({
+          event_id: `${type}-${row.id}`,
+          event_type: type,
+          event_label: EVENT_TYPE_LABELS[type],
+          event_at: eventAt,
+          patient_id: internacaoId,
+          summary,
+          payload: row,
+          ...base,
+        });
+      };
+
+      const [internRes, evolRes, prescRes, examRes, cultRes, transfRes, altasRes] =
+        await Promise.all([
+          supabase.from("internacoes").select("*").in("id", internacaoIds),
+          supabase.from("evolucoes").select("*").in("internacao_id", internacaoIds),
+          supabase.from("prescricoes").select("*").in("internacao_id", internacaoIds),
+          supabase.from("solicitacoes_exame").select("*").in("internacao_id", internacaoIds),
+          supabase.from("resultados_cultura").select("*").in("internacao_id", internacaoIds),
+          supabase.from("transferencias").select("*").in("internacao_id", internacaoIds),
+          supabase.from("altas").select("*").in("internacao_id", internacaoIds),
+        ]);
+
+      (internRes.data || []).forEach((r: any) =>
+        push("encounter", r, r.data_entrada, r.id, r.queixa_principal ?? null),
+      );
+      (evolRes.data || []).forEach((r: any) =>
+        push("evolution", r, r.data_hora ?? r.criado_em, r.internacao_id, null),
+      );
+      (prescRes.data || []).forEach((r: any) =>
+        push("prescription", r, r.criado_em, r.internacao_id, r.observacoes ?? null),
+      );
+      (examRes.data || []).forEach((r: any) =>
+        push("exam_request", r, r.criado_em, r.internacao_id, r.categoria ?? null),
+      );
+      (cultRes.data || []).forEach((r: any) =>
+        push("culture_result", r, r.criado_em ?? r.data_coleta, r.internacao_id, r.tipo_cultura ?? null),
+      );
+      (transfRes.data || []).forEach((r: any) =>
+        push("movement", r, r.data_hora ?? r.criado_em, r.internacao_id, r.motivo ?? null),
+      );
+      (altasRes.data || []).forEach((r: any) =>
+        push("discharge_document", r, r.data_hora ?? r.criado_em, r.internacao_id, r.tipo ?? null),
+      );
+
+      // Filtros client-side (antes feitos pela RPC).
+      let result = events;
+      if (eventTypes && eventTypes.length > 0) {
+        const set = new Set(eventTypes);
+        result = result.filter((e) => set.has(e.event_type));
+      }
+      if (fromDate) result = result.filter((e) => e.event_at >= fromDate);
+      if (toDate) result = result.filter((e) => e.event_at <= toDate);
+      if (search && search.trim()) {
+        const q = search.trim().toLowerCase();
+        result = result.filter(
+          (e) =>
+            (e.summary?.toLowerCase().includes(q) ?? false) ||
+            e.event_label.toLowerCase().includes(q),
+        );
+      }
+      result.sort((a, b) => (a.event_at < b.event_at ? 1 : -1));
+      return result.slice(0, limit);
     },
   });
 }

@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
-import { useDepartment } from "@/contexts/DepartmentContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Calendar } from "lucide-react";
@@ -12,6 +11,7 @@ import { parseISO, differenceInDays } from "date-fns";
 import { DhdPatientCard } from "@/components/dhd/DhdPatientCard";
 import { DhdCompletionDialog } from "@/components/dhd/DhdCompletionDialog";
 
+// Shape de view-model consumido pelos cards/dialogs DHD (mantido estável).
 interface DhdPatient {
   id: string;
   patient_name: string;
@@ -26,12 +26,41 @@ interface DhdPatient {
   created_at: string;
 }
 
+// MIGRAÇÃO: pacientes_dhd (schema novo) não tem colunas de nome/idade/programação.
+// A identidade do paciente vem, quando existe, da internação vinculada
+// (internacao_id → internacoes → pacientes). Sem internação, nome/idade ficam vazios.
+function computeAge(dob: string | null | undefined): string | null {
+  if (!dob) return null;
+  const d = new Date(dob);
+  if (isNaN(d.getTime())) return null;
+  const diff = Date.now() - d.getTime();
+  const years = Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
+  return years >= 0 ? `${years} anos` : null;
+}
+
+function mapDhdRow(r: any): DhdPatient {
+  const pac = r?.internacoes?.pacientes ?? null;
+  const nome = pac?.nome_social || pac?.nome_completo || "";
+  return {
+    id: r.id,
+    patient_name: nome, // MIGRAÇÃO: derivado de internacao→paciente (vazio sem vínculo)
+    patient_age: computeAge(pac?.data_nascimento), // MIGRAÇÃO: idem
+    diagnosis: r.diagnostico ?? null,
+    start_date: r.data_inicio,
+    end_date: r.data_fim,
+    medication_schedule: null, // MIGRAÇÃO: sem coluna equivalente no schema novo
+    medication_days: Array.isArray(r.dias_medicacao) ? r.dias_medicacao : [],
+    dhd_report: r.relatorio_dhd ?? null,
+    status: r.status,
+    created_at: r.criado_em,
+  };
+}
+
 export default function DhdDashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { currentState, currentHospital } = useHospital();
-  const { currentDepartment } = useDepartment();
-  
+  const { currentHospital } = useHospital();
+
   const [patients, setPatients] = useState<DhdPatient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,22 +68,22 @@ export default function DhdDashboardPage() {
   const [selectedPatient, setSelectedPatient] = useState<DhdPatient | null>(null);
 
   const fetchPatients = async () => {
-    if (!user || !currentState || !currentHospital) return;
+    // MIGRAÇÃO: filtros por state_id/department removidos (colunas inexistentes);
+    // escopo agora é hospital_id + RLS.
+    if (!user || !currentHospital) return;
 
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from("dhd_patients")
-        .select("*")
-        .eq("state_id", currentState.id)
-        .eq("hospital_unit_id", currentHospital.id)
-        .eq("department", currentDepartment)
+        .from("pacientes_dhd")
+        .select("*, internacoes(pacientes(nome_completo, nome_social, data_nascimento))")
+        .eq("hospital_id", currentHospital.id)
         .eq("status", "active")
-        .order("end_date", { ascending: true });
+        .order("data_fim", { ascending: true });
 
       if (error) throw error;
 
-      setPatients(data as any || []);
+      setPatients((data as any[] | null)?.map(mapDhdRow) ?? []);
     } catch (error) {
       console.error("Erro ao buscar pacientes DHD:", error);
       toast.error("Erro ao carregar pacientes DHD");
@@ -65,7 +94,7 @@ export default function DhdDashboardPage() {
 
   useEffect(() => {
     fetchPatients();
-  }, [user, currentState, currentHospital, currentDepartment]);
+  }, [user, currentHospital]);
 
   const handleMedicationToggle = async (patientId: string, date: string, currentDays: string[]) => {
     try {
@@ -75,8 +104,8 @@ export default function DhdDashboardPage() {
         : [...currentDays, date];
 
       const { error } = await supabase
-        .from("dhd_patients")
-        .update({ medication_days: updatedDays })
+        .from("pacientes_dhd")
+        .update({ dias_medicacao: updatedDays })
         .eq("id", patientId);
 
       if (error) throw error;
@@ -106,7 +135,7 @@ export default function DhdDashboardPage() {
 
     try {
       const { error } = await supabase
-        .from("dhd_patients")
+        .from("pacientes_dhd")
         .update({ status: "completed" })
         .eq("id", selectedPatient.id);
 

@@ -22,6 +22,7 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
+import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 import { PrintableDashboard } from "@/components/PrintableDashboard";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SECTOR_DISPLAY_LABELS, SECTOR_BED_CONFIG } from "@/utils/bedNaming";
@@ -55,11 +56,16 @@ const SECTOR_COLORS: Record<string, string> = {
 
 const DashboardPage = () => {
   const { currentDepartment } = useDepartment();
+  // Setores reais do banco (alas→setores). O rótulo do setor ativo passa a vir de
+  // setor.nome, casado por setor.tipo (o código guardado em localStorage), em vez
+  // da taxonomia estática (SECTOR_DISPLAY_LABELS). Degrada para o fallback estático
+  // enquanto carrega ou se nenhum setor tiver o `tipo` ativo.
+  const { sectors: dbSectors } = useSectorNavigation();
   const [isLoading, setIsLoading] = useState(false);
 
   // Active sector from localStorage (synced with login/header selector)
   const [activeSector, setActiveSector] = useState<string>(() => {
-    return localStorage.getItem("selected_sector") || "red";
+    return localStorage.getItem("selected_sector") || "";
   });
 
   // Listen for sector changes from other pages
@@ -78,7 +84,7 @@ const DashboardPage = () => {
 
     // Also poll localStorage (same-tab changes don't fire StorageEvent)
     const interval = setInterval(() => {
-      const stored = localStorage.getItem("selected_sector") || "red";
+      const stored = localStorage.getItem("selected_sector") || "";
       setActiveSector(prev => prev !== stored ? stored : prev);
     }, 1000);
 
@@ -88,7 +94,10 @@ const DashboardPage = () => {
     };
   }, []);
 
-  const activeSectorLabel = SECTOR_DISPLAY_LABELS[activeSector] || activeSector;
+  const activeSectorLabel =
+    dbSectors.find((s) => s.tipo === activeSector)?.nome ||
+    SECTOR_DISPLAY_LABELS[activeSector] ||
+    activeSector;
   
   // Date range filters
   const [tempDateRange, setTempDateRange] = useState<{ from: Date; to: Date }>({
@@ -102,7 +111,7 @@ const DashboardPage = () => {
   });
   const [comparisonPeriod, setComparisonPeriod] = useState<string>("previous");
 
-  const { currentHospital, currentState } = useHospital();
+  const { currentHospital } = useHospital();
 
   // KPIs State
   const [kpis, setKpis] = useState({
@@ -149,11 +158,12 @@ const DashboardPage = () => {
       debounceId = window.setTimeout(() => fetchDashboardData(), 800);
     };
 
+    // MIGRAÇÃO: realtime migrado de patient_movements/internment_requests/patients
+    // para as tabelas novas internacoes e solicitacoes_leito.
     const channel = supabase
       .channel('dashboard-rt')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'patient_movements' }, debouncedRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'internment_requests' }, debouncedRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'patients' }, debouncedRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'internacoes' }, debouncedRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'solicitacoes_leito' }, debouncedRefetch)
       .subscribe();
 
     return () => {
@@ -180,91 +190,75 @@ const DashboardPage = () => {
     }
   };
 
+  // MIGRAÇÃO: internacoes vincula-se ao hospital por leitos → setores → alas.hospital_id.
+  // setores.tipo guarda o código de setor (red/yellow/blue/...).
+  const INT_JOIN = `id, data_entrada, data_alta, leito:leitos!inner ( setor:setores!inner ( tipo, ala:alas!inner ( hospital_id ) ) )`;
+
   const fetchKPIs = async () => {
-    const departmentFilter = { department: currentDepartment };
+    if (!currentHospital) return;
+    const hospitalId = currentHospital.id;
     const now = new Date();
     const twentyFourHoursAgo = subHours(now, 24);
-    
+
     // Sector-specific bed config
     const sectorConfig = SECTOR_BED_CONFIG[activeSector];
     const totalSectorBeds = sectorConfig?.maxRegularBeds || 0;
-    
-    // Current period queries — filtered by sector
+
+    // Aplica o filtro hospital + setor sobre os embeds (cast por causa dos caminhos aninhados).
+    const scoped = (base: any) =>
+      base.eq("leito.setor.ala.hospital_id", hospitalId).eq("leito.setor.tipo", activeSector);
+
     const [
-      { data: requests },
-      { data: patients },
-      { data: discharges },
-      { data: deaths },
-      { data: transfers },
-      { data: newAdmissions },
-      { data: pendingPrescriptions },
-      { data: plannedDischargesData },
+      { data: activeForOcc },
+      { count: internmentRequests },
+      { count: newAdmissions24h },
     ] = await Promise.all([
-      supabase.from('internment_requests').select('*').match(departmentFilter)
-        .gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
-      supabase.from('patients').select('*').match(departmentFilter).eq('sector', activeSector),
-      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
-        .eq('movement_type', 'ALTA').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
-      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
-        .eq('movement_type', 'ÓBITO').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
-      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
-        .eq('movement_type', 'TRANSFERÊNCIA').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
-      supabase.from('patients').select('*').match(departmentFilter).eq('sector', activeSector)
-        .gte('created_at', twentyFourHoursAgo.toISOString()),
-      supabase.from('prescriptions').select('*').match(departmentFilter)
-        .eq('status', 'draft'),
-      supabase.from('patients').select('*').match(departmentFilter).eq('sector', activeSector)
-        .or('internment_status.eq.IR_PARA_ENFERMARIA,internment_status.eq.PSM_FAVORAVEL'),
+      scoped(supabase.from("internacoes").select(INT_JOIN).is("data_alta", null)),
+      scoped(
+        supabase
+          .from("internacoes")
+          .select(INT_JOIN, { count: "exact", head: true })
+          .gte("data_entrada", dateRange.from.toISOString())
+          .lte("data_entrada", dateRange.to.toISOString()),
+      ),
+      scoped(
+        supabase
+          .from("internacoes")
+          .select(INT_JOIN, { count: "exact", head: true })
+          .is("data_alta", null)
+          .gte("data_entrada", twentyFourHoursAgo.toISOString()),
+      ),
     ]);
 
-    // Occupancy for this sector
-    const occupiedCount = (patients || []).filter(p => !p.is_vacant && p.name?.trim()).length;
+    // Ocupação = internações ativas no setor. Total = capacidade FIXA (SECTOR_BED_CONFIG).
+    const occupiedCount = ((activeForOcc as any[]) || []).length;
     const occRate = totalSectorBeds > 0 ? Math.round((occupiedCount / totalSectorBeds) * 100) : 0;
 
-    // Comparison period
-    const daysDiff = Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
-    const comparisonFrom = subDays(dateRange.from, daysDiff);
-    const comparisonTo = dateRange.from;
-    const compTwentyFourHBefore = subHours(comparisonTo, 24);
-
-    const [
-      { data: compRequests },
-      { data: compDischarges },
-      { data: compDeaths },
-      { data: compTransfers },
-      { data: compNewAdmissions },
-    ] = await Promise.all([
-      supabase.from('internment_requests').select('*').match(departmentFilter)
-        .gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
-      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
-        .eq('movement_type', 'ALTA').gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
-      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
-        .eq('movement_type', 'ÓBITO').gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
-      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
-        .eq('movement_type', 'TRANSFERÊNCIA').gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
-      supabase.from('patients').select('*').match(departmentFilter).eq('sector', activeSector)
-        .gte('created_at', compTwentyFourHBefore.toISOString()).lte('created_at', comparisonTo.toISOString()),
-    ]);
-
     setKpis({
-      internmentRequests: requests?.length || 0,
-      activePatients: (patients || []).filter(p => !p.is_vacant && p.name?.trim()).length,
-      discharges: discharges?.length || 0,
-      deaths: deaths?.length || 0,
-      transfers: transfers?.length || 0,
-      newAdmissions24h: newAdmissions?.length || 0,
-      pendingPrescriptions: pendingPrescriptions?.length || 0,
-      plannedDischarges: plannedDischargesData?.length || 0,
+      // "Pedidos de internação" no período ≈ internações criadas no período (data_entrada).
+      internmentRequests: internmentRequests || 0,
+      activePatients: occupiedCount,
+      // MIGRAÇÃO: patient_movements não tem equivalente fiel (transferencias só modela
+      // leito→leito; alta/óbito não são distinguíveis). Altas/óbitos/transferências → 0.
+      discharges: 0,
+      deaths: 0,
+      transfers: 0,
+      newAdmissions24h: newAdmissions24h || 0,
+      // MIGRAÇÃO: prescricoes não tem setor/departamento nem status "draft" mapeável → 0.
+      pendingPrescriptions: 0,
+      // MIGRAÇÃO: internment_status do paciente foi degradado → sem "altas previstas".
+      plannedDischarges: 0,
       occupancyRate: occRate,
       totalBeds: totalSectorBeds,
       occupiedBeds: occupiedCount,
+      // MIGRAÇÃO: comparação com período anterior dependia de patient_movements → 0.
       comparison: {
-        internmentRequests: compRequests?.length || 0,
+        internmentRequests: 0,
         activePatients: 0,
-        discharges: compDischarges?.length || 0,
-        deaths: compDeaths?.length || 0,
-        transfers: compTransfers?.length || 0,
-        newAdmissions24h: compNewAdmissions?.length || 0,
+        discharges: 0,
+        deaths: 0,
+        transfers: 0,
+        newAdmissions24h: 0,
         pendingPrescriptions: 0,
         plannedDischarges: 0,
       }
@@ -272,63 +266,28 @@ const DashboardPage = () => {
   };
 
   const fetchPriorityAlerts = async () => {
-    const departmentFilter = { department: currentDepartment };
+    if (!currentHospital) return;
+    const hospitalId = currentHospital.id;
     const alerts: PriorityAlert[] = [];
 
-    // Critical: Patients with clinical_status 'gravissimo' in this sector
-    const { data: criticalPatients } = await supabase
-      .from('patients')
-      .select('id, name, bed_number, clinical_status, created_at')
-      .match(departmentFilter)
-      .eq('sector', activeSector)
-      .eq('clinical_status', 'gravissimo');
-
-    criticalPatients?.forEach(p => {
-      alerts.push({
-        id: `critical-${p.id}`,
-        level: 'critical',
-        message: 'Estado clínico gravíssimo — requer atenção imediata',
-        patientName: p.name,
-        bedNumber: p.bed_number,
-        timestamp: p.created_at,
-      });
-    });
-
-    // Warning: Pending prescriptions (draft) older than 2h
-    const twoHoursAgo = subHours(new Date(), 2);
-    const { data: stalePrescriptions } = await supabase
-      .from('prescriptions')
-      .select('id, patient_name, created_at')
-      .match(departmentFilter)
-      .eq('status', 'draft')
-      .lte('created_at', twoHoursAgo.toISOString());
-
-    stalePrescriptions?.forEach(p => {
-      alerts.push({
-        id: `warning-rx-${p.id}`,
-        level: 'warning',
-        message: 'Prescrição pendente há mais de 2 horas',
-        patientName: p.patient_name,
-        timestamp: p.created_at,
-      });
-    });
-
-    // Info: Pending bed allocation requests for THIS sector
-    const { data: pendingAllocations } = await supabase
-      .from('bed_allocation_requests')
-      .select('id, patient_id, requested_sector, created_at')
-      .match(departmentFilter)
-      .eq('requested_sector', activeSector)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false })
+    // MIGRAÇÃO: alertas "crítico" (clinical_status degradado) e "prescrição pendente há +2h"
+    // (prescriptions/prescricoes sem status/hora mapeável) foram removidos.
+    // Resta: solicitacoes_leito pendentes para o setor (bed_allocation_requests → solicitacoes_leito).
+    const { data: pendingAllocations } = await (supabase
+      .from('solicitacoes_leito')
+      .select('id, data_hora, status, setor_solicitado:setores!inner ( tipo, ala:alas!inner ( hospital_id ) )') as any)
+      .eq('status', 'pendente')
+      .eq('setor_solicitado.ala.hospital_id', hospitalId)
+      .eq('setor_solicitado.tipo', activeSector)
+      .order('data_hora', { ascending: false })
       .limit(5);
 
-    pendingAllocations?.forEach(a => {
+    (pendingAllocations as any[] | null)?.forEach(a => {
       alerts.push({
         id: `info-alloc-${a.id}`,
         level: 'info',
         message: `Solicitação de leito pendente para ${activeSectorLabel}`,
-        timestamp: a.created_at,
+        timestamp: a.data_hora,
       });
     });
 
@@ -338,60 +297,31 @@ const DashboardPage = () => {
   };
 
   const fetchRecentActivities = async () => {
-    const departmentFilter = { department: currentDepartment };
+    if (!currentHospital) return;
+    const hospitalId = currentHospital.id;
     const activities: RecentActivity[] = [];
 
     const fortyEightHoursAgo = subHours(new Date(), 48);
-    const { data: movements } = await supabase
-      .from('patient_movements')
-      .select('id, patient_name, movement_type, created_at')
-      .match(departmentFilter)
-      .eq('patient_sector', activeSector)
-      .gte('created_at', fortyEightHoursAgo.toISOString())
-      .order('created_at', { ascending: false })
-      .limit(5);
 
-    movements?.forEach(m => {
+    // MIGRAÇÃO: atividades de movimentação (patient_movements) e de prescrição
+    // (prescriptions sem patient_name) foram removidas. Resta: novas admissões
+    // (internacoes criadas nas últimas 48h), com nome via pacientes.
+    const { data: newAdmissions } = await (supabase
+      .from('internacoes')
+      .select(`id, data_entrada, paciente:pacientes ( nome_completo, nome_social ), leito:leitos!inner ( setor:setores!inner ( tipo, ala:alas!inner ( hospital_id ) ) )`) as any)
+      .eq('leito.setor.ala.hospital_id', hospitalId)
+      .eq('leito.setor.tipo', activeSector)
+      .gte('data_entrada', fortyEightHoursAgo.toISOString())
+      .order('data_entrada', { ascending: false })
+      .limit(10);
+
+    (newAdmissions as any[] | null)?.forEach(i => {
+      const nome = i.paciente?.nome_social || i.paciente?.nome_completo || '—';
       activities.push({
-        id: `mov-${m.id}`,
-        type: m.movement_type === 'ALTA' ? 'discharge' : 'movement',
-        description: `${m.movement_type}: ${m.patient_name}`,
-        timestamp: m.created_at,
-      });
-    });
-
-    const { data: rxs } = await supabase
-      .from('prescriptions')
-      .select('id, patient_name, status, created_at')
-      .match(departmentFilter)
-      .gte('created_at', fortyEightHoursAgo.toISOString())
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    rxs?.forEach(r => {
-      activities.push({
-        id: `rx-${r.id}`,
-        type: 'prescription',
-        description: `Prescrição ${r.status === 'signed' ? 'assinada' : 'criada'}: ${r.patient_name}`,
-        timestamp: r.created_at,
-      });
-    });
-
-    const { data: newPatients } = await supabase
-      .from('patients')
-      .select('id, name, created_at')
-      .match(departmentFilter)
-      .eq('sector', activeSector)
-      .gte('created_at', fortyEightHoursAgo.toISOString())
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    newPatients?.forEach(p => {
-      activities.push({
-        id: `adm-${p.id}`,
+        id: `adm-${i.id}`,
         type: 'admission',
-        description: `Admissão: ${p.name}`,
-        timestamp: p.created_at,
+        description: `Admissão: ${nome}`,
+        timestamp: i.data_entrada,
       });
     });
 
@@ -399,127 +329,47 @@ const DashboardPage = () => {
     setRecentActivities(activities.slice(0, 10));
   };
 
+  // MIGRAÇÃO: patient_movements não tem equivalente fiel → séries de movimentação vazias.
   const fetchMovementsOverTime = async () => {
-    const departmentFilter = { department: currentDepartment };
-    
-    const { data } = await supabase
-      .from('patient_movements')
-      .select('*')
-      .match(departmentFilter)
-      .eq('patient_sector', activeSector)
-      .gte('created_at', dateRange.from.toISOString())
-      .lte('created_at', dateRange.to.toISOString())
-      .order('created_at');
-
-    if (data) {
-      const groupedByDate = data.reduce((acc: any, movement: any) => {
-        const date = format(new Date(movement.created_at), 'dd/MM', { locale: ptBR });
-        if (!acc[date]) {
-          acc[date] = { date, ALTA: 0, ÓBITO: 0, TRANSFERÊNCIA: 0 };
-        }
-        acc[date][movement.movement_type]++;
-        return acc;
-      }, {});
-
-      setMovementsOverTime(Object.values(groupedByDate));
-    }
+    setMovementsOverTime([]);
   };
 
   const fetchSectorDistribution = async () => {
-    const departmentFilter = { department: currentDepartment };
-    
-    // Only fetch data for the active sector
-    const { data } = await supabase
-      .from('patients')
-      .select('sector, is_vacant, name')
-      .match(departmentFilter)
-      .eq('sector', activeSector);
+    if (!currentHospital) return;
+    const hospitalId = currentHospital.id;
 
-    if (data) {
-      const occupied = data.filter(p => !p.is_vacant && p.name?.trim()).length;
-      const sectorConfig = SECTOR_BED_CONFIG[activeSector];
-      const total = sectorConfig?.maxRegularBeds || data.length;
-      const vacant = total - occupied;
+    // Ocupados vs vagos no setor ativo — internações ativas + capacidade fixa.
+    const { data } = await (supabase
+      .from('internacoes')
+      .select(INT_JOIN) as any)
+      .is('data_alta', null)
+      .eq('leito.setor.ala.hospital_id', hospitalId)
+      .eq('leito.setor.tipo', activeSector);
 
-      setSectorDistribution([
-        { name: 'Ocupados', value: occupied },
-        { name: 'Vagos', value: Math.max(0, vacant) },
-      ]);
-    }
+    const occupied = ((data as any[]) || []).length;
+    const sectorConfig = SECTOR_BED_CONFIG[activeSector];
+    const total = sectorConfig?.maxRegularBeds || occupied;
+    const vacant = total - occupied;
+
+    setSectorDistribution([
+      { name: 'Ocupados', value: occupied },
+      { name: 'Vagos', value: Math.max(0, vacant) },
+    ]);
   };
 
+  // MIGRAÇÃO: patient_movements sem equivalente → distribuição por tipo vazia.
   const fetchMovementsByType = async () => {
-    const departmentFilter = { department: currentDepartment };
-    
-    const { data } = await supabase
-      .from('patient_movements')
-      .select('movement_type')
-      .match(departmentFilter)
-      .eq('patient_sector', activeSector)
-      .gte('created_at', dateRange.from.toISOString())
-      .lte('created_at', dateRange.to.toISOString());
-
-    if (data) {
-      const typeCounts = data.reduce((acc: any, movement: any) => {
-        acc[movement.movement_type] = (acc[movement.movement_type] || 0) + 1;
-        return acc;
-      }, {});
-
-      setMovementsByType(
-        Object.entries(typeCounts).map(([type, count]) => ({ type, count }))
-      );
-    }
+    setMovementsByType([]);
   };
 
+  // MIGRAÇÃO: série temporal de ocupação dependia de patient_movements/patients → vazia.
   const fetchBedOccupancy = async () => {
-    const departmentFilter = { department: currentDepartment };
-    
-    const { data } = await supabase
-      .from('patients')
-      .select('sector, created_at')
-      .match(departmentFilter)
-      .eq('sector', activeSector)
-      .gte('created_at', dateRange.from.toISOString())
-      .lte('created_at', dateRange.to.toISOString())
-      .order('created_at');
-
-    if (data) {
-      const groupedByDate = data.reduce((acc: any, patient: any) => {
-        const date = format(new Date(patient.created_at), 'dd/MM', { locale: ptBR });
-        if (!acc[date]) {
-          acc[date] = { date, ocupação: 0 };
-        }
-        acc[date].ocupação++;
-        return acc;
-      }, {});
-
-      setBedOccupancy(Object.values(groupedByDate));
-    }
+    setBedOccupancy([]);
   };
 
+  // MIGRAÇÃO: transferências por destino vinham de patient_movements → vazio.
   const fetchRequestsByDestination = async () => {
-    const departmentFilter = { department: currentDepartment };
-    
-    const { data } = await supabase
-      .from('patient_movements')
-      .select('destination')
-      .match(departmentFilter)
-      .eq('patient_sector', activeSector)
-      .eq('movement_type', 'TRANSFERÊNCIA')
-      .gte('created_at', dateRange.from.toISOString())
-      .lte('created_at', dateRange.to.toISOString());
-
-    if (data) {
-      const destCounts = data.reduce((acc: any, movement: any) => {
-        const dest = movement.destination || 'Não especificado';
-        acc[dest] = (acc[dest] || 0) + 1;
-        return acc;
-      }, {});
-
-      setRequestsByDestination(
-        Object.entries(destCounts).map(([destination, count]) => ({ destination, count }))
-      );
-    }
+    setRequestsByDestination([]);
   };
 
   const handleExportPDF = () => {
@@ -632,7 +482,6 @@ const DashboardPage = () => {
           <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <SidebarTrigger className="text-white hover:bg-white/20 transition-colors" />
                 <div className="rounded-xl bg-white/20 p-3 backdrop-blur-sm">
                   <BarChart3 className="h-6 w-6 text-white" />
                 </div>

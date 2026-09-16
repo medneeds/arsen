@@ -130,19 +130,41 @@ async function loadIndex(): Promise<ProtocolIndex> {
   if (cachePromise) return cachePromise;
 
   cachePromise = (async () => {
+    // MIGRAÇÃO: medication_catalog → catalogo_medicamentos;
+    // medication_presentations → apresentacoes_medicamento (colunas em pt-BR).
+    // DEGRADADO: iv_bolus e pharmacy_suggestion_enabled não têm coluna no schema
+    // novo → sempre false. Consequência: as "sugestões da farmácia" (popup
+    // automático) ficam sempre vazias (pharmacySuggestions).
     const [catalogRes, presRes] = await Promise.all([
       supabase
-        .from("medication_catalog")
-        .select("id, generic_name, high_alert, controlled, requires_dilution"),
+        .from("catalogo_medicamentos")
+        .select("id, nome_generico, alta_vigilancia, controlado, exige_diluicao"),
       supabase
-        .from("medication_presentations")
+        .from("apresentacoes_medicamento")
         .select(
-          "medication_id, form, concentration, unit, route, standard_dilution, max_daily_dose, infusion_time, iv_bolus, pharmacy_suggestion_enabled",
+          "medicamento_id, forma, concentracao, unidade, via, diluicao_padrao, dose_maxima_diaria, tempo_infusao",
         ),
     ]);
 
-    const catalog = (catalogRes.data ?? []) as CatalogRow[];
-    const presentations = (presRes.data ?? []) as PresentationRow[];
+    const catalog: CatalogRow[] = (catalogRes.data ?? []).map((c: any) => ({
+      id: c.id,
+      generic_name: c.nome_generico,
+      high_alert: !!c.alta_vigilancia,
+      controlled: !!c.controlado,
+      requires_dilution: !!c.exige_diluicao,
+    }));
+    const presentations: PresentationRow[] = (presRes.data ?? []).map((p: any) => ({
+      medication_id: p.medicamento_id,
+      form: p.forma,
+      concentration: p.concentracao,
+      unit: p.unidade,
+      route: p.via,
+      standard_dilution: p.diluicao_padrao ?? null,
+      max_daily_dose: p.dose_maxima_diaria ?? null,
+      infusion_time: p.tempo_infusao ?? null,
+      iv_bolus: false,
+      pharmacy_suggestion_enabled: false,
+    }));
 
     const catalogById = new Map<string, CatalogRow>();
     catalog.forEach((c) => catalogById.set(c.id, c));

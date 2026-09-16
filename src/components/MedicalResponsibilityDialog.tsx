@@ -88,19 +88,23 @@ export const MedicalResponsibilityDialog = ({
     let cancelled = false;
     const t = setTimeout(async () => {
       setSearching(true);
+      // MIGRAÇÃO: profiles → profissionais. `full_name`→`nome`, `crm`→`numero_conselho`.
+      // `access_profile`/`professional_type`/`status='approved'` (filtro de perfil médico)
+      // → `papel='medico'` + `ativo=true`. O shape local {id, full_name, crm} é preservado.
       const { data } = await supabase
-        .from("profiles")
-        .select("id, full_name, crm, access_profile, professional_type")
-        .eq("status", "approved")
-        .ilike("full_name", `%${doctorQuery}%`)
+        .from("profissionais")
+        .select("id, nome, numero_conselho")
+        .eq("ativo", true)
+        .eq("papel", "medico")
+        .ilike("nome", `%${doctorQuery}%`)
         .limit(10);
       if (cancelled) return;
-      const filtered = (data || []).filter((p: any) => {
-        const ap = (p.access_profile || "").toLowerCase();
-        const pt = (p.professional_type || "").toLowerCase();
-        return ap.includes("medic") || pt.includes("medic") || pt.includes("médic");
-      });
-      setDoctorResults(filtered as any);
+      const mapped = (data || []).map((p: any) => ({
+        id: p.id,
+        full_name: p.nome,
+        crm: p.numero_conselho ?? null,
+      }));
+      setDoctorResults(mapped);
       setSearching(false);
     }, 250);
     return () => { cancelled = true; clearTimeout(t); };

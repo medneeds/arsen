@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, FileWarning, Save } from "lucide-react";
 import { toast } from "sonner";
+import { detectUnidentified } from "@/lib/unidentifiedDetector";
 
 interface Props {
   open: boolean;
@@ -22,19 +23,22 @@ interface Props {
 
 interface RegistryRow {
   id: string;
-  full_name: string;
+  nome_completo: string;
   cpf: string | null;
   cns: string | null;
-  birth_date: string | null;
-  phone: string | null;
-  mother_name: string | null;
-  is_unidentified: boolean;
-  unidentified_features: any;
+  data_nascimento: string | null;
+  telefone: string | null;
+  nome_mae: string | null;
 }
 
 /**
  * Drawer-like dialog para complementar pendências de identificação SEM abrir o cadastro completo.
- * Foca nos campos mais críticos (CPF, CNS, DN, Mãe, Telefone) e marca docs_pending=false ao salvar.
+ * Foca nos campos mais críticos (CPF, CNS, DN, Mãe, Telefone).
+ *
+ * MIGRAÇÃO: `patient_registry`→`pacientes`. Não há mais `unidentified_features`
+ * (documents_pending/partial_identification/completed_at...) nem `is_unidentified`.
+ * A "pendência de documentação" deixa de ser persistida numa flag: ela é implícita
+ * (ausência de CPF/CNS/DN) e o estado NI é derivado do nome (detectUnidentified).
  */
 export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSaved }: Props) {
   const { user } = useAuth();
@@ -55,8 +59,8 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
     if (!open || !registryId) return;
     setLoading(true);
     supabase
-      .from("patient_registry")
-      .select("id, full_name, cpf, cns, birth_date, phone, mother_name, is_unidentified, unidentified_features")
+      .from("pacientes")
+      .select("id, nome_completo, cpf, cns, data_nascimento, telefone, nome_mae")
       .eq("id", registryId)
       .maybeSingle()
       .then(({ data, error }) => {
@@ -67,12 +71,12 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
         }
         const r = data as RegistryRow;
         setRow(r);
-        setFullName(r.full_name || "");
+        setFullName(r.nome_completo || "");
         setCpf(r.cpf || "");
         setCns(r.cns || "");
-        setBirthDate(r.birth_date || "");
-        setPhone(r.phone || "");
-        setMotherName(r.mother_name || "");
+        setBirthDate(r.data_nascimento || "");
+        setPhone(r.telefone || "");
+        setMotherName(r.nome_mae || "");
         setObservations("");
         setLoading(false);
       });
@@ -82,37 +86,44 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
     if (!registryId || !row) return;
     setSaving(true);
     try {
+      // MIGRAÇÃO: `pacientes` não tem `unidentified_features` — não persistimos
+      // mais docs_pending/partial_identification/completed_by. Só gravamos os
+      // dados reais; a pendência passa a ser inferida pela ausência de documentos.
       const updates: Record<string, any> = {
-        full_name: fullName.trim().toUpperCase(),
+        nome_completo: fullName.trim().toUpperCase(),
         cpf: cpf.trim() || null,
         cns: cns.trim() || null,
-        birth_date: birthDate || null,
-        phone: phone.trim() || null,
-        mother_name: motherName.trim().toUpperCase() || null,
+        data_nascimento: birthDate || null,
+        telefone: phone.trim() || null,
+        nome_mae: motherName.trim().toUpperCase() || null,
       };
 
-      // Se forneceu pelo menos 1 documento, marca docs_pending=false
       const providedAnyDoc = Boolean(cpf.trim() || cns.trim() || birthDate);
-      const fullNameOk = fullName.trim().split(/\s+/).filter(Boolean).length >= 2;
-
-      const newFeatures = {
-        ...(row.unidentified_features || {}),
-        documents_pending: providedAnyDoc ? false : Boolean(row.unidentified_features?.documents_pending),
-        partial_identification: !fullNameOk,
-        completed_at: providedAnyDoc ? new Date().toISOString() : row.unidentified_features?.completed_at || null,
-        completed_by: providedAnyDoc ? user?.id : row.unidentified_features?.completed_by || null,
-        completion_notes: observations.trim() || row.unidentified_features?.completion_notes || null,
-      };
-      updates.unidentified_features = newFeatures;
 
       const { error } = await supabase
-        .from("patient_registry")
+        .from("pacientes")
         .update(updates)
         .eq("id", registryId);
       if (error) throw error;
 
+      // MIGRAÇÃO: sem tabela de histórico de complementação — a observação da
+      // complementação é registrada em logs_auditoria (best-effort).
+      if (observations.trim()) {
+        await supabase.from("logs_auditoria").insert({
+          tipo_evento: "edicao_prontuario",
+          nome_tabela: "pacientes",
+          acao: "UPDATE",
+          registro_id: registryId,
+          paciente_id: registryId,
+          campos_alterados: Object.keys(updates),
+          motivo: observations.trim(),
+          ator_user_id: user?.id ?? null,
+          email_ator: user?.email ?? null,
+        }).then(({ error: e }) => { if (e) console.warn("[complete-data] auditoria:", e.message); });
+      }
+
       toast.success("Dados complementados com sucesso", {
-        description: providedAnyDoc ? "Pendência de documentação removida." : "Atualizado.",
+        description: providedAnyDoc ? "Documentação registrada." : "Atualizado.",
       });
       onSaved?.();
       onOpenChange(false);
@@ -142,7 +153,8 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
           </div>
         ) : row ? (
           <div className="space-y-3">
-            {row.is_unidentified && (
+            {/* MIGRAÇÃO: sem coluna is_unidentified — NI derivado do nome (heurística). */}
+            {detectUnidentified(row.nome_completo || "").isUnidentified && (
               <Badge variant="outline" className="text-[10px] border-slate-500/40">
                 Paciente NI — para promover, use "Identificar paciente" (merge).
               </Badge>

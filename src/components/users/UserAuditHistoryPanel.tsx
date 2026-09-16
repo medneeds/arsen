@@ -22,14 +22,6 @@ import {
   Search,
   RefreshCw,
   Shield,
-  UserPlus,
-  UserCog,
-  KeyRound,
-  Building2,
-  CheckCircle2,
-  Ban,
-  XCircle,
-  Mail,
   Eye,
   Download,
 } from "lucide-react";
@@ -37,51 +29,50 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
+// MIGRAÇÃO: tabelas antigas (audit_logs / user_admin_audit, inglês) foram removidas.
+// Origem agora é `logs_auditoria` (schema pt-BR). Colunas em types.ts:
+// criado_em, tipo_evento, acao (enum, nullable), nome_tabela, registro_id,
+// ator_user_id, email_ator, papel_ator, dados_antigos/dados_novos (Json),
+// campos_alterados (text[]), motivo, hospital_id, user_agent.
+// RLS desabilitada -> legível por qualquer usuário autenticado.
 type AuditRow = {
   id: string;
-  created_at: string;
-  actor_id: string | null;
-  actor_email: string | null;
-  actor_name: string | null;
-  target_user_id: string | null;
-  target_email: string | null;
-  target_name: string | null;
-  action: string;
-  hospital_unit_id: string | null;
-  access_profile: string | null;
-  app_role: string | null;
-  departments: string[] | null;
-  old_data: Record<string, unknown> | null;
-  new_data: Record<string, unknown> | null;
-  metadata: Record<string, unknown> | null;
-  ip_address: string | null;
+  criado_em: string;
+  tipo_evento: string;
+  acao: string | null;
+  nome_tabela: string;
+  registro_id: string | null;
+  ator_user_id: string | null;
+  email_ator: string | null;
+  papel_ator: string | null;
+  dados_antigos: Record<string, unknown> | null;
+  dados_novos: Record<string, unknown> | null;
+  campos_alterados: string[] | null;
+  motivo: string | null;
+  hospital_id: string | null;
   user_agent: string | null;
 };
 
-const ACTION_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  "user.created.password": { label: "Cadastro c/ senha", icon: <UserPlus className="h-3 w-3" />, color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
-  "user.created.invite": { label: "Convite enviado", icon: <Mail className="h-3 w-3" />, color: "bg-sky-500/10 text-sky-600 border-sky-500/20" },
-  "user.role.updated": { label: "Role alterada", icon: <Shield className="h-3 w-3" />, color: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
-  "user.permissions.updated": { label: "Permissões/setores", icon: <UserCog className="h-3 w-3" />, color: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" },
-  "user.password.reset": { label: "Senha redefinida", icon: <KeyRound className="h-3 w-3" />, color: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
-  "user.status.approved": { label: "Aprovado", icon: <CheckCircle2 className="h-3 w-3" />, color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
-  "user.status.rejected": { label: "Rejeitado", icon: <XCircle className="h-3 w-3" />, color: "bg-red-500/10 text-red-600 border-red-500/20" },
-  "user.status.suspended": { label: "Suspenso", icon: <Ban className="h-3 w-3" />, color: "bg-gray-500/10 text-gray-600 border-gray-500/20" },
-  "user.status.reactivated": { label: "Reativado", icon: <CheckCircle2 className="h-3 w-3" />, color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
-  "user.hospital.updated": { label: "Unidade alterada", icon: <Building2 className="h-3 w-3" />, color: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
-};
-
-function actionMeta(a: string) {
-  return ACTION_META[a] ?? { label: a, icon: <Shield className="h-3 w-3" />, color: "bg-muted text-foreground border-border" };
+// MIGRAÇÃO: os antigos códigos de "action" (user.created.password, etc.) não
+// existem mais. `tipo_evento` é texto livre no novo schema, então derivamos as
+// opções do filtro dinamicamente a partir das linhas carregadas e usamos um
+// badge genérico com o próprio texto do evento.
+function eventLabel(tipo: string | null | undefined) {
+  return (tipo ?? "—").replace(/[._]/g, " ");
 }
 
 const PAGE_SIZE = 50;
 
-export function UserAuditHistoryPanel() {
+type UserAuditHistoryPanelProps = {
+  hospitalId?: string;
+};
+
+export function UserAuditHistoryPanel({ hospitalId }: UserAuditHistoryPanelProps = {}) {
   const [rows, setRows] = useState<AuditRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [actionFilter, setActionFilter] = useState<string>("all");
+  const [eventFilter, setEventFilter] = useState<string>("all");
+  const [eventOptions, setEventOptions] = useState<string[]>([]);
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
   const [detail, setDetail] = useState<AuditRow | null>(null);
@@ -91,52 +82,61 @@ export function UserAuditHistoryPanel() {
     const from = page * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
     let q = supabase
-      .from("user_admin_audit")
+      .from("logs_auditoria")
       .select("*", { count: "exact" })
-      .order("created_at", { ascending: false })
+      .order("criado_em", { ascending: false })
       .range(from, to);
-    if (actionFilter !== "all") q = q.eq("action", actionFilter);
+    if (eventFilter !== "all") q = q.eq("tipo_evento", eventFilter);
+    // MIGRAÇÃO: filtro opcional por hospital (coluna hospital_id existe).
+    if (hospitalId) q = q.eq("hospital_id", hospitalId);
     const { data, count, error } = await q;
     if (error) {
       toast.error("Falha ao carregar histórico");
     } else {
-      setRows((data ?? []) as AuditRow[]);
+      const list = (data ?? []) as AuditRow[];
+      setRows(list);
       setTotal(count ?? 0);
+      // acumula os tipos de evento vistos para popular o filtro
+      setEventOptions((prev) => {
+        const set = new Set(prev);
+        list.forEach((r) => r.tipo_evento && set.add(r.tipo_evento));
+        return Array.from(set).sort();
+      });
     }
     setLoading(false);
   };
 
-  useEffect(() => { fetchAudit();   }, [page, actionFilter]);
+  useEffect(() => { fetchAudit(); }, [page, eventFilter, hospitalId]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return rows;
     const term = search
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .normalize("NFD").replace(/[̀-ͯ]/g, "")
       .toLowerCase().trim();
     return rows.filter((r) => {
-      const hay = `${r.target_name ?? ""} ${r.target_email ?? ""} ${r.actor_name ?? ""} ${r.actor_email ?? ""} ${r.app_role ?? ""} ${r.access_profile ?? ""}`
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      const hay = `${r.email_ator ?? ""} ${r.ator_user_id ?? ""} ${r.papel_ator ?? ""} ${r.tipo_evento ?? ""} ${r.acao ?? ""} ${r.nome_tabela ?? ""} ${r.registro_id ?? ""} ${r.motivo ?? ""}`
+        .normalize("NFD").replace(/[̀-ͯ]/g, "")
         .toLowerCase();
       return hay.includes(term);
     });
   }, [rows, search]);
 
   const exportCsv = () => {
-    const header = ["data", "ator", "ator_email", "alvo", "alvo_email", "acao", "perfil", "role", "setores"];
+    const header = ["data", "tipo_evento", "acao", "ator_email", "ator_user_id", "papel", "tabela", "registro_id", "motivo"];
     const lines = filtered.map((r) => [
-      format(new Date(r.created_at), "yyyy-MM-dd HH:mm:ss"),
-      r.actor_name ?? "", r.actor_email ?? "",
-      r.target_name ?? "", r.target_email ?? "",
-      r.action,
-      r.access_profile ?? "", r.app_role ?? "",
-      (r.departments ?? []).join("|"),
+      format(new Date(r.criado_em), "yyyy-MM-dd HH:mm:ss"),
+      r.tipo_evento ?? "", r.acao ?? "",
+      r.email_ator ?? "", r.ator_user_id ?? "",
+      r.papel_ator ?? "",
+      r.nome_tabela ?? "", r.registro_id ?? "",
+      r.motivo ?? "",
     ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","));
     const csv = [header.join(","), ...lines].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `historico-usuarios-${format(new Date(), "yyyyMMdd-HHmm")}.csv`;
+    a.download = `historico-auditoria-${format(new Date(), "yyyyMMdd-HHmm")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -150,9 +150,9 @@ export function UserAuditHistoryPanel() {
           <History className="h-5 w-5 text-white" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-bold">Histórico de cadastros e permissões</h2>
+          <h2 className="text-lg font-bold">Histórico de auditoria</h2>
           <p className="text-xs text-muted-foreground">
-            Auditoria imutável de quem criou, aprovou, alterou perfil/role e permissões — conformidade LGPD.
+            Registro imutável de eventos do sistema (quem fez o quê, em qual tabela) — conformidade LGPD.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchAudit} disabled={loading} className="gap-2">
@@ -167,18 +167,18 @@ export function UserAuditHistoryPanel() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome, e-mail, perfil ou role…"
+            placeholder="Buscar por e-mail, usuário, tabela, evento ou motivo…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
           />
         </div>
-        <Select value={actionFilter} onValueChange={(v) => { setActionFilter(v); setPage(0); }}>
-          <SelectTrigger className="w-full md:w-64"><SelectValue placeholder="Tipo de ação" /></SelectTrigger>
+        <Select value={eventFilter} onValueChange={(v) => { setEventFilter(v); setPage(0); }}>
+          <SelectTrigger className="w-full md:w-64"><SelectValue placeholder="Tipo de evento" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todas as ações</SelectItem>
-            {Object.entries(ACTION_META).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v.label}</SelectItem>
+            <SelectItem value="all">Todos os eventos</SelectItem>
+            {eventOptions.map((k) => (
+              <SelectItem key={k} value={k}>{eventLabel(k)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -187,7 +187,7 @@ export function UserAuditHistoryPanel() {
       <div className="rounded-xl border bg-card overflow-hidden">
         <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-muted/50 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
           <div className="col-span-2">Data/Hora</div>
-          <div className="col-span-3">Ação</div>
+          <div className="col-span-3">Evento</div>
           <div className="col-span-3">Alvo</div>
           <div className="col-span-3">Executado por</div>
           <div className="col-span-1 text-right">Detalhes</div>
@@ -204,34 +204,35 @@ export function UserAuditHistoryPanel() {
           </div>
         ) : (
           <ul className="divide-y">
-            {filtered.map((r) => {
-              const m = actionMeta(r.action);
-              return (
-                <li key={r.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 items-center text-sm hover:bg-muted/30">
-                  <div className="col-span-2 text-xs text-muted-foreground">
-                    {format(new Date(r.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                  </div>
-                  <div className="col-span-3">
-                    <Badge variant="outline" className={`${m.color} gap-1.5 font-medium`}>
-                      {m.icon}{m.label}
-                    </Badge>
-                  </div>
-                  <div className="col-span-3 min-w-0">
-                    <div className="font-medium truncate">{r.target_name || "—"}</div>
-                    <div className="text-[11px] text-muted-foreground truncate">{r.target_email || "—"}</div>
-                  </div>
-                  <div className="col-span-3 min-w-0">
-                    <div className="font-medium truncate">{r.actor_name || "—"}</div>
-                    <div className="text-[11px] text-muted-foreground truncate">{r.actor_email || "—"}</div>
-                  </div>
-                  <div className="col-span-1 text-right">
-                    <Button variant="ghost" size="sm" onClick={() => setDetail(r)} title="Ver detalhes">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </li>
-              );
-            })}
+            {filtered.map((r) => (
+              <li key={r.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 items-center text-sm hover:bg-muted/30">
+                <div className="col-span-2 text-xs text-muted-foreground">
+                  {format(new Date(r.criado_em), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                </div>
+                <div className="col-span-3 min-w-0">
+                  <Badge variant="outline" className="bg-muted text-foreground border-border gap-1.5 font-medium max-w-full">
+                    <Shield className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{eventLabel(r.tipo_evento)}</span>
+                  </Badge>
+                  {r.acao && (
+                    <div className="text-[11px] text-muted-foreground truncate mt-0.5">{r.acao}</div>
+                  )}
+                </div>
+                <div className="col-span-3 min-w-0">
+                  <div className="font-medium truncate">{r.nome_tabela || "—"}</div>
+                  <div className="text-[11px] text-muted-foreground truncate">{r.registro_id || "—"}</div>
+                </div>
+                <div className="col-span-3 min-w-0">
+                  <div className="font-medium truncate">{r.email_ator || r.ator_user_id || "—"}</div>
+                  <div className="text-[11px] text-muted-foreground truncate">{r.papel_ator || "—"}</div>
+                </div>
+                <div className="col-span-1 text-right">
+                  <Button variant="ghost" size="sm" onClick={() => setDetail(r)} title="Ver detalhes">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </div>
+              </li>
+            ))}
           </ul>
         )}
       </div>
@@ -258,30 +259,33 @@ export function UserAuditHistoryPanel() {
           {detail && (
             <div className="space-y-3 text-sm">
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Data/Hora" value={format(new Date(detail.created_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })} />
-                <Field label="Ação" value={actionMeta(detail.action).label} />
-                <Field label="Executado por" value={`${detail.actor_name ?? "—"} (${detail.actor_email ?? "—"})`} />
-                <Field label="Alvo" value={`${detail.target_name ?? "—"} (${detail.target_email ?? "—"})`} />
-                <Field label="Perfil de acesso" value={detail.access_profile ?? "—"} />
-                <Field label="Role" value={detail.app_role ?? "—"} />
-                <Field label="Setores" value={detail.departments?.join(", ") || "—"} />
-                <Field label="IP" value={detail.ip_address ?? "—"} />
+                <Field label="Data/Hora" value={format(new Date(detail.criado_em), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })} />
+                <Field label="Tipo de evento" value={eventLabel(detail.tipo_evento)} />
+                <Field label="Ação" value={detail.acao ?? "—"} />
+                <Field label="Executado por" value={detail.email_ator ?? detail.ator_user_id ?? "—"} />
+                <Field label="Papel" value={detail.papel_ator ?? "—"} />
+                <Field label="Tabela" value={detail.nome_tabela ?? "—"} />
+                <Field label="Registro" value={detail.registro_id ?? "—"} />
+                <Field label="Campos alterados" value={detail.campos_alterados?.join(", ") || "—"} />
               </div>
-              {(detail.old_data || detail.new_data) && (
+              {detail.motivo && (
+                <Field label="Motivo" value={detail.motivo} />
+              )}
+              {(detail.dados_antigos || detail.dados_novos) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {detail.old_data && (
+                  {detail.dados_antigos && (
                     <div>
                       <div className="text-[11px] font-bold uppercase text-muted-foreground mb-1">Antes</div>
                       <pre className="text-[11px] bg-muted/40 rounded p-2 overflow-auto max-h-64 whitespace-pre-wrap break-words">
-                        {JSON.stringify(detail.old_data, null, 2)}
+                        {JSON.stringify(detail.dados_antigos, null, 2)}
                       </pre>
                     </div>
                   )}
-                  {detail.new_data && (
+                  {detail.dados_novos && (
                     <div>
                       <div className="text-[11px] font-bold uppercase text-muted-foreground mb-1">Depois</div>
                       <pre className="text-[11px] bg-muted/40 rounded p-2 overflow-auto max-h-64 whitespace-pre-wrap break-words">
-                        {JSON.stringify(detail.new_data, null, 2)}
+                        {JSON.stringify(detail.dados_novos, null, 2)}
                       </pre>
                     </div>
                   )}

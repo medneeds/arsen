@@ -2,8 +2,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
-import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 
+// MIGRAÇÃO: conduct_history → logs_auditoria (tipo_evento='edicao_conduta').
+// `patientId` é `internacoes.id`. Colunas antigas mapeadas:
+//   patient_id→internacao_id/registro_id, field_name→campo_alterado,
+//   old_value→valor_antigo, new_value→valor_novo, changed_by→ator_user_id,
+//   changed_by_email→email_ator, created_at→criado_em.
+// DEGRADADO (sem coluna): archived_at (trilha nunca é arquivada) e o
+// isolamento por encounter (o "encounter" É a internação → internacao_id).
 export interface ConductHistoryEntry {
   id: string;
   patient_id: string;
@@ -35,34 +41,33 @@ export function getFieldLabel(fieldName: string): string {
 export function useConductHistory(patientId: string) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { currentState, currentHospital } = useHospital();
-
-  // Fase B.1 — isola pelo atendimento ativo
-  const { encounterId: activeEncounterId } = useActiveEncounterId(patientId || null);
+  const { currentHospital } = useHospital();
 
   const { data: history = [], isLoading } = useQuery({
-    queryKey: ["conduct-history", patientId, activeEncounterId],
+    queryKey: ["conduct-history", patientId],
     queryFn: async () => {
-      let query = supabase
-        .from("conduct_history")
+      const { data, error } = await supabase
+        .from("logs_auditoria")
         .select("*")
-        .eq("patient_id", patientId)
-        // 🔒 Blindagem: nunca mostrar conduta arquivada (ocupante anterior do leito)
-        .is("archived_at", null)
-        .order("created_at", { ascending: false })
+        .eq("tipo_evento", "edicao_conduta")
+        .eq("internacao_id", patientId)
+        .order("criado_em", { ascending: false })
         .limit(200);
-
-      if (activeEncounterId) {
-        query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
-      }
-
-      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching conduct history:", error);
         return [];
       }
-      return data as ConductHistoryEntry[];
+      return ((data as any[]) || []).map((r): ConductHistoryEntry => ({
+        id: r.id,
+        patient_id: r.internacao_id ?? patientId,
+        field_name: r.campo_alterado ?? "",
+        old_value: r.valor_antigo ?? null,
+        new_value: r.valor_novo ?? null,
+        changed_by: r.ator_user_id ?? null,
+        changed_by_email: r.email_ator ?? null,
+        created_at: r.criado_em,
+      }));
     },
     enabled: !!patientId,
     staleTime: 30000,
@@ -78,24 +83,21 @@ export function useConductHistory(patientId: string) {
       oldValue: string | null;
       newValue: string | null;
     }) => {
-      if (!currentHospital || !currentState) return;
       // Don't record if values are the same
       if (oldValue === newValue) return;
 
-      const { error } = await supabase.from("conduct_history").insert({
-        patient_id: patientId,
-        // encounter_id carimbado na origem — o hook já resolve activeEncounterId
-        // para o filtro de leitura; gravá-lo aqui fecha o vazamento por reuso de
-        // leito (dado novo deixa de ser NULL). Auditoria 22/07/2026.
-        encounter_id: activeEncounterId ?? null,
-        field_name: fieldName,
-        old_value: oldValue,
-        new_value: newValue,
-        changed_by: user?.id || null,
-        changed_by_email: user?.email || null,
-        hospital_unit_id: currentHospital.id,
-        state_id: currentState.id,
-      });
+      const { error } = await supabase.from("logs_auditoria").insert({
+        tipo_evento: "edicao_conduta",
+        nome_tabela: "internacoes",
+        internacao_id: patientId,
+        registro_id: patientId,
+        campo_alterado: fieldName,
+        valor_antigo: oldValue,
+        valor_novo: newValue,
+        ator_user_id: user?.id || null,
+        email_ator: user?.email || null,
+        hospital_id: currentHospital?.id || null,
+      } as any);
 
       if (error) {
         console.error("Error recording conduct history:", error);

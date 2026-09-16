@@ -28,7 +28,6 @@ import { asUuidOrNull } from "@/lib/utils";
 import { resolvePatientHeader, resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
 import { toast } from "sonner";
-import { comSnapshotDeDocumento } from "@/lib/registrarSolicitacao";
 import {
   PrintableHemocomponentRequest,
   type HemocomponentRequestData,
@@ -36,6 +35,15 @@ import {
   type ComponentKey,
   type TransfusionType,
 } from "./PrintableHemocomponentRequest";
+
+/** MIGRAÇÃO: resolve profissionais.id a partir do auth user id (solicitado_por ≠ auth.uid). */
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase.from("profissionais").select("id").eq("user_id", userId).maybeSingle();
+    return (data as { id?: string } | null)?.id ?? null;
+  } catch { return null; }
+}
 
 interface Props {
   open: boolean;
@@ -68,7 +76,7 @@ export function HemocomponentRequestDialog({
   patientSector,
 }: Props) {
   const { user } = useAuth();
-  const { currentHospital, currentState } = useHospital();
+  const { currentHospital } = useHospital(); // MIGRAÇÃO: currentState não usado (sem coluna state_id)
   const [previewMode, setPreviewMode] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [data, setData] = useState<HemocomponentRequestData>({
@@ -105,41 +113,29 @@ export function HemocomponentRequestDialog({
   //   Campos extras (peso, ABO/RH, diagnósticos, raça) seguem sendo lidos
   //   diretamente porque resolvePatientHeader não os cobre.
   const buildHeaderPatch = async (): Promise<Partial<HemocomponentRequestData> | null> => {
-    if (!patientId) return null;
+    const validPid = asUuidOrNull(patientId);
+    if (!validPid) return null;
 
-    // Garantir que temos o nome mais atualizado antes de resolver o header
-    let resolvedFallbackName: string | null = patientName || null;
-    if (!resolvedFallbackName && patientId) {
-      const { data: patRow } = await supabase
-        .from("patients")
-        .select("name")
-        .eq("id", patientId)
-        .maybeSingle();
-      if ((patRow as any)?.name?.trim()) resolvedFallbackName = (patRow as any).name.trim();
-    }
-
-    const [header, currentBed, extras] = await Promise.all([
-      resolvePatientHeader(patientId, resolvedFallbackName, currentHospital?.id || null),
-      resolveCurrentBedSector(patientId),
+    // MIGRAÇÃO (Wave3): patients/patient_registry mortos. Identidade via
+    // resolvePatientHeader (internacoes→pacientes, já migrado) + join direto em
+    // internacoes(hipotese_diagnostica)+pacientes(tipo_sanguineo). DEGRADADOS:
+    //   - patient_race (raça) → sem coluna em pacientes → null.
+    //   - patient_weight (uti_weight_kg) → sem coluna equivalente → undefined.
+    //   - diagnóstico agora vem de internacoes.hipotese_diagnostica.
+    //   - grupo sanguíneo agora vem de pacientes.tipo_sanguineo.
+    const [header, currentBed, internacao] = await Promise.all([
+      resolvePatientHeader(validPid, patientName || null, currentHospital?.id || null),
+      resolveCurrentBedSector(validPid),
       supabase
-        .from("patients")
-        .select("diagnoses, uti_weight_kg")
-        .eq("id", patientId)
+        .from("internacoes")
+        .select("hipotese_diagnostica, paciente:pacientes(tipo_sanguineo)")
+        .eq("id", validPid)
         .maybeSingle()
         .then((r) => r.data as any),
     ]);
 
-    let bloodType: string | null = null;
-    let race: string | null = null;
-    if (header.registryId) {
-      const { data: reg } = await supabase
-        .from("patient_registry")
-        .select("blood_type, race")
-        .eq("id", header.registryId)
-        .maybeSingle();
-      bloodType = (reg as any)?.blood_type || null;
-      race = (reg as any)?.race || null;
-    }
+    const bloodType: string | null = internacao?.paciente?.tipo_sanguineo || null;
+    const diagnosis: string | null = internacao?.hipotese_diagnostica || null;
 
     const sectorRaw = currentBed.sector || patientSector || null;
     const sectorCode = sectorRaw && isKnownSectorCode(sectorRaw) ? sectorRaw : null;
@@ -152,11 +148,11 @@ export function HemocomponentRequestDialog({
       patient_sex: header.sex,
       patient_blood_group: bloodType,
       patient_record: header.prontuario,
-      patient_race: race,
-      patient_weight: (extras?.uti_weight_kg as any) ?? undefined,
+      patient_race: null, // MIGRAÇÃO: sem coluna raça em pacientes
+      patient_weight: undefined, // MIGRAÇÃO: sem coluna de peso equivalente
       patient_unit: unitLabel,
       patient_bed: currentBed.bed || patientBed || null,
-      patient_diagnosis: (extras?.diagnoses as any) || null,
+      patient_diagnosis: diagnosis,
       __sectorCode: sectorCode,
     } as any;
   };
@@ -200,19 +196,20 @@ export function HemocomponentRequestDialog({
 
 
   // Pré-preenche dados do médico solicitante
+  // MIGRAÇÃO: profiles → profissionais (full_name→nome, crm→numero_conselho) via user_id.
   useEffect(() => {
     if (!open || !user) return;
     (async () => {
       const { data: prof } = await supabase
-        .from("profiles")
-        .select("full_name, crm")
-        .eq("id", user.id)
+        .from("profissionais")
+        .select("nome, numero_conselho")
+        .eq("user_id", user.id)
         .maybeSingle();
       if (prof) {
         setData((d) => ({
           ...d,
-          requested_by_name: prof.full_name,
-          requested_by_crm: prof.crm,
+          requested_by_name: (prof as any).nome,
+          requested_by_crm: (prof as any).numero_conselho,
         }));
       }
     })();
@@ -255,8 +252,15 @@ export function HemocomponentRequestDialog({
   const isComponentActive = (key: ComponentKey) => Boolean(getComponent(key));
 
   const persistRequest = async (): Promise<string | null> => {
-    if (!currentHospital?.id || !currentState?.id) {
-      toast.error("Selecione hospital/estado para salvar");
+    // MIGRAÇÃO (Wave3): exam_requests → solicitacoes_exame (categoria
+    // 'hemocomponente'). internacao_id é NOT NULL e não há colunas de paciente
+    // avulso → sem UUID de internação real, nada a gravar. DEGRADADOS (sem
+    // coluna): patient_name/bed/sector, hospital_unit_id/state_id, requested_by_name,
+    // document_payload (snapshot → reimpressão do impresso diferenciado pelo
+    // histórico indisponível). Nome/CRM/setores vão em observacoes.
+    const internacaoId = asUuidOrNull(patientId);
+    if (!internacaoId) {
+      toast.error("Sem internação vinculada — não é possível salvar a solicitação.");
       return null;
     }
     if (!data.patient_name?.trim()) {
@@ -275,63 +279,41 @@ export function HemocomponentRequestDialog({
         attributes: (c as any).attributes || null,
         lab_justification: (c as any).lab_justification || null,
       }));
+      const solicitadoPor = await resolveProfissionalId(user?.id);
       const payload: any = {
-        category: "hemocomponente",
-        patient_id: asUuidOrNull(patientId),
-        patient_name: data.patient_name,
-        patient_bed: data.patient_bed || null,
-        patient_sector: data.patient_unit || null,
-        hospital_unit_id: currentHospital.id,
-        state_id: currentState.id,
-        priority: data.transfusion_type === "emergencia" || data.transfusion_type === "programada"
+        categoria: "hemocomponente",
+        internacao_id: internacaoId,
+        prioridade: data.transfusion_type === "emergencia" || data.transfusion_type === "programada"
           ? "urgente"
           : "rotina",
-        clinical_indication: [
+        indicacao_clinica: [
           data.transfusion_type ? `Tipo: ${data.transfusion_type}` : null,
           data.patient_diagnosis ? `Dx: ${data.patient_diagnosis}` : null,
-        ].filter(Boolean).join(" | "),
-        items,
-        notes: [
+        ].filter(Boolean).join(" | ") || null,
+        itens: items,
+        observacoes: [
           data.requested_by_name ? `Médico: ${data.requested_by_name}${data.requested_by_crm ? " — CRM " + data.requested_by_crm : ""}` : null,
           data.transfusion_sectors && data.transfusion_sectors.length > 0
             ? `Setores: ${data.transfusion_sectors.join(", ")}`
             : null,
-        ].filter(Boolean).join("\n"),
-        requested_by: user?.id || null,
-        requested_by_name: data.requested_by_name || null,
+        ].filter(Boolean).join("\n") || null,
+        solicitado_por: solicitadoPor,
         status: "pending",
       };
-      /*
-        Snapshot do documento — e o que permite reemitir o impresso de
-        hemocomponente a partir do historico (fase 3b). Sem ele a linha aparece
-        na aba mas cai na guia generica, perdendo o impresso diferenciado.
-
-        comSnapshotDeDocumento preserva a logica de insert/update deste dialogo
-        e cuida do caso git != banco: se a coluna nao existir, regrava sem o
-        snapshot em vez de derrubar a solicitacao.
-      */
-      const snapshot = { kind: "hemocomponente" as const, version: 1, data: { ...data } };
 
       if (savedId) {
-        const { error } = await comSnapshotDeDocumento(
-          (extra) => supabase.from("exam_requests").update({ ...payload, ...extra }).eq("id", savedId).then(r => ({ data: null, error: r.error })),
-          snapshot,
-        );
+        const { error } = await supabase.from("solicitacoes_exame").update(payload).eq("id", savedId);
         if (error) throw error;
         return savedId;
       }
-      const { data: inserted, error } = await comSnapshotDeDocumento<{ id: string }>(
-        (extra) => supabase
-          .from("exam_requests")
-          .insert({ ...payload, ...extra })
-          .select("id")
-          .single()
-          .then(r => ({ data: r.data as { id: string } | null, error: r.error })),
-        snapshot,
-      );
+      const { data: inserted, error } = await supabase
+        .from("solicitacoes_exame")
+        .insert(payload)
+        .select("id")
+        .single();
       if (error) throw error;
-      setSavedId(inserted.id);
-      return inserted.id;
+      setSavedId((inserted as { id: string }).id);
+      return (inserted as { id: string }).id;
     } catch (e: any) {
       console.error("[HemocomponentRequestDialog] persist error", e);
       toast.error(e?.message || "Erro ao salvar solicitação");

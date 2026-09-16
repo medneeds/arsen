@@ -47,13 +47,57 @@ import { PrintableRequisitionGuide, printRequisitionGuide, buildRequisitionGuide
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
 import { openPrintWindow } from "@/lib/printNormaZero";
-import { registrarSolicitacao } from "@/lib/registrarSolicitacao";
+// MIGRAÇÃO: registrarSolicitacao/solicitacaoPayload ainda gravam na tabela morta
+// exam_requests (arquivos fora do escopo desta migração). Este módulo passou a
+// inserir direto em solicitacoes_exame, então o helper não é mais usado aqui.
 import { PostValidationPrintDialog } from "@/components/PostValidationPrintDialog";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import { useHospital } from "@/contexts/HospitalContext";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
 const getSectorLabel = getSectorDisplayLabel;
+
+// MIGRAÇÃO: resolve profissionais.id a partir do auth user id, para os campos
+// *_por do schema novo (solicitado_por/concluido_por são FK de profissionais).
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase.from("profissionais").select("id").eq("user_id", userId).maybeSingle();
+    return (data as { id?: string } | null)?.id ?? null;
+  } catch { return null; }
+}
+
+// MIGRAÇÃO: solicitacoes_exame só tem internacao_id + campos clínicos — não há
+// colunas de paciente/unidade/documento/solicitante. Normaliza a linha nova
+// para o shape legado que RequestCard e os builders de impressão consomem
+// (todos recebem `req` como any). Campos sem coluna nova são degradados.
+function normalizeSolicitacao(
+  row: any,
+  ctx: { patientName?: string; patientBed?: string; patientSector?: string },
+) {
+  return {
+    id: row.id,
+    internacao_id: row.internacao_id,
+    patient_id: row.internacao_id,            // scoping client-side usa patient_id
+    patient_name: ctx.patientName || "",       // MIGRAÇÃO: sem coluna → contexto do form
+    patient_bed: ctx.patientBed || "",         // MIGRAÇÃO: idem
+    patient_sector: ctx.patientSector || "",   // MIGRAÇÃO: idem
+    category: row.categoria,
+    items: Array.isArray(row.itens) ? row.itens : [],
+    priority: row.prioridade,
+    status: row.status,
+    clinical_indication: row.indicacao_clinica || "",
+    notes: row.observacoes || "",
+    results: row.resultado_texto || null,
+    result_data: row.resultado_dados || null,
+    completed_at: row.concluido_em || null,
+    completed_by: null,                        // MIGRAÇÃO: concluido_por é FK profissional; nome não resolvido
+    created_at: row.criado_em,
+    requested_by_name: "",                     // MIGRAÇÃO: sem coluna no schema novo
+    document_payload: null,                    // MIGRAÇÃO: sem coluna → reimpressão de snapshot indisponível
+    patient_registry_id: null,                 // MIGRAÇÃO: sem coluna no schema novo
+  };
+}
 
 // ── UTI Exam Combos ──
 type ComboCategory = "laboratorio" | "imagem";
@@ -468,10 +512,14 @@ const RequisicaoUnificadaPage = () => {
   }, [unitId, stateId, activeCategory, formPatientId]);
 
   const fetchRequests = async () => {
-    if (!unitId || !stateId) return;
+    // MIGRAÇÃO: solicitacoes_exame pendura em internacao_id e não tem colunas de
+    // unidade/estado nem de nome de paciente. A listagem só é possível com uma
+    // internação (paciente) em contexto; sem UUID real, nada a buscar.
+    const internacaoId = asUuidOrNull(formPatientId);
+    if (!internacaoId) { setRequests([]); return; }
     setLoading(true);
     try {
-      // Algumas categorias agregam sub-fluxos que persistem com category própria:
+      // Algumas categorias agregam sub-fluxos que persistem com categoria própria:
       //   terapeutico → hemocomponente + sat (diálogos especializados)
       //   regulacao   → regulacao + transferencia + vaga + externo
       // A aba precisa buscar TODAS as categorias relacionadas para o rastro aparecer.
@@ -481,27 +529,16 @@ const RequisicaoUnificadaPage = () => {
       };
       const categoriesToFetch = CATEGORY_GROUPS[activeCategory] || [activeCategory];
 
-      let query = supabase
-        .from("exam_requests")
+      const { data, error } = await supabase
+        .from("solicitacoes_exame")
         .select("*")
-        .eq("hospital_unit_id", unitId)
-        .eq("state_id", stateId)
-        .in("category", categoriesToFetch)
-        .order("created_at", { ascending: false })
+        .eq("internacao_id", internacaoId)
+        .in("categoria", categoriesToFetch)
+        .order("criado_em", { ascending: false })
         .limit(200);
-
-      // When patient context is present AND id is a real UUID, filter by patient
-      const validPatientId = asUuidOrNull(formPatientId);
-      if (validPatientId) {
-        query = query.eq("patient_id", validPatientId);
-      } else if (formPatientName) {
-        // Fallback para mocks (sem UUID real): filtra por nome
-        query = query.eq("patient_name", formPatientName);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
-      setRequests(data || []);
+      const ctx = { patientName: formPatientName, patientBed: formPatientBed, patientSector: formPatientSector };
+      setRequests((data || []).map((r) => normalizeSolicitacao(r, ctx)));
     } catch {
       toast.error("Erro ao carregar requisições");
     } finally {
@@ -510,23 +547,11 @@ const RequisicaoUnificadaPage = () => {
   };
 
   const fetchAllProcedures = async () => {
-    if (!unitId || !stateId) return;
-    setLoadingAllProcedures(true);
-    try {
-      const { data } = await supabase
-        .from("exam_requests")
-        .select("*")
-        .eq("hospital_unit_id", unitId)
-        .eq("state_id", stateId)
-        .eq("category", "procedimento")
-        .order("created_at", { ascending: false })
-        .limit(100);
-      setAllProcedureRequests(data || []);
-    } catch {
-      // silent — histórico geral é suplementar
-    } finally {
-      setLoadingAllProcedures(false);
-    }
+    // MIGRAÇÃO: a aba "todos os procedimentos da unidade" não tem equivalente no
+    // schema novo — solicitacoes_exame não possui coluna de hospital/unidade
+    // (pendura só em internacao_id). Degradado para lista vazia.
+    setAllProcedureRequests([]);
+    setLoadingAllProcedures(false);
   };
 
   // ── Filtered lists ──
@@ -711,8 +736,14 @@ const RequisicaoUnificadaPage = () => {
 
     // Validações de contexto com mensagens claras (antes só fazia return silencioso)
     if (!user) { toast.error("Sessão inválida — refaça login"); return; }
-    if (!unitId) { toast.error("Unidade hospitalar não selecionada"); return; }
-    if (!stateId) { toast.error("Estado não selecionado"); return; }
+    // MIGRAÇÃO: solicitacoes_exame exige internacao_id (uuid real). Sem paciente
+    // vinculado ao mapa (internação) não há como gravar — o schema novo não tem
+    // mais colunas de paciente/unidade avulsos.
+    const internacaoId = asUuidOrNull(formPatientId);
+    if (!internacaoId) {
+      toast.error("Paciente sem internação vinculada — selecione um paciente do mapa para solicitar");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -727,33 +758,24 @@ const RequisicaoUnificadaPage = () => {
         notesContent = (notesContent ? notesContent + "\n\n" : "") + extraBlock;
       }
 
-      // Mesmo helper das fichas APAC e AIH — um ponto único de gravação.
-      // Esta ficha já bloqueava corretamente; o ganho aqui é não haver três
-      // montagens diferentes do mesmo payload, que foi como as outras duas
-      // acabaram divergindo (AIH nem gravava leito e setor).
-      await registrarSolicitacao({
-        category: activeCategory,
-        patientId: formPatientId,
-        patientName: formPatientName,
-        patientBed: formPatientBed,
-        patientSector: formPatientSector,
-        items: formSelectedItems.map(name => ({ name })),
-        clinicalIndication: activeCategory === "parecer" ? sanitizeRichHtml(formIndication) : formIndication,
-        priority: formPriority,
-        notes: notesContent,
-        requestedBy: user.id,
-        requestedByName: (() => {
-          const name = (doctor.fullName || "").trim()
-            || (user.user_metadata?.full_name as string | undefined)?.trim()
-            || user.user_metadata?.username
-            || user.email?.split("@")[0]
-            || "Médico";
-          const crm = (doctor.crm || "").trim();
-          return crm ? `${name} — CRM ${crm}` : name;
-        })(),
-        hospitalUnitId: unitId,
-        stateId: stateId,
-      });
+      // MIGRAÇÃO: grava direto em solicitacoes_exame (o helper registrarSolicitacao
+      // ainda mira a tabela morta exam_requests). Degradados por falta de coluna:
+      // nome/leito/setor do paciente, unidade/estado, requested_by_name e
+      // document_payload. O solicitante vira FK profissional (solicitado_por).
+      const solicitadoPor = await resolveProfissionalId(user.id);
+      const { error: insertError } = await supabase
+        .from("solicitacoes_exame")
+        .insert({
+          internacao_id: internacaoId,
+          categoria: activeCategory,
+          itens: formSelectedItems.map(name => ({ name })),
+          prioridade: formPriority,
+          status: "pending",
+          indicacao_clinica: activeCategory === "parecer" ? sanitizeRichHtml(formIndication) : formIndication,
+          observacoes: notesContent || null,
+          solicitado_por: solicitadoPor,
+        });
+      if (insertError) throw insertError;
       toast.success(`${CATEGORIES[activeCategory].shortLabel}: ${formSelectedItems.length} item(ns) solicitado(s)`);
       // Preserva paciente selecionado para encadear novas solicitações sem reabrir o picker.
       resetRequestFields();
@@ -772,17 +794,21 @@ const RequisicaoUnificadaPage = () => {
     if (!viewingRequest) return;
     setSavingResult(true);
     try {
+      // MIGRAÇÃO: colunas renomeadas em solicitacoes_exame
+      //   results→resultado_texto, result_data→resultado_dados,
+      //   completed_at→concluido_em, completed_by→concluido_por (FK profissional).
+      const concluidoPor = await resolveProfissionalId(user?.id);
       const updateData: any = {
         status: "completed",
-        results: resultText.trim() || null,
-        completed_at: new Date().toISOString(),
-        completed_by: user?.email?.split("@")[0] || "Sistema",
+        resultado_texto: resultText.trim() || null,
+        concluido_em: new Date().toISOString(),
+        concluido_por: concluidoPor,
       };
       if (resultFiles.length > 0) {
-        updateData.result_data = { files: resultFiles };
+        updateData.resultado_dados = { files: resultFiles };
       }
       const { error } = await supabase
-        .from("exam_requests")
+        .from("solicitacoes_exame")
         .update(updateData)
         .eq("id", viewingRequest.id);
       if (error) throw error;
@@ -801,7 +827,7 @@ const RequisicaoUnificadaPage = () => {
   const handleCancelRequest = async (id: string) => {
     try {
       const { error } = await supabase
-        .from("exam_requests")
+        .from("solicitacoes_exame")
         .update({ status: "cancelled" })
         .eq("id", id);
       if (error) throw error;
@@ -2255,26 +2281,29 @@ async function fetchImagingApacPatientData(request: any): Promise<{
     record: "", cpf: "", cns: "", dob: "", sex: "",
     motherName: "", phone: "", address: "", city: "", uf: "",
   };
-  const registryId = request?.patient_registry_id;
-  if (!registryId) return empty;
+  // MIGRAÇÃO: patient_registry → pacientes. A linha da solicitação não carrega
+  // mais paciente_id (solicitacoes_exame não tem essa coluna), então na prática
+  // este fallback de reimpressão fica sem fonte; quando um id existir, lê pacientes.
+  const pacienteId = request?.paciente_id || request?.patient_registry_id;
+  if (!pacienteId) return empty;
   try {
     const { data, error } = await supabase
-      .from("patient_registry")
-      .select("medical_record, cpf, cns, birth_date, sex, mother_name, phone, address, city, state")
-      .eq("id", registryId)
+      .from("pacientes")
+      .select("prontuario, cpf, cns, data_nascimento, sexo, nome_mae, telefone, endereco")
+      .eq("id", pacienteId)
       .maybeSingle();
     if (error || !data) return empty;
     return {
-      record: data.medical_record || "",
-      cpf: data.cpf || "",
-      cns: data.cns || "",
-      dob: data.birth_date || "",
-      sex: data.sex || "",
-      motherName: data.mother_name || "",
-      phone: data.phone || "",
-      address: data.address || "",
-      city: data.city || "",
-      uf: data.state || "",
+      record: (data as any).prontuario || "",
+      cpf: (data as any).cpf || "",
+      cns: (data as any).cns || "",
+      dob: (data as any).data_nascimento || "",
+      sex: (data as any).sexo || "",
+      motherName: (data as any).nome_mae || "",
+      phone: (data as any).telefone || "",
+      address: (data as any).endereco || "",
+      city: "", // MIGRAÇÃO: pacientes.endereco é campo único — sem município/UF estruturados
+      uf: "",
     };
   } catch {
     return empty;
@@ -2523,19 +2552,10 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const [pickerSearch, setPickerSearch] = useState("");
   const needsPicker = !asUuidOrNull(patientId);
   useEffect(() => {
-    if (!needsPicker || !currentHospital?.id || !currentState?.id) return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await (supabase as any)
-        .from("patients")
-        .select("id, name, bed_number, sector, medical_record")
-        .eq("unit_id", currentHospital.id)
-        .eq("state_id", currentState.id)
-        .order("bed_number", { ascending: true })
-        .limit(500);
-      if (!cancelled && data) setUnitPatients(data as any);
-    })();
-    return () => { cancelled = true; };
+    // MIGRAÇÃO: não há mais coluna de unidade em internacoes/pacientes para listar
+    // "pacientes da unidade" no seletor. Degradado para lista vazia — o paciente
+    // deve chegar via ?patientId= (id da internação).
+    setUnitPatients([]);
   }, [needsPicker, currentHospital?.id, currentState?.id]);
   const filteredPickerPatients = useMemo(() => {
     const q = pickerSearch.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -2580,8 +2600,10 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const { data } = await supabase.from("profiles").select("full_name, crm, cpf").eq("id", user.id).maybeSingle();
-      if (data) { setDoctorName(data.full_name || ""); setDoctorCRM(data.crm || ""); if ((data as any).cpf) setDoctorCPF((data as any).cpf); }
+      // MIGRAÇÃO: profiles → profissionais (full_name→nome, crm→numero_conselho).
+      // profissionais não tem coluna cpf → doctorCPF não é hidratado.
+      const { data } = await supabase.from("profissionais").select("nome, numero_conselho").eq("user_id", user.id).maybeSingle();
+      if (data) { setDoctorName((data as any).nome || ""); setDoctorCRM((data as any).numero_conselho || ""); }
     };
     load();
   }, [user]);
@@ -2594,73 +2616,48 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     let cancelled = false;
     (async () => {
       try {
-        const { data: pat } = await supabase
-          .from("patients")
-          .select("patient_registry_id, medical_record, name")
+        // MIGRAÇÃO: patientId é internacoes.id. Junta internacao → pacientes.
+        //   admission_histories → internacoes (queixa/história/hipótese/conduta)
+        //   patient_registry → pacientes; patient_registry_id → paciente_id
+        const { data: internacao } = await supabase
+          .from("internacoes")
+          .select("paciente_id, hipotese_diagnostica, queixa_principal, historia_clinica, conduta_inicial, paciente:pacientes(prontuario, nome_completo, nome_social, cpf, cns, data_nascimento, sexo, nome_mae, telefone, endereco)")
           .eq("id", validPid)
           .maybeSingle();
-        if (!pat || cancelled) return;
-        const registryId = (pat as any).patient_registry_id as string | null;
-        if (!cancelled) setPatientRegistryId(registryId);
+        if (!internacao || cancelled) return;
+        const pacienteId = (internacao as any).paciente_id as string | null;
+        if (!cancelled) setPatientRegistryId(pacienteId); // guarda paciente_id (antes: registry_id)
 
-        // Diagnóstico/CID e justificativa via admissão mais recente (ORDER BY garante)
-        const { data: adm } = await supabase
-          .from("admission_histories")
-          .select("diagnostic_hypothesis, primary_cid10, secondary_cid10, chief_complaint, clinical_history, initial_conduct")
-          .eq("patient_id", validPid)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (adm && !cancelled) {
-          setDiagnosis((adm as any).diagnostic_hypothesis || "");
-          setCidPrimary((adm as any).primary_cid10 || "");
-          setCidSecondary((adm as any).secondary_cid10 || "");
-          const admParts: string[] = [];
-          if ((adm as any).chief_complaint)  admParts.push(`QP: ${(adm as any).chief_complaint}`);
-          if ((adm as any).clinical_history) admParts.push(`HDA: ${(adm as any).clinical_history}`);
-          if ((adm as any).diagnostic_hypothesis) admParts.push(`HD: ${(adm as any).diagnostic_hypothesis}`);
-          if ((adm as any).initial_conduct)  admParts.push(`Conduta: ${(adm as any).initial_conduct}`);
-          if (admParts.length > 0) {
-            setObservations(prev => {
-              if (prev.trim()) return prev;
-              setObservationsAutoFilled(true);
-              return admParts.join("\n");
-            });
-          }
+        // Diagnóstico e justificativa a partir da própria internação.
+        // MIGRAÇÃO: CID (primary_cid10/secondary_cid10) não tem coluna em
+        // internacoes → cidPrimary/cidSecondary degradados (ficam em branco).
+        setDiagnosis((internacao as any).hipotese_diagnostica || "");
+        const admParts: string[] = [];
+        if ((internacao as any).queixa_principal)     admParts.push(`QP: ${(internacao as any).queixa_principal}`);
+        if ((internacao as any).historia_clinica)     admParts.push(`HDA: ${(internacao as any).historia_clinica}`);
+        if ((internacao as any).hipotese_diagnostica) admParts.push(`HD: ${(internacao as any).hipotese_diagnostica}`);
+        if ((internacao as any).conduta_inicial)      admParts.push(`Conduta: ${(internacao as any).conduta_inicial}`);
+        if (admParts.length > 0) {
+          setObservations(prev => {
+            if (prev.trim()) return prev;
+            setObservationsAutoFilled(true);
+            return admParts.join("\n");
+          });
         }
 
-        if (!registryId) {
-          // Sem registry: hidrata prontuário e tenta CPF direto na tabela patients
-          const { data: patExtra } = await supabase
-            .from("patients")
-            .select("cpf")
-            .eq("id", validPid)
-            .maybeSingle();
-          if (cancelled) return;
-          if ((patExtra as any)?.cpf) setPatientCPF((patExtra as any).cpf);
-          if ((pat as any).medical_record) setPatientRecord((pat as any).medical_record);
-          return;
-        }
-
-        const { data: reg } = await supabase
-          .from("patient_registry")
-          .select("medical_record, full_name, cpf, cns, birth_date, sex, mother_name, phone, address, city, state")
-          .eq("id", registryId)
-          .maybeSingle();
-        if (!reg || cancelled) return;
-
-        const r = reg as any;
-        setPatientRecord(r.medical_record || (pat as any).medical_record || "");
-        setApacPatientName(r.full_name || "");
+        const r = (internacao as any).paciente || null;
+        if (!r || cancelled) return;
+        setPatientRecord(r.prontuario || "");
+        setApacPatientName(r.nome_social || r.nome_completo || "");
         setPatientCPF(r.cpf || "");
         setPatientCNS(r.cns || "");
-        setPatientDOB(r.birth_date ? String(r.birth_date).slice(0, 10) : "");
-        setPatientSex(r.sex === "M" || r.sex === "F" ? r.sex : "");
-        setPatientMotherName(r.mother_name || "");
-        setPatientPhone(r.phone || "");
-        setPatientAddress(r.address || "");
-        if (r.city) setPatientCity(r.city);
-        if (r.state) setPatientUF(r.state);
+        setPatientDOB(r.data_nascimento ? String(r.data_nascimento).slice(0, 10) : "");
+        setPatientSex(r.sexo === "M" || r.sexo === "F" ? r.sexo : "");
+        setPatientMotherName(r.nome_mae || "");
+        setPatientPhone(r.telefone || "");
+        setPatientAddress(r.endereco || "");
+        // MIGRAÇÃO: pacientes.endereco é campo único → município/UF sem coluna,
+        // mantêm os defaults (São Luís / MA).
       } catch {
         /* hidratação silenciosa */
       }
@@ -2710,35 +2707,31 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const registrarProcedimento = async (
     apacData: Parameters<typeof buildApacHtml>[0],
   ): Promise<boolean> => {
-    if (!user?.id || !currentHospital?.id || !currentState?.id) {
+    // MIGRAÇÃO: exige internacao_id (uuid real) — solicitacoes_exame pendura nele.
+    const internacaoId = asUuidOrNull(patientId);
+    if (!internacaoId) {
       toast.error("Não foi possível registrar a solicitação", {
-        description: "Contexto de unidade ou usuário ausente.",
+        description: "Paciente sem internação vinculada.",
       });
       return false;
     }
-    const requesterName = (() => {
-      const nm = (doctorName || "").trim() || user.email?.split("@")[0] || "Médico";
-      const crm = (doctorCRM || "").trim();
-      return crm ? `${nm} — CRM ${crm}` : nm;
-    })();
     try {
-      await registrarSolicitacao({
-        category: "procedimento", // taxonomia preservada
-        patientId,
-        patientRegistryId: patientRegistryId ?? null,
-        patientName: apacPatientName,
-        patientBed,
-        patientSector,
-        items: selectedProcedures.map(p => ({ name: p.code ? `${p.name} (${p.code})` : p.name })),
-        clinicalIndication: null, // o laudo APAC já contempla o procedimento no corpo
-        priority: "rotina",
-        notes: "[PROCEDIMENTO — Laudo APAC gerado]",
-        requestedBy: user.id,
-        requestedByName: requesterName,
-        hospitalUnitId: currentHospital.id,
-        stateId: currentState.id,
-        documentPayload: { kind: "apac", version: 1, data: apacData },
+      // MIGRAÇÃO: grava direto em solicitacoes_exame (helper mira tabela morta).
+      // Degradados: nome/leito/setor do paciente, unidade, requested_by_name e
+      // document_payload (kind:"apac"). Sem o snapshot, a reimpressão do Laudo
+      // APAC pelo histórico (RequestCard) não fica disponível.
+      const solicitadoPor = await resolveProfissionalId(user?.id);
+      const { error } = await supabase.from("solicitacoes_exame").insert({
+        internacao_id: internacaoId,
+        categoria: "procedimento", // taxonomia preservada
+        itens: selectedProcedures.map(p => ({ name: p.code ? `${p.name} (${p.code})` : p.name })),
+        prioridade: "rotina",
+        status: "pending",
+        indicacao_clinica: null, // o laudo APAC já contempla o procedimento no corpo
+        observacoes: "[PROCEDIMENTO — Laudo APAC gerado]",
+        solicitado_por: solicitadoPor,
       });
+      if (error) throw error;
       onProcedureRegistered?.();
       return true;
     } catch (err) {
@@ -2830,17 +2823,18 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     if (!validPid) { toast.error("Paciente não vinculado ao mapa (sem ID válido)"); return; }
     setImportingAdmission(true);
     try {
+      // MIGRAÇÃO: admission_histories → internacoes (patientId é internacoes.id).
       const { data } = await supabase
-        .from("admission_histories")
-        .select("chief_complaint, clinical_history, diagnostic_hypothesis, initial_conduct")
-        .eq("patient_id", validPid)
+        .from("internacoes")
+        .select("queixa_principal, historia_clinica, hipotese_diagnostica, conduta_inicial")
+        .eq("id", validPid)
         .maybeSingle();
       if (!data) { toast.error("Nenhuma admissão encontrada para este paciente"); return; }
       const parts: string[] = [];
-      if (data.chief_complaint) parts.push(`QP: ${data.chief_complaint}`);
-      if (data.clinical_history) parts.push(`HDA: ${data.clinical_history}`);
-      if (data.diagnostic_hypothesis) parts.push(`HD: ${data.diagnostic_hypothesis}`);
-      if (data.initial_conduct) parts.push(`Conduta: ${data.initial_conduct}`);
+      if ((data as any).queixa_principal) parts.push(`QP: ${(data as any).queixa_principal}`);
+      if ((data as any).historia_clinica) parts.push(`HDA: ${(data as any).historia_clinica}`);
+      if ((data as any).hipotese_diagnostica) parts.push(`HD: ${(data as any).hipotese_diagnostica}`);
+      if ((data as any).conduta_inicial) parts.push(`Conduta: ${(data as any).conduta_inicial}`);
       if (parts.length === 0) { toast.info("Admissão sem dados preenchidos"); return; }
       setObservations(prev => prev ? prev + "\n\n" + parts.join("\n") : parts.join("\n"));
       toast.success("Dados da admissão importados");
@@ -2853,72 +2847,35 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     if (!validPid) { toast.error("Paciente não vinculado ao mapa (sem ID válido)"); return; }
     setImportingEvolution(true);
     try {
-      // 1. patient_registry_id do paciente atual
-      const { data: pat } = await supabase
-        .from("patients")
-        .select("patient_registry_id")
+      // MIGRAÇÃO: patientId é internacoes.id; evolucoes pendura em internacao_id.
+      // Removidos: lookup de patient_registry_id, filtro de status (enum novo
+      // desconhecido) e archived_at (coluna inexistente). Ordena por data_hora.
+      const { data: evol } = await supabase
+        .from("evolucoes")
+        .select("soap, data_hora")
+        .eq("internacao_id", validPid)
+        .order("data_hora", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // MIGRAÇÃO: CID (cid_primary) não tem coluna em internacoes → degradado.
+      // O diagnóstico vem de internacoes.hipotese_diagnostica. A tabela morta
+      // cid10_codes foi substituída por codigos_referencia(tipo='cid10'), mas
+      // sem código de origem não há o que consultar aqui.
+      const { data: internacao } = await supabase
+        .from("internacoes")
+        .select("hipotese_diagnostica")
         .eq("id", validPid)
         .maybeSingle();
-      const registryId = (pat as any)?.patient_registry_id ?? null;
+      const diagFromInternacao = (internacao as any)?.hipotese_diagnostica || "";
+      if (diagFromInternacao) setDiagnosis(diagFromInternacao);
 
-      // 2. Última evolução VALIDADA em clinical_evolutions
-      let evQuery = supabase
-        .from("clinical_evolutions")
-        .select("soap_data, diagnostic_hypotheses, created_at, validated_at")
-        .eq("status", "validated")
-        .is("archived_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (registryId) {
-        evQuery = evQuery.or(`patient_id.eq.${validPid},patient_registry_id.eq.${registryId}`);
-      } else {
-        evQuery = evQuery.eq("patient_id", validPid);
-      }
-      const { data: evol } = await evQuery.maybeSingle();
-
-      // 3. CID da admissão ativa
-      let ahQuery = supabase
-        .from("admission_histories")
-        .select("cid_primary, cid_secondary, macro_diagnosis, diagnostic_hypothesis")
-        .is("archived_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (registryId) {
-        ahQuery = ahQuery.or(`patient_id.eq.${validPid},patient_registry_id.eq.${registryId}`);
-      } else {
-        ahQuery = ahQuery.eq("patient_id", validPid);
-      }
-      const { data: ah } = await ahQuery.maybeSingle();
-
-      // 4. CID-10 Principal + Diagnóstico Inicial
-      if (ah?.cid_primary) {
-        const primaryStr = String(ah.cid_primary);
-        const cidMatch = primaryStr.match(/([A-Za-z]\d{2}\.?\d*)/);
-        const cidCode = cidMatch ? cidMatch[1].toUpperCase() : "";
-        if (cidCode) setCidPrimary(cidCode);
-
-        let desc = primaryStr.replace(/^[A-Za-z]\d{2}\.?\d*\s*[-–—]\s*/, "").trim();
-        if (!desc || desc === primaryStr.trim()) {
-          try {
-            const { data: cidEntry } = await supabase
-              .from("cid10_codes")
-              .select("description")
-              .ilike("code", cidCode)
-              .limit(1)
-              .maybeSingle();
-            desc = (cidEntry as any)?.description || (ah as any).macro_diagnosis || (ah as any).diagnostic_hypothesis || "";
-          } catch {
-            desc = (ah as any).macro_diagnosis || (ah as any).diagnostic_hypothesis || "";
-          }
-        }
-        if (desc) setDiagnosis(desc);
-      }
-
-      // 5. Observações a partir do SOAP
+      // Observações a partir do SOAP
       let imported = false;
-      if (evol?.soap_data) {
-        const soap = evol.soap_data as any;
-        const evolDate = evol.validated_at || evol.created_at;
+      const soapData = (evol as any)?.soap;
+      if (soapData) {
+        const soap = soapData as any;
+        const evolDate = (evol as any).data_hora;
         const dateStr = evolDate ? new Date(evolDate).toLocaleDateString("pt-BR") : "";
         const stripHtml = (html: string) =>
           (html || "").replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim();
@@ -2934,17 +2891,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
 
         const plan = stripHtml(soap.plan || "");
         if (plan) parts.push(`Conduta: ${plan}`);
-
-        if (evol.diagnostic_hypotheses) {
-          let hypo: any = evol.diagnostic_hypotheses;
-          try {
-            const parsed = typeof hypo === "string" ? JSON.parse(hypo) : hypo;
-            hypo = Array.isArray(parsed)
-              ? parsed.map((h: any) => String(h).trim()).filter(Boolean).join("; ")
-              : String(parsed).trim();
-          } catch { /* mantém */ }
-          if (String(hypo).trim()) parts.push(`Hipóteses: ${String(hypo).trim()}`);
-        }
+        // MIGRAÇÃO: diagnostic_hypotheses não tem coluna em evolucoes → omitido.
 
         const obsText = parts.join("\n").trim();
         if (obsText) {
@@ -2954,10 +2901,10 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         }
       }
 
-      if (imported || ah?.cid_primary) {
+      if (imported || diagFromInternacao) {
         toast.success("Dados da evolução importados");
       } else {
-        toast.info("Nenhuma evolução validada encontrada");
+        toast.info("Nenhuma evolução encontrada");
       }
     } catch (err) {
       console.error("[APAC] importEvolution error:", err);
@@ -3972,19 +3919,6 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
           ))}
         </CardContent>
       </Card>
-
-      {/* Validação obrigatória para TC — no componente pai onde tcValidationOpen é declarado */}
-      <PasswordConfirmDialog
-        open={tcValidationOpen}
-        onOpenChange={setTcValidationOpen}
-        title="Validar e Solicitar — TC"
-        description="Solicitações de TC requerem confirmação de identidade. Após confirmar, a solicitação será enviada automaticamente."
-        actionLabel="Confirmar e Solicitar"
-        onConfirmed={async () => {
-          setTcValidationOpen(false);
-          await handleSubmitRequest();
-        }}
-      />
     </div>
   );
 }

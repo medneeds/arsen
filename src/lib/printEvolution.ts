@@ -134,33 +134,36 @@ export const printEvolution = async (
 
   if ((evo as any).patient_id) {
     try {
-      const { data: pRow } = await supabase
-        .from("patients")
-        .select("medical_history, uti_allergies, age, birth_date")
+      // MIGRAÇÃO: patients → internacoes + join pacientes. `patient_id` do
+      // EvolutionRecord é internacoes.id. medical_history→pacientes.comorbidades,
+      // uti_allergies→pacientes.alergias, birth_date→pacientes.data_nascimento.
+      // DEGRADADO: coluna `age` não existe em pacientes → idade só via data_nascimento.
+      const { data: iRow } = await supabase
+        .from("internacoes")
+        .select("paciente:pacientes(comorbidades, alergias, data_nascimento)")
         .eq("id", (evo as any).patient_id)
         .maybeSingle();
 
+      const pRow = (iRow as any)?.paciente ?? null;
       if (pRow) {
-        if (soapAntecedentes.length === 0 && (pRow as any).medical_history?.trim()) {
-          patientAntecedentes = (pRow as any).medical_history.split("\n").filter(Boolean);
+        if (soapAntecedentes.length === 0 && pRow.comorbidades?.trim()) {
+          patientAntecedentes = pRow.comorbidades.split("\n").filter(Boolean);
         }
-        patientAllergies = (pRow as any).uti_allergies?.trim()
-          ? (pRow as any).uti_allergies.replace(/\n/g, " • ")
+        patientAllergies = pRow.alergias?.trim()
+          ? pRow.alergias.replace(/\n/g, " • ")
           : "SEM ALERGIAS CONHECIDAS";
-        if ((pRow as any).birth_date) {
-          // Usar birth_date do patients como fallback para birthDisplay
+        if (pRow.data_nascimento) {
+          // Usar data_nascimento como fallback para birthDisplay
           if (!birthDisplay || birthDisplay === "—") {
-            birthDisplay = formatBirthDateBR((pRow as any).birth_date);
+            birthDisplay = formatBirthDateBR(pRow.data_nascimento);
           }
           // Calcular idade
-          const bd = new Date((pRow as any).birth_date);
+          const bd = new Date(pRow.data_nascimento);
           const today = new Date();
           let age = today.getFullYear() - bd.getFullYear();
           const m = today.getMonth() - bd.getMonth();
           if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
           patientAge = `${age} anos`;
-        } else if ((pRow as any).age) {
-          patientAge = `${(pRow as any).age} anos`;
         }
       }
     } catch { /* falha silenciosa */ }

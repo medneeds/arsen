@@ -156,6 +156,26 @@ export const PROFILE_DEFAULTS: Record<AccessProfile, ProfileDefaults> = {
   },
 };
 
+/**
+ * Mapa papel (profissionais.papel) → perfil de acesso.
+ *
+ * ESPELHA o PAPEL_TO_PROFILE do AppSidebar: quando o usuário não tem
+ * `access_profile` gravado no user_metadata, o papel do sistema determina qual
+ * MÓDULO (menu + rota de pouso) ele enxerga. Sem isto, um usuário NIR cujo
+ * papel é `regulador`/`nir` (sem access_profile) caía na rota genérica "/" em
+ * vez do painel do NIR. Mantenha os dois mapas em sincronia.
+ */
+export const PAPEL_TO_PROFILE: Record<string, AccessProfile> = {
+  medico: "medico",
+  enfermeiro: "multi",
+  tecnico: "multi",
+  regulador: "nir",
+  nir: "nir",
+  farmacia: "farmacia",
+  coordenador: "coord_multi",
+  dev: "desenvolvedor",
+};
+
 /** Resolve a rota inicial a partir do perfil (com fallback por role). */
 export function resolveLandingRoute(
   accessProfile: string | null | undefined,
@@ -164,7 +184,14 @@ export function resolveLandingRoute(
   if (accessProfile && accessProfile in PROFILE_DEFAULTS) {
     return PROFILE_DEFAULTS[accessProfile as AccessProfile].landingRoute;
   }
-  // Fallback por role do sistema
+  // Fallback 1: mapeia o papel para o perfil de acesso equivalente (mesma
+  // lógica do menu lateral) → cada papel abre no painel do seu módulo.
+  // Ex.: papel `nir`/`regulador` → perfil `nir` → landingRoute "/nir".
+  const mapped = appRole ? PAPEL_TO_PROFILE[appRole] : undefined;
+  if (mapped && mapped in PROFILE_DEFAULTS) {
+    return PROFILE_DEFAULTS[mapped].landingRoute;
+  }
+  // Fallback 2: role do sistema (papéis que não têm perfil de módulo próprio).
   switch (appRole) {
     case "admin":
       return "/painel-gestor";

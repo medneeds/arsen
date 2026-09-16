@@ -5,57 +5,87 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
 import type { ReceituarioData } from "@/lib/receituario";
 import { toast } from "sonner";
-import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
+import { asUuidOrNull } from "@/lib/utils";
 
 /**
  * Hook para criar, ler, atualizar e listar receituários de um paciente.
- * Busca por patient_registry_id (vínculo estável — segue o paciente entre
- * leitos) com fallback para patient_id/patient_name. Antes buscava só por
- * patient_id (linha-leito): após uma transferência interna, o receituário
- * ficava invisível no leito novo. Auditoria 22/07/2026.
+ *
+ * MIGRAÇÃO: `receituarios` (mesmo nome) migrou para o schema novo. `patientId`
+ * é `internacoes.id`. Colunas: type→tipo, patient_id→internacao_id,
+ * patient_registry_id→paciente_id (resolvido via internacoes),
+ * hospital_unit_id→hospital_id, items→itens, free_text→texto_livre,
+ * signed_by_name→assinado_por_nome, signed_by_crm→assinado_por_crm,
+ * created_by→criado_por (profissionais.id, ≠ auth.uid), created_at→criado_em,
+ * updated_at→atualizado_em.
+ *
+ * DEGRADADO (sem coluna no schema novo): patient_name/patient_bed/patient_sector
+ * não são persistidos (o cabeçalho do impresso é reconstruído pelo chamador);
+ * encounter_id descontinuado (a internação É o atendimento); busca por nome
+ * (ilike patient_name) removida. A "busca que segue o paciente entre leitos"
+ * agora usa paciente_id.
  */
+
+/** Resolve profissionais.id a partir do auth user id (criado_por ≠ auth.uid). */
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from("profissionais")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function mapRow(r: any, fallbackName?: string | null): ReceituarioData {
+  return {
+    id: r.id,
+    type: r.tipo,
+    patient_id: r.internacao_id ?? null,
+    patient_name: fallbackName ?? "", // DEGRADADO: não persistido em receituarios
+    patient_bed: undefined,           // DEGRADADO: sem coluna
+    patient_sector: undefined,        // DEGRADADO: sem coluna
+    items: Array.isArray(r.itens) ? r.itens : [],
+    free_text: r.texto_livre ?? undefined,
+    signed_by_name: r.assinado_por_nome ?? undefined,
+    signed_by_crm: r.assinado_por_crm ?? undefined,
+    created_at: r.criado_em,
+    updated_at: r.atualizado_em,
+  };
+}
+
 export function useReceituario(
   patientId?: string | null,
   patientName?: string | null,
 ) {
   const { user } = useAuth();
   const { currentHospital } = useHospital();
+  // registryId aqui = paciente_id (identidade permanente) resolvido da internação.
   const { registryId: resolvedRegistryId } = useResolvedRegistryId(patientId || null);
   const [receituarios, setReceituarios] = useState<ReceituarioData[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetch = useCallback(async () => {
-    if (!patientId && !patientName) return;
+    if (!patientId) return;
     setLoading(true);
     try {
-      // Busca primária por patient_id (coluna garantida). O vínculo por
-      // patient_registry_id (segue o paciente entre leitos) é aplicado só se a
-      // coluna existir no banco — senão cai para patient_id sem quebrar.
-      // Migration 20260722150000 adiciona a coluna; enquanto não aplicada, o
-      // fallback mantém a tela funcionando. (Correção 22/07/2026.)
-      const runQuery = async (useRegistry: boolean) => {
-        let q = supabase
-          .from("receituarios")
-          .select("*")
-          .order("created_at", { ascending: false });
-        if (useRegistry && resolvedRegistryId && patientId) {
-          q = q.or(`patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${patientId})`);
-        } else if (patientId) {
-          q = q.eq("patient_id", patientId);
-        } else if (patientName) {
-          q = q.ilike("patient_name", `%${patientName}%`);
-        }
-        return q;
-      };
-
-      let { data, error } = await runQuery(true);
-      // 42703 = undefined_column → a coluna patient_registry_id ainda não existe
-      // neste banco. Refaz a busca só por patient_id, sem erro para o usuário.
-      if (error && (error.code === "42703" || /patient_registry_id.*does not exist/i.test(error.message))) {
-        ({ data, error } = await runQuery(false));
+      // Vínculo estável por paciente_id (segue o paciente entre internações)
+      // quando resolvido; senão pela própria internação.
+      let q = supabase
+        .from("receituarios")
+        .select("*")
+        .order("criado_em", { ascending: false });
+      if (resolvedRegistryId) {
+        q = q.eq("paciente_id", resolvedRegistryId);
+      } else {
+        q = q.eq("internacao_id", patientId);
       }
+      const { data, error } = await q;
       if (error) throw error;
-      setReceituarios((data ?? []) as unknown as ReceituarioData[]);
+      setReceituarios((data ?? []).map((r) => mapRow(r, patientName)));
     } catch (err: any) {
       toast.error("Erro ao carregar receituários", { description: err.message });
     } finally {
@@ -72,38 +102,24 @@ export function useReceituario(
         toast.error("Selecione a unidade hospitalar antes de salvar o receituário");
         return null;
       }
+      const criadoPor = await resolveProfissionalId(user?.id);
       const payload: Record<string, any> = {
-        type: data.type,
-        hospital_unit_id: currentHospital.id,
-        patient_id: data.patient_id ?? null,
-        patient_name: data.patient_name,
-        patient_bed: data.patient_bed ?? null,
-        patient_sector: data.patient_sector ?? null,
-        items: data.items as any,
-        free_text: data.free_text ?? null,
-        signed_by_name: data.signed_by_name ?? null,
-        signed_by_crm: data.signed_by_crm ?? null,
-        created_by: user?.id ?? null,
+        tipo: data.type,
+        hospital_id: currentHospital.id,
+        internacao_id: asUuidOrNull(data.patient_id || "") ?? asUuidOrNull(patientId || ""),
+        paciente_id: resolvedRegistryId ?? null,
+        itens: data.items as any,
+        texto_livre: data.free_text ?? null,
+        assinado_por_nome: data.signed_by_name ?? null,
+        assinado_por_crm: data.signed_by_crm ?? null,
+        criado_por: criadoPor,
       };
-      // Carimba o vínculo estável (segue o paciente entre leitos) — igual às
-      // demais tabelas clínicas. Só inclui se resolvido; a coluna existe no
-      // banco a partir da migration 20260722150000. (22/07/2026.)
-      if (resolvedRegistryId) payload.patient_registry_id = resolvedRegistryId;
-      if (data.patient_id) {
-        const encId = await resolveActiveEncounterId(data.patient_id);
-        if (encId) payload.encounter_id = encId;
-      }
 
-      const insertReceituario = async (p: Record<string, any>) =>
-        supabase.from("receituarios").insert(p as any).select("id").single();
-
-      let { data: row, error } = await insertReceituario(payload);
-      // Se a coluna registry/encounter ainda não existe neste banco (42703),
-      // remove os campos novos e reinsere — o save nunca falha por isso.
-      if (error && (error.code === "42703" || /patient_registry_id|encounter_id/i.test(error.message))) {
-        const { patient_registry_id, encounter_id, ...legacy } = payload;
-        ({ data: row, error } = await insertReceituario(legacy));
-      }
+      const { data: row, error } = await supabase
+        .from("receituarios")
+        .insert(payload as any)
+        .select("id")
+        .single();
 
       if (error) throw error;
       toast.success("Receituário salvo");
@@ -113,7 +129,7 @@ export function useReceituario(
       toast.error("Erro ao salvar receituário", { description: err.message });
       return null;
     }
-  }, [user, currentHospital, fetch]);
+  }, [user, currentHospital, resolvedRegistryId, patientId, fetch]);
 
   /** Atualiza um receituário existente. */
   const update = useCallback(async (id: string, data: Partial<ReceituarioData>): Promise<boolean> => {
@@ -121,10 +137,10 @@ export function useReceituario(
       const { error } = await supabase
         .from("receituarios")
         .update({
-          items: data.items as any,
-          free_text: data.free_text ?? null,
-          signed_by_name: data.signed_by_name ?? null,
-          signed_by_crm: data.signed_by_crm ?? null,
+          itens: data.items as any,
+          texto_livre: data.free_text ?? null,
+          assinado_por_nome: data.signed_by_name ?? null,
+          assinado_por_crm: data.signed_by_crm ?? null,
         })
         .eq("id", id);
 

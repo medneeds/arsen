@@ -25,8 +25,6 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { useDepartment } from "@/contexts/DepartmentContext";
-import { useHospital } from "@/contexts/HospitalContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ChecklistItem {
@@ -44,21 +42,23 @@ const NotesTabOptimized = () => {
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
   const { toast } = useToast();
-  const { currentDepartment } = useDepartment();
-  const { currentState, currentHospital } = useHospital();
 
   useEffect(() => {
     loadChecklistFromDB();
-  }, [currentDepartment]);
+  }, []);
 
+  // MIGRAÇÃO: notes_reminders→notas_lembretes. Colunas: content→conteudo,
+  // type→tipo, is_active→ativo, completed→concluido, created_at→criado_em.
+  // DEGRADADO: notas_lembretes não tem coluna `department` (só setor_id UUID) →
+  // o filtro por departamento foi REMOVIDO (traz todos os itens ativos, como o
+  // NotificationCenter migrado). Também sem colunas state_id/hospital_unit_id.
   const loadChecklistFromDB = async () => {
     const { data, error } = await supabase
-      .from("notes_reminders")
+      .from("notas_lembretes")
       .select("*")
-      .eq("department", currentDepartment)
-      .eq("type", "checklist_item")
-      .eq("is_active", true)
-      .order("created_at", { ascending: true });
+      .eq("tipo", "checklist_item")
+      .eq("ativo", true)
+      .order("criado_em", { ascending: true });
 
     if (error) {
       console.error("Erro ao carregar checklist:", error);
@@ -66,10 +66,10 @@ const NotesTabOptimized = () => {
     }
 
     setChecklistItems(
-      (data || []).map((item) => ({
+      (data || []).map((item: any) => ({
         id: item.id,
-        text: item.content,
-        completed: item.completed,
+        text: item.conteudo,
+        completed: !!item.concluido,
       }))
     );
   };
@@ -84,23 +84,13 @@ const NotesTabOptimized = () => {
       return;
     }
 
-    if (!currentHospital || !currentState) {
-      toast({
-        title: "Erro",
-        description: "Unidade hospitalar não selecionada",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const { error } = await supabase.from("notes_reminders").insert({
-      department: currentDepartment,
-      content: notes,
-      type: "free_text",
-      is_active: true,
-      state_id: currentState.id,
-      hospital_unit_id: currentHospital.id,
-    });
+    // MIGRAÇÃO: notas_lembretes não tem colunas department/state_id/hospital_unit_id
+    // → removidos do payload (guarda de unidade hospitalar deixou de ser necessária).
+    const { error } = await supabase.from("notas_lembretes").insert({
+      conteudo: notes,
+      tipo: "free_text",
+      ativo: true,
+    } as any);
 
     if (error) {
       toast({
@@ -122,24 +112,13 @@ const NotesTabOptimized = () => {
   const handleAddChecklistItem = async () => {
     if (!newChecklistItem.trim()) return;
 
-    if (!currentHospital || !currentState) {
-      toast({
-        title: "Erro",
-        description: "Unidade hospitalar não selecionada",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const { error } = await supabase.from("notes_reminders").insert({
-      department: currentDepartment,
-      content: newChecklistItem,
-      type: "checklist_item",
-      completed: false,
-      is_active: true,
-      state_id: currentState.id,
-      hospital_unit_id: currentHospital.id,
-    });
+    // MIGRAÇÃO: notas_lembretes (sem department/state_id/hospital_unit_id).
+    const { error } = await supabase.from("notas_lembretes").insert({
+      conteudo: newChecklistItem,
+      tipo: "checklist_item",
+      concluido: false,
+      ativo: true,
+    } as any);
 
     if (error) {
       toast({
@@ -161,8 +140,8 @@ const NotesTabOptimized = () => {
 
   const toggleChecklistItem = async (id: string, currentStatus: boolean) => {
     const { error } = await supabase
-      .from("notes_reminders")
-      .update({ completed: !currentStatus })
+      .from("notas_lembretes")
+      .update({ concluido: !currentStatus })
       .eq("id", id);
 
     if (error) {
@@ -179,8 +158,8 @@ const NotesTabOptimized = () => {
 
   const deleteChecklistItem = async (id: string) => {
     const { error } = await supabase
-      .from("notes_reminders")
-      .update({ is_active: false })
+      .from("notas_lembretes")
+      .update({ ativo: false })
       .eq("id", id);
 
     if (error) {
@@ -209,26 +188,16 @@ const NotesTabOptimized = () => {
       return;
     }
 
-    if (!currentHospital || !currentState) {
-      toast({
-        title: "ERRO",
-        description: "Unidade hospitalar não selecionada",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const scheduledDateTime = `${scheduledDate}T${scheduledTime}:00`;
 
-    const { error } = await supabase.from("notes_reminders").insert({
-      department: currentDepartment,
-      content: scheduledContent,
-      type: "free_text",
-      scheduled_popup_time: scheduledDateTime,
-      is_active: true,
-      state_id: currentState.id,
-      hospital_unit_id: currentHospital.id,
-    });
+    // MIGRAÇÃO: notas_lembretes — scheduled_popup_time→horario_lembrete
+    // (sem department/state_id/hospital_unit_id).
+    const { error } = await supabase.from("notas_lembretes").insert({
+      conteudo: scheduledContent,
+      tipo: "free_text",
+      horario_lembrete: scheduledDateTime,
+      ativo: true,
+    } as any);
 
     if (error) {
       toast({

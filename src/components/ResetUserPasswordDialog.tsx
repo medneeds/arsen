@@ -1,10 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { z } from "zod";
 import {
   Dialog,
   DialogContent,
@@ -14,28 +11,37 @@ import {
 } from "@/components/ui/dialog";
 import {
   KeyRound,
-  Eye,
-  EyeOff,
   Shield,
   AlertTriangle,
   CheckCircle,
+  Copy,
 } from "lucide-react";
 
-const passwordSchema = z.object({
-  newPassword: z.string()
-    .min(6, { message: "SENHA DEVE TER PELO MENOS 6 CARACTERES" })
-    .max(72, { message: "SENHA DEVE TER NO MÁXIMO 72 CARACTERES" }),
-  confirmPassword: z.string(),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "SENHAS NÃO CONFEREM",
-  path: ["confirmPassword"],
-});
+// MIGRAÇÃO: a antiga edge function "reset-user-password" recebia uma senha
+// escolhida pelo admin. A nova "resetar-senha-profissional" gera uma senha
+// provisória no servidor e a retorna, então todo o formulário de digitação
+// de senha (schema zod, gerador local, campos de input) foi removido.
 
-const getFunctionErrorMessage = async (error: unknown) => {
-  const err = error as { message?: string; context?: Response };
-  if (err.context) {
+// MIGRAÇÃO: a nova edge function pode retornar a mensagem de erro dentro de
+// (error as any).context.body, que vem como string JSON — parse abaixo.
+const getFunctionErrorMessage = async (error: unknown): Promise<string> => {
+  const err = error as { message?: string; context?: unknown };
+  const ctx = err.context as { body?: unknown } | undefined;
+  if (ctx?.body) {
     try {
-      const body = await err.context.clone().json();
+      const raw =
+        typeof ctx.body === "string" ? ctx.body : JSON.stringify(ctx.body);
+      const parsed = JSON.parse(raw);
+      if (parsed?.error) return parsed.error as string;
+    } catch {
+      // mantém fallback abaixo
+    }
+  }
+  // Fallback: alguns runtimes expõem context como Response com .json()
+  const maybeResponse = err.context as { clone?: () => Response } | undefined;
+  if (maybeResponse?.clone) {
+    try {
+      const body = await maybeResponse.clone().json();
       if (body?.error) return body.error as string;
     } catch {
       // mantém fallback abaixo
@@ -44,58 +50,56 @@ const getFunctionErrorMessage = async (error: unknown) => {
   return err.message || "Falha na requisição";
 };
 
-const generateStrongPassword = () => {
-  const pools = ["ABCDEFGHJKLMNPQRSTUVWXYZ", "abcdefghijkmnopqrstuvwxyz", "23456789", "!@#$%&*"];
-  const all = pools.join("");
-  const bytes = crypto.getRandomValues(new Uint32Array(12));
-  const chars = pools.map((pool, index) => pool[bytes[index] % pool.length]);
-  for (let i = chars.length; i < 10; i++) chars.push(all[bytes[i] % all.length]);
-  return chars.sort(() => crypto.getRandomValues(new Uint32Array(1))[0] - 2147483648).join("");
-};
-
-interface ResetUserPasswordDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  userId: string;
-  userName: string;
-  userEmail: string;
-  onSuccess: () => void;
+interface ResetResult {
+  email?: string;
+  nome?: string;
+  tempPassword: string;
 }
 
 export function ResetUserPasswordDialog({
   open,
   onOpenChange,
-  userId,
+  profissionalId,
   userName,
   userEmail,
   onSuccess,
-}: ResetUserPasswordDialogProps) {
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  profissionalId: string;
+  userName: string;
+  userEmail: string;
+  onSuccess?: () => void;
+}) {
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [formData, setFormData] = useState({
-    newPassword: "",
-    confirmPassword: "",
-  });
+  const [result, setResult] = useState<ResetResult | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleReset = async () => {
     setLoading(true);
 
     try {
-      const validated = passwordSchema.parse(formData);
+      // MIGRAÇÃO: a nova edge function exige o token do usuário no header.
+      const session = (await supabase.auth.getSession()).data.session;
+      if (!session) {
+        throw new Error("Sessão expirada.");
+      }
 
-      // Call edge function (uses service_role on the server side)
-      const { data, error } = await supabase.functions.invoke("reset-user-password", {
-        body: {
-          userId,
-          newPassword: validated.newPassword,
-        },
-      });
+      // MIGRAÇÃO: chama "resetar-senha-profissional" com o PK da linha em
+      // profissionais (profissionalId), NÃO o auth user_id.
+      const { data, error } = await supabase.functions.invoke(
+        "resetar-senha-profissional",
+        {
+          body: { profissionalId },
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
 
       if (error) {
-        toast.error("ERRO AO REDEFINIR SENHA: " + await getFunctionErrorMessage(error));
+        toast.error(
+          "ERRO AO REDEFINIR SENHA: " + (await getFunctionErrorMessage(error))
+        );
         setLoading(false);
         return;
       }
@@ -106,39 +110,42 @@ export function ResetUserPasswordDialog({
         return;
       }
 
-      setSuccess(true);
-      toast.success("SENHA REDEFINIDA COM SUCESSO");
-      
-      // Reset form and close after delay
-      setTimeout(() => {
-        setFormData({ newPassword: "", confirmPassword: "" });
-        setSuccess(false);
-        onSuccess();
-        onOpenChange(false);
-      }, 2000);
-      
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        toast.error(err.errors[0].message);
-      } else {
-        toast.error("ERRO AO PROCESSAR SOLICITAÇÃO");
+      if (!data?.tempPassword) {
+        toast.error("ERRO AO REDEFINIR SENHA: resposta inválida do servidor");
+        setLoading(false);
+        return;
       }
+
+      setResult({
+        email: data.email,
+        nome: data.nome,
+        tempPassword: data.tempPassword,
+      });
+      toast.success("SENHA REDEFINIDA COM SUCESSO");
+      onSuccess?.();
+    } catch (err) {
+      toast.error(
+        "ERRO AO REDEFINIR SENHA: " +
+          (err instanceof Error ? err.message : "Erro ao processar solicitação")
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleClose = () => {
-    setFormData({ newPassword: "", confirmPassword: "" });
-    setSuccess(false);
+    setResult(null);
     onOpenChange(false);
   };
 
-  const handleGeneratePassword = () => {
-    const generated = generateStrongPassword();
-    setFormData({ newPassword: generated, confirmPassword: generated });
-    setShowPassword(true);
-    setShowConfirmPassword(true);
+  const handleCopy = async () => {
+    if (!result?.tempPassword) return;
+    try {
+      await navigator.clipboard.writeText(result.tempPassword);
+      toast.success("SENHA COPIADA");
+    } catch {
+      toast.error("NÃO FOI POSSÍVEL COPIAR");
+    }
   };
 
   return (
@@ -150,27 +157,75 @@ export function ResetUserPasswordDialog({
             Redefinir Senha do Usuário
           </DialogTitle>
           <DialogDescription>
-            Defina uma nova senha para o usuário
+            Gere uma senha provisória para o usuário
           </DialogDescription>
         </DialogHeader>
 
-        {success ? (
-          <div className="py-8 text-center">
+        {result ? (
+          <div className="py-6 text-center">
             <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-emerald-100 mx-auto mb-4">
               <CheckCircle className="h-8 w-8 text-emerald-600" />
             </div>
             <h3 className="text-lg font-bold text-gray-900">Senha Redefinida!</h3>
             <p className="text-sm text-gray-600 mt-2">
-              A nova senha foi configurada com sucesso.
+              Repasse a senha provisória abaixo para{" "}
+              <strong>{result.nome || userName || "o usuário"}</strong>.
             </p>
+
+            {/* Senha provisória + copiar */}
+            <div className="mt-4 bg-gray-50 border rounded-lg p-3 text-left">
+              <p className="text-xs text-gray-500 font-semibold mb-1">
+                Senha provisória
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 font-mono text-base tracking-widest bg-white border rounded px-2 py-2 break-all">
+                  {result.tempPassword}
+                </code>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 flex-shrink-0"
+                  onClick={handleCopy}
+                  title="Copiar senha"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              {result.email && (
+                <p className="text-xs text-gray-500 mt-2">
+                  {result.email.replace("@sistema.local", "")}
+                </p>
+              )}
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-4 text-left">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-amber-800">
+                  Esta senha não será exibida novamente. Copie-a agora e
+                  oriente o usuário a alterá-la no primeiro acesso.
+                </p>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              className="w-full mt-4 bg-amber-600 hover:bg-amber-700"
+              onClick={handleClose}
+            >
+              Concluir
+            </Button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-4">
             {/* User Info */}
             <div className="bg-gray-50 rounded-lg p-3 border">
               <p className="text-xs text-gray-500 font-semibold mb-1">Usuário</p>
               <p className="font-medium">{userName || "—"}</p>
-              <p className="text-xs text-gray-500">{userEmail?.replace("@sistema.local", "") || "—"}</p>
+              <p className="text-xs text-gray-500">
+                {userEmail?.replace("@sistema.local", "") || "—"}
+              </p>
             </div>
 
             {/* Warning */}
@@ -178,72 +233,10 @@ export function ResetUserPasswordDialog({
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-amber-800">
-                  A nova senha precisa ter <strong>pelo menos 6 caracteres</strong>.
+                  Uma <strong>senha provisória segura</strong> será gerada
+                  automaticamente. A senha atual do usuário deixará de
+                  funcionar.
                 </p>
-              </div>
-            </div>
-
-            <Button type="button" variant="outline" className="w-full" onClick={handleGeneratePassword} disabled={loading}>
-              Gerar senha provisória segura
-            </Button>
-
-            {/* Password Fields */}
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600">Nova Senha *</Label>
-                <div className="relative">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    value={formData.newPassword}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      newPassword: e.target.value.slice(0, 72)
-                    })}
-                    placeholder="Mínimo 6 caracteres"
-                    className="h-10 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono tracking-widest"
-                    disabled={loading}
-                    maxLength={72}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-                <p className="text-[9px] text-gray-400">
-                  {formData.newPassword.length}/72 caracteres (mínimo 6)
-                </p>
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600">Confirmar Nova Senha *</Label>
-                <div className="relative">
-                  <Input
-                    type={showConfirmPassword ? "text" : "password"}
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      confirmPassword: e.target.value.slice(0, 72)
-                    })}
-                    placeholder="REPITA A SENHA"
-                    className="h-10 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono tracking-widest"
-                    disabled={loading}
-                    maxLength={72}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
               </div>
             </div>
 
@@ -259,14 +252,15 @@ export function ResetUserPasswordDialog({
                 Cancelar
               </Button>
               <Button
-                type="submit"
-                disabled={loading || formData.newPassword.length < 6 || formData.newPassword.length > 72}
+                type="button"
+                onClick={handleReset}
+                disabled={loading}
                 className="flex-1 bg-amber-600 hover:bg-amber-700"
               >
                 {loading ? (
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Salvando...</span>
+                    <span>Gerando...</span>
                   </div>
                 ) : (
                   <span className="flex items-center gap-2">
@@ -282,7 +276,7 @@ export function ResetUserPasswordDialog({
               <Shield className="h-3 w-3" />
               <span>Esta ação será registrada na trilha de auditoria</span>
             </div>
-          </form>
+          </div>
         )}
       </DialogContent>
     </Dialog>

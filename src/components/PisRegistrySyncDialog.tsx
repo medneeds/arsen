@@ -14,14 +14,15 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
 /**
- * Diálogo único de sincronização PIS → patient_registry.
- * Reaproveitado pelo AdmitPatientDialog (no momento de puxar paciente)
- * e pelo EditPatientDialog (banner persistente em Edição Avançada).
+ * Diálogo único de sincronização PIS → prontuário do paciente.
+ * Reaproveitado pelo EditPatientDialog (banner persistente em Edição Avançada).
  *
- * Não altera schema, não toca em patients/medical_records.
- * Escreve apenas em:
- *  - patient_registry (campos aceitos)
- *  - patient_registry_edit_history (1 linha por campo, source='pis_sync')
+ * MIGRAÇÃO: destino patient_registry→`pacientes`; histórico
+ * patient_registry_edit_history→`logs_auditoria` (tipo_evento='edicao_prontuario',
+ * 1 linha por campo). Os SHAPES exportados (PisSourceRow/RegistryRow/PisDiffField/
+ * computePisDiff) são mantidos em inglês (view-model estável); o dialog fetcha
+ * `pacientes` e remapeia. `pacientes` tem `endereco` único — não há bairro/cidade/
+ * UF separados, então neighborhood/city/state saíram do FIELD_MAP (não sincronizam).
  */
 
 export type PisSourceRow = {
@@ -68,11 +69,25 @@ const FIELD_MAP: { pisKey: keyof PisSourceRow; regKey: keyof RegistryRow; label:
   { pisKey: "mother_name", regKey: "mother_name", label: "Nome da mãe", upper: true },
   { pisKey: "phone", regKey: "phone", label: "Telefone" },
   { pisKey: "address", regKey: "address", label: "Endereço", upper: true },
-  { pisKey: "neighborhood", regKey: "neighborhood", label: "Bairro", upper: true },
-  { pisKey: "city", regKey: "city", label: "Cidade", upper: true },
-  { pisKey: "state", regKey: "state", label: "UF", upper: true },
+  // MIGRAÇÃO: pacientes.endereco é único — sem bairro/cidade/UF separados; esses
+  // campos saíram da sincronização (degradados).
   { pisKey: "medical_record", regKey: "medical_record", label: "Nº Prontuário PIS" },
 ];
+
+// MIGRAÇÃO: regKey (inglês, view-model) → coluna real em `pacientes`.
+// Campos sem coluna correspondente não entram (já removidos do FIELD_MAP).
+const REG_TO_PACIENTE: Record<string, string> = {
+  full_name: "nome_completo",
+  social_name: "nome_social",
+  mother_name: "nome_mae",
+  birth_date: "data_nascimento",
+  sex: "sexo",
+  cpf: "cpf",
+  cns: "cns",
+  phone: "telefone",
+  address: "endereco",
+  medical_record: "prontuario",
+};
 
 const norm = (v: any) => (v === null || v === undefined ? "" : String(v).trim());
 
@@ -140,13 +155,32 @@ export function PisRegistrySyncDialog({
     let cancelled = false;
     (async () => {
       setLoading(true);
+      // MIGRAÇÃO: patient_registry→pacientes; remapeia colunas pt-BR → RegistryRow (inglês).
       const { data, error } = await supabase
-        .from("patient_registry")
-        .select("id, full_name, social_name, mother_name, birth_date, sex, cpf, cns, phone, address, neighborhood, city, state, medical_record")
+        .from("pacientes")
+        .select("id, nome_completo, nome_social, nome_mae, data_nascimento, sexo, cpf, cns, telefone, endereco, prontuario")
         .eq("id", registryId)
         .maybeSingle();
       if (cancelled) return;
-      if (!error && data) setRegistry(data as RegistryRow);
+      if (!error && data) {
+        setRegistry({
+          id: data.id,
+          full_name: data.nome_completo,
+          social_name: data.nome_social,
+          mother_name: data.nome_mae,
+          birth_date: data.data_nascimento,
+          sex: data.sexo,
+          cpf: data.cpf,
+          cns: data.cns,
+          phone: data.telefone,
+          address: data.endereco,
+          // MIGRAÇÃO: sem bairro/cidade/UF separados em pacientes.
+          neighborhood: null,
+          city: null,
+          state: null,
+          medical_record: data.prontuario,
+        });
+      }
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -184,30 +218,39 @@ export function PisRegistrySyncDialog({
     }
     setSaving(true);
     try {
+      // MIGRAÇÃO: escreve em `pacientes`, traduzindo cada regKey (inglês) para a
+      // coluna real. Campos sem mapeamento são ignorados.
       const updatePayload: Record<string, any> = {};
-      for (const d of toApply) updatePayload[d.regKey] = d.incoming;
+      for (const d of toApply) {
+        const col = REG_TO_PACIENTE[d.regKey];
+        if (col) updatePayload[col] = d.incoming;
+      }
 
       const { error: upErr } = await supabase
-        .from("patient_registry")
+        .from("pacientes")
         .update(updatePayload)
         .eq("id", registryId);
       if (upErr) throw upErr;
 
-      // Auditoria: 1 linha por campo
+      // Auditoria: 1 linha por campo em logs_auditoria (patient_registry_edit_history não existe).
       const histRows = toApply.map((d) => ({
-        patient_registry_id: registryId,
-        patient_id: patientId ?? null,
-        field_changed: d.regKey,
-        old_value: d.current || null,
-        new_value: d.incoming || null,
-        reason: reason.trim(),
-        source: "pis_sync",
-        changed_by: user?.id ?? null,
-        changed_by_email: user?.email ?? null,
+        tipo_evento: "edicao_prontuario",
+        nome_tabela: "pacientes",
+        acao: "UPDATE" as const,
+        registro_id: registryId,
+        paciente_id: registryId,
+        // MIGRAÇÃO: patientId (id da linha-leito legada) não tem FK segura para
+        // internacoes — omitido do audit para não violar a FK internacao_id.
+        campo_alterado: REG_TO_PACIENTE[d.regKey] ?? d.regKey,
+        valor_antigo: d.current || null,
+        valor_novo: d.incoming || null,
+        motivo: `${reason.trim()} (source=pis_sync)`,
+        ator_user_id: user?.id ?? null,
+        email_ator: user?.email ?? null,
       }));
       const { error: histErr } = await supabase
-        .from("patient_registry_edit_history" as any)
-        .insert(histRows as any);
+        .from("logs_auditoria")
+        .insert(histRows);
       if (histErr) console.warn("[pis-sync] histórico falhou:", histErr.message);
 
       toast({

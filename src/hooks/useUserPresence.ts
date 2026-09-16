@@ -49,24 +49,22 @@ export function useUserPresence() {
     if (!user) return;
 
     const setupPresence = async () => {
-      // Get user profile info
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, email")
-        .eq("id", user.id)
-        .single();
+      // MIGRAÇÃO: a apresentação (presence) já roda 100% em realtime do Supabase —
+      // nenhuma tabela de presença foi tocada. Só o enriquecimento do perfil mudou:
+      //   profiles → profissionais (buscado por user_id, pois profissionais.id ≠ auth.uid)
+      //   user_hospital_assignments → profissionais.hospital_id → hospitais(nome)
+      //   user_departments → SEM equivalente → department degradado para null.
+      const { data: profissional } = await supabase
+        .from("profissionais")
+        .select("nome, email, hospitais(nome)")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-      // Get user departments
-      const { data: departments } = await supabase
-        .from("user_departments")
-        .select("department")
-        .eq("user_id", user.id);
-
-      // Get user hospital assignments
-      const { data: hospitalAssignments } = await supabase
-        .from("user_hospital_assignments")
-        .select("hospital_unit_id, hospital_units(name)")
-        .eq("user_id", user.id);
+      const profile = {
+        full_name: (profissional as any)?.nome ?? null,
+        email: (profissional as any)?.email ?? null,
+      };
+      const hospitalName = (profissional as any)?.hospitais?.nome ?? null;
 
       const channel = supabase.channel("online-users", {
         config: {
@@ -104,8 +102,8 @@ export function useUserPresence() {
               full_name: profile?.full_name || null,
               email: profile?.email || user.email || null,
               role: role || null,
-              department: departments?.[0]?.department || null,
-              hospital_unit: (hospitalAssignments?.[0] as any)?.hospital_units?.name || null,
+              department: null, // MIGRAÇÃO: sem user_departments no schema novo
+              hospital_unit: hospitalName,
               online_at: new Date().toISOString(),
               last_activity: lastActivityRef.current,
               current_route: window.location.pathname,
@@ -124,8 +122,8 @@ export function useUserPresence() {
             full_name: profile?.full_name || null,
             email: profile?.email || user.email || null,
             role: role || null,
-            department: departments?.[0]?.department || null,
-            hospital_unit: (hospitalAssignments?.[0] as any)?.hospital_units?.name || null,
+            department: null, // MIGRAÇÃO: sem user_departments no schema novo
+            hospital_unit: hospitalName,
             online_at: new Date().toISOString(),
             last_activity: lastActivityRef.current,
             current_route: window.location.pathname,

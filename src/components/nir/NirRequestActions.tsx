@@ -61,43 +61,29 @@ export function NirRequestActions({ requests, typeFilter, defaultRequestType }: 
     qc.invalidateQueries({ queryKey: ["nir-regulation-requests-all"] });
   };
 
+  // MIGRAÇÃO: regulation_requests → regulacoes. A tabela nova exige `internacao_id`
+  // NOT NULL e NÃO tem colunas para paciente avulso digitado à mão (patient_name,
+  // patient_age, patient_record, origin_sector, reason, clinical_summary, department,
+  // hospital_unit_id, state_id, requested_by_name). O cadastro manual de uma
+  // solicitação sem internação vinculada é, portanto, INCOMPATÍVEL com o schema novo →
+  // criação DEGRADADA (bloqueada com aviso). As regulações passam a nascer do fluxo
+  // clínico (a partir de uma internação real). Ver MIGRACAO_DEGRADACOES.md.
   const create = async () => {
-    if (!currentHospital?.id || !currentState?.id) return;
-    if (!form.patient_name.trim() || !form.reason.trim()) {
-      toast({ title: "Preencha paciente e motivo", variant: "destructive" });
-      return;
-    }
-    setBusy(true);
-    const { error } = await supabase.from("regulation_requests").insert({
-      ...form,
-      patient_name: form.patient_name.toUpperCase(),
-      hospital_unit_id: currentHospital.id,
-      state_id: currentState.id,
-      department: form.destination_sector || form.origin_sector || "NIR",
-      status: "pendente",
-      requested_by: user?.id ?? null,
-      requested_by_name: user?.email?.split("@")[0]?.toUpperCase() ?? "NIR",
+    toast({
+      title: "Cadastro manual indisponível",
+      description:
+        "No schema novo, uma regulação é vinculada a uma internação existente. Abra a regulação a partir do paciente internado (não há mais cadastro avulso por nome).",
+      variant: "destructive",
     });
-    setBusy(false);
-    if (error) {
-      toast({ title: "Erro ao criar solicitação", description: error.message, variant: "destructive" });
-      return;
-    }
-    toast({ title: "Solicitação criada" });
-    setOpen(false);
-    setForm({ ...form, patient_name: "", patient_age: "", patient_record: "", reason: "", clinical_summary: "" });
-    refresh();
   };
 
-  const updateStatus = async (id: string, newStatus: string, extra: Record<string, any> = {}) => {
+  // MIGRAÇÃO: regulacoes só tem `status` (sem regulator_id/regulator_name/approved_at/
+  // completed_at/cancellation_reason/canceled_at) → transições gravam apenas o status;
+  // os metadados de transição são DEGRADADOS.
+  const updateStatus = async (id: string, newStatus: string, _extra: Record<string, any> = {}) => {
     const { error } = await supabase
-      .from("regulation_requests")
-      .update({
-        status: newStatus,
-        regulator_id: user?.id ?? null,
-        regulator_name: user?.email?.split("@")[0]?.toUpperCase() ?? "NIR",
-        ...extra,
-      })
+      .from("regulacoes")
+      .update({ status: newStatus } as any)
       .eq("id", id);
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -107,16 +93,17 @@ export function NirRequestActions({ requests, typeFilter, defaultRequestType }: 
     refresh();
   };
 
-  const approve = (id: string) => updateStatus(id, "aprovada", { approved_at: new Date().toISOString() });
-  const complete = (id: string) => updateStatus(id, "concluida", { completed_at: new Date().toISOString() });
+  const approve = (id: string) => updateStatus(id, "aprovada");
+  const complete = (id: string) => updateStatus(id, "concluida");
   const deny = (id: string) => {
+    // MIGRAÇÃO: motivo da negação sem coluna em regulacoes → apenas confirma e degrada o motivo.
     const reason = window.prompt("Motivo da negação:") || "";
     if (!reason.trim()) return;
-    updateStatus(id, "negada", { cancellation_reason: reason, canceled_at: new Date().toISOString() });
+    updateStatus(id, "negada");
   };
   const cancel = (id: string) => {
     if (!window.confirm("Cancelar esta solicitação?")) return;
-    updateStatus(id, "cancelada", { canceled_at: new Date().toISOString() });
+    updateStatus(id, "cancelada");
   };
 
   return (

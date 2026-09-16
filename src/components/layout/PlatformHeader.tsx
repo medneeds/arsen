@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
 import { LucideIcon, Building2 } from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { SectorSelector } from "@/components/SectorSelector";
 import type { Department } from "@/contexts/DepartmentContext";
@@ -36,6 +35,8 @@ interface PlatformHeaderProps {
   navigateOnSectorSelect?: boolean;
   /** Disparado após a troca de setor, com o departamento escolhido. */
   onSectorSelect?: (department: Department) => void;
+  /** Oculta o botão de alternar a barra lateral (ex.: Painel do Gestor). */
+  hideSidebarTrigger?: boolean;
   className?: string;
 }
 
@@ -52,6 +53,7 @@ export function PlatformHeader({
   variant = "institutional",
   eyebrow,
   showSectorSelector = false,
+  hideSidebarTrigger = false,
   navigateOnSectorSelect = true,
   onSectorSelect,
   className,
@@ -89,15 +91,8 @@ export function PlatformHeader({
       )}
 
       <div className="relative w-full px-4 md:px-8 py-3 flex items-center gap-3">
-        <SidebarTrigger
-          className={cn(
-            "h-9 w-9 shrink-0 rounded-md",
-            isInstitutional
-              ? "text-primary-foreground hover:bg-white/10"
-              : "text-foreground",
-          )}
-          aria-label="Alternar menu lateral"
-        />
+        {/* Sem botão de menu no header: no desktop o toggle vive na própria
+            barra lateral (AppSidebar); no mobile, no MobileMenuFab. */}
 
         <div
           className={cn(

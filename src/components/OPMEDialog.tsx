@@ -29,7 +29,20 @@ import { resolvePatientHeader, resolveCurrentBedSector } from "@/lib/resolvePati
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
-import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
+
+// MIGRAÇÃO (Wave3): discharge_documents → altas. A tabela nova tem só
+// internacao_id, tipo, conteudo(Json), numero_documento, assinado_por,
+// crm_assinatura, data_hora. Colunas ricas do modelo antigo (patient_name/bed/
+// sector, encounter_id, signed_by_name, hospital_unit_id, state_id, department)
+// NÃO existem → preservadas dentro de `conteudo`. assinado_por é FK
+// profissionais.id (≠ auth.uid) → resolvido via lookup.
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase.from("profissionais").select("id").eq("user_id", userId).maybeSingle();
+    return (data as { id?: string } | null)?.id ?? null;
+  } catch { return null; }
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -78,7 +91,7 @@ export function OPMEDialog({
   procedureLabel = "",
 }: Props) {
   const { user } = useAuth();
-  const { currentHospital, currentState } = useHospital();
+  const { currentHospital } = useHospital(); // MIGRAÇÃO: currentState não usado (sem coluna state_id)
 
   const [resolvedName, setResolvedName] = useState(patientName);
   const [resolvedBed, setResolvedBed] = useState(patientBed);
@@ -116,9 +129,10 @@ export function OPMEDialog({
 
   useEffect(() => {
     if (!open || !user?.id) return;
-    supabase.from("profiles").select("full_name, crm").eq("id", user.id).maybeSingle().then(({ data }) => {
-      if (data?.full_name) setDoctorName(data.full_name);
-      if (data?.crm) setDoctorCRM(data.crm);
+    // MIGRAÇÃO: profiles → profissionais (full_name→nome, crm→numero_conselho).
+    supabase.from("profissionais").select("nome, numero_conselho").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      if ((data as any)?.nome) setDoctorName((data as any).nome);
+      if ((data as any)?.numero_conselho) setDoctorCRM((data as any).numero_conselho);
     });
   }, [open, user?.id]);
 
@@ -132,9 +146,15 @@ export function OPMEDialog({
   const handleSave = async () => {
     if (!resolvedName.trim()) { toast.error("Nome do paciente não identificado"); return; }
     if (materiais.every((m) => !m.descricao.trim())) { toast.error("Adicione ao menos um material"); return; }
-    if (!currentHospital?.id || !currentState?.id) { toast.error("Contexto hospitalar não disponível"); return; }
+    if (!currentHospital?.id) { toast.error("Contexto hospitalar não disponível"); return; }
+    // MIGRAÇÃO: altas.internacao_id é NOT NULL — sem internação vinculada não há
+    // onde gravar o documento.
+    const internacaoId = asUuidOrNull(patientId);
+    if (!internacaoId) { toast.error("Sem internação vinculada — não é possível salvar o registro de OPME."); return; }
     setSaving(true);
     try {
+      // MIGRAÇÃO: campos ricos sem coluna em `altas` preservados em `conteudo`
+      // (patient_name/bed/sector, signed_by_name/crm, department).
       const content = {
         cirurgia, cirurgiao, instrumentador, empresa,
         data_hora: dataHora,
@@ -142,25 +162,19 @@ export function OPMEDialog({
         intercorrencias,
         medico_responsavel: doctorName,
         medico_crm: doctorCRM,
-      };
-      // encounter ativo carimbado (helper canônico via registry) — o documento
-      // pertence ao ATENDIMENTO, não ao leito. Auditoria 22/07/2026.
-      const encounterId = await resolveActiveEncounterId(patientId);
-      const { error } = await supabase.from("discharge_documents").insert({
-        document_type: "opme",
-        patient_id: asUuidOrNull(patientId),
-        encounter_id: encounterId,
         patient_name: resolvedName,
         patient_bed: resolvedBed || null,
         patient_sector: resolvedSector || null,
-        content,
-        signed_by: user?.id ?? null,
-        signed_by_name: doctorName || null,
-        signed_by_crm: doctorCRM || null,
-        signed_at: new Date().toISOString(),
-        hospital_unit_id: currentHospital.id,
-        state_id: currentState.id,
         department: "procedimento",
+      };
+      const assinadoPor = await resolveProfissionalId(user?.id);
+      const { error } = await supabase.from("altas").insert({
+        tipo: "opme",
+        internacao_id: internacaoId,
+        conteudo: content,
+        assinado_por: assinadoPor,
+        crm_assinatura: doctorCRM || null,
+        data_hora: new Date().toISOString(),
       } as any);
       if (error) throw error;
       toast.success("Registro de OPME salvo");

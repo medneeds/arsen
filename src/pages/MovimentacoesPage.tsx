@@ -148,20 +148,38 @@ const MovimentacoesPage = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const finalDestination = destination === "OUTRO" ? customDestination : destination;
-      const { error } = await supabase.from("patient_movements").insert({
-        patient_id: patientId || null,
-        patient_name: patientName,
-        patient_bed: patientBed,
-        patient_sector: patientSector,
-        movement_type: subtypeDef.id,
-        destination: finalDestination || null,
-        notes: notes || null,
-        responsible_doctor: responsibleDoctor || null,
-        created_by: user?.id,
-        department: "URGÊNCIA E EMERGÊNCIA ADULTO",
-        state_id: currentState.id,
-        hospital_unit_id: currentHospital.id,
-      });
+
+      // MIGRAÇÃO: patient_movements (morta) → logs_auditoria. `transferencias` só modela
+      // leito→leito (leito_destino_id NOT NULL) e não cabe numa sinalização sem destino
+      // físico. Gravamos um evento de auditoria: tipo_evento='sinalizacao_transferencia_*'
+      // para transferências (usado por BedReleasePreAdmissionDialog/usePatientMovements),
+      // 'movimentacao_<subtipo>' para os demais. Os campos ricos (paciente/leito/setor/
+      // destino/médico/notas/departamento) são preservados em `dados_novos`. patientId ==
+      // internacao_id (uuid ou null). state_id/hospital_unit_id degradados (hospital_id).
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(patientId);
+      const tipoEvento =
+        subtypeDef.id === "TRANSFERENCIA_INTERNA" ? "sinalizacao_transferencia_interna"
+        : subtypeDef.id === "TRANSFERENCIA_EXTERNA" ? "sinalizacao_transferencia_externa"
+        : `movimentacao_${subtypeDef.id.toLowerCase()}`;
+      const { error } = await supabase.from("logs_auditoria").insert({
+        tipo_evento: tipoEvento,
+        nome_tabela: "internacoes",
+        acao: "UPDATE",
+        internacao_id: isUuid ? patientId : null,
+        ator_user_id: user?.id ?? null,
+        hospital_id: currentHospital.id,
+        motivo: notes || null,
+        dados_novos: {
+          movement_type: subtypeDef.id,
+          patient_name: patientName,
+          patient_bed: patientBed,
+          patient_sector: patientSector,
+          destination: finalDestination || null,
+          notes: notes || null,
+          responsible_doctor: responsibleDoctor || null,
+          department: "URGÊNCIA E EMERGÊNCIA ADULTO",
+        },
+      } as any);
       if (error) throw error;
 
       toast({

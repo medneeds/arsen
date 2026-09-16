@@ -63,6 +63,9 @@ export interface Patient {
   registryId?: string | null; // patient_registry_id — vínculo com o prontuário permanente
   age: string | number;
   sector: SectorType;
+  /** MIGRAÇÃO: nome real do setor (setores.nome) do banco — usado para filtrar
+   *  o mapa por setores criados no painel do admin, além do código legado. */
+  sectorName?: string;
   diagnoses: string[];
   medicalHistory: string[];
   relevantExams: string[];

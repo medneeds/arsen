@@ -38,7 +38,11 @@ const GROUP_TO_SCOPE: Record<SectorGroup, Exclude<SectorScope, "all">> = {
 };
 
 export type NirPeriod = "today" | "7d" | "30d";
-export type SectorScope = "all" | "alta_complexidade" | "enfermaria" | "urgencia_horizontal" | "centro_cirurgico";
+// MIGRAÇÃO: o Escopo passou a ser dinâmico pelo `tipo` real do setor (banco):
+// "all" | <setor.tipo> (ex.: "clinico" | "cirurgico" | "triagem"). Os valores
+// antigos (alta_complexidade/enfermaria/...) ainda são retornados por
+// classifySector para a lógica interna de cobertura/alertas.
+export type SectorScope = string;
 
 export interface NirFilters {
   period: NirPeriod;
@@ -62,35 +66,111 @@ export function useNirMetrics(hospitalUnitId: string | undefined, filters: NirFi
     return d.toISOString();
   }, [filters.period]);
 
+  // MIGRAÇÃO: bed_census → leitos. `leitos` tem id, numero, status, tipo, setor_id,
+  // motivo_bloqueio, atualizado_em — NÃO tem sector(código), bed_number, name,
+  // patient_name, block_started_at, hospital_unit_id. Reconstruímos o shape que o
+  // dashboard consome via join setores(tipo/nome) + internação ATIVA (paciente).
+  // Escopo por hospital via setores→alas.hospital_id. `block_started_at` DEGRADADO
+  // (sem coluna → null; longBlocked fica vazio). Status usa 'livre' (o antigo 'vago'
+  // é INVÁLIDO). Ver MIGRACAO_DEGRADACOES.md.
   const bedCensusQuery = useQuery({
     queryKey: ["nir-bed-census", hospitalUnitId],
     queryFn: async () => {
       if (!hospitalUnitId) return [];
-      const { data, error } = await supabase
-        .from("bed_census")
-        .select("*")
-        .eq("hospital_unit_id", hospitalUnitId)
-        .order("sector")
-        .order("bed_number");
+      const { data, error } = await (supabase
+        .from("leitos")
+        .select(`
+          id, numero, status, tipo, motivo_bloqueio, atualizado_em,
+          setor:setores!inner(tipo, nome, ala:alas!inner(hospital_id)),
+          internacoes(id, data_alta, paciente:pacientes(nome_completo, nome_social))
+        `) as any)
+        .eq("setor.ala.hospital_id", hospitalUnitId);
       if (error) throw error;
-      return data || [];
+      const rows = ((data || []) as any[]).map((l: any) => {
+        const ativa = (l.internacoes || []).find((i: any) => !i.data_alta);
+        const nome = ativa?.paciente
+          ? (ativa.paciente.nome_social || ativa.paciente.nome_completo || "")
+          : "";
+        // MIGRAÇÃO/robustez: a ocupação é derivada da INTERNAÇÃO ATIVA (fonte da
+        // verdade). Se há internação ativa, o leito é 'ocupado' mesmo que o
+        // leitos.status esteja dessincronizado; caso contrário usa o status real
+        // (livre/higienizacao/bloqueado/reservado).
+        const effectiveStatus = ativa ? "ocupado" : (l.status || "livre");
+        return {
+          id: l.id,
+          bed_number: l.numero,
+          // GRUPO/FILTRO agora pelo NOME REAL do setor (alas→setores do banco).
+          // `sector_tipo` guarda o código taxonômico apenas para a classificação
+          // de escopo/cobertura (classifySector, semáforo de alta complexidade).
+          sector: l.setor?.nome ?? "",
+          sector_tipo: l.setor?.tipo ?? "",
+          status: effectiveStatus,
+          block_reason: l.motivo_bloqueio ?? null,
+          block_started_at: null, // MIGRAÇÃO: sem coluna → longBlocked degradado
+          updated_at: l.atualizado_em,
+          name: nome,
+          patient_name: nome,
+        };
+      });
+      rows.sort((a, b) =>
+        a.sector === b.sector
+          ? String(a.bed_number).localeCompare(String(b.bed_number))
+          : String(a.sector).localeCompare(String(b.sector)),
+      );
+      return rows;
     },
     enabled: !!hospitalUnitId,
     refetchInterval: 60_000,
   });
 
+  // MIGRAÇÃO: regulation_requests → regulacoes. `regulacoes` tem internacao_id,
+  // tipo_solicitacao, status, prioridade, cid_primario, codigo_sisreg, unidade_destino,
+  // data_hora, solicitado_por. DEGRADADOS (sem coluna): approved_at, completed_at,
+  // reason, clinical_summary, patient_age, patient_name/origin_sector (reconstruídos via
+  // join internacao→paciente/leito→setor). Sem hospital_unit_id → filtro por hospital
+  // REMOVIDO (escopo por RLS), consistente com os demais hooks migrados.
+  const REGULACAO_SELECT = `
+    id, status, prioridade, data_hora, criado_em, tipo_solicitacao, unidade_destino,
+    cid_primario, codigo_sisreg,
+    internacao:internacoes(
+      paciente:pacientes(nome_completo, nome_social),
+      leito:leitos(setor:setores(tipo, nome))
+    )
+  `;
+  const mapRegulacao = (r: any) => {
+    const nome = r.internacao?.paciente
+      ? (r.internacao.paciente.nome_social || r.internacao.paciente.nome_completo || "")
+      : "";
+    return {
+      id: r.id,
+      status: r.status,
+      priority: r.prioridade ?? null,
+      created_at: r.data_hora ?? r.criado_em,
+      request_type: r.tipo_solicitacao,
+      origin_sector: r.internacao?.leito?.setor?.tipo ?? null,
+      destination_sector: r.unidade_destino ?? null,
+      patient_name: nome,
+      cid_primary: r.cid_primario ?? null,
+      // DEGRADADOS (sem coluna no schema novo):
+      approved_at: null,
+      completed_at: null,
+      reason: null,
+      clinical_summary: null,
+      patient_age: null,
+    };
+  };
+
   const requestsQuery = useQuery({
     queryKey: ["nir-regulation-requests", hospitalUnitId, filters.period],
     queryFn: async () => {
       if (!hospitalUnitId) return [];
-      const { data, error } = await supabase
-        .from("regulation_requests")
-        .select("*")
-        .eq("hospital_unit_id", hospitalUnitId)
-        .gte("created_at", sinceISO)
-        .order("created_at", { ascending: false });
+      const { data, error } = await (supabase
+        .from("regulacoes")
+        .select(REGULACAO_SELECT) as any)
+        .gte("data_hora", sinceISO)
+        .order("data_hora", { ascending: false });
       if (error) throw error;
-      return data || [];
+      return ((data || []) as any[]).map(mapRegulacao);
     },
     enabled: !!hospitalUnitId,
     refetchInterval: 60_000,
@@ -100,14 +180,13 @@ export function useNirMetrics(hospitalUnitId: string | undefined, filters: NirFi
     queryKey: ["nir-regulation-requests-all", hospitalUnitId],
     queryFn: async () => {
       if (!hospitalUnitId) return [];
-      const { data, error } = await supabase
-        .from("regulation_requests")
-        .select("status,priority,created_at,approved_at,completed_at,origin_sector,destination_sector,patient_name,id,request_type,reason,patient_age")
-        .eq("hospital_unit_id", hospitalUnitId)
-        .order("created_at", { ascending: false })
+      const { data, error } = await (supabase
+        .from("regulacoes")
+        .select(REGULACAO_SELECT) as any)
+        .order("data_hora", { ascending: false })
         .limit(500);
       if (error) throw error;
-      return data || [];
+      return ((data || []) as any[]).map(mapRegulacao);
     },
     enabled: !!hospitalUnitId,
     refetchInterval: 120_000,
@@ -127,7 +206,9 @@ export function useNirMetrics(hospitalUnitId: string | undefined, filters: NirFi
       return !isArchivedExtra;
     });
     if (filters.sectorScope === "all") return noExtra;
-    return noExtra.filter((b: any) => classifySector(b.sector) === filters.sectorScope);
+    // MIGRAÇÃO: o Escopo agora filtra pelo `tipo` REAL do setor (do banco:
+    // clinico/cirurgico/triagem), não pela taxonomia hardcoded de cobertura.
+    return noExtra.filter((b: any) => (b.sector_tipo ?? "") === filters.sectorScope);
   }, [beds, filters.sectorScope]);
 
   // Apply priority filter to requests
@@ -139,7 +220,8 @@ export function useNirMetrics(hospitalUnitId: string | undefined, filters: NirFi
   const metrics = useMemo(() => {
     const total = filteredBeds.length;
     const occupied = filteredBeds.filter((b: any) => b.status === "ocupado").length;
-    const vacant = filteredBeds.filter((b: any) => b.status === "vago").length;
+    // MIGRAÇÃO: leitos.status usa 'livre' (o antigo 'vago' é INVÁLIDO no schema novo).
+    const vacant = filteredBeds.filter((b: any) => b.status === "livre").length;
     const blocked = filteredBeds.filter((b: any) => ["bloqueado", "interditado", "manutencao"].includes(b.status)).length;
     const cleaning = filteredBeds.filter((b: any) => b.status === "higienizacao").length;
     const reserved = filteredBeds.filter((b: any) => b.status === "reservado").length;
@@ -149,8 +231,8 @@ export function useNirMetrics(hospitalUnitId: string | undefined, filters: NirFi
     // Vacant by type
     const vacantByType = beds.reduce(
       (acc, b: any) => {
-        if (b.status !== "vago") return acc;
-        const type = classifySector(b.sector);
+        if (b.status !== "livre") return acc;
+        const type = classifySector(b.sector_tipo);
         acc[type] = (acc[type] || 0) + 1;
         return acc;
       },
@@ -166,14 +248,18 @@ export function useNirMetrics(hospitalUnitId: string | undefined, filters: NirFi
         const bed = (b.bed_number || b.bedNumber || '').toString().toUpperCase();
         const isExtra = bed.startsWith('EXTRA') && !b.name?.trim();
         if (isExtra) return acc; // excluir EXTRAs vagos do cálculo
-        if (!acc[b.sector]) acc[b.sector] = { total: 0, occupied: 0 };
+        // Chaveado pelo NOME REAL do setor (b.sector = setores.nome).
+        if (!acc[b.sector]) acc[b.sector] = { total: 0, occupied: 0, tipo: b.sector_tipo ?? "" };
         acc[b.sector].total += 1;
         if (b.status === "ocupado") acc[b.sector].occupied += 1;
         return acc;
-      }, {} as Record<string, { total: number; occupied: number }>),
+      }, {} as Record<string, { total: number; occupied: number; tipo: string }>),
     )
       .map(([sector, v]) => ({
         sector,
+        // Código taxonômico do setor — para a classificação de cobertura a
+        // jusante (alta complexidade, sala vermelha); `sector` já é o nome real.
+        sectorTipo: v.tipo,
         total: v.total,
         occupied: v.occupied,
         rate: v.total > 0 ? Math.round((v.occupied / v.total) * 100) : 0,

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,40 +44,52 @@ import {
   RefreshCw,
   Eye,
   Shield,
+  Copy,
 } from "lucide-react";
 
+// MIGRAÇÃO: tabela antiga `password_reset_requests` (inglês) foi removida.
+// Origem/destino agora é `solicitacoes_redefinicao_senha` (schema pt-BR).
+// Mapeamento de colunas:
+//   username        -> nome_usuario
+//   user_id         -> usuario_id (auth uid, nullable)
+//   requested_at    -> solicitado_em
+//   reviewed_at     -> avaliado_em
+//   reviewed_by     -> avaliado_por
+//   reviewer_notes  -> observacoes_avaliador
+//   + nova_senha_definida_em (timestamp)
+// Status agora em pt: 'pendente' | 'aprovado' | 'reprovado'.
+// RLS desabilitada -> legível/gravável por qualquer usuário autenticado.
+// Não há coluna hospital_id nesta tabela -> não é possível escopar por hospital no DB.
 interface PasswordResetRequest {
   id: string;
-  user_id: string | null;
-  username: string;
+  usuario_id: string | null;
+  nome_usuario: string;
   crm: string;
   status: string;
-  requested_at: string;
-  reviewed_at: string | null;
-  reviewed_by: string | null;
-  reviewer_notes: string | null;
+  solicitado_em: string;
+  avaliado_em: string | null;
+  avaliado_por: string | null;
+  observacoes_avaliador: string | null;
+  nova_senha_definida_em: string | null;
 }
 
-export function PasswordResetRequestsPanel() {
+type PasswordResetRequestsPanelProps = {
+  // MIGRAÇÃO: aceito por compatibilidade, mas ignorado — a tabela
+  // solicitacoes_redefinicao_senha não possui hospital_id para escopo no DB.
+  hospitalId?: string;
+};
+
+export function PasswordResetRequestsPanel(_props: PasswordResetRequestsPanelProps = {}) {
   const { user } = useAuth();
   const [requests, setRequests] = useState<PasswordResetRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<PasswordResetRequest | null>(null);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [processing, setProcessing] = useState(false);
-
-  const generateStrongPassword = () => {
-    const pools = ["ABCDEFGHJKLMNPQRSTUVWXYZ", "abcdefghijkmnopqrstuvwxyz", "23456789", "!@#$%&*"];
-    const all = pools.join("");
-    const bytes = crypto.getRandomValues(new Uint32Array(12));
-    const chars = pools.map((pool, index) => pool[bytes[index] % pool.length]);
-    for (let i = chars.length; i < 10; i++) chars.push(all[bytes[i] % all.length]);
-    return chars.sort(() => crypto.getRandomValues(new Uint32Array(1))[0] - 2147483648).join("");
-  };
+  const [tempPassword, setTempPassword] = useState("");
+  const [resetTarget, setResetTarget] = useState<{ email: string; nome: string } | null>(null);
 
   const getFunctionErrorMessage = async (error: unknown) => {
     const err = error as { message?: string; context?: Response };
@@ -100,12 +111,12 @@ export function PasswordResetRequestsPanel() {
   const fetchRequests = async () => {
     try {
       const { data, error } = await supabase
-        .from("password_reset_requests")
+        .from("solicitacoes_redefinicao_senha")
         .select("*")
-        .order("requested_at", { ascending: false });
+        .order("solicitado_em", { ascending: false });
 
       if (error) throw error;
-      setRequests(data || []);
+      setRequests((data as PasswordResetRequest[]) || []);
     } catch (error) {
       console.error("Erro ao buscar solicitações:", error);
       toast.error("Erro ao carregar solicitações");
@@ -114,56 +125,40 @@ export function PasswordResetRequestsPanel() {
     }
   };
 
-  const validatePassword = (password: string): string | null => {
-    if (password.length < 6 || password.length > 72) {
-      return "Senha deve ter pelo menos 6 caracteres";
-    }
-    return null;
-  };
-
+  // MIGRAÇÃO: fluxo antigo (admin digitava a senha + edge function reset-user-password)
+  // foi substituído. Agora a edge function "resetar-senha-profissional" gera uma
+  // senha provisória e a retorna; o painel apenas a exibe para o coordenador copiar.
   const handleApproveReset = async () => {
-    if (!selectedRequest || !newPassword) return;
+    if (!selectedRequest) return;
 
-    const validationError = validatePassword(newPassword);
-    if (validationError) {
-      toast.error(validationError);
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast.error("As senhas não coincidem");
-      return;
-    }
-
-    if (!selectedRequest.user_id) {
-      toast.error("Usuário não encontrado no sistema");
+    if (!selectedRequest.usuario_id) {
+      toast.error("Usuário não vinculado no sistema");
       return;
     }
 
     setProcessing(true);
     try {
-      // Primeiro, atualizar status para aprovado
-      const { error: approveError } = await supabase
-        .from("password_reset_requests")
-        .update({
-          status: "approved",
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id,
-          reviewer_notes: `Nova senha definida pelo coordenador`,
-        })
-        .eq("id", selectedRequest.id);
+      // 1) Localiza o profissional pelo auth uid (usuario_id -> profissionais.user_id)
+      const { data: prof, error: profError } = await supabase
+        .from("profissionais")
+        .select("id, email, nome")
+        .eq("user_id", selectedRequest.usuario_id)
+        .maybeSingle();
 
-      if (approveError) throw approveError;
+      if (profError) throw profError;
+      if (!prof) {
+        throw new Error("Profissional não encontrado para este usuário");
+      }
 
-      // Chamar edge function para resetar a senha
+      // 2) Chama a edge function que gera a nova senha provisória
+      const { data: { session } } = await supabase.auth.getSession();
       const { data, error: resetError } = await supabase.functions.invoke(
-        "reset-user-password",
+        "resetar-senha-profissional",
         {
-          body: {
-            userId: selectedRequest.user_id,
-            newPassword: newPassword,
-            requestId: selectedRequest.id,
-          },
+          body: { profissionalId: prof.id },
+          headers: session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : undefined,
         }
       );
 
@@ -171,18 +166,33 @@ export function PasswordResetRequestsPanel() {
         console.error("Erro da edge function:", resetError);
         throw new Error(await getFunctionErrorMessage(resetError));
       }
-
       if (data?.error) {
         throw new Error(data.error);
       }
 
-      toast.success(
-        `Senha redefinida com sucesso! Informe ao usuário ${selectedRequest.username} que a nova senha é: ${newPassword}`
-      );
-      setShowResetDialog(false);
-      setSelectedRequest(null);
-      setNewPassword("");
-      setConfirmPassword("");
+      const tempPass: string = data?.tempPassword ?? "";
+      const email: string = data?.email ?? prof.email ?? "";
+      const nome: string = data?.nome ?? prof.nome ?? selectedRequest.nome_usuario;
+
+      // 3) Marca a solicitação como aprovada
+      const nowIso = new Date().toISOString();
+      const { error: approveError } = await supabase
+        .from("solicitacoes_redefinicao_senha")
+        .update({
+          status: "aprovado",
+          avaliado_em: nowIso,
+          avaliado_por: user?.id ?? null,
+          nova_senha_definida_em: nowIso,
+          observacoes_avaliador: "Nova senha provisória gerada pelo coordenador",
+        })
+        .eq("id", selectedRequest.id);
+
+      if (approveError) throw approveError;
+
+      // 4) Exibe a senha provisória para cópia
+      setTempPassword(tempPass);
+      setResetTarget({ email, nome });
+      toast.success(`Senha provisória gerada para ${nome}`);
       fetchRequests();
     } catch (error) {
       console.error("Erro ao aprovar solicitação:", error);
@@ -198,38 +208,53 @@ export function PasswordResetRequestsPanel() {
     setProcessing(true);
     try {
       const { error } = await supabase
-        .from("password_reset_requests")
+        .from("solicitacoes_redefinicao_senha")
         .update({
-          status: "rejected",
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id,
-          reviewer_notes: rejectReason || "Solicitação rejeitada",
+          status: "reprovado",
+          avaliado_em: new Date().toISOString(),
+          avaliado_por: user?.id ?? null,
+          observacoes_avaliador: rejectReason || "Solicitação recusada",
         })
         .eq("id", selectedRequest.id);
 
       if (error) throw error;
 
-      toast.success("Solicitação rejeitada");
+      toast.success("Solicitação recusada");
       setShowRejectDialog(false);
       setSelectedRequest(null);
       setRejectReason("");
       fetchRequests();
     } catch (error) {
-      console.error("Erro ao rejeitar solicitação:", error);
-      toast.error("Erro ao rejeitar solicitação");
+      console.error("Erro ao recusar solicitação:", error);
+      toast.error("Erro ao recusar solicitação");
     } finally {
       setProcessing(false);
     }
   };
 
+  const copyPassword = async () => {
+    try {
+      await navigator.clipboard.writeText(tempPassword);
+      toast.success("Senha copiada");
+    } catch {
+      toast.error("Não foi possível copiar");
+    }
+  };
+
+  const closeResetDialog = () => {
+    setShowResetDialog(false);
+    setSelectedRequest(null);
+    setTempPassword("");
+    setResetTarget(null);
+  };
+
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string; icon: React.ReactNode }> = {
-      pending: { variant: "secondary", label: "Pendente", icon: <Clock className="h-3 w-3" /> },
-      approved: { variant: "default", label: "Aprovado", icon: <CheckCircle className="h-3 w-3" /> },
-      rejected: { variant: "destructive", label: "Rejeitado", icon: <XCircle className="h-3 w-3" /> },
-      completed: { variant: "outline", label: "Concluído", icon: <CheckCircle className="h-3 w-3" /> },
+      pendente: { variant: "secondary", label: "Pendente", icon: <Clock className="h-3 w-3" /> },
+      aprovado: { variant: "default", label: "Aprovado", icon: <CheckCircle className="h-3 w-3" /> },
+      reprovado: { variant: "destructive", label: "Reprovado", icon: <XCircle className="h-3 w-3" /> },
     };
-    const badge = badges[status] || badges.pending;
+    const badge = badges[status] || badges.pendente;
     return (
       <Badge variant={badge.variant} className="flex items-center gap-1">
         {badge.icon}
@@ -238,7 +263,7 @@ export function PasswordResetRequestsPanel() {
     );
   };
 
-  const pendingCount = requests.filter((r) => r.status === "pending").length;
+  const pendingCount = requests.filter((r) => r.status === "pendente").length;
 
   return (
     <Card>
@@ -282,41 +307,43 @@ export function PasswordResetRequestsPanel() {
                 <TableHead>CRM</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Solicitado em</TableHead>
-                <TableHead>Revisado em</TableHead>
+                <TableHead>Avaliado em</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {requests.map((request) => (
                 <TableRow key={request.id}>
-                  <TableCell className="font-medium">{request.username}</TableCell>
+                  <TableCell className="font-medium">{request.nome_usuario}</TableCell>
                   <TableCell>{request.crm}</TableCell>
                   <TableCell>{getStatusBadge(request.status)}</TableCell>
                   <TableCell>
-                    {format(new Date(request.requested_at), "dd/MM/yyyy HH:mm", {
+                    {format(new Date(request.solicitado_em), "dd/MM/yyyy HH:mm", {
                       locale: ptBR,
                     })}
                   </TableCell>
                   <TableCell>
-                    {request.reviewed_at
-                      ? format(new Date(request.reviewed_at), "dd/MM/yyyy HH:mm", {
+                    {request.avaliado_em
+                      ? format(new Date(request.avaliado_em), "dd/MM/yyyy HH:mm", {
                           locale: ptBR,
                         })
                       : "-"}
                   </TableCell>
                   <TableCell className="text-right">
-                    {request.status === "pending" ? (
+                    {request.status === "pendente" ? (
                       <div className="flex items-center justify-end gap-2">
                         <Button
                           size="sm"
                           variant="default"
                           onClick={() => {
                             setSelectedRequest(request);
+                            setTempPassword("");
+                            setResetTarget(null);
                             setShowResetDialog(true);
                           }}
                         >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Aprovar
+                          <KeyRound className="h-4 w-4 mr-1" />
+                          Gerar nova senha
                         </Button>
                         <Button
                           size="sm"
@@ -327,7 +354,7 @@ export function PasswordResetRequestsPanel() {
                           }}
                         >
                           <XCircle className="h-4 w-4 mr-1" />
-                          Rejeitar
+                          Recusar
                         </Button>
                       </div>
                     ) : (
@@ -335,7 +362,7 @@ export function PasswordResetRequestsPanel() {
                         size="sm"
                         variant="ghost"
                         onClick={() => {
-                          toast.info(request.reviewer_notes || "Sem observações");
+                          toast.info(request.observacoes_avaliador || "Sem observações");
                         }}
                       >
                         <Eye className="h-4 w-4" />
@@ -348,91 +375,88 @@ export function PasswordResetRequestsPanel() {
           </Table>
         )}
 
-        {/* Dialog de Aprovação */}
-        <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        {/* Dialog de Geração de nova senha */}
+        <Dialog open={showResetDialog} onOpenChange={(o) => { if (!o) closeResetDialog(); }}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Definir Nova Senha</DialogTitle>
+              <DialogTitle>Gerar nova senha</DialogTitle>
               <DialogDescription>
-                Defina uma nova senha para o usuário{" "}
-                <strong>{selectedRequest?.username}</strong>
+                Uma senha provisória será gerada para o usuário{" "}
+                <strong>{selectedRequest?.nome_usuario}</strong>. Repasse-a com segurança.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-xs text-blue-800">
-                  <strong>Política de Senha:</strong> mínimo de 6 caracteres.
-                </p>
+
+            {tempPassword ? (
+              <div className="space-y-4 py-4">
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                  <p className="text-xs text-emerald-800">
+                    Senha provisória gerada com sucesso
+                    {resetTarget?.email ? ` para ${resetTarget.email}` : ""}.
+                    Copie e informe ao usuário — ela não será exibida novamente.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Senha provisória</Label>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 rounded-md border bg-muted px-3 py-2 text-sm font-mono break-all">
+                      {tempPassword}
+                    </code>
+                    <Button type="button" variant="outline" size="icon" onClick={copyPassword} title="Copiar senha">
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  const generated = generateStrongPassword();
-                  setNewPassword(generated);
-                  setConfirmPassword(generated);
-                }}
-              >
-                Gerar senha provisória segura
-              </Button>
-              <div className="space-y-2">
-                <Label>Nova Senha *</Label>
-                <Input
-                  type="text"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value.slice(0, 72))}
-                  placeholder="Mínimo 6 caracteres"
-                  maxLength={72}
-                  className=""
-                />
+            ) : (
+              <div className="space-y-4 py-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-xs text-blue-800">
+                    A senha será gerada automaticamente pelo sistema e exibida aqui para cópia.
+                  </p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Confirmar Senha *</Label>
-                <Input
-                  type="text"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value.slice(0, 72))}
-                  placeholder="REPITA A SENHA"
-                  maxLength={72}
-                  className=""
-                />
-              </div>
-            </div>
+            )}
+
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowResetDialog(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleApproveReset} disabled={processing}>
-                {processing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processando...
-                  </>
-                ) : (
-                  "Confirmar Nova Senha"
-                )}
-              </Button>
+              {tempPassword ? (
+                <Button onClick={closeResetDialog}>Concluir</Button>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={closeResetDialog}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleApproveReset} disabled={processing}>
+                    {processing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Gerando...
+                      </>
+                    ) : (
+                      "Gerar senha provisória"
+                    )}
+                  </Button>
+                </>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Dialog de Rejeição */}
+        {/* Dialog de Recusa */}
         <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Rejeitar Solicitação</AlertDialogTitle>
+              <AlertDialogTitle>Recusar Solicitação</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja rejeitar a solicitação de{" "}
-                <strong>{selectedRequest?.username}</strong>?
+                Tem certeza que deseja recusar a solicitação de{" "}
+                <strong>{selectedRequest?.nome_usuario}</strong>?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="py-4">
-              <Label>Motivo da Rejeição (opcional)</Label>
+              <Label>Motivo da Recusa (opcional)</Label>
               <Textarea
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Informe o motivo da rejeição..."
+                placeholder="Informe o motivo da recusa..."
                 className="mt-2"
               />
             </div>
@@ -443,7 +467,7 @@ export function PasswordResetRequestsPanel() {
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 disabled={processing}
               >
-                {processing ? "Processando..." : "Rejeitar"}
+                {processing ? "Processando..." : "Recusar"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

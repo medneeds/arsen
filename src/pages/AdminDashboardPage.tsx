@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { toSexoDb } from "@/lib/sexo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
@@ -151,6 +152,29 @@ interface Encounter {
   created_at: string;
 }
 
+// MIGRAÇÃO: patient_registry→pacientes. Mapeia colunas pt-BR para PatientRegistry.
+// Sem coluna no schema novo (degradados): neighborhood/city (pacientes.endereco é
+// campo único).
+const mapPaciente = (p: any): PatientRegistry => ({
+  id: p.id,
+  medical_record: p.prontuario ?? "",
+  full_name: p.nome_completo ?? "",
+  social_name: p.nome_social ?? undefined,
+  cpf: p.cpf ?? undefined,
+  cns: p.cns ?? undefined,
+  birth_date: p.data_nascimento ?? undefined,
+  sex: p.sexo ?? undefined,
+  mother_name: p.nome_mae ?? undefined,
+  phone: p.telefone ?? undefined,
+  address: p.endereco ?? undefined,
+  neighborhood: undefined,
+  city: undefined,
+  blood_type: p.tipo_sanguineo ?? undefined,
+  allergies: p.alergias ?? undefined,
+  comorbidities: p.comorbidades ?? undefined,
+  created_at: p.criado_em,
+});
+
 const AdminDashboardPage = () => {
   const { user } = useAuth();
   const { currentHospital } = useHospital();
@@ -280,15 +304,30 @@ const AdminDashboardPage = () => {
     if (!selectedHospitalId) return;
     setIsLoadingEncounters(true);
     try {
+      // MIGRAÇÃO: patient_encounters→internacoes. Sem encounter_code/registry_id/
+      // triage_status/hospital_unit_id no schema novo → degradados. encounter_code
+      // usa um id curto; destino via setores.tipo (setor_classificacao_id).
       const { data, error } = await supabase
-        .from("patient_encounters")
-        .select("id, encounter_code, patient_name, registry_id, destination_sector, triage_status, status, created_at")
-        .eq("hospital_unit_id", selectedHospitalId)
-        .order("created_at", { ascending: false })
+        .from("internacoes")
+        .select(`id, status, criado_em, paciente_id,
+          paciente:pacientes(nome_completo, nome_social),
+          setor:setores(tipo)`)
+        .order("criado_em", { ascending: false })
         .limit(20);
 
       if (error) throw error;
-      setRecentEncounters((data as any[]) || []);
+      setRecentEncounters(
+        (data as any[] || []).map((r: any) => ({
+          id: r.id,
+          encounter_code: String(r.id).slice(0, 8),
+          patient_name: r.paciente?.nome_social || r.paciente?.nome_completo || "",
+          registry_id: r.paciente_id,
+          destination_sector: r.setor?.tipo || undefined,
+          triage_status: undefined,
+          status: r.status,
+          created_at: r.criado_em,
+        }))
+      );
     } catch (err) {
       console.error("Error loading encounters:", err);
     } finally {
@@ -302,16 +341,18 @@ const AdminDashboardPage = () => {
     setIsSearching(true);
     setHasSearched(true);
     try {
+      // MIGRAÇÃO: patient_registry→pacientes (full_name→nome_completo,
+      // medical_record→prontuario).
       const query = searchQuery.trim().toLowerCase();
       const { data, error } = await supabase
-        .from("patient_registry")
+        .from("pacientes")
         .select("*")
-        .or(`full_name.ilike.%${query}%,cpf.ilike.%${query}%,cns.ilike.%${query}%,medical_record.ilike.%${query}%`)
-        .order("full_name")
+        .or(`nome_completo.ilike.%${query}%,cpf.ilike.%${query}%,cns.ilike.%${query}%,prontuario.ilike.%${query}%`)
+        .order("nome_completo")
         .limit(20);
 
       if (error) throw error;
-      setSearchResults((data as any[]) || []);
+      setSearchResults((data || []).map(mapPaciente));
     } catch (err) {
       console.error("Error searching:", err);
       toast.error("Erro ao buscar pacientes");
@@ -352,56 +393,48 @@ const AdminDashboardPage = () => {
 
     setIsRegistering(true);
     try {
-      const stateId = localStorage.getItem("selected_state_id");
-
-      // Gera código NI quando paciente não identificado
+      // MIGRAÇÃO: patient_registry→pacientes. Colunas sem equivalente (degradadas):
+      // neighborhood/city (endereco é campo único), is_unidentified/unidentified_code/
+      // unidentified_features (bloco NI), created_by, hospital_unit_id, state_id.
       let niCode: string | null = null;
       let finalName = registerForm.full_name.trim().toUpperCase();
-      const niFeatures = registerForm.is_unidentified
-        ? {
-            estimated_age: registerForm.ni_estimated_age || null,
-            apparent_sex: registerForm.ni_apparent_sex || null,
-            skin_color: registerForm.ni_skin_color || null,
-            distinctive_marks: registerForm.ni_distinctive_marks || null,
-            arrival_circumstance: registerForm.ni_arrival_circumstance || null,
-          }
-        : null;
 
       if (registerForm.is_unidentified) {
-        const { data: ni, error: niErr } = await (supabase.rpc as any)("generate_ni_code");
-        if (niErr) throw niErr;
-        niCode = ni as string;
-        // Padronização universal: "NÃO IDENTIFICADO (NI-AAAA-NNNNNN)"
+        // MIGRAÇÃO: RPC generate_ni_code pode não existir no backend novo → fallback local.
+        try {
+          const { data: ni, error: niErr } = await (supabase.rpc as any)("generate_ni_code");
+          if (niErr) throw niErr;
+          niCode = ni as string;
+        } catch {
+          niCode = `NI-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+        }
         finalName = `NÃO IDENTIFICADO (${niCode})`;
       }
 
+      // MIGRAÇÃO: pacientes.prontuario é NOT NULL e a geração oficial
+      // (generate_medical_record_number + hospital_units.unit_code) não existe no
+      // schema novo → usa o número informado ou um fallback local (degradado).
       const manualMr = registerForm.medical_record.trim() || null;
+      const prontuario = manualMr || niCode || `PR-${Date.now()}`;
+
       const insertPayload: any = {
-        full_name: finalName,
-        social_name: registerForm.social_name.trim() || null,
+        nome_completo: finalName,
+        nome_social: registerForm.social_name.trim() || null,
         cpf: registerForm.cpf.replace(/\D/g, "") || null,
         cns: registerForm.cns.replace(/\D/g, "") || null,
-        birth_date: registerForm.birth_date || null,
-        sex: registerForm.sex || null,
-        mother_name: registerForm.mother_name.trim() || null,
-        phone: registerForm.phone.trim() || null,
-        address: registerForm.address.trim() || null,
-        neighborhood: registerForm.neighborhood.trim() || null,
-        city: registerForm.city.trim() || null,
-        blood_type: registerForm.blood_type || null,
-        allergies: registerForm.allergies.trim() || null,
-        comorbidities: registerForm.comorbidities.trim() || null,
-        is_unidentified: registerForm.is_unidentified,
-        unidentified_code: niCode,
-        unidentified_features: niFeatures,
-        created_by: user?.id,
-        hospital_unit_id: selectedHospitalId,
-        state_id: stateId,
+        data_nascimento: registerForm.birth_date || null,
+        sexo: toSexoDb(registerForm.sex),
+        nome_mae: registerForm.mother_name.trim() || null,
+        telefone: registerForm.phone.trim() || null,
+        endereco: registerForm.address.trim() || null,
+        tipo_sanguineo: registerForm.blood_type || null,
+        alergias: registerForm.allergies.trim() || null,
+        comorbidades: registerForm.comorbidities.trim() || null,
+        prontuario,
       };
-      if (manualMr) insertPayload.medical_record = manualMr;
 
       const { data, error } = await supabase
-        .from("patient_registry")
+        .from("pacientes")
         .insert(insertPayload)
         .select()
         .single();
@@ -415,36 +448,10 @@ const AdminDashboardPage = () => {
         return;
       }
 
-      // Padronização AA-UUU-SSSSSS-DV: só gera automaticamente se NÃO foi informado manualmente (modo auto)
-      let officialMr: string | null = (data as any).medical_record;
-      if (!manualMr && mrMode === "auto") try {
-        const { data: unit } = await supabase
-          .from("hospital_units")
-          .select("unit_code")
-          .eq("id", selectedHospitalId)
-          .maybeSingle();
-        const unitCode = (unit as any)?.unit_code && /^[0-9]{3}$/.test((unit as any).unit_code)
-          ? (unit as any).unit_code
-          : "117";
-        const { data: gen, error: genErr } = await (supabase.rpc as any)(
-          "generate_medical_record_number",
-          {
-            p_codigo_unidade: unitCode,
-            p_data_criacao: new Date().toISOString(),
-            p_patient_registry_id: (data as any).id,
-            p_patient_id: null,
-          }
-        );
-        if (!genErr && gen) {
-          officialMr = gen as string;
-          await supabase
-            .from("patient_registry")
-            .update({ medical_record: officialMr })
-            .eq("id", (data as any).id);
-        }
-      } catch (e) {
-        console.warn("Falha ao gerar prontuário oficial (mantém fallback):", e);
-      }
+      // MIGRAÇÃO: geração de prontuário oficial (RPC generate_medical_record_number
+      // + hospital_units.unit_code) DEGRADADA — sem RPC/coluna no schema novo. O
+      // número usado é o definido no insert (informado ou fallback local).
+      const officialMr: string = (data as any).prontuario;
 
       toast.success(
         registerForm.is_unidentified ? "Paciente NÃO IDENTIFICADO cadastrado!" : "Prontuário criado com sucesso!",
@@ -458,7 +465,7 @@ const AdminDashboardPage = () => {
         is_unidentified: false, ni_estimated_age: "", ni_apparent_sex: "",
         ni_skin_color: "", ni_distinctive_marks: "", ni_arrival_circumstance: "",
       });
-      setSelectedPatient({ ...(data as any), medical_record: officialMr });
+      setSelectedPatient(mapPaciente(data));
       setShowPatientDetail(true);
     } catch (err: any) {
       console.error("Error registering:", err);
@@ -484,108 +491,37 @@ const AdminDashboardPage = () => {
 
     setIsCreatingEncounter(true);
     try {
-      const stateId = localStorage.getItem("selected_state_id");
-
-      // 0) GUARDA anti-duplicação (auditoria 22/07/2026): impede criar um 2º
-      //    encounter ativo para um prontuário que já tem atendimento aberto.
-      //    O PatientSearchActionsDialog já tinha esse gate; este fluxo (recepção)
-      //    não tinha — dois encounters abertos no mesmo registry deixam o
-      //    useActiveEncounterId ambíguo e criam órfãos. Regra: 1 atendimento
-      //    aberto por prontuário.
-      {
-        const { data: openEnc } = await supabase
-          .from("patient_encounters")
-          .select("id, encounter_code")
-          .eq("registry_id", selectedPatient.id)
-          .in("status", ["active", "pending"])
-          .limit(1)
-          .maybeSingle();
-        if (openEnc) {
-          toast.error("Este paciente já tem um atendimento em aberto", {
-            description: `Atendimento ${(openEnc as any).encounter_code ?? ""} — finalize-o (alta/óbito) antes de criar um novo.`,
-          });
-          return;
-        }
-      }
-
-      // 1) Cria o atendimento (encounter) — vincula ao prontuário oficial e
-      //    pré-gera o código de atendimento via generate_encounter_code_v2 (12 dígitos sequencial)
-      let preGeneratedCode: string | null = null;
-      let medicalRecordId: string | null = null;
-      try {
-        const { data: mr } = await supabase
-          .from("medical_records")
-          .select("id")
-          .eq("patient_registry_id", selectedPatient.id)
-          .order("created_at", { ascending: true })
-          .limit(1)
-          .maybeSingle();
-        medicalRecordId = (mr as any)?.id ?? null;
-        if (medicalRecordId) {
-          const { data: code } = await (supabase.rpc as any)(
-            "generate_encounter_code_v2",
-            { p_medical_record_id: medicalRecordId, p_data_hora_admissao: new Date().toISOString() }
-          );
-          preGeneratedCode = (code as string) || null;
-        }
-      } catch (e) {
-        console.warn("Falha ao pré-gerar código de atendimento (usa trigger):", e);
-      }
-
-      const { data: enc, error: encErr } = await supabase
-        .from("patient_encounters")
-        .insert({
-          patient_name: selectedPatient.full_name,
-          registry_id: selectedPatient.id,
-          medical_record_id: medicalRecordId,
-          encounter_code: preGeneratedCode || undefined,
-          hospital_unit_id: selectedHospitalId,
-          state_id: stateId,
-          department: currentDepartment,
-          destination_sector: destinationSector,
-          triage_status: "encaminhado",
-          status: "active",
-          created_by: user?.id,
-        } as any)
-        .select()
-        .single();
-
-      if (encErr) throw encErr;
-
-      // 2) Cria pré-admissão "aguardando_leito" para o paciente aparecer no
-      //    card "Aguardando Admissão" do setor de destino.
+      // MIGRAÇÃO: patient_encounters/medical_records não existem no schema novo e
+      // internacoes exige um leito (que a recepção ainda não atribuiu). O
+      // "atendimento" da recepção passa a ser modelado apenas como pré-admissão
+      // (pre_admissions→pre_admissoes) aguardando leito. DEGRADADO: o guard
+      // anti-duplicação por encounter aberto, a geração de encounter_code
+      // (generate_encounter_code_v2 + medical_records) e as colunas denormalizadas
+      // de pre_admissoes (social_name, mother_name, sex, medical_record, phone,
+      // patient_registry_id, destination_sector-título, hospital_unit_id, state_id,
+      // department, created_by, notes) — sem equivalente — foram removidos. O destino
+      // vira setor_destino_id (UUID) resolvido por setores.tipo.
+      let setorDestinoId: string | null = null;
       if (sectorDef.sectorKey) {
-        const { error: paErr } = await supabase
-          .from("pre_admissions")
-          .insert({
-            patient_name: selectedPatient.full_name,
-            social_name: selectedPatient.social_name || null,
-            mother_name: selectedPatient.mother_name || null,
-            birth_date: selectedPatient.birth_date || null,
-            sex: selectedPatient.sex || null,
-            cpf: selectedPatient.cpf || null,
-            cns: selectedPatient.cns || null,
-            medical_record: selectedPatient.medical_record || null,
-            phone: selectedPatient.phone || null,
-            patient_registry_id: selectedPatient.id,
-            destination_sector: SECTOR_KEY_TO_MAP_TITLE[sectorDef.sectorKey!] || sectorDef.label,
-            status: "aguardando_leito",
-            hospital_unit_id: selectedHospitalId,
-            state_id: stateId,
-            department: currentDepartment,
-            created_by: user?.id,
-            notes: `Direcionado pela Recepção • Atendimento ${(enc as any).encounter_code}`,
-          } as any);
-        if (paErr) {
-          console.error("Erro ao criar pré-admissão:", paErr);
-          toast.warning("Atendimento criado, mas falha ao notificar setor", {
-            description: paErr.message,
-          });
-        }
+        const { data: setor } = await supabase
+          .from("setores").select("id").eq("tipo", sectorDef.sectorKey).limit(1).maybeSingle();
+        setorDestinoId = (setor as any)?.id ?? null;
       }
 
-      toast.success("Atendimento iniciado!", {
-        description: `Código: ${(enc as any).encounter_code} → ${sectorDef.label}`,
+      const { error: paErr } = await supabase
+        .from("pre_admissoes")
+        .insert({
+          nome_paciente: selectedPatient.full_name,
+          cpf: selectedPatient.cpf || null,
+          cns: selectedPatient.cns || null,
+          data_nascimento: selectedPatient.birth_date || null,
+          setor_destino_id: setorDestinoId,
+          status: "classificado",
+        } as any);
+      if (paErr) throw paErr;
+
+      toast.success("Encaminhamento registrado!", {
+        description: `${selectedPatient.full_name} → ${sectorDef.label}`,
       });
       setShowNewEncounter(false);
       setDestinationSector("");
@@ -626,136 +562,64 @@ const AdminDashboardPage = () => {
         !forcedNI && (!hasName || payload.partialName.split(/\s+/).filter(Boolean).length < 2);
 
       // 1) Gera NI code se: marcou NI explicitamente OU não digitou nome
+      // MIGRAÇÃO: RPC generate_ni_code pode não existir no backend novo → fallback local.
       let niCode: string | null = null;
       if (forcedNI || !hasName) {
-        const { data: code, error: niErr } = await (supabase.rpc as any)("generate_ni_code");
-        if (niErr) throw niErr;
-        niCode = code as string;
+        try {
+          const { data: code, error: niErr } = await (supabase.rpc as any)("generate_ni_code");
+          if (niErr) throw niErr;
+          niCode = code as string;
+        } catch {
+          niCode = `NI-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+        }
       }
 
       const finalName = hasName
         ? payload.partialName
         : `NÃO IDENTIFICADO (${niCode})`;
 
-      // 2) Cria registry parcial
+      // 2) Cria o paciente (patient_registry→pacientes). DEGRADADO: is_unidentified,
+      //    unidentified_code/features, notes, created_by, hospital_unit_id, state_id
+      //    sem coluna no schema novo. prontuario é NOT NULL → fallback local (a RPC
+      //    generate_medical_record_number + hospital_units.unit_code não existem).
+      const prontuario = niCode || `PR-${Date.now()}`;
       const { data: registry, error: regErr } = await supabase
-        .from("patient_registry")
+        .from("pacientes")
         .insert({
-          full_name: finalName,
-          sex: payload.sex,
-          phone: payload.contactPhone || null,
-          birth_date: payload.birthDate || null,
-          is_unidentified: !hasName,
-          unidentified_code: niCode,
-          unidentified_features: {
-            arrival_circumstance: "Cadastro Express",
-            arrival_mode: payload.arrivalMode,
-            approx_age: payload.approxAge || null,
-            age_mode: payload.ageMode,
-            birth_date: payload.birthDate || null,
-            chief_complaint: payload.chiefComplaint || null,
-            documents_pending: payload.documentsPending,
-            partial_identification: isPartial,
-            observations: payload.observations || null,
-            reception_point: receptionPoint || null,
-            registered_at: new Date().toISOString(),
-          },
-          notes: payload.observations || null,
-          created_by: user?.id,
-          hospital_unit_id: selectedHospitalId,
-          state_id: stateId,
+          nome_completo: finalName,
+          sexo: toSexoDb(payload.sex),
+          telefone: payload.contactPhone || null,
+          data_nascimento: payload.birthDate || null,
+          prontuario,
         } as any)
         .select()
         .single();
       if (regErr) throw regErr;
 
-      // 3) Gera prontuário oficial
-      let officialMr: string | null = (registry as any).medical_record;
-      try {
-        const { data: unit } = await supabase
-          .from("hospital_units").select("unit_code").eq("id", selectedHospitalId).maybeSingle();
-        const unitCode = (unit as any)?.unit_code && /^[0-9]{3}$/.test((unit as any).unit_code) ? (unit as any).unit_code : "117";
-        const { data: gen } = await (supabase.rpc as any)("generate_medical_record_number", {
-          p_codigo_unidade: unitCode,
-          p_data_criacao: new Date().toISOString(),
-          p_patient_registry_id: (registry as any).id,
-          p_patient_id: null,
-        });
-        if (gen) {
-          officialMr = gen as string;
-          await supabase.from("patient_registry").update({ medical_record: officialMr }).eq("id", (registry as any).id);
-        }
-      } catch (e) { console.warn("MR gen falhou:", e); }
-
-      // 4) Gera código de atendimento
-      let preGenCode: string | null = null;
-      let mrId: string | null = null;
-      try {
-        const { data: mr } = await supabase
-          .from("medical_records")
-          .select("id")
-          .eq("patient_registry_id", (registry as any).id)
-          .order("created_at", { ascending: true }).limit(1).maybeSingle();
-        mrId = (mr as any)?.id ?? null;
-        if (mrId) {
-          const { data: code } = await (supabase.rpc as any)(
-            "generate_encounter_code_v2",
-            { p_medical_record_id: mrId, p_data_hora_admissao: new Date().toISOString() }
-          );
-          preGenCode = (code as string) || null;
-        }
-      } catch (e) { console.warn("Encounter code falhou:", e); }
-
-      // 5) Cria encounter direcionado
-      const { data: enc, error: encErr } = await supabase
-        .from("patient_encounters")
-        .insert({
-          patient_name: finalName,
-          registry_id: (registry as any).id,
-          medical_record_id: mrId,
-          encounter_code: preGenCode || undefined,
-          hospital_unit_id: selectedHospitalId,
-          state_id: stateId,
-          department: currentDepartment,
-          reception_point: receptionPoint || null,
-          destination_sector: payload.destinationValue,
-          triage_status: "encaminhado",
-          status: "active",
-          entry_type: payload.arrivalMode?.toLowerCase().includes("samu") ? "samu" : "espontaneo",
-          created_by: user?.id,
-        } as any)
-        .select()
-        .single();
-      if (encErr) throw encErr;
-
-      // 6) Cria pré-admissão no setor de destino
+      // 3) Cria pré-admissão no setor de destino (pre_admissions→pre_admissoes).
+      //    DEGRADADO: patient_encounters/medical_records/encounter_code não existem
+      //    no schema novo — o encaminhamento é apenas a pré-admissão. Colunas
+      //    denormalizadas (patient_age/sex, phone, patient_registry_id, notes,
+      //    destination_sector-título, hospital_unit_id/state_id/department/created_by)
+      //    sem equivalente. Destino vira setor_destino_id (UUID) via setores.tipo.
+      let setorDestinoId: string | null = null;
       if (sectorDef.sectorKey) {
-        const noteParts = [
-          `Cadastro Express • Entrada ${(enc as any).encounter_code}`,
-          payload.chiefComplaint && `Queixa: ${payload.chiefComplaint}`,
-          payload.documentsPending && "⚠ Documentação pendente",
-        ].filter(Boolean).join(" • ");
-        const { error: paErr } = await supabase
-          .from("pre_admissions" as any)
-          .insert({
-            patient_name: finalName,
-            patient_age: payload.approxAge ? parseInt(payload.approxAge) || null : null,
-            patient_sex: payload.sex,
-            phone: payload.contactPhone || null,
-            patient_registry_id: (registry as any).id,
-            destination_sector: SECTOR_KEY_TO_MAP_TITLE[sectorDef.sectorKey!] || sectorDef.label,
-            status: "aguardando_leito",
-            hospital_unit_id: selectedHospitalId,
-            state_id: stateId,
-            department: currentDepartment,
-            created_by: user?.id,
-            notes: noteParts,
-          } as any);
-        if (paErr) console.warn("Pre-admissão falhou:", paErr);
+        const { data: setor } = await supabase
+          .from("setores").select("id").eq("tipo", sectorDef.sectorKey).limit(1).maybeSingle();
+        setorDestinoId = (setor as any)?.id ?? null;
       }
+      const { error: paErr } = await supabase
+        .from("pre_admissoes")
+        .insert({
+          nome_paciente: finalName,
+          data_nascimento: payload.birthDate || null,
+          setor_destino_id: setorDestinoId,
+          status: "classificado",
+        } as any);
+      if (paErr) console.warn("Pre-admissão falhou:", paErr);
 
       toast.success("Cadastro Express criado!", {
-        description: `${niCode || "Identificado"} • Atd ${(enc as any).encounter_code} → ${sectorDef.label}`,
+        description: `${niCode || "Identificado"} • ${finalName} → ${sectorDef.label}`,
       });
       setShowTriageExpress(false);
       loadRecentEncounters();
@@ -770,14 +634,15 @@ const AdminDashboardPage = () => {
   // Pega paciente do dashboard daily (por registry_id) para reatender
   const handlePickRegistryFromDashboard = async (registryId: string, _patientName: string) => {
     try {
+      // MIGRAÇÃO: patient_registry→pacientes.
       const { data, error } = await supabase
-        .from("patient_registry")
+        .from("pacientes")
         .select("*")
         .eq("id", registryId)
         .maybeSingle();
       if (error) throw error;
       if (data) {
-        setSelectedPatient(data as any);
+        setSelectedPatient(mapPaciente(data));
         setShowNewEncounter(true);
       }
     } catch (err: any) {

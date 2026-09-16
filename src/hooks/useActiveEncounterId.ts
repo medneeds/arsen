@@ -2,22 +2,13 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Fase B.1 — Resolve o encounter_id ATIVO do paciente atual.
+ * Resolve o "encounter id" ATIVO do paciente atual.
  *
- * Hardening (bug JOSE WILLAME — leito reaproveitado): a linha-leito (patients.id)
- * pode ter sido reassociada entre ocupantes, deixando `patient_encounters.patient_id`
- * desalinhado (NULL ou apontando para outro paciente). O vínculo confiável é o
- * `patient_registry_id` (prontuário do paciente). Por isso resolvemos o encontro
- * pela tupla (registry_id ⊕ patient_id), priorizando o registry quando existir.
- *
- * Estratégia:
- *   1) Buscar patient_registry_id do paciente.
- *   2) Encontro ativo (status != closed) com registry_id correspondente.
- *   3) Fallback: encontro ativo com patient_id correspondente.
- *   4) Fallback final: encontro mais recente por registry_id ou patient_id.
- *
- * Realtime ouve mudanças em patient_encounters do paciente/registry para
- * refletir alta/transferência imediatamente.
+ * MIGRAÇÃO: a tabela patient_encounters não existe mais. No schema novo o
+ * "encontro" É a própria internação — `patientId` já é `internacoes.id`.
+ * Portanto o encounterId ativo é o próprio `patientId` (a internação), desde
+ * que ela exista. Mantemos a assinatura `{ encounterId, loading }` para não
+ * quebrar consumidores.
  */
 export function useActiveEncounterId(patientId: string | null): {
   encounterId: string | null;
@@ -35,47 +26,14 @@ export function useActiveEncounterId(patientId: string | null): {
     setLoading(true);
 
     const resolve = async () => {
-      // 0) Descobrir o registry do paciente (vínculo estável)
-      const { data: patientRow } = await supabase
-        .from("patients")
-        .select("patient_registry_id")
+      // Confirma que a internação existe; o id dela É o encounter ativo.
+      const { data } = await supabase
+        .from("internacoes")
+        .select("id")
         .eq("id", patientId)
         .maybeSingle();
-      const registryId = patientRow?.patient_registry_id ?? null;
-
-      const pickActive = async (column: "registry_id" | "patient_id", value: string) => {
-        const { data } = await supabase
-          .from("patient_encounters")
-          .select("id, status, created_at")
-          .eq(column, value)
-          .neq("status", "closed")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        return data?.id ?? null;
-      };
-
-      const pickLatest = async (column: "registry_id" | "patient_id", value: string) => {
-        const { data } = await supabase
-          .from("patient_encounters")
-          .select("id")
-          .eq(column, value)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        return data?.id ?? null;
-      };
-
-      // 1) Ativo por registry (prioritário — sobrevive a reuso de leito)
-      let id = registryId ? await pickActive("registry_id", registryId) : null;
-      // 2) Ativo por patient_id (compat com encontros legados sem registry)
-      if (!id) id = await pickActive("patient_id", patientId);
-      // 3) Fallback: mais recente (ainda preferindo registry)
-      if (!id && registryId) id = await pickLatest("registry_id", registryId);
-      if (!id) id = await pickLatest("patient_id", patientId);
-
       if (cancelled) return;
-      setEncounterId(id);
+      setEncounterId(data?.id ?? null);
       setLoading(false);
     };
 
@@ -83,18 +41,12 @@ export function useActiveEncounterId(patientId: string | null): {
       if (!cancelled) setLoading(false);
     });
 
+    // MIGRAÇÃO: realtime em "internacoes" (antes "patient_encounters"/"patients").
     const channel = supabase
       .channel(`active-encounter-${patientId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "patient_encounters", filter: `patient_id=eq.${patientId}` },
-        () => { resolve().catch(() => {}); },
-      )
-      .on(
-        // 🔒 Escuta mudanças no leito (patients) — detecta transferências que
-        // alteram patient_registry_id, disparando re-resolução do encounter.
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "patients", filter: `id=eq.${patientId}` },
+        { event: "*", schema: "public", table: "internacoes", filter: `id=eq.${patientId}` },
         () => { resolve().catch(() => {}); },
       )
       .subscribe();

@@ -48,7 +48,13 @@ export function FirstAccessSetup({ userId, fullName, onComplete }: FirstAccessSe
     setChecking(true);
     const t = setTimeout(async () => {
       try {
-        const { data, error } = await supabase.rpc("is_username_available", {
+        // MIGRAÇÃO: `is_username_available` não consta em types.ts (RPC custom
+        // possivelmente ainda não deployada) → chamada via (supabase.rpc as any).
+        // Se não existir, `error` volta e a disponibilidade fica `null`
+        // (usuário não consegue concluir até a RPC existir — degradação aceita,
+        // já que o username agora vive no user_metadata e não há coluna única
+        // consultável).
+        const { data, error } = await (supabase.rpc as any)("is_username_available", {
           p_username: username.trim(),
           p_exclude_user: userId,
         });
@@ -70,9 +76,13 @@ export function FirstAccessSetup({ userId, fullName, onComplete }: FirstAccessSe
     return { ok: true, msg: "Senha forte" };
   }, [pwd]);
 
+  // Bloqueia só quando o username está EXPLICITAMENTE em uso (available === false).
+  // Se a verificação ainda não respondeu ou falhou (available === null), não trava
+  // o primeiro acesso — caso contrário uma RPC indisponível impediria o login.
   const canSubmit =
     usernameOk(username) &&
-    available === true &&
+    available !== false &&
+    !checking &&
     pwdStrong.ok &&
     pwd === pwd2 &&
     !submitting;
@@ -82,30 +92,19 @@ export function FirstAccessSetup({ userId, fullName, onComplete }: FirstAccessSe
     if (!canSubmit) return;
     setSubmitting(true);
     try {
-      // 1) Atualiza senha no auth + metadados
+      // MIGRAÇÃO: `profiles.username`/`must_change_password` (tabela morta) não
+      // têm coluna em `profissionais`. Ambos vivem agora no `user_metadata` do
+      // auth (username é lido de user_metadata em toda a app; a flag de primeiro
+      // acesso também). Persistimos os dois de uma vez em auth.updateUser — não
+      // há mais UPDATE em tabela de perfil nem índice único de username a tratar.
       const { error: updErr } = await supabase.auth.updateUser({
         password: pwd,
-        data: { username: username.trim().toLowerCase() },
-      });
-      if (updErr) throw updErr;
-
-      // 2) Persiste username e marca conclusão do primeiro acesso
-      const { error: profErr } = await supabase
-        .from("profiles")
-        .update({
+        data: {
           username: username.trim().toLowerCase(),
           must_change_password: false,
-        })
-        .eq("id", userId);
-      if (profErr) {
-        // username pode colidir com índice único — mensagem amigável
-        if ((profErr.message || "").includes("idx_profiles_username_unique")) {
-          toast.error("Este nome de usuário acabou de ser escolhido. Tente outro.");
-          setAvailable(false);
-          return;
-        }
-        throw profErr;
-      }
+        },
+      });
+      if (updErr) throw updErr;
 
       toast.success("Primeiro acesso concluído!");
       onComplete();
@@ -175,6 +174,8 @@ export function FirstAccessSetup({ userId, fullName, onComplete }: FirstAccessSe
                 </span>
               ) : available === false ? (
                 <span className="text-red-600">já em uso, escolha outro</span>
+              ) : available === null ? (
+                <span className="text-muted-foreground">não foi possível verificar — você pode prosseguir</span>
               ) : null}
             </div>
           </div>

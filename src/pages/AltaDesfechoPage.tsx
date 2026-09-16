@@ -541,19 +541,32 @@ function TransferTab({ patient }: { patient: PatientCtx }) {
     setIsSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.from("patient_movements").insert({
-        patient_id: patient.id || null,
-        patient_name: patient.name,
-        patient_bed: patient.bed,
-        patient_sector: patient.sector,
-        movement_type: subtypeId,
-        destination: finalDest,
-        notes: [reason && `Motivo: ${reason}`, notes].filter(Boolean).join(" — ") || null,
-        responsible_doctor: responsibleDoctor || null,
-        created_by: user?.id,
-        department: "URGÊNCIA E EMERGÊNCIA ADULTO",
-        state_id: currentState.id,
-        hospital_unit_id: currentHospital.id,
+      // MIGRAÇÃO: patient_movements não existe. A nova `transferencias` só modela
+      // transferência leito→leito (leito_origem/destino NOT NULL) e não cabe uma
+      // sinalização com destino em texto livre (interna/externa). DEGRADADO: a
+      // trilha é gravada em logs_auditoria com os campos ricos em dados_novos
+      // (mesmo padrão de bedLifecycle). `patient.id` é internacoes.id.
+      const internacaoId = patient.id || null;
+      const { error } = await supabase.from("logs_auditoria").insert({
+        tipo_evento: transferType === "interna" ? "transferencia_interna" : "transferencia_externa",
+        acao: "INSERT",
+        nome_tabela: "transferencias",
+        registro_id: internacaoId,
+        internacao_id: internacaoId,
+        hospital_id: currentHospital.id,
+        ator_user_id: user?.id ?? null,
+        email_ator: user?.email ?? null,
+        dados_novos: {
+          patient_name: patient.name,
+          patient_bed: patient.bed,
+          patient_sector: patient.sector,
+          movement_type: subtypeId,
+          destination: finalDest,
+          notes: [reason && `Motivo: ${reason}`, notes].filter(Boolean).join(" — ") || null,
+          responsible_doctor: responsibleDoctor || null,
+          department: "URGÊNCIA E EMERGÊNCIA ADULTO",
+          state_id: currentState.id,
+        },
       } as any);
       if (error) throw error;
       toast.success(`Transferência ${transferType} registrada.`);

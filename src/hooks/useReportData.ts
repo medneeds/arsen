@@ -9,6 +9,18 @@ export interface ReportResult {
   summary?: Record<string, any>;
 }
 
+// MIGRAÇÃO: este hook foi reescrito do schema antigo (patient_encounters, pre_admissions,
+// bed_census, admission_histories, bed_allocation_requests, exam_requests, clinical_evolutions,
+// saps3_assessments, patients) para o schema novo (internacoes + pacientes + leitos + setores +
+// pre_admissoes + solicitacoes_exame + solicitacoes_leito + evolucoes + transferencias +
+// avaliacoes_saps3). Ver supabase/MIGRACAO_DEGRADACOES.md.
+//
+// MIGRAÇÃO (escopo por hospital/estado): as tabelas clínicas novas (internacoes, pacientes,
+// leitos, setores, evolucoes, solicitacoes_exame, solicitacoes_leito, pre_admissoes,
+// transferencias, avaliacoes_saps3) NÃO possuem colunas hospital_unit_id / state_id. O filtro
+// `.eq('hospital_unit_id', ...).eq('state_id', ...)` foi REMOVIDO de todas as queries — os
+// relatórios passam a agregar sobre o schema inteiro. Degradação registrada no log.
+
 export function useReportData() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ReportResult | null>(null);
@@ -33,6 +45,19 @@ export function useReportData() {
   return { loading, result, runReport, setResult };
 }
 
+// MIGRAÇÃO: helper para relatórios cuja métrica dependia de colunas que não existem no schema
+// novo (desfecho/outcome, tempos de triagem, cidade de origem, entry_type, etc.). Mantém o
+// shape ReportResult estável exibindo um aviso em vez de inventar dados.
+function migracaoIndisponivel(motivo: string): ReportResult {
+  console.warn(`[MIGRAÇÃO][useReportData] Relatório degradado: ${motivo}`);
+  return { columns: ['Info'], rows: [{ Info: motivo }] };
+}
+
+// Extratores dos joins de internacoes(+pacientes,+leitos,+setores)
+const pacNome = (r: any) => r?.paciente?.nome_social || r?.paciente?.nome_completo || '-';
+const setorNome = (r: any) => r?.leito?.setor?.nome || '-';
+const leitoNum = (r: any) => r?.leito?.numero || '-';
+
 async function executeQuery(
   queryType: string, start: string, end: string, hospitalId: string, stateId: string
 ): Promise<ReportResult> {
@@ -41,52 +66,57 @@ async function executeQuery(
 
   switch (queryType) {
     case 'encounters_list': {
-      const { data } = await supabase.from('patient_encounters')
-        .select('*')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull)
-        .order('created_at', { ascending: false });
+      // MIGRAÇÃO: patient_encounters → internacoes (join pacientes/leitos/setores).
+      const { data } = await supabase.from('internacoes')
+        .select('id, status, data_entrada, paciente:pacientes(nome_completo, nome_social), leito:leitos(numero, setor:setores(nome))')
+        .gte('data_entrada', startFull).lte('data_entrada', endFull)
+        .order('data_entrada', { ascending: false });
+      const rows: any[] = (data as any) || [];
       return {
         columns: ['Código', 'Paciente', 'Status', 'Setor Destino', 'Entrada', 'Triagem'],
-        rows: (data || []).map(r => ({
-          'Código': r.encounter_code,
-          'Paciente': r.patient_name,
+        rows: rows.map(r => ({
+          // MIGRAÇÃO: encounter_code não existe no schema novo → '-'.
+          'Código': '-',
+          'Paciente': pacNome(r),
           'Status': r.status,
-          'Setor Destino': r.destination_sector || '-',
-          'Entrada': formatDate(r.created_at),
-          'Triagem': r.triage_status || '-',
+          'Setor Destino': setorNome(r),
+          'Entrada': formatDate(r.data_entrada),
+          // MIGRAÇÃO: triage_status não existe no schema novo → '-'.
+          'Triagem': '-',
         })),
       };
     }
 
     case 'encounters_compiled': {
-      const { data } = await supabase.from('patient_encounters')
-        .select('*')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull)
-        .order('created_at', { ascending: false });
+      // MIGRAÇÃO: patient_encounters → internacoes. Chamado/Status Triagem/Desfecho degradados.
+      const { data } = await supabase.from('internacoes')
+        .select('id, status, data_entrada, paciente:pacientes(nome_completo, nome_social), leito:leitos(numero, setor:setores(nome))')
+        .gte('data_entrada', startFull).lte('data_entrada', endFull)
+        .order('data_entrada', { ascending: false });
+      const rows: any[] = (data as any) || [];
       return {
         columns: ['Código', 'Paciente', 'Entrada', 'Chamado', 'Status Triagem', 'Setor Destino', 'Desfecho'],
-        rows: (data || []).map(r => ({
-          'Código': r.encounter_code,
-          'Paciente': r.patient_name,
-          'Entrada': formatDate(r.created_at),
-          'Chamado': r.called_at ? formatDate(r.called_at) : '-',
-          'Status Triagem': r.triage_status || '-',
-          'Setor Destino': r.destination_sector || '-',
-          'Desfecho': (r as any).outcome || '-',
+        rows: rows.map(r => ({
+          'Código': '-', // MIGRAÇÃO: encounter_code inexistente.
+          'Paciente': pacNome(r),
+          'Entrada': formatDate(r.data_entrada),
+          'Chamado': '-', // MIGRAÇÃO: called_at inexistente.
+          'Status Triagem': '-', // MIGRAÇÃO: triage_status inexistente.
+          'Setor Destino': setorNome(r),
+          'Desfecho': '-', // MIGRAÇÃO: outcome inexistente.
         })),
       };
     }
 
     case 'encounters_daily_count': {
-      const { data } = await supabase.from('patient_encounters')
-        .select('created_at')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
+      // MIGRAÇÃO: patient_encounters → internacoes (created_at → data_entrada).
+      const { data } = await supabase.from('internacoes')
+        .select('data_entrada')
+        .gte('data_entrada', startFull).lte('data_entrada', endFull);
+      const rows: any[] = (data as any) || [];
       const byDay: Record<string, number> = {};
-      (data || []).forEach(r => {
-        const day = r.created_at.substring(0, 10);
+      rows.forEach(r => {
+        const day = (r.data_entrada || '').substring(0, 10);
         byDay[day] = (byDay[day] || 0) + 1;
       });
       return {
@@ -97,16 +127,17 @@ async function executeQuery(
     }
 
     case 'encounters_shift': {
-      const { data } = await supabase.from('patient_encounters')
-        .select('created_at')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
+      // MIGRAÇÃO: patient_encounters → internacoes (created_at → data_entrada).
+      const { data } = await supabase.from('internacoes')
+        .select('data_entrada')
+        .gte('data_entrada', startFull).lte('data_entrada', endFull);
+      const rows: any[] = (data as any) || [];
       const sd: Record<string, number> = {};
       const sn: Record<string, number> = {};
-      (data || []).forEach(r => {
-        const dt = new Date(r.created_at);
+      rows.forEach(r => {
+        const dt = new Date(r.data_entrada);
         const h = dt.getHours();
-        const day = r.created_at.substring(0, 10);
+        const day = (r.data_entrada || '').substring(0, 10);
         if (h >= 7 && h < 19) { sd[day] = (sd[day] || 0) + 1; }
         else { sn[day] = (sn[day] || 0) + 1; }
       });
@@ -123,13 +154,14 @@ async function executeQuery(
     }
 
     case 'encounters_by_sex': {
-      const { data } = await supabase.from('pre_admissions')
-        .select('sex')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
+      // MIGRAÇÃO: pre_admissions.sex não existe. Usa internacoes → pacientes.sexo (dado real).
+      const { data } = await supabase.from('internacoes')
+        .select('data_entrada, paciente:pacientes(sexo)')
+        .gte('data_entrada', startFull).lte('data_entrada', endFull);
+      const rows: any[] = (data as any) || [];
       const counts: Record<string, number> = {};
-      (data || []).forEach(r => {
-        const s = r.sex || 'Não informado';
+      rows.forEach(r => {
+        const s = r?.paciente?.sexo || 'Não informado';
         counts[s] = (counts[s] || 0) + 1;
       });
       return {
@@ -137,17 +169,18 @@ async function executeQuery(
         rows: Object.entries(counts).map(([s, c]) => ({
           'Sexo': s === 'M' ? 'Masculino' : s === 'F' ? 'Feminino' : s,
           'Quantidade': c,
-          '%': ((c / (data?.length || 1)) * 100).toFixed(1) + '%',
+          '%': ((c / (rows.length || 1)) * 100).toFixed(1) + '%',
         })),
-        summary: { Total: data?.length || 0 },
+        summary: { Total: rows.length },
       };
     }
 
     case 'encounters_by_age_sex': {
-      const { data } = await supabase.from('pre_admissions')
-        .select('sex, birth_date')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
+      // MIGRAÇÃO: pre_admissions → internacoes + pacientes (sexo, data_nascimento reais).
+      const { data } = await supabase.from('internacoes')
+        .select('data_entrada, paciente:pacientes(sexo, data_nascimento)')
+        .gte('data_entrada', startFull).lte('data_entrada', endFull);
+      const rows: any[] = (data as any) || [];
       const ranges = ['0-14', '15-29', '30-44', '45-59', '60-74', '75+'];
       const getRange = (age: number) => {
         if (age < 15) return '0-14';
@@ -159,11 +192,13 @@ async function executeQuery(
       };
       const matrix: Record<string, { M: number; F: number; O: number }> = {};
       ranges.forEach(r => matrix[r] = { M: 0, F: 0, O: 0 });
-      (data || []).forEach(r => {
-        if (!r.birth_date) return;
-        const age = Math.floor((Date.now() - new Date(r.birth_date).getTime()) / 31557600000);
+      rows.forEach(r => {
+        const birth = r?.paciente?.data_nascimento;
+        if (!birth) return;
+        const age = Math.floor((Date.now() - new Date(birth).getTime()) / 31557600000);
         const range = getRange(age);
-        const sex = r.sex === 'M' ? 'M' : r.sex === 'F' ? 'F' : 'O';
+        const sx = r?.paciente?.sexo;
+        const sex = sx === 'M' ? 'M' : sx === 'F' ? 'F' : 'O';
         matrix[range][sex]++;
       });
       return {
@@ -180,14 +215,15 @@ async function executeQuery(
 
     case 'encounters_by_priority':
     case 'risk_colors': {
-      const { data } = await supabase.from('pre_admissions')
-        .select('risk_classification')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull)
-        .not('risk_classification', 'is', null);
+      // MIGRAÇÃO: pre_admissions → pre_admissoes (risk_classification → classificacao_risco).
+      const { data } = await supabase.from('pre_admissoes')
+        .select('classificacao_risco')
+        .gte('data_hora', startFull).lte('data_hora', endFull)
+        .not('classificacao_risco', 'is', null);
+      const rows: any[] = (data as any) || [];
       const counts: Record<string, number> = {};
-      (data || []).forEach(r => {
-        const c = r.risk_classification || 'Não classificado';
+      rows.forEach(r => {
+        const c = r.classificacao_risco || 'Não classificado';
         counts[c] = (counts[c] || 0) + 1;
       });
       const colorMap: Record<string, string> = {
@@ -202,53 +238,56 @@ async function executeQuery(
         rows: Object.entries(counts).map(([c, n]) => ({
           'Classificação': colorMap[c] || c,
           'Quantidade': n,
-          '%': ((n / (data?.length || 1)) * 100).toFixed(1) + '%',
+          '%': ((n / (rows.length || 1)) * 100).toFixed(1) + '%',
         })),
-        summary: { Total: data?.length || 0 },
+        summary: { Total: rows.length },
       };
     }
 
     case 'risk_colors_detailed': {
-      const { data } = await supabase.from('pre_admissions')
-        .select('patient_name, risk_classification, risk_classified_at, chief_complaint, destination_sector, status')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull)
-        .not('risk_classification', 'is', null);
+      // MIGRAÇÃO: pre_admissions → pre_admissoes. chief_complaint e risk_classified_at inexistentes.
+      const { data } = await supabase.from('pre_admissoes')
+        .select('nome_paciente, classificacao_risco, status, setor_destino:setores(nome)')
+        .gte('data_hora', startFull).lte('data_hora', endFull)
+        .not('classificacao_risco', 'is', null);
+      const rows: any[] = (data as any) || [];
       return {
         columns: ['Paciente', 'Classificação', 'Queixa', 'Data Classificação', 'Destino', 'Status'],
-        rows: (data || []).map(r => ({
-          'Paciente': r.patient_name,
-          'Classificação': r.risk_classification,
-          'Queixa': r.chief_complaint || '-',
-          'Data Classificação': r.risk_classified_at ? formatDate(r.risk_classified_at) : '-',
-          'Destino': r.destination_sector || '-',
+        rows: rows.map(r => ({
+          'Paciente': r.nome_paciente,
+          'Classificação': r.classificacao_risco,
+          'Queixa': '-', // MIGRAÇÃO: chief_complaint inexistente em pre_admissoes.
+          'Data Classificação': '-', // MIGRAÇÃO: risk_classified_at inexistente.
+          'Destino': r?.setor_destino?.nome || '-',
           'Status': r.status,
         })),
       };
     }
 
-    case 'avg_triage_time': {
-      const { data } = await supabase.from('pre_admissions')
-        .select('created_at, risk_classified_at, risk_classification')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull)
-        .not('risk_classified_at', 'is', null);
-      const byColor: Record<string, number[]> = {};
-      (data || []).forEach(r => {
-        const diff = (new Date(r.risk_classified_at!).getTime() - new Date(r.created_at).getTime()) / 60000;
-        const c = r.risk_classification || 'outros';
-        if (!byColor[c]) byColor[c] = [];
-        byColor[c].push(diff);
-      });
+    case 'avg_triage_time':
+      // MIGRAÇÃO: pre_admissoes não tem risk_classified_at → tempo de triagem não é calculável.
+      return migracaoIndisponivel('Tempo de triagem indisponível: pre_admissoes não possui data de classificação de risco (risk_classified_at) no schema novo.');
+
+    case 'total_stay': {
+      // MIGRAÇÃO: patient_encounters.outcome_date → internacoes.data_alta (permanência real).
+      const { data } = await supabase.from('internacoes')
+        .select('data_entrada, data_alta, status, paciente:pacientes(nome_completo, nome_social)')
+        .gte('data_entrada', startFull).lte('data_entrada', endFull);
+      const rows: any[] = ((data as any) || []).filter((r: any) => r.data_alta);
+      if (rows.length === 0) {
+        return { columns: ['Info'], rows: [{ Info: 'Nenhuma internação com alta registrada no período.' }] };
+      }
       return {
-        columns: ['Classificação', 'Qtd', 'Tempo Médio (min)', 'Mínimo (min)', 'Máximo (min)'],
-        rows: Object.entries(byColor).map(([c, times]) => ({
-          'Classificação': c,
-          'Qtd': times.length,
-          'Tempo Médio (min)': (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1),
-          'Mínimo (min)': Math.min(...times).toFixed(1),
-          'Máximo (min)': Math.max(...times).toFixed(1),
-        })),
+        columns: ['Paciente', 'Código', 'Permanência (min)', 'Desfecho'],
+        rows: rows.map(r => {
+          const diff = (new Date(r.data_alta).getTime() - new Date(r.data_entrada).getTime()) / 60000;
+          return {
+            'Paciente': pacNome(r),
+            'Código': '-', // MIGRAÇÃO: encounter_code inexistente.
+            'Permanência (min)': diff.toFixed(1),
+            'Desfecho': r.status || '-', // MIGRAÇÃO: outcome inexistente → usa internacoes.status.
+          };
+        }),
       };
     }
 
@@ -256,66 +295,23 @@ async function executeQuery(
     case 'first_attendance_duration':
     case 'avg_first_attendance':
     case 'avg_return_attendance':
-    case 'total_stay': {
-      const { data } = await supabase.from('patient_encounters')
-        .select('*')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
-      const rows = (data || []).filter(r => {
-        const enc = r as any;
-        if (queryType === 'door_to_doctor') return enc.first_medical_attendance_at;
-        if (queryType === 'total_stay') return enc.outcome_date;
-        return enc.first_medical_attendance_at;
-      }).map(r => {
-        const enc = r as any;
-        if (queryType === 'door_to_doctor') {
-          const diff = (new Date(enc.first_medical_attendance_at).getTime() - new Date(r.created_at).getTime()) / 60000;
-          return { 'Paciente': r.patient_name, 'Código': r.encounter_code, 'Tempo (min)': diff.toFixed(1) };
-        }
-        if (queryType === 'total_stay') {
-          const diff = (new Date(enc.outcome_date).getTime() - new Date(r.created_at).getTime()) / 60000;
-          return { 'Paciente': r.patient_name, 'Código': r.encounter_code, 'Permanência (min)': diff.toFixed(1), 'Desfecho': enc.outcome || '-' };
-        }
-        return { 'Paciente': r.patient_name, 'Código': r.encounter_code };
-      });
-      const colMap: Record<string, string[]> = {
-        door_to_doctor: ['Paciente', 'Código', 'Tempo (min)'],
-        total_stay: ['Paciente', 'Código', 'Permanência (min)', 'Desfecho'],
-        first_attendance_duration: ['Paciente', 'Código'],
-        avg_first_attendance: ['Paciente', 'Código'],
-        avg_return_attendance: ['Paciente', 'Código'],
-      };
-      if (rows.length === 0) {
-        return { columns: ['Info'], rows: [{ Info: 'Nenhum registro com dados de tempo médico no período. Preencha os campos de atendimento médico nos encounters.' }] };
-      }
-      return { columns: colMap[queryType] || ['Paciente', 'Código'], rows };
-    }
+      // MIGRAÇÃO: first_medical_attendance_at não existe → tempos porta-médico não calculáveis.
+      return migracaoIndisponivel('Tempos de atendimento médico (porta-médico / primeiro atendimento) indisponíveis: internacoes não registra horário de atendimento médico no schema novo.');
 
     case 'los_with_admission':
-    case 'los_without_admission':
-    case 'los_with_admission_detailed':
-    case 'los_without_admission_detailed': {
-      const { data } = await supabase.from('patient_encounters')
-        .select('*')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
-      const isAdmission = queryType.includes('with');
-      const isDetailed = queryType.includes('detailed');
-      const filtered = (data || []).filter(r => {
-        const enc = r as any;
-        if (!enc.outcome_date) return false;
-        return isAdmission ? enc.outcome === 'internacao' : enc.outcome !== 'internacao';
-      });
-      const times = filtered.map(r => {
-        const enc = r as any;
-        return {
-          name: r.patient_name,
-          code: r.encounter_code,
-          los: (new Date(enc.outcome_date).getTime() - new Date(r.created_at).getTime()) / 60000,
-          outcome: enc.outcome,
-        };
-      });
-      if (isDetailed) {
+    case 'los_with_admission_detailed': {
+      // MIGRAÇÃO: no schema novo toda internacao É uma admissão. LOS = data_alta - data_entrada.
+      const { data } = await supabase.from('internacoes')
+        .select('data_entrada, data_alta, status, paciente:pacientes(nome_completo, nome_social)')
+        .gte('data_entrada', startFull).lte('data_entrada', endFull);
+      const filtered: any[] = ((data as any) || []).filter((r: any) => r.data_alta);
+      const times = filtered.map((r: any) => ({
+        name: pacNome(r),
+        code: '-', // MIGRAÇÃO: encounter_code inexistente.
+        los: (new Date(r.data_alta).getTime() - new Date(r.data_entrada).getTime()) / 60000,
+        outcome: r.status,
+      }));
+      if (queryType.includes('detailed')) {
         return {
           columns: ['Paciente', 'Código', 'LOS (min)', 'LOS (h)', 'Desfecho'],
           rows: times.map(t => ({
@@ -339,36 +335,42 @@ async function executeQuery(
       };
     }
 
+    case 'los_without_admission':
+    case 'los_without_admission_detailed':
+      // MIGRAÇÃO: não existe o conceito de atendimento "sem internação" (patient_encounters morto).
+      return migracaoIndisponivel('LOS sem internação indisponível: o schema novo só registra internacoes (não há fichas de atendimento sem internação).');
+
     case 'diagnosis_count':
     case 'diagnosis_avc':
     case 'diagnosis_iam': {
-      const { data } = await supabase.from('admission_histories')
-        .select('cid_primary, cid_secondary, diagnostic_hypothesis, department')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
+      // MIGRAÇÃO: admission_histories → internacoes. cid_primary/cid_secondary/department
+      // inexistentes; usa apenas hipotese_diagnostica (texto livre).
+      const { data } = await supabase.from('internacoes')
+        .select('hipotese_diagnostica')
+        .gte('data_entrada', startFull).lte('data_entrada', endFull);
+      const rows: any[] = (data as any) || [];
       if (queryType === 'diagnosis_count') {
-        const cidCounts: Record<string, number> = {};
-        (data || []).forEach(r => {
-          [r.cid_primary, r.cid_secondary].filter(Boolean).forEach(c => {
-            cidCounts[c!] = (cidCounts[c!] || 0) + 1;
-          });
+        const counts: Record<string, number> = {};
+        rows.forEach(r => {
+          const h = (r.hipotese_diagnostica || '').trim();
+          if (!h) return;
+          counts[h] = (counts[h] || 0) + 1;
         });
         return {
+          // MIGRAÇÃO: coluna 'CID' passa a exibir a hipótese diagnóstica (não há códigos CID).
           columns: ['CID', 'Quantidade'],
-          rows: Object.entries(cidCounts).sort((a, b) => b[1] - a[1]).map(([c, n]) => ({ 'CID': c, 'Quantidade': n })),
+          rows: Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([c, n]) => ({ 'CID': c, 'Quantidade': n })),
         };
       }
       const keyword = queryType === 'diagnosis_avc' ? 'avc|acidente vascular|isquem' : 'iam|infarto|miocárdio';
       const regex = new RegExp(keyword, 'i');
-      const filtered = (data || []).filter(r =>
-        regex.test(r.diagnostic_hypothesis || '') || regex.test(r.cid_primary || '') || regex.test(r.cid_secondary || '')
-      );
+      const filtered = rows.filter(r => regex.test(r.hipotese_diagnostica || ''));
       return {
         columns: ['CID Primário', 'CID Secundário', 'Hipótese Diagnóstica'],
         rows: filtered.map(r => ({
-          'CID Primário': r.cid_primary || '-',
-          'CID Secundário': r.cid_secondary || '-',
-          'Hipótese Diagnóstica': r.diagnostic_hypothesis || '-',
+          'CID Primário': '-', // MIGRAÇÃO: cid_primary inexistente.
+          'CID Secundário': '-', // MIGRAÇÃO: cid_secondary inexistente.
+          'Hipótese Diagnóstica': r.hipotese_diagnostica || '-',
         })),
         summary: { Total: filtered.length },
       };
@@ -377,53 +379,17 @@ async function executeQuery(
     case 'outcomes':
     case 'outcomes_detailed':
     case 'deaths':
-    case 'evasions': {
-      const { data } = await supabase.from('patient_encounters')
-        .select('*')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
-      let filtered = data || [];
-      if (queryType === 'deaths') filtered = filtered.filter(r => (r as any).outcome === 'obito');
-      if (queryType === 'evasions') filtered = filtered.filter(r => (r as any).outcome === 'evasao');
-
-      if (queryType === 'outcomes') {
-        const counts: Record<string, number> = {};
-        filtered.forEach(r => {
-          const o = (r as any).outcome || 'Sem desfecho';
-          counts[o] = (counts[o] || 0) + 1;
-        });
-        const labelMap: Record<string, string> = {
-          alta: 'Alta', obito: 'Óbito', evasao: 'Evasão', internacao: 'Internação',
-          transferencia: 'Transferência', desistencia: 'Desistência', 'Sem desfecho': 'Sem desfecho',
-        };
-        return {
-          columns: ['Desfecho', 'Quantidade', '%'],
-          rows: Object.entries(counts).map(([o, n]) => ({
-            'Desfecho': labelMap[o] || o,
-            'Quantidade': n,
-            '%': ((n / filtered.length) * 100).toFixed(1) + '%',
-          })),
-          summary: { Total: filtered.length },
-        };
-      }
-      return {
-        columns: ['Código', 'Paciente', 'Entrada', 'Desfecho', 'Data Desfecho'],
-        rows: filtered.map(r => ({
-          'Código': r.encounter_code,
-          'Paciente': r.patient_name,
-          'Entrada': formatDate(r.created_at),
-          'Desfecho': (r as any).outcome || '-',
-          'Data Desfecho': (r as any).outcome_date ? formatDate((r as any).outcome_date) : '-',
-        })),
-      };
-    }
+    case 'evasions':
+      // MIGRAÇÃO: patient_encounters.outcome / outcome_date não existem no schema novo. O conceito
+      // de desfecho de atendimento (alta/óbito/evasão/transferência) não tem coluna equivalente.
+      return migracaoIndisponivel('Desfechos de atendimento (alta/óbito/evasão) indisponíveis: internacoes não possui campo de desfecho (outcome) no schema novo.');
 
     case 'admissions': {
-      const { data } = await supabase.from('patients')
-        .select('name, bed_number, sector, internment_status, admission_date, clinical_status')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .not('internment_status', 'is', null)
-        .gte('created_at', startFull).lte('created_at', endFull);
+      // MIGRAÇÃO: patients → internacoes + pacientes + leitos + setores.
+      const { data } = await supabase.from('internacoes')
+        .select('status, data_entrada, paciente:pacientes(nome_completo, nome_social), leito:leitos(numero, setor:setores(nome))')
+        .gte('data_entrada', startFull).lte('data_entrada', endFull);
+      const rows: any[] = (data as any) || [];
       const statusMap: Record<string, string> = {
         SOLICITACAO_PENDENTE: 'Solicitação Pendente',
         PSM_FAVORAVEL: 'PSM Favorável',
@@ -433,136 +399,84 @@ async function executeQuery(
       };
       return {
         columns: ['Paciente', 'Leito', 'Setor', 'Status Internação', 'Status Clínico', 'Data Admissão'],
-        rows: (data || []).map(r => ({
-          'Paciente': r.name, 'Leito': r.bed_number, 'Setor': r.sector,
-          'Status Internação': statusMap[r.internment_status || ''] || r.internment_status || '-',
-          'Status Clínico': r.clinical_status || '-',
-          'Data Admissão': r.admission_date ? formatDate(r.admission_date) : '-',
+        rows: rows.map(r => ({
+          'Paciente': pacNome(r), 'Leito': leitoNum(r), 'Setor': setorNome(r),
+          'Status Internação': statusMap[r.status || ''] || r.status || '-',
+          'Status Clínico': '-', // MIGRAÇÃO: clinical_status não tem coluna nova (default degradado).
+          'Data Admissão': r.data_entrada ? formatDate(r.data_entrada) : '-',
         })),
       };
     }
 
-    case 'origin_city': {
-      const { data } = await supabase.from('pre_admissions')
-        .select('city')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
-      const counts: Record<string, number> = {};
-      (data || []).forEach(r => {
-        const c = r.city || 'Não informado';
-        counts[c] = (counts[c] || 0) + 1;
-      });
-      return {
-        columns: ['Cidade', 'Quantidade', '%'],
-        rows: Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([c, n]) => ({
-          'Cidade': c, 'Quantidade': n,
-          '%': ((n / (data?.length || 1)) * 100).toFixed(1) + '%',
-        })),
-        summary: { Total: data?.length || 0 },
-      };
-    }
+    case 'origin_city':
+      // MIGRAÇÃO: pre_admissoes não tem coluna city → cidade de origem indisponível.
+      return migracaoIndisponivel('Cidade de origem indisponível: pre_admissoes não possui coluna de município (city) no schema novo.');
 
     case 'macro_regions':
     case 'macro_regions_detailed':
     case 'health_macro_regions':
-    case 'health_regions': {
-      const { data } = await supabase.from('pre_admissions')
-        .select('city, patient_name')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
-      const regionCounts: Record<string, number> = {};
-      (data || []).forEach(r => {
-        const city = r.city || '';
-        let found = false;
-        for (const [region, cities] of Object.entries(MARANHAO_MACRO_REGIONS)) {
-          if (cities.some(c => city.toLowerCase().includes(c.toLowerCase()))) {
-            regionCounts[region] = (regionCounts[region] || 0) + 1;
-            found = true;
-            break;
-          }
-        }
-        if (!found) regionCounts['Outros'] = (regionCounts['Outros'] || 0) + 1;
-      });
-      return {
-        columns: ['Macrorregião', 'Quantidade', '%'],
-        rows: Object.entries(regionCounts).sort((a, b) => b[1] - a[1]).map(([r, n]) => ({
-          'Macrorregião': r, 'Quantidade': n,
-          '%': ((n / (data?.length || 1)) * 100).toFixed(1) + '%',
-        })),
-        summary: { Total: data?.length || 0 },
-      };
-    }
+    case 'health_regions':
+      // MIGRAÇÃO: derivava macrorregião de pre_admissions.city (inexistente). Mantém import
+      // MARANHAO_MACRO_REGIONS referenciado para não quebrar dependências.
+      void MARANHAO_MACRO_REGIONS;
+      return migracaoIndisponivel('Macrorregiões indisponíveis: dependem do município de origem (pre_admissoes.city), que não existe no schema novo.');
 
     case 'conversion_by_city':
-    case 'conversion_by_sector': {
-      const { data } = await supabase.from('patient_encounters')
-        .select('*')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
-      const groupKey = queryType === 'conversion_by_sector' ? 'destination_sector' : 'destination_sector';
-      const groups: Record<string, { total: number; converted: number }> = {};
-      (data || []).forEach(r => {
-        const key = (r as any)[groupKey] || 'Não definido';
-        if (!groups[key]) groups[key] = { total: 0, converted: 0 };
-        groups[key].total++;
-        if ((r as any).outcome === 'internacao') groups[key].converted++;
-      });
-      return {
-        columns: ['Setor/Município', 'Total Atendimentos', 'Internações', 'Taxa Conversão'],
-        rows: Object.entries(groups).map(([k, v]) => ({
-          'Setor/Município': k,
-          'Total Atendimentos': v.total,
-          'Internações': v.converted,
-          'Taxa Conversão': ((v.converted / v.total) * 100).toFixed(1) + '%',
-        })),
-      };
-    }
+    case 'conversion_by_sector':
+      // MIGRAÇÃO: taxa de conversão dependia de patient_encounters.outcome (inexistente).
+      return migracaoIndisponivel('Taxa de conversão indisponível: depende do desfecho (outcome) de atendimentos, que não existe no schema novo.');
 
     case 'exams_summary': {
-      const { data } = await supabase.from('exam_requests')
-        .select('category, status, priority')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
+      // MIGRAÇÃO: exam_requests → solicitacoes_exame (created_at → criado_em).
+      const { data } = await supabase.from('solicitacoes_exame')
+        .select('categoria, status, prioridade')
+        .gte('criado_em', startFull).lte('criado_em', endFull);
+      const rows: any[] = (data as any) || [];
       const byCat: Record<string, number> = {};
-      (data || []).forEach(r => { byCat[r.category] = (byCat[r.category] || 0) + 1; });
+      rows.forEach(r => { byCat[r.categoria] = (byCat[r.categoria] || 0) + 1; });
       return {
         columns: ['Categoria', 'Quantidade'],
         rows: Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(([c, n]) => ({ 'Categoria': c, 'Quantidade': n })),
-        summary: { Total: data?.length || 0 },
+        summary: { Total: rows.length },
       };
     }
 
     case 'exams_detailed': {
-      const { data } = await supabase.from('exam_requests')
-        .select('patient_name, patient_bed, patient_sector, category, items, priority, status, created_at')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull)
-        .order('created_at', { ascending: false });
+      // MIGRAÇÃO: exam_requests → solicitacoes_exame. patient_name/bed/sector via join internacoes.
+      const { data } = await supabase.from('solicitacoes_exame')
+        .select('categoria, prioridade, status, criado_em, internacao:internacoes(paciente:pacientes(nome_completo, nome_social), leito:leitos(numero, setor:setores(nome)))')
+        .gte('criado_em', startFull).lte('criado_em', endFull)
+        .order('criado_em', { ascending: false });
+      const rows: any[] = (data as any) || [];
       return {
         columns: ['Paciente', 'Leito', 'Setor', 'Categoria', 'Prioridade', 'Status', 'Data'],
-        rows: (data || []).map(r => ({
-          'Paciente': r.patient_name, 'Leito': r.patient_bed || '-', 'Setor': r.patient_sector || '-',
-          'Categoria': r.category, 'Prioridade': r.priority, 'Status': r.status,
-          'Data': formatDate(r.created_at),
+        rows: rows.map(r => ({
+          'Paciente': pacNome(r?.internacao),
+          'Leito': leitoNum(r?.internacao),
+          'Setor': setorNome(r?.internacao),
+          'Categoria': r.categoria, 'Prioridade': r.prioridade, 'Status': r.status,
+          'Data': formatDate(r.criado_em),
         })),
       };
     }
 
     case 'ct_scans': {
-      const { data } = await supabase.from('exam_requests')
-        .select('patient_name, patient_bed, items, status, created_at')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .eq('category', 'imagem')
-        .gte('created_at', startFull).lte('created_at', endFull);
-      const filtered = (data || []).filter(r => {
-        const items = JSON.stringify(r.items || []).toLowerCase();
+      // MIGRAÇÃO: exam_requests → solicitacoes_exame (category → categoria='imagem', items → itens).
+      const { data } = await supabase.from('solicitacoes_exame')
+        .select('itens, status, criado_em, internacao:internacoes(paciente:pacientes(nome_completo, nome_social), leito:leitos(numero))')
+        .eq('categoria', 'imagem')
+        .gte('criado_em', startFull).lte('criado_em', endFull);
+      const rows: any[] = (data as any) || [];
+      const filtered = rows.filter(r => {
+        const items = JSON.stringify(r.itens || []).toLowerCase();
         return items.includes('tomografia') || items.includes('tc ') || items.includes('ct ');
       });
       return {
         columns: ['Paciente', 'Leito', 'Status', 'Data'],
         rows: filtered.map(r => ({
-          'Paciente': r.patient_name, 'Leito': r.patient_bed || '-',
-          'Status': r.status, 'Data': formatDate(r.created_at),
+          'Paciente': pacNome(r?.internacao),
+          'Leito': leitoNum(r?.internacao),
+          'Status': r.status, 'Data': formatDate(r.criado_em),
         })),
         summary: { Total: filtered.length },
       };
@@ -572,62 +486,24 @@ async function executeQuery(
     case 'firearm_injuries':
     case 'falls':
     case 'burns':
-    case 'flu_syndrome': {
-      const keywordMap: Record<string, string[]> = {
-        traffic_accidents: ['acidente', 'trânsito', 'colisão', 'atropel', 'capotamento', 'moto', 'veículo', 'carro'],
-        firearm_injuries: ['paf', 'arma de fogo', 'projétil', 'tiro', 'bala'],
-        falls: ['queda', 'própria altura', 'caiu'],
-        burns: ['queimadura', 'queimado', 'escaldad'],
-        flu_syndrome: [],
-      };
-
-      if (queryType === 'flu_syndrome') {
-        const { data } = await supabase.from('pre_admissions')
-          .select('patient_name, chief_complaint, flu_symptoms, flu_symptoms_detail, created_at')
-          .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-          .eq('flu_symptoms', true)
-          .gte('created_at', startFull).lte('created_at', endFull);
-        return {
-          columns: ['Paciente', 'Queixa', 'Detalhes Gripais', 'Data'],
-          rows: (data || []).map(r => ({
-            'Paciente': r.patient_name, 'Queixa': r.chief_complaint || '-',
-            'Detalhes Gripais': r.flu_symptoms_detail || '-', 'Data': formatDate(r.created_at),
-          })),
-          summary: { Total: data?.length || 0 },
-        };
-      }
-
-      const keywords = keywordMap[queryType];
-      const { data } = await supabase.from('pre_admissions')
-        .select('patient_name, chief_complaint, risk_classification, created_at')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
-      const filtered = (data || []).filter(r => {
-        const text = (r.chief_complaint || '').toLowerCase();
-        return keywords.some(k => text.includes(k));
-      });
-      return {
-        columns: ['Paciente', 'Queixa Principal', 'Classificação', 'Data'],
-        rows: filtered.map(r => ({
-          'Paciente': r.patient_name, 'Queixa Principal': r.chief_complaint || '-',
-          'Classificação': r.risk_classification || '-', 'Data': formatDate(r.created_at),
-        })),
-        summary: { Total: filtered.length },
-      };
-    }
+    case 'flu_syndrome':
+      // MIGRAÇÃO: filtravam pre_admissions por chief_complaint / flu_symptoms (inexistentes em
+      // pre_admissoes). Sem campo de queixa na pré-admissão, esses recortes não são possíveis.
+      return migracaoIndisponivel('Recorte por queixa/sintoma indisponível: pre_admissoes não possui chief_complaint nem flu_symptoms no schema novo.');
 
     case 'arrival_average': {
-      const { data } = await supabase.from('patient_encounters')
-        .select('created_at')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
+      // MIGRAÇÃO: patient_encounters → internacoes (created_at → data_entrada).
+      const { data } = await supabase.from('internacoes')
+        .select('data_entrada')
+        .gte('data_entrada', startFull).lte('data_entrada', endFull);
+      const rows: any[] = (data as any) || [];
       const byHour: Record<number, number> = {};
       for (let i = 0; i < 24; i++) byHour[i] = 0;
       const days = new Set<string>();
-      (data || []).forEach(r => {
-        const dt = new Date(r.created_at);
+      rows.forEach(r => {
+        const dt = new Date(r.data_entrada);
         byHour[dt.getHours()]++;
-        days.add(r.created_at.substring(0, 10));
+        days.add((r.data_entrada || '').substring(0, 10));
       });
       const numDays = Math.max(days.size, 1);
       return {
@@ -641,13 +517,14 @@ async function executeQuery(
     }
 
     case 'entry_reason': {
-      const { data } = await supabase.from('pre_admissions')
-        .select('chief_complaint')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
+      // MIGRAÇÃO: pre_admissions.chief_complaint → internacoes.queixa_principal (dado real).
+      const { data } = await supabase.from('internacoes')
+        .select('queixa_principal')
+        .gte('data_entrada', startFull).lte('data_entrada', endFull);
+      const rows: any[] = (data as any) || [];
       const counts: Record<string, number> = {};
-      (data || []).forEach(r => {
-        const c = r.chief_complaint || 'Não informado';
+      rows.forEach(r => {
+        const c = r.queixa_principal || 'Não informado';
         counts[c] = (counts[c] || 0) + 1;
       });
       return {
@@ -656,73 +533,46 @@ async function executeQuery(
       };
     }
 
-    case 'entry_type': {
-      const { data } = await supabase.from('patient_encounters')
-        .select('*')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
-      const counts: Record<string, number> = {};
-      const typeLabels: Record<string, string> = {
-        espontaneo: 'Espontâneo', samu: 'SAMU', bombeiro: 'Bombeiro',
-        policia: 'Polícia', transferencia: 'Transferência', outros: 'Outros',
-      };
-      (data || []).forEach(r => {
-        const t = (r as any).entry_type || 'espontaneo';
-        counts[t] = (counts[t] || 0) + 1;
-      });
-      return {
-        columns: ['Tipo de Entrada', 'Quantidade', '%'],
-        rows: Object.entries(counts).map(([t, n]) => ({
-          'Tipo de Entrada': typeLabels[t] || t,
-          'Quantidade': n,
-          '%': ((n / (data?.length || 1)) * 100).toFixed(1) + '%',
-        })),
-        summary: { Total: data?.length || 0 },
-      };
-    }
+    case 'entry_type':
+      // MIGRAÇÃO: patient_encounters.entry_type (espontâneo/SAMU/...) não tem coluna equivalente.
+      return migracaoIndisponivel('Tipo de entrada indisponível: internacoes não possui campo entry_type (espontâneo/SAMU/bombeiro/...) no schema novo.');
 
     case 'readmissions': {
-      const { data } = await supabase.from('patient_encounters')
-        .select('patient_name, encounter_code, created_at')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull)
-        .order('patient_name');
-      const byPatient: Record<string, { codes: string[]; dates: string[] }> = {};
-      (data || []).forEach(r => {
-        const name = r.patient_name.trim().toLowerCase();
-        if (!byPatient[name]) byPatient[name] = { codes: [], dates: [] };
-        byPatient[name].codes.push(r.encounter_code);
-        byPatient[name].dates.push(formatDate(r.created_at));
+      // MIGRAÇÃO: patient_encounters → internacoes. Agrupa por paciente_id; encounter_code → '-'.
+      const { data } = await supabase.from('internacoes')
+        .select('paciente_id, data_entrada, paciente:pacientes(nome_completo, nome_social)')
+        .gte('data_entrada', startFull).lte('data_entrada', endFull)
+        .order('paciente_id');
+      const rows: any[] = (data as any) || [];
+      const byPatient: Record<string, { name: string; dates: string[] }> = {};
+      rows.forEach(r => {
+        const key = r.paciente_id || pacNome(r);
+        if (!byPatient[key]) byPatient[key] = { name: pacNome(r), dates: [] };
+        byPatient[key].dates.push(formatDate(r.data_entrada));
       });
-      const repeaters = Object.entries(byPatient).filter(([, v]) => v.codes.length > 1);
+      const repeaters = Object.values(byPatient).filter(v => v.dates.length > 1);
       return {
         columns: ['Paciente', 'Nº Atendimentos', 'Códigos', 'Datas'],
-        rows: repeaters.map(([name, v]) => ({
-          'Paciente': name, 'Nº Atendimentos': v.codes.length,
-          'Códigos': v.codes.join(', '), 'Datas': v.dates.join(', '),
+        rows: repeaters.map(v => ({
+          'Paciente': v.name, 'Nº Atendimentos': v.dates.length,
+          'Códigos': '-', // MIGRAÇÃO: encounter_code inexistente.
+          'Datas': v.dates.join(', '),
         })),
         summary: { 'Pacientes reincidentes': repeaters.length },
       };
     }
 
     case 'lean_indicators': {
-      const { data: encounters } = await supabase.from('patient_encounters')
-        .select('*')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
-      const { data: triage } = await supabase.from('pre_admissions')
-        .select('created_at, risk_classified_at')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull)
-        .not('risk_classified_at', 'is', null);
-      const triageTimes = (triage || []).map(r =>
-        (new Date(r.risk_classified_at!).getTime() - new Date(r.created_at).getTime()) / 60000
-      );
-      const avgTriage = triageTimes.length ? triageTimes.reduce((a, b) => a + b, 0) / triageTimes.length : 0;
-      const enc = encounters || [];
-      const withOutcome = enc.filter(r => (r as any).outcome_date);
+      // MIGRAÇÃO: patient_encounters → internacoes; LOS via data_alta. Tempo de triagem degradado
+      // (pre_admissoes não tem risk_classified_at).
+      const { data: internacoes } = await supabase.from('internacoes')
+        .select('data_entrada, data_alta')
+        .gte('data_entrada', startFull).lte('data_entrada', endFull);
+      const enc: any[] = (internacoes as any) || [];
+      const avgTriage = 0; // MIGRAÇÃO: tempo médio de classificação indisponível (sem risk_classified_at).
+      const withOutcome = enc.filter(r => r.data_alta);
       const losTimes = withOutcome.map(r =>
-        (new Date((r as any).outcome_date).getTime() - new Date(r.created_at).getTime()) / 60000
+        (new Date(r.data_alta).getTime() - new Date(r.data_entrada).getTime()) / 60000
       );
       const avgLos = losTimes.length ? losTimes.reduce((a, b) => a + b, 0) / losTimes.length : 0;
 
@@ -730,7 +580,7 @@ async function executeQuery(
         columns: ['Indicador', 'Valor'],
         rows: [
           { 'Indicador': 'Total de atendimentos', 'Valor': enc.length },
-          { 'Indicador': 'Tempo médio classificação (min)', 'Valor': avgTriage.toFixed(1) },
+          { 'Indicador': 'Tempo médio classificação (min)', 'Valor': avgTriage.toFixed(1) }, // MIGRAÇÃO: degradado → 0.
           { 'Indicador': 'LOS médio (min)', 'Valor': avgLos.toFixed(1) },
           { 'Indicador': 'LOS médio (h)', 'Valor': (avgLos / 60).toFixed(1) },
           { 'Indicador': 'Fichas com desfecho', 'Valor': withOutcome.length },
@@ -740,38 +590,41 @@ async function executeQuery(
     }
 
     case 'gestao_occupancy_by_sector': {
-      const { data } = await supabase.from('bed_census')
-        .select('sector, status')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId);
+      // MIGRAÇÃO: bed_census → leitos (join setores para nome do setor). Sem escopo por hospital.
+      const { data } = await supabase.from('leitos')
+        .select('status, setor:setores(nome)');
+      const rows: any[] = (data as any) || [];
       const bySector: Record<string, Record<string, number>> = {};
-      (data || []).forEach(r => {
-        if (!bySector[r.sector]) bySector[r.sector] = { total: 0, ocupado: 0, vago: 0, bloqueado: 0, reservado: 0, outros: 0 };
-        bySector[r.sector].total++;
-        const k = ['ocupado', 'vago', 'bloqueado', 'reservado'].includes(r.status) ? r.status : 'outros';
-        bySector[r.sector][k]++;
+      rows.forEach(r => {
+        const sec = r?.setor?.nome || 'Não definido';
+        if (!bySector[sec]) bySector[sec] = { total: 0, ocupado: 0, livre: 0, higienizacao: 0, bloqueado: 0, reservado: 0, outros: 0 };
+        bySector[sec].total++;
+        const k = ['ocupado', 'livre', 'higienizacao', 'bloqueado', 'reservado'].includes(r.status) ? r.status : 'outros';
+        bySector[sec][k]++;
       });
       return {
-        columns: ['Setor', 'Total', 'Ocupados', 'Vagos', 'Bloqueados', 'Reservados', 'Ocupação %'],
+        columns: ['Setor', 'Total', 'Ocupados', 'Livres', 'Bloqueados', 'Reservados', 'Ocupação %'],
         rows: Object.entries(bySector).sort().map(([s, v]) => ({
           'Setor': s, 'Total': v.total,
-          'Ocupados': v.ocupado, 'Vagos': v.vago,
+          'Ocupados': v.ocupado, 'Livres': v.livre,
           'Bloqueados': v.bloqueado, 'Reservados': v.reservado,
           'Ocupação %': ((v.ocupado / Math.max(v.total, 1)) * 100).toFixed(1) + '%',
         })),
-        summary: { Setores: Object.keys(bySector).length, 'Total leitos': (data || []).length },
+        summary: { Setores: Object.keys(bySector).length, 'Total leitos': rows.length },
       };
     }
 
     case 'gestao_stay_by_sector': {
-      const { data } = await supabase.from('patient_encounters')
-        .select('destination_sector, created_at, outcome_date, outcome')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull)
-        .not('outcome_date', 'is', null);
+      // MIGRAÇÃO: patient_encounters → internacoes. LOS = data_alta - data_entrada; setor via join.
+      const { data } = await supabase.from('internacoes')
+        .select('data_entrada, data_alta, leito:leitos(setor:setores(nome))')
+        .gte('data_entrada', startFull).lte('data_entrada', endFull)
+        .not('data_alta', 'is', null);
+      const rows: any[] = (data as any) || [];
       const bySector: Record<string, number[]> = {};
-      (data || []).forEach(r => {
-        const sec = r.destination_sector || 'Não definido';
-        const mins = (new Date((r as any).outcome_date).getTime() - new Date(r.created_at).getTime()) / 60000;
+      rows.forEach(r => {
+        const sec = setorNome(r);
+        const mins = (new Date(r.data_alta).getTime() - new Date(r.data_entrada).getTime()) / 60000;
         if (!bySector[sec]) bySector[sec] = [];
         bySector[sec].push(mins);
       });
@@ -786,157 +639,83 @@ async function executeQuery(
       };
     }
 
-    case 'gestao_discharge_death_rate': {
-      const { data } = await supabase.from('patient_encounters')
-        .select('outcome')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull)
-        .not('outcome', 'is', null);
-      const counts: Record<string, number> = {};
-      (data || []).forEach(r => {
-        const o = (r as any).outcome || 'Sem desfecho';
-        counts[o] = (counts[o] || 0) + 1;
-      });
-      const total = (data || []).length || 1;
-      const labelMap: Record<string, string> = {
-        alta: 'Alta', obito: 'Óbito', evasao: 'Evasão',
-        internacao: 'Internação', transferencia: 'Transferência', desistencia: 'Desistência',
-      };
-      return {
-        columns: ['Desfecho', 'Quantidade', 'Taxa %'],
-        rows: Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([o, n]) => ({
-          'Desfecho': labelMap[o] || o,
-          'Quantidade': n,
-          'Taxa %': ((n / total) * 100).toFixed(2) + '%',
-        })),
-        summary: {
-          Total: total,
-          'Taxa Óbito': (((counts.obito || 0) / total) * 100).toFixed(2) + '%',
-          'Taxa Alta': (((counts.alta || 0) / total) * 100).toFixed(2) + '%',
-        },
-      };
-    }
+    case 'gestao_discharge_death_rate':
+      // MIGRAÇÃO: taxa de alta/óbito dependia de patient_encounters.outcome (inexistente).
+      return migracaoIndisponivel('Taxa de alta/óbito indisponível: internacoes não possui campo de desfecho (outcome) no schema novo.');
 
     case 'gestao_production_per_doctor': {
-      const { data: enc } = await supabase.from('patient_encounters')
-        .select('attending_doctor_name, outcome')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull)
-        .not('attending_doctor_name', 'is', null);
-      const { data: evo } = await supabase.from('clinical_evolutions')
-        .select('created_by_name')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
+      // MIGRAÇÃO: clinical_evolutions → evolucoes (created_by_name → join profissionais.nome).
+      // Atendimentos/altas/óbitos por médico dependiam de patient_encounters (inexistente) → 0.
+      const { data: evo } = await supabase.from('evolucoes')
+        .select('profissional:profissionais(nome)')
+        .gte('data_hora', startFull).lte('data_hora', endFull);
+      const rows: any[] = (evo as any) || [];
       const byDoc: Record<string, { atendimentos: number; evolucoes: number; altas: number; obitos: number }> = {};
-      (enc || []).forEach(r => {
-        const d = (r as any).attending_doctor_name || 'Não informado';
-        if (!byDoc[d]) byDoc[d] = { atendimentos: 0, evolucoes: 0, altas: 0, obitos: 0 };
-        byDoc[d].atendimentos++;
-        if ((r as any).outcome === 'alta') byDoc[d].altas++;
-        if ((r as any).outcome === 'obito') byDoc[d].obitos++;
-      });
-      (evo || []).forEach(r => {
-        const d = r.created_by_name || 'Não informado';
+      rows.forEach(r => {
+        const d = r?.profissional?.nome || 'Não informado';
         if (!byDoc[d]) byDoc[d] = { atendimentos: 0, evolucoes: 0, altas: 0, obitos: 0 };
         byDoc[d].evolucoes++;
       });
       return {
         columns: ['Médico', 'Atendimentos', 'Evoluções', 'Altas', 'Óbitos'],
-        rows: Object.entries(byDoc).sort((a, b) => b[1].atendimentos - a[1].atendimentos).map(([d, v]) => ({
-          'Médico': d, 'Atendimentos': v.atendimentos, 'Evoluções': v.evolucoes,
-          'Altas': v.altas, 'Óbitos': v.obitos,
+        rows: Object.entries(byDoc).sort((a, b) => b[1].evolucoes - a[1].evolucoes).map(([d, v]) => ({
+          'Médico': d,
+          'Atendimentos': v.atendimentos, // MIGRAÇÃO: sem patient_encounters → 0.
+          'Evoluções': v.evolucoes,
+          'Altas': v.altas, // MIGRAÇÃO: sem outcome → 0.
+          'Óbitos': v.obitos, // MIGRAÇÃO: sem outcome → 0.
         })),
         summary: { Médicos: Object.keys(byDoc).length },
       };
     }
 
     case 'gestao_nir_queue': {
-      const { data } = await supabase.from('bed_allocation_requests')
-        .select('*')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull)
-        .order('created_at', { ascending: false });
+      // MIGRAÇÃO: bed_allocation_requests → solicitacoes_leito. requested_sector via join;
+      // requested_bed inexistente; requesting_doctor_name via join profissionais.
+      const { data } = await supabase.from('solicitacoes_leito')
+        .select('status, criado_em, setor_solicitado:setores(nome), solicitante:profissionais!solicitacoes_leito_solicitado_por_fkey(nome)')
+        .gte('criado_em', startFull).lte('criado_em', endFull)
+        .order('criado_em', { ascending: false });
+      const rows: any[] = (data as any) || [];
       const SLA_MIN = 120;
-      const rows = (data || []).map(r => {
-        const ageMin = (Date.now() - new Date(r.created_at).getTime()) / 60000;
+      const outRows = rows.map(r => {
+        const ageMin = (Date.now() - new Date(r.criado_em).getTime()) / 60000;
         const slaOk = ageMin <= SLA_MIN;
         return {
           'Status': r.status,
-          'Setor Solicitado': r.requested_sector,
-          'Leito': r.requested_bed || '-',
-          'Médico': r.requesting_doctor_name || '-',
-          'Aberta em': formatDate(r.created_at),
+          'Setor Solicitado': r?.setor_solicitado?.nome || '-',
+          'Leito': '-', // MIGRAÇÃO: requested_bed inexistente em solicitacoes_leito.
+          'Médico': r?.solicitante?.nome || '-',
+          'Aberta em': formatDate(r.criado_em),
           'Idade (h)': (ageMin / 60).toFixed(1),
           'SLA (≤2h)': slaOk ? '✅' : '❌',
         };
       });
       const counts: Record<string, number> = {};
-      (data || []).forEach(r => { counts[r.status] = (counts[r.status] || 0) + 1; });
+      rows.forEach(r => { counts[r.status] = (counts[r.status] || 0) + 1; });
       return {
         columns: ['Status', 'Setor Solicitado', 'Leito', 'Médico', 'Aberta em', 'Idade (h)', 'SLA (≤2h)'],
-        rows,
-        summary: { Total: (data || []).length, ...counts },
+        rows: outRows,
+        summary: { Total: rows.length, ...counts },
       };
     }
 
-    case 'gestao_triage_sla': {
-      const { data } = await supabase.from('pre_admissions')
-        .select('patient_name, created_at, risk_classified_at, risk_classification')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
-      const SLA_BY_COLOR: Record<string, number> = {
-        vermelho: 0, laranja: 10, amarelo: 60, verde: 120, azul: 240,
-      };
-      let dentro = 0, fora = 0, semClass = 0;
-      const rows = (data || []).map(r => {
-        if (!r.risk_classified_at) {
-          semClass++;
-          return {
-            'Paciente': r.patient_name,
-            'Classificação': '-',
-            'Tempo (min)': '-',
-            'SLA (min)': '-',
-            'Status': 'Sem classificação',
-          };
-        }
-        const mins = (new Date(r.risk_classified_at).getTime() - new Date(r.created_at).getTime()) / 60000;
-        const sla = SLA_BY_COLOR[r.risk_classification || ''] ?? 60;
-        const ok = mins <= sla;
-        if (ok) dentro++; else fora++;
-        return {
-          'Paciente': r.patient_name,
-          'Classificação': r.risk_classification || '-',
-          'Tempo (min)': mins.toFixed(1),
-          'SLA (min)': sla,
-          'Status': ok ? '✅ Dentro' : '❌ Fora',
-        };
-      });
-      const total = dentro + fora || 1;
-      return {
-        columns: ['Paciente', 'Classificação', 'Tempo (min)', 'SLA (min)', 'Status'],
-        rows,
-        summary: {
-          Total: (data || []).length,
-          'Dentro do SLA': dentro,
-          'Fora do SLA': fora,
-          'Sem classificação': semClass,
-          Aderência: ((dentro / total) * 100).toFixed(1) + '%',
-        },
-      };
-    }
-
+    case 'gestao_triage_sla':
+      // MIGRAÇÃO: aderência de SLA de triagem dependia de risk_classified_at (inexistente).
+      return migracaoIndisponivel('SLA de triagem indisponível: pre_admissoes não possui data de classificação de risco (risk_classified_at) no schema novo.');
 
     case 'gestao_readmission_30d': {
+      // MIGRAÇÃO: patient_encounters → internacoes. patient_id → paciente_id; outcome_date → data_alta.
       const startDate = new Date(startFull);
       const lookback = new Date(startDate.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const { data } = await supabase.from('patient_encounters')
-        .select('patient_name, patient_id, encounter_code, created_at, outcome, outcome_date')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', lookback).lte('created_at', endFull)
-        .order('created_at', { ascending: true });
+      const { data } = await supabase.from('internacoes')
+        .select('paciente_id, data_entrada, data_alta, paciente:pacientes(nome_completo, nome_social)')
+        .gte('data_entrada', lookback).lte('data_entrada', endFull)
+        .order('data_entrada', { ascending: true });
+      const rows: any[] = (data as any) || [];
       const byPatient: Record<string, any[]> = {};
-      (data || []).forEach(r => {
-        const key = r.patient_id || r.patient_name.trim().toLowerCase();
+      rows.forEach(r => {
+        const key = r.paciente_id || pacNome(r);
         if (!byPatient[key]) byPatient[key] = [];
         byPatient[key].push(r);
       });
@@ -945,15 +724,15 @@ async function executeQuery(
         for (let i = 1; i < list.length; i++) {
           const prev = list[i - 1];
           const curr = list[i];
-          if (!prev.outcome_date) continue;
-          const gapDays = (new Date(curr.created_at).getTime() - new Date(prev.outcome_date).getTime()) / 86400000;
-          if (gapDays >= 0 && gapDays <= 30 && new Date(curr.created_at) >= startDate) {
+          if (!prev.data_alta) continue;
+          const gapDays = (new Date(curr.data_entrada).getTime() - new Date(prev.data_alta).getTime()) / 86400000;
+          if (gapDays >= 0 && gapDays <= 30 && new Date(curr.data_entrada) >= startDate) {
             readmissions.push({
-              'Paciente': curr.patient_name,
-              'Atendimento Anterior': prev.encounter_code,
-              'Desfecho Anterior': prev.outcome || '-',
-              'Reentrada': formatDate(curr.created_at),
-              'Novo Atendimento': curr.encounter_code,
+              'Paciente': pacNome(curr),
+              'Atendimento Anterior': '-', // MIGRAÇÃO: encounter_code inexistente.
+              'Desfecho Anterior': '-', // MIGRAÇÃO: outcome inexistente.
+              'Reentrada': formatDate(curr.data_entrada),
+              'Novo Atendimento': '-', // MIGRAÇÃO: encounter_code inexistente.
               'Intervalo (dias)': gapDays.toFixed(1),
             });
           }
@@ -966,39 +745,20 @@ async function executeQuery(
       };
     }
 
-    case 'gestao_uti_mortality': {
-      const { data } = await supabase.from('patient_encounters')
-        .select('patient_name, encounter_code, destination_sector, outcome, outcome_date, created_at')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
-      const utiAll = (data || []).filter(r => /uti/i.test(r.destination_sector || ''));
-      const utiDeaths = utiAll.filter(r => (r as any).outcome === 'obito');
-      return {
-        columns: ['Paciente', 'Código', 'Setor', 'Entrada', 'Óbito em'],
-        rows: utiDeaths.map(r => ({
-          'Paciente': r.patient_name,
-          'Código': r.encounter_code,
-          'Setor': r.destination_sector || '-',
-          'Entrada': formatDate(r.created_at),
-          'Óbito em': (r as any).outcome_date ? formatDate((r as any).outcome_date) : '-',
-        })),
-        summary: {
-          'Total UTI': utiAll.length,
-          Óbitos: utiDeaths.length,
-          'Mortalidade UTI': ((utiDeaths.length / Math.max(utiAll.length, 1)) * 100).toFixed(2) + '%',
-        },
-      };
-    }
+    case 'gestao_uti_mortality':
+      // MIGRAÇÃO: mortalidade UTI dependia de patient_encounters.outcome='obito' (inexistente).
+      return migracaoIndisponivel('Mortalidade UTI indisponível: internacoes não possui campo de desfecho/óbito (outcome) no schema novo.');
 
     case 'gestao_transfers': {
-      const { data } = await supabase.from('patient_encounters')
-        .select('patient_name, encounter_code, destination_sector, outcome_date, created_at')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .eq('outcome', 'transferencia')
-        .gte('created_at', startFull).lte('created_at', endFull);
+      // MIGRAÇÃO: patient_encounters(outcome='transferencia') → tabela transferencias. Setor de
+      // origem via join do leito de origem (FK transferencias_leito_origem_id_fkey).
+      const { data } = await supabase.from('transferencias')
+        .select('data_hora, origem:leitos!transferencias_leito_origem_id_fkey(setor:setores(nome))')
+        .gte('data_hora', startFull).lte('data_hora', endFull);
+      const rows: any[] = (data as any) || [];
       const bySector: Record<string, number> = {};
-      (data || []).forEach(r => {
-        const s = r.destination_sector || 'Não definido';
+      rows.forEach(r => {
+        const s = r?.origem?.setor?.nome || 'Não definido';
         bySector[s] = (bySector[s] || 0) + 1;
       });
       return {
@@ -1006,24 +766,26 @@ async function executeQuery(
         rows: Object.entries(bySector).sort((a, b) => b[1] - a[1]).map(([s, n]) => ({
           'Setor de Origem': s, 'Transferências': n,
         })),
-        summary: { Total: (data || []).length },
+        summary: { Total: rows.length },
       };
     }
 
     case 'gestao_top_diagnoses': {
-      const { data } = await supabase.from('admission_histories')
-        .select('cid_primary, cid_secondary')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .gte('created_at', startFull).lte('created_at', endFull);
+      // MIGRAÇÃO: admission_histories → internacoes. Sem CID → agrupa por hipotese_diagnostica.
+      const { data } = await supabase.from('internacoes')
+        .select('hipotese_diagnostica')
+        .gte('data_entrada', startFull).lte('data_entrada', endFull);
+      const rows: any[] = (data as any) || [];
       const counts: Record<string, number> = {};
-      (data || []).forEach(r => {
-        [r.cid_primary, r.cid_secondary].filter(Boolean).forEach(c => {
-          counts[c!] = (counts[c!] || 0) + 1;
-        });
+      rows.forEach(r => {
+        const h = (r.hipotese_diagnostica || '').trim();
+        if (!h) return;
+        counts[h] = (counts[h] || 0) + 1;
       });
       const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 20);
       const total = sorted.reduce((a, [, n]) => a + n, 0) || 1;
       return {
+        // MIGRAÇÃO: coluna 'CID' passa a exibir a hipótese diagnóstica (não há códigos CID).
         columns: ['Posição', 'CID', 'Quantidade', '% do Top 20'],
         rows: sorted.map(([c, n], i) => ({
           'Posição': i + 1, 'CID': c, 'Quantidade': n,
@@ -1034,110 +796,92 @@ async function executeQuery(
     }
 
     case 'gestao_nir_rejections': {
-      const { data } = await supabase.from('bed_allocation_requests')
-        .select('patient_id, requested_sector, requested_bed, requesting_doctor_name, rejection_reason, reviewed_at, created_at, status')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
+      // MIGRAÇÃO: bed_allocation_requests → solicitacoes_leito. rejection_reason → motivo_rejeicao;
+      // requested_sector via join; requested_bed e reviewed_at inexistentes.
+      const { data } = await supabase.from('solicitacoes_leito')
+        .select('motivo_rejeicao, criado_em, status, setor_solicitado:setores(nome), solicitante:profissionais!solicitacoes_leito_solicitado_por_fkey(nome)')
         .eq('status', 'rejected')
-        .gte('created_at', startFull).lte('created_at', endFull)
-        .order('reviewed_at', { ascending: false });
+        .gte('criado_em', startFull).lte('criado_em', endFull)
+        .order('criado_em', { ascending: false });
+      const rows: any[] = (data as any) || [];
       const motivos: Record<string, number> = {};
-      (data || []).forEach(r => {
-        const m = r.rejection_reason || 'Sem motivo';
+      rows.forEach(r => {
+        const m = r.motivo_rejeicao || 'Sem motivo';
         motivos[m] = (motivos[m] || 0) + 1;
       });
       return {
         columns: ['Setor Solicitado', 'Leito', 'Médico', 'Motivo', 'Aberta em', 'Rejeitada em'],
-        rows: (data || []).map(r => ({
-          'Setor Solicitado': r.requested_sector,
-          'Leito': r.requested_bed || '-',
-          'Médico': r.requesting_doctor_name || '-',
-          'Motivo': r.rejection_reason || '-',
-          'Aberta em': formatDate(r.created_at),
-          'Rejeitada em': r.reviewed_at ? formatDate(r.reviewed_at) : '-',
+        rows: rows.map(r => ({
+          'Setor Solicitado': r?.setor_solicitado?.nome || '-',
+          'Leito': '-', // MIGRAÇÃO: requested_bed inexistente.
+          'Médico': r?.solicitante?.nome || '-',
+          'Motivo': r.motivo_rejeicao || '-',
+          'Aberta em': formatDate(r.criado_em),
+          'Rejeitada em': '-', // MIGRAÇÃO: reviewed_at inexistente em solicitacoes_leito.
         })),
-        summary: { Total: (data || []).length, ...motivos },
+        summary: { Total: rows.length, ...motivos },
       };
     }
 
-    case 'gestao_cleaning_time': {
-      const { data } = await supabase.from('bed_census')
-        .select('sector, bed_number, cleaning_started_at, cleaning_finished_at')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .not('cleaning_started_at', 'is', null)
-        .not('cleaning_finished_at', 'is', null)
-        .gte('cleaning_started_at', startFull).lte('cleaning_started_at', endFull);
-      const bySector: Record<string, number[]> = {};
-      (data || []).forEach(r => {
-        const mins = (new Date(r.cleaning_finished_at!).getTime() - new Date(r.cleaning_started_at!).getTime()) / 60000;
-        if (mins < 0 || mins > 24 * 60) return;
-        if (!bySector[r.sector]) bySector[r.sector] = [];
-        bySector[r.sector].push(mins);
-      });
-      return {
-        columns: ['Setor', 'Limpezas', 'Tempo Médio (min)', 'Mínimo (min)', 'Máximo (min)'],
-        rows: Object.entries(bySector).map(([s, t]) => ({
-          'Setor': s, 'Limpezas': t.length,
-          'Tempo Médio (min)': (t.reduce((a, b) => a + b, 0) / t.length).toFixed(1),
-          'Mínimo (min)': Math.min(...t).toFixed(1),
-          'Máximo (min)': Math.max(...t).toFixed(1),
-        })),
-        summary: { 'Total limpezas': (data || []).length },
-      };
-    }
-
+    case 'gestao_cleaning_time':
+      // MIGRAÇÃO: bed_census.cleaning_started_at/finished_at não existem em leitos → tempo de
+      // limpeza de leito não é calculável no schema novo.
+      return migracaoIndisponivel('Tempo de limpeza de leito indisponível: leitos não possui cleaning_started_at/cleaning_finished_at no schema novo.');
 
     case 'gestao_saps3_adherence': {
-      // UTI: usar patients (admission_date + sector ILIKE %UTI%) como fonte de admissões
-      const { data: utiPatients } = await supabase.from('patients')
-        .select('id, name, sector, bed_number, admission_date')
-        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
-        .ilike('sector', '%uti%')
-        .not('admission_date', 'is', null)
-        .gte('admission_date', startFull).lte('admission_date', endFull);
+      // MIGRAÇÃO: patients(UTI) → internacoes filtradas por setor ILIKE %uti% (em JS via join);
+      // saps3_assessments → avaliacoes_saps3 (patient_id → internacao_id, created_at → criado_em,
+      // total_score → escore_total). Sem coluna status → todas as avaliações contam.
+      const { data: internacoesUti } = await supabase.from('internacoes')
+        .select('id, data_entrada, paciente:pacientes(nome_completo, nome_social), leito:leitos(numero, setor:setores(nome))')
+        .not('data_entrada', 'is', null)
+        .gte('data_entrada', startFull).lte('data_entrada', endFull);
+      const utiPatients: any[] = ((internacoesUti as any) || []).filter((r: any) => /uti/i.test(setorNome(r)));
 
-      const ids = (utiPatients || []).map(p => p.id);
+      const ids = utiPatients.map(p => p.id);
       const { data: sapsList } = ids.length
-        ? await supabase.from('saps3_assessments')
-            .select('patient_id, created_at, status, total_score')
-            .in('patient_id', ids)
+        ? await supabase.from('avaliacoes_saps3')
+            .select('internacao_id, criado_em, escore_total')
+            .in('internacao_id', ids)
         : { data: [] as any[] };
 
       const sapsByPatient: Record<string, any[]> = {};
-      (sapsList || []).forEach((s: any) => {
-        if (!sapsByPatient[s.patient_id]) sapsByPatient[s.patient_id] = [];
-        sapsByPatient[s.patient_id].push(s);
+      ((sapsList as any) || []).forEach((s: any) => {
+        if (!sapsByPatient[s.internacao_id]) sapsByPatient[s.internacao_id] = [];
+        sapsByPatient[s.internacao_id].push(s);
       });
 
       let dentro = 0, fora = 0, sem = 0;
-      const rows = (utiPatients || []).map(p => {
-        const list = (sapsByPatient[p.id] || []).filter((s: any) => s.status === 'completed');
-        list.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      const rows = utiPatients.map(p => {
+        // MIGRAÇÃO: avaliacoes_saps3 não tem coluna status → considera todas as avaliações.
+        const list = (sapsByPatient[p.id] || []).slice();
+        list.sort((a: any, b: any) => new Date(a.criado_em).getTime() - new Date(b.criado_em).getTime());
         const first = list[0];
         let status = 'Sem SAPS 3', tempoH: string | number = '-', score: any = '-';
         if (!first) { sem++; }
         else {
-          const h = (new Date(first.created_at).getTime() - new Date(p.admission_date!).getTime()) / 3600000;
+          const h = (new Date(first.criado_em).getTime() - new Date(p.data_entrada).getTime()) / 3600000;
           tempoH = h.toFixed(1);
-          score = first.total_score ?? '-';
+          score = first.escore_total ?? '-';
           if (h <= 24 && h >= 0) { dentro++; status = '✅ Dentro 24h'; }
           else { fora++; status = '❌ Fora 24h'; }
         }
         return {
-          'Paciente': p.name,
-          'Setor': p.sector,
-          'Leito': p.bed_number || '-',
-          'Admissão': formatDate(p.admission_date!),
+          'Paciente': pacNome(p),
+          'Setor': setorNome(p),
+          'Leito': leitoNum(p),
+          'Admissão': formatDate(p.data_entrada),
           'Tempo até SAPS 3 (h)': tempoH,
           'Score': score,
           'Status': status,
         };
       });
-      const total = (utiPatients || []).length || 1;
+      const total = utiPatients.length || 1;
       return {
         columns: ['Paciente', 'Setor', 'Leito', 'Admissão', 'Tempo até SAPS 3 (h)', 'Score', 'Status'],
         rows,
         summary: {
-          'Admissões UTI': (utiPatients || []).length,
+          'Admissões UTI': utiPatients.length,
           'Dentro 24h': dentro,
           'Fora 24h': fora,
           'Sem SAPS 3': sem,

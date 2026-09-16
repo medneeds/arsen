@@ -143,28 +143,51 @@ export const GlobalSearchDialog = forwardRef<GlobalSearchHandle, GlobalSearchDia
 
         if (patientsResult.error || movementsResult.error) {
           console.error("Search RPC error:", patientsResult.error || movementsResult.error);
-          const searchTerm = `%${term}%`;
-          const [fallbackP, fallbackM] = await Promise.all([
-            supabase
-              .from("patients")
-              .select("id, name, bed_number, sector, department, diagnoses")
-              .eq("hospital_unit_id", currentHospital.id)
-              .eq("state_id", currentState.id)
-              .or(`name.ilike.${searchTerm},bed_number.ilike.${searchTerm},diagnoses.ilike.${searchTerm}`)
-              .limit(8),
-            supabase
-              .from("patient_movements")
-              .select("id, patient_name, movement_type, destination, patient_sector, patient_bed, created_at")
-              .eq("hospital_unit_id", currentHospital.id)
-              .eq("state_id", currentState.id)
-              .or(`patient_name.ilike.${searchTerm},destination.ilike.${searchTerm},patient_bed.ilike.${searchTerm}`)
-              .order("created_at", { ascending: false })
-              .limit(6),
-          ]);
+          // MIGRAÇÃO: fallback migrado para o schema novo.
+          //  - patients→internacoes(+pacientes/leitos/setores). internacoes não
+          //    tem hospital_unit_id/state_id/department (filtros e coluna
+          //    degradados) e o `.or` do PostgREST não cruza colunas de relações
+          //    embutidas → filtro textual feito client-side. "Alocado" = internação
+          //    aberta (data_alta null).
+          //  - patient_movements→transferencias, mas essa tabela não tem as
+          //    colunas denormalizadas (patient_name/movement_type/destination/
+          //    patient_bed) que este resultado exibe → grupo de movimentações
+          //    degradado para vazio no fallback.
+          const termLc = term.toLowerCase();
+          const { data: intData } = await supabase
+            .from("internacoes")
+            .select("id, hipotese_diagnostica, data_alta, paciente:pacientes!internacoes_paciente_id_fkey(nome_completo, nome_social), leito:leitos!internacoes_leito_id_fkey(numero, setor:setores!leitos_setor_id_fkey(nome, tipo))")
+            .is("data_alta", null)
+            .limit(60);
 
           if (currentSearchId !== searchIdRef.current) return;
-          setPatients((fallbackP.data || []).filter((p) => p.name && p.name.trim() !== ""));
-          setMovements(fallbackM.data || []);
+
+          const mapped: SearchPatient[] = ((intData as any[]) || []).map((row) => {
+            const pac = row.paciente || {};
+            const leito = row.leito || null;
+            const setor = leito?.setor || null;
+            return {
+              id: row.id,
+              name: pac.nome_social || pac.nome_completo || "",
+              bed_number: leito?.numero || "",
+              sector: setor?.tipo || setor?.nome || "",
+              // MIGRAÇÃO: internacoes não tem `department`.
+              department: "",
+              diagnoses: row.hipotese_diagnostica ?? null,
+            };
+          });
+          setPatients(
+            mapped
+              .filter((p) => p.name && p.name.trim() !== "")
+              .filter((p) =>
+                !termLc ||
+                p.name.toLowerCase().includes(termLc) ||
+                p.bed_number.toLowerCase().includes(termLc) ||
+                (p.diagnoses || "").toLowerCase().includes(termLc),
+              )
+              .slice(0, 8),
+          );
+          setMovements([]);
         } else {
           setPatients((patientsResult.data || []) as SearchPatient[]);
           setMovements((movementsResult.data || []) as SearchMovement[]);

@@ -138,40 +138,40 @@ const STORAGE_KEY = "selected_department";
 
 export function DepartmentProvider({ children }: { children: ReactNode }) {
   const [currentDepartment, setCurrentDepartmentState] = useState<Department>(() => {
-    if (typeof window === "undefined") return "UTI 1";
+    // MIGRAÇÃO: NÃO há mais setor padrão "UTI"/"UTI 1" (não existe no banco novo).
+    // O padrão é o ÚLTIMO setor selecionado (localStorage); se nunca houve seleção,
+    // fica em branco ("") e a UI pede para selecionar.
+    if (typeof window === "undefined") return "" as Department;
     const stored = localStorage.getItem(STORAGE_KEY) as Department | null;
-    // Validar que o valor salvo tem um sectorCode válido.
-    // "UTI" (sem número) era o fallback antigo e não tem mapeamento — gera
-    // currentSectorCode = "" que trava o carregamento para todos os setores.
     if (stored && DEPARTMENT_TO_SECTOR[stored]) return stored;
-    // Tentar recuperar pelo sector code salvo separadamente
+    // Recupera pelo sector code salvo separadamente (perfis legados).
     const storedSector = localStorage.getItem("selected_sector");
     if (storedSector) {
       const dept = Object.entries(DEPARTMENT_TO_SECTOR).find(([, v]) => v === storedSector)?.[0] as Department | undefined;
       if (dept) return dept;
+      // Setor do banco (ex.: "Amarelo") salvo como código = próprio nome.
+      return storedSector as Department;
     }
-    return "UTI 1";
+    // Último recurso: valor salvo cru (nome de setor do banco) ou vazio.
+    return (stored ?? "") as Department;
   });
 
-  const currentSectorCode = DEPARTMENT_TO_SECTOR[currentDepartment] || "";
-  const currentSectorLabel = SECTOR_DISPLAY[currentSectorCode] || currentDepartment;
+  // MIGRAÇÃO: quando o department não está no taxonômico antigo, ele já É um
+  // setor do banco (setor.nome) → usa o próprio nome como "código" para o mapa.
+  const currentSectorCode = DEPARTMENT_TO_SECTOR[currentDepartment] || currentDepartment;
+  const currentSectorLabel =
+    SECTOR_DISPLAY[DEPARTMENT_TO_SECTOR[currentDepartment]] || currentDepartment;
 
   const setCurrentDepartment = (department: Department) => {
     setCurrentDepartmentState(department);
     localStorage.setItem(STORAGE_KEY, department);
-    // Sync sector code for legacy consumers
-    const sectorCode = DEPARTMENT_TO_SECTOR[department];
-    if (sectorCode) {
-      localStorage.setItem("selected_sector", sectorCode);
-    }
+    // Sync sector code: código legado quando existir, senão o próprio nome do setor.
+    localStorage.setItem("selected_sector", DEPARTMENT_TO_SECTOR[department] || department);
   };
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, currentDepartment);
-    const sectorCode = DEPARTMENT_TO_SECTOR[currentDepartment];
-    if (sectorCode) {
-      localStorage.setItem("selected_sector", sectorCode);
-    }
+    localStorage.setItem("selected_sector", DEPARTMENT_TO_SECTOR[currentDepartment] || currentDepartment);
   }, [currentDepartment]);
 
   return (

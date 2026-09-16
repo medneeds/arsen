@@ -22,7 +22,8 @@ import { Separator } from "@/components/ui/separator";
 interface Notification {
   id: string;
   content: string;
-  type: "free_text" | "checklist_item";
+  // MIGRAÇÃO: notas_lembretes.tipo é string livre no schema novo.
+  type: string;
   completed: boolean | null;
   scheduled_popup_time: string | null;
   is_active: boolean | null;
@@ -37,24 +38,40 @@ export const NotificationCenter = () => {
   const { toast } = useToast();
   const { currentDepartment } = useDepartment();
 
+  // MIGRAÇÃO: notes_reminders→notas_lembretes. Colunas renomeadas
+  // (content→conteudo, type→tipo, completed→concluido,
+  // scheduled_popup_time→horario_lembrete, is_active→ativo, created_at→criado_em).
+  // Sem equivalente no schema novo: `read` (leitura) e `department`. A tabela
+  // nova tem `setor_id` (UUID), não um nome de departamento — o filtro por
+  // department foi removido (degradado): traz todas as notas ativas.
+  const mapRow = (r: any): Notification => ({
+    id: r.id,
+    content: r.conteudo,
+    type: r.tipo,
+    completed: r.concluido,
+    scheduled_popup_time: r.horario_lembrete,
+    is_active: r.ativo,
+    created_at: r.criado_em,
+    // MIGRAÇÃO: sem coluna de leitura → sempre "lida" (esconde badges/ações de leitura).
+    read: true,
+  });
+
   const fetchNotifications = async () => {
     const { data, error } = await supabase
-      .from("notes_reminders")
+      .from("notas_lembretes")
       .select("*")
-      .eq("department", currentDepartment)
-      .eq("is_active", true)
-      .order("created_at", { ascending: false });
+      .eq("ativo", true)
+      .order("criado_em", { ascending: false });
 
     if (error) {
       console.error("Erro ao carregar notificações:", error);
       return;
     }
 
-    setNotifications((data as unknown as Notification[]) || []);
-    
-    // Contar itens não lidos
-    const unread = (data || []).filter(n => !n.read).length;
-    setUnreadCount(unread);
+    setNotifications((data || []).map(mapRow));
+
+    // MIGRAÇÃO: sem controle de leitura no schema novo → nunca há "não lidas".
+    setUnreadCount(0);
   };
 
   useEffect(() => {
@@ -65,15 +82,15 @@ export const NotificationCenter = () => {
     checkScheduledPopups();
 
     // Realtime subscription
+    // MIGRAÇÃO: tabela notas_lembretes; sem coluna `department` para filtrar.
     const channel = supabase
-      .channel("notes_reminders_changes")
+      .channel("notas_lembretes_changes")
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
-          table: "notes_reminders",
-          filter: `department=eq.${currentDepartment}`,
+          table: "notas_lembretes",
         },
         () => {
           fetchNotifications();
@@ -91,26 +108,25 @@ export const NotificationCenter = () => {
     const now = new Date().toISOString();
     
     const { data, error } = await supabase
-      .from("notes_reminders")
+      .from("notas_lembretes")
       .select("*")
-      .eq("department", currentDepartment)
-      .eq("is_active", true)
-      .not("scheduled_popup_time", "is", null)
-      .lte("scheduled_popup_time", now);
+      .eq("ativo", true)
+      .not("horario_lembrete", "is", null)
+      .lte("horario_lembrete", now);
 
     if (error || !data || data.length === 0) return;
 
-    data.forEach((notification) => {
+    data.forEach((notification: any) => {
       toast({
         title: "⏰ LEMBRETE PROGRAMADO",
-        description: notification.content,
+        description: notification.conteudo,
         duration: 10000,
       });
 
       // Desativar o pop-up após exibição
       supabase
-        .from("notes_reminders")
-        .update({ scheduled_popup_time: null })
+        .from("notas_lembretes")
+        .update({ horario_lembrete: null })
         .eq("id", notification.id)
         .then();
     });
@@ -118,8 +134,8 @@ export const NotificationCenter = () => {
 
   const toggleComplete = async (id: string, currentStatus: boolean) => {
     const { error } = await supabase
-      .from("notes_reminders")
-      .update({ completed: !currentStatus })
+      .from("notas_lembretes")
+      .update({ concluido: !currentStatus })
       .eq("id", id);
 
     if (error) {
@@ -140,8 +156,8 @@ export const NotificationCenter = () => {
 
   const deleteNotification = async (id: string) => {
     const { error } = await supabase
-      .from("notes_reminders")
-      .update({ is_active: false })
+      .from("notas_lembretes")
+      .update({ ativo: false })
       .eq("id", id);
 
     if (error) {
@@ -160,46 +176,15 @@ export const NotificationCenter = () => {
     });
   };
 
-  const markAsRead = async (id: string) => {
-    const { error } = await supabase
-      .from("notes_reminders")
-      .update({ read: true })
-      .eq("id", id);
-
-    if (error) {
-      toast({
-        title: "ERRO",
-        description: "NÃO FOI POSSÍVEL MARCAR COMO LIDA",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    fetchNotifications();
+  // MIGRAÇÃO: notas_lembretes não tem coluna de leitura. Como todas as notas são
+  // tratadas como "lidas" (read=true), os botões de leitura ficam ocultos na UI e
+  // estas funções viram no-ops (mantidas só para os handlers onClick existentes).
+  const markAsRead = async (_id: string) => {
+    /* degradado: sem coluna `read` no schema novo */
   };
 
   const markAllAsRead = async () => {
-    const { error } = await supabase
-      .from("notes_reminders")
-      .update({ read: true })
-      .eq("department", currentDepartment)
-      .eq("is_active", true)
-      .eq("read", false);
-
-    if (error) {
-      toast({
-        title: "ERRO",
-        description: "NÃO FOI POSSÍVEL MARCAR TODAS COMO LIDAS",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    fetchNotifications();
-    toast({
-      title: "SUCESSO",
-      description: "TODAS AS NOTIFICAÇÕES FORAM MARCADAS COMO LIDAS",
-    });
+    /* degradado: sem coluna `read` no schema novo */
   };
 
   const checklistItems = notifications.filter(n => n.type === "checklist_item");

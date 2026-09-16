@@ -91,20 +91,30 @@ export default function MedicationCatalogPage() {
   const saveEdit = async (presentationId: string, medicationId: string) => {
     setSavingId(presentationId);
     try {
+      // MIGRAÇÃO: apresentacoes_medicamento só tem diluicao_padrao/
+      // dose_maxima_diaria/tempo_infusao. iv_bolus e pharmacy_suggestion_enabled
+      // NÃO têm coluna → DEGRADADOS: não são persistidos (ficam só no estado
+      // local otimista). O popup de "sugestão automática da farmácia" não pode
+      // ser (des)ativado neste schema.
       const payload = {
-        standard_dilution: editDraft.standard_dilution.trim() || null,
-        max_daily_dose: editDraft.max_daily_dose.trim() || null,
-        infusion_time: editDraft.infusion_time.trim() || null,
-        iv_bolus: editDraft.iv_bolus,
-        pharmacy_suggestion_enabled: editDraft.pharmacy_suggestion_enabled,
+        diluicao_padrao: editDraft.standard_dilution.trim() || null,
+        dose_maxima_diaria: editDraft.max_daily_dose.trim() || null,
+        tempo_infusao: editDraft.infusion_time.trim() || null,
       };
       if (editDraft.pharmacy_suggestion_enabled) invalidateMedicationProtocolCache();
       const { error } = await supabase
-        .from("medication_presentations")
+        .from("apresentacoes_medicamento")
         .update(payload)
         .eq("id", presentationId);
       if (error) throw error;
-      // atualização otimista local
+      // atualização otimista local (inclui os campos degradados, só em memória)
+      const localPatch = {
+        standard_dilution: payload.diluicao_padrao,
+        max_daily_dose: payload.dose_maxima_diaria,
+        infusion_time: payload.tempo_infusao,
+        iv_bolus: editDraft.iv_bolus,
+        pharmacy_suggestion_enabled: editDraft.pharmacy_suggestion_enabled,
+      };
       setMedications((prev) =>
         prev.map((m) =>
           m.id !== medicationId
@@ -112,7 +122,7 @@ export default function MedicationCatalogPage() {
             : {
                 ...m,
                 presentations: m.presentations.map((pr) =>
-                  pr.id === presentationId ? { ...pr, ...payload } : pr,
+                  pr.id === presentationId ? { ...pr, ...localPatch } : pr,
                 ),
               },
         ),
@@ -132,18 +142,54 @@ export default function MedicationCatalogPage() {
 
   const fetchCatalog = async () => {
     try {
+      // MIGRAÇÃO: medication_catalog → catalogo_medicamentos;
+      // medication_presentations → apresentacoes_medicamento;
+      // medication_aliases → sinonimos_medicamento (colunas em pt-BR).
       const [catalogRes, presentationsRes, aliasesRes] = await Promise.all([
-        supabase.from("medication_catalog").select("*").order("generic_name"),
-        supabase.from("medication_presentations").select("*"),
-        supabase.from("medication_aliases").select("*"),
+        supabase.from("catalogo_medicamentos").select("*").order("nome_generico"),
+        supabase.from("apresentacoes_medicamento").select("*"),
+        supabase.from("sinonimos_medicamento").select("*"),
       ]);
 
       if (catalogRes.error) throw catalogRes.error;
 
+      const presByMed = (presentationsRes.data || []) as any[];
+      const aliasesByMed = (aliasesRes.data || []) as any[];
+
       const meds: MedicationCatalogItem[] = (catalogRes.data || []).map((med: any) => ({
-        ...med,
-        presentations: (presentationsRes.data || []).filter((p: any) => p.medication_id === med.id),
-        aliases: (aliasesRes.data || []).filter((a: any) => a.medication_id === med.id),
+        id: med.id,
+        generic_name: med.nome_generico,
+        therapeutic_class: med.classe_terapeutica,
+        pharmacological_group: med.grupo_farmacologico ?? null,
+        atc_code: med.codigo_atc ?? null,
+        controlled: !!med.controlado,
+        requires_dilution: !!med.exige_diluicao,
+        high_alert: !!med.alta_vigilancia,
+        notes: med.observacoes ?? null,
+        // DEGRADADO: iv_bolus e pharmacy_suggestion_enabled não existem em
+        // apresentacoes_medicamento → default false (os toggles "Bolus EV" e
+        // "Sugestão automática" ficam só na UI, sem persistência).
+        presentations: presByMed
+          .filter((p: any) => p.medicamento_id === med.id)
+          .map((p: any) => ({
+            id: p.id,
+            form: p.forma,
+            concentration: p.concentracao,
+            unit: p.unidade,
+            route: p.via,
+            standard_dilution: p.diluicao_padrao ?? null,
+            max_daily_dose: p.dose_maxima_diaria ?? null,
+            infusion_time: p.tempo_infusao ?? null,
+            iv_bolus: false,
+            pharmacy_suggestion_enabled: false,
+          })),
+        aliases: aliasesByMed
+          .filter((a: any) => a.medicamento_id === med.id)
+          .map((a: any) => ({
+            id: a.id,
+            alias_name: a.nome_sinonimo,
+            alias_type: a.tipo,
+          })),
       }));
 
       setMedications(meds);

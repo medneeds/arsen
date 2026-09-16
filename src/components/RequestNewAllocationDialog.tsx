@@ -291,80 +291,51 @@ export function RequestNewAllocationDialog({
 
     setIsSubmitting(true);
     try {
-      // First, create a door patient in the "outside" sector
-      const sectorPrefix = 'F';
-      
-      // Get highest bed number for outside sector
-      const { data: existingBeds } = await supabase
-        .from('patients')
-        .select('bed_number')
-        .eq('sector', 'outside')
-        .eq('department', currentDepartment)
-        .eq('hospital_unit_id', currentHospital.id);
-      
-      const bedNumbers = (existingBeds || [])
-        .map(p => parseInt(p.bed_number.substring(1)))
-        .filter(n => !isNaN(n));
-      
-      const maxBedNumber = bedNumbers.length > 0 ? Math.max(...bedNumbers) : 0;
-      const newBedNumber = `${sectorPrefix}${String(maxBedNumber + 1).padStart(2, '0')}`;
+      // MIGRAÇÃO: patients (paciente porta) + bed_allocation_requests → pre_admissoes.
+      // O fluxo antigo criava um "paciente porta" em `patients` (setor 'outside',
+      // is_door_patient, allocation_status) e uma solicitação de leito. No schema novo
+      // não há `patients`, `solicitacoes_leito` exige `internacao_id` NOT NULL (paciente
+      // ainda não admitido) e o bloco door/allocation/bed-number é DEGRADADO. O
+      // equivalente honesto é uma PRÉ-ADMISSÃO aguardando leito: grava em
+      // `pre_admissoes` com o bloco clínico rico + médico solicitante em
+      // `dados_extraidos_ia` (entrada do usuário). Ver MIGRACAO_DEGRADACOES.md.
+      const sectorCode = sectorToInternalSector[targetSector]; // red/yellow/blue
 
-      // Parse text fields into arrays (split by newlines) - legacy helper for other uses
-      const parseTextToArray = (text: string): string | null => {
-        const items = text.split('\n').map(item => item.trim()).filter(Boolean);
-        return items.length > 0 ? items.join('\n') : null;
+      // Resolve o setor de destino (por código `tipo`) no hospital atual.
+      const { data: setoresData } = await (supabase
+        .from("setores")
+        .select("id, tipo, ala:alas!inner(hospital_id)") as any)
+        .eq("ala.hospital_id", currentHospital.id);
+      const setorMatch = ((setoresData || []) as any[]).find((s) => s.tipo === sectorCode);
+      const setorDestinoId = setorMatch?.id ?? null;
+
+      const dadosExtraidos = {
+        requesting_doctor_name: doctorName.toUpperCase() || null,
+        requesting_office_number: officeNumber || null,
+        target_sector_label: targetSector,
+        diagnoses: diagnosesList.map((d) => d.trim()).filter(Boolean),
+        medical_history: medicalHistoryList.map((m) => m.trim()).filter(Boolean),
+        relevant_exams: relevantExamsList.map((e) => e.trim()).filter(Boolean),
+        pendencies: pendenciesList.map((p) => p.trim()).filter(Boolean),
+        admission_history: admissionHistory.trim() || null,
       };
 
-      // Convert lists to database format
-      const diagnosesData = listToString(diagnosesList);
-      const medicalHistoryData = listToString(medicalHistoryList);
-      const relevantExamsData = listToString(relevantExamsList);
-      const pendenciesData = listToString(pendenciesList);
-
-      // Create the door patient with all clinical data
-      const { data: newPatient, error: createError } = await supabase
-        .from('patients')
-        .insert({
-          bed_number: newBedNumber,
-          name: patientName.toUpperCase(),
-          age: patientAge || null,
-          sector: 'outside',
-          department: currentDepartment,
-          state_id: currentState.id,
-          hospital_unit_id: currentHospital.id,
-          is_door_patient: true,
-          allocation_status: 'pending',
-          medical_responsibility: { type: 'porta' },
-          created_by: user?.id || null,
-          // Clinical data from lists
-          diagnoses: diagnosesData,
-          medical_history: medicalHistoryData,
-          relevant_exams: relevantExamsData,
-          pendencies: pendenciesData,
-          admission_history: admissionHistory.trim() || null,
-        })
-        .select()
-        .single();
+      const { error: createError } = await supabase.from("pre_admissoes").insert({
+        nome_paciente: patientName.toUpperCase(),
+        data_nascimento: null,
+        setor_destino_id: setorDestinoId,
+        status: "classificado",
+        dados_extraidos_ia: dadosExtraidos,
+      } as any);
 
       if (createError) throw createError;
 
-      // Create the allocation request with doctor info
-      const result = await createRequest(
-        newPatient.id, 
-        targetSector, 
-        undefined, 
-        doctorName.toUpperCase(), 
-        officeNumber || undefined
-      );
-      
-      if (result) {
-        toast({
-          title: "Solicitação enviada",
-          description: `Paciente ${patientName} cadastrado e solicitação de alocação em ${targetSector} enviada ao líder.`,
-        });
-        onOpenChange(false);
-        resetForm();
-      }
+      toast({
+        title: "Solicitação enviada",
+        description: `Paciente ${patientName} cadastrado e solicitação de alocação em ${targetSector} enviada ao líder.`,
+      });
+      onOpenChange(false);
+      resetForm();
     } catch (error) {
       console.error('Error creating allocation request:', error);
       toast({

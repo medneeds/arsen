@@ -70,7 +70,6 @@ export default function DevConsolePage() {
              style={{ backgroundImage: "radial-gradient(circle at 20% 30%, hsl(217 91% 60% / 0.15), transparent 50%), radial-gradient(circle at 80% 70%, hsl(217 91% 50% / 0.12), transparent 55%)" }} />
         <div className="relative max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <SidebarTrigger className="h-9 w-9 text-slate-300 hover:text-white hover:bg-white/10" />
             <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 grid place-items-center shadow-md ring-1 ring-white/10">
               <Terminal className="h-5 w-5 text-white" />
             </div>

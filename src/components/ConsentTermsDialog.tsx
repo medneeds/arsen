@@ -38,27 +38,17 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
     if (!allAccepted) return;
     setIsSubmitting(true);
     try {
-      const consents = [
-        { consent_type: "terms_of_use", consent_version: CURRENT_TERMS_VERSION },
-        { consent_type: "privacy_policy", consent_version: CURRENT_TERMS_VERSION },
-        { consent_type: "data_processing", consent_version: CURRENT_TERMS_VERSION },
-      ];
-      for (const consent of consents) {
-        const { error } = await supabase.from("user_consents").insert({
-          user_id: userId,
-          consent_type: consent.consent_type,
-          consent_version: consent.consent_version,
+      // Schema refatorado: grava em consentimentos_usuario (antes: user_consents + profiles).
+      const tipos = ["terms_of_use", "privacy_policy", "data_processing"];
+      for (const tipo of tipos) {
+        const { error } = await supabase.from("consentimentos_usuario").insert({
+          usuario_id: userId,
+          tipo_consentimento: tipo,
+          versao_consentimento: CURRENT_TERMS_VERSION,
           user_agent: navigator.userAgent,
         });
         if (error && !error.message.includes("duplicate")) throw error;
       }
-      await supabase
-        .from("profiles")
-        .update({
-          terms_accepted_at: new Date().toISOString(),
-          terms_version: CURRENT_TERMS_VERSION,
-        })
-        .eq("id", userId);
       toast.success("Termos aceitos com sucesso!");
       onAccept();
     } catch (error) {

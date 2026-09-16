@@ -15,9 +15,20 @@ export interface PatientMovement {
   notes: string | null;
 }
 
+// MIGRAÇÃO: patient_movements (morta) → logs_auditoria.
+// A nova `transferencias` só modela transferência leito→leito (leito_destino_id NOT
+// NULL) e não cabe em alta/óbito/evasão/sinalização sem destino; por isso o registro
+// de movimentação foi migrado para `logs_auditoria` (tipo_evento='movimentacao_*' e
+// 'sinalizacao_transferencia_*'), com os campos ricos preservados em `dados_novos`.
+// Ver MIGRACAO_DEGRADACOES.md. patientId == internacoes.id.
+const MOVEMENT_EVENT_PREFIXES = ["movimentacao_", "sinalizacao_transferencia_"];
+const isMovementEvent = (tipo: string | null | undefined) =>
+  !!tipo && MOVEMENT_EVENT_PREFIXES.some((p) => tipo.startsWith(p));
+
 /**
- * Realtime list of patient_movements for a given patient.
- * Tries patient_id first; falls back to patient_name + hospital_unit_id.
+ * Realtime list of patient movements for a given patient, from logs_auditoria.
+ * DEGRADADO: o fallback por patient_name + hospital_unit_id (colunas inexistentes
+ * em logs_auditoria) foi removido — só o caminho por patientId (=internacao_id) resolve.
  */
 export function usePatientMovements(
   patientId: string | null,
@@ -27,42 +38,39 @@ export function usePatientMovements(
   const [movements, setMovements] = useState<PatientMovement[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fase B.1 — isola pelo atendimento ativo
+  // Fase B.1 — isola pelo atendimento ativo (encounter = a própria internação)
   const { encounterId: activeEncounterId } = useActiveEncounterId(patientId);
-  // 🔒 Registry para cobertura pós-transferência (patient_id é repontado pelo RPC)
+  // 🔒 Mantido por compatibilidade de assinatura; no schema novo o histórico segue a internação.
   const { registryId: resolvedRegistryId } = useResolvedRegistryId(patientId);
 
   const fetchMovements = useCallback(async () => {
-    if (!patientId && !patientName) { setMovements([]); return; }
+    // MIGRAÇÃO: sem patientId (=internacao_id) não há como escopar em logs_auditoria.
+    if (!patientId) { setMovements([]); return; }
     setLoading(true);
-    let query = supabase
-      .from("patient_movements")
+    const { data, error } = await supabase
+      .from("logs_auditoria")
       .select("*")
-      .order("created_at", { ascending: false })
-      .limit(15);
+      .eq("internacao_id", patientId)
+      .order("criado_em", { ascending: false })
+      .limit(30);
 
-    if (patientId) {
-      query = query.eq("patient_id", patientId);
-      if (activeEncounterId) {
-        query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
-      }
-    } else if (patientName && hospitalUnitId) {
-      query = query.eq("patient_name", patientName).eq("hospital_unit_id", hospitalUnitId);
-    }
-
-    const { data, error } = await query;
     if (!error && data) {
-      setMovements(data.map((r: any) => ({
-        id: r.id,
-        movementType: r.movement_type,
-        destination: r.destination,
-        patientSector: r.patient_sector,
-        patientBed: r.patient_bed,
-        releaseStatus: r.release_status,
-        releasedAt: r.released_at,
-        createdAt: r.created_at,
-        notes: r.notes,
-      })));
+      const rows = (data as any[]).filter((r) => isMovementEvent(r.tipo_evento));
+      setMovements(rows.slice(0, 15).map((r: any) => {
+        const dn = (r.dados_novos ?? {}) as Record<string, any>;
+        return {
+          id: r.id,
+          // dados_novos.movement_type preserva o subtipo original; senão deriva do tipo_evento.
+          movementType: dn.movement_type ?? String(r.tipo_evento).replace(/^movimentacao_/, ""),
+          destination: dn.destination ?? null,
+          patientSector: dn.patient_sector ?? null,
+          patientBed: dn.patient_bed ?? null,
+          releaseStatus: dn.release_status ?? "pending_release",
+          releasedAt: dn.released_at ?? null,
+          createdAt: r.criado_em,
+          notes: dn.notes ?? r.motivo ?? null,
+        };
+      }));
     }
     setLoading(false);
   }, [patientId, patientName, hospitalUnitId, activeEncounterId, resolvedRegistryId]);
@@ -73,19 +81,18 @@ export function usePatientMovements(
   useEffect(() => { fetchMovements(); }, [fetchMovements]);
 
   useEffect(() => {
-    if (!patientId && !(patientName && hospitalUnitId)) return;
-    const key = patientId || `${hospitalUnitId}-${patientName}`;
+    // MIGRAÇÃO: realtime em logs_auditoria; match por internacao_id (=patientId).
+    if (!patientId) return;
     const channel = supabase
-      .channel(`patient-movements-${key}`)
+      .channel(`patient-movements-${patientId}`)
       .on("postgres_changes",
-        { event: "*", schema: "public", table: "patient_movements" },
+        { event: "*", schema: "public", table: "logs_auditoria" },
         (payload) => {
           const row: any = payload.new || payload.old;
           if (!row) return;
-          const matches = patientId
-            ? row.patient_id === patientId
-            : row.patient_name === patientName && row.hospital_unit_id === hospitalUnitId;
-          if (matches) fetchMovementsRef.current();
+          if (row.internacao_id === patientId && isMovementEvent(row.tipo_evento)) {
+            fetchMovementsRef.current();
+          }
         })
       .subscribe();
     return () => { supabase.removeChannel(channel); };

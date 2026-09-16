@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { User, Hash, Loader2, Activity } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { detectUnidentified } from "@/lib/unidentifiedDetector";
 
 interface RegistryHit {
   id: string;
@@ -41,9 +42,13 @@ interface Props {
 /**
  * Busca global da recepção (Ctrl+K / Cmd+K).
  * Busca instantânea (debounce 250ms) por:
- *  - Nome / CPF / CNS / nº prontuário (patient_registry)
- *  - Código de atendimento (patient_encounters)
- * Resultados separados em 2 grupos. Tecla Enter executa ação.
+ *  - Nome / CPF / CNS / nº prontuário (pacientes)
+ *
+ * MIGRAÇÃO: patient_registry→pacientes; sem hospital_unit_id em pacientes (o
+ * escopo por hospital foi removido do filtro). O grupo "Atendimentos" dependia de
+ * `patient_encounters.encounter_code`, que não existe em `internacoes` — a busca
+ * por código de atendimento foi degradada (retorna sempre vazio). O shape
+ * EncounterHit e o callback onPickEncounter são mantidos estáveis.
  */
 export function ReceptionGlobalSearch({ open, onOpenChange, onPickRegistry, onPickEncounter }: Props) {
   const { currentHospital } = useHospital();
@@ -78,37 +83,38 @@ export function ReceptionGlobalSearch({ open, onOpenChange, onPickRegistry, onPi
         const cleaned = q.replace(/\D/g, "");
         const isNumeric = cleaned.length >= 4 && /^[\d\s.\-/]+$/.test(q);
 
-        // Registry search: nome/cpf/cns/prontuário
+        // Registry search: nome/cpf/cns/prontuário.
+        // MIGRAÇÃO: pacientes não tem merged_into_registry_id nem hospital_unit_id.
         let regQuery = supabase
-          .from("patient_registry")
-          .select("id, full_name, medical_record, cpf, birth_date, is_unidentified")
-          .is("merged_into_registry_id", null)
+          .from("pacientes")
+          .select("id, nome_completo, prontuario, cpf, cns, data_nascimento")
           .limit(8);
-        if (currentHospital?.id) regQuery = regQuery.eq("hospital_unit_id", currentHospital.id);
 
         if (isNumeric) {
           regQuery = regQuery.or(
-            `cpf.ilike.%${cleaned}%,cns.ilike.%${cleaned}%,medical_record.ilike.%${cleaned}%`,
+            `cpf.ilike.%${cleaned}%,cns.ilike.%${cleaned}%,prontuario.ilike.%${cleaned}%`,
           );
         } else {
-          regQuery = regQuery.ilike("full_name", `%${q}%`);
+          regQuery = regQuery.ilike("nome_completo", `%${q}%`);
         }
 
-        // Encounter search por código de atendimento (sempre numérico)
-        const encPromise = isNumeric
-          ? supabase
-              .from("patient_encounters")
-              .select("id, encounter_code, patient_name, registry_id, destination_sector, status, created_at")
-              .eq("hospital_unit_id", currentHospital?.id || "")
-              .ilike("encounter_code", `%${cleaned}%`)
-              .order("created_at", { ascending: false })
-              .limit(6)
-          : Promise.resolve({ data: [], error: null } as any);
+        // MIGRAÇÃO: internacoes não tem encounter_code — busca de atendimento por
+        // código degradada para vazio (grupo "Atendimentos" nunca aparece).
+        const regRes = await regQuery;
 
-        const [regRes, encRes] = await Promise.all([regQuery, encPromise]);
-
-        if (!regRes.error) setRegistries((regRes.data as RegistryHit[]) || []);
-        if (!encRes.error) setEncounters((encRes.data as EncounterHit[]) || []);
+        if (!regRes.error) {
+          setRegistries(
+            ((regRes.data as any[]) || []).map((r) => ({
+              id: r.id,
+              full_name: r.nome_completo,
+              medical_record: r.prontuario,
+              cpf: r.cpf,
+              birth_date: r.data_nascimento,
+              is_unidentified: detectUnidentified(r.nome_completo || "").isUnidentified,
+            })),
+          );
+        }
+        setEncounters([]);
       } catch (err) {
         console.warn("Busca global:", err);
       } finally {

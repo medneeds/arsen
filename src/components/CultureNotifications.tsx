@@ -57,24 +57,50 @@ export function CultureNotifications() {
   const fetchUnread = useCallback(async () => {
     if (!hospitalId || !stateId || !isMedico) return;
 
-    let query = supabase
-      .from("culture_results")
-      .select("id, patient_name, patient_sector, patient_bed, culture_type, microorganism, antibiogram, result_text, uploaded_by_name, created_at")
-      .eq("hospital_unit_id", hospitalId)
-      .eq("state_id", stateId)
+    // MIGRAÇÃO (Wave3): culture_results → resultados_cultura. As colunas
+    // denormalizadas de paciente (patient_name/sector/bed) e uploaded_by_name não
+    // existem → reconstruídas via join internacoes→pacientes/leitos/setores e
+    // enviado_por→profissionais. Sem hospital_unit_id/state_id → filtro por
+    // unidade removido (RLS escopa). Colunas: culture_type→tipo_cultura,
+    // microorganism→microorganismo, antibiogram→antibiograma, result_text→
+    // resultado_texto, read_by_doctor→lido_pelo_medico, created_at→criado_em.
+    const { data } = await supabase
+      .from("resultados_cultura")
+      .select(`
+        id, tipo_cultura, microorganismo, antibiograma, resultado_texto, criado_em,
+        enviado:profissionais!resultados_cultura_enviado_por_fkey(nome),
+        internacao:internacoes!resultados_cultura_internacao_id_fkey(
+          paciente:pacientes(nome_completo, nome_social),
+          leito:leitos(numero),
+          setor:setores(tipo, nome)
+        )
+      `)
       .eq("status", "completed")
-      .eq("read_by_doctor", false)
-      .order("created_at", { ascending: false })
+      .eq("lido_pelo_medico", false)
+      .order("criado_em", { ascending: false })
       .limit(10);
 
-    // Filter by sector if doctor has one selected
-    if (activeSector) {
-      query = query.eq("patient_sector", activeSector);
-    }
-
-    const { data } = await query;
     if (data) {
-      setNotifications(data as CultureNotification[]);
+      let mapped: CultureNotification[] = (data as any[]).map((row) => {
+        const internacao = row.internacao || {};
+        const paciente = internacao.paciente || {};
+        return {
+          id: row.id,
+          patient_name: paciente.nome_social || paciente.nome_completo || "",
+          patient_sector: internacao.setor?.tipo || "",
+          patient_bed: internacao.leito?.numero || null,
+          culture_type: row.tipo_cultura,
+          microorganism: row.microorganismo,
+          antibiogram: row.antibiograma,
+          result_text: row.resultado_texto,
+          uploaded_by_name: row.enviado?.nome || null,
+          created_at: row.criado_em,
+        };
+      });
+      // MIGRAÇÃO: filtro por setor do médico feito client-side (setor.tipo),
+      // pois resultados_cultura não tem coluna de setor do paciente.
+      if (activeSector) mapped = mapped.filter((n) => n.patient_sector === activeSector);
+      setNotifications(mapped);
     }
   }, [hospitalId, stateId, isMedico, activeSector]);
 
@@ -85,22 +111,24 @@ export function CultureNotifications() {
   // Realtime subscription
   useEffect(() => {
     if (!hospitalId || !isMedico) return;
+    // MIGRAÇÃO: realtime em resultados_cultura. Sem coluna hospital_unit_id →
+    // sem filtro por unidade (RLS escopa); refetch por evento.
     const channel = supabase
       .channel("culture-notifications")
       .on("postgres_changes", {
         event: "INSERT",
         schema: "public",
-        table: "culture_results",
-        filter: `hospital_unit_id=eq.${hospitalId}`,
+        table: "resultados_cultura",
       }, () => fetchUnread())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [hospitalId, isMedico, fetchUnread]);
 
   const markAsRead = async (id: string) => {
+    // MIGRAÇÃO: read_by_doctor→lido_pelo_medico, read_at→lido_em.
     await supabase
-      .from("culture_results")
-      .update({ read_by_doctor: true, read_at: new Date().toISOString() } as any)
+      .from("resultados_cultura")
+      .update({ lido_pelo_medico: true, lido_em: new Date().toISOString() } as any)
       .eq("id", id);
 
     setDismissed(prev => new Set(prev).add(id));

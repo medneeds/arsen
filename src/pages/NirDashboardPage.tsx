@@ -26,7 +26,7 @@ import { NirPdfExport } from "@/components/nir/NirPdfExport";
 import { NirNotificationCenter } from "@/components/nir/NirNotificationCenter";
 import { useDischargePredictions } from "@/hooks/useDischargePredictions";
 import { BedDetailDialog } from "@/components/nir/BedDetailDialog";
-import { sectorLabelFromCode, INPATIENT_SECTOR_GROUPS } from "@/lib/hospitalSectors";
+import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 import { SlaBadge } from "@/components/sla/SlaBadge";
 import { NirRequestActions } from "@/components/nir/NirRequestActions";
 
@@ -75,7 +75,8 @@ const BED_STATUS_LABELS: Record<
   string,
   { label: string; dot: string; icon: string; ring: string; bg: string }
 > = {
-  vago: {
+  // MIGRAÇÃO: leitos.status usa 'livre' (o antigo 'vago' é INVÁLIDO no schema novo).
+  livre: {
     label: "Vago",
     dot: "bg-emerald-500",
     icon: "text-emerald-600 dark:text-emerald-400",
@@ -173,9 +174,13 @@ export default function NirDashboardPage() {
 
   const { isLoading, refetch, beds, requests, metrics, historical, heatmap, flow } = useNirMetrics(currentHospital?.id, filters);
   const { data: predictions = [] } = useDischargePredictions(currentHospital?.id);
+  // Grupos de setor DIRETO DO BANCO (alas → setores). Substitui a taxonomia
+  // hardcoded no filtro do censo. Enquanto carrega/vazio, degrada para "Todos".
+  const { groups: sectorNavGroups } = useSectorNavigation();
 
   // Status válidos como destino na realocação
-  const VALID_DEST = new Set(["vago", "reservado", "ocupado"]);
+  // MIGRAÇÃO: 'vago' → 'livre' (status válido no schema novo).
+  const VALID_DEST = new Set(["livre", "reservado", "ocupado"]);
   const isValidDest = (s: string) => VALID_DEST.has(s);
 
   const handleBedClick = (bed: any) => {
@@ -217,6 +222,8 @@ export default function NirDashboardPage() {
     }
   };
 
+  // Censo: agrupado pelo NOME REAL do setor (bed.sector = setores.nome), para
+  // casar com o filtro por ala/setor vindo do banco.
   const bedsBySector = useMemo(
     () =>
       beds.reduce((acc: Record<string, any[]>, bed: any) => {
@@ -263,18 +270,21 @@ export default function NirDashboardPage() {
         */
         return <BedMapPage embedded />;
       case "censo_leitos": {
-        // Agrupa setores conforme HOSPITAL_SECTOR_GROUPS para reduzir o ruído
-        // de filtros e dar uma visão hierárquica institucional.
-        // Blocos de internacao (INPATIENT_SECTOR_GROUPS ja exclui os setores
-        // fora do escopo). Titulos espelham docs/disposicao-setores-leitos.
+        // GRUPOS DE SETOR direto do banco (alas → setores), via
+        // useSectorNavigation: "Todos" + um grupo por ALA, cada um filtrando
+        // seus setores pelo NOME real. bedsBySector já está chaveado por nome,
+        // então o filtro casa direto. Enquanto carrega/vazio, sobra só "Todos".
         const SECTOR_GROUPS = [
-          { title: "Todos", codes: null as string[] | null },
-          ...INPATIENT_SECTOR_GROUPS.map((g) => ({ title: g.title, codes: g.items.map((i) => i.key) })),
+          { title: "Todos", names: null as string[] | null },
+          ...sectorNavGroups.map((g) => ({
+            title: g.group,
+            names: g.sectors.map((s) => s.name),
+          })),
         ];
         const activeGroup = SECTOR_GROUPS.find((g) => g.title === censusGroup) ?? SECTOR_GROUPS[0];
         const visibleBedsBySector = Object.fromEntries(
           Object.entries(bedsBySector).filter(([sector]) =>
-            !activeGroup.codes || activeGroup.codes.includes(sector),
+            !activeGroup.names || activeGroup.names.includes(sector),
           ),
         );
 
@@ -310,7 +320,7 @@ export default function NirDashboardPage() {
                       return (
                         <div key={s.sector} className="rounded-lg border p-2.5">
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-medium truncate">{sectorLabelFromCode(s.sector)}</span>
+                            <span className="text-xs font-medium truncate">{s.sector}</span>
                             <span className={cn("text-xs font-bold", colorText)}>{s.rate}%</span>
                           </div>
                           <div className="h-1.5 rounded-full bg-muted overflow-hidden">
@@ -410,7 +420,7 @@ export default function NirDashboardPage() {
             ) : (
               Object.entries(visibleBedsBySector).map(([sector, sectorBeds]) => {
                 const occupiedCount = sectorBeds.filter((b: any) => b.status === "ocupado").length;
-                const sectorLabel = sectorLabelFromCode(sector);
+                const sectorLabel = sector;
                 return (
                   <Card key={sector}>
                     <CardHeader className="pb-2">
@@ -454,7 +464,7 @@ export default function NirDashboardPage() {
                                 isOrigin && "ring-2 ring-primary border-primary scale-[1.05] shadow-md",
                                 isSwapTarget && "ring-2 ring-amber-500/70 border-amber-500/70",
                                 reallocMode && !reallocOrigin && bed.status === "ocupado" && "ring-1 ring-primary/40",
-                                reallocMode && !!reallocOrigin && !isOrigin && bed.status === "vago" && "ring-1 ring-emerald-500/60",
+                                reallocMode && !!reallocOrigin && !isOrigin && bed.status === "livre" && "ring-1 ring-emerald-500/60",
                               )}
                               title={
                                 reallocDisabled
@@ -752,7 +762,7 @@ export default function NirDashboardPage() {
               <ul className="divide-y">
                 {(alertList.items as any[]).map((s, i) => (
                   <li key={i} className="py-2 flex items-center justify-between">
-                    <span className="text-sm font-medium">{sectorLabelFromCode(s.sector)}</span>
+                    <span className="text-sm font-medium">{s.sector}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">{s.occupied}/{s.total}</span>
                       <Badge variant={s.rate >= 95 ? "destructive" : "outline"} className="text-[10px]">{s.rate}%</Badge>
@@ -764,7 +774,7 @@ export default function NirDashboardPage() {
               <ul className="divide-y">
                 {(alertList.items as any[]).map((b) => (
                   <li key={b.id} className="py-2">
-                    <p className="text-sm font-semibold">Leito {b.bed_number} — <span>{sectorLabelFromCode(b.sector)}</span></p>
+                    <p className="text-sm font-semibold">Leito {b.bed_number} — <span>{b.sector}</span></p>
                     <p className="text-xs text-muted-foreground">{b.block_reason || "Aguardando higienização"}</p>
                   </li>
                 ))}
@@ -814,7 +824,7 @@ export default function NirDashboardPage() {
                 <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Origem</p>
                 <p className="font-semibold">{reallocOrigin.patient_name}</p>
                 <p className="text-xs text-muted-foreground">
-                  Leito {reallocOrigin.bed_number} · {sectorLabelFromCode(reallocOrigin.sector)}
+                  Leito {reallocOrigin.bed_number} · {reallocOrigin.sector}
                 </p>
               </div>
               <div className="flex justify-center text-muted-foreground">
@@ -826,7 +836,7 @@ export default function NirDashboardPage() {
                   {reallocDest.patient_name ?? <span className="italic text-muted-foreground">Leito vago</span>}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Leito {reallocDest.bed_number} · {sectorLabelFromCode(reallocDest.sector)} · {BED_STATUS_LABELS[reallocDest.status]?.label ?? reallocDest.status}
+                  Leito {reallocDest.bed_number} · {reallocDest.sector} · {BED_STATUS_LABELS[reallocDest.status]?.label ?? reallocDest.status}
                 </p>
               </div>
             </div>

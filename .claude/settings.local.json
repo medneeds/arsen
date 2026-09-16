@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /tmp/pgtest)",
+      "Read(//tmp/**)",
+      "Bash(npm init *)",
+      "Bash(npm i *)",
+      "Bash(node -e ' *)",
+      "Bash(npx supabase *)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(npx --yes supabase@1.207.9 gen types typescript --db-url \"postgresql://postgres.your-tenant-id:w3pbocoon8f1mnh1k7xoqfifyqjnt89x@newsb.arsen.com.br:5433/postgres\" --schema public)",
+      "Bash(node -e 'console.log\\(require\\(\"@supabase/postgres-meta/package.json\"\\).version\\)')",
+      "Bash(cd /tmp/pgtest && echo \"--- arquivos com 'typescript' ---\"; find node_modules/@supabase/postgres-meta/dist -iname '*typescript*' 2>/dev/null; echo \"--- grep apply/generateTypes ---\"; grep -rl \"export.*apply\\\\|generateTypescriptTypes\\\\|export const apply\" node_modules/@supabase/postgres-meta/dist 2>/dev/null | head; echo \"--- estrutura dist ---\"; find node_modules/@supabase/postgres-meta/dist -maxdepth 2 -type d 2>/dev/null)",
+      "Bash(node gen.mjs)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"EXIT_GREP=$? \\(1 = nenhum erro nos meus arquivos\\)\")",
+      "Bash(curl -s -m 20 -w '\\\\nHTTP=%{http_code}\\\\n' -X POST https://newsb.arsen.com.br/rest/v1/rpc/existe_super_admin -H 'apikey: __TRACKED_VAR__' -H 'Authorization: Bearer __TRACKED_VAR__' -H 'Content-Type: application/json' -d '{}')",
+      "Bash(node apply.mjs)",
+      "Bash(curl -s -m 15 -o /dev/null -w \"HTTP=%{http_code}\\\\n\" \"https://newsb.arsen.com.br/realtime/v1/websocket\")",
+      "Bash(curl -s -m 15 -o /dev/null -w \"HTTP=%{http_code}\\\\n\" \"https://newsb.arsen.com.br/realtime/v1/\")",
+      "Bash(curl -s -m 15 -o /dev/null -w \"HTTP=%{http_code}\\\\n\" \"https://newsb.arsen.com.br/rest/v1/\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg4MTc4NTM2LCJleHAiOjIxMDM1Mzg1MzZ9.wmbv0QOtFg2WepTYpF9KpxW2fzDy2NEhMJppHe0NM-w\")",
+      "Bash(curl -s -m 15 -o /dev/null -w \"HTTP=%{http_code}\\\\n\" -H \"Connection: Upgrade\" -H \"Upgrade: websocket\" -H \"Sec-WebSocket-Version: 13\" -H \"Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\" \"https://newsb.arsen.com.br/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg4MTc4NTM2LCJleHAiOjIxMDM1Mzg1MzZ9.wmbv0QOtFg2WepTYpF9KpxW2fzDy2NEhMJppHe0NM-w&vsn=1.0.0\")",
+      "Bash(echo \"exit:$?\")",
+      "Bash(grep -v \"//\")",
+      "Bash(node -e \"import\\('pg'\\).then\\(\\(\\)=>console.log\\('import ok'\\)\\).catch\\(e=>console.log\\('import fail',e.code\\)\\)\")",
+      "Bash(npm install *)",
+      "Bash(node leitos_chk.mjs)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(npm --prefix /d/Arsen/arsen run build)"
+    ]
+  }
+}

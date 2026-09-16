@@ -114,14 +114,15 @@ export function PrescriptionDiffDialog({
     (async () => {
       setLoading(true);
       try {
+        // MIGRAÇÃO: prescriptions → prescricoes (items → itens).
         const [{ data: left, error: el }, { data: right, error: er }] = await Promise.all([
-          supabase.from("prescriptions").select("items").eq("id", leftId).maybeSingle(),
-          supabase.from("prescriptions").select("items").eq("id", rightId).maybeSingle(),
+          supabase.from("prescricoes").select("itens").eq("id", leftId).maybeSingle(),
+          supabase.from("prescricoes").select("itens").eq("id", rightId).maybeSingle(),
         ]);
         if (el || er) throw el || er;
         if (cancelled) return;
-        setLeftItems(Array.isArray(left?.items) ? (left!.items as any[]) : []);
-        setRightItems(Array.isArray(right?.items) ? (right!.items as any[]) : []);
+        setLeftItems(Array.isArray(left?.itens) ? (left!.itens as any[]) : []);
+        setRightItems(Array.isArray(right?.itens) ? (right!.itens as any[]) : []);
       } catch (err: any) {
         toast.error("Erro ao carregar versões", { description: err?.message });
       } finally {

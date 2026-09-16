@@ -118,47 +118,48 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
     const newValueISO = brToISO(editDate, editTime);
 
     // Persist history
+    // MIGRAÇÃO: patient_admission_date_history → logs_auditoria
+    // (tipo_evento='alteracao_data_internacao'). patients.admission_date/
+    // admitted_at/uti_admission_date → internacoes.data_entrada (única coluna
+    // de entrada no schema novo; admitted_at/uti_admission_date degradados).
+    // profiles → profissionais (nome via user_id). `patientId` = internacoes.id.
     if (patientId) {
       try {
         const { data: auth } = await supabase.auth.getUser();
         const user = auth?.user;
         let displayName: string | null = user?.email ?? null;
         if (user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("id", user.id)
+          const { data: prof } = await supabase
+            .from("profissionais")
+            .select("nome")
+            .eq("user_id", user.id)
             .maybeSingle();
-          if (profile?.full_name) displayName = profile.full_name;
+          if ((prof as any)?.nome) displayName = (prof as any).nome;
         }
         const oldParts = splitBR(value);
         const oldISO = value ? brToISO(oldParts.date, oldParts.time) || null : null;
 
-        await supabase.from("patient_admission_date_history").insert({
-          patient_id: patientId,
-          old_value: oldISO,
-          new_value: newValueISO,
-          changed_by: user?.id ?? null,
-          changed_by_name: displayName,
-          reason: reason || null,
-        });
+        await supabase.from("logs_auditoria").insert({
+          tipo_evento: "alteracao_data_internacao",
+          nome_tabela: "internacoes",
+          internacao_id: patientId,
+          registro_id: patientId,
+          campo_alterado: "data_entrada",
+          valor_antigo: oldISO,
+          valor_novo: newValueISO,
+          // changed_by_name não tem coluna própria → preservado em dados_novos.
+          dados_novos: { changed_by_name: displayName },
+          ator_user_id: user?.id ?? null,
+          email_ator: user?.email ?? null,
+          motivo: reason || null,
+        } as any);
 
-        // Caminho ÚNICO de mutação de admission_date (auditado).
-        // Sincroniza os 3 campos para manter a data efetiva consistente
-        // em mapa de leitos, cockpit, evolução e prescrição:
-        //   admission_date     — campo livre (cadastro)
-        //   admitted_at        — D0 oficial (timestamp da admissão validada)
-        //   uti_admission_date — admissão no setor (espelhada ao D0)
         const { error: updateErr } = await supabase
-          .from("patients")
-          .update({
-            admission_date: newValueISO,
-            admitted_at: newValueISO,
-            uti_admission_date: newValueISO,
-          })
+          .from("internacoes")
+          .update({ data_entrada: newValueISO } as any)
           .eq("id", patientId);
         if (updateErr) {
-          console.error("[AdmissionDateEditor] patient update failed", updateErr);
+          console.error("[AdmissionDateEditor] internacao update failed", updateErr);
           toast.error("Erro ao salvar data de admissão");
           return;
         }
@@ -177,15 +178,26 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
   const loadHistory = async () => {
     if (!patientId) return;
     setLoadingHistory(true);
+    // MIGRAÇÃO: patient_admission_date_history → logs_auditoria filtrado por
+    // tipo_evento + internacao_id. changed_by_name vem de dados_novos (fallback email_ator).
     const { data, error } = await supabase
-      .from("patient_admission_date_history")
-      .select("*")
-      .eq("patient_id", patientId)
-      .order("changed_at", { ascending: false });
+      .from("logs_auditoria")
+      .select("id, valor_antigo, valor_novo, dados_novos, email_ator, criado_em, motivo")
+      .eq("tipo_evento", "alteracao_data_internacao")
+      .eq("internacao_id", patientId)
+      .order("criado_em", { ascending: false });
     if (error) {
       toast.error("Erro ao carregar histórico");
     } else {
-      setHistory((data as HistoryRow[]) || []);
+      const rows: HistoryRow[] = ((data as any[]) || []).map((r) => ({
+        id: r.id,
+        old_value: r.valor_antigo ?? null,
+        new_value: r.valor_novo ?? "",
+        changed_by_name: (r.dados_novos as any)?.changed_by_name ?? r.email_ator ?? null,
+        changed_at: r.criado_em,
+        reason: r.motivo ?? null,
+      }));
+      setHistory(rows);
     }
     setLoadingHistory(false);
   };

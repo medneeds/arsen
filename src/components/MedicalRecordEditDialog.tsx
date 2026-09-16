@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { toSexoDb } from "@/lib/sexo";
 import {
   FileText, History, Loader2, Save, AlertTriangle, IdCard, Upload, FileWarning,
   ShieldAlert, Trash2, Pencil, Lock, ClipboardPaste, Sparkles, Check, X, FileUp,
@@ -111,6 +112,52 @@ const UPPER_FIELDS = new Set([
   "allergies", "comorbidities",
 ]);
 
+// MIGRAÇÃO: RegistryRow (patient_registry, morto) → colunas reais de `pacientes`.
+// Os campos ausentes deste mapa são DEGRADADOS (não têm coluna nova → não persistidos):
+// neighborhood, city, state, medical_record, is_unidentified, unidentified_features.
+const REG_TO_PACIENTE: Partial<Record<keyof RegistryRow, string>> = {
+  full_name: "nome_completo",
+  social_name: "nome_social",
+  cpf: "cpf",
+  cns: "cns",
+  birth_date: "data_nascimento",
+  sex: "sexo",
+  mother_name: "nome_mae",
+  phone: "telefone",
+  address: "endereco",
+  blood_type: "tipo_sanguineo",
+  allergies: "alergias",
+  comorbidities: "comorbidades",
+};
+
+/** Mapeia uma linha de `pacientes` para o view-model estável RegistryRow. */
+function pacienteToRegistry(p: any, id: string): RegistryRow {
+  return {
+    id,
+    full_name: p?.nome_completo ?? null,
+    social_name: p?.nome_social ?? null,
+    cpf: p?.cpf ?? null,
+    cns: p?.cns ?? null,
+    birth_date: p?.data_nascimento ?? null,
+    sex: p?.sexo ?? null,
+    mother_name: p?.nome_mae ?? null,
+    phone: p?.telefone ?? null,
+    address: p?.endereco ?? null,
+    neighborhood: null, // MIGRAÇÃO: sem coluna em pacientes
+    city: null,         // MIGRAÇÃO: sem coluna em pacientes
+    state: null,        // MIGRAÇÃO: sem coluna em pacientes
+    blood_type: p?.tipo_sanguineo ?? null,
+    allergies: p?.alergias ?? null,
+    comorbidities: p?.comorbidades ?? null,
+    medical_record: null, // MIGRAÇÃO: prontuário é campo único (pacientes.prontuario) → sem PIS/legado separado
+    is_unidentified: null,
+    unidentified_features: null,
+  };
+}
+
+// Campos de prontuário (para separar o histórico em "Prontuário" vs "Ficha cadastral").
+const PRONTUARIO_FIELDS = new Set(["numero_prontuario"]);
+
 export function MedicalRecordEditDialog({
   open, onOpenChange, patientId, patientName, onSaved,
 }: Props) {
@@ -122,28 +169,31 @@ export function MedicalRecordEditDialog({
   const [deleting, setDeleting] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
+  // MIGRAÇÃO: profiles.access_profiles (morto) → profissionais.papel === 'dev'.
   useEffect(() => {
     if (!user?.id) { setIsDeveloper(false); return; }
     let cancelled = false;
     supabase
-      .from("profiles")
-      .select("access_profiles")
-      .eq("id", user.id)
+      .from("profissionais")
+      .select("papel")
+      .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return;
-        const profiles = (data as any)?.access_profiles as string[] | null;
-        setIsDeveloper(Array.isArray(profiles) && profiles.includes("desenvolvedor"));
+        setIsDeveloper((data as any)?.papel === "dev");
       });
     return () => { cancelled = true; };
   }, [user?.id]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // MIGRAÇÃO: patientId é internacoes.id. A identidade cadastral vive em `pacientes`,
+  // resolvida via internacoes.paciente_id. Prontuário = pacientes.prontuario.
+  const [pacienteId, setPacienteId] = useState<string | null>(null);
+
   // Prontuário
   const [record, setRecord] = useState<MedicalRecordRow | null>(null);
   const [numero, setNumero] = useState("");
-  const [legado, setLegado] = useState("");
   const [mrReason, setMrReason] = useState("");
 
   // Ficha cadastral
@@ -174,10 +224,18 @@ export function MedicalRecordEditDialog({
   const [createLegacyNumber, setCreateLegacyNumber] = useState("");
   const [creatingLegacy, setCreatingLegacy] = useState(false);
 
+  // MIGRAÇÃO: medical_records (morto) não existe mais — o prontuário é a coluna única
+  // pacientes.prontuario (NOT NULL). Esta ação de "criar prontuário legado on-demand"
+  // agora apenas define/atualiza pacientes.prontuario e audita em logs_auditoria.
+  // Na prática raramente é acionada, pois `pacientes` sempre tem prontuário.
   async function createLegacyMedicalRecord() {
     const value = createLegacyNumber.trim();
     if (value.length < 1) {
       toast({ title: "Informe o nº do prontuário (PIN/PIS ou nº legado).", variant: "destructive" });
+      return;
+    }
+    if (!pacienteId) {
+      toast({ title: "Paciente não resolvido para esta internação.", variant: "destructive" });
       return;
     }
     setCreatingLegacy(true);
@@ -186,53 +244,39 @@ export function MedicalRecordEditDialog({
       const userId = u?.user?.id;
       const userEmail = u?.user?.email;
 
-      const { data: pat } = await supabase
-        .from("patients")
-        .select("hospital_unit_id, patient_registry_id")
-        .eq("id", patientId)
-        .maybeSingle();
-
-      const insertPayload: Record<string, any> = {
-        numero_prontuario: value,
-        numero_prontuario_legado: value,
-        generation_mode: "manual_legacy",
-        is_legacy: true,
-        patient_id: patientId,
-        patient_registry_id: (pat as any)?.patient_registry_id || null,
-        hospital_unit_id: (pat as any)?.hospital_unit_id || null,
-        created_by: userId,
-      };
-
-      const { data: created, error: insErr } = await supabase
-        .from("medical_records")
-        .insert(insertPayload as any)
-        .select("id")
-        .single();
-      if (insErr) throw insErr;
+      const { error: upErr } = await supabase
+        .from("pacientes")
+        .update({ prontuario: value } as any)
+        .eq("id", pacienteId);
+      if (upErr) throw upErr;
 
       await supabase
-        .from("medical_record_edit_history")
+        .from("logs_auditoria")
         .insert({
-          medical_record_id: (created as any).id,
-          patient_id: patientId,
-          field_changed: "numero_prontuario",
-          old_value: null,
-          new_value: value,
-          reason: "[Prontuário legado criado on-demand pelo cockpit de edição]",
-          changed_by: userId,
-          changed_by_email: userEmail,
+          tipo_evento: "edicao_prontuario",
+          nome_tabela: "pacientes",
+          registro_id: pacienteId,
+          paciente_id: pacienteId,
+          internacao_id: patientId,
+          campo_alterado: "numero_prontuario",
+          campos_alterados: ["numero_prontuario"],
+          valor_antigo: null,
+          valor_novo: value,
+          motivo: "[Prontuário definido on-demand pelo cockpit de edição]",
+          ator_user_id: userId,
+          email_ator: userEmail,
         } as any);
 
-      toast({ title: "✅ Prontuário legado criado", description: `Nº ${value} vinculado ao paciente.` });
+      toast({ title: "✅ Prontuário definido", description: `Nº ${value} vinculado ao paciente.` });
       setCreateLegacyNumber("");
       await loadData();
       onSaved?.();
     } catch (e: any) {
       console.error(e);
-      const msg = (e?.message || "").includes("numero_prontuario_key")
-        ? `Já existe um prontuário com o nº "${value}". Escolha outro identificador.`
+      const msg = (e?.message || "").includes("prontuario")
+        ? `Já existe um paciente com o prontuário "${value}". Escolha outro identificador.`
         : (e.message || "Erro inesperado");
-      toast({ title: "Erro ao criar prontuário", description: msg, variant: "destructive" });
+      toast({ title: "Erro ao definir prontuário", description: msg, variant: "destructive" });
     } finally {
       setCreatingLegacy(false);
     }
@@ -247,73 +291,63 @@ export function MedicalRecordEditDialog({
   async function loadData() {
     setLoading(true);
     try {
-      // 1) medical_records
-      const { data: rec } = await supabase
-        .from("medical_records")
-        .select("id, numero_prontuario, numero_prontuario_legado, is_legacy, generation_mode, patient_registry_id")
-        .eq("patient_id", patientId)
-        .order("created_at", { ascending: false })
-        .limit(1)
+      // MIGRAÇÃO: patientId = internacoes.id → resolve o paciente vivo por internacoes.paciente_id.
+      // medical_records / patient_registry / *_edit_history estão mortos: prontuário e ficha
+      // cadastral vivem em `pacientes`; a trilha de edição vive em logs_auditoria.
+      const { data: inter } = await supabase
+        .from("internacoes")
+        .select("paciente_id, paciente:pacientes(id, prontuario, nome_completo, nome_social, cpf, cns, data_nascimento, sexo, nome_mae, telefone, endereco, tipo_sanguineo, alergias, comorbidades)")
+        .eq("id", patientId)
         .maybeSingle();
+
+      const pac = (inter as any)?.paciente || null;
+      const resolvedPacienteId: string | null = pac?.id || (inter as any)?.paciente_id || null;
+      setPacienteId(resolvedPacienteId);
 
       let regRow: RegistryRow | null = null;
 
-      // Resolve patient_registry_id com PRIORIDADE ao vínculo vivo do paciente
-      // (patients.patient_registry_id). O medical_records.patient_registry_id pode estar
-      // desalinhado quando o leito foi reusado e a linha de prontuário herdou o registry
-      // do ocupante anterior — abrir esse registry causaria edição cruzada de identidade
-      // e violação de UNIQUE em patient_registry.medical_record.
-      const { data: patRow } = await supabase
-        .from("patients")
-        .select("patient_registry_id, name")
-        .eq("id", patientId)
-        .maybeSingle();
-      const patRegistryId: string | null = (patRow as any)?.patient_registry_id || null;
-      const recRegistryId: string | null = (rec as any)?.patient_registry_id || null;
+      if (pac && resolvedPacienteId) {
+        regRow = pacienteToRegistry(pac, resolvedPacienteId);
 
-      let registryId: string | null = patRegistryId || recRegistryId;
+        // "record" sintetizado a partir de pacientes.prontuario (medical_records morto).
+        // MIGRAÇÃO: numero_prontuario_legado / is_legacy / generation_mode não existem
+        // no schema novo → sempre null (UI degradada).
+        setRecord({
+          id: resolvedPacienteId,
+          numero_prontuario: pac.prontuario || "",
+          numero_prontuario_legado: null,
+          is_legacy: null,
+          generation_mode: null,
+        });
+        setNumero(pac.prontuario || "");
 
-      if (patRegistryId && recRegistryId && patRegistryId !== recRegistryId) {
-        console.warn(
-          "[MedicalRecordEditDialog] divergência registry: patients=%s medical_records=%s — usando patients (vínculo vivo)",
-          patRegistryId,
-          recRegistryId
-        );
+        // Histórico de edição a partir de logs_auditoria (tipo_evento='edicao_prontuario').
+        const { data: logs } = await supabase
+          .from("logs_auditoria")
+          .select("id, campo_alterado, campos_alterados, valor_antigo, valor_novo, motivo, email_ator, criado_em")
+          .eq("tipo_evento", "edicao_prontuario")
+          .eq("registro_id", resolvedPacienteId)
+          .order("criado_em", { ascending: false })
+          .limit(120);
 
-        // Auto-reparo: realinha medical_records.patient_registry_id ao vínculo vivo
-        // (best-effort; falha silenciosa se RLS bloquear)
-        if (rec?.id) {
-          await supabase
-            .from("medical_records")
-            .update({ patient_registry_id: patRegistryId } as any)
-            .eq("id", rec.id);
-        }
-      }
+        const mapped: RegHistoryRow[] = ((logs as any[]) || []).map((l) => ({
+          id: l.id,
+          field_changed: l.campo_alterado || (Array.isArray(l.campos_alterados) ? l.campos_alterados[0] : "") || "",
+          old_value: l.valor_antigo ?? null,
+          new_value: l.valor_novo ?? null,
+          reason: l.motivo ?? "",
+          changed_by_email: l.email_ator ?? null,
+          changed_at: l.criado_em,
+          source: null,
+        }));
 
-      if (registryId) {
-        const { data: r } = await supabase
-          .from("patient_registry")
-          .select("*")
-          .eq("id", registryId)
-          .maybeSingle();
-        regRow = (r as RegistryRow) || null;
-      }
-
-      if (rec) {
-        setRecord(rec as MedicalRecordRow);
-        setNumero(rec.numero_prontuario || "");
-        setLegado(rec.numero_prontuario_legado || "");
-
-        const { data: hist } = await supabase
-          .from("medical_record_edit_history")
-          .select("id, field_changed, old_value, new_value, reason, changed_by_email, changed_at")
-          .eq("medical_record_id", rec.id)
-          .order("changed_at", { ascending: false })
-          .limit(50);
-        setMrHistory((hist as MrHistoryRow[]) || []);
+        // Separa prontuário (numero_prontuario) da ficha cadastral (demais campos).
+        setMrHistory(mapped.filter((h) => PRONTUARIO_FIELDS.has(h.field_changed)));
+        setRegHistory(mapped.filter((h) => !PRONTUARIO_FIELDS.has(h.field_changed)));
       } else {
         setRecord(null);
         setMrHistory([]);
+        setRegHistory([]);
       }
 
       setRegistry(regRow);
@@ -323,18 +357,6 @@ export function MedicalRecordEditDialog({
       setCadastroEditMode(false);
       setPasteText("");
       setPisFromFieldsApplied(new Set());
-
-      if (regRow?.id) {
-        const { data: rh } = await supabase
-          .from("patient_registry_edit_history" as any)
-          .select("id, field_changed, old_value, new_value, reason, changed_by_email, changed_at, source")
-          .eq("patient_registry_id", regRow.id)
-          .order("changed_at", { ascending: false })
-          .limit(80);
-        setRegHistory((rh as unknown as RegHistoryRow[]) || []);
-      } else {
-        setRegHistory([]);
-      }
     } catch (e) {
       console.error(e);
       toast({ title: "Erro ao carregar dados", variant: "destructive" });
@@ -344,18 +366,16 @@ export function MedicalRecordEditDialog({
   }
 
   // ===== Diffs =====
+  // MIGRAÇÃO: numero_prontuario_legado degradado (sem coluna) → só numero_prontuario é editável.
   const mrChanges = useMemo(() => {
     const out: { field: string; oldVal: string; newVal: string }[] = [];
     if (record) {
       if ((record.numero_prontuario || "") !== numero.trim()) {
         out.push({ field: "numero_prontuario", oldVal: record.numero_prontuario || "", newVal: numero.trim() });
       }
-      if ((record.numero_prontuario_legado || "") !== legado.trim()) {
-        out.push({ field: "numero_prontuario_legado", oldVal: record.numero_prontuario_legado || "", newVal: legado.trim() });
-      }
     }
     return out;
-  }, [record, numero, legado]);
+  }, [record, numero]);
 
   const regChanges = useMemo(() => {
     const out: { field: string; oldVal: string; newVal: string }[] = [];
@@ -388,33 +408,41 @@ export function MedicalRecordEditDialog({
     setConfirmOpen(true);
   }
 
+  // MIGRAÇÃO: UPDATE medical_records → UPDATE pacientes.prontuario. A trilha de edição
+  // (medical_record_edit_history) vira logs_auditoria tipo_evento='edicao_prontuario'.
   async function saveProntuario() {
-    if (!record) return;
+    if (!record || !pacienteId) return;
     setSaving(true);
     try {
       const { data: u } = await supabase.auth.getUser();
       const userId = u?.user?.id;
       const userEmail = u?.user?.email;
 
-      const updatePayload: Record<string, any> = {};
-      for (const c of mrChanges) updatePayload[c.field] = (c.newVal || null);
-
-      const { error: upErr } = await supabase
-        .from("medical_records").update(updatePayload).eq("id", record.id);
-      if (upErr) throw upErr;
+      const numeroChange = mrChanges.find((c) => c.field === "numero_prontuario");
+      if (numeroChange) {
+        const { error: upErr } = await supabase
+          .from("pacientes")
+          .update({ prontuario: numeroChange.newVal || "" } as any)
+          .eq("id", pacienteId);
+        if (upErr) throw upErr;
+      }
 
       const { error: hErr } = await supabase
-        .from("medical_record_edit_history")
+        .from("logs_auditoria")
         .insert(mrChanges.map((c) => ({
-          medical_record_id: record.id,
-          patient_id: patientId,
-          field_changed: c.field,
-          old_value: c.oldVal || null,
-          new_value: c.newVal || null,
-          reason: mrReason.trim(),
-          changed_by: userId,
-          changed_by_email: userEmail,
-        })));
+          tipo_evento: "edicao_prontuario",
+          nome_tabela: "pacientes",
+          registro_id: pacienteId,
+          paciente_id: pacienteId,
+          internacao_id: patientId,
+          campo_alterado: c.field,
+          campos_alterados: [c.field],
+          valor_antigo: c.oldVal || null,
+          valor_novo: c.newVal || null,
+          motivo: mrReason.trim(),
+          ator_user_id: userId,
+          email_ator: userEmail,
+        })) as any);
       if (hErr) throw hErr;
 
       toast({ title: "✅ Prontuário atualizado", description: `${mrChanges.length} campo(s) alterado(s).` });
@@ -443,152 +471,76 @@ export function MedicalRecordEditDialog({
     setConfirmOpen(true);
   }
 
+  // MIGRAÇÃO: patient_registry / patient_registry_edit_history (mortos) → a ficha cadastral
+  // é a própria linha de `pacientes` (sempre existe, resolvida por internacoes.paciente_id).
+  // Não há mais criação/relink de registry: aplicamos UPDATE em pacientes com os campos
+  // mapeáveis (REG_TO_PACIENTE) e auditamos campo a campo em logs_auditoria. Campos sem
+  // coluna nova (neighborhood, city, state, medical_record) são DEGRADADOS — ignorados no
+  // payload. O nome (nome_completo) é coluna direta, então não há mais "sync" separado.
   async function saveFicha(source: "manual" | "pis_import" = "manual") {
+    if (!pacienteId) {
+      toast({ title: "Paciente não resolvido para esta internação.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
       const { data: u } = await supabase.auth.getUser();
       const userId = u?.user?.id;
       const userEmail = u?.user?.email;
 
-      let registryId = registry?.id || null;
-      let createdNewRegistry = false;
-
-      // Se o paciente ainda não tem ficha cadastral vinculada, cria uma agora
-      // hidratando com dados básicos do paciente (legacy UTI patients).
-      if (!registryId) {
-        const { data: pat } = await supabase
-          .from("patients")
-          .select("id, name, hospital_unit_id, state_id, patient_registry_id")
-          .eq("id", patientId)
-          .maybeSingle();
-
-        if ((pat as any)?.patient_registry_id) {
-          registryId = (pat as any).patient_registry_id;
+      // Monta o UPDATE apenas com campos que têm coluna real em pacientes.
+      const updatePayload: Record<string, any> = {};
+      const skipped: string[] = [];
+      for (const c of regChanges) {
+        const col = REG_TO_PACIENTE[c.field as keyof RegistryRow];
+        if (col) {
+          // MIGRAÇÃO: sexo tem CHECK no banco (masculino/feminino/outro/nao_informado).
+          updatePayload[col] = col === "sexo" ? toSexoDb(c.newVal) : (c.newVal || null);
         } else {
-          // Antes de criar, verifica se já existe registry órfão com mesmo medical_record
-          // (UNIQUE em patient_registry.medical_record) — reutiliza em vez de duplicar.
-          const mrCandidate = (reg.medical_record || "").toString().trim();
-          if (mrCandidate) {
-            const { data: existingByMr } = await supabase
-              .from("patient_registry")
-              .select("id")
-              .eq("medical_record", mrCandidate)
-              .maybeSingle();
-            if ((existingByMr as any)?.id) {
-              registryId = (existingByMr as any).id;
-              toast({ title: "Ficha existente vinculada", description: "Já havia ficha cadastral com este prontuário — vinculamos ao paciente em vez de duplicar." });
-            }
-          }
-
-          if (!registryId) {
-            const seedName = (reg.full_name || (pat as any)?.name || "PACIENTE SEM IDENTIFICAÇÃO").toString().toUpperCase().trim();
-            const insertPayload: Record<string, any> = {
-              full_name: seedName,
-              hospital_unit_id: (pat as any)?.hospital_unit_id || null,
-              state_id: (pat as any)?.state_id || null,
-              is_unidentified: false,
-              created_by: userId,
-            };
-            for (const k of REG_EDITABLE) {
-              const v = (reg as any)[k];
-              if (v != null && String(v).trim() !== "") insertPayload[k as string] = v;
-            }
-            const { data: newReg, error: insErr } = await supabase
-              .from("patient_registry")
-              .insert(insertPayload as any)
-              .select("id")
-              .single();
-            if (insErr) throw insErr;
-            registryId = (newReg as any).id;
-            createdNewRegistry = true;
-          }
-
-          // Vincula ao paciente
-          await supabase
-            .from("patients")
-            .update({ patient_registry_id: registryId } as any)
-            .eq("id", patientId);
-
-          // Vincula ao prontuário ativo (se existir)
-          if (record?.id) {
-            await supabase
-              .from("medical_records")
-              .update({ patient_registry_id: registryId } as any)
-              .eq("id", record.id);
-          }
+          skipped.push(c.field); // DEGRADADO: sem coluna nova
         }
       }
 
-      // Se houve criação, todos os campos preenchidos já entraram no insert; só precisamos auditar.
-      // Caso contrário (registry pré-existente), aplica o UPDATE com os diffs.
-      if (!createdNewRegistry && regChanges.length > 0) {
-        const updatePayload: Record<string, any> = {};
-        for (const c of regChanges) updatePayload[c.field] = (c.newVal || null);
-
+      if (Object.keys(updatePayload).length > 0) {
         const { error: upErr } = await supabase
-          .from("patient_registry").update(updatePayload).eq("id", registryId!);
+          .from("pacientes")
+          .update(updatePayload as any)
+          .eq("id", pacienteId);
         if (upErr) throw upErr;
       }
 
-      // Histórico — registra todas as alterações (incluindo a criação inicial campo a campo)
+      // Auditoria campo a campo — registra todas as alterações (inclusive as degradadas,
+      // para não perder o rastro da intenção do editor).
       const historyRows = regChanges.map((c) => ({
-        patient_registry_id: registryId!,
-        patient_id: patientId,
-        field_changed: c.field,
-        old_value: c.oldVal || null,
-        new_value: c.newVal || null,
-        reason: createdNewRegistry
-          ? `[Ficha criada] ${regReason.trim()}`
+        tipo_evento: "edicao_prontuario",
+        nome_tabela: "pacientes",
+        registro_id: pacienteId,
+        paciente_id: pacienteId,
+        internacao_id: patientId,
+        campo_alterado: c.field,
+        campos_alterados: [c.field],
+        valor_antigo: c.oldVal || null,
+        valor_novo: c.newVal || null,
+        motivo: (pisFromFieldsApplied.has(c.field) || source === "pis_import")
+          ? `[PIS] ${regReason.trim()}`
           : regReason.trim(),
-        source: pisFromFieldsApplied.has(c.field) ? "pis_import" : source,
-        changed_by: userId,
-        changed_by_email: userEmail,
+        ator_user_id: userId,
+        email_ator: userEmail,
       }));
 
       if (historyRows.length > 0) {
         const { error: hErr } = await supabase
-          .from("patient_registry_edit_history" as any)
-          .insert(historyRows);
+          .from("logs_auditoria")
+          .insert(historyRows as any);
         if (hErr) throw hErr;
       }
 
-      // ===== Sincroniza identificação do paciente (header/prontuário) =====
-      // Quando há nome/nome social preenchido na ficha, propagamos para patients.name
-      // — é o campo lido pela prescrição, mapa, cockpit e cabeçalhos clínicos.
-      const newName = (reg.full_name || reg.social_name || "").toString().trim().toUpperCase();
-      if (newName) {
-        const { data: curPat } = await supabase
-          .from("patients")
-          .select("name")
-          .eq("id", patientId)
-          .maybeSingle();
-        const prevName = ((curPat as any)?.name || "").toString().trim().toUpperCase();
-        if (prevName !== newName) {
-          await supabase
-            .from("patients")
-            .update({ name: newName } as any)
-            .eq("id", patientId);
-          // Auditoria do nome no histórico do prontuário (se houver)
-          if (record?.id) {
-            await supabase
-              .from("medical_record_edit_history" as any)
-              .insert({
-                medical_record_id: record.id,
-                patient_id: patientId,
-                field_changed: "patient_name",
-                old_value: prevName || null,
-                new_value: newName,
-                reason: `[Sincronizado da ficha cadastral] ${regReason.trim() || "Atualização cadastral"}`,
-                changed_by: userId,
-                changed_by_email: userEmail,
-              } as any);
-          }
-        }
-      }
-
+      const savedCount = regChanges.length - skipped.length;
       toast({
-        title: createdNewRegistry ? "✅ Ficha cadastral criada" : "✅ Ficha cadastral atualizada",
-        description: `${regChanges.length} campo(s) ${createdNewRegistry ? "preenchido(s)" : "alterado(s)"}.`,
+        title: "✅ Ficha cadastral atualizada",
+        description: skipped.length > 0
+          ? `${savedCount} campo(s) salvo(s). ${skipped.length} campo(s) sem destino no schema novo foram ignorados.`
+          : `${savedCount} campo(s) alterado(s).`,
       });
       setConfirmOpen(false);
       await loadData();
@@ -606,9 +558,10 @@ export function MedicalRecordEditDialog({
     if (!isDeveloper) return;
     setDeleting(true);
     try {
-      const { error } = await supabase.rpc("admin_hard_delete_patient" as any, {
-        p_patient_id: patientId,
-        p_registry_id: registry?.id ?? null,
+      // MIGRAÇÃO: RPC custom (assinatura mantida). p_patient_id = pacientes.id resolvido
+      // via internacoes.paciente_id. p_registry_id descontinuado (patient_registry morto).
+      const { error } = await (supabase.rpc as any)("admin_hard_delete_patient", {
+        p_patient_id: pacienteId ?? patientId,
         p_reason: deleteReason.trim(),
       });
       if (error) throw error;
@@ -844,24 +797,12 @@ export function MedicalRecordEditDialog({
                   ) : (
                     <div className="space-y-4">
                       <section className="space-y-3 p-3 rounded-lg border bg-card">
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <Label className="text-xs font-semibold">Nº do Prontuário</Label>
-                            <Input value={numero} onChange={(e) => setNumero(e.target.value)}
-                              className="h-9 text-xs uppercase" placeholder="AA-UUU-SSSSSS-DV" />
-                          </div>
-                          <div>
-                            <Label className="text-xs font-semibold">Nº Legado / PIN</Label>
-                            <Input value={legado} onChange={(e) => setLegado(e.target.value)}
-                              className="h-9 text-xs uppercase" placeholder="Nº PIS / código PIN" />
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                          Modo:{" "}
-                          <Badge variant="outline" className="text-[10px]">
-                            {record.generation_mode || (record.is_legacy ? "manual_legacy" : "auto")}
-                          </Badge>
-                          {record.is_legacy && <Badge variant="secondary" className="text-[10px]">Legado</Badge>}
+                        {/* MIGRAÇÃO: prontuário é campo único pacientes.prontuario. Nº Legado/PIN,
+                            modo de geração e flag "legado" (medical_records) foram degradados. */}
+                        <div>
+                          <Label className="text-xs font-semibold">Nº do Prontuário</Label>
+                          <Input value={numero} onChange={(e) => setNumero(e.target.value)}
+                            className="h-9 text-xs uppercase" placeholder="Nº do prontuário" />
                         </div>
                       </section>
 

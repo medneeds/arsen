@@ -9,8 +9,10 @@
  * Esses dados alimentam o feedback diário à farmácia: se uma sugestão é
  * consistentemente editada da mesma forma, ela vira o novo default.
  *
- * Tabela: audit_logs (action='INSERT', table_name='reconstitution_suggestion_feedback')
- * Não cria tabela nova; reusa o canal existente.
+ * MIGRAÇÃO: audit_logs → logs_auditoria. tipo_evento='feedback_reconstituicao',
+ * acao='INSERT', nome_tabela='reconstitution_suggestion_feedback' (rótulo do canal,
+ * preservado). user_id→ator_user_id, user_email→email_ator, new_data→dados_novos,
+ * changed_fields→campos_alterados. Não cria tabela nova; reusa o canal existente.
  */
 import { supabase } from "@/integrations/supabase/client";
 
@@ -59,13 +61,14 @@ export async function logReconstitutionFeedback(p: ReconAuditPayload): Promise<v
     if (!user) return;
     const changed = fieldsChanged(p);
     const accepted = p.suggested ? changed.length === 0 : false;
-    await supabase.from('audit_logs').insert({
-      user_id: user.id,
-      user_email: user.email ?? null,
-      action: 'INSERT',
-      table_name: 'reconstitution_suggestion_feedback',
-      record_id: null,
-      new_data: {
+    await supabase.from('logs_auditoria').insert({
+      tipo_evento: 'feedback_reconstituicao',
+      acao: 'INSERT',
+      nome_tabela: 'reconstitution_suggestion_feedback',
+      ator_user_id: user.id,
+      email_ator: user.email ?? null,
+      registro_id: null,
+      dados_novos: {
         medication: p.medication,
         patient_id: p.patientId ?? null,
         accepted,
@@ -74,7 +77,7 @@ export async function logReconstitutionFeedback(p: ReconAuditPayload): Promise<v
         prescribed: p.prescribed,
         source: p.suggested?.source ?? null,
       },
-      changed_fields: changed,
+      campos_alterados: changed,
     });
   } catch {
     // não propaga — feedback é auxiliar

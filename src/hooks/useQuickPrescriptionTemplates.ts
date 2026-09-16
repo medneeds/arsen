@@ -38,6 +38,41 @@ export interface QuickPrescriptionTemplate {
   updated_at: string;
 }
 
+// MIGRAÇÃO: `prescription_quick_templates` (morta) → `modelos` (tipo='prescricao_rapida').
+// Mapa de colunas: name→nome, description→descricao, clinical_category→categoria_clinica,
+// items→itens(Json), scope→escopo ('shared'→'global' | 'personal'→'pessoal'),
+// created_by(auth.uid)→criado_por(profissionais.id, resolvido), use_count→contagem_uso,
+// last_used_at→ultimo_uso_em. DEGRADADO: state_id (sem coluna); hospital_unit_id→hospital_id.
+const TIPO = "prescricao_rapida";
+
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase.from("profissionais").select("id").eq("user_id", userId).maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function mapRow(r: any): QuickPrescriptionTemplate {
+  return {
+    id: r.id,
+    name: r.nome,
+    description: r.descricao ?? null,
+    clinical_category: r.categoria_clinica ?? "geral",
+    items: Array.isArray(r.itens) ? r.itens : [],
+    scope: r.escopo === "global" ? "shared" : "personal",
+    created_by: r.criado_por ?? null,
+    hospital_unit_id: r.hospital_id ?? null,
+    state_id: null, // MIGRAÇÃO: sem coluna state_id em modelos
+    use_count: r.contagem_uso ?? 0,
+    last_used_at: r.ultimo_uso_em ?? null,
+    created_at: r.criado_em,
+    updated_at: r.atualizado_em,
+  };
+}
+
 export function useQuickPrescriptionTemplates() {
   const { user } = useAuth();
   const [templates, setTemplates] = useState<QuickPrescriptionTemplate[]>([]);
@@ -47,15 +82,13 @@ export function useQuickPrescriptionTemplates() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("prescription_quick_templates" as any)
+        .from("modelos")
         .select("*")
-        .order("use_count", { ascending: false })
-        .order("name", { ascending: true });
+        .eq("tipo", TIPO)
+        .order("contagem_uso", { ascending: false })
+        .order("nome", { ascending: true });
       if (error) throw error;
-      setTemplates(((data as any[]) || []).map((r) => ({
-        ...r,
-        items: Array.isArray(r.items) ? r.items : [],
-      })) as QuickPrescriptionTemplate[]);
+      setTemplates(((data as any[]) || []).map(mapRow));
     } catch (err: any) {
       console.error("[quickTemplates] load error", err);
       toast.error("Erro ao carregar templates", { description: err.message });
@@ -81,24 +114,25 @@ export function useQuickPrescriptionTemplates() {
         return null;
       }
       try {
+        const criadoPor = await resolveProfissionalId(user.id);
         const { data, error } = await supabase
-          .from("prescription_quick_templates" as any)
+          .from("modelos")
           .insert({
-            name: input.name.trim(),
-            description: input.description?.trim() || null,
-            clinical_category: input.clinical_category || "geral",
-            items: input.items as any,
-            scope: input.scope,
-            created_by: user.id,
-            hospital_unit_id: input.hospital_unit_id || null,
-            state_id: input.state_id || null,
-          })
+            tipo: TIPO,
+            nome: input.name.trim(),
+            descricao: input.description?.trim() || null,
+            categoria_clinica: input.clinical_category || "geral",
+            itens: input.items as any,
+            escopo: input.scope === "shared" ? "global" : "pessoal",
+            criado_por: criadoPor,
+            hospital_id: input.hospital_unit_id || null,
+          } as any)
           .select()
           .single();
         if (error) throw error;
         toast.success("Template salvo", { description: input.name });
         await load();
-        return data as any;
+        return mapRow(data);
       } catch (err: any) {
         toast.error("Erro ao salvar template", { description: err.message });
         return null;
@@ -110,10 +144,7 @@ export function useQuickPrescriptionTemplates() {
   const deleteTemplate = useCallback(
     async (id: string) => {
       try {
-        const { error } = await supabase
-          .from("prescription_quick_templates" as any)
-          .delete()
-          .eq("id", id);
+        const { error } = await supabase.from("modelos").delete().eq("id", id);
         if (error) throw error;
         toast.success("Template excluído");
         await load();
@@ -124,9 +155,12 @@ export function useQuickPrescriptionTemplates() {
     [load],
   );
 
+  // MIGRAÇÃO: RPC bump_quick_template_use não existe → incremento best-effort direto.
   const bumpUseCount = useCallback(async (id: string) => {
     try {
-      await supabase.rpc("bump_quick_template_use" as any, { _template_id: id });
+      const { data } = await supabase.from("modelos").select("contagem_uso").eq("id", id).maybeSingle();
+      const atual = (data as any)?.contagem_uso ?? 0;
+      await supabase.from("modelos").update({ contagem_uso: atual + 1, ultimo_uso_em: new Date().toISOString() } as any).eq("id", id);
     } catch {
       // best-effort
     }

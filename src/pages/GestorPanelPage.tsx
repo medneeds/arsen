@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getSectorDisplayLabel, sectorCapacity } from "@/utils/bedNaming";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { format, subDays, startOfDay, formatDistanceToNow, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MainLayout } from "@/components/MainLayout";
@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
-import { useDepartment, DEPARTMENT_TO_SECTOR } from "@/contexts/DepartmentContext";
+import { useDepartment } from "@/contexts/DepartmentContext";
+import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 import {
   Bed, Activity, AlertTriangle, Users, Clock, BarChart3, ArrowUpDown, HeartPulse,
   RefreshCw, Download, TrendingUp, TrendingDown, FileText,
@@ -121,44 +122,22 @@ const PIE_COLORS = [
   "hsl(var(--muted-foreground))",
 ];
 
-// ── Hierarchical sector blocks for the gestor filter ──
-interface SectorBlock {
-  id: string;
-  label: string;
-  /** Department names (matching DEPARTMENT_TO_SECTOR keys / requested_sector / department fields) */
-  departments: string[];
+// Normaliza o valor do filtro: "ALL" | nome real do setor. Valores legados da
+// taxonomia antiga ("BLOCK:...") são degradados para "ALL".
+function normalizeSectorFilter(raw: string | null | undefined): string {
+  if (!raw || raw === "ALL" || raw.startsWith("BLOCK:")) return "ALL";
+  return raw;
 }
-
-const SECTOR_BLOCKS: SectorBlock[] = [
-  { id: "uti", label: "UTI", departments: ["UTI 1", "UTI 2"] },
-  { id: "uci", label: "UCI", departments: ["UCI 1", "UCI 2"] },
-  {
-    id: "enfermarias",
-    label: "Enfermarias",
-    departments: ["NEURO 01", "NEURO 02", "CLÍNICA CIRÚRGICA", "ENFERMARIA DE TRANSIÇÃO", "UCC"],
-  },
-  {
-    id: "emergencia",
-    label: "Urgência e Emergência",
-    departments: ["UE VERTICAL", "UE HORIZONTAL", "SALA VERMELHA", "SALA LARANJA", "INTERNAÇÃO UE", "OBSERVAÇÃO CLÍNICA"],
-  },
-  {
-    id: "vascular",
-    label: "Anexo Vascular",
-    departments: ["ENFERMARIA VASCULAR", "RIV"],
-  },
-  {
-    id: "cc",
-    label: "Centro Cirúrgico",
-    departments: ["CC PREPARO", "CC BLOCO CIRÚRGICO", "CC RPA"],
-  },
-];
 
 export default function GestorPanelPage() {
   const { currentHospital: selectedUnit } = useHospital();
   const isMobile = useIsMobile();
   const [sectorFilterOpen, setSectorFilterOpen] = useState(false);
   const { currentDepartment, setCurrentDepartment } = useDepartment();
+  // Hierarquia de setores DIRETO DO BANCO (alas → setores), substitui a taxonomia
+  // hardcoded (SECTOR_BLOCKS/DEPARTMENT_TO_SECTOR). Filtro e agregações "por setor"
+  // passam a usar o NOME REAL do setor (setores.nome).
+  const { groups: sectorGroups, loading: sectorsLoading } = useSectorNavigation();
   const [bedStats, setBedStats] = useState<BedStats>({ total: 0, occupied: 0, vacant: 0, doorPatients: 0, bySector: {} });
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlert[]>([]);
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
@@ -204,50 +183,30 @@ export default function GestorPanelPage() {
   const [kpiDeltas, setKpiDeltas] = useState<Record<string, KpiDelta>>({});
   const [sectorFilter, setSectorFilter] = useState<string>(() => {
     if (typeof window === "undefined") return "ALL";
-    return localStorage.getItem("gestor_sector_filter") || "ALL";
+    return normalizeSectorFilter(localStorage.getItem("gestor_sector_filter"));
   });
 
   // Sincroniza o filtro de setor com mudanças externas (sidebar/seletor) e
   // mantém alinhado ao currentDepartment do contexto.
   useEffect(() => {
     const stored = typeof window !== "undefined" ? localStorage.getItem("gestor_sector_filter") : null;
-    setSectorFilter(stored || "ALL");
+    setSectorFilter(normalizeSectorFilter(stored));
   }, [currentDepartment]);
 
-  // ── Filter resolution: ALL | BLOCK:<id> | specific department ──
+  // ── Filter resolution: ALL | nome real do setor (setores.nome) ──
   const isAllSectors = sectorFilter === "ALL";
-  const isBlockFilter = sectorFilter.startsWith("BLOCK:");
-  const activeBlock = isBlockFilter
-    ? SECTOR_BLOCKS.find(b => b.id === sectorFilter.slice(6)) || null
-    : null;
+  /** Nome real do setor filtrado (setores.nome). null = sem filtro (ALL). */
+  const filteredSectorName: string | null = isAllSectors ? null : sectorFilter;
+  const sectorDisplayName = isAllSectors ? "Todos os setores" : sectorFilter;
 
-  /** Department names this filter resolves to. null = no filter (ALL). */
-  const filteredDepartments: string[] | null = isAllSectors
-    ? null
-    : activeBlock
-      ? activeBlock.departments
-      : [sectorFilter];
-
-  /** Sector codes (red/yellow/neuro_01/...) for patients/movements queries. */
-  const filteredSectorCodes: string[] | null = filteredDepartments
-    ? (filteredDepartments
-        .map(d => DEPARTMENT_TO_SECTOR[d as keyof typeof DEPARTMENT_TO_SECTOR])
-        .filter(Boolean) as string[])
-    : null;
-
-  const sectorDisplayName = isAllSectors
-    ? "Todos os setores"
-    : activeBlock
-      ? activeBlock.label
-      : getSectorDisplayLabel(filteredSectorCodes?.[0] || sectorFilter);
-
-  // ── Apply a new filter (ALL / BLOCK / specific department) ──
+  // ── Apply a new filter (ALL / nome real do setor) ──
   const applyFilter = (next: string) => {
     setSectorFilter(next);
     if (typeof window !== "undefined") {
       localStorage.setItem("gestor_sector_filter", next);
     }
-    if (next !== "ALL" && !next.startsWith("BLOCK:")) {
+    if (next !== "ALL") {
+      // Mantém alinhado ao seletor/sidebar, que usam setores.nome como department.
       try { setCurrentDepartment(next as any); } catch { /* noop */ }
     }
   };
@@ -257,211 +216,165 @@ export default function GestorPanelPage() {
     setLoading(true);
 
     try {
-      // ── 1. Patients ──
-      let patientsQuery = supabase
-        .from("patients")
-        .select("id, name, bed_number, sector, is_vacant, is_door_patient, clinical_status, diagnoses, relevant_exams, uti_discharge_prediction, hospital_discharge_prediction")
-        .eq("hospital_unit_id", selectedUnit.id);
-      if (filteredSectorCodes && filteredSectorCodes.length > 0) {
-        patientsQuery = patientsQuery.in("sector", filteredSectorCodes);
-      }
-      const { data: patients } = await patientsQuery;
+      const hospitalId = selectedUnit.id;
+      const wantSector = filteredSectorName; // string | null (setores.nome)
+      const inSector = (nome: string | undefined | null) =>
+        !wantSector || (nome != null && nome === wantSector);
 
-      if (patients) {
-        const occupied = patients.filter(p => !p.is_vacant && p.name?.trim());
-        const vacant = patients.filter(p => p.is_vacant || !p.name?.trim());
-        const doorPatients = patients.filter(p => p.is_door_patient);
+      // ── 1. Leitos + Internações ativas ──
+      // MIGRAÇÃO: patients → internacoes(+leitos+setores+pacientes). Vínculo com o hospital:
+      // leitos → setores → alas.hospital_id. setores.tipo guarda o código do setor.
+      // Ocupação = internações ativas (data_alta IS NULL); leitos livres = leitos sem internação.
+      const [{ data: leitosRaw }, { data: intRaw }] = await Promise.all([
+        (supabase
+          .from("leitos")
+          .select("id, numero, status, tipo, setor:setores!inner ( nome, tipo, ala:alas!inner ( hospital_id ) )") as any)
+          .eq("setor.ala.hospital_id", hospitalId),
+        (supabase
+          .from("internacoes")
+          .select("id, leito_id, leito:leitos!inner ( numero, setor:setores!inner ( nome, tipo, ala:alas!inner ( hospital_id ) ) ), paciente:pacientes ( nome_completo, nome_social )") as any)
+          .is("data_alta", null)
+          .eq("leito.setor.ala.hospital_id", hospitalId),
+      ]);
 
-        const bySector: Record<string, { total: number; occupied: number }> = {};
-        patients.forEach(p => {
-          if (!bySector[p.sector]) {
-            // Usa a capacidade FIXA configurada (SECTOR_BED_CONFIG) como denominador.
-            // Evita que leitos fora do range (L19, L20...) sejam contados como regulares.
-            bySector[p.sector] = { total: sectorCapacity(p.sector) || 0, occupied: 0 };
-          }
-          if (!p.is_vacant && p.name?.trim()) bySector[p.sector].occupied++;
-        });
+      const leitos = ((leitosRaw as any[]) || []).filter(l => inSector(l.setor?.nome));
+      const activeInt = ((intRaw as any[]) || []).filter(i => inSector(i.leito?.setor?.nome));
+      const occupiedLeitoIds = new Set(activeInt.map(i => i.leito_id));
 
-        // Total de leitos = soma das capacidades fixas dos setores presentes (SECTOR_BED_CONFIG).
-        // Garante que leitos fora do range configurado não sejam contados.
-        const regularTotal = Object.keys(bySector).reduce(
-          (sum, code) => sum + (sectorCapacity(code) || 0), 0
-        );
-        setBedStats({ total: regularTotal, occupied: occupied.length, vacant: vacant.length, doorPatients: doorPatients.length, bySector });
-        setOccupiedPatientsList(occupied);
-        setVacantBedsList(vacant);
-        setDoorPatientsList(doorPatients);
+      // Agregação por NOME REAL do setor (setores.nome). Total = leitos reais no
+      // setor (contagem do banco); ocupados = internações ativas. Substitui a
+      // capacidade fixa do bedNaming (sectorCapacity) pela contagem real.
+      const bySector: Record<string, { total: number; occupied: number }> = {};
+      leitos.forEach(l => {
+        const nome = l.setor?.nome;
+        if (!nome) return;
+        if (!bySector[nome]) bySector[nome] = { total: 0, occupied: 0 };
+        bySector[nome].total++;
+      });
+      activeInt.forEach(i => {
+        const nome = i.leito?.setor?.nome;
+        if (!nome) return;
+        if (!bySector[nome]) bySector[nome] = { total: 0, occupied: 0 };
+        bySector[nome].occupied++;
+      });
 
-        // Critical alerts
-        const alerts: CriticalAlert[] = [];
-        occupied.forEach(p => {
-          if (p.clinical_status === "gravíssimo" || p.clinical_status === "crítico") {
-            alerts.push({ id: p.id, patientName: p.name, bed: p.bed_number, sector: getSectorDisplayLabel(p.sector), type: "Estado Clínico", detail: `Paciente em estado ${p.clinical_status}`, severity: "critical" });
-          }
-          if (p.relevant_exams && /crítico|urgente|alerta/i.test(p.relevant_exams)) {
-            alerts.push({ id: p.id + "-exam", patientName: p.name, bed: p.bed_number, sector: getSectorDisplayLabel(p.sector), type: "Exame Crítico", detail: "Resultado com valor crítico identificado", severity: "warning" });
-          }
-        });
-        setCriticalAlerts(alerts);
+      // Total de leitos = soma dos leitos reais dos setores presentes.
+      const regularTotal = Object.values(bySector).reduce((sum, s) => sum + s.total, 0);
 
-        // ── 8g. Previsão de Alta (a partir dos patients já carregados) ──
-        const _today = startOfDay(new Date());
-        const _tomorrow = startOfDay(addDays(new Date(), 1));
-        const _nextWeek = startOfDay(addDays(new Date(), 7));
+      const occupied = activeInt.map(i => ({
+        id: i.id,
+        name: i.paciente?.nome_social || i.paciente?.nome_completo || "",
+        bed_number: i.leito?.numero || "",
+        sector: i.leito?.setor?.nome || "",
+        clinical_status: undefined as string | undefined, // MIGRAÇÃO: degradado
+      }));
+      const vacant = leitos
+        .filter(l => !occupiedLeitoIds.has(l.id))
+        .map(l => ({ id: l.id, bed_number: l.numero, sector: l.setor?.nome || "" }));
 
-        const parseDischargeDate = (raw: string | null): Date | null => {
-          if (!raw || /sem previs/i.test(raw)) return null;
-          if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return new Date(raw);
-          const m = raw.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-          if (m) return new Date(`${m[3]}-${m[2]}-${m[1]}`);
-          return null;
-        };
+      // MIGRAÇÃO: is_door_patient degradado (sem coluna) → 0 pacientes porta.
+      setBedStats({ total: regularTotal, occupied: occupied.length, vacant: vacant.length, doorPatients: 0, bySector });
+      setOccupiedPatientsList(occupied);
+      setVacantBedsList(vacant);
+      setDoorPatientsList([]);
 
-        const previews: DischargePreviewItem[] = (patients || [])
-          .filter(p => !p.is_vacant && p.name?.trim())
-          .map(p => {
-            const raw = (p as any).hospital_discharge_prediction || (p as any).uti_discharge_prediction || null;
-            const date = parseDischargeDate(raw);
-            let status: DischargePreviewItem['status'] = 'unknown';
-            if (date) {
-              const d = startOfDay(date);
-              if (d < _today) status = 'overdue';
-              else if (d.getTime() === _today.getTime()) status = 'today';
-              else if (d.getTime() === _tomorrow.getTime()) status = 'tomorrow';
-              else if (d <= _nextWeek) status = 'this_week';
-              else status = 'future';
-            }
-            return {
-              id: p.id,
-              name: p.name || '—',
-              bed: p.bed_number || '—',
-              sector: p.sector,
-              sectorLabel: getSectorDisplayLabel(p.sector) || p.sector,
-              dischargeDate: date,
-              rawDate: raw || '',
-              status,
-            };
-          })
-          .filter(p => p.status !== 'future' && p.status !== 'unknown')
-          .sort((a, b) => {
-            const order: Record<string, number> = { overdue: 0, today: 1, tomorrow: 2, this_week: 3 };
-            return (order[a.status] ?? 4) - (order[b.status] ?? 4);
-          });
+      // MIGRAÇÃO: alertas críticos dependiam de clinical_status / relevant_exams (degradados) → [].
+      setCriticalAlerts([]);
 
-        setDischargePreviews(previews);
-      }
+      // MIGRAÇÃO: previsão de alta dependia de uti/hospital_discharge_prediction (degradados) → [].
+      setDischargePreviews([]);
 
-      // ── 2. Movements ──
-      // Pull a wider window (30 days) so we can build the period trend +
-      // previous-period comparisons without re-querying.
+      // ── 2. Movimentações ──
+      // MIGRAÇÃO: patient_movements não tem equivalente fiel (transferencias só modela
+      // leito→leito; altas/óbitos não são eventos registrados). "Movimentações recentes" → [].
+      setRecentMovements([]);
+
       const periodDays = period === "today" ? 1 : period === "7d" ? 7 : 30;
-      const trendWindowDays = Math.max(periodDays, 30); // always 30 to cover deltas
-      const windowStart = startOfDay(subDays(new Date(), trendWindowDays - 1)).toISOString();
-      let movementsQuery = supabase
-        .from("patient_movements")
-        .select("*")
-        .eq("hospital_unit_id", selectedUnit.id)
-        .gte("created_at", windowStart)
-        .order("created_at", { ascending: false });
-      if (filteredSectorCodes && filteredSectorCodes.length > 0) {
-        movementsQuery = movementsQuery.in("patient_sector", filteredSectorCodes);
-      }
-      const { data: movements } = await movementsQuery;
+      const periodStart = startOfDay(subDays(new Date(), periodDays - 1));
 
-      setRecentMovements((movements || []).slice(0, 15));
-
-      // Build trend for the selected period
+      // Tendência: apenas ADMISSÕES são reais (internacoes.data_entrada). Altas/óbitos/
+      // transferências dependiam de patient_movements → permanecem 0 (degradado).
       const trend: Record<string, { altas: number; admissoes: number; transferencias: number; obitos: number }> = {};
       for (let i = periodDays - 1; i >= 0; i--) {
         const day = format(subDays(new Date(), i), "dd/MM", { locale: ptBR });
         trend[day] = { altas: 0, admissoes: 0, transferencias: 0, obitos: 0 };
       }
-      const periodStart = startOfDay(subDays(new Date(), periodDays - 1));
-      (movements || []).forEach(m => {
-        const d = new Date(m.created_at);
-        if (d < periodStart) return;
-        const day = format(d, "dd/MM", { locale: ptBR });
-        if (trend[day]) {
-          const type = m.movement_type?.toUpperCase() || "";
-          if (type.includes("ALTA")) trend[day].altas++;
-          else if (type.includes("ADMISS") || type.includes("INTERN")) trend[day].admissoes++;
-          else if (type.includes("TRANSF")) trend[day].transferencias++;
-          else if (type.includes("ÓBITO") || type.includes("OBITO")) trend[day].obitos++;
-        }
-      });
+      const { data: admRaw } = await (supabase
+        .from("internacoes")
+        .select("id, data_entrada, leito:leitos!inner ( setor:setores!inner ( nome, tipo, ala:alas!inner ( hospital_id ) ) )") as any)
+        .gte("data_entrada", periodStart.toISOString())
+        .eq("leito.setor.ala.hospital_id", hospitalId);
+      ((admRaw as any[]) || [])
+        .filter(a => inSector(a.leito?.setor?.nome))
+        .forEach(a => {
+          const day = format(new Date(a.data_entrada), "dd/MM", { locale: ptBR });
+          if (trend[day]) trend[day].admissoes++;
+        });
       setMovementTrend(Object.entries(trend).map(([day, vals]) => ({ day, ...vals })));
 
       // ── 3. Medication catalog count ──
-      const { count } = await supabase.from("medication_catalog").select("id", { count: "exact", head: true });
+      // MIGRAÇÃO: medication_catalog → catalogo_medicamentos (catálogo global, sem filtro de hospital).
+      const { count } = await supabase.from("catalogo_medicamentos").select("id", { count: "exact", head: true });
       setMedicationCount(count || 0);
 
-      // ── 4. Pending bed allocation requests (with detail for drill-down) ──
-      let pendingQuery = supabase
-        .from("bed_allocation_requests")
-        .select("id, requested_sector, requested_bed, requesting_doctor_name, created_at, patient:patients(name, bed_number, sector)")
-        .eq("hospital_unit_id", selectedUnit.id)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false });
-      if (filteredDepartments && filteredDepartments.length > 0) {
-        pendingQuery = pendingQuery.in("requested_sector", filteredDepartments);
-      }
-      const { data: pendData } = await pendingQuery;
-      setPendingRequests(pendData?.length || 0);
-      setPendingRequestsList(pendData || []);
+      // ── 4. Solicitações de leito pendentes (detalhe p/ drill-down) ──
+      // MIGRAÇÃO: bed_allocation_requests → solicitacoes_leito. Sem requested_bed nem
+      // requesting_doctor_name no schema novo → degradados. Setor solicitado vem de
+      // setor_solicitado_id; paciente/leito de origem via internacao.
+      const { data: solRaw } = await (supabase
+        .from("solicitacoes_leito")
+        .select("id, status, data_hora, setor_solicitado:setores!inner ( nome, tipo, ala:alas!inner ( hospital_id ) ), internacao:internacoes ( paciente:pacientes ( nome_completo, nome_social ), leito:leitos ( numero ) )") as any)
+        .eq("setor_solicitado.ala.hospital_id", hospitalId)
+        .order("data_hora", { ascending: false });
+      const pendData = ((solRaw as any[]) || [])
+        .filter(s => /pend/i.test(s.status || "") && inSector(s.setor_solicitado?.nome))
+        .map(s => ({
+          id: s.id,
+          requested_sector: s.setor_solicitado?.nome || "",
+          requested_bed: null as string | null, // MIGRAÇÃO: degradado
+          requesting_doctor_name: null as string | null, // MIGRAÇÃO: degradado
+          created_at: s.data_hora,
+          patient: {
+            name: s.internacao?.paciente?.nome_social || s.internacao?.paciente?.nome_completo || "",
+            bed_number: s.internacao?.leito?.numero || "",
+            sector: s.setor_solicitado?.tipo || "",
+          },
+        }));
+      setPendingRequests(pendData.length);
+      setPendingRequestsList(pendData);
 
-      // ── 5. Prescription & validation stats ──
-      let prescriptionQuery = supabase
-        .from("prescriptions")
-        .select("id, patient_name, patient_bed, department, created_at, status")
-        .eq("hospital_unit_id", selectedUnit.id)
-        .order("created_at", { ascending: false })
-        .limit(200);
-      if (filteredDepartments && filteredDepartments.length > 0) {
-        prescriptionQuery = prescriptionQuery.in("department", filteredDepartments);
-      }
-      const { data: prescData } = await prescriptionQuery;
-      setPrescriptionsList(prescData || []);
-
-      let validationsQuery = supabase
-        .from("prescription_validations")
-        .select("status")
-        .eq("hospital_unit_id", selectedUnit.id);
-      if (filteredDepartments && filteredDepartments.length > 0) {
-        validationsQuery = validationsQuery.in("department", filteredDepartments);
-      }
-      const { data: validations } = await validationsQuery;
-
-      const valCounts = { validated: 0, pending: 0, rejected: 0 };
-      (validations || []).forEach((v: any) => {
-        if (v.status === "approved") valCounts.validated++;
-        else if (v.status === "pending") valCounts.pending++;
-        else valCounts.rejected++;
-      });
-      setPrescriptionStats({ total: prescData?.length || 0, ...valCounts });
+      // ── 5. Prescrições & validações ──
+      // MIGRAÇÃO: prescriptions → prescricoes (sem patient_name/patient_bed/department).
+      // Total por hospital via internacao → leito → setor → ala. Lista de drill-down e
+      // a quebra de validação (validacoes_prescricao sem hospital) foram degradadas.
+      const { count: prescCount } = await (supabase
+        .from("prescricoes")
+        .select("id, internacao:internacoes!inner ( leito:leitos!inner ( setor:setores!inner ( ala:alas!inner ( hospital_id ) ) ) )", { count: "exact", head: true }) as any)
+        .eq("internacao.leito.setor.ala.hospital_id", hospitalId);
+      setPrescriptionsList([]);
+      setPrescriptionStats({ total: prescCount || 0, validated: 0, pending: 0, rejected: 0 });
 
       // ── 6. TMP (Tempo Médio de Permanência) ──
-      // Encontros com alta no período selecionado, usando outcome_date ou discharge_date.
+      // MIGRAÇÃO: patient_encounters → internacoes. LOS = data_alta − data_entrada das
+      // internações com alta no período. Setor via leito → setor.nome (nome real).
       const tmpStartIso = startOfDay(subDays(new Date(), periodDays - 1)).toISOString();
-      let encQuery = supabase
-        .from("patient_encounters")
-        .select("admission_date, discharge_date, outcome_date, outcome, department")
-        .eq("hospital_unit_id", selectedUnit.id)
-        .or(`discharge_date.gte.${tmpStartIso},outcome_date.gte.${tmpStartIso}`);
-      if (filteredDepartments && filteredDepartments.length > 0) {
-        encQuery = encQuery.in("department", filteredDepartments);
-      }
-      const { data: encs } = await encQuery;
+      const { data: dischRaw } = await (supabase
+        .from("internacoes")
+        .select("id, data_entrada, data_alta, leito:leitos!inner ( setor:setores!inner ( nome, tipo, ala:alas!inner ( hospital_id ) ) )") as any)
+        .not("data_alta", "is", null)
+        .gte("data_alta", tmpStartIso)
+        .eq("leito.setor.ala.hospital_id", hospitalId);
+      const encs = ((dischRaw as any[]) || []).filter(e => inSector(e.leito?.setor?.nome));
       const losDays: number[] = [];
       const bySectorLos: Record<string, number[]> = {};
-      (encs || []).forEach((e: any) => {
-        const end = e.discharge_date || e.outcome_date;
-        if (!e.admission_date || !end) return;
-        const ms = new Date(end).getTime() - new Date(e.admission_date).getTime();
+      encs.forEach((e: any) => {
+        if (!e.data_entrada || !e.data_alta) return;
+        const ms = new Date(e.data_alta).getTime() - new Date(e.data_entrada).getTime();
         if (ms <= 0) return;
         const days = ms / (1000 * 60 * 60 * 24);
         if (days > 365) return; // descarta outlier
         losDays.push(days);
-        const sec = e.department || "—";
+        const sec = e.leito?.setor?.nome || "—";
         if (!bySectorLos[sec]) bySectorLos[sec] = [];
         bySectorLos[sec].push(days);
       });
@@ -470,58 +383,38 @@ export default function GestorPanelPage() {
       setTmpBySector(
         Object.entries(bySectorLos)
           .map(([sector, arr]) => ({
-            sector: getSectorDisplayLabel(sector) || sector,
+            sector, // nome real do setor
             avgDays: arr.reduce((a, b) => a + b, 0) / arr.length,
             samples: arr.length,
           }))
           .sort((a, b) => b.avgDays - a.avgDays),
       );
 
-      // ── 7. Outcomes breakdown (período) — usa patient_movements pois cobre melhor o real ──
-      const outBuckets = { alta: 0, obito: 0, transf: 0, evasao: 0, outros: 0 };
-      (movements || []).forEach((m: any) => {
-        const d = new Date(m.created_at);
-        if (d < periodStart) return;
-        const t = (m.movement_type || "").toUpperCase();
-        if (t.includes("ÓBITO") || t.includes("OBITO")) outBuckets.obito++;
-        else if (t.includes("ALTA")) outBuckets.alta++;
-        else if (t.includes("EVAS")) outBuckets.evasao++;
-        else if (t.includes("TRANSF") && t.includes("EXTERN")) outBuckets.transf++;
-      });
-      const totalOut = outBuckets.alta + outBuckets.obito + outBuckets.transf + outBuckets.evasao + outBuckets.outros;
-      setOutcomesTotal(totalOut);
+      // ── 7. Desfechos (período) ──
+      // MIGRAÇÃO: dependia de patient_movements (tipo de desfecho: alta/óbito/transf/evasão),
+      // que não existe. internacoes.data_alta não distingue o tipo de desfecho → tudo 0.
+      setOutcomesTotal(0);
       setOutcomes([
-        { key: "alta", label: "Alta", count: outBuckets.alta, color: "hsl(142, 70%, 45%)", icon: Heart },
-        { key: "obito", label: "Óbito", count: outBuckets.obito, color: "hsl(var(--destructive))", icon: Skull },
-        { key: "transf", label: "Transf. Externa", count: outBuckets.transf, color: "hsl(45, 90%, 50%)", icon: ArrowRight },
-        { key: "evasao", label: "Evasão", count: outBuckets.evasao, color: "hsl(280, 70%, 55%)", icon: LogOut },
-        { key: "outros", label: "Outros", count: outBuckets.outros, color: "hsl(var(--muted-foreground))", icon: HelpCircle },
+        { key: "alta", label: "Alta", count: 0, color: "hsl(142, 70%, 45%)", icon: Heart },
+        { key: "obito", label: "Óbito", count: 0, color: "hsl(var(--destructive))", icon: Skull },
+        { key: "transf", label: "Transf. Externa", count: 0, color: "hsl(45, 90%, 50%)", icon: ArrowRight },
+        { key: "evasao", label: "Evasão", count: 0, color: "hsl(280, 70%, 55%)", icon: LogOut },
+        { key: "outros", label: "Outros", count: 0, color: "hsl(var(--muted-foreground))", icon: HelpCircle },
       ]);
 
-      // ── 8b. Giro de Leito (encontros encerrados / leitos no setor) ──
+      // ── 8b. Giro de Leito (internações encerradas / leitos no setor) ──
+      // MIGRAÇÃO: encontros agora vêm de internacoes (encs). Leitos por setor usam o
+      // bySector já calculado (leitos reais do banco), keyado por setor.nome.
       const encsBySector: Record<string, number> = {};
-      (encs || []).forEach((e: any) => {
-        const dept = e.department || "—";
-        const code = (DEPARTMENT_TO_SECTOR as any)[dept] || dept;
-        encsBySector[code] = (encsBySector[code] || 0) + 1;
+      encs.forEach((e: any) => {
+        const nome = e.leito?.setor?.nome || "—";
+        encsBySector[nome] = (encsBySector[nome] || 0) + 1;
       });
-
-      // Para calcular leitos: tenta bySector direto, depois agrega sub-setores da UE
-      const getBedsForCode = (code: string): number => {
-        if (bedStats.bySector[code]) return bedStats.bySector[code].total;
-        const UE_CODES = ["sala_vermelha", "sala_laranja", "ue_vertical", "ue_horizontal", "internacao_ue", "observacao_clinica"];
-        if (UE_CODES.includes(code)) {
-          return UE_CODES.reduce((acc, c) => acc + (bedStats.bySector[c]?.total || 0), 0);
-        }
-        return 0;
-      };
-
       const turnoverRows: BedTurnoverItem[] = Object.entries(encsBySector)
-        .map(([code, count]) => {
-          const beds = getBedsForCode(code);
-          const label = getSectorDisplayLabel(code) || (DEPARTMENT_TO_SECTOR as any)[code] || code;
+        .map(([nome, count]) => {
+          const beds = bySector[nome]?.total || 0;
           return {
-            sector: label,
+            sector: nome, // nome real do setor
             encounters: count,
             beds,
             turnover: beds > 0 ? count / beds : 0,
@@ -535,74 +428,34 @@ export default function GestorPanelPage() {
       setBedTurnoverAvg(totalBedsTurn > 0 ? totalEncsTurn / totalBedsTurn : 0);
 
       // ── 8c. Mortalidade por setor (período) ──
-      const deathsBySector: Record<string, number> = {};
-      const totalBySector: Record<string, number> = {};
-      (movements || []).forEach((m: any) => {
-        const d = new Date(m.created_at);
-        if (d < periodStart) return;
-        const sec = m.patient_sector || "—";
-        totalBySector[sec] = (totalBySector[sec] || 0) + 1;
-        const t = (m.movement_type || "").toUpperCase();
-        if (t.includes("ÓBITO") || t.includes("OBITO")) {
-          deathsBySector[sec] = (deathsBySector[sec] || 0) + 1;
-        }
-      });
-      const mortalityRows: MortalityItem[] = Object.entries(deathsBySector)
-        .map(([sec, deaths]) => {
-          const total = totalBySector[sec] || deaths;
-          return {
-            sector: getSectorDisplayLabel(sec) || sec,
-            deaths,
-            total,
-            rate: total > 0 ? (deaths / total) * 100 : 0,
-          };
-        })
-        .sort((a, b) => b.deaths - a.deaths);
-      setMortalityBySector(mortalityRows);
-      setMortalityTotal(mortalityRows.reduce((acc, r) => acc + r.deaths, 0));
+      // MIGRAÇÃO: óbitos vinham de patient_movements (movement_type ÓBITO), sem equivalente
+      // no schema novo (internacoes.data_alta não distingue óbito) → vazio.
+      setMortalityBySector([]);
+      setMortalityTotal(0);
 
-      // ── 8d. Ranking de Produção Médica (clinical_evolutions) ──
-      let evolQuery = supabase
-        .from("clinical_evolutions")
-        .select("created_by_name, department")
-        .eq("hospital_unit_id", selectedUnit.id)
-        .gte("created_at", periodStart.toISOString());
-      if (filteredDepartments && filteredDepartments.length > 0) {
-        evolQuery = evolQuery.in("department", filteredDepartments);
-      }
-      const { data: evolData } = await evolQuery;
-      const byDoctor: Record<string, number> = {};
-      (evolData || []).forEach((row: any) => {
-        const name = (row.created_by_name || "").trim();
-        if (!name) return;
-        byDoctor[name] = (byDoctor[name] || 0) + 1;
-      });
-      setMedicalProduction(
-        Object.entries(byDoctor)
-          .map(([name, count]) => ({ name, count }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 10),
-      );
+      // ── 8d. Ranking de Produção Médica ──
+      // MIGRAÇÃO: clinical_evolutions → evolucoes, que não tem created_by_name nem department
+      // (só profissional_id). Ranking por nome do médico degradado → vazio.
+      setMedicalProduction([]);
 
 
       // ── 8e. Pendências de Exames (categoria + por setor) ──
-      let examQuery = supabase
-        .from("exam_requests")
-        .select("category, department, priority, patient_name, patient_bed, created_at")
-        .eq("hospital_unit_id", selectedUnit.id)
-        .eq("status", "pending");
-      if (filteredDepartments && filteredDepartments.length > 0) {
-        examQuery = examQuery.in("department", filteredDepartments);
-      }
-      const { data: examData } = await examQuery;
+      // MIGRAÇÃO: exam_requests → solicitacoes_exame. category→categoria; o setor vem de
+      // internacao → leito → setor (não há mais coluna department). status pendente via /pend/i.
+      const { data: examRaw } = await (supabase
+        .from("solicitacoes_exame")
+        .select("id, categoria, status, prioridade, internacao:internacoes!inner ( leito:leitos!inner ( setor:setores!inner ( nome, tipo, ala:alas!inner ( hospital_id ) ) ) )") as any)
+        .eq("internacao.leito.setor.ala.hospital_id", hospitalId);
+      const examData = ((examRaw as any[]) || [])
+        .filter(e => /pend/i.test(e.status || "") && inSector(e.internacao?.leito?.setor?.nome));
 
       const catMap: Record<string, number> = {};
       const sectorMap: Record<string, Record<string, number>> = {};
-      (examData || []).forEach((e: any) => {
-        catMap[e.category] = (catMap[e.category] || 0) + 1;
-        const sec = e.department || "—";
+      examData.forEach((e: any) => {
+        catMap[e.categoria] = (catMap[e.categoria] || 0) + 1;
+        const sec = e.internacao?.leito?.setor?.nome || "—";
         if (!sectorMap[sec]) sectorMap[sec] = {};
-        sectorMap[sec][e.category] = (sectorMap[sec][e.category] || 0) + 1;
+        sectorMap[sec][e.categoria] = (sectorMap[sec][e.categoria] || 0) + 1;
       });
 
       const CAT_META: Record<string, { label: string; color: string }> = {
@@ -636,29 +489,28 @@ export default function GestorPanelPage() {
       );
 
       // ── 8f. Pacientes Regulados ──
-      let regulQuery = supabase
-        .from("regulation_requests")
-        .select("id, patient_name, patient_age, patient_sex, origin_sector, destination_sector, destination_unit, priority, status, created_at")
-        .eq("hospital_unit_id", selectedUnit.id)
-        .not("status", "eq", "completed")
-        .not("status", "eq", "canceled")
-        .order("created_at", { ascending: true });
-      if (filteredDepartments && filteredDepartments.length > 0) {
-        regulQuery = regulQuery.in("origin_sector", filteredDepartments);
-      }
-      const { data: regulData } = await regulQuery;
+      // MIGRAÇÃO: regulation_requests → regulacoes. Nome via internacao→paciente; origem via
+      // internacao→leito→setor; destino = unidade_destino. patient_age/patient_sex e
+      // destination_sector não existem no schema novo → degradados.
+      const { data: regulRaw } = await (supabase
+        .from("regulacoes")
+        .select("id, tipo_solicitacao, status, prioridade, unidade_destino, data_hora, internacao:internacoes!inner ( paciente:pacientes ( nome_completo, nome_social ), leito:leitos!inner ( setor:setores!inner ( nome, tipo, ala:alas!inner ( hospital_id ) ) ) )") as any)
+        .eq("internacao.leito.setor.ala.hospital_id", hospitalId)
+        .order("data_hora", { ascending: true });
+      const regulData = ((regulRaw as any[]) || [])
+        .filter(r => !/(conclu|cancel|complet)/i.test(r.status || "") && inSector(r.internacao?.leito?.setor?.nome));
       setRegulatedPatients(
-        (regulData || []).map((r: any) => ({
+        regulData.map((r: any) => ({
           id: r.id,
-          name: r.patient_name || "—",
-          age: r.patient_age,
-          sex: r.patient_sex,
-          origin: getSectorDisplayLabel(r.origin_sector) || r.origin_sector || "—",
-          destination: r.destination_unit || r.destination_sector || "—",
-          priority: r.priority || "—",
+          name: r.internacao?.paciente?.nome_social || r.internacao?.paciente?.nome_completo || "—",
+          age: null, // MIGRAÇÃO: degradado (sem patient_age)
+          sex: null, // MIGRAÇÃO: degradado (sem patient_sex)
+          origin: r.internacao?.leito?.setor?.nome || "—",
+          destination: r.unidade_destino || "—",
+          priority: r.prioridade || "—",
           status: r.status || "—",
-          waitHours: Math.floor((Date.now() - new Date(r.created_at).getTime()) / 3_600_000),
-          createdAt: r.created_at,
+          waitHours: Math.floor((Date.now() - new Date(r.data_hora).getTime()) / 3_600_000),
+          createdAt: r.data_hora,
         }))
       );
 
@@ -666,88 +518,17 @@ export default function GestorPanelPage() {
 
 
       // ── 8. KPI deltas (tendência) ──
-      // Para ocupação/leitos/porta usamos delta vs ontem via balanço de movimentações
-      // (admissões - altas - óbitos - transf.externas) nas últimas 24h.
-      // Para prescrições / solicitações usamos contagem desta semana vs semana passada.
-      const now = new Date();
-      const yesterday = subDays(now, 1);
-      const last24Start = subDays(now, 1);
-      const prev24Start = subDays(now, 2);
-      let admit24 = 0, discharge24 = 0;
-      let admitPrev24 = 0, dischargePrev24 = 0;
-      (movements || []).forEach((m: any) => {
-        const d = new Date(m.created_at);
-        const t = (m.movement_type || "").toUpperCase();
-        const isAdm = t.includes("ADMISS") || t.includes("INTERN");
-        const isOut = t.includes("ALTA") || t.includes("ÓBITO") || t.includes("OBITO") || t.includes("EVAS") ||
-          (t.includes("TRANSF") && t.includes("EXTERN"));
-        if (d >= last24Start) {
-          if (isAdm) admit24++;
-          if (isOut) discharge24++;
-        } else if (d >= prev24Start) {
-          if (isAdm) admitPrev24++;
-          if (isOut) dischargePrev24++;
-        }
-      });
-      const occupancyDelta24 = admit24 - discharge24;        // net change in occupied beds today
-      const occupancyDeltaPrev = admitPrev24 - dischargePrev24;
-
-      // weekly comparisons for prescriptions & requests
-      const weekStart = subDays(now, 7).toISOString();
-      const prevWeekStart = subDays(now, 14).toISOString();
-      const prevWeekEnd = subDays(now, 7).toISOString();
-
-      let prescCurrPromise = supabase
-        .from("prescriptions")
-        .select("id", { count: "exact", head: true })
-        .eq("hospital_unit_id", selectedUnit.id)
-        .gte("created_at", weekStart);
-      let prescPrevPromise = supabase
-        .from("prescriptions")
-        .select("id", { count: "exact", head: true })
-        .eq("hospital_unit_id", selectedUnit.id)
-        .gte("created_at", prevWeekStart)
-        .lt("created_at", prevWeekEnd);
-      if (filteredDepartments && filteredDepartments.length > 0) {
-        prescCurrPromise = prescCurrPromise.in("department", filteredDepartments);
-        prescPrevPromise = prescPrevPromise.in("department", filteredDepartments);
-      }
-      let reqCurrPromise = supabase
-        .from("bed_allocation_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("hospital_unit_id", selectedUnit.id)
-        .gte("created_at", weekStart);
-      let reqPrevPromise = supabase
-        .from("bed_allocation_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("hospital_unit_id", selectedUnit.id)
-        .gte("created_at", prevWeekStart)
-        .lt("created_at", prevWeekEnd);
-      if (filteredDepartments && filteredDepartments.length > 0) {
-        reqCurrPromise = reqCurrPromise.in("requested_sector", filteredDepartments);
-        reqPrevPromise = reqPrevPromise.in("requested_sector", filteredDepartments);
-      }
-      const [prescCurr, prescPrev, reqCurr, reqPrev] = await Promise.all([
-        prescCurrPromise, prescPrevPromise, reqCurrPromise, reqPrevPromise,
-      ]);
-      const prescDelta = (prescCurr.count || 0) - (prescPrev.count || 0);
-      const reqDelta = (reqCurr.count || 0) - (reqPrev.count || 0);
-
-      const mkDelta = (n: number, hint: string, goodIsDown = false): KpiDelta => ({
-        value: n,
-        display: n === 0 ? "0" : n > 0 ? `+${n}` : `${n}`,
-        trend: n === 0 ? "flat" : n > 0 ? "up" : "down",
-        goodIsDown,
-        hint,
-      });
-
+      // MIGRAÇÃO: os deltas de ocupação/leitos/porta vinham do balanço de patient_movements
+      // (admissões − altas − óbitos − transf.) das últimas 24h, e os de prescrições/solicitações
+      // de contagens semanais em prescriptions/bed_allocation_requests. Sem base fiel de
+      // movimentação, todos os deltas são degradados para placeholders neutros.
       setKpiDeltas({
-        occupancy: mkDelta(occupancyDelta24, "vs últimas 24h", true), // mais ocupação geralmente é "pior"
-        vacant: mkDelta(-occupancyDelta24, "vs últimas 24h", false),  // mais vagos é melhor
-        door: mkDelta(occupancyDelta24 - occupancyDeltaPrev, "vs ontem", true),
+        occupancy: { value: 0, display: "—", trend: "flat", goodIsDown: true, hint: "—" },
+        vacant: { value: 0, display: "—", trend: "flat", hint: "—" },
+        door: { value: 0, display: "—", trend: "flat", goodIsDown: true, hint: "—" },
         alerts: { value: 0, display: "—", trend: "flat", hint: "tempo real" },
-        prescriptions: mkDelta(prescDelta, "vs semana anterior", false),
-        requests: mkDelta(reqDelta, "vs semana anterior", true),
+        prescriptions: { value: 0, display: "—", trend: "flat", hint: "—" },
+        requests: { value: 0, display: "—", trend: "flat", goodIsDown: true, hint: "—" },
         tmp: { value: 0, display: "—", trend: "flat", hint: "período selecionado" },
       });
 
@@ -811,7 +592,7 @@ export default function GestorPanelPage() {
 
   // ── Bar data for sectors ──
   const sectorBarData = Object.entries(bedStats.bySector).map(([sector, s]) => ({
-    sector: getSectorDisplayLabel(sector),
+    sector, // nome real do setor
     Ocupados: s.occupied,
     Vagos: s.total - s.occupied,
   }));
@@ -837,19 +618,19 @@ export default function GestorPanelPage() {
     occupancy: occupiedPatientsList.map(p => ({
       id: p.id,
       primary: p.name || "(SEM NOME)",
-      secondary: `LEITO ${p.bed_number} • ${getSectorDisplayLabel(p.sector)}`,
+      secondary: `LEITO ${p.bed_number} • ${p.sector}`,
       badge: p.clinical_status ? { label: String(p.clinical_status).toUpperCase(), variant: ["gravíssimo", "grave", "crítico"].includes(p.clinical_status) ? "destructive" : "secondary" } : undefined,
     })),
     vacant: vacantBedsList.map(p => ({
       id: p.id,
       primary: `LEITO ${p.bed_number}`,
-      secondary: getSectorDisplayLabel(p.sector),
+      secondary: p.sector,
       badge: { label: "VAGO", variant: "outline" },
     })),
     door: doorPatientsList.map(p => ({
       id: p.id,
       primary: p.name || "(SEM NOME)",
-      secondary: `LEITO PORTA ${p.bed_number} • ${getSectorDisplayLabel(p.sector)}`,
+      secondary: `LEITO PORTA ${p.bed_number} • ${p.sector}`,
       badge: { label: "AGUARDANDO", variant: "secondary" },
     })),
     alerts: criticalAlerts.map(a => ({
@@ -890,6 +671,7 @@ export default function GestorPanelPage() {
         eyebrow="Painel · Gestão Hospitalar"
         title="Painel do Gestor"
         icon={BarChart3}
+        hideSidebarTrigger
         subtitle={
           <>
             <Building2 className="h-3 w-3" />
@@ -989,95 +771,91 @@ export default function GestorPanelPage() {
                 {isAllSectors && <Check className="h-4 w-4" />}
               </button>
 
-              {/* Blocks + sectors */}
-              <div className="space-y-2.5">
-                <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 px-1">
-                  Blocos e setores
+              {/* Alas + setores reais (useSectorNavigation) */}
+              {sectorsLoading ? (
+                <p className="text-[11px] text-muted-foreground text-center py-4">
+                  Carregando setores…
                 </p>
-                {SECTOR_BLOCKS.map(block => {
-                  const blockId = `BLOCK:${block.id}`;
-                  const blockActive = sectorFilter === blockId;
-                  const blockHasActiveChild = block.departments.some(d => d === sectorFilter);
-                  const isHighlighted = blockActive || blockHasActiveChild;
-                  const blockTotals = block.departments.reduce(
-                    (acc, dept) => {
-                      const code = DEPARTMENT_TO_SECTOR[dept as keyof typeof DEPARTMENT_TO_SECTOR];
-                      const s = code ? bedStats.bySector[code] : undefined;
-                      if (s) {
-                        acc.total += s.total;
-                        acc.occupied += s.occupied;
-                      }
-                      return acc;
-                    },
-                    { total: 0, occupied: 0 }
-                  );
-                  return (
-                    <div
-                      key={block.id}
-                      className={cn(
-                        "rounded-md border-l-2 pl-2.5 pr-1 py-1 transition-colors",
-                        isHighlighted
-                          ? "border-primary bg-primary/5"
-                          : "border-border/40 hover:border-border"
-                      )}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => { applyFilter(blockId); setSectorFilterOpen(false); }}
+              ) : sectorGroups.length === 0 ? (
+                <p className="text-[11px] text-muted-foreground text-center py-4">
+                  Nenhum setor cadastrado para esta unidade.
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 px-1">
+                    Setores por ala
+                  </p>
+                  {sectorGroups.map(group => {
+                    const groupHasActiveChild = group.sectors.some(s => s.name === sectorFilter);
+                    const groupTotals = group.sectors.reduce(
+                      (acc, s) => {
+                        const stat = bedStats.bySector[s.name];
+                        if (stat) {
+                          acc.total += stat.total;
+                          acc.occupied += stat.occupied;
+                        }
+                        return acc;
+                      },
+                      { total: 0, occupied: 0 }
+                    );
+                    return (
+                      <div
+                        key={group.group}
                         className={cn(
-                          "w-full flex items-center justify-between gap-2 px-1.5 py-1.5 rounded-md text-[10.5px] font-bold uppercase tracking-[0.14em] transition-all",
-                          blockActive
-                            ? "text-primary"
-                            : "text-muted-foreground/90 hover:text-foreground"
+                          "rounded-md border-l-2 pl-2.5 pr-1 py-1 transition-colors",
+                          groupHasActiveChild
+                            ? "border-primary bg-primary/5"
+                            : "border-border/40 hover:border-border"
                         )}
                       >
-                        <span className="flex items-center gap-1.5">
-                          <span>Bloco {block.label}</span>
-                          {blockTotals.total > 0 && (
-                            <span className="text-[9px] font-semibold text-muted-foreground/70 tabular-nums normal-case tracking-normal">
-                              · {blockTotals.occupied}/{blockTotals.total}
-                            </span>
-                          )}
-                        </span>
-                        {blockActive && <Check className="h-3.5 w-3.5" />}
-                      </button>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 pt-0.5 pb-1">
-                        {block.departments.map(dept => {
-                          const isActive = sectorFilter === dept;
-                          const code = DEPARTMENT_TO_SECTOR[dept as keyof typeof DEPARTMENT_TO_SECTOR];
-                          const stat = code ? bedStats.bySector[code] : undefined;
-                          return (
-                            <button
-                              key={dept}
-                              type="button"
-                              onClick={() => { applyFilter(dept); setSectorFilterOpen(false); }}
-                              className={cn(
-                                "flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all text-left border",
-                                isActive
-                                  ? "bg-primary/10 text-primary border-primary/30 shadow-sm"
-                                  : "text-foreground hover:bg-muted border-transparent"
-                              )}
-                            >
-                              <span className="truncate">{dept}</span>
-                              <span className="flex items-center gap-1 flex-shrink-0">
-                                {stat && (
-                                  <span className={cn(
-                                    "text-[9px] font-semibold tabular-nums",
-                                    isActive ? "text-primary/80" : "text-muted-foreground/70"
-                                  )}>
-                                    {stat.occupied}/{stat.total}
-                                  </span>
-                                )}
-                                {isActive && <Check className="h-3.5 w-3.5" />}
+                        <div className="w-full flex items-center justify-between gap-2 px-1.5 py-1.5 text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted-foreground/90">
+                          <span className="flex items-center gap-1.5">
+                            <span>{group.group}</span>
+                            {groupTotals.total > 0 && (
+                              <span className="text-[9px] font-semibold text-muted-foreground/70 tabular-nums normal-case tracking-normal">
+                                · {groupTotals.occupied}/{groupTotals.total}
                               </span>
-                            </button>
-                          );
-                        })}
+                            )}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 pt-0.5 pb-1">
+                          {group.sectors.map(sector => {
+                            const name = sector.name;
+                            const isActive = sectorFilter === name;
+                            const stat = bedStats.bySector[name];
+                            return (
+                              <button
+                                key={name}
+                                type="button"
+                                onClick={() => { applyFilter(name); setSectorFilterOpen(false); }}
+                                className={cn(
+                                  "flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all text-left border",
+                                  isActive
+                                    ? "bg-primary/10 text-primary border-primary/30 shadow-sm"
+                                    : "text-foreground hover:bg-muted border-transparent"
+                                )}
+                              >
+                                <span className="truncate">{name}</span>
+                                <span className="flex items-center gap-1 flex-shrink-0">
+                                  {stat && (
+                                    <span className={cn(
+                                      "text-[9px] font-semibold tabular-nums",
+                                      isActive ? "text-primary/80" : "text-muted-foreground/70"
+                                    )}>
+                                      {stat.occupied}/{stat.total}
+                                    </span>
+                                  )}
+                                  {isActive && <Check className="h-3.5 w-3.5" />}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
 
@@ -1220,7 +998,7 @@ export default function GestorPanelPage() {
                 <div className="space-y-1.5 max-h-64 overflow-y-auto">
                   {tmpBySector.map(row => (
                     <div key={row.sector} className="flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-md hover:bg-muted/40 transition-colors">
-                      <span className="text-xs font-medium text-foreground truncate">{getSectorDisplayLabel(row.sector) || row.sector}</span>
+                      <span className="text-xs font-medium text-foreground truncate">{row.sector}</span>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-[10px] text-muted-foreground">{row.samples} altas</span>
                         <span className="text-xs font-bold text-primary tabular-nums">
@@ -1323,7 +1101,7 @@ export default function GestorPanelPage() {
                     return (
                       <div key={row.sector} className="flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-md hover:bg-muted/40 transition-colors">
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium text-foreground truncate">{getSectorDisplayLabel(row.sector) || row.sector}</p>
+                          <p className="text-xs font-medium text-foreground truncate">{row.sector}</p>
                           <p className="text-[10px] text-muted-foreground">
                             {row.encounters} altas · {row.beds > 0 ? `${row.beds} leitos` : "sem leitos mapeados"}
                           </p>
@@ -1371,7 +1149,7 @@ export default function GestorPanelPage() {
                     return (
                       <div key={row.sector} className="space-y-1">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-medium text-foreground truncate">{getSectorDisplayLabel(row.sector) || row.sector}</span>
+                          <span className="font-medium text-foreground truncate">{row.sector}</span>
                           <span className="tabular-nums shrink-0">
                             <span className="font-bold text-destructive">{row.deaths}</span>
                             <span className="text-muted-foreground"> · {row.rate.toFixed(0)}%</span>
@@ -1527,7 +1305,7 @@ export default function GestorPanelPage() {
                     return (
                       <div key={row.sector} className="px-2.5 py-1.5 rounded-md hover:bg-muted/40 transition-colors space-y-1">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs font-medium text-foreground truncate">{getSectorDisplayLabel(row.sector) || row.sector}</p>
+                          <p className="text-xs font-medium text-foreground truncate">{row.sector}</p>
                           <Badge variant="secondary" className="text-[10px] tabular-nums shrink-0">{row.total}</Badge>
                         </div>
                         <div className="flex flex-wrap gap-1">

@@ -1,11 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
-import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
-import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
+
+// MIGRAÇÃO: clinical_evolutions → evolucoes.
+// Colunas novas: id, internacao_id, profissional_id, data_hora, soap (Json),
+// exame_fisico (Json), status, motivo_suspensao, criado_em, atualizado_em.
+// O modelo antigo tinha dezenas de colunas dedicadas (patient_name/bed/sector,
+// vital_signs, cid_*, validated_*, created_by*, evolution_type, archived_at, etc.)
+// que NÃO existem em `evolucoes`. Elas foram degradadas: os dados são preservados
+// dentro do JSON `soap` (chaves prefixadas com `__`), e os campos sem fonte
+// retornam default. Ver MIGRACAO_DEGRADACOES.md.
+// `patient_id` (antigo) == `internacao_id` (patientId == internacao.id).
+// `profissional_id` referencia profissionais.id (≠ auth.uid) — resolvido via lookup.
 
 export interface EvolutionRecord {
   id: string;
@@ -65,12 +73,60 @@ const EMPTY_EXAM = { general: "", cardiovascular: "", respiratory: "", abdomen: 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const asUuid = (id: string | null): string | null => (id && UUID_RE.test(id) ? id : null);
 
+/** Resolve profissionais.id a partir do auth user id (profissional_id ≠ auth.uid). */
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from("profissionais")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Mapeia uma linha `evolucoes` para o view-model estável EvolutionRecord. */
+function mapEvolution(d: any): EvolutionRecord {
+  const soap = (d.soap as any) || {};
+  return {
+    id: d.id,
+    patient_id: d.internacao_id ?? null,
+    patient_registry_id: null, // MIGRAÇÃO: sem registry no schema novo
+    archived_at: null, // MIGRAÇÃO: sem coluna archived_at em evolucoes
+    archive_reason: null,
+    patient_name: soap.__patient_name ?? "",
+    patient_bed: soap.__patient_bed ?? null,
+    patient_sector: soap.__patient_sector ?? null,
+    // soap_data preserva TODAS as chaves do JSON (inclui diagnosticHypotheses,
+    // planItems, pendenciasItems, antecedentes usados pelo PDF/consumidores).
+    soap_data: { ...EMPTY_SOAP, ...soap },
+    vital_signs: { ...EMPTY_VITALS, ...(soap.__vital_signs ?? {}) },
+    physical_exam: { ...EMPTY_EXAM, ...((d.exame_fisico as any) ?? {}) },
+    status: (d.status as EvolutionRecord["status"]) ?? "draft",
+    evolution_type: soap.__evolution_type ?? undefined,
+    diagnostic_hypotheses: soap.__diagnostic_hypotheses ?? null,
+    cid_primary: soap.__cid_primary ?? null,
+    cid_secondary: soap.__cid_secondary ?? null,
+    validated_at: soap.__validated_at ?? null,
+    validated_by: soap.__validated_by ?? null,
+    validated_by_name: soap.__validated_by_name ?? null,
+    suspended_at: soap.__suspended_at ?? null,
+    suspension_reason: d.motivo_suspensao ?? null,
+    created_by: soap.__created_by ?? d.profissional_id ?? "",
+    created_by_name: soap.__created_by_name ?? null,
+    created_at: d.criado_em ?? d.data_hora,
+    updated_at: d.atualizado_em ?? d.criado_em ?? d.data_hora,
+  };
+}
+
 export function useEvolutions(
   patientId: string | null,
   fallback?: { patientName?: string; patientBed?: string; patientSector?: string }
 ) {
   const { user } = useAuth();
-  const { currentHospital, currentState } = useHospital();
   const [evolutions, setEvolutions] = useState<EvolutionRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -79,192 +135,78 @@ export function useEvolutions(
   const fbBed = fallback?.patientBed?.trim() || null;
   const fbSector = fallback?.patientSector?.trim() || null;
 
-  // Fase B.1 — filtro por atendimento ativo (encounter_id) para evitar
-  // arrastar evoluções do ocupante anterior do leito.
-  const { encounterId: activeEncounterId } = useActiveEncounterId(safePatientId);
-
-  // 🔒 Documentação SEGUE O PACIENTE: resolvemos o patient_registry_id (identidade
-  // clínica permanente) a partir do bed-row atual e priorizamos ele no filtro.
-  // Assim, ao transferir ou realocar o paciente entre leitos, a timeline de
-  // evoluções continua junto — independente do `patients.id` da linha do leito.
-  const { registryId: resolvedRegistryId, isResolving: registryIsResolving } = useResolvedRegistryId(safePatientId);
-
   const loadEvolutions = useCallback(async (silent: boolean = false) => {
-    if (!currentHospital || !currentState) return;
-    // 🔒 Aguardar o registry resolver antes de disparar a query.
-    // Sem isso, a primeira execução cai no fallback por patient_id (sem registry),
-    // podendo perder evoluções que estão vinculadas ao registry_id mas com
-    // patient_id diferente do leito atual (ex: após repoint por transferência).
-    // O hook re-dispara quando registryIsResolving muda para false com o valor.
-    if (safePatientId && registryIsResolving) {
-      if (!silent) setLoading(true);
-      return; // aguardar próxima execução quando registry resolver
+    if (!safePatientId) {
+      setEvolutions([]);
+      return;
     }
     if (!silent) setLoading(true);
     try {
-      // 🔒 BARREIRA DE SETOR: filtrar evoluções pelo setor esperado do paciente.
-      // Impede que evoluções de outro setor vazem para o leito atual,
-      // especialmente em casos de reassociação de leito ou registro legado.
-      // fbSector pode ser o nome de exibição ("UTI 2") ou o código interno ("yellow").
-      // Mapeamos ambos para garantir cobertura.
-      const sectorCodeMap: Record<string, string> = {
-        "UTI 1": "red", "UTI 2": "yellow", "UCI 1": "blue", "UCI 2": "outside",
-        "red": "red", "yellow": "yellow", "blue": "blue", "outside": "outside",
-      };
-      const normalizedSector = fbSector ? (sectorCodeMap[fbSector] ?? fbSector) : null;
-
-      let query = supabase
-        .from("clinical_evolutions")
+      // MIGRAÇÃO: evolucoes é ancorada por internacao_id (identidade da internação).
+      // Toda a lógica antiga de registry/encounter/barreira-de-setor/leitos-históricos
+      // (tabelas patient_registry, patient_encounters, admission_histories — mortas)
+      // foi degradada: filtramos diretamente por internacao_id. evolucoes também não
+      // tem colunas hospital_unit_id/state_id/archived_at, então esses filtros saíram.
+      const { data, error } = await supabase
+        .from("evolucoes")
         .select("*")
-        .eq("hospital_unit_id", currentHospital.id)
-        .eq("state_id", currentState.id)
-        // ⚠️ Nunca trazer evoluções arquivadas (paciente anterior do leito,
-        // reverts de re-bind incorreto, etc). Auditoria preservada no banco.
-        .is("archived_at", null)
-        .order("created_at", { ascending: false });
-
-      // 🔒 Barreira de setor: só aplicada quando NÃO temos registry_id.
-      // Quando registry_id está disponível, ele identifica o paciente permanentemente
-      // através de todos os setores — não faz sentido filtrar por setor porque o
-      // paciente pode ter evoluções gravadas em setores anteriores (ex: José Ribamar
-      // tinha evoluções de "outside" antes de chegar em "yellow").
-      // A barreira de setor só protege contra vazamento quando usamos patient_id
-      // como filtro principal (patient_id muda por leito, registry_id não).
-
-      // Recupera todos os leitos históricos do paciente para cobrir evoluções legadas
-      // (patient_registry_id = NULL) que ficaram presas no leito de origem quando
-      // a RPC repoint_patient_history falhou silenciosamente em clinical_evolutions.
-      // Sem isso, essas evoluções somem da timeline após qualquer transferência interna.
-      // Fonte: admission_histories registra patient_id de cada passagem do paciente.
-      let legacyPatientIds: string[] = safePatientId ? [safePatientId] : [];
-      if (resolvedRegistryId && safePatientId) {
-        const { data: ahBeds, error: ahError } = await supabase
-          .from("admission_histories")
-          .select("patient_id")
-          .eq("patient_registry_id", resolvedRegistryId)
-          .eq("hospital_unit_id", currentHospital.id)
-          .not("patient_id", "is", null);
-        if (ahError) {
-          console.warn("[useEvolutions] lookup de leitos históricos indisponível:", ahError.message);
-          // Fallback: usa só o leito atual — histórico parcial mas funcional
-        }
-        if (ahBeds && ahBeds.length > 0) {
-          const extraIds = (ahBeds as { patient_id: string }[])
-            .map(r => r.patient_id)
-            .filter(id => id && id !== safePatientId);
-          if (extraIds.length > 0) {
-            legacyPatientIds = [safePatientId, ...extraIds];
-          }
-        }
-      }
-
-      if (resolvedRegistryId) {
-        // Com registry: sem barreira de setor — registry já garante isolamento.
-        // 🔒 Quando temos registry_id como âncora, ele é suficiente para identificar
-        // o paciente de forma segura. NÃO filtramos por encounter_id aqui porque:
-        // - Evoluções D1-D6 podem ter encounter_id de um encounter antigo (fechado/reaberto)
-        // - Evoluções gravadas antes do encounter ainda têm encounter_id = null
-        // - O registry_id já garante isolamento — evoluções de outro paciente
-        //   nunca compartilharão o mesmo registry_id.
-        // OR adicional cobre legados sem patient_registry_id (vinculados só por patient_id),
-        // incluindo leitos históricos para recuperar evoluções órfãs pós-repoint falho.
-        const legacyClauses = legacyPatientIds
-          .map(id => `and(patient_registry_id.is.null,patient_id.eq.${id})`)
-          .join(',');
-        query = query.or(
-          `patient_registry_id.eq.${resolvedRegistryId},${legacyClauses}`
-        );
-      } else if (safePatientId && activeEncounterId) {
-        // Sem registry: aplicar barreira de setor + filtro por patient_id
-        if (normalizedSector) {
-          const sectorDisplayNames2: Record<string, string> = { "red": "UTI 1", "yellow": "UTI 2", "blue": "UCI 1", "outside": "UCI 2" };
-          const sectorDisplayName2 = sectorDisplayNames2[normalizedSector] ?? normalizedSector;
-          if (normalizedSector !== sectorDisplayName2) {
-            query = query.or(`patient_sector.eq.${normalizedSector},patient_sector.eq.${sectorDisplayName2},patient_sector.is.null`);
-          } else {
-            query = query.or(`patient_sector.eq.${normalizedSector},patient_sector.is.null`);
-          }
-        }
-        query = query
-          .eq("patient_id", safePatientId)
-          .or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
-      } else if (safePatientId) {
-        // ⚠️ Sem registry nem encounter resolvido: buscar por patient_id direto como
-        // fallback defensivo. Isso evita que pacientes com patient_registry_id = NULL
-        // (registros legados ou admitidos antes da implementação do registry) percam
-        // o acesso às suas evoluções.
-        // Barreira: filtramos apenas evoluções archived_at IS NULL (já aplicado acima)
-        // e limitamos ao hospital_unit_id (também já aplicado) para evitar vazamento.
-        console.warn('[useEvolutions] sem encounter/registry — usando fallback por patient_id');
-        query = query.eq("patient_id", safePatientId);
-      } else {
-        setEvolutions([]);
-        if (!silent) setLoading(false);
-        return;
-      }
-
-      const { data, error } = await query;
+        .eq("internacao_id", safePatientId)
+        .order("data_hora", { ascending: false });
 
       if (error) throw error;
 
-      const mapped: EvolutionRecord[] = (data || []).map((d: any) => ({
-        ...d,
-        soap_data: { ...EMPTY_SOAP, ...(d.soap_data as any) },
-        vital_signs: { ...EMPTY_VITALS, ...(d.vital_signs as any) },
-        physical_exam: { ...EMPTY_EXAM, ...(d.physical_exam as any) },
-      })).filter((e: any) => !e.archived_at);
+      const mapped: EvolutionRecord[] = ((data as any[]) || []).map(mapEvolution);
 
-      const hasAdmissionEvo = mapped.some(e => (e as any).evolution_type === "admission");
-      if (!hasAdmissionEvo && safePatientId) {
-        let ahQuery = supabase
-          .from("admission_histories")
+      // Evolução virtual de admissão sintetizada a partir de `internacoes`
+      // (substitui a antiga leitura de admission_histories, tabela morta).
+      const hasAdmissionEvo = mapped.some((e) => e.evolution_type === "admission");
+      if (!hasAdmissionEvo) {
+        const { data: inter } = await supabase
+          .from("internacoes")
           .select("*")
-          .is("archived_at", null)
-          .order("created_at", { ascending: false })
-          .limit(1);
-
-        // Prioriza encounter ativo → registry → patient_id (defensivo contra reuso de leito)
-        if (activeEncounterId) {
-          ahQuery = ahQuery.eq("encounter_id", activeEncounterId);
-        } else if (resolvedRegistryId) {
-          ahQuery = ahQuery.eq("patient_registry_id", resolvedRegistryId);
-        } else {
-          ahQuery = ahQuery.eq("patient_id", safePatientId);
-        }
-
-        const { data: ah } = await ahQuery.maybeSingle();
-        if (ah) {
-          const cidLine = [ah.cid_primary, ah.cid_secondary].filter(Boolean).join(" • ");
-          const virtual: EvolutionRecord = {
-            id: `admission:${ah.id}`,
-            patient_id: ah.patient_id,
-            patient_name: fbName || "",
-            patient_bed: fbBed,
-            patient_sector: fbSector,
-            soap_data: {
-              subjective: ah.clinical_history || ah.chief_complaint || "",
-              objective: "",
-              assessment: cidLine || ah.diagnostic_hypothesis || ah.macro_diagnosis || "",
-              plan: ah.initial_conduct || "",
-            },
-            vital_signs: { ...EMPTY_VITALS },
-            physical_exam: { ...EMPTY_EXAM },
-            status: "validated",
-            evolution_type: "admission",
-            validated_at: ah.created_at,
-            validated_by: ah.created_by ?? null,
-            validated_by_name: null,
-            suspended_at: null,
-            suspension_reason: null,
-            created_by: ah.created_by ?? "",
-            created_by_name: null,
-            created_at: ah.created_at,
-            updated_at: ah.updated_at,
-          };
-          mapped.push(virtual);
+          .eq("id", safePatientId)
+          .maybeSingle();
+        if (inter) {
+          const i = inter as any;
+          const hasContent =
+            i.queixa_principal || i.historia_clinica || i.hipotese_diagnostica || i.conduta_inicial;
+          if (hasContent) {
+            const virtual: EvolutionRecord = {
+              id: `admission:${i.id}`,
+              patient_id: i.id,
+              patient_registry_id: null,
+              archived_at: null,
+              archive_reason: null,
+              patient_name: fbName || "",
+              patient_bed: fbBed,
+              patient_sector: fbSector,
+              soap_data: {
+                subjective: i.historia_clinica || i.queixa_principal || "",
+                objective: "",
+                assessment: i.hipotese_diagnostica || "",
+                plan: i.conduta_inicial || "",
+              },
+              vital_signs: { ...EMPTY_VITALS },
+              physical_exam: { ...EMPTY_EXAM },
+              status: "validated",
+              evolution_type: "admission",
+              diagnostic_hypotheses: i.hipotese_diagnostica ?? null,
+              cid_primary: null,
+              cid_secondary: null,
+              validated_at: i.data_entrada || i.criado_em,
+              validated_by: i.registrado_por ?? null,
+              validated_by_name: null,
+              suspended_at: null,
+              suspension_reason: null,
+              created_by: i.registrado_por ?? "",
+              created_by_name: null,
+              created_at: i.data_entrada || i.criado_em,
+              updated_at: i.atualizado_em || i.criado_em,
+            };
+            mapped.push(virtual);
+          }
         }
       }
-
 
       mapped.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
@@ -274,7 +216,7 @@ export function useEvolutions(
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [safePatientId, fbName, fbBed, fbSector, currentHospital, currentState, activeEncounterId, resolvedRegistryId, registryIsResolving]);
+  }, [safePatientId, fbName, fbBed, fbSector]);
 
   const fetchEvolutions = useCallback(() => loadEvolutions(false), [loadEvolutions]);
   const refreshSilently = useCallback(() => loadEvolutions(true), [loadEvolutions]);
@@ -297,54 +239,56 @@ export function useEvolutions(
     planItems?: string[],
     pendenciasItems?: string[],
   ): Promise<EvolutionRecord | null> => {
-    if (!user || !currentHospital || !currentState) {
-      toast.error("Contexto hospitalar não disponível");
+    if (!user) {
+      toast.error("Contexto de usuário não disponível");
+      return null;
+    }
+    if (!safePatientId) {
+      toast.error("Internação inválida para gravar evolução");
       return null;
     }
     try {
       const doctorName = user.user_metadata?.full_name || "Dr. Carlos Eduardo Mendes";
+      const profissionalId = await resolveProfissionalId(user.id);
+      if (!profissionalId) {
+        toast.error("Profissional não encontrado para o usuário atual");
+        return null;
+      }
 
-      // 🔁 Padronização do write (escopo: padronizar gravação de hipóteses).
-      // O caller manda `diagnosticHypotheses` como string concatenada por "\n".
-      // O LOAD (EvolucaoPage / printEvolution / EvolutionForm) prioriza
-      // `soap_data.diagnosticHypotheses` no formato ARRAY. Sincronizamos os dois
-      // formatos no insert: array no soap_data (formato novo / "oficial") e
-      // string preservada na coluna raiz `diagnostic_hypotheses` (compat legada).
       const hypoArray = Array.isArray(diagnosticHypotheses)
-        ? (diagnosticHypotheses as unknown as string[]).map(s => String(s).trim()).filter(Boolean)
+        ? (diagnosticHypotheses as unknown as string[]).map((s) => String(s).trim()).filter(Boolean)
         : typeof diagnosticHypotheses === "string" && diagnosticHypotheses.trim()
-          ? diagnosticHypotheses.split("\n").map(s => s.trim()).filter(Boolean)
+          ? diagnosticHypotheses.split("\n").map((s) => s.trim()).filter(Boolean)
           : [];
 
+      // MIGRAÇÃO: campos sem coluna dedicada em `evolucoes` são preservados dentro
+      // do JSON `soap` (prefixo `__`). O exame físico vai na coluna `exame_fisico`.
+      const soapPayload = {
+        ...(soapData || EMPTY_SOAP),
+        planItems: planItems?.filter(Boolean) ?? [],
+        pendenciasItems: pendenciasItems?.filter(Boolean) ?? [],
+        antecedentes: antecedentes?.filter(Boolean) ?? [],
+        diagnosticHypotheses: hypoArray,
+        __patient_name: patientName,
+        __patient_bed: patientBed,
+        __patient_sector: patientSector,
+        __vital_signs: vitalSigns || EMPTY_VITALS,
+        __diagnostic_hypotheses: diagnosticHypotheses ?? null,
+        __cid_primary: cidPrimary ?? null,
+        __cid_secondary: cidSecondary ?? null,
+        __created_by: user.id,
+        __created_by_name: doctorName,
+        __evolution_type: (soapData as any)?.type ?? null,
+      };
+
       const { data, error } = await supabase
-        .from("clinical_evolutions")
+        .from("evolucoes")
         .insert({
-          patient_id: safePatientId,
-          // 🔒 Carimba a identidade clínica permanente (segue o paciente entre leitos).
-          patient_registry_id: resolvedRegistryId ?? null,
-          encounter_id: activeEncounterId ?? null,
-          patient_name: patientName,
-          patient_bed: patientBed,
-          patient_sector: patientSector,
-          soap_data: {
-            ...(soapData || EMPTY_SOAP),
-            // Campos por item — armazenados no JSON do soap_data
-            planItems: planItems?.filter(Boolean) ?? [],
-            pendenciasItems: pendenciasItems?.filter(Boolean) ?? [],
-            // Antecedentes também no soap_data para o PDF da evolução
-            antecedentes: antecedentes?.filter(Boolean) ?? [],
-            // Hipóteses diagnósticas no formato ARRAY (formato novo / oficial)
-            diagnosticHypotheses: hypoArray,
-          },
-          vital_signs: vitalSigns || EMPTY_VITALS,
-          physical_exam: physicalExam || EMPTY_EXAM,
-          diagnostic_hypotheses: diagnosticHypotheses ?? null,
-          cid_primary: cidPrimary ?? null,
-          cid_secondary: cidSecondary ?? null,
-          hospital_unit_id: currentHospital.id,
-          state_id: currentState.id,
-          created_by: user.id,
-          created_by_name: doctorName,
+          internacao_id: safePatientId,
+          profissional_id: profissionalId,
+          data_hora: new Date().toISOString(),
+          soap: soapPayload,
+          exame_fisico: physicalExam || EMPTY_EXAM,
           status: "draft",
         } as any)
         .select()
@@ -352,56 +296,49 @@ export function useEvolutions(
 
       if (error) throw error;
 
-      // 🔒 Sincronização com o mapa de leitos
+      // 🔒 Sincronização com o card da internação (Painel Clínico).
+      // MIGRAÇÃO: antes atualizava a tabela `patients`; agora escreve em `internacoes`.
       // Só sincroniza quando a evolução é de ROTINA (não complementar).
-      // Complementares (vespertina/noturna/intercorrência) servem só como registro
-      // pontual e NÃO devem sobrescrever os campos do card no Painel Clínico.
       const evoType = (soapData as any)?.type as string | undefined;
-      const isComplementary = evoType === "intercurrence" || evoType === "vespertina" || evoType === "noturna";
+      const isComplementary =
+        evoType === "intercurrence" || evoType === "vespertina" || evoType === "noturna";
 
-      if (safePatientId && !isComplementary) {
-        const patientUpdates: Record<string, unknown> = {};
+      if (!isComplementary) {
+        const interUpdates: Record<string, unknown> = {};
 
-        // Hipóteses → patients.diagnoses
+        // Hipóteses → internacoes.hipotese_diagnostica
         if (diagnosticHypotheses !== undefined) {
-          patientUpdates.diagnoses = parseDiagnosesText(diagnosticHypotheses);
+          const parsed = parseDiagnosesText(diagnosticHypotheses);
+          interUpdates.hipotese_diagnostica = Array.isArray(parsed) ? parsed.join("\n") : parsed;
         }
-
-        // Antecedentes → patients.medical_history
+        // Antecedentes → internacoes.historia_clinica
         if (antecedentes && antecedentes.length > 0) {
-          patientUpdates.medical_history = antecedentes.filter(Boolean).join("\n");
+          interUpdates.historia_clinica = antecedentes.filter(Boolean).join("\n");
         }
-
-        // Plano Terapêutico → patients.uti_daily_conducts (TEXT join \n)
+        // Plano Terapêutico → internacoes.conduta_inicial
         if (planItems && planItems.length > 0) {
-          patientUpdates.uti_daily_conducts = planItems.filter(Boolean).join("\n");
+          interUpdates.conduta_inicial = planItems.filter(Boolean).join("\n");
         }
-
-        // Pendências → patients.pendencies
+        // Pendências → internacoes.pendencias
         if (pendenciasItems && pendenciasItems.length > 0) {
-          patientUpdates.pendencies = pendenciasItems.filter(Boolean).join("\n");
+          interUpdates.pendencias = pendenciasItems.filter(Boolean).join("\n");
         }
 
-        if (Object.keys(patientUpdates).length > 0) {
+        if (Object.keys(interUpdates).length > 0) {
           try {
             await supabase
-              .from("patients")
-              .update(patientUpdates as any)
+              .from("internacoes")
+              .update(interUpdates as any)
               .eq("id", safePatientId);
           } catch (syncErr) {
-            console.warn("[useEvolutions] sync mapa error", syncErr);
+            console.warn("[useEvolutions] sync internação error", syncErr);
           }
         }
       }
 
       toast.success("Evolução criada com sucesso");
       await refreshSilently();
-      return {
-        ...data,
-        soap_data: { ...EMPTY_SOAP, ...(data.soap_data as any) },
-        vital_signs: { ...EMPTY_VITALS, ...(data.vital_signs as any) },
-        physical_exam: { ...EMPTY_EXAM, ...(data.physical_exam as any) },
-      } as EvolutionRecord;
+      return mapEvolution(data);
     } catch (err: any) {
       toast.error("Erro ao criar evolução: " + err.message);
       return null;
@@ -417,16 +354,26 @@ export function useEvolutions(
       diagnostic_hypotheses?: string | null;
     }
   ) => {
-    const target = evolutions.find((e) => e.id === id);
-    if (target?.archived_at) {
-      toast.error("Evolução arquivada não pode ser editada");
-      await refreshSilently();
-      return false;
-    }
     try {
+      // MIGRAÇÃO: mescla no JSON `soap` (vital_signs/diagnostic_hypotheses não têm
+      // coluna própria). Lê o soap atual para não sobrescrever chaves preservadas.
+      const { data: existing } = await supabase
+        .from("evolucoes")
+        .select("soap")
+        .eq("id", id)
+        .maybeSingle();
+      const mergedSoap: any = { ...(((existing as any)?.soap as any) || {}), ...(updates.soap_data || {}) };
+      if (updates.vital_signs !== undefined) mergedSoap.__vital_signs = updates.vital_signs;
+      if (updates.diagnostic_hypotheses !== undefined) {
+        mergedSoap.__diagnostic_hypotheses = updates.diagnostic_hypotheses;
+      }
+
+      const payload: any = { soap: mergedSoap };
+      if (updates.physical_exam !== undefined) payload.exame_fisico = updates.physical_exam;
+
       const { error } = await supabase
-        .from("clinical_evolutions")
-        .update(updates as any)
+        .from("evolucoes")
+        .update(payload)
         .eq("id", id);
       if (error) throw error;
       toast.success("Evolução salva");
@@ -440,22 +387,23 @@ export function useEvolutions(
 
   const validateEvolution = async (id: string) => {
     if (!user) return false;
-    const target = evolutions.find((e) => e.id === id);
-    if (target?.archived_at) {
-      toast.error("Evolução arquivada não pode ser validada");
-      await refreshSilently();
-      return false;
-    }
     try {
       const doctorName = user.user_metadata?.full_name || "Dr. Carlos Eduardo Mendes";
+      // MIGRAÇÃO: validated_at/validated_by/validated_by_name não têm coluna →
+      // preservados no JSON `soap`.
+      const { data: existing } = await supabase
+        .from("evolucoes")
+        .select("soap")
+        .eq("id", id)
+        .maybeSingle();
+      const mergedSoap: any = { ...(((existing as any)?.soap as any) || {}) };
+      mergedSoap.__validated_at = new Date().toISOString();
+      mergedSoap.__validated_by = user.id;
+      mergedSoap.__validated_by_name = doctorName;
+
       const { error } = await supabase
-        .from("clinical_evolutions")
-        .update({
-          status: "validated",
-          validated_at: new Date().toISOString(),
-          validated_by: user.id,
-          validated_by_name: doctorName,
-        } as any)
+        .from("evolucoes")
+        .update({ status: "validated", soap: mergedSoap } as any)
         .eq("id", id);
       if (error) throw error;
       toast.success("Evolução validada e assinada");
@@ -470,13 +418,22 @@ export function useEvolutions(
   const suspendEvolution = async (id: string, reason: string) => {
     if (!user) return false;
     try {
+      // motivo_suspensao É coluna real em evolucoes. suspended_at fica no soap.
+      const { data: existing } = await supabase
+        .from("evolucoes")
+        .select("soap")
+        .eq("id", id)
+        .maybeSingle();
+      const mergedSoap: any = { ...(((existing as any)?.soap as any) || {}) };
+      mergedSoap.__suspended_at = new Date().toISOString();
+      mergedSoap.__suspended_by = user.id;
+
       const { error } = await supabase
-        .from("clinical_evolutions")
+        .from("evolucoes")
         .update({
           status: "suspended",
-          suspended_at: new Date().toISOString(),
-          suspended_by: user.id,
-          suspension_reason: reason,
+          motivo_suspensao: reason,
+          soap: mergedSoap,
         } as any)
         .eq("id", id);
       if (error) throw error;
@@ -492,7 +449,7 @@ export function useEvolutions(
   const deleteEvolution = async (id: string) => {
     try {
       const { error } = await supabase
-        .from("clinical_evolutions")
+        .from("evolucoes")
         .delete()
         .eq("id", id);
       if (error) throw error;
@@ -511,11 +468,6 @@ export function useEvolutions(
     patientBed: string,
     patientSector: string
   ) => {
-    if (source.archived_at) {
-      toast.error("Evolução arquivada não pode ser duplicada");
-      await refreshSilently();
-      return null;
-    }
     return createEvolution(
       patientName,
       patientBed,

@@ -1,61 +1,74 @@
 import { useMemo } from "react";
-import { AlertTriangle, CheckCircle2, Settings2, Info } from "lucide-react";
+import { Settings2, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
+
+interface BedLike {
+  status?: string | null;
+  bed_number?: string | null;
+  bedNumber?: string | null;
+}
 
 interface NirConfigPanelProps {
-  /** Leitos existentes no banco, agrupados por código de setor. */
-  bedsBySector: Record<string, unknown[]>;
+  /** Leitos existentes no banco, agrupados pelo NOME REAL do setor (setores.nome). */
+  bedsBySector: Record<string, BedLike[]>;
 }
+
+// Rótulos e ordem de exibição dos status do banco (CHECK leitos.status).
+const STATUS_ORDER = ["livre", "ocupado", "higienizacao", "bloqueado", "reservado"] as const;
+const STATUS_LABEL: Record<string, string> = {
+  livre: "Livres",
+  ocupado: "Ocupados",
+  higienizacao: "Higienização",
+  bloqueado: "Bloqueados",
+  reservado: "Reservados",
+};
+const STATUS_CLASS: Record<string, string> = {
+  livre: "text-emerald-600 dark:text-emerald-400",
+  ocupado: "text-sky-600 dark:text-sky-400",
+  higienizacao: "text-amber-600 dark:text-amber-500",
+  bloqueado: "text-destructive",
+  reservado: "text-violet-600 dark:text-violet-400",
+};
+
+const isExtra = (b: BedLike) =>
+  ((b.bed_number || b.bedNumber || "") as string).toString().toUpperCase().startsWith("EXTRA");
 
 /**
  * Configuração — estrutura de leitos por setor.
  *
- * POR QUE ESTE PAINEL COMEÇA COMO DIAGNÓSTICO, E NÃO COMO CADASTRO:
+ * MIGRAÇÃO: este painel comparava a capacidade prevista em `SECTOR_BED_CONFIG`
+ * (hardcoded, com os códigos antigos red/yellow/ucc/neuro_01…) contra os leitos
+ * existentes. No schema novo os leitos vivem em `leitos` agrupados pelo NOME
+ * real do setor (alas → setores), e `setores` NÃO tem coluna de capacidade
+ * prevista — então aquela comparação nunca casava (mostrava todo setor como
+ * "Faltam N" ou "Sem configuração") e passou a ser lixo.
  *
- * A capacidade por setor JÁ EXISTE no código, em `SECTOR_BED_CONFIG`
- * (src/utils/bedNaming.ts): prefixo, quantidade de leitos regulares e número
- * inicial. É ela que governa a numeração quando alguém cria um leito.
- *
- * Mas os LEITOS em si são linhas na tabela `patients` — e as duas coisas podem
- * divergir. Foi exatamente o que apareceu ao liberar os setores novos: o Neuro
- * 01 mostrava dez leitos L01–L10 que ninguém reconhecia como a estrutura real
- * da unidade.
- *
- * Cadastrar leito sem antes ver essa divergência seria construir por cima de
- * um desalinhamento que ninguém mediu. Este painel mede primeiro: mostra, por
- * setor, quantos leitos a configuração prevê e quantos existem de fato.
- *
- * O cadastro e o bloqueio programado entram depois, sobre um retrato confiável.
+ * A "capacidade prevista" foi DEGRADADA (não há fonte no banco). O painel agora
+ * é um RETRATO FIEL da estrutura real: por setor, quantos leitos existem e como
+ * estão distribuídos por status. É leitura — cadastro/bloqueio entram depois.
  */
 export function NirConfigPanel({ bedsBySector }: NirConfigPanelProps) {
   const linhas = useMemo(() => {
-    const setores = new Set([
-      ...Object.keys(SECTOR_BED_CONFIG),
-      ...Object.keys(bedsBySector),
-    ]);
-    return Array.from(setores)
-      .map((codigo) => {
-        const cfg = SECTOR_BED_CONFIG[codigo];
-        const reais = bedsBySector[codigo]?.length ?? 0;
-        const previstos = cfg?.maxRegularBeds ?? null;
-        return {
-          codigo,
-          rotulo: cfg?.label ?? codigo,
-          prefixo: cfg?.prefix ?? "—",
-          inicio: cfg?.startNumber ?? null,
-          previstos,
-          reais,
-          // Extras são legítimos (maca extra); faltar leito é que chama atenção.
-          diferenca: previstos === null ? null : reais - previstos,
-          semConfig: !cfg,
-        };
+    return Object.entries(bedsBySector)
+      .filter(([nome]) => nome) // ignora chave vazia (leito sem setor)
+      .map(([nome, leitos]) => {
+        const regulares = leitos.filter((b) => !isExtra(b));
+        const extras = leitos.length - regulares.length;
+        const porStatus: Record<string, number> = {};
+        for (const b of regulares) {
+          const s = (b.status || "").toString();
+          porStatus[s] = (porStatus[s] ?? 0) + 1;
+        }
+        return { nome, total: regulares.length, extras, porStatus };
       })
-      .sort((a, b) => a.rotulo.localeCompare(b.rotulo, "pt-BR"));
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   }, [bedsBySector]);
 
-  const divergentes = linhas.filter((l) => l.semConfig || (l.diferenca !== null && l.diferenca !== 0));
+  const totalLeitos = useMemo(
+    () => linhas.reduce((acc, l) => acc + l.total + l.extras, 0),
+    [linhas],
+  );
 
   return (
     <div className="space-y-4">
@@ -65,91 +78,71 @@ export function NirConfigPanel({ bedsBySector }: NirConfigPanelProps) {
           Configuração — estrutura de leitos
         </h3>
         <Badge variant="outline" className="text-[11px]">
-          {divergentes.length === 0
-            ? "Todos os setores conferem"
-            : `${divergentes.length} setor${divergentes.length > 1 ? "es" : ""} a revisar`}
+          {linhas.length === 0
+            ? "Nenhum leito cadastrado"
+            : `${linhas.length} setor${linhas.length > 1 ? "es" : ""} · ${totalLeitos} leito${totalLeitos !== 1 ? "s" : ""}`}
         </Badge>
       </div>
 
       <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground flex items-start gap-2">
         <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
         <span>
-          A capacidade prevista vive na configuração da plataforma; os leitos são
-          registros do banco. Quando os dois divergem, o mapa mostra leitos que a
-          unidade não reconhece — ou esconde leitos que existem.{" "}
-          <strong>Este painel é leitura</strong>: cadastro e bloqueio programado
-          entram depois, sobre um retrato conferido.
+          Estrutura real dos leitos por setor, direto do banco (alas → setores →
+          leitos). <strong>Este painel é leitura</strong>: cadastro e bloqueio
+          programado entram depois, sobre um retrato conferido.
         </span>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground">
-              <th className="text-left font-medium py-2 px-2">Setor</th>
-              <th className="text-left font-medium py-2 px-2">Numeração</th>
-              <th className="text-right font-medium py-2 px-2">Previstos</th>
-              <th className="text-right font-medium py-2 px-2">Existentes</th>
-              <th className="text-left font-medium py-2 px-2">Situação</th>
-            </tr>
-          </thead>
-          <tbody>
-            {linhas.map((l) => {
-              const faltando = l.diferenca !== null && l.diferenca < 0;
-              const sobrando = l.diferenca !== null && l.diferenca > 0;
-              return (
-                <tr key={l.codigo} className="border-b border-border/50 hover:bg-muted/30">
-                  <td className="py-2 px-2 font-medium text-foreground">{l.rotulo}</td>
-                  <td className="py-2 px-2 font-mono text-muted-foreground">
-                    {l.prefixo}
-                    {l.inicio !== null && (
-                      <span className="opacity-60">
-                        {String(l.inicio).padStart(2, "0")}…
-                      </span>
-                    )}
-                  </td>
+      {linhas.length === 0 ? (
+        <p className="text-xs text-muted-foreground py-6 text-center">
+          Nenhum leito encontrado para os setores deste hospital.
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground">
+                <th className="text-left font-medium py-2 px-2">Setor</th>
+                <th className="text-right font-medium py-2 px-2">Leitos</th>
+                {STATUS_ORDER.map((s) => (
+                  <th key={s} className="text-right font-medium py-2 px-2">{STATUS_LABEL[s]}</th>
+                ))}
+                <th className="text-right font-medium py-2 px-2">Extras</th>
+              </tr>
+            </thead>
+            <tbody>
+              {linhas.map((l) => (
+                <tr key={l.nome} className="border-b border-border/50 hover:bg-muted/30">
+                  <td className="py-2 px-2 font-medium text-foreground">{l.nome}</td>
+                  <td className="py-2 px-2 text-right tabular-nums font-medium text-foreground">{l.total}</td>
+                  {STATUS_ORDER.map((s) => {
+                    const n = l.porStatus[s] ?? 0;
+                    return (
+                      <td
+                        key={s}
+                        className={cn(
+                          "py-2 px-2 text-right tabular-nums",
+                          n > 0 ? STATUS_CLASS[s] : "text-muted-foreground/40",
+                        )}
+                      >
+                        {n}
+                      </td>
+                    );
+                  })}
                   <td className="py-2 px-2 text-right tabular-nums text-muted-foreground">
-                    {l.previstos ?? "—"}
-                  </td>
-                  <td className={cn(
-                    "py-2 px-2 text-right tabular-nums font-medium",
-                    faltando && "text-amber-600 dark:text-amber-500",
-                    sobrando && "text-sky-600 dark:text-sky-400",
-                  )}>
-                    {l.reais}
-                  </td>
-                  <td className="py-2 px-2">
-                    {l.semConfig ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-destructive">
-                        <AlertTriangle className="h-3 w-3" /> Sem configuração
-                      </span>
-                    ) : faltando ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-500">
-                        <AlertTriangle className="h-3 w-3" /> Faltam {Math.abs(l.diferenca!)}
-                      </span>
-                    ) : sobrando ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-sky-600 dark:text-sky-400">
-                        +{l.diferenca} além do previsto
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
-                        <CheckCircle2 className="h-3 w-3" /> Confere
-                      </span>
-                    )}
+                    {l.extras > 0 ? `+${l.extras}` : "—"}
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <p className="text-[10px] text-muted-foreground leading-relaxed">
-        Leitos <strong>além do previsto</strong> costumam ser macas extras, e são
-        legítimos. <strong>Faltar</strong> leito significa que o setor tem menos
-        registros do que a unidade opera — e é o caso que merece conferência.{" "}
-        <strong>Sem configuração</strong> significa que existem leitos gravados
-        num setor que a plataforma não conhece.
+        <strong>Leitos</strong> conta os regulares do setor. <strong>Extras</strong>{" "}
+        são macas adicionais (numeração EXTRA), legítimas em sobrecarga. A soma por
+        status reflete a ocupação atual: leito ocupado deriva de internação ativa.
       </p>
     </div>
   );

@@ -13,6 +13,22 @@ import { useHospital } from "@/contexts/HospitalContext";
 
 export type ReceptionPoint = "vertical" | "horizontal";
 
+// MIGRAÇÃO: `reception_desk_sessions` (morta) → `sessoes_recepcao`. Colunas:
+//   started_at→iniciado_em, ended_at→finalizado_em, reception_point→ponto_recepcao,
+//   hospital_unit_id→hospital_id, user_name→nome_usuario,
+//   last_heartbeat_at→ultimo_heartbeat_em, user_id→profissional_id (profissionais.id).
+// DEGRADADO: state_id não existe → removido (e o gate por selected_state_id também,
+// senão nenhuma sessão de recepção abriria).
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase.from("profissionais").select("id").eq("user_id", userId).maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export interface ReceptionPostState {
   /** Posto atualmente selecionado (null = ainda não escolheu) */
   point: ReceptionPoint | null;
@@ -55,16 +71,16 @@ export function useReceptionPost(): ReceptionPostState {
     if (storedPoint && storedSession) {
       // Valida se a sessão ainda está aberta no banco
       supabase
-        .from("reception_desk_sessions" as any)
-        .select("id, started_at, ended_at, reception_point")
+        .from("sessoes_recepcao")
+        .select("id, iniciado_em, finalizado_em, ponto_recepcao")
         .eq("id", storedSession)
         .maybeSingle()
         .then(({ data }) => {
           const row = data as any;
-          if (row && !row.ended_at && row.reception_point === storedPoint) {
+          if (row && !row.finalizado_em && row.ponto_recepcao === storedPoint) {
             setPointState(storedPoint);
             setSessionId(storedSession);
-            setStartedAt(row.started_at);
+            setStartedAt(row.iniciado_em);
           } else {
             // Sessão inválida — limpa local
             localStorage.removeItem(`${STORAGE_KEY}:${user.id}`);
@@ -88,8 +104,8 @@ export function useReceptionPost(): ReceptionPostState {
     }
     const beat = async () => {
       await supabase
-        .from("reception_desk_sessions" as any)
-        .update({ last_heartbeat_at: new Date().toISOString() })
+        .from("sessoes_recepcao")
+        .update({ ultimo_heartbeat_em: new Date().toISOString() })
         .eq("id", sessionId);
     };
     beat();
@@ -102,14 +118,12 @@ export function useReceptionPost(): ReceptionPostState {
   const setPoint = useCallback(
     async (next: ReceptionPoint) => {
       if (!user?.id || !hospitalId) return;
-      const stateId = localStorage.getItem("selected_state_id");
-      if (!stateId) return;
 
       // 1) Encerra sessão anterior se existir e for diferente
       if (sessionId && point !== next) {
         await supabase
-          .from("reception_desk_sessions" as any)
-          .update({ ended_at: new Date().toISOString() })
+          .from("sessoes_recepcao")
+          .update({ finalizado_em: new Date().toISOString() })
           .eq("id", sessionId);
       }
 
@@ -121,18 +135,18 @@ export function useReceptionPost(): ReceptionPostState {
       }
 
       // 3) Abre nova sessão
+      const profissionalId = await resolveProfissionalId(user.id);
       const { data, error } = await supabase
-        .from("reception_desk_sessions" as any)
+        .from("sessoes_recepcao")
         .insert({
-          user_id: user.id,
-          user_name: user.user_metadata?.full_name || user.email || null,
-          reception_point: next,
-          hospital_unit_id: hospitalId,
-          state_id: stateId,
-          started_at: new Date().toISOString(),
-          last_heartbeat_at: new Date().toISOString(),
+          profissional_id: profissionalId,
+          nome_usuario: user.user_metadata?.full_name || user.email || null,
+          ponto_recepcao: next,
+          hospital_id: hospitalId,
+          iniciado_em: new Date().toISOString(),
+          ultimo_heartbeat_em: new Date().toISOString(),
         } as any)
-        .select("id, started_at")
+        .select("id, iniciado_em")
         .single();
 
       if (error) {
@@ -143,7 +157,7 @@ export function useReceptionPost(): ReceptionPostState {
       const row = data as any;
       setPointState(next);
       setSessionId(row.id);
-      setStartedAt(row.started_at);
+      setStartedAt(row.iniciado_em);
       localStorage.setItem(`${STORAGE_KEY}:${user.id}`, next);
       localStorage.setItem(`${SESSION_KEY}:${user.id}`, row.id);
     },
@@ -154,8 +168,8 @@ export function useReceptionPost(): ReceptionPostState {
     if (!user?.id) return;
     if (sessionId) {
       await supabase
-        .from("reception_desk_sessions" as any)
-        .update({ ended_at: new Date().toISOString() })
+        .from("sessoes_recepcao")
+        .update({ finalizado_em: new Date().toISOString() })
         .eq("id", sessionId);
     }
     setPointState(null);

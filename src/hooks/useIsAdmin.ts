@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Returns whether the current user has the `admin` role.
- * Backed exclusively by `user_roles` (server-side) — never localStorage.
+ * Backed exclusively by `profissionais.papel` (server-side) — never localStorage.
+ *
+ * MIGRAÇÃO: `user_roles` (morta) → `profissionais.papel` por `user_id`.
  */
 export function useIsAdmin(): { isAdmin: boolean; loading: boolean } {
   const { user } = useAuth();
@@ -20,13 +22,13 @@ export function useIsAdmin(): { isAdmin: boolean; loading: boolean } {
     }
     setLoading(true);
     supabase
-      .from("user_roles")
-      .select("role")
+      .from("profissionais")
+      .select("papel")
       .eq("user_id", user.id)
+      .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return;
-        const allowed = (data ?? []).some((r) => (r.role as string) === "admin");
-        setIsAdmin(allowed);
+        setIsAdmin((data as { papel?: string } | null)?.papel === "admin");
         setLoading(false);
       });
     return () => {

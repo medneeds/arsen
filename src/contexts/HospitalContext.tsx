@@ -29,8 +29,15 @@ const HospitalContext = createContext<HospitalContextType | undefined>(undefined
 const STORAGE_KEY_STATE = "selected_state_id";
 const STORAGE_KEY_HOSPITAL = "selected_hospital_id";
 
+// MIGRAÇÃO: o schema novo não tem tabela de estados geográficos (`states`/`estados`) nem
+// coluna de estado em `hospitais`. A interface exportada (State, currentState, states, HospitalUnit)
+// é mantida idêntica porque ~100 consumidores dependem dela. `states` degrada para [] e
+// `currentState` recebe um placeholder não-nulo para não quebrar consumidores que fazem
+// `currentState.id` sem guarda. `HospitalUnit.state_id` passa a apontar para esse placeholder.
+const DEFAULT_STATE: State = { id: "default", name: "Brasil", abbreviation: "BR" };
+
 export function HospitalProvider({ children }: { children: ReactNode }) {
-  const [currentState, setCurrentState] = useState<State | null>(null);
+  const [currentState, setCurrentState] = useState<State | null>(DEFAULT_STATE);
   const [currentHospital, setCurrentHospitalState] = useState<HospitalUnit | null>(null);
   const [states, setStates] = useState<State[]>([]);
   const [hospitals, setHospitals] = useState<HospitalUnit[]>([]);
@@ -39,53 +46,43 @@ export function HospitalProvider({ children }: { children: ReactNode }) {
   const fetchStatesAndHospitals = async () => {
     try {
       setIsLoading(true);
-      
-      // Fetch states
-      const { data: statesData, error: statesError } = await supabase
-        .from('states')
-        .select('*')
-        .order('name');
 
-      if (statesError) throw statesError;
-      setStates(statesData || []);
+      // MIGRAÇÃO: `states` não existe no schema novo — mantido vazio (degradado).
+      setStates([]);
+      setCurrentState(DEFAULT_STATE);
 
-      // Fetch hospitals
-      const { data: hospitalsData, error: hospitalsError } = await supabase
-        .from('hospital_units')
-        .select('*')
-        .order('name');
+      // hospital_units → hospitais. Mapeia colunas novas (nome, endereco) para os
+      // nomes de campo antigos (name, address) que a interface expõe.
+      const { data: hospitaisData, error: hospitaisError } = await supabase
+        .from("hospitais")
+        .select("id, nome, endereco, ativo")
+        .eq("ativo", true)
+        .order("nome");
 
-      if (hospitalsError) throw hospitalsError;
-      setHospitals(hospitalsData || []);
+      if (hospitaisError) throw hospitaisError;
 
-      // Try to restore from localStorage or set default
-      const storedStateId = localStorage.getItem(STORAGE_KEY_STATE);
+      const mappedHospitals: HospitalUnit[] = (hospitaisData || []).map((h) => ({
+        id: h.id,
+        name: h.nome,
+        state_id: DEFAULT_STATE.id, // MIGRAÇÃO: sem estado no schema novo
+        address: h.endereco,
+      }));
+      setHospitals(mappedHospitals);
+
+      // Restaura o hospital selecionado do localStorage, ou usa o primeiro.
       const storedHospitalId = localStorage.getItem(STORAGE_KEY_HOSPITAL);
+      const restored = storedHospitalId
+        ? mappedHospitals.find((h) => h.id === storedHospitalId)
+        : undefined;
+      const defaultHospital = restored || mappedHospitals[0];
 
-      if (storedStateId && storedHospitalId) {
-        const state = statesData?.find(s => s.id === storedStateId);
-        const hospital = hospitalsData?.find(h => h.id === storedHospitalId);
-        
-        if (state && hospital) {
-          setCurrentState(state);
-          setCurrentHospitalState(hospital);
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      // Set default to Maranhão and first hospital
-      const maState = statesData?.find(s => s.abbreviation === 'MA');
-      const defaultHospital = hospitalsData?.find(h => h.state_id === maState?.id) || hospitalsData?.[0];
-
-      if (maState && defaultHospital) {
-        setCurrentState(maState);
+      if (defaultHospital) {
         setCurrentHospitalState(defaultHospital);
-        localStorage.setItem(STORAGE_KEY_STATE, maState.id);
         localStorage.setItem(STORAGE_KEY_HOSPITAL, defaultHospital.id);
+        localStorage.setItem(STORAGE_KEY_STATE, DEFAULT_STATE.id);
       }
     } catch (error) {
-      console.error('Error fetching states and hospitals:', error);
+      console.error("Error fetching hospitals:", error);
     } finally {
       setIsLoading(false);
     }
@@ -94,13 +91,9 @@ export function HospitalProvider({ children }: { children: ReactNode }) {
   const setCurrentHospital = (hospital: HospitalUnit) => {
     setCurrentHospitalState(hospital);
     localStorage.setItem(STORAGE_KEY_HOSPITAL, hospital.id);
-    
-    // Update state based on hospital
-    const state = states.find(s => s.id === hospital.state_id);
-    if (state) {
-      setCurrentState(state);
-      localStorage.setItem(STORAGE_KEY_STATE, state.id);
-    }
+    // MIGRAÇÃO: sem estado por hospital — currentState permanece no placeholder.
+    setCurrentState(DEFAULT_STATE);
+    localStorage.setItem(STORAGE_KEY_STATE, DEFAULT_STATE.id);
   };
 
   useEffect(() => {

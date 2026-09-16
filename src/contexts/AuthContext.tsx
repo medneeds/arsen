@@ -2,8 +2,10 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode } fro
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import type { Database } from "@/integrations/supabase/types";
 
-type UserRole = "admin" | "medico" | "porta" | "visitante" | "farmacia" | null;
+// Papel agora vem do enum papel_profissional (schema refatorado → tabela `profissionais`).
+type UserRole = Database["public"]["Enums"]["papel_profissional"] | null;
 type UserStatus = "pending" | "approved" | "rejected" | null;
 
 interface AuthContextType {
@@ -78,59 +80,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (fetchingUserIdRef.current === userId) return;
     fetchingUserIdRef.current = userId;
     try {
-      // Fetch role - get highest privilege role (admin > medico > others)
-      const { data: rolesData, error: roleError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
+      // Schema refatorado: papel + vínculo vêm de `profissionais`
+      // (antes: user_roles + profiles.status + user_departments).
+      // RLS permite o próprio usuário ler sua linha (user_id = auth.uid()).
+      const { data: prof, error: profErr } = await supabase
+        .from("profissionais")
+        .select("papel, ativo")
+        .eq("user_id", userId)
+        .maybeSingle();
 
-      const roleData = rolesData && rolesData.length > 0
-        ? (rolesData.find(r => r.role === 'admin') || rolesData[0])
-        : null;
-
-      if (roleError) {
-        // Sempre loga — falha de role não deve ser silenciosa em produção.
-        console.error("[AuthContext] falha ao buscar role do usuário — acesso bloqueado:", roleError);
-        // Negar acesso completamente: role null + status pending exibe PendingApprovalScreen.
-        // ProtectedRoute só verifica status, não role — por isso ambos precisam ser restritivos.
-        // Antes era setRole("medico"), o que promovia qualquer usuário com falha de rede.
+      if (profErr) {
+        console.error("[AuthContext] falha ao buscar profissional — acesso bloqueado:", profErr);
         setRole(null);
         setStatus("pending");
         setAllowedDepartments([]);
         return;
-      } else {
-        setRole(roleData?.role as UserRole);
       }
 
-      // Fetch user status from profiles
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("status")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error("[AuthContext] falha ao buscar status do usuário:", profileError);
-        // Status "pending" é restritivo — bloqueia acesso sem conceder permissão indevida.
+      if (!prof) {
+        // Autenticado sem linha em profissionais: sem papel → bloqueado.
+        setRole(null);
         setStatus("pending");
-      } else {
-        setStatus(profileData?.status as UserStatus);
-      }
-
-      // Fetch allowed departments
-      const { data: deptData, error: deptError } = await supabase
-        .from("user_departments")
-        .select("department")
-        .eq("user_id", userId);
-
-      if (deptError) {
-        // Sempre loga em qualquer ambiente — falha de departamento pode bloquear
-        // acesso legítimo e deve ser visível em produção.
-        console.error("[AuthContext] falha ao buscar departamentos do usuário:", deptError);
         setAllowedDepartments([]);
-      } else {
-        setAllowedDepartments(deptData?.map(d => d.department) || []);
+        return;
       }
+
+      setRole((prof.papel as UserRole) ?? null);
+      // profissionais não tem workflow pending/approved; `ativo` decide o acesso.
+      setStatus(prof.ativo ? "approved" : "pending");
+      // allowedDepartments (setores) migra junto com o módulo de estrutura física
+      // (profissionais_setores → setores.nome). Stub por ora — super_admin não usa.
+      setAllowedDepartments([]);
     } catch (error) {
       // Sempre loga — erro crítico de autenticação deve ser visível em produção.
       console.error("[AuthContext] falha crítica ao carregar dados do usuário — acesso negado:", error);
@@ -163,18 +143,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let emailToUse = raw.toLowerCase();
 
-    // Resolve identificador (CPF, e-mail ou usuário) → email real via RPC (sem cold start)
-    try {
-      const { data: resolveData, error: resolveError } = await (supabase.rpc as any)(
-        "resolve_login",
-        { p_identifier: isCpf ? digits : raw },
-      );
-      if (resolveError || !(resolveData as any)?.email) {
-        return { error: resolveError ?? new Error("Usuário não encontrado") };
+    if (!isEmail) {
+      // Login por CPF/usuário dependia da RPC resolve_login, que NÃO existe no
+      // schema refatorado. Até uma equivalente ser deployada, só e-mail funciona.
+      try {
+        const { data: resolveData, error: resolveError } = await (supabase.rpc as any)(
+          "resolve_login",
+          { p_identifier: isCpf ? digits : raw },
+        );
+        if (resolveError || !(resolveData as any)?.email) {
+          return { error: resolveError ?? new Error("Login por CPF/usuário indisponível — use o e-mail.") };
+        }
+        emailToUse = (resolveData as any).email;
+      } catch (e) {
+        return { error: e };
       }
-      emailToUse = (resolveData as any).email;
-    } catch (e) {
-      return { error: e };
     }
 
     const { error } = await supabase.auth.signInWithPassword({
