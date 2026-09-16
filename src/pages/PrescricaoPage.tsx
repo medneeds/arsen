@@ -4238,74 +4238,57 @@ function DrugInteractionDialog({
     setError("");
 
     try {
-      // Busca o JWT real da sessão do usuário logado.
-      // Antes usava VITE_SUPABASE_PUBLISHABLE_KEY (chave anon) — a Edge Function
-      // valida o token com auth.getUser() e rejeita chave anon com 401 Unauthorized.
-      const { supabase } = await import("@/integrations/supabase/client");
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userToken = sessionData?.session?.access_token;
-      if (!userToken) {
-        setError("Sessão expirada — faça login novamente.");
+      // Usa a mesma verificação local da validação — runClinicalAlertChecks
+      // com detectSevereInteractions. Não depende de servidor externo.
+      const { runClinicalAlertChecks } = await import("@/lib/clinicalAlertChecks");
+      const alerts = runClinicalAlertChecks(
+        items.filter(i => i.status === 'active'),
+        { allergies: patientContext?.allergies || "" }
+      );
+
+      const interactions = alerts.filter(a => a.type === 'interaction');
+      const duplicates = alerts.filter(a => a.type === 'duplicate');
+      const allergyAlerts = alerts.filter(a => a.type === 'allergy');
+
+      if (alerts.length === 0) {
+        setResult("## 🟢 Nenhuma interação grave identificada\n\nA verificação automática não detectou interações graves, duplicatas ou alertas de alergia entre os medicamentos ativos desta prescrição.\n\n> Esta verificação usa uma lista de pares de alto risco validados clinicamente. Consulte sempre fontes especializadas para casos complexos.");
         return;
       }
 
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-interactions`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${userToken}`,
-          },
-          body: JSON.stringify({ medications, patientContext }),
-        }
-      );
+      let output = "";
 
-      if (!resp.ok) {
-        const errData = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
-        throw new Error(errData.error || `Erro ${resp.status}`);
+      if (interactions.length > 0) {
+        output += "## 🔴 Interações Graves Identificadas\n\n";
+        interactions.forEach(a => {
+          output += `**${a.message}**\n- Gravidade: ALTA\n- ${a.detail || "Monitorar rigorosamente."}\n\n`;
+        });
+      } else {
+        output += "## 🟢 Sem interações graves identificadas\n\nNenhuma interação de alto risco detectada.\n\n";
       }
 
-      if (!resp.body) throw new Error("Resposta vazia");
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let accumulated = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) {
-              accumulated += content;
-              setResult(accumulated);
-            }
-          } catch {
-            buffer = line + "\n" + buffer;
-            break;
-          }
-        }
+      if (duplicates.length > 0) {
+        output += "## 🟡 Duplicatas / Sobreposição Terapêutica\n\n";
+        duplicates.forEach(a => {
+          output += `**${a.message}**\n- ${a.detail || "Verificar se a duplicação é intencional."}\n\n`;
+        });
       }
+
+      if (allergyAlerts.length > 0) {
+        output += "## 🚨 Alertas de Alergia\n\n";
+        allergyAlerts.forEach(a => {
+          output += `**${a.message}**\n- ${a.detail || "Paciente tem alergia registrada."}\n\n`;
+        });
+      }
+
+      output += `## 📋 Resumo\n- Interações graves: ${interactions.length}\n- Duplicatas: ${duplicates.length}\n- Alertas de alergia: ${allergyAlerts.length}\n\n> Verificação automática baseada em lista de pares de alto risco. Consulte fontes especializadas para análise completa.`;
+
+      setResult(output);
     } catch (err: any) {
       setError(err.message || "Erro ao verificar interações");
     } finally {
       setLoading(false);
     }
-  }, [medications, patientContext]);
+  }, [medications, patientContext, items]);
 
   useEffect(() => {
     if (open && !result && !loading && !error) {
