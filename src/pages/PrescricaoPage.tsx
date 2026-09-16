@@ -1568,7 +1568,7 @@ function FlagToggle({ flag, active, onToggle }: {
 }
 
 // --- Hydration optimized fields (expanded view) ---
-const HYDRATION_PHASE_OPTIONS: Array<{ phases: number; interval: string }> = [
+const HYDRATION_PHASE_OPTIONS: Array<{ phases: number; interval: string; label?: string }> = [
   { phases: 1, interval: '24/24h' },
   { phases: 2, interval: '12/12h' },
   { phases: 3, interval: '8/8h' },
@@ -1577,6 +1577,7 @@ const HYDRATION_PHASE_OPTIONS: Array<{ phases: number; interval: string }> = [
   { phases: 8, interval: '3/3h' },
   { phases: 12, interval: '2/2h' },
   { phases: 24, interval: '1/1h' },
+  { phases: 1, interval: 'Dose única', label: 'Dose única' },
 ];
 const HYDRATION_DRIP_FACTOR = DRIP_FACTOR_MACRO; // macrogotas/mL — fonte única (solutoToken)
 
@@ -1626,7 +1627,7 @@ function HydrationFields({
   }, [calcRateStr, item.infusionRate, item.id]);
 
   const handlePhasesChange = (v: string) => {
-    const opt = HYDRATION_PHASE_OPTIONS.find(o => String(o.phases) === v);
+    const opt = HYDRATION_PHASE_OPTIONS.find(o => o.interval === v);
     if (opt) onUpdate(item.id, 'posology', opt.interval);
   };
 
@@ -1650,12 +1651,12 @@ function HydrationFields({
         <span className="text-[10px] text-muted-foreground">mL</span>
 
         <NutFieldLabel>Fases / intervalo:</NutFieldLabel>
-        <Select value={String(phases)} onValueChange={handlePhasesChange}>
+        <Select value={interval} onValueChange={handlePhasesChange}>
           <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-36 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
           <SelectContent>
             {HYDRATION_PHASE_OPTIONS.map(o => (
-              <SelectItem key={o.phases} value={String(o.phases)} className="text-xs">
-                {o.phases} fase{o.phases > 1 ? 's' : ''} ({o.interval})
+              <SelectItem key={o.interval} value={o.interval} className="text-xs">
+                {o.label ?? `${o.phases} fase${o.phases > 1 ? 's' : ''} (${o.interval})`}
               </SelectItem>
             ))}
           </SelectContent>
