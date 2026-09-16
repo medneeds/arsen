@@ -14,8 +14,7 @@ import {
   Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe, History,
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText, FlaskConical,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
-  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, List, AlignJustify, ChevronUp, Wand2, BedDouble, PlusCircle,
-} from "lucide-react";
+  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, List, AlignJustify, ChevronUp, Wand2, BedDouble, PlusCircle, ChevronDown } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -41,6 +40,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
@@ -328,6 +328,7 @@ import { NUTRITION_STRUCTURED_KEYS } from "@/components/NutritionWizard";
 import { ENTERAL_ROUTE_VALUES, SUPPLEMENT_ROUTE_OPTIONS, normalizeEnteralRoute } from "@/lib/enteralRoutes";
 import { readNutritionPlan, type NutritionPlan } from "@/lib/nutritionPlan";
 import { DEFAULT_WATER_STATE } from "@/components/shared/WaterOfferingFields";
+import { DIET_PROFILE_OPTIONS, readDietProfiles, writeDietProfiles } from "@/lib/dietProfiles";
 
 // Compose dose token combining `dose` (texto livre, geralmente do preset do wizard)
 // e `quantity`+`quantityUnit` (campos editados inline pelo médico).
@@ -1278,6 +1279,65 @@ function NutritionFields({
     </div>
   );
 
+  /**
+   * Perfil da dieta: SELECAO MULTIPLA.
+   *
+   * Um paciente pode precisar de dieta hipossodica E para diabetico ao mesmo
+   * tempo. O assistente sempre permitiu escolher varios e os enviava unidos por
+   * virgula; aqui havia um seletor de escolha unica, com OUTRO vocabulario --
+   * entao o campo abria vazio e metade da prescricao se perdia no caminho.
+   * Ver src/lib/dietProfiles.ts.
+   */
+  const ProfileField = ({ item, onUpdate, width = 'w-44' }: {
+    item: PrescriptionItem; onUpdate: (id: string, field: string, value: string) => void; width?: string;
+  }) => {
+    const selecionados = readDietProfiles(item.dietProfile);
+    const alterna = (perfil: string) => {
+      const novo = selecionados.includes(perfil)
+        ? selecionados.filter(p => p !== perfil)
+        : [...selecionados, perfil];
+      onUpdate(item.id, 'dietProfile', writeDietProfiles(novo));
+    };
+    return (
+      <div className="flex items-center gap-1">
+        <NutFieldLabel>Perfil:</NutFieldLabel>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "h-7 justify-between px-2 text-xs font-medium bg-white border-released-border",
+                width,
+              )}
+            >
+              <span className="truncate">
+                {selecionados.length === 0
+                  ? '—'
+                  : selecionados.length === 1
+                    ? selecionados[0]
+                    : `${selecionados.length} perfis`}
+              </span>
+              <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="max-h-72 overflow-y-auto">
+            {DIET_PROFILE_OPTIONS.map(o => (
+              <DropdownMenuCheckboxItem
+                key={o}
+                checked={selecionados.includes(o)}
+                onCheckedChange={() => alterna(o)}
+                onSelect={e => e.preventDefault()}
+                className="text-xs"
+              >
+                {o}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+  };
+
   // Mini-toggle (2 opções) reutilizável
   const MiniToggle = ({ value, options, onChange }: { value: string; options: { v: string; label: string }[]; onChange: (v: string) => void }) => (
     <div className="inline-flex rounded-md border border-released-border overflow-hidden h-7 bg-white">
@@ -1374,19 +1434,43 @@ function NutritionFields({
   // Orientacao do assistente: derivada da configuracao, nao editavel. Fica
   // ACIMA das recomendacoes para deixar claro quem escreveu o que — o medico
   // reconhece de imediato o que e dele e o que o sistema deduziu.
-  const GuidanceBlock = item.guidance ? (
-    <div className="space-y-1">
-      <NutFieldLabel>Orientação do assistente:</NutFieldLabel>
-      <p className="rounded-md border border-released-border/70 bg-released-soft/50 px-3 py-2 text-xs leading-relaxed text-released-on-soft">
-        {item.guidance}
-      </p>
-    </div>
-  ) : null;
+  /**
+   * Orientacao do assistente: OPCIONAL, aplicada por escolha do medico.
+   *
+   * Antes ela ocupava um bloco fixo acima das Recomendacoes, sempre visivel e
+   * so de leitura -- o item passava a ter dois textos concorrendo pelo mesmo
+   * espaco, e o medico nao tinha o que fazer com aquele.
+   *
+   * Agora e um botao discreto ao lado do rotulo. Clicar acrescenta o texto ao
+   * campo de Recomendacoes, que continua sendo do medico: ele edita, corta ou
+   * remove o que quiser depois. Nada e escrito sem ele pedir, e o botao some
+   * quando a orientacao ja esta aplicada.
+   */
+  const orientacaoAplicada = !!item.guidance
+    && (item.instructions || "").includes(item.guidance);
+
+  const aplicarOrientacao = () => {
+    if (!item.guidance) return;
+    const atual = (item.instructions || "").trim();
+    onUpdate(item.id, 'instructions', atual ? `${atual} · ${item.guidance}` : item.guidance);
+  };
 
   const RecommendationsField = (
     <div className="space-y-1">
-      {GuidanceBlock}
-      <NutFieldLabel>Recomendações:</NutFieldLabel>
+      <div className="flex items-center gap-2">
+        <NutFieldLabel>Recomendações:</NutFieldLabel>
+        {item.guidance && !orientacaoAplicada && (
+          <button
+            type="button"
+            onClick={aplicarOrientacao}
+            title={item.guidance}
+            className="inline-flex items-center gap-1 rounded border border-released-border/70 bg-released-soft/40 px-1.5 py-0.5 text-[11px] font-medium text-released-on-soft transition-colors hover:bg-released-soft"
+          >
+            <Sparkles className="h-3 w-3" aria-hidden />
+            Aplicar orientação do assistente
+          </button>
+        )}
+      </div>
       <Textarea
         value={item.instructions}
         onChange={(e) => onUpdate(item.id, 'instructions', e.target.value)}
@@ -1460,7 +1544,7 @@ function NutritionFields({
           <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
             <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
             <SelectField label="Tipo" value={item.dietType} options={ORAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-40" />
-            <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-44" />
+            <ProfileField item={item} onUpdate={onUpdate} width="w-44" />
             <NutFieldLabel>Quantidade:</NutFieldLabel>
             <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="300" />
             <SelectField label="Intervalo" value={item.dietInterval} options={DIET_INTERVALS} onChange={(v) => onUpdate(item.id, 'dietInterval', v)} width="w-28" />
@@ -1477,7 +1561,7 @@ function NutritionFields({
               <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
               <SelectField label="Tipo" value={item.dietType} options={ENTERAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
               <SelectField label="Via" value={normalizeEnteralRoute(item.route)} options={ENTERAL_ROUTES} onChange={(v) => onUpdate(item.id, 'route', v)} width="w-44" />
-              <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
+              <ProfileField item={item} onUpdate={onUpdate} width="w-40" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <NutFieldLabel>Vol/dia:</NutFieldLabel>
@@ -1509,7 +1593,7 @@ function NutritionFields({
                 <NutFieldLabel>Via:</NutFieldLabel>
                 <Input value="Endovenosa" disabled className="h-7 text-xs font-medium bg-released-soft/60 border-released-border w-36" />
               </div>
-              <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
+              <ProfileField item={item} onUpdate={onUpdate} width="w-40" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <NutFieldLabel>Vol/dia:</NutFieldLabel>
@@ -1554,7 +1638,7 @@ function NutritionFields({
               <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
               <SelectField label="Tipo" value={item.dietType} options={SUPPLEMENT_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
               <SelectField label="Via" value={item.route === 'Oral' ? 'Oral' : normalizeEnteralRoute(item.route)} options={SUPPLEMENT_ROUTES} onChange={(v) => onUpdate(item.id, 'route', v)} width="w-44" />
-              <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
+              <ProfileField item={item} onUpdate={onUpdate} width="w-40" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <NutFieldLabel>Quantidade:</NutFieldLabel>

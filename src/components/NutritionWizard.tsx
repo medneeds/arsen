@@ -896,7 +896,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
     onOpenChange(false);
   };
 
-  const STEPS = ["Modalidades", "Detalhes", "Comorbidades", "Aporte proteico", "Revisão"];
+  const STEPS = ["Modalidades", "Detalhes", "Água", "Comorbidades", "Aporte proteico", "Revisão"];
   const canAdvance = step === 0 ? modalities.size > 0 : true;
 
   const MODALITY_OPTIONS = [
@@ -908,7 +908,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl w-[min(48rem,calc(100vw-2rem))] h-[calc(100svh-8rem)] max-h-[calc(100svh-8rem)] top-4 translate-y-0 sm:top-4 z-[80] overflow-hidden flex flex-col p-4">
+      <DialogContent className="max-w-5xl w-[min(64rem,calc(100vw-2rem))] h-[calc(100svh-8rem)] max-h-[calc(100svh-8rem)] top-4 translate-y-0 sm:top-4 z-[80] overflow-hidden flex flex-col p-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-released" />
@@ -1177,80 +1177,6 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                     Incluir esquema de progressão (20 mL/h a cada 6-8h)
                   </label>
 
-                  {/* Água via sonda */}
-                  <Separator />
-                  <div>
-                    <Label className="text-xs font-medium flex items-center gap-2"><Droplets className="h-3.5 w-3.5 text-muted-foreground" /> Água via sonda</Label>
-                    <p className="text-xs text-muted-foreground mt-1">As três opções podem ser combinadas; cada uma gera uma linha própria na prescrição.</p>
-
-                    <div className="mt-2 space-y-2">
-                      <label className="flex items-start gap-2 text-xs cursor-pointer p-2 rounded-md border border-border/60 hover:border-released-border">
-                        <input type="checkbox" checked={waterFlush} onChange={e => setWaterFlush(e.target.checked)} className="rounded-md mt-1" />
-                        <div>
-                          <div className="font-medium">Flush de manutenção</div>
-                          <div className="text-xs text-muted-foreground">30 mL antes/após dieta e medicações para manter pérvia a sonda.</div>
-                        </div>
-                      </label>
-
-                      <div className={cn("p-2 rounded-md border transition-all", waterScheduled ? "border-released bg-released-soft/30" : "border-border/60")}>
-                        <label className="flex items-start gap-2 text-xs cursor-pointer">
-                          <input type="checkbox" checked={waterScheduled} onChange={e => setWaterScheduled(e.target.checked)} className="rounded-md mt-1" />
-                          <div className="flex-1">
-                            <div className="font-medium">Hidratação enteral programada</div>
-                            <div className="text-xs text-muted-foreground">Volume e frequência regulares.</div>
-                          </div>
-                        </label>
-                        {waterScheduled && (
-                          <div className="grid grid-cols-2 gap-2 mt-2 pl-6">
-                            <div>
-                              <Label className="text-xs font-medium">Volume por tomada (mL)</Label>
-                              <Input value={waterVol} onChange={e => setWaterVol(e.target.value)} className="mt-1 h-8 text-xs" />
-                            </div>
-                            <div>
-                              <Label className="text-xs font-medium">Frequência</Label>
-                              <Select value={waterFreq} onValueChange={setWaterFreq}>
-                                <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="2/2h">2/2h</SelectItem>
-                                  <SelectItem value="3/3h">3/3h</SelectItem>
-                                  <SelectItem value="4/4h">4/4h</SelectItem>
-                                  <SelectItem value="6/6h">6/6h</SelectItem>
-                                  <SelectItem value="8/8h">8/8h</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className={cn("p-2 rounded-md border transition-all", waterCorrection ? "border-warning bg-warning-soft/30" : "border-border/60")}>
-                        <label className="flex items-start gap-2 text-xs cursor-pointer">
-                          <input type="checkbox" checked={waterCorrection} onChange={e => setWaterCorrection(e.target.checked)} className="rounded-md mt-1" />
-                          <div className="flex-1">
-                            <div className="font-medium flex items-center gap-2"><AlertTriangle className="h-3 w-3 text-warning" /> Correção de distúrbio hidroeletrolítico</div>
-                            <div className="text-xs text-muted-foreground">Esquema terapêutico (ex.: hipernatremia).</div>
-                          </div>
-                        </label>
-                        {waterCorrection && (
-                          <div className="space-y-2 mt-2 pl-6">
-                            <div>
-                              <Label className="text-xs font-medium">Volume total/dia (mL)</Label>
-                              <Input value={waterCorrectionVol} onChange={e => setWaterCorrectionVol(e.target.value)} placeholder="ex: 1500" className="mt-1 h-8 text-xs" />
-                            </div>
-                            <div>
-                              <Label className="text-xs font-medium">Observações (fracionamento, alvo de Na, reavaliação)</Label>
-                              <Textarea value={waterCorrectionObs} onChange={e => setWaterCorrectionObs(e.target.value)} placeholder="Ex.: 250 mL 4/4h; alvo Na 145; reavaliar em 12h" className="mt-1 text-xs min-h-[40px]" />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-xs font-medium">Ajustes manuais / observações desta dieta</Label>
-                    <Textarea value={entCustom} onChange={e => setEntCustom(e.target.value)} placeholder="Ex.: pausa para fisioterapia respiratória 14h; ajuste conforme glicemia; fórmula caseira do hospital..." className="mt-2 text-xs min-h-[50px]" />
-                  </div>
                 </section>
               )}
 
@@ -1292,46 +1218,135 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                 </section>
               )}
 
-              {/* ── Oferta hídrica ampliada (catálogo de águas) — opt-in, aditiva ── */}
-              <section className={cn(
-                "rounded-lg border p-3 space-y-3 transition-all",
-                waterOfferEnabled
-                  ? "border-border bg-muted/40"
-                  : "border-dashed border-border/60 bg-muted/10"
-              )}>
-                <label className="flex items-start gap-2 text-xs cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={waterOfferEnabled}
-                    onChange={e => setWaterOfferEnabled(e.target.checked)}
-                    className="rounded-md mt-1"
-                  />
-                  <div className="flex-1">
-                    <div className="font-semibold text-foreground flex items-center gap-2">
-                      <Droplets className="h-3.5 w-3.5" />
-                      Oferta hídrica ampliada (catálogo de águas)
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Permite escolher tipo de água (filtrada, mineral, coco, soro caseiro, destilada para sonda…),
-                      via, fracionamento, temperatura e restrição hídrica. Gera uma linha extra na prescrição,
-                      complementando "Água oral livre" ou "Água via sonda programada".
-                    </div>
-                  </div>
-                </label>
-                {waterOfferEnabled && (
-                  <WaterOfferingFields
-                    value={waterOffer}
-                    onChange={setWaterOffer}
-                    accentClassName="border-border bg-muted/60"
-                    accentTextClassName="text-foreground"
-                  />
-                )}
-              </section>
             </div>
           )}
 
-          {/* STEP 2 — Comorbidades */}
+
+          {/* STEP 2 — Água e hidratação
+              Antes isto vivia no fim do passo de Detalhes: a água via sonda
+              ficava DENTRO da seção enteral e a oferta hídrica logo abaixo,
+              exigindo rolar a tela até o fim para descobrir que existiam.
+              Como passo próprio, aparece na trilha de progresso e o médico vê
+              que há uma decisão de hidratação a tomar. */}
           {step === 2 && (
+            <div className="space-y-4 p-1">
+              <p className="text-xs text-muted-foreground">
+                A hidratação é prescrita em linha própria, separada da dieta. Nenhuma das opções é obrigatória — marque só o que o paciente precisa.
+              </p>
+                {/* Água via sonda */}
+                <Separator />
+                <div>
+                  <Label className="text-xs font-medium flex items-center gap-2"><Droplets className="h-3.5 w-3.5 text-muted-foreground" /> Água via sonda</Label>
+                  <p className="text-xs text-muted-foreground mt-1">As três opções podem ser combinadas; cada uma gera uma linha própria na prescrição.</p>
+
+                  <div className="mt-2 space-y-2">
+                    <label className="flex items-start gap-2 text-xs cursor-pointer p-2 rounded-md border border-border/60 hover:border-released-border">
+                      <input type="checkbox" checked={waterFlush} onChange={e => setWaterFlush(e.target.checked)} className="rounded-md mt-1" />
+                      <div>
+                        <div className="font-medium">Flush de manutenção</div>
+                        <div className="text-xs text-muted-foreground">30 mL antes/após dieta e medicações para manter pérvia a sonda.</div>
+                      </div>
+                    </label>
+
+                    <div className={cn("p-2 rounded-md border transition-all", waterScheduled ? "border-released bg-released-soft/30" : "border-border/60")}>
+                      <label className="flex items-start gap-2 text-xs cursor-pointer">
+                        <input type="checkbox" checked={waterScheduled} onChange={e => setWaterScheduled(e.target.checked)} className="rounded-md mt-1" />
+                        <div className="flex-1">
+                          <div className="font-medium">Hidratação enteral programada</div>
+                          <div className="text-xs text-muted-foreground">Volume e frequência regulares.</div>
+                        </div>
+                      </label>
+                      {waterScheduled && (
+                        <div className="grid grid-cols-2 gap-2 mt-2 pl-6">
+                          <div>
+                            <Label className="text-xs font-medium">Volume por tomada (mL)</Label>
+                            <Input value={waterVol} onChange={e => setWaterVol(e.target.value)} className="mt-1 h-8 text-xs" />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-medium">Frequência</Label>
+                            <Select value={waterFreq} onValueChange={setWaterFreq}>
+                              <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="2/2h">2/2h</SelectItem>
+                                <SelectItem value="3/3h">3/3h</SelectItem>
+                                <SelectItem value="4/4h">4/4h</SelectItem>
+                                <SelectItem value="6/6h">6/6h</SelectItem>
+                                <SelectItem value="8/8h">8/8h</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className={cn("p-2 rounded-md border transition-all", waterCorrection ? "border-warning bg-warning-soft/30" : "border-border/60")}>
+                      <label className="flex items-start gap-2 text-xs cursor-pointer">
+                        <input type="checkbox" checked={waterCorrection} onChange={e => setWaterCorrection(e.target.checked)} className="rounded-md mt-1" />
+                        <div className="flex-1">
+                          <div className="font-medium flex items-center gap-2"><AlertTriangle className="h-3 w-3 text-warning" /> Correção de distúrbio hidroeletrolítico</div>
+                          <div className="text-xs text-muted-foreground">Esquema terapêutico (ex.: hipernatremia).</div>
+                        </div>
+                      </label>
+                      {waterCorrection && (
+                        <div className="space-y-2 mt-2 pl-6">
+                          <div>
+                            <Label className="text-xs font-medium">Volume total/dia (mL)</Label>
+                            <Input value={waterCorrectionVol} onChange={e => setWaterCorrectionVol(e.target.value)} placeholder="ex: 1500" className="mt-1 h-8 text-xs" />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-medium">Observações (fracionamento, alvo de Na, reavaliação)</Label>
+                            <Textarea value={waterCorrectionObs} onChange={e => setWaterCorrectionObs(e.target.value)} placeholder="Ex.: 250 mL 4/4h; alvo Na 145; reavaliar em 12h" className="mt-1 text-xs min-h-[40px]" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-medium">Ajustes manuais / observações desta dieta</Label>
+                  <Textarea value={entCustom} onChange={e => setEntCustom(e.target.value)} placeholder="Ex.: pausa para fisioterapia respiratória 14h; ajuste conforme glicemia; fórmula caseira do hospital..." className="mt-2 text-xs min-h-[50px]" />
+                </div>
+                {/* ── Oferta hídrica ampliada (catálogo de águas) — opt-in, aditiva ── */}
+                <section className={cn(
+                  "rounded-lg border p-3 space-y-3 transition-all",
+                  waterOfferEnabled
+                    ? "border-border bg-muted/40"
+                    : "border-dashed border-border/60 bg-muted/10"
+                )}>
+                  <label className="flex items-start gap-2 text-xs cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={waterOfferEnabled}
+                      onChange={e => setWaterOfferEnabled(e.target.checked)}
+                      className="rounded-md mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-foreground flex items-center gap-2">
+                        <Droplets className="h-3.5 w-3.5" />
+                        Oferta hídrica ampliada (catálogo de águas)
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Permite escolher tipo de água (filtrada, mineral, coco, soro caseiro, destilada para sonda…),
+                        via, fracionamento, temperatura e restrição hídrica. Gera uma linha extra na prescrição,
+                        complementando "Água oral livre" ou "Água via sonda programada".
+                      </div>
+                    </div>
+                  </label>
+                  {waterOfferEnabled && (
+                    <WaterOfferingFields
+                      value={waterOffer}
+                      onChange={setWaterOffer}
+                      accentClassName="border-border bg-muted/60"
+                      accentTextClassName="text-foreground"
+                    />
+                  )}
+                </section>
+            </div>
+          )}
+
+          {/* STEP 3 — Comorbidades */}
+          {step === 3 && (
             <div className="space-y-3 p-1">
               <p className="text-xs text-muted-foreground">
                 Selecione as comorbidades/condições do paciente. As recomendações terapêuticas serão incorporadas automaticamente.
@@ -1361,8 +1376,8 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
             </div>
           )}
 
-          {/* STEP 3 — Aporte proteico (catálogo genérico) */}
-          {step === 3 && (
+          {/* STEP 4 — Aporte proteico (catálogo genérico) */}
+          {step === 4 && (
             <div className="space-y-3 p-1">
               <div className="text-xs text-muted-foreground bg-released-soft/40 border border-released-border/60 rounded-lg px-3 py-2">
                 <span className="font-medium text-released-on-soft">Suplementação proteica/calórico-proteica</span> — selecione os produtos a anexar à prescrição.
@@ -1447,8 +1462,8 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
             </div>
           )}
 
-          {/* STEP 4 — Revisão */}
-          {step === 4 && (
+          {/* STEP 5 — Revisão */}
+          {step === 5 && (
             <div className="space-y-2 p-1">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -1492,8 +1507,8 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
           </Button>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => { reset(); onOpenChange(false); }}>Cancelar</Button>
-            {step < 4 ? (
-              <Button size="sm" className="bg-released hover:bg-released" disabled={!canAdvance} onClick={() => setStep(s => Math.min(4, s + 1))}>
+            {step < STEPS.length - 1 ? (
+              <Button size="sm" className="bg-released hover:bg-released" disabled={!canAdvance} onClick={() => setStep(s => Math.min(STEPS.length - 1, s + 1))}>
                 Avançar <ChevronRight className="h-3.5 w-3.5 ml-1" />
               </Button>
             ) : (

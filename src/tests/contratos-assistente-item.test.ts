@@ -235,9 +235,18 @@ check(
   "createItem copia guidance do assistente",
   /baseItem\.guidance = orientacao/.test(prescricao),
 );
+// A orientação deixou de ser um bloco fixo de leitura e virou um botão
+// opcional ao lado do rótulo: o médico decide se aplica. Ela NUNCA é escrita
+// em instructions sem ação dele — esse campo é do médico.
 check(
-  "guidance é exibido separado das Recomendações",
-  prescricao.includes("GuidanceBlock"),
+  "a orientação é oferecida como ação opcional",
+  /aplicarOrientacao/.test(prescricao) && /Aplicar orientação do assistente/.test(prescricao),
+  "um bloco fixo de leitura punha dois textos concorrendo pelo mesmo espaço",
+);
+check(
+  "aplicar a orientação acrescenta, não substitui",
+  /atual \? `\$\{atual\} · \$\{item\.guidance\}` : item\.guidance/.test(prescricao),
+  "sobrescrever apagaria o que o médico já tinha escrito",
 );
 
 check(
