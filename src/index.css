@@ -61,6 +61,10 @@
     --input: 215 20% 90%;
     --ring: 174 60% 42%;
     --radius: 0.625rem;
+
+    /* Serifa da marca — nome Arsen e momentos institucionais. Token unico para
+       nao espalhar a familia pelo codigo, como acontecia com Playfair. */
+    --font-brand: 'Newsreader', Georgia, 'Times New Roman', serif;
     
     --gradient-primary: linear-gradient(135deg, hsl(210 65% 28%) 0%, hsl(210 55% 22%) 100%);
     --gradient-card: linear-gradient(to bottom, hsl(0 0% 100% / 0.98) 0%, hsl(0 0% 100% / 0.94) 100%);

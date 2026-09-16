@@ -76,7 +76,7 @@ interface AccessLimitsScreenProps {
   onProceed: () => void;
 }
 
-const SERIF = "'Playfair Display', Georgia, serif";
+const SERIF = "var(--font-brand)";
 
 export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
   const { role, allowedDepartments, user, signOut } = useAuth();
