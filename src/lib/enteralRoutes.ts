@@ -32,6 +32,7 @@ export const ENTERAL_ROUTE_OPTIONS: EnteralRouteOption[] = [
   { value: "SNG", description: "Sonda nasogástrica" },
   { value: "SNE", description: "Sonda nasoentérica" },
   { value: "SOG", description: "Sonda orogástrica" },
+  { value: "SOE", description: "Sonda oroentérica" },
   { value: "GTT", description: "Gastrostomia" },
   { value: "JTT", description: "Jejunostomia" },
 ];
@@ -55,6 +56,9 @@ const LEGADO: Record<string, string> = {
   "nasogastrica (ngt)": "SNG",
   "nasoenteral (net)": "SNE",
   "orogastrica (ogt)": "SOG",
+  "sonda oroenterica": "SOE",
+  "oroenteral": "SOE",
+  soe: "SOE",
   gastrostomia: "GTT",
   jejunostomia: "JTT",
   // defaultRoute que o assistente emitia

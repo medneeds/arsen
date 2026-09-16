@@ -1301,14 +1301,11 @@ function NutritionFields({
     return (
       <div className="flex items-center gap-1">
         <NutFieldLabel>Perfil:</NutFieldLabel>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <Popover>
+          <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className={cn(
-                "h-7 justify-between px-2 text-xs font-medium bg-white border-released-border",
-                width,
-              )}
+              className={cn("h-7 justify-between px-2 text-xs font-medium bg-white border-released-border", width)}
             >
               <span className="truncate">
                 {selecionados.length === 0
@@ -1319,21 +1316,39 @@ function NutritionFields({
               </span>
               <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="max-h-72 overflow-y-auto">
-            {DIET_PROFILE_OPTIONS.map(o => (
-              <DropdownMenuCheckboxItem
-                key={o}
-                checked={selecionados.includes(o)}
-                onCheckedChange={() => alterna(o)}
-                onSelect={e => e.preventDefault()}
-                className="text-xs"
-              >
-                {o}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-80 p-3">
+            <p className="text-xs text-muted-foreground mb-2">
+              Selecione quantas condições o paciente tiver. A característica que cada uma impõe à dieta aparece ao lado.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {DIET_PROFILE_OPTIONS.map(o => {
+                const sel = selecionados.includes(o.label);
+                return (
+                  <button
+                    key={o.key}
+                    type="button"
+                    title={o.efeito}
+                    onClick={() => alterna(o.label)}
+                    className={cn(
+                      "text-xs px-2.5 py-1.5 rounded-lg border transition-all text-left",
+                      sel
+                        ? "border-released bg-released text-white"
+                        : "border-border hover:border-released-border",
+                    )}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+            {selecionados.length > 0 && (
+              <p className="mt-3 border-t border-border pt-2 text-xs text-muted-foreground">
+                Dieta: {DIET_PROFILE_OPTIONS.filter(o => selecionados.includes(o.label)).map(o => o.efeito).join(' · ')}
+              </p>
+            )}
+          </PopoverContent>
+        </Popover>
       </div>
     );
   };
