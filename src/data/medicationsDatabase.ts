@@ -22,6 +22,16 @@ export interface MedicationEntry {
   defaultPosology: string;
   defaultSchedule: string;
   instructions?: string;
+  /**
+   * Orientação clínica DERIVADA, montada pelos assistentes (protocolo de
+   * reposição, cuidados com a sonda, total hídrico). Separada de
+   * `instructions`, que é a nota do médico.
+   *
+   * Os dois disputavam o mesmo campo, e createItem zera `instructions` para
+   * tudo que não é esquema de insulina — então toda orientação de assistente
+   * era descartada na conversão para item, sem aviso.
+   */
+  guidance?: string;
   category: PrescriptionCategory;
   highAlert?: boolean;
   aliases?: string[]; // Nomes alternativos para busca

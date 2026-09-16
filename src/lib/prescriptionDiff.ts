@@ -49,19 +49,105 @@ export interface PrescriptionDiffSummary {
   total: number;
 }
 
+/**
+ * Campos que aparecem no comparativo entre versões da prescrição.
+ *
+ * POR QUE A LISTA CRESCEU (16/09/2026)
+ * Rastreavam-se 12 campos, e TRÊS deles nem existiam no item: "frequency",
+ * "observations" e "rate" são nomes mortos — o item usa schedule, instructions
+ * e infusionRate. Dos 85 campos que o item realmente tem, ficavam de fora a
+ * quantidade, o volume total, a reconstituição, a dose de nebulização, o fluxo
+ * de oxigênio, a configuração inteira de dieta e os campos de antimicrobiano
+ * exigidos pela CCIH.
+ *
+ * Na prática: o médico trocava o volume da dieta ou o solvente de
+ * reconstituição, gerava uma versão nova, e o comparativo dizia "nenhuma
+ * alteração". Num documento assinado, isso não é só incômodo — o diff É o
+ * registro do que mudou entre duas versões.
+ *
+ * CRITÉRIO
+ * Entra o que muda COMO O PACIENTE RECEBE: dose, via, preparo, velocidade,
+ * horário, e as decisões clínicas que acompanham o item. Ficam de fora
+ * identificadores, rótulos de exibição e estado de fluxo (id, validated,
+ * printOnly, pharmacyFilled), que mudam sem alterar a administração e só
+ * poluiriam o comparativo.
+ *
+ * Rastrear os 85 deixaria o diff ilegível; rastrear 12 era cegueira.
+ */
 const TRACKED_FIELDS: Array<{ key: string; label: string }> = [
+  // ── O essencial da administração ──
   { key: "dose", label: "Dose" },
-  { key: "frequency", label: "Frequência" },
-  { key: "schedule", label: "Frequência" },
+  { key: "quantity", label: "Quantidade" },
+  { key: "quantityUnit", label: "Unidade" },
   { key: "route", label: "Via" },
+  { key: "schedule", label: "Frequência" },
+  { key: "posology", label: "Posologia" },
+  { key: "presentation", label: "Apresentação" },
+  { key: "action", label: "Fazer/Retirar" },
+
+  // ── Preparo e infusão ──
   { key: "diluent", label: "Diluente" },
   { key: "diluentVolume", label: "Vol. diluente" },
-  { key: "infusionTime", label: "Tempo infusão" },
-  { key: "rate", label: "Vazão" },
-  { key: "instructions", label: "Instruções" },
-  { key: "observations", label: "Observações" },
-  { key: "presentation", label: "Apresentação" },
+  { key: "reconstitutionSolvent", label: "Solvente de reconstituição" },
+  { key: "reconstitutionVolume", label: "Vol. de reconstituição" },
+  { key: "enteralDilutionVolume", label: "Vol. diluição p/ sonda" },
+  { key: "infusionTime", label: "Tempo de infusão" },
+  { key: "infusionTimeUnit", label: "Unidade do tempo" },
+  { key: "infusionRate", label: "Vazão" },
+  { key: "infusionMode", label: "Modo de infusão" },
+  { key: "volumeTotal", label: "Volume total" },
   { key: "concentration", label: "Concentração" },
+  { key: "ivBolus", label: "Bolus EV" },
+  { key: "accessType", label: "Acesso" },
+
+  // ── Inalação e oxigênio ──
+  { key: "nebDose", label: "Dose de nebulização" },
+  { key: "nebDoseUnit", label: "Unidade da nebulização" },
+  { key: "oxygenFlow", label: "Fluxo de O₂" },
+  { key: "inhalationInterface", label: "Interface inalatória" },
+  { key: "inhalationMode", label: "Modo inalatório" },
+  { key: "puffs", label: "Puffs" },
+  { key: "spacer", label: "Espaçador" },
+  { key: "stageDuration", label: "Duração por etapa" },
+  { key: "continuousDuration", label: "Duração contínua" },
+
+  // ── Nutrição ──
+  { key: "nutritionType", label: "Tipo de nutrição" },
+  { key: "dietType", label: "Tipo de dieta" },
+  { key: "dietProfile", label: "Perfil da dieta" },
+  { key: "dietInterval", label: "Intervalo da dieta" },
+  { key: "nutConsistency", label: "Consistência" },
+  { key: "nutAccess", label: "Via/acesso nutricional" },
+  { key: "nutVolDay", label: "Volume/dia" },
+  { key: "nutFraction", label: "Tomadas/dia" },
+  { key: "nutMode", label: "Modo de administração" },
+  { key: "nutScheduleMode", label: "Esquema" },
+  { key: "nutSteps", label: "Etapas" },
+  { key: "nutProgression", label: "Progressão" },
+  { key: "nutBedHead", label: "Cabeceira" },
+  { key: "nutResidualCheck", label: "Checagem de resíduo" },
+  { key: "nutNightPause", label: "Pausa noturna" },
+  { key: "nutWaterVolPerAdmin", label: "Água por administração" },
+  { key: "nutWaterFreq", label: "Frequência da água" },
+  { key: "nutZeroReason", label: "Motivo do jejum" },
+
+  // ── Antimicrobiano (exigências da CCIH) ──
+  { key: "atbStartDate", label: "Início do ATB" },
+  { key: "atbPlannedDays", label: "Duração prevista" },
+  { key: "atbInfectionSite", label: "Sítio de infecção" },
+  { key: "atbJustification", label: "Justificativa" },
+  { key: "atbCultureCollected", label: "Cultura colhida" },
+  { key: "atbCultureResult", label: "Resultado da cultura" },
+
+  // ── Texto e sinalização clínica ──
+  { key: "instructions", label: "Recomendações" },
+  { key: "guidance", label: "Orientação" },
+  { key: "highAlert", label: "Alta vigilância" },
+  { key: "doubleCheck", label: "Dupla checagem" },
+  { key: "controlled", label: "Controlado" },
+  { key: "controlledList", label: "Lista de controle" },
+  { key: "status", label: "Situação" },
+  { key: "suspensionReason", label: "Motivo da suspensão" },
 ];
 
 function normalize(s: any): string {
@@ -80,6 +166,24 @@ function makeFallbackKey(item: any): string {
   ].join("|");
 }
 
+/**
+ * Campo booleano ausente e campo booleano false são a MESMA coisa clinicamente:
+ * a sinalização não está ligada. Sem esta normalização, um item antigo sem o
+ * campo comparado a um item novo com `false` aparecia como alteração —
+ * "Dupla checagem: — → false" — ruído puro num documento assinado.
+ */
+function exibir(v: unknown): string {
+  if (typeof v === "boolean") return v ? "Sim" : "Não";
+  if (v == null || v === "") return "—";
+  return String(v);
+}
+
+function comparavel(v: unknown): string {
+  if (typeof v === "boolean") return v ? "sim" : "nao";
+  if (v == null || v === "") return "";
+  return normalize(v);
+}
+
 function detectChanges(before: any, after: any): DiffField[] {
   const changes: DiffField[] = [];
   const seen = new Set<string>();
@@ -87,13 +191,16 @@ function detectChanges(before: any, after: any): DiffField[] {
     if (seen.has(label)) continue;
     const a = before?.[key];
     const b = after?.[key];
-    if (normalize(a) === normalize(b)) continue;
-    if ((a == null || a === "") && (b == null || b === "")) continue;
+    const ehBooleano = typeof a === "boolean" || typeof b === "boolean";
+    const va = ehBooleano ? comparavel(a ?? false) : comparavel(a);
+    const vb = ehBooleano ? comparavel(b ?? false) : comparavel(b);
+    if (va === vb) continue;
+    if (va === "" && vb === "") continue;
     changes.push({
       field: key,
       label,
-      before: a == null || a === "" ? "—" : String(a),
-      after: b == null || b === "" ? "—" : String(b),
+      before: ehBooleano ? exibir(a ?? false) : exibir(a),
+      after: ehBooleano ? exibir(b ?? false) : exibir(b),
     });
     seen.add(label);
   }

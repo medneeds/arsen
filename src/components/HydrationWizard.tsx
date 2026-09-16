@@ -94,7 +94,10 @@ function ivSnapshotToEntry(s: IvSnapshot): MedicationEntry {
     defaultRoute: "Intravenosa",
     defaultPosology: interval,
     defaultSchedule: interval,
-    instructions: [instr, flags, s.notes].filter(Boolean).join(" · "),
+    // Orientação derivada (do sistema) separada da nota do médico — ver o
+    // comentário equivalente no ReplacementWizard.
+    guidance: [instr, flags].filter(Boolean).join(" · ") || undefined,
+    instructions: s.notes || "",
     category: "hydration" as const,
   };
 }
@@ -125,7 +128,8 @@ function enteralSnapshotToEntry(s: EnteralSnapshot): MedicationEntry {
     defaultRoute: route,
     defaultPosology: s.water.fraction,
     defaultSchedule: s.water.fraction,
-    instructions: buildWaterInstruction(s.water),
+    guidance: buildWaterInstruction(s.water),
+    instructions: "",
     category: "hydration" as const,
   };
 }

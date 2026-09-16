@@ -6114,6 +6114,11 @@ const PrescricaoPage = () => {
       // aqui sozinho — nao ha lista para manter em sincronia.
       const plano = (med as unknown as { nutritionPlan?: NutritionPlan }).nutritionPlan;
       if (plano) baseItem.nutritionPlan = plano;
+    }
+    // Orientacao derivada: vale para TODOS os assistentes (nutricao, reposicao,
+    // hidratacao), nao so nutricao. Fica fora do bloco acima para deixar isso
+    // explicito — o escopo estava certo, mas o lugar sugeria o contrario.
+    {
       const orientacao = (med as unknown as { guidance?: string }).guidance;
       if (orientacao) baseItem.guidance = orientacao;
     }

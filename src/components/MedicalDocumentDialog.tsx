@@ -112,7 +112,10 @@ export function MedicalDocumentDialog({
   const [rx, setRx] = useState<RxItem[]>([{ name: "", dose: "", route: "VO", freq: "", duration: "" }]);
 
   const reset = () => {
-    setKind(null); setBody(""); setDays(""); setIncludeCid(true);
+    // setIncludeCid saiu daqui: o estado includeCid foi removido em aa62d9bb e a
+    // chamada ficou orfa. reset() e invocada ao FECHAR o dialogo, entao toda vez
+    // que o medico fechava "Emitir documento" estourava ReferenceError.
+    setKind(null); setBody(""); setDays("");
     setRx([{ name: "", dose: "", route: "VO", freq: "", duration: "" }]);
   };
 

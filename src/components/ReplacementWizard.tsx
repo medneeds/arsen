@@ -489,7 +489,12 @@ export function ReplacementWizard({
       defaultRoute: r.route,
       defaultPosology: r.posology,
       defaultSchedule: "ACM",
-      instructions: [r.instructions, s.notes].filter(Boolean).join(" · "),
+      // Orientação do protocolo (do sistema) e nota do médico ficam em campos
+      // separados. Juntas em `instructions`, eram apagadas inteiras pelo
+      // createItem, que zera esse campo para tudo que não é esquema de insulina
+      // — as 46 orientações deste assistente nunca chegavam ao item.
+      guidance: r.instructions || undefined,
+      instructions: s.notes || "",
       category: "replacement" as const,
       highAlert: ["hiperK", "hipoNa", "hipoK"].includes(s.disorder),
     }));
