@@ -11624,6 +11624,30 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   </div>
                 )}
 
+                {/* Subitens combinados — Hidratação, Reposição, Inalação */}
+                {(item.category === 'hydration' || item.category === 'replacement' || item.category === 'inhalation') &&
+                  item.combinedItems && item.combinedItems.length > 0 && (
+                  <div style={{ marginTop: '3px', paddingLeft: '8px', borderLeft: '2px solid #e2e8f0' }}>
+                    {item.combinedItems.map((sub) => {
+                      const subDose = item.category === 'inhalation'
+                        ? [sub.nebDose, sub.nebDoseUnit].filter(Boolean).join(' ')
+                        : [sub.quantity, sub.quantityUnit, sub.dose].filter(Boolean).join(' ');
+                      return (
+                        <div key={sub.id} style={{ fontSize: '7pt', color: '#334155', lineHeight: 1.4, marginTop: '1px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontWeight: 700, color: '#64748b', fontSize: '7.5pt' }}>+</span>
+                          <span style={{ fontWeight: 700, color: '#0f172a' }}>{sub.name}</span>
+                          {sub.presentation && (
+                            <span style={{ color: '#64748b', fontWeight: 400 }}>({sub.presentation})</span>
+                          )}
+                          {subDose && (
+                            <span style={{ color: '#334155', fontWeight: 600 }}>· {subDose}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {/* Preparo IV (medicação / hidratação) */}
                 {/* Bloco de preparo IV legado (DEPRECATED, {false && ...})
                     removido em 21/07/2026 — a linha de preparo do impresso é
