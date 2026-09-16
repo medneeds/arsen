@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { LoadingScreen } from "./LoadingScreen";
 import { SessionTimeoutProvider } from "./SessionTimeoutProvider";
 import { PendingApprovalScreen } from "./PendingApprovalScreen";
 import { ConsentTermsDialog, CURRENT_TERMS_VERSION } from "./ConsentTermsDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { AccessLimitsScreen } from "./AccessLimitsScreen";
 import { ProfileIpGate } from "./ProfileIpGate";
 
 // Logins genéricos que não precisam de aprovação (período de transição)
@@ -26,19 +24,12 @@ const LEGACY_GENERIC_USERS = [
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, status } = useAuth();
   const navigate = useNavigate();
-  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
   const [hasShownLoading, setHasShownLoading] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [checkingTerms, setCheckingTerms] = useState(true);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [showAccessLimits, setShowAccessLimits] = useState(false);
   // 🔒 Persistir no sessionStorage para sobreviver a F5/reload da página.
   // Sem isso, cada reload reseta o estado e força a re-seleção do setor.
-  const [accessLimitsShown, setAccessLimitsShown] = useState(() => {
-    try {
-      return sessionStorage.getItem("access_limits_shown") === "1";
-    } catch { return false; }
-  });
 
   // Verificar se é um usuário genérico legado (não precisa de aprovação nem termos)
   const isLegacyGenericUser = user?.email && LEGACY_GENERIC_USERS.includes(user.email.toLowerCase());
@@ -83,7 +74,9 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       try { sessionStorage.removeItem("access_limits_shown"); } catch {}
       navigate("/auth");
     } else if (!loading && user && !hasShownLoading) {
-      setShowLoadingScreen(true);
+      // Sem tela de carregamento aqui: o AuthPage ja mostra uma ao autenticar,
+      // e esta aparecia logo depois — dois carregamentos seguidos antes de uma
+      // tela (/setores) que nao busca nada e abre instantanea.
       setHasShownLoading(true);
     }
   }, [user, loading, navigate, hasShownLoading]);
@@ -98,8 +91,10 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const activeAccessProfile = typeof window !== "undefined"
     ? (sessionStorage.getItem("active_access_profile") || localStorage.getItem("access_profile") || "")
     : "";
-  const SECTOR_PICKER_PROFILES = new Set(["medico"]);
-  const skipAccessLimits = !SECTOR_PICKER_PROFILES.has(activeAccessProfile);
+  // A escolha de setor acontece em /setores, para onde medico e multi pousam
+  // depois do login. O AccessLimitsScreen fazia a MESMA pergunta antes, entao
+  // o profissional via duas telas de selecao em sequencia -- e a antiga vinha
+  // primeiro, precedida de um carregamento. Desligado para todos os perfis.
 
   if (loading || checkingTerms) {
     return null;
@@ -107,19 +102,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return null;
-  }
-
-  if (showLoadingScreen) {
-    return <LoadingScreen onComplete={() => {
-      setShowLoadingScreen(false);
-      // Perfis globais (gestor/admin/painéis dedicados) pulam a tela de seleção de setor.
-      if (!isLegacyGenericUser && !accessLimitsShown && !skipAccessLimits) {
-        setShowAccessLimits(true);
-      } else if (skipAccessLimits) {
-        setAccessLimitsShown(true);
-        try { sessionStorage.setItem("access_limits_shown", "1"); } catch {}
-      }
-    }} />;
   }
 
   // Mostrar diálogo de termos se ainda não aceitou
@@ -131,19 +113,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         onAccept={() => {
           setTermsAccepted(true);
           setShowTermsDialog(false);
-        }}
-      />
-    );
-  }
-
-  // Tela de limites de acesso
-  if (showAccessLimits && !accessLimitsShown) {
-    return (
-      <AccessLimitsScreen
-        onProceed={() => {
-          setShowAccessLimits(false);
-          setAccessLimitsShown(true);
-          try { sessionStorage.setItem("access_limits_shown", "1"); } catch {}
         }}
       />
     );
