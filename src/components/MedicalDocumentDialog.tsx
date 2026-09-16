@@ -304,7 +304,7 @@ export function MedicalDocumentDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => (v ? onOpenChange(v) : close())}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl" onInteractOutside={(e) => { e.preventDefault(); close(); }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 normal-case">
             {kind && (
