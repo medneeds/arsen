@@ -193,7 +193,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
     exam: Object.values(physicalExam).some(v => (v ?? "").trim()),
     evolucao: richHtmlToPlainText(evolucaoText).length >= 10,
     complementares: richHtmlToPlainText(soap.objective).length > 0,
-    // 🔒 Plano completo quando: RichText com 10+ chars OU planItems[] com ao menos 1 item não vazio
+    // Plano completo quando: RichText com 10+ chars OU planItems[] com ao menos 1 item não vazio
     plan: richHtmlToPlainText(soap.plan).length >= 10
       || (Array.isArray(planItems) && planItems.some(p => p.trim().length > 0)),
   }), [cidPrimary, vitals, physicalExam, soap.objective, soap.plan, evolucaoText, planItems]);
@@ -237,9 +237,9 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 text-xs"
+              className="gap-2 text-xs"
               onClick={async () => {
-                  // 🔒 Abrir janela antes de qualquer await
+                  // Abrir janela antes de qualquer await
                   const printWinForm = window.open("", "_blank", "width=1024,height=768");
                   if (printWinForm) printWinForm.document.write("<html><body style='font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#475569'>Preparando evolução…</body></html>");                // Unificado com o botão de impressão da Timeline (printEvolution):
                 // mesma resolução de identidade (resolvePatientHeader) + leitura
@@ -316,7 +316,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
     <div className="space-y-3">
       {/* Toolbar: status + expand/collapse */}
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {requiredComplete ? (
             <span className="inline-flex items-center gap-1 text-released-on-soft font-medium">
               <CheckCircle2 className="h-3 w-3" /> Pronto para validar
@@ -327,21 +327,21 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             </span>
           )}
           {autoSave && hasUnsaved && (
-            <Badge variant="outline" className="h-4 px-1.5 text-[9px] bg-warning/10 text-warning-on-soft border-warning/30">
+            <Badge variant="outline" className="h-4 px-2 text-xs bg-warning/10 text-warning-on-soft border-warning/30">
               Salvando…
             </Badge>
           )}
           {autoSave && !hasUnsaved && autoSavedAt && (
-            <span className="text-[10px] text-released-on-soft">
-              ✓ Salvo {autoSavedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+            <span className="text-xs text-released-on-soft">
+              Salvo {autoSavedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
         </div>
         <div className="ml-auto flex items-center gap-1">
-          <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={expandAll}>
+          <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={expandAll}>
             Expandir tudo
           </Button>
-          <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={collapseAll}>
+          <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={collapseAll}>
             Recolher tudo
           </Button>
         </div>
@@ -352,7 +352,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
         type="multiple"
         value={openSections}
         onValueChange={setOpenSections}
-        className="rounded-xl border border-border bg-card divide-y divide-border"
+        className="rounded-lg border border-border bg-card divide-y divide-border"
       >
         {diagnosticsSlot && (
           <SectionItem
@@ -380,7 +380,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           customStatus={
             news2 && news2.score > 0 ? (
               <span className={cn(
-                "text-[10px] font-semibold px-1.5 py-0.5 rounded",
+                "text-xs font-medium px-2 py-1 rounded-md",
                 news2RiskLabels[news2.risk].className,
               )}>
                 NEWS2 {news2.score} · {news2RiskLabels[news2.risk].label}
@@ -389,12 +389,12 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           }
         >
           <div className="flex items-center justify-between mb-2">
-            <Label className="text-[10px] text-muted-foreground font-semibold tracking-wider">
+            <Label className="text-xs text-muted-foreground font-medium tracking-wider">
               SINAIS VITAIS (OPCIONAL)
             </Label>
             {onCopyVitalsFromAdmission && (
               <Button
-                variant="ghost" size="sm" className="h-6 text-[10px] gap-1 px-2"
+                variant="ghost" size="sm" className="h-6 text-xs gap-1 px-2"
                 onClick={onCopyVitalsFromAdmission}
               >
                 <ClipboardCopy className="h-3 w-3" /> Copiar da admissão
@@ -404,7 +404,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {VITAL_FIELDS.map(f => (
               <div key={f.key} className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground">
+                <Label className="text-xs text-muted-foreground">
                   {f.label} {f.unit && <span className="text-muted-foreground/60">({f.unit})</span>}
                 </Label>
                 <Input
@@ -417,7 +417,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             ))}
           </div>
           {news2 && news2.score > 0 && (
-            <p className="mt-2 text-[10px] text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
               NEWS2 calculado a partir de FR, SpO₂, T, PAS e FC. Glasgow/Diurese/Dor não compõem o escore.
             </p>
           )}
@@ -434,12 +434,12 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           required={false}
         >
           <div className="flex items-center justify-between mb-2">
-            <Label className="text-[10px] text-muted-foreground font-semibold tracking-wider">
+            <Label className="text-xs text-muted-foreground font-medium tracking-wider">
               EXAME FÍSICO POR APARELHOS (OPCIONAL)
             </Label>
             {onCopyExamFromAdmission && (
               <Button
-                variant="ghost" size="sm" className="h-6 text-[10px] gap-1 px-2"
+                variant="ghost" size="sm" className="h-6 text-xs gap-1 px-2"
                 onClick={onCopyExamFromAdmission}
               >
                 <ClipboardCopy className="h-3 w-3" /> Copiar da admissão
@@ -449,7 +449,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {EXAM_FIELDS.map(f => (
               <div key={f.key} className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground">{f.label}</Label>
+                <Label className="text-xs text-muted-foreground">{f.label}</Label>
                 <Textarea
                   value={physicalExam[f.key]}
                   onChange={(e) => onPhysicalExamChange(f.key, e.target.value)}
@@ -471,7 +471,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           required={false}
         >
           <div className="flex items-center justify-between mb-1">
-            <Label className="text-[10px] text-muted-foreground font-semibold tracking-wider">
+            <Label className="text-xs text-muted-foreground font-medium tracking-wider">
               RESULTADOS LABORATORIAIS E DE IMAGEM
             </Label>
             <div className="flex items-center gap-1">
@@ -502,7 +502,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             required={false}
             customStatus={
               (devices && devices.length > 0) ? (
-                <span className="text-[10px] text-critical-on-soft">
+                <span className="text-xs text-critical-on-soft">
                   {devices.length} dispositivo{devices.length > 1 ? "s" : ""}
                 </span>
               ) : undefined
@@ -529,7 +529,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           required
         >
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {richHtmlToPlainText(evolucaoText).length}/10+ caracteres
             </span>
             <FieldTemplates
@@ -570,7 +570,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                 showReorder={false}
                 draggable
               />
-              <p className="text-[9px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Arraste pelo ⋮⋮ para reordenar — a numeração e o PDF se ajustam automaticamente. Sincroniza com o mapa de leitos.
               </p>
 
@@ -579,9 +579,9 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowPendencias(p => !p)}
-                  className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+                  className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
                   <span className={cn(
-                    "inline-flex items-center justify-center h-3.5 w-3.5 rounded-full border text-[8px] font-bold transition-colors",
+                    "inline-flex items-center justify-center h-3.5 w-3.5 rounded-full border text-xs font-semibold transition-colors",
                     showPendencias ? "border-warning text-warning bg-warning-soft" : "border-border"
                   )}>
                     {showPendencias ? "−" : "+"}
@@ -591,7 +591,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                 </button>
 
                 {showPendencias && onPendenciasItemsChange && (
-                  <div className="mt-2 rounded-md border border-warning-border/60 bg-warning-soft/30 p-2 space-y-1.5">
+                  <div className="mt-2 rounded-md border border-warning-border/60 bg-warning-soft/30 p-2 space-y-2">
                     <ItemListEditor
                       items={pendenciasItems && pendenciasItems.length > 0 ? pendenciasItems : [""]}
                       onChange={onPendenciasItemsChange}
@@ -610,7 +610,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             /* Modo texto livre (legado) */
             <>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {richHtmlToPlainText(soap.plan).length}/10+ caracteres
                 </span>
                 <FieldTemplates
@@ -634,11 +634,11 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
       </Accordion>
 
       {/* Revisão — abre modal em vez de expandir inline */}
-      <div className="border-0 border-t border-border rounded-xl border bg-card overflow-hidden">
+      <div className="border-0 border-t border-border rounded-lg border bg-card overflow-hidden">
         <button
           type="button"
           onClick={() => setShowReviewModal(true)}
-          className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-muted/30 transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-3 text-left hover:bg-muted/30 transition-colors"
         >
           <span className={cn(
             "flex items-center justify-center h-6 w-6 rounded-full shrink-0",
@@ -648,15 +648,15 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               ? <CheckCircle2 className="h-3.5 w-3.5" />
               : <Eye className={cn("h-3.5 w-3.5 text-primary")} />}
           </span>
-          <span className="text-xs font-semibold text-foreground">Revisão</span>
-          <span className="text-[10px] text-muted-foreground hidden md:inline">— Pré-visualização final antes de validar</span>
+          <span className="text-xs font-medium text-foreground">Revisão</span>
+          <span className="text-xs text-muted-foreground hidden md:inline">— Pré-visualização final antes de validar</span>
           <div className="ml-auto flex items-center gap-2">
             {requiredComplete ? (
-              <span className="text-[10px] text-released-on-soft flex items-center gap-1">
+              <span className="text-xs text-released-on-soft flex items-center gap-1">
                 <CheckCircle2 className="h-3 w-3" /> Pronto
               </span>
             ) : (
-              <span className="text-[10px] text-warning-on-soft flex items-center gap-1">
+              <span className="text-xs text-warning-on-soft flex items-center gap-1">
                 <AlertCircle className="h-3 w-3" /> Pendente
               </span>
             )}
@@ -669,15 +669,15 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
       <Dialog open={showReviewModal} onOpenChange={setShowReviewModal}>
         <DialogContent className="max-w-2xl w-full p-0 gap-0">
           <DialogHeader className="px-4 pt-4 pb-2 border-b border-border">
-            <DialogTitle className="text-sm font-semibold flex items-center gap-2">
+            <DialogTitle className="text-sm font-medium flex items-center gap-2">
               <Eye className="h-4 w-4 text-primary" />
               Revisão da Evolução
               {requiredComplete ? (
-                <span className="ml-auto text-[10px] text-released-on-soft flex items-center gap-1 font-normal">
+                <span className="ml-auto text-xs text-released-on-soft flex items-center gap-1 font-normal">
                   <CheckCircle2 className="h-3 w-3" /> Pronto para validar
                 </span>
               ) : (
-                <span className="ml-auto text-[10px] text-warning-on-soft flex items-center gap-1 font-normal">
+                <span className="ml-auto text-xs text-warning-on-soft flex items-center gap-1 font-normal">
                   <AlertCircle className="h-3 w-3" /> Pendências
                 </span>
               )}
@@ -686,11 +686,11 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
 
           <div className="overflow-y-auto max-h-[65vh] px-4 py-3 space-y-3">
             {!requiredComplete && (
-              <div className="rounded-lg border border-warning/30 bg-warning/5 p-2.5 space-y-1">
-                <p className="text-[11px] font-semibold text-warning-on-soft flex items-center gap-1.5">
+              <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-1">
+                <p className="text-xs font-medium text-warning-on-soft flex items-center gap-2">
                   <AlertCircle className="h-3.5 w-3.5" /> Pendências para validação
                 </p>
-                <ul className="text-[11px] text-warning-on-soft/80 space-y-0.5 ml-5 list-disc">
+                <ul className="text-xs text-warning-on-soft/80 space-y-1 ml-4 list-disc">
                   {!completion.diagnostics && <li>Definir <strong>CID-10 primário</strong> em Diagnósticos</li>}
                   {!completion.evolucao && <li>Preencher <strong>Evolução</strong> (mín. 10 caracteres)</li>}
                   {!completion.plan && <li>Preencher <strong>Plano</strong> (mín. 10 caracteres)</li>}
@@ -698,8 +698,8 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               </div>
             )}
             {diagnosticsReviewSlot && (
-              <div className="rounded-lg border border-border bg-muted/20 p-2.5">
-                <p className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-2">DIAGNÓSTICOS — REVISÃO</p>
+              <div className="rounded-lg border border-border bg-muted/20 p-3">
+                <p className="text-xs font-medium text-muted-foreground tracking-wider mb-2">DIAGNÓSTICOS — REVISÃO</p>
                 {diagnosticsReviewSlot}
               </div>
             )}
@@ -720,7 +720,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             <button
               type="button"
               onClick={() => setShowReviewModal(false)}
-              className="flex-1 sm:flex-none px-3 py-1.5 rounded-md border border-border text-xs font-medium hover:bg-muted transition-colors"
+              className="flex-1 sm:flex-none px-3 py-2 rounded-md border border-border text-xs font-medium hover:bg-muted transition-colors"
             >
               Voltar e Editar
             </button>
@@ -729,7 +729,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                 type="button"
                 onClick={() => { setShowReviewModal(false); onValidate(); }}
                 disabled={!requiredComplete}
-                className="flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-released hover:bg-released disabled:opacity-50 text-white text-xs font-medium gap-1.5 flex items-center justify-center transition-colors"
+                className="flex-1 sm:flex-none px-3 py-2 rounded-md bg-released hover:bg-released disabled:opacity-50 text-white text-xs font-medium gap-2 flex items-center justify-center transition-colors"
               >
                 <ShieldCheck className="h-3.5 w-3.5" /> Validar e Assinar
               </button>
@@ -744,7 +744,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
         {!autoSave && (
           <Button
             variant="outline" size="sm"
-            className="gap-1.5 text-xs"
+            className="gap-2 text-xs"
             onClick={onSave}
             disabled={saving}
           >
@@ -755,7 +755,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
         {autoSave && (
           <Button
             variant="ghost" size="sm"
-            className="gap-1.5 text-xs"
+            className="gap-2 text-xs"
             onClick={() => { onSave(); setAutoSavedAt(new Date()); }}
             disabled={saving || !hasUnsaved}
           >
@@ -767,7 +767,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
         {onValidate && !isValidated && (
           <Button
             size="sm"
-            className="gap-1.5 text-xs bg-released hover:bg-released disabled:opacity-50"
+            className="gap-2 text-xs bg-released hover:bg-released disabled:opacity-50"
             onClick={onValidate}
             disabled={!requiredComplete}
             title={!requiredComplete ? "Preencha todas as seções obrigatórias" : "Validar e assinar evolução"}
@@ -795,7 +795,7 @@ const SectionItem: React.FC<{
 }> = ({ id, icon: Icon, iconColor, label, hint, complete, required, customStatus, children }) => {
   return (
     <AccordionItem value={id} className="border-0">
-      <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-muted/30 [&>svg]:hidden group">
+      <AccordionTrigger className="px-3 py-3 hover:no-underline hover:bg-muted/30 [&>svg]:hidden group">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className={cn(
             "flex items-center justify-center h-6 w-6 rounded-full shrink-0",
@@ -803,12 +803,12 @@ const SectionItem: React.FC<{
           )}>
             {complete ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Icon className={cn("h-3.5 w-3.5", !complete && iconColor)} />}
           </span>
-          <span className="text-xs font-semibold text-foreground">{label}</span>
+          <span className="text-xs font-medium text-foreground">{label}</span>
           {required && !complete && (
-            <span className="text-warning text-[10px] font-bold">*</span>
+            <span className="text-warning text-xs font-semibold">*</span>
           )}
           {hint && (
-            <span className="text-[10px] text-muted-foreground hidden md:inline">— {hint}</span>
+            <span className="text-xs text-muted-foreground hidden md:inline">— {hint}</span>
           )}
           <div className="ml-auto flex items-center gap-2">
             {customStatus}
@@ -861,7 +861,7 @@ const ReadOnlyView: React.FC<{
     <div className="space-y-2 text-xs leading-relaxed">
       {hasVitals && (
         <div className="rounded-lg border border-border bg-muted/30 p-2">
-          <p className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-1">SINAIS VITAIS</p>
+          <p className="text-xs font-medium text-muted-foreground tracking-wider mb-1">SINAIS VITAIS</p>
           <p className="text-foreground">
             {[
               vitals.pa && `PA ${vitals.pa}`, vitals.fc && `FC ${vitals.fc}`, vitals.fr && `FR ${vitals.fr}`,
@@ -889,7 +889,7 @@ const ReadOnlyView: React.FC<{
         <div>
           <strong className="text-released">Objetivo:</strong>
           {hasExam && (
-            <ul className="ml-4 mt-0.5 text-foreground/90 list-disc">
+            <ul className="ml-4 mt-1 text-foreground/90 list-disc">
               {EXAM_FIELDS.filter(f => physicalExam[f.key]).map(f => (
                 <li key={f.key}><span className="font-medium">{f.label}:</span> {physicalExam[f.key]}</li>
               ))}
@@ -906,14 +906,14 @@ const ReadOnlyView: React.FC<{
       {hasDevices && (
         <div>
           <strong className="text-warning-on-soft">Dispositivos invasivos:</strong>
-          <ul className="ml-4 mt-0.5 text-foreground/90 list-disc">
+          <ul className="ml-4 mt-1 text-foreground/90 list-disc">
             {devices!.map((d, i) => {
               const days = daysSince(d.insertedAt);
               const tone = deviceAlertTone(days);
               const toneCls = tone === "red"
-                ? "text-critical-on-soft font-semibold"
+                ? "text-critical-on-soft font-medium"
                 : tone === "amber"
-                  ? "text-warning-on-soft font-semibold"
+                  ? "text-warning-on-soft font-medium"
                   : "text-released-on-soft";
               return (
                 <li key={`${d.id}-${i}`}>
@@ -930,7 +930,7 @@ const ReadOnlyView: React.FC<{
         <div>
           <strong className="text-critical-on-soft">Culturas:</strong>
           <div
-            className="prose prose-sm max-w-none mt-0.5 text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
+            className="prose prose-sm max-w-none mt-1 text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
             dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(toRichHtml(culturesHtml!)) }}
           />
         </div>
@@ -939,7 +939,7 @@ const ReadOnlyView: React.FC<{
       {Array.isArray(antecedentes) && antecedentes.filter(Boolean).length > 0 && (
         <div>
           <strong className="text-foreground">Antecedentes Clínicos:</strong>
-          <ol className="ml-4 mt-0.5 text-foreground/90 list-decimal space-y-0.5">
+          <ol className="ml-4 mt-1 text-foreground/90 list-decimal space-y-1">
             {antecedentes.filter(Boolean).map((a, i) => (
               <li key={i}>{a}</li>
             ))}
@@ -957,7 +957,7 @@ const ReadOnlyView: React.FC<{
         return hypos.length > 0 ? (
           <div>
             <strong className="text-foreground">Hipóteses Diagnósticas:</strong>
-            <ol className="ml-4 mt-0.5 text-foreground/90 list-decimal space-y-0.5">
+            <ol className="ml-4 mt-1 text-foreground/90 list-decimal space-y-1">
               {hypos.map((h, i) => <li key={i}>{h}</li>)}
             </ol>
           </div>
@@ -971,7 +971,7 @@ const ReadOnlyView: React.FC<{
         if (items.length > 0) return (
           <div>
             <strong className="text-muted-foreground">Plano:</strong>
-            <ol className="ml-4 mt-0.5 text-foreground/90 list-decimal space-y-0.5">
+            <ol className="ml-4 mt-1 text-foreground/90 list-decimal space-y-1">
               {items.map((p, i) => <li key={i}>{p}</li>)}
             </ol>
           </div>
@@ -992,14 +992,14 @@ const ReadOnlyView: React.FC<{
       {Array.isArray(pendenciasItems) && pendenciasItems.filter(Boolean).length > 0 && (
         <div>
           <strong className="text-warning">Programações e Pendências:</strong>
-          <ol className="ml-4 mt-0.5 text-foreground/90 list-decimal space-y-0.5">
+          <ol className="ml-4 mt-1 text-foreground/90 list-decimal space-y-1">
             {pendenciasItems.filter(Boolean).map((p, i) => {
               const m = /^\s*\[( |x|X)\]\s?/.exec(p);
               const done = m ? m[1].toLowerCase() === "x" : false;
               const text = m ? p.replace(/^\s*\[( |x|X)\]\s?/, "") : p;
               return (
                 <li key={i} className={done ? "line-through text-muted-foreground" : undefined}>
-                  <span className="mr-1">{done ? "☑" : "☐"}</span>{text}
+                  <span className="mr-1">{done ? "" : ""}</span>{text}
                 </li>
               );
             })}

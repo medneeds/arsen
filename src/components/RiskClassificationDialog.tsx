@@ -228,7 +228,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
       const level = RISK_LEVELS.find(r => r.value === selected);
       toast({
-        title: `✅ Classificação: ${level?.label}`,
+        title: `Classificação: ${level?.label}`,
         description: `${preAdmission.patient_name} classificado com sucesso`,
       });
 
@@ -302,10 +302,10 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
         <ScrollArea className="max-h-[60vh] px-6">
           {step === 0 ? (
-            <div className="space-y-5 pb-4">
+            <div className="space-y-4 pb-4">
               {/* Chief Complaint */}
               <div>
-                <Label className="text-xs font-semibold">Motivo da Entrada / Queixa Principal *</Label>
+                <Label className="text-xs font-medium">Motivo da Entrada / Queixa Principal *</Label>
                 <Textarea
                   value={form.chief_complaint}
                   onChange={e => setForm(prev => ({ ...prev, chief_complaint: e.target.value }))}
@@ -316,10 +316,10 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
               {/* Vital Signs */}
               <div>
-                <Label className="text-xs font-semibold mb-2 block">Sinais Vitais</Label>
+                <Label className="text-xs font-medium mb-2 block">Sinais Vitais</Label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">PA (mmHg)</Label>
+                    <Label className="text-xs text-muted-foreground">PA (mmHg)</Label>
                     <div className="flex items-center gap-1">
                       <Input
                         type="number"
@@ -339,7 +339,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                     </div>
                   </div>
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">FC (bpm)</Label>
+                    <Label className="text-xs text-muted-foreground">FC (bpm)</Label>
                     <Input
                       type="number"
                       placeholder="FC"
@@ -349,7 +349,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                     />
                   </div>
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">FR (irpm)</Label>
+                    <Label className="text-xs text-muted-foreground">FR (irpm)</Label>
                     <Input
                       type="number"
                       placeholder="FR"
@@ -359,7 +359,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                     />
                   </div>
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">Tax (°C)</Label>
+                    <Label className="text-xs text-muted-foreground">Tax (°C)</Label>
                     <Input
                       type="number"
                       step="0.1"
@@ -370,7 +370,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                     />
                   </div>
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">SpO₂ (%)</Label>
+                    <Label className="text-xs text-muted-foreground">SpO₂ (%)</Label>
                     <Input
                       type="number"
                       placeholder="SpO₂"
@@ -380,7 +380,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                     />
                   </div>
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">HGT (mg/dL)</Label>
+                    <Label className="text-xs text-muted-foreground">HGT (mg/dL)</Label>
                     <Input
                       type="number"
                       placeholder="HGT"
@@ -394,7 +394,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
               {/* Airway Assessment */}
               <div>
-                <Label className="text-xs font-semibold mb-2 block">Avaliação das Vias Aéreas</Label>
+                <Label className="text-xs font-medium mb-2 block">Avaliação das Vias Aéreas</Label>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="flex items-center gap-2">
                     <Checkbox
@@ -432,7 +432,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
               {/* Perfusion & Pulse */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs font-semibold">Perfusão Periférica</Label>
+                  <Label className="text-xs font-medium">Perfusão Periférica</Label>
                   <Select
                     value={form.peripheral_perfusion}
                     onValueChange={v => setForm(prev => ({ ...prev, peripheral_perfusion: v }))}
@@ -448,7 +448,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold">Pulso</Label>
+                  <Label className="text-xs font-medium">Pulso</Label>
                   <Select
                     value={form.pulse_quality}
                     onValueChange={v => setForm(prev => ({ ...prev, pulse_quality: v }))}
@@ -468,12 +468,12 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
               {/* Glasgow */}
               <div>
-                <Label className="text-xs font-semibold mb-2 block">
-                  Escala de Glasgow (ECG) — Total: <span className={cn("font-bold", glasgowTotal <= 8 ? "text-critical-on-soft" : glasgowTotal <= 12 ? "text-warning-on-soft" : "text-released-on-soft")}>{glasgowTotal}</span>
+                <Label className="text-xs font-medium mb-2 block">
+                  Escala de Glasgow (ECG) — Total: <span className={cn("font-semibold", glasgowTotal <= 8 ? "text-critical-on-soft" : glasgowTotal <= 12 ? "text-warning-on-soft" : "text-released-on-soft")}>{glasgowTotal}</span>
                 </Label>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">Ocular (1-4)</Label>
+                    <Label className="text-xs text-muted-foreground">Ocular (1-4)</Label>
                     <Select
                       value={String(form.glasgow_eye)}
                       onValueChange={v => setForm(prev => ({ ...prev, glasgow_eye: Number(v) }))}
@@ -490,7 +490,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">Verbal (1-5)</Label>
+                    <Label className="text-xs text-muted-foreground">Verbal (1-5)</Label>
                     <Select
                       value={String(form.glasgow_verbal)}
                       onValueChange={v => setForm(prev => ({ ...prev, glasgow_verbal: Number(v) }))}
@@ -508,7 +508,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">Motora (1-6)</Label>
+                    <Label className="text-xs text-muted-foreground">Motora (1-6)</Label>
                     <Select
                       value={String(form.glasgow_motor)}
                       onValueChange={v => setForm(prev => ({ ...prev, glasgow_motor: Number(v) }))}
@@ -531,8 +531,8 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
               {/* Pain Scale */}
               <div>
-                <Label className="text-xs font-semibold mb-1 block">
-                  Escala de Dor: <span className={cn("font-bold", painColor)}>{form.pain_scale}/10</span>
+                <Label className="text-xs font-medium mb-1 block">
+                  Escala de Dor: <span className={cn("font-semibold", painColor)}>{form.pain_scale}/10</span>
                 </Label>
                 <Slider
                   value={[form.pain_scale]}
@@ -541,7 +541,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                   step={1}
                   className="py-2"
                 />
-                <div className="flex justify-between text-[10px] text-muted-foreground">
+                <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Sem dor</span>
                   <span>Dor máxima</span>
                 </div>
@@ -549,7 +549,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
               {/* Allergies */}
               <div>
-                <Label className="text-xs font-semibold">Alergias</Label>
+                <Label className="text-xs font-medium">Alergias</Label>
                 <Input
                   value={form.allergies}
                   onChange={e => setForm(prev => ({ ...prev, allergies: e.target.value }))}
@@ -566,7 +566,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                   onCheckedChange={v => setForm(prev => ({ ...prev, flu_symptoms: !!v }))}
                 />
                 <div className="flex-1 space-y-1">
-                  <Label htmlFor="flu-symptoms" className="text-xs font-semibold cursor-pointer">Sintomas Gripais / Síndrome Respiratória</Label>
+                  <Label htmlFor="flu-symptoms" className="text-xs font-medium cursor-pointer">Sintomas Gripais / Síndrome Respiratória</Label>
                   {form.flu_symptoms && (
                     <Input
                       className="h-8 text-xs mt-1"
@@ -586,7 +586,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                   onCheckedChange={v => setForm(prev => ({ ...prev, oxygen_therapy: !!v }))}
                 />
                 <div className="flex-1 space-y-1">
-                  <Label htmlFor="oxygen-therapy" className="text-xs font-semibold cursor-pointer">Em uso de O₂ / Oxigenoterapia</Label>
+                  <Label htmlFor="oxygen-therapy" className="text-xs font-medium cursor-pointer">Em uso de O₂ / Oxigenoterapia</Label>
                   {form.oxygen_therapy && (
                     <Input
                       className="h-8 text-xs mt-1"
@@ -600,7 +600,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
               {/* Triage Notes */}
               <div>
-                <Label className="text-xs font-semibold">Observações da Triagem</Label>
+                <Label className="text-xs font-medium">Observações da Triagem</Label>
                 <Textarea
                   value={form.triage_notes}
                   onChange={e => setForm(prev => ({ ...prev, triage_notes: e.target.value }))}
@@ -618,10 +618,10 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Info className="h-4 w-4 text-primary" />
-                        <span className="text-xs font-semibold uppercase tracking-wide text-primary">
+                        <span className="text-xs font-medium uppercase tracking-wide text-primary">
                           Sugestão do sistema
                         </span>
-                        <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded", sug.color.split(" ").filter(c => c.startsWith("bg-") || c.startsWith("text-")).join(" "))}>
+                        <span className={cn("text-xs font-semibold px-2 py-1 rounded-md", sug.color.split(" ").filter(c => c.startsWith("bg-") || c.startsWith("text-")).join(" "))}>
                           {sug.label}
                         </span>
                       </div>
@@ -636,15 +636,15 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                       </Button>
                     </div>
                     {suggestion.reasons.length > 0 ? (
-                      <ul className="text-[11px] text-muted-foreground space-y-0.5 pl-5 list-disc">
+                      <ul className="text-xs text-muted-foreground space-y-1 pl-4 list-disc">
                         {suggestion.reasons.slice(0, 5).map((r, i) => <li key={i}>{r}</li>)}
                       </ul>
                     ) : (
-                      <p className="text-[11px] text-muted-foreground pl-1">
+                      <p className="text-xs text-muted-foreground pl-1">
                         Sem critérios de gravidade detectados nos sinais avaliados.
                       </p>
                     )}
-                    <p className="text-[10px] text-muted-foreground italic pl-1">
+                    <p className="text-xs text-muted-foreground italic pl-1">
                       Sugestão não-vinculante. A decisão final é do profissional triador.
                     </p>
                   </div>
@@ -665,10 +665,10 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                   >
                     <Icon className="h-5 w-5 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-sm">{level.label}</div>
+                      <div className="font-semibold text-sm">{level.label}</div>
                       <div className="text-xs opacity-90">{level.description}</div>
                     </div>
-                    <div className="text-xs font-mono font-bold shrink-0">{level.time}</div>
+                    <div className="text-xs font-mono font-semibold shrink-0">{level.time}</div>
                   </button>
                 );
               })}

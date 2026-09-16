@@ -328,14 +328,14 @@ const ResourcesPage = () => {
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-lg bg-primary/20 flex items-center justify-center">
               <Database className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight uppercase">
+              <h1 className="text-3xl font-semibold tracking-tight uppercase">
                 Solicitações de Internação
               </h1>
-              <p className="text-muted-foreground uppercase text-sm">
+              <p className="text-muted-foreground uppercase tracking-wider text-sm">
                 {currentDepartment} • Criar e gerenciar solicitações
               </p>
             </div>
@@ -343,7 +343,7 @@ const ResourcesPage = () => {
           <Button
             onClick={() => navigate('/internment-history')}
             variant="outline"
-            className="gap-2 uppercase"
+            className="gap-2 uppercase tracking-wider"
           >
             <History className="h-4 w-4" />
             Histórico
@@ -354,22 +354,22 @@ const ResourcesPage = () => {
       <Separator className="my-6" />
 
       {/* Nueva Solicitação Section */}
-      <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300">
-        <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+      <Card className="border-primary/20 shadow-md hover:shadow-md transition-all duration-300">
+        <CardHeader className="bg-primary/5">
           <div className="flex items-start justify-between">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Plus className="h-5 w-5 text-primary" />
-                <CardTitle className="uppercase text-xl">Nova Solicitação</CardTitle>
+                <CardTitle className="uppercase tracking-wider text-xl">Nova Solicitação</CardTitle>
               </div>
-              <CardDescription className="uppercase text-xs">
+              <CardDescription className="uppercase tracking-wider text-xs">
                 Selecione um paciente do mapa atual e crie a solicitação de internação
               </CardDescription>
             </div>
             <Button
               onClick={handleOpenSaveDialog}
               size="lg"
-              className="gap-2 uppercase shadow-md hover:shadow-lg transition-all"
+              className="gap-2 uppercase tracking-wider shadow-md hover:shadow-md transition-all"
             >
               <Plus className="h-4 w-4" />
               Criar Solicitação
@@ -383,8 +383,8 @@ const ResourcesPage = () => {
                 <FileText className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-semibold uppercase">Pacientes Disponíveis</p>
-                <p className="text-2xl font-bold text-primary">{patients.filter(p => {
+                <p className="text-sm font-medium uppercase tracking-wider">Pacientes Disponíveis</p>
+                <p className="text-2xl font-semibold text-primary">{patients.filter(p => {
                   const bed = (p.bed_number || '').toString().toUpperCase();
                   return !bed.startsWith('EXTRA');
                 }).length}</p>
@@ -395,8 +395,8 @@ const ResourcesPage = () => {
                 <Database className="h-5 w-5 text-foreground" />
               </div>
               <div>
-                <p className="text-sm font-semibold uppercase">Banco de Dados</p>
-                <p className="text-xs text-muted-foreground uppercase">Solicitações Salvas</p>
+                <p className="text-sm font-medium uppercase tracking-wider">Banco de Dados</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Solicitações Salvas</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30 border border-border/50">
@@ -404,8 +404,8 @@ const ResourcesPage = () => {
                 <FileText className="h-5 w-5 text-warning-on-soft" />
               </div>
               <div>
-                <p className="text-sm font-semibold uppercase">Templates</p>
-                <p className="text-xs text-muted-foreground uppercase">Modelos Personalizados</p>
+                <p className="text-sm font-medium uppercase tracking-wider">Templates</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Modelos Personalizados</p>
               </div>
             </div>
           </div>
@@ -415,13 +415,13 @@ const ResourcesPage = () => {
       <Separator className="my-8" />
 
       {/* Notes Section */}
-      <Card className="shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-muted/50 to-transparent">
+      <Card className="shadow-md">
+        <CardHeader className="bg-muted/50">
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            <CardTitle className="uppercase text-xl">Bloco de Notas & Templates</CardTitle>
+            <CardTitle className="uppercase tracking-wider text-xl">Bloco de Notas & Templates</CardTitle>
           </div>
-          <CardDescription className="uppercase text-xs">
+          <CardDescription className="uppercase tracking-wider text-xs">
             Utilize templates padrão ou crie modelos personalizados para suas solicitações
           </CardDescription>
         </CardHeader>
@@ -434,30 +434,30 @@ const ResourcesPage = () => {
       <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="uppercase flex items-center gap-2">
+            <DialogTitle className="uppercase tracking-wider flex items-center gap-2">
               <Plus className="h-5 w-5 text-primary" />
               Nova Solicitação de Internação
             </DialogTitle>
-            <DialogDescription className="uppercase">
+            <DialogDescription className="uppercase tracking-wider">
               Selecione o paciente e preencha os dados da solicitação
             </DialogDescription>
           </DialogHeader>
           <Separator className="my-4" />
           <div className="grid gap-6 py-4">
             <div className="grid gap-3">
-              <Label htmlFor="patient" className="uppercase font-semibold text-sm">
+              <Label htmlFor="patient" className="uppercase tracking-wider font-medium text-sm">
                 Paciente do Mapa *
               </Label>
               <Select
                 value={selectedPatient}
                 onValueChange={setSelectedPatient}
               >
-                <SelectTrigger className="uppercase h-12">
+                <SelectTrigger className="uppercase tracking-wider h-12">
                   <SelectValue placeholder="Selecione um paciente" />
                 </SelectTrigger>
                 <SelectContent>
                   {patients.map((patient) => (
-                    <SelectItem key={patient.id} value={patient.id} className="uppercase">
+                    <SelectItem key={patient.id} value={patient.id} className="uppercase tracking-wider">
                       Leito {patient.bed_number} - {patient.name} ({getSectorLabel(patient.sector)})
                     </SelectItem>
                   ))}
@@ -466,23 +466,23 @@ const ResourcesPage = () => {
             </div>
 
             <div className="grid gap-3">
-              <Label htmlFor="destination" className="uppercase font-semibold text-sm">
+              <Label htmlFor="destination" className="uppercase tracking-wider font-medium text-sm">
                 Destino da Internação *
               </Label>
               <Select
                 value={formData.destination}
                 onValueChange={(value) => setFormData({ ...formData, destination: value })}
               >
-                <SelectTrigger className="uppercase h-12">
+                <SelectTrigger className="uppercase tracking-wider h-12">
                   <SelectValue placeholder="Selecione o destino" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="UTI" className="uppercase">UTI - Unidade de Terapia Intensiva</SelectItem>
-                  <SelectItem value="ENFERMARIA" className="uppercase">Enfermaria</SelectItem>
-                  <SelectItem value="POSTO INTERNAÇÃO" className="uppercase">Posto Internação</SelectItem>
-                  <SelectItem value="CIRURGIA" className="uppercase">Centro Cirúrgico</SelectItem>
-                  <SelectItem value="HEMODINÂMICA" className="uppercase">Hemodinâmica</SelectItem>
-                  <SelectItem value="PSIQUIATRIA (INSTITUTO VOLTA VIDA)" className="uppercase">
+                  <SelectItem value="UTI" className="uppercase tracking-wider">UTI - Unidade de Terapia Intensiva</SelectItem>
+                  <SelectItem value="ENFERMARIA" className="uppercase tracking-wider">Enfermaria</SelectItem>
+                  <SelectItem value="POSTO INTERNAÇÃO" className="uppercase tracking-wider">Posto Internação</SelectItem>
+                  <SelectItem value="CIRURGIA" className="uppercase tracking-wider">Centro Cirúrgico</SelectItem>
+                  <SelectItem value="HEMODINÂMICA" className="uppercase tracking-wider">Hemodinâmica</SelectItem>
+                  <SelectItem value="PSIQUIATRIA (INSTITUTO VOLTA VIDA)" className="uppercase tracking-wider">
                     Psiquiatria (Instituto Volta Vida)
                   </SelectItem>
                 </SelectContent>
@@ -493,7 +493,7 @@ const ResourcesPage = () => {
 
             <div className="grid gap-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="content" className="uppercase font-semibold text-sm">
+                <Label htmlFor="content" className="uppercase tracking-wider font-medium text-sm">
                   Conteúdo da Solicitação *
                 </Label>
                 <div className="flex gap-2">
@@ -502,7 +502,7 @@ const ResourcesPage = () => {
                     variant="outline"
                     size="sm"
                     onClick={handleImportDiagnoses}
-                    className="uppercase gap-2 h-8 text-xs"
+                    className="uppercase tracking-wider gap-2 h-8 text-xs"
                     disabled={!selectedPatient}
                   >
                     <Import className="h-3.5 w-3.5" />
@@ -513,7 +513,7 @@ const ResourcesPage = () => {
                     variant="outline"
                     size="sm"
                     onClick={handleImportAdmissionHistory}
-                    className="uppercase gap-2 h-8 text-xs"
+                    className="uppercase tracking-wider gap-2 h-8 text-xs"
                     disabled={!selectedPatient}
                   >
                     <Import className="h-3.5 w-3.5" />
@@ -526,7 +526,7 @@ const ResourcesPage = () => {
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value.toUpperCase() })}
                 placeholder="Digite o conteúdo detalhado da solicitação..."
-                className="min-h-[300px] font-mono text-sm uppercase resize-none"
+                className="min-h-[300px] font-mono text-sm uppercase tracking-wider resize-none"
                 required
               />
             </div>
@@ -536,14 +536,14 @@ const ResourcesPage = () => {
               type="button"
               variant="outline"
               onClick={() => setIsSaveDialogOpen(false)}
-              className="uppercase"
+              className="uppercase tracking-wider"
             >
               Cancelar
             </Button>
             <Button
               type="button"
               onClick={handleSave}
-              className="uppercase gap-2"
+              className="uppercase tracking-wider gap-2"
             >
               <Database className="h-4 w-4" />
               Salvar no Banco
@@ -556,7 +556,7 @@ const ResourcesPage = () => {
       <AlertDialog open={isConfirmationDialogOpen} onOpenChange={setIsConfirmationDialogOpen}>
         <AlertDialogContent className="sm:max-w-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="uppercase flex items-center gap-2 text-released-on-soft">
+            <AlertDialogTitle className="uppercase tracking-wider flex items-center gap-2 text-released-on-soft">
               <Database className="h-6 w-6" />
               Solicitação Registrada com Sucesso
             </AlertDialogTitle>
@@ -564,29 +564,29 @@ const ResourcesPage = () => {
               <div className="bg-muted/50 rounded-lg p-4 space-y-3">
                 <div className="grid gap-2">
                   <div className="flex justify-between items-start">
-                    <span className="text-xs font-semibold uppercase text-foreground">Paciente:</span>
-                    <span className="text-sm font-bold text-foreground text-right">{savedRequestInfo?.patientName}</span>
+                    <span className="text-xs font-medium uppercase tracking-wider text-foreground">Paciente:</span>
+                    <span className="text-sm font-semibold text-foreground text-right">{savedRequestInfo?.patientName}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between items-start">
-                    <span className="text-xs font-semibold uppercase text-foreground">Destino:</span>
-                    <span className="text-sm font-bold text-primary text-right">{savedRequestInfo?.destination}</span>
+                    <span className="text-xs font-medium uppercase tracking-wider text-foreground">Destino:</span>
+                    <span className="text-sm font-semibold text-primary text-right">{savedRequestInfo?.destination}</span>
                   </div>
                 </div>
               </div>
               
               <div className="bg-muted border border-border rounded-lg p-4">
-                <p className="text-sm text-foreground font-medium uppercase">
-                  📋 Informação Importante
+                <p className="text-sm text-foreground font-medium uppercase tracking-wider">
+                  Informação Importante
                 </p>
-                <p className="text-xs text-foreground mt-2 uppercase leading-relaxed">
+                <p className="text-xs text-foreground mt-2 uppercase tracking-wider leading-relaxed">
                   A solicitação foi salva com sucesso no banco de dados. Você pode visualizar, editar ou imprimir a solicitação completa a qualquer momento acessando o <strong>Histórico de Solicitações</strong>.
                 </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-2">
-            <AlertDialogCancel className="uppercase">
+            <AlertDialogCancel className="uppercase tracking-wider">
               Fechar
             </AlertDialogCancel>
             <AlertDialogAction 
@@ -594,7 +594,7 @@ const ResourcesPage = () => {
                 setIsConfirmationDialogOpen(false);
                 navigate('/internment-history');
               }}
-              className="uppercase gap-2"
+              className="uppercase tracking-wider gap-2"
             >
               <History className="h-4 w-4" />
               Ver Histórico

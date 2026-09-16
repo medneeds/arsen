@@ -54,7 +54,7 @@ export function ViewPatientSnapshotDialog({
               <div className="flex-1 space-y-2">
                 <div className="flex items-center gap-3">
                   <User className="h-5 w-5 text-muted-foreground" />
-                  <h3 className="patient-id text-xl font-bold">{patient.name}</h3>
+                  <h3 className="patient-id text-xl font-semibold">{patient.name}</h3>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
@@ -92,10 +92,10 @@ export function ViewPatientSnapshotDialog({
             {/* Diagnoses */}
             {patient.diagnoses && patient.diagnoses.length > 0 && (
               <div className="space-y-2">
-                <h4 className="font-semibold text-sm">Hipóteses / Diagnósticos</h4>
+                <h4 className="font-medium text-sm">Hipóteses / Diagnósticos</h4>
                 <ul className="list-decimal list-inside space-y-1 pl-2">
                   {patient.diagnoses.map((diagnosis, index) => (
-                    <li key={index} className="text-sm uppercase">{diagnosis}</li>
+                    <li key={index} className="text-sm uppercase tracking-wider">{diagnosis}</li>
                   ))}
                 </ul>
               </div>
@@ -104,10 +104,10 @@ export function ViewPatientSnapshotDialog({
             {/* Medical History */}
             {patient.medicalHistory && patient.medicalHistory.length > 0 && (
               <div className="space-y-2">
-                <h4 className="font-semibold text-sm">Antecedentes</h4>
+                <h4 className="font-medium text-sm">Antecedentes</h4>
                 <ul className="list-decimal list-inside space-y-1 pl-2">
                   {patient.medicalHistory.map((history, index) => (
-                    <li key={index} className="text-sm uppercase">{history}</li>
+                    <li key={index} className="text-sm uppercase tracking-wider">{history}</li>
                   ))}
                 </ul>
               </div>
@@ -116,10 +116,10 @@ export function ViewPatientSnapshotDialog({
             {/* Relevant Exams */}
             {patient.relevantExams && patient.relevantExams.length > 0 && (
               <div className="space-y-2">
-                <h4 className="font-semibold text-sm">Exames</h4>
+                <h4 className="font-medium text-sm">Exames</h4>
                 <ul className="list-decimal list-inside space-y-1 pl-2">
                   {patient.relevantExams.map((exam, index) => (
-                    <li key={index} className="text-sm uppercase">{exam}</li>
+                    <li key={index} className="text-sm uppercase tracking-wider">{exam}</li>
                   ))}
                 </ul>
               </div>
@@ -128,10 +128,10 @@ export function ViewPatientSnapshotDialog({
             {/* Pendencies */}
             {patient.pendencies && patient.pendencies.length > 0 && (
               <div className="space-y-2">
-                <h4 className="font-semibold text-sm">Programações / Pendências</h4>
+                <h4 className="font-medium text-sm">Programações / Pendências</h4>
                 <ul className="list-decimal list-inside space-y-1 pl-2">
                   {patient.pendencies.map((pendency, index) => (
-                    <li key={index} className="text-sm uppercase">{pendency}</li>
+                    <li key={index} className="text-sm uppercase tracking-wider">{pendency}</li>
                   ))}
                 </ul>
               </div>
@@ -140,9 +140,9 @@ export function ViewPatientSnapshotDialog({
             {/* Admission History */}
             {patient.admissionHistory && (
               <div className="space-y-2">
-                <h4 className="font-semibold text-sm">História Admissional / Anamnese</h4>
+                <h4 className="font-medium text-sm">História Admissional / Anamnese</h4>
                 <div className="bg-muted/30 rounded-lg p-4 border">
-                  <p className="text-sm whitespace-pre-wrap uppercase">
+                  <p className="text-sm whitespace-pre-wrap uppercase tracking-wider">
                     {patient.admissionHistory}
                   </p>
                 </div>

@@ -143,7 +143,7 @@ export function AtmStatusDialog({
   <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[88vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-5 py-3 border-b bg-[hsl(217,55%,96%)]/50(217,75%,12%)]/15">
+        <DialogHeader className="px-4 py-3 border-b bg-[hsl(217,55%,96%)]/50">
           <DialogTitle className="flex items-center gap-2 text-base">
             <Shield className="h-5 w-5 text-[hsl(217,70%,40%)]" />
             Guia ATM — Antimicrobianos
@@ -154,19 +154,19 @@ export function AtmStatusDialog({
         </DialogHeader>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="mx-5 mt-3 grid grid-cols-2 w-auto self-start">
-            <TabsTrigger value="status" className="text-xs gap-1.5 data-[state=active]:text-[hsl(217,72%,36%)] data-[state=active]:border-b-2 data-[state=active]:border-[hsl(217,65%,45%)]">
+          <TabsList className="mx-4 mt-3 grid grid-cols-2 w-auto self-start">
+            <TabsTrigger value="status" className="text-xs gap-2 data-[state=active]:text-[hsl(217,72%,36%)] data-[state=active]:border-b-2 data-[state=active]:border-[hsl(217,65%,45%)]">
               <Activity className="h-3.5 w-3.5" /> Status ({activeItems.length})
             </TabsTrigger>
-            <TabsTrigger value="nova" className="text-xs gap-1.5 data-[state=active]:text-[hsl(217,72%,36%)] data-[state=active]:border-b-2 data-[state=active]:border-[hsl(217,65%,45%)]">
+            <TabsTrigger value="nova" className="text-xs gap-2 data-[state=active]:text-[hsl(217,72%,36%)] data-[state=active]:border-b-2 data-[state=active]:border-[hsl(217,65%,45%)]">
               <Plus className="h-3.5 w-3.5" /> Nova ATB
             </TabsTrigger>
           </TabsList>
 
           {/* === STATUS === */}
-          <TabsContent value="status" className="flex-1 min-h-0 m-0 px-5 py-3">
+          <TabsContent value="status" className="flex-1 min-h-0 m-0 px-4 py-3">
             {!hasActive ? (
-              <div className="text-center text-sm text-muted-foreground py-12 border border-dashed rounded-lg">
+              <div className="text-center text-sm text-muted-foreground py-8 border border-dashed rounded-lg">
                 <Shield className="h-8 w-8 mx-auto mb-2 opacity-40" />
                 Nenhum antimicrobiano em curso.<br />
                 Use a aba <strong>Nova ATB</strong> para iniciar uma solicitação.
@@ -174,22 +174,22 @@ export function AtmStatusDialog({
             ) : (
               <ScrollArea className="h-[420px] pr-2">
                 {onReprintAll && activeItems.length >= 2 && (
-                  <div className="mb-2.5 flex items-center justify-between gap-2 rounded-md border border-[hsl(217,55%,82%)]/70 bg-[hsl(217,55%,96%)]/50(217,70%,28%)]/40(217,75%,12%)]/15 px-2.5 py-2">
-                    <div className="text-[11px] text-[hsl(217,72%,36%)](217,60%,60%)]">
+                  <div className="mb-3 flex items-center justify-between gap-2 rounded-md border border-[hsl(217,55%,82%)]/70 bg-[hsl(217,55%,96%)]/50 px-3 py-2">
+                    <div className="text-xs text-[hsl(217,72%,36%)]">
                       <strong>Guia consolidada:</strong> imprime uma única Guia ATM com todos os {activeItems.length} antibióticos em curso (1 bloco por item).
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => onReprintAll(activeItems)}
-                      className="h-7 text-[11px] gap-1 border-[hsl(217,55%,72%)] text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,90%)](217,60%,60%)](217,75%,12%)]/30 shrink-0"
+                      className="h-7 text-xs gap-1 border-[hsl(217,55%,72%)] text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,90%)] shrink-0"
                       title="Gera uma única Guia ATM contendo todos os antibióticos validados em curso"
                     >
                       <Printer className="h-3 w-3" /> Reimprimir todas ({activeItems.length})
                     </Button>
                   </div>
                 )}
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   {activeItems.map((it) => {
                     const dot = dayOfTherapy(it.atbStartDate);
                     const total = parseInt(it.atbPlannedDays || '', 10);
@@ -216,32 +216,32 @@ export function AtmStatusDialog({
                           "rounded-lg border p-3 bg-card transition-colors",
                           overdue
                             ? "border-critical-border bg-critical-soft/40"
-                            : "border-[hsl(217,55%,82%)]/70(217,70%,28%)]/40 hover:border-[hsl(217,55%,72%)]",
+                            : "border-[hsl(217,55%,82%)]/70 hover:border-[hsl(217,55%,72%)]",
                         )}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-semibold truncate">{it.name}</span>
-                              <Badge variant="outline" className="text-[9px] gap-1 border-released text-released-on-soft">
+                              <span className="text-sm font-medium truncate">{it.name}</span>
+                              <Badge variant="outline" className="text-xs gap-1 border-released text-released-on-soft">
                                 <span className="h-1.5 w-1.5 rounded-full bg-released inline-block" /> Em curso
                               </Badge>
                               {overdue && (
-                                <Badge variant="outline" className="text-[9px] gap-1 border-critical text-critical-on-soft">
+                                <Badge variant="outline" className="text-xs gap-1 border-critical text-critical-on-soft">
                                   <AlertTriangle className="h-2.5 w-2.5" /> Excedeu duração planejada
                                 </Badge>
                               )}
                               {sinceLabel && !overdue && (
-                                <Badge variant="outline" className="text-[9px] gap-1 border-[hsl(217,55%,72%)] text-[hsl(217,72%,36%)](217,60%,60%)]">
+                                <Badge variant="outline" className="text-xs gap-1 border-[hsl(217,55%,72%)] text-[hsl(217,72%,36%)]">
                                   <Timer className="h-2.5 w-2.5" /> {sinceLabel}
                                 </Badge>
                               )}
                             </div>
-                            <div className="text-[11px] text-muted-foreground mt-0.5">
+                            <div className="text-xs text-muted-foreground mt-1">
                               {it.dose} · {it.route} · {it.posology}
                             </div>
                             {it.atbInfectionSite && (
-                              <div className="text-[11px] text-muted-foreground mt-0.5">
+                              <div className="text-xs text-muted-foreground mt-1">
                                 Sítio: <strong className="text-foreground/80">{it.atbInfectionSite}</strong>
                               </div>
                             )}
@@ -249,13 +249,13 @@ export function AtmStatusDialog({
                             {/* Linha de progresso (Dia X / Y + barra) */}
                             {dot !== null && (
                               <div className="mt-2">
-                                <div className="flex items-center justify-between gap-2 text-[11px] mb-1">
-                                  <span className="inline-flex items-center gap-1 font-semibold text-[hsl(217,72%,36%)](217,60%,60%)]">
+                                <div className="flex items-center justify-between gap-2 text-xs mb-1">
+                                  <span className="inline-flex items-center gap-1 font-medium text-[hsl(217,72%,36%)]">
                                     <Clock className="h-3 w-3" /> Dia {dot}{totalValid ? ` de ${total}` : ''}
                                   </span>
                                   {totalValid && remaining !== null && (
                                     <span className={cn(
-                                      "font-semibold",
+                                      "font-medium",
                                       remaining < 0 ? "text-critical-on-soft" : remaining <= 1 ? "text-warning-on-soft" : "text-muted-foreground"
                                     )}>
                                       {remaining > 0 ? `Faltam ${remaining} dia${remaining === 1 ? '' : 's'}` : remaining === 0 ? 'Último dia' : `Excedeu há ${Math.abs(remaining)} dia${Math.abs(remaining) === 1 ? '' : 's'}`}
@@ -263,7 +263,7 @@ export function AtmStatusDialog({
                                   )}
                                 </div>
                                 {pct !== null && (
-                                  <div className="h-1.5 w-full rounded-full bg-[hsl(217,55%,90%)](217,75%,12%)]/30 overflow-hidden">
+                                  <div className="h-1.5 w-full rounded-full bg-[hsl(217,55%,90%)]/30 overflow-hidden">
                                     <div
                                       className={cn(
                                         "h-full rounded-full transition-all",
@@ -278,7 +278,7 @@ export function AtmStatusDialog({
 
                             {/* Janela de tratamento */}
                             {(it.atbStartDate || end) && (
-                              <div className="flex items-center gap-1.5 mt-1.5 text-[10.5px] text-muted-foreground">
+                              <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                                 <CalendarDays className="h-2.5 w-2.5" />
                                 {it.atbStartDate && (
                                   <span>Início <strong className="text-foreground/70">{format(parseISO(it.atbStartDate), 'dd/MM/yyyy', { locale: ptBR })}</strong></span>
@@ -302,7 +302,7 @@ export function AtmStatusDialog({
                                   setExtendDays(it.atbPlannedDays || '');
                                   setExtendJustification('');
                                 }}
-                                className="h-7 text-[11px] gap-1 text-released-on-soft hover:bg-released-soft"
+                                className="h-7 text-xs gap-1 text-released-on-soft hover:bg-released-soft"
                                 title="Estender duração do tratamento sem criar novo episódio"
                               >
                                 <CalendarPlus className="h-3 w-3" /> Estender
@@ -313,7 +313,7 @@ export function AtmStatusDialog({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => onReprintItem(it)}
-                                className="h-7 text-[11px] gap-1 text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,96%)](217,60%,60%)](217,75%,12%)]/30"
+                                className="h-7 text-xs gap-1 text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,96%)]"
                                 title="Reimprimir 2ª via da Guia ATM já validada"
                               >
                                 <Printer className="h-3 w-3" /> Reimprimir
@@ -324,7 +324,7 @@ export function AtmStatusDialog({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => onSuspendItem(it.id)}
-                                className="h-7 text-[11px] gap-1 text-critical-on-soft hover:bg-critical-soft"
+                                className="h-7 text-xs gap-1 text-critical-on-soft hover:bg-critical-soft"
                               >
                                 <Ban className="h-3 w-3" /> Suspender
                               </Button>
@@ -335,7 +335,7 @@ export function AtmStatusDialog({
                     );
                   })}
                 </div>
-                <div className="mt-3 p-2 rounded-md bg-muted/40 text-[11px] text-muted-foreground">
+                <div className="mt-3 p-2 rounded-md bg-muted/40 text-xs text-muted-foreground">
                   <strong>Importante:</strong> guias já autorizadas não são editadas aqui — use <strong>Reimprimir</strong> para gerar 2ª via, ou a aba <strong>Nova ATB</strong> para acréscimo/troca.
                 </div>
               </ScrollArea>
@@ -343,11 +343,11 @@ export function AtmStatusDialog({
           </TabsContent>
 
           {/* === NOVA === */}
-          <TabsContent value="nova" className="flex-1 min-h-0 m-0 px-5 py-3">
+          <TabsContent value="nova" className="flex-1 min-h-0 m-0 px-4 py-3">
             <div className="space-y-4">
               {!hasActive ? (
                 <div className="rounded-lg border border-dashed p-4 bg-muted/20 text-xs">
-                  <div className="font-semibold flex items-center gap-1.5 mb-1">
+                  <div className="font-medium flex items-center gap-2 mb-1">
                     <Plus className="h-3.5 w-3.5 text-[hsl(217,70%,40%)]" />
                     Início de antibioticoterapia
                   </div>
@@ -361,34 +361,34 @@ export function AtmStatusDialog({
                   <div className="text-xs font-medium">Esta nova prescrição é:</div>
                   <RadioGroup value={novaMode} onValueChange={(v) => setNovaMode(v as any)} className="space-y-2">
                     <label className={cn(
-                      "flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer hover:bg-muted/30",
-                      novaMode === 'acrescimo' && "border-[hsl(217,60%,60%)] bg-[hsl(217,55%,96%)]/50(217,75%,12%)]/20"
+                      "flex items-start gap-3 rounded-lg border p-3 cursor-pointer hover:bg-muted/30",
+                      novaMode === 'acrescimo' && "border-[hsl(217,60%,60%)] bg-[hsl(217,55%,96%)]/50"
                     )}>
-                      <RadioGroupItem value="acrescimo" className="mt-0.5" />
+                      <RadioGroupItem value="acrescimo" className="mt-1" />
                       <div className="text-xs">
-                        <div className="font-semibold">Acréscimo</div>
+                        <div className="font-medium">Acréscimo</div>
                         <div className="text-muted-foreground">
                           Adicionar novo antibiótico mantendo os atuais (sinergismo, expansão de cobertura).
                         </div>
                       </div>
                     </label>
                     <label className={cn(
-                      "flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer hover:bg-muted/30",
+                      "flex items-start gap-3 rounded-lg border p-3 cursor-pointer hover:bg-muted/30",
                       novaMode === 'troca' && "border-critical bg-critical-soft/50"
                     )}>
-                      <RadioGroupItem value="troca" className="mt-0.5" />
+                      <RadioGroupItem value="troca" className="mt-1" />
                       <div className="text-xs flex-1">
-                        <div className="font-semibold">Troca / Escalonamento</div>
+                        <div className="font-medium">Troca / Escalonamento</div>
                         <div className="text-muted-foreground">
                           Substituir antibiótico atual (falência terapêutica, antibiograma, descalonamento).
                         </div>
                         {novaMode === 'troca' && (
-                          <div className="mt-2 space-y-1.5">
-                            <div className="text-[10px] font-semibold uppercase text-muted-foreground">
+                          <div className="mt-2 space-y-2">
+                            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                               Selecione qual(is) suspender:
                             </div>
                             {activeItems.map(it => (
-                              <label key={it.id} className="flex items-center gap-2 text-[11px] cursor-pointer">
+                              <label key={it.id} className="flex items-center gap-2 text-xs cursor-pointer">
                                 <Checkbox
                                   checked={trocaIds.has(it.id)}
                                   onCheckedChange={(v) => {
@@ -410,7 +410,7 @@ export function AtmStatusDialog({
                 </>
               )}
 
-              <div className="rounded-md bg-muted/60 border border-border p-2.5 text-[11px] text-foreground">
+              <div className="rounded-md bg-muted/60 border border-border p-3 text-xs text-foreground">
                 Ao continuar, abriremos a <strong>Guia ATM</strong> com formulário em branco para o
                 novo antibiótico. Os itens em curso permanecem inalterados (a menos que você
                 selecione a opção de Troca).
@@ -419,7 +419,7 @@ export function AtmStatusDialog({
           </TabsContent>
         </Tabs>
 
-        <DialogFooter className="px-5 py-3 border-t bg-background flex-row sm:justify-between gap-2">
+        <DialogFooter className="px-4 py-3 border-t bg-background flex-row sm:justify-between gap-2">
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
             Fechar
           </Button>
@@ -427,7 +427,7 @@ export function AtmStatusDialog({
             <Button
               size="sm"
               onClick={handleProceed}
-              className="gap-1.5 bg-[hsl(217,70%,40%)] hover:bg-[hsl(217,72%,36%)] text-white"
+              className="gap-2 bg-[hsl(217,70%,40%)] hover:bg-[hsl(217,72%,36%)] text-white"
             >
               {novaModeEffective === 'inicial' ? 'Abrir Guia ATM' : novaModeEffective === 'troca' ? 'Continuar com Troca' : 'Continuar com Acréscimo'}
               <ChevronRight className="h-3.5 w-3.5" />
@@ -438,7 +438,7 @@ export function AtmStatusDialog({
               variant="outline"
               size="sm"
               onClick={() => setTab('nova')}
-              className="gap-1.5"
+              className="gap-2"
             >
               <Plus className="h-3.5 w-3.5" /> Iniciar nova ATB
             </Button>
@@ -517,7 +517,7 @@ export function AtmStatusDialog({
             size="sm"
             disabled={!extendValid || !extendJustification.trim()}
             onClick={handleConfirmExtend}
-            className="gap-1.5 bg-released hover:bg-released text-white"
+            className="gap-2 bg-released hover:bg-released text-white"
           >
             <CalendarPlus className="h-3.5 w-3.5" /> Confirmar extensão
           </Button>

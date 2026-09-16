@@ -108,7 +108,7 @@ export function ChangeUserEmailDialog({
           </div>
 
           <div>
-            <Label className="text-[10px] font-medium text-muted-foreground tracking-[0.15em]">
+            <Label className="text-xs font-medium text-muted-foreground tracking-[0.15em]">
               NOVO E-MAIL
             </Label>
             <Input
@@ -122,12 +122,12 @@ export function ChangeUserEmailDialog({
               spellCheck={false}
               inputMode="email"
               disabled={loading}
-              className="mt-1.5"
+              className="mt-2"
             />
           </div>
 
           <div>
-            <Label className="text-[10px] font-medium text-muted-foreground tracking-[0.15em]">
+            <Label className="text-xs font-medium text-muted-foreground tracking-[0.15em]">
               MOTIVO DA ALTERAÇÃO
             </Label>
             <Textarea
@@ -136,13 +136,13 @@ export function ChangeUserEmailDialog({
               placeholder="Ex.: correção solicitada pelo usuário"
               rows={2}
               disabled={loading}
-              className="mt-1.5 resize-none"
+              className="mt-2 resize-none"
             />
           </div>
 
           <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3">
-            <AlertTriangle className="h-4 w-4 text-warning-on-soft shrink-0 mt-0.5" />
-            <p className="text-[11px] text-warning-on-soft preserve-case leading-relaxed">
+            <AlertTriangle className="h-4 w-4 text-warning-on-soft shrink-0 mt-1" />
+            <p className="text-xs text-warning-on-soft preserve-case leading-relaxed">
               O e-mail novo será marcado como verificado automaticamente.
               O usuário deverá usar o novo e-mail no próximo login.
             </p>

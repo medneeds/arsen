@@ -284,7 +284,7 @@ ${extractedExams.join('\n')}`
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <div 
-              className="p-1.5 rounded-lg"
+              className="p-2 rounded-lg"
               style={{ backgroundColor: `${sectorColor}20` }}
             >
               <Sparkles className="h-5 w-5" style={{ color: sectorColor }} />
@@ -377,7 +377,7 @@ ${extractedExams.join('\n')}`
                       size="sm"
                       onClick={filterCriticalValues}
                       disabled={isFilteringCritical}
-                      className="h-7 text-xs gap-1.5 border-warning/50 text-warning hover:bg-warning/10 hover:text-warning"
+                      className="h-7 text-xs gap-2 border-warning/50 text-warning hover:bg-warning/10 hover:text-warning"
                     >
                       {isFilteringCritical ? (
                         <>
@@ -397,7 +397,7 @@ ${extractedExams.join('\n')}`
                       variant="outline"
                       size="sm"
                       onClick={() => setShowOnlyCritical(false)}
-                      className="h-7 text-xs gap-1.5"
+                      className="h-7 text-xs gap-2"
                     >
                       <Filter className="h-3 w-3" />
                       Ver Todos ({extractedExams.length})
@@ -415,18 +415,18 @@ ${extractedExams.join('\n')}`
                     <div
                       key={idx}
                       className={cn(
-                        "flex items-start gap-2 p-2 rounded hover:bg-accent/50 group",
+                        "flex items-start gap-2 p-2 rounded-md hover:bg-accent/50 group",
                         showOnlyCritical && "bg-warning/10 border border-warning/30"
                       )}
                     >
-                      <span className="text-xs font-semibold text-muted-foreground flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-medium text-muted-foreground flex-shrink-0 mt-1">
                         {idx + 1}.
                       </span>
                       <input
                         type="text"
                         value={exam}
                         onChange={(e) => handleEditExtracted(idx, e.target.value)}
-                        className="flex-1 text-xs uppercase bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary rounded px-1"
+                        className="flex-1 text-xs uppercase tracking-wider bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary rounded-md px-1"
                       />
                       <Button
                         variant="ghost"

@@ -88,7 +88,7 @@ export default function IpAllowlistPage() {
 
   if (!isAdmin) {
     return (
-      <div className="p-8 text-center text-muted-foreground uppercase">
+      <div className="p-8 text-center text-muted-foreground uppercase tracking-wider">
         Acesso restrito a administradores.
       </div>
     );
@@ -149,7 +149,7 @@ export default function IpAllowlistPage() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold uppercase tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-medium uppercase tracking-tight flex items-center gap-2">
             <ShieldCheck className="h-6 w-6 text-primary" />
             Restrição de Acesso por IP
           </h1>
@@ -169,7 +169,7 @@ export default function IpAllowlistPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base uppercase">Configuração por módulo</CardTitle>
+          <CardTitle className="text-base uppercase tracking-wider">Configuração por módulo</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -209,12 +209,12 @@ export default function IpAllowlistPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base uppercase">Adicionar IP / faixa</CardTitle>
+          <CardTitle className="text-base uppercase tracking-wider">Adicionar IP / faixa</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
             <div>
-              <Label className="text-xs uppercase">Módulo</Label>
+              <Label className="text-xs uppercase tracking-wider">Módulo</Label>
               <Select value={newModule} onValueChange={setNewModule}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
@@ -229,7 +229,7 @@ export default function IpAllowlistPage() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs uppercase">IP ou faixa CIDR</Label>
+              <Label className="text-xs uppercase tracking-wider">IP ou faixa CIDR</Label>
               <Input
                 placeholder="200.10.5.4 ou 200.10.5.0/24"
                 value={newIp}
@@ -237,7 +237,7 @@ export default function IpAllowlistPage() {
               />
             </div>
             <div>
-              <Label className="text-xs uppercase">Identificação</Label>
+              <Label className="text-xs uppercase tracking-wider">Identificação</Label>
               <Input
                 placeholder="Ex.: Farmácia central – PC 02"
                 value={newLabel}
@@ -253,7 +253,7 @@ export default function IpAllowlistPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base uppercase">IPs autorizados</CardTitle>
+          <CardTitle className="text-base uppercase tracking-wider">IPs autorizados</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -299,7 +299,7 @@ export default function IpAllowlistPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base uppercase">Tentativas recentes (últimas 50)</CardTitle>
+          <CardTitle className="text-base uppercase tracking-wider">Tentativas recentes (últimas 50)</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>

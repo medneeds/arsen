@@ -56,12 +56,12 @@ export function LoadingScreen({ onComplete, duration = 1400 }: LoadingScreenProp
 
         {/* Logo única — Socorrão I */}
         <motion.div
-          className="mb-7"
+          className="mb-6"
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.45, ease: "easeOut" }}
         >
-          <div className="h-20 w-20 rounded-2xl bg-card/70 border border-border/40 flex items-center justify-center backdrop-blur-sm p-3 shadow-sm">
+          <div className="h-20 w-20 rounded-lg bg-card/70 border border-border/40 flex items-center justify-center backdrop-blur-sm p-3 shadow-sm">
             <img
               src={socorraoCrossLogo}
               alt="ARSen — Socorrão I"
@@ -72,7 +72,7 @@ export function LoadingScreen({ onComplete, duration = 1400 }: LoadingScreenProp
 
         {/* Nome da plataforma */}
         <motion.h1
-          className="preserve-case text-3xl font-extralight tracking-[0.35em] text-foreground mb-1.5"
+          className="preserve-case text-3xl font-normal tracking-[0.35em] text-foreground mb-2"
           style={{ fontFamily: SERIF }}
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
@@ -83,7 +83,7 @@ export function LoadingScreen({ onComplete, duration = 1400 }: LoadingScreenProp
 
         {/* Hospital — discreto */}
         <motion.p
-          className="preserve-case text-[9px] font-medium tracking-[0.2em] uppercase text-foreground/45 text-center mb-10"
+          className="preserve-case text-xs font-medium tracking-[0.2em] uppercase text-foreground/45 text-center mb-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, delay: 0.2 }}

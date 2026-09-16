@@ -55,7 +55,7 @@ export function SidebarPatientSearch({
 
   if (isCollapsed) {
     return (
-      <div className="px-0 flex justify-center py-1.5 border-b border-border/50">
+      <div className="px-0 flex justify-center py-2 border-b border-border/50">
         <button
           onClick={() => navigate("/historico-paciente")}
           title="Buscar prontuário"
@@ -69,11 +69,11 @@ export function SidebarPatientSearch({
 
   return (
     <div className="px-3 py-2 border-b border-border/50">
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
           Buscar Prontuário
         </span>
-        <div className="flex-1 h-px bg-gradient-to-r from-primary/30 to-transparent" />
+        <div className="flex-1 h-px bg-primary/30" />
       </div>
       <div ref={wrapperRef} className="relative">
         <div className="relative">
@@ -86,7 +86,7 @@ export function SidebarPatientSearch({
             }}
             onFocus={() => setOpen(true)}
             placeholder="Nome, CPF, CNS, prontuário…"
-            className="h-7 pl-7 pr-7 text-[11px] bg-muted/40 border-border/60 focus-visible:ring-1 focus-visible:ring-primary/40"
+            className="h-7 pl-6 pr-6 text-xs bg-muted/40 border-border/60 focus-visible:ring-1 focus-visible:ring-primary/40"
           />
           {term && (
             <button
@@ -94,7 +94,7 @@ export function SidebarPatientSearch({
                 setTerm("");
                 setOpen(false);
               }}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 h-4 w-4 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 h-4 w-4 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
               title="Limpar"
             >
               <X className="h-3 w-3" />
@@ -103,15 +103,15 @@ export function SidebarPatientSearch({
         </div>
 
         {open && debounced.length >= 2 && (
-          <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-md border border-border bg-popover shadow-lg max-h-80 overflow-y-auto">
+          <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-md border border-border bg-popover shadow-md max-h-80 overflow-y-auto">
             {isFetching && hits.length === 0 && (
-              <div className="flex items-center gap-2 px-2.5 py-2 text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 Buscando…
               </div>
             )}
             {!isFetching && hits.length === 0 && (
-              <div className="px-2.5 py-2 text-[11px] text-muted-foreground">
+              <div className="px-3 py-2 text-xs text-muted-foreground">
                 Nenhum prontuário encontrado.
               </div>
             )}
@@ -124,18 +124,18 @@ export function SidebarPatientSearch({
                 <button
                   key={p.id}
                   onClick={() => goToHistorico(p.id)}
-                  className="w-full text-left px-2.5 py-1.5 hover:bg-primary/10 hover:text-primary transition-colors border-b border-border/40 last:border-b-0"
+                  className="w-full text-left px-3 py-2 hover:bg-primary/10 hover:text-primary transition-colors border-b border-border/40 last:border-b-0"
                 >
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <FileSearch className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
-                    <span className="text-[11px] font-semibold truncate uppercase">{name}</span>
+                    <span className="text-xs font-medium truncate uppercase tracking-wider">{name}</span>
                     {isActive && (
-                      <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 flex-shrink-0">
+                      <Badge variant="outline" className="text-xs px-1 py-0 h-3.5 flex-shrink-0">
                         {p.current_bed}
                       </Badge>
                     )}
                   </div>
-                  <div className="mt-0.5 ml-4 text-[9px] text-muted-foreground truncate">
+                  <div className="mt-1 ml-4 text-xs text-muted-foreground truncate">
                     {p.medical_record ? `PRONT. ${p.medical_record}` : "SEM Nº"}
                     {p.cpf && ` · CPF ${p.cpf}`}
                     {!isActive && " · ARQUIVADO"}
@@ -143,7 +143,7 @@ export function SidebarPatientSearch({
                 </button>
               );
             })}
-            <div className="px-2.5 py-1.5 border-t border-border/60 bg-muted/30">
+            <div className="px-3 py-2 border-t border-border/60 bg-muted/30">
               <button
                 onClick={() => {
                   setOpen(false);
@@ -151,7 +151,7 @@ export function SidebarPatientSearch({
                   navigate("/historico-paciente");
                   onNavigate?.();
                 }}
-                className="text-[10px] font-semibold text-primary hover:underline uppercase tracking-wide"
+                className="text-xs font-medium text-primary hover:underline uppercase tracking-wide"
               >
                 Abrir busca completa →
               </button>

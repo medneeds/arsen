@@ -33,12 +33,12 @@ export function ClinicalNavTabs({ variant = "default", hideSector = false }: Cli
     : currentSectorLabel;
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       {/* Sector badge */}
       {!hideSector && sectorLabel && (
         <>
           <span className={cn(
-            "text-[11px] font-semibold px-2 py-1 rounded-md whitespace-nowrap",
+            "text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap",
             variant === "dark"
               ? "bg-white/15 text-white/90"
               : "bg-primary/10 text-primary"
@@ -62,10 +62,10 @@ export function ClinicalNavTabs({ variant = "default", hideSector = false }: Cli
               key={tab.path}
               onClick={() => navigate(tab.path)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold tracking-wide transition-all duration-150 hover:-translate-y-0.5",
+                "flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium tracking-wide transition-all duration-150 hover:-translate-y-0.5",
                 variant === "dark"
                   ? isActive
-                    ? "bg-white text-primary shadow-lg ring-2 ring-white/60"
+                    ? "bg-white text-primary shadow-md ring-2 ring-white/60"
                     : "bg-white/20 text-white shadow-sm ring-1 ring-white/50 hover:bg-white/35 hover:ring-white/70 hover:shadow-md"
                   : isActive
                     ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30"

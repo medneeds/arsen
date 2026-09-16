@@ -565,11 +565,11 @@ const RequisicaoImagensPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-primary/10">
+            <div className="p-3 rounded-lg bg-primary/10">
               <ScanLine className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">APAC — Solicitação de Alta Complexidade</h1>
+              <h1 className="text-2xl font-semibold text-foreground">APAC — Solicitação de Alta Complexidade</h1>
               <p className="text-sm text-muted-foreground">Laudo para Solicitação/Autorização de Procedimento Ambulatorial</p>
             </div>
           </div>
@@ -586,7 +586,7 @@ const RequisicaoImagensPage = () => {
         {/* Quick access buttons */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Acesso Rápido — Tomografias</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Acesso Rápido — Tomografias</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
@@ -597,7 +597,7 @@ const RequisicaoImagensPage = () => {
                   <Button
                     key={qa.code}
                     size="sm"
-                    className={`${isSelected ? "ring-2 ring-offset-2 ring-primary opacity-60" : qa.color} transition-all font-semibold`}
+                    className={`${isSelected ? "ring-2 ring-offset-2 ring-primary opacity-60" : qa.color} transition-all font-medium`}
                     onClick={() => proc && addProcedure(proc)}
                     disabled={isSelected}
                   >
@@ -616,7 +616,7 @@ const RequisicaoImagensPage = () => {
             {/* Institution (read-only) */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Estabelecimento Solicitante</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Estabelecimento Solicitante</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex gap-3">
@@ -626,7 +626,7 @@ const RequisicaoImagensPage = () => {
                   </div>
                   <div className="w-28">
                     <Label className="text-xs text-muted-foreground">CNES</Label>
-                    <Input value={INSTITUTION.cnes} readOnly className="bg-muted/50 font-mono font-bold text-sm text-center" />
+                    <Input value={INSTITUTION.cnes} readOnly className="bg-muted/50 font-mono font-semibold text-sm text-center" />
                   </div>
                 </div>
               </CardContent>
@@ -635,7 +635,7 @@ const RequisicaoImagensPage = () => {
             {/* Patient identification */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Identificação do Paciente</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Identificação do Paciente</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-3 gap-3">
@@ -698,7 +698,7 @@ const RequisicaoImagensPage = () => {
             {/* Justification */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Justificativa Clínica</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Justificativa Clínica</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
@@ -732,7 +732,7 @@ const RequisicaoImagensPage = () => {
             {/* Manual / Avulso (sem SIGTAP) — destacado no topo */}
             <Card className="border-2 border-primary/40 bg-primary/5">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+                <CardTitle className="text-sm font-medium text-primary uppercase tracking-wider flex items-center gap-2">
                   <Plus className="h-4 w-4" /> Procedimento avulso (sem SIGTAP)
                 </CardTitle>
                 <p className="text-xs text-muted-foreground">
@@ -779,7 +779,7 @@ const RequisicaoImagensPage = () => {
             {/* Procedure search */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Catálogo de Procedimentos SIGTAP</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Catálogo de Procedimentos SIGTAP</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex gap-2">
@@ -789,7 +789,7 @@ const RequisicaoImagensPage = () => {
                       value={searchProcedure}
                       onChange={(e) => setSearchProcedure(e.target.value)}
                       placeholder="Buscar por nome ou código..."
-                      className="pl-9"
+                      className="pl-8"
                     />
                   </div>
                   <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -832,7 +832,7 @@ const RequisicaoImagensPage = () => {
             <Card className={selectedProcedures.length > 0 ? "border-primary/30" : ""}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                     Procedimentos Selecionados ({selectedProcedures.length}/6)
                   </CardTitle>
                 </div>
@@ -875,7 +875,7 @@ const RequisicaoImagensPage = () => {
             {/* Contrast & Sedation */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Requisitos do Exame</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Requisitos do Exame</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between rounded-lg border p-3">
@@ -904,7 +904,7 @@ const RequisicaoImagensPage = () => {
             {/* Doctor info */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Profissional Solicitante</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Profissional Solicitante</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>

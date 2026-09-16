@@ -152,7 +152,7 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
           {bed.patient_name ? (
             <div className="flex items-center gap-2 text-sm">
               <UserRound className="h-4 w-4 text-muted-foreground" />
-              <span className="font-semibold">{bed.patient_name}</span>
+              <span className="font-medium">{bed.patient_name}</span>
             </div>
           ) : bed.last_patient_name ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -180,9 +180,9 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
         {kpis.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {kpis.map((k) => (
-              <div key={k.label} className="rounded-lg border border-border bg-card p-2.5">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{k.label}</p>
-                <p className="text-sm font-bold mt-0.5">{k.value}</p>
+              <div key={k.label} className="rounded-lg border border-border bg-card p-3">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">{k.label}</p>
+                <p className="text-sm font-semibold mt-1">{k.value}</p>
               </div>
             ))}
           </div>
@@ -190,8 +190,8 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
 
         <Tabs defaultValue="actions" className="mt-2">
           <TabsList className="w-full grid grid-cols-2">
-            <TabsTrigger value="actions"><Activity className="h-3.5 w-3.5 mr-1.5" /> Ações NIR</TabsTrigger>
-            <TabsTrigger value="timeline"><Clock className="h-3.5 w-3.5 mr-1.5" /> Linha do tempo</TabsTrigger>
+            <TabsTrigger value="actions"><Activity className="h-3.5 w-3.5 mr-2" /> Ações NIR</TabsTrigger>
+            <TabsTrigger value="timeline"><Clock className="h-3.5 w-3.5 mr-2" /> Linha do tempo</TabsTrigger>
           </TabsList>
 
           {/* PAINEL DE AÇÕES */}
@@ -199,7 +199,7 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
             {/* Ocupar (vago) */}
             {bed.status === "vago" && (
               <div className="rounded-lg border p-3 space-y-2">
-                <Label className="text-xs font-semibold">Admitir paciente neste leito</Label>
+                <Label className="text-xs font-medium">Admitir paciente neste leito</Label>
                 <div className="flex gap-2">
                   <Input
                     placeholder="Nome do paciente (ex.: JOSÉ DA SILVA)"
@@ -230,13 +230,13 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
                   variant="outline" size="sm" disabled={busy}
                   onClick={() => run(() => actions.giveMedicalDischarge(bed.id).then(ok => { if (ok) onOpenChange(false); return ok; }))}
                 >
-                  <Stethoscope className="h-3.5 w-3.5 mr-1.5 text-foreground" /> Alta médica
+                  <Stethoscope className="h-3.5 w-3.5 mr-2 text-foreground" /> Alta médica
                 </Button>
                 <Button
                   variant="outline" size="sm" disabled={busy}
                   onClick={() => run(() => actions.giveAdministrativeDischarge(bed.id).then(ok => { if (ok) onOpenChange(false); return ok; }))}
                 >
-                  <FileCheck2 className="h-3.5 w-3.5 mr-1.5 text-critical-on-soft" /> Alta administrativa
+                  <FileCheck2 className="h-3.5 w-3.5 mr-2 text-critical-on-soft" /> Alta administrativa
                 </Button>
               </div>
             )}
@@ -244,12 +244,12 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
             {/* Alta médica → administrativa ou higienização */}
             {bed.status === "alta_medica_dada" && (
               <div className="rounded-lg border p-3">
-                <p className="text-[11px] text-muted-foreground mb-2">Paciente liberado pela equipe médica. NIR libera o destino:</p>
+                <p className="text-xs text-muted-foreground mb-2">Paciente liberado pela equipe médica. NIR libera o destino:</p>
                 <Button
                   size="sm" disabled={busy} className="w-full"
                   onClick={() => run(() => actions.giveAdministrativeDischarge(bed.id).then(ok => { if (ok) onOpenChange(false); return ok; }))}
                 >
-                  <FileCheck2 className="h-3.5 w-3.5 mr-1.5" /> Liberar destino · iniciar higienização
+                  <FileCheck2 className="h-3.5 w-3.5 mr-2" /> Liberar destino · iniciar higienização
                 </Button>
               </div>
             )}
@@ -261,7 +261,7 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
                   size="sm" disabled={busy} className="w-full"
                   onClick={() => run(() => actions.finishCleaning(bed.id).then(ok => { if (ok) onOpenChange(false); return ok; }))}
                 >
-                  <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Concluir higienização · liberar leito
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-2" /> Concluir higienização · liberar leito
                 </Button>
               </div>
             )}
@@ -269,7 +269,7 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
             {/* Reserva (vago) */}
             {bed.status === "vago" && (
               <div className="rounded-lg border p-3 space-y-2">
-                <Label className="text-xs font-semibold">Reservar leito</Label>
+                <Label className="text-xs font-medium">Reservar leito</Label>
                 <Input
                   placeholder="Reservado para… (ex.: pré-admissão UTI, transferência)"
                   value={reserveFor}
@@ -286,7 +286,7 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
                     size="sm" variant="outline" disabled={busy || !reserveFor.trim()}
                     onClick={() => run(() => actions.reserveBed(bed.id, reserveFor.trim(), Number(reserveHours) || 4).then(ok => { if (ok) { setReserveFor(""); onOpenChange(false); } return ok; }))}
                   >
-                    <Calendar className="h-3.5 w-3.5 mr-1.5" /> Reservar
+                    <Calendar className="h-3.5 w-3.5 mr-2" /> Reservar
                   </Button>
                 </div>
               </div>
@@ -304,7 +304,7 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
             {/* Bloqueio / manutenção / interdição */}
             {!["bloqueado", "manutencao", "interditado", "ocupado"].includes(bed.status) && (
               <div className="rounded-lg border p-3 space-y-2">
-                <Label className="text-xs font-semibold">Bloquear leito</Label>
+                <Label className="text-xs font-medium">Bloquear leito</Label>
                 <Textarea
                   placeholder="Motivo do bloqueio (obrigatório)"
                   value={blockReason}
@@ -333,7 +333,7 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
                 variant="outline" size="sm" className="w-full" disabled={busy}
                 onClick={() => run(() => actions.unblockBed(bed.id).then(ok => { if (ok) onOpenChange(false); return ok; }))}
               >
-                <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 text-released-on-soft" /> Desbloquear leito
+                <CheckCircle2 className="h-3.5 w-3.5 mr-2 text-released-on-soft" /> Desbloquear leito
               </Button>
             )}
           </TabsContent>
@@ -352,15 +352,15 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
                       has ? "border-border bg-card" : "border-dashed border-border/50 bg-muted/20",
                     )}
                   >
-                    <Icon className={cn("h-4 w-4 mt-0.5 shrink-0", has ? step.tone : "text-muted-foreground/50")} />
+                    <Icon className={cn("h-4 w-4 mt-1 shrink-0", has ? step.tone : "text-muted-foreground/50")} />
                     <div className="min-w-0 flex-1">
                       <p className={cn("text-xs font-medium", !has && "text-muted-foreground")}>{step.label}</p>
                       {has ? (
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           {fmt(step.ts)} <span className="text-muted-foreground/60">· {elapsed(step.ts)}</span>
                         </p>
                       ) : (
-                        <p className="text-[11px] text-muted-foreground/60">— ainda não registrado</p>
+                        <p className="text-xs text-muted-foreground/60">— ainda não registrado</p>
                       )}
                     </div>
                   </li>
@@ -373,7 +373,7 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
         <Separator />
 
         {bed.updated_by_name && (
-          <p className="text-[10px] text-muted-foreground text-right">
+          <p className="text-xs text-muted-foreground text-right">
             Última atualização por <span className="font-medium">{bed.updated_by_name}</span>
             {bed.updated_at ? ` · ${fmt(bed.updated_at)}` : ""}
           </p>

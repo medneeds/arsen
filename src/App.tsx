@@ -128,7 +128,7 @@ function ProfileHomeRedirect() {
 }
 
 /**
- * 🔒 Wrappers clínicos — força remontagem completa ao trocar de paciente.
+ * Wrappers clínicos — força remontagem completa ao trocar de paciente.
  *
  * PROBLEMA: sem key, React reutiliza a instância do componente ao navegar
  * entre pacientes ou ao voltar ao mesmo módulo. Hooks com estado interno

@@ -150,9 +150,9 @@ export function SignalInternalTransferDialog({ patient, open, onOpenChange, onSu
               <div className="flex items-center gap-2">
                 {needsSaps ? <AlertTriangle className="h-4 w-4 text-warning-on-soft" /> : <Info className="h-4 w-4 text-foreground" />}
                 <span className="font-medium">{classificationLabel(classification)}</span>
-                <Badge variant="outline" className="ml-auto text-[10px]">{classification}</Badge>
+                <Badge variant="outline" className="ml-auto text-xs">{classification}</Badge>
               </div>
-              <ul className="list-disc pl-5 text-muted-foreground space-y-0.5">
+              <ul className="list-disc pl-4 text-muted-foreground space-y-1">
                 <li>Leito atual será <strong>liberado imediatamente</strong> ao confirmar.</li>
                 <li>Paciente aparecerá em <strong>"Aguardando alocação por transferência interna"</strong> no setor destino.</li>
                 <li>Encounter e prontuário <strong>preservados</strong> até o desfecho final.</li>

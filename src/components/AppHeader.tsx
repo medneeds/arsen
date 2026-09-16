@@ -80,7 +80,7 @@ export function AppHeader({
         actions={actions}
       />
       {subtitle && (
-        <p className="hidden sm:block px-1.5 mt-1 text-[11px] text-muted-foreground tracking-wide truncate">
+        <p className="hidden sm:block px-2 mt-1 text-xs text-muted-foreground tracking-wide truncate">
           {subtitle}
         </p>
       )}

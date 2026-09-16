@@ -178,11 +178,11 @@ export function ReceituarioForm({
           {items.map((item, idx) => (
             <div
               key={item.id}
-              className="grid gap-1.5 p-2.5 rounded-lg border border-border/70 bg-muted/20"
+              className="grid gap-2 p-3 rounded-lg border border-border/70 bg-muted/20"
             >
               {/* Linha 1: número + nome */}
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-muted-foreground w-4 shrink-0">
+                <span className="text-xs font-semibold text-muted-foreground w-4 shrink-0">
                   {idx + 1}.
                 </span>
                 <Input
@@ -202,9 +202,9 @@ export function ReceituarioForm({
               </div>
 
               {/* Linha 2: dose + via + frequência + duração */}
-              <div className="grid grid-cols-2 gap-1.5 pl-6 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 pl-6 sm:grid-cols-4">
                 <div>
-                  <p className="text-[9px] text-muted-foreground mb-0.5">Dose</p>
+                  <p className="text-xs text-muted-foreground mb-1">Dose</p>
                   <Input
                     value={item.dose}
                     onChange={(e) => updateItem(item.id, "dose", e.target.value)}
@@ -213,7 +213,7 @@ export function ReceituarioForm({
                   />
                 </div>
                 <div>
-                  <p className="text-[9px] text-muted-foreground mb-0.5">Via</p>
+                  <p className="text-xs text-muted-foreground mb-1">Via</p>
                   <Select
                     value={item.route}
                     onValueChange={(v) => updateItem(item.id, "route", v)}
@@ -229,7 +229,7 @@ export function ReceituarioForm({
                   </Select>
                 </div>
                 <div>
-                  <p className="text-[9px] text-muted-foreground mb-0.5">Frequência</p>
+                  <p className="text-xs text-muted-foreground mb-1">Frequência</p>
                   <Select
                     value={item.frequency}
                     onValueChange={(v) => updateItem(item.id, "frequency", v)}
@@ -245,7 +245,7 @@ export function ReceituarioForm({
                   </Select>
                 </div>
                 <div>
-                  <p className="text-[9px] text-muted-foreground mb-0.5">Duração</p>
+                  <p className="text-xs text-muted-foreground mb-1">Duração</p>
                   <Input
                     value={item.duration}
                     onChange={(e) => updateItem(item.id, "duration", e.target.value)}
@@ -262,7 +262,7 @@ export function ReceituarioForm({
         <Button
           variant="outline"
           size="sm"
-          className="mt-2 h-7 text-xs gap-1.5 border-dashed w-full"
+          className="mt-2 h-7 text-xs gap-2 border-dashed w-full"
           onClick={addItem}
         >
           <Plus className="h-3.5 w-3.5" />
@@ -270,8 +270,8 @@ export function ReceituarioForm({
         </Button>
 
         {/* Aviso sobre controlados */}
-        <div className="flex items-start gap-1.5 mt-1.5 text-[10px] text-warning-on-soft">
-          <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+        <div className="flex items-start gap-2 mt-2 text-xs text-warning-on-soft">
+          <AlertTriangle className="h-3 w-3 mt-1 shrink-0" />
           Medicamentos controlados (Receita Azul/Especial) não podem ser incluídos aqui — use o formulário de Prescrição Controlada.
         </div>
       </div>
@@ -315,7 +315,7 @@ export function ReceituarioForm({
       {/* ── Ações ── */}
       <div className="flex gap-2 pt-1">
         <Button
-          className="flex-1 gap-1.5"
+          className="flex-1 gap-2"
           onClick={handleSave}
           disabled={saving}
         >
@@ -324,7 +324,7 @@ export function ReceituarioForm({
         </Button>
         <Button
           variant="outline"
-          className="gap-1.5"
+          className="gap-2"
           onClick={handlePrint}
           disabled={printing || items.length === 0}
           title={items.length === 0 ? "Adicione medicamentos para imprimir" : "Imprimir receituário"}

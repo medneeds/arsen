@@ -79,14 +79,14 @@ export function HelpSlideshowDialog({ entry, open, onOpenChange }: Props) {
         {/* Header */}
         <div className={cn("relative px-6 pt-6 pb-4 bg-gradient-to-b", TONE_ACCENT[entry.tone])}>
           <div className="flex items-start gap-3 pr-8">
-            <div className="h-10 w-10 rounded-xl bg-background border border-border/60 grid place-items-center shadow-sm flex-shrink-0">
+            <div className="h-10 w-10 rounded-lg bg-background border border-border/60 grid place-items-center shadow-sm flex-shrink-0">
               <Icon className="h-5 w-5 text-foreground" />
             </div>
             <div className="min-w-0">
-              <DialogTitle className="text-base font-semibold leading-tight">
+              <DialogTitle className="text-base font-medium leading-tight">
                 {entry.title}
               </DialogTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-muted-foreground mt-1">
                 {idx + 1} de {total} · {entry.short}
               </p>
             </div>
@@ -102,7 +102,7 @@ export function HelpSlideshowDialog({ entry, open, onOpenChange }: Props) {
 
         {/* Slide body */}
         <div
-          className="px-6 py-5 min-h-[320px] flex flex-col"
+          className="px-6 py-4 min-h-[320px] flex flex-col"
           onTouchStart={(e) => setTouchStart(e.touches[0].clientX)}
           onTouchEnd={(e) => {
             if (touchStart == null) return;
@@ -114,11 +114,11 @@ export function HelpSlideshowDialog({ entry, open, onOpenChange }: Props) {
         >
           {slide && (
             <div key={idx} className="animate-in fade-in slide-in-from-right-2 duration-300 flex-1 flex flex-col">
-              <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
                 <span className={cn("h-1.5 w-1.5 rounded-full", TONE_DOT[tone])} />
                 {slide.title}
               </h3>
-              <div className="text-[13px] text-muted-foreground whitespace-pre-line leading-relaxed mb-4">
+              <div className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed mb-4">
                 {slide.body}
               </div>
               {slide.visual && (
@@ -143,7 +143,7 @@ export function HelpSlideshowDialog({ entry, open, onOpenChange }: Props) {
             Anterior
           </Button>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {slides.map((_, i) => (
               <button
                 key={i}

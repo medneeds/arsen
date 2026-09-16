@@ -119,7 +119,7 @@ export function PlatformHeader({
           {eyebrow && (
             <p
               className={cn(
-                "text-[10px] font-semibold uppercase tracking-[0.2em] truncate",
+                "text-xs font-medium uppercase tracking-[0.2em] truncate",
                 isInstitutional
                   ? "text-primary-foreground/70"
                   : "text-muted-foreground",
@@ -130,7 +130,7 @@ export function PlatformHeader({
           )}
           <h1
             className={cn(
-              "text-base md:text-lg font-bold leading-tight truncate",
+              "text-base md:text-lg font-semibold leading-tight truncate",
               isInstitutional ? "text-primary-foreground" : "text-foreground",
             )}
           >
@@ -139,7 +139,7 @@ export function PlatformHeader({
           {subtitle && (
             <div
               className={cn(
-                "text-[11px] flex items-center gap-1.5 flex-wrap mt-0.5",
+                "text-xs flex items-center gap-2 flex-wrap mt-1",
                 isInstitutional
                   ? "text-primary-foreground/80"
                   : "text-muted-foreground",
@@ -152,7 +152,7 @@ export function PlatformHeader({
 
         {(showSectorSelector || actions) && (
           <div className={cn(
-            "flex items-center gap-1.5 shrink-0",
+            "flex items-center gap-2 shrink-0",
             isInstitutional && "institutional-actions"
           )}>
             {showSectorSelector && (

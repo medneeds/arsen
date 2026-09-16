@@ -170,25 +170,25 @@ function SortableItem({ id, index, value, onEdit, onDelete, showDragHandle = tru
   // Highlight color styles based on variant
   const highlightStyles: Record<string, { bg: string; number: string; text: string; star: string }> = {
     blue: {
-      bg: "bg-muted/60 border-l-2 border-l-blue-500 pl-1.5",
+      bg: "bg-muted/60 border-l-2 border-l-blue-500 pl-2",
       number: "text-foreground",
       text: "text-foreground",
       star: "fill-blue-500 text-muted-foreground"
     },
     yellow: {
-      bg: "bg-warning-soft/60 border-l-2 border-l-amber-500 pl-1.5",
+      bg: "bg-warning-soft/60 border-l-2 border-l-amber-500 pl-2",
       number: "text-warning-on-soft",
       text: "text-warning-on-soft",
       star: "fill-amber-500 text-warning"
     },
     red: {
-      bg: "bg-critical-soft/60 border-l-2 border-l-red-500 pl-1.5",
+      bg: "bg-critical-soft/60 border-l-2 border-l-red-500 pl-2",
       number: "text-critical-on-soft",
       text: "text-critical-on-soft",
       star: "fill-red-500 text-critical"
     },
     green: {
-      bg: "bg-released-soft/60 border-l-2 border-l-emerald-500 pl-1.5",
+      bg: "bg-released-soft/60 border-l-2 border-l-emerald-500 pl-2",
       number: "text-released-on-soft",
       text: "text-released-on-soft",
       star: "fill-emerald-500 text-released"
@@ -201,7 +201,7 @@ function SortableItem({ id, index, value, onEdit, onDelete, showDragHandle = tru
       ref={setNodeRef} 
       style={style} 
       className={cn(
-        "flex items-center gap-1 group py-1 rounded-sm px-1 -mx-0.5 transition-all duration-150",
+        "flex items-center gap-1 group py-1 rounded-md px-1 -mx-1 transition-all duration-150",
         isDragging && "z-50 shadow-sm",
         isHighlighted ? hStyles.bg : "hover:bg-muted/30"
       )}
@@ -216,7 +216,7 @@ function SortableItem({ id, index, value, onEdit, onDelete, showDragHandle = tru
         </button>
       )}
       <span className={cn(
-        "font-semibold text-[10px] min-w-[14px] flex-shrink-0 tabular-nums",
+        "font-medium text-xs min-w-[14px] flex-shrink-0 tabular-nums",
         isHighlighted ? hStyles.number : "text-muted-foreground"
       )}>{index + 1}.</span>
       
@@ -227,7 +227,7 @@ function SortableItem({ id, index, value, onEdit, onDelete, showDragHandle = tru
             type="text"
             value={localValue}
             onChange={(e) => setLocalValue(e.target.value)}
-            className="flex-1 text-[11px] bg-background border border-primary/30 rounded px-1.5 py-0.5 outline-none font-medium tracking-tight"
+            className="flex-1 text-xs bg-background border border-primary/30 rounded-md px-2 py-1 outline-none font-medium tracking-tight"
             onKeyDown={handleKeyDownInternal}
             onBlur={handleSave}
             onClick={(e) => e.stopPropagation()}
@@ -237,7 +237,7 @@ function SortableItem({ id, index, value, onEdit, onDelete, showDragHandle = tru
         <>
           <span 
             className={cn(
-              "flex-1 text-[11px] break-words cursor-pointer hover:text-primary transition-colors leading-relaxed tracking-tight",
+              "flex-1 text-xs break-words cursor-pointer hover:text-primary transition-colors leading-relaxed tracking-tight",
               isHighlighted ? hStyles.text : "text-foreground/90"
             )}
             onClick={(e) => {
@@ -480,14 +480,14 @@ function InlineEditableArray({
   const hiddenCount = maxCollapsedItems && !alwaysShowAll ? Math.max(0, items.length - maxCollapsedItems) : 0;
 
   return (
-    <div className={cn("rounded-md p-1.5", colorClass)}>
+    <div className={cn("rounded-md p-2", colorClass)}>
       {label && (
         <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {icon}
-            <span className="text-[10px] font-semibold text-muted-foreground tracking-wide">{label}</span>
+            <span className="text-xs font-medium text-muted-foreground tracking-wide">{label}</span>
             {items.length > 0 && (
-              <Badge variant="secondary" className="h-3.5 px-1 text-[9px] font-medium">{items.length}</Badge>
+              <Badge variant="secondary" className="h-3.5 px-1 text-xs font-medium">{items.length}</Badge>
             )}
           </div>
           <Button
@@ -504,7 +504,7 @@ function InlineEditableArray({
         </div>
       )}
       
-      <div className="space-y-0.5">
+      <div className="space-y-1">
         {items.length > 0 ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={itemIds.slice(0, displayItems.length)} strategy={verticalListSortingStrategy}>
@@ -554,7 +554,7 @@ function InlineEditableArray({
           </DndContext>
         ) : !isAddingNew ? (
           <span 
-            className="text-[11px] text-muted-foreground/50 cursor-pointer hover:text-muted-foreground italic pl-0.5"
+            className="text-xs text-muted-foreground/50 cursor-pointer hover:text-muted-foreground italic pl-1"
             onClick={() => setIsAddingNew(true)}
           >
             {placeholder}
@@ -562,7 +562,7 @@ function InlineEditableArray({
         ) : null}
         
         {hiddenCount > 0 && (
-          <span className="text-[10px] text-muted-foreground pl-5 italic">+{hiddenCount} mais</span>
+          <span className="text-xs text-muted-foreground pl-4 italic">+{hiddenCount} mais</span>
         )}
         
         {isAddingNew && (
@@ -573,7 +573,7 @@ function InlineEditableArray({
               value={newItemValue}
               onChange={(e) => setNewItemValue(e.target.value)}
               placeholder="Novo item..."
-              className="flex-1 text-[11px] bg-background border border-primary/30 rounded px-1.5 py-1 outline-none font-medium tracking-tight placeholder:font-normal placeholder:text-muted-foreground/50"
+              className="flex-1 text-xs bg-background border border-primary/30 rounded-md px-2 py-1 outline-none font-medium tracking-tight placeholder:font-normal placeholder:text-muted-foreground/50"
               onKeyDown={handleNewItemKeyDown}
               onBlur={() => handleAddItem(false)}
             />
@@ -598,13 +598,13 @@ function InlineEditableArray({
           <Button
             size="sm"
             variant="ghost"
-            className={cn("h-5 text-[10px] p-0 mt-1.5", iconColorClass)}
+            className={cn("h-5 text-xs p-0 mt-2", iconColorClass)}
             onClick={(e) => {
               e.stopPropagation();
               setIsAddingNew(true);
             }}
           >
-            <Plus className="h-3 w-3 mr-0.5" /> Adicionar
+            <Plus className="h-3 w-3 mr-1" /> Adicionar
           </Button>
         )}
       </div>
@@ -626,27 +626,27 @@ function ReadOnlyArray({
   icon?: ReactNode;
 }) {
   return (
-    <div className={cn("rounded-md p-1.5 cursor-default", colorClass)}>
+    <div className={cn("rounded-md p-2 cursor-default", colorClass)}>
       <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           {icon}
-          <span className="text-[10px] font-semibold text-muted-foreground tracking-wide">{label}</span>
+          <span className="text-xs font-medium text-muted-foreground tracking-wide">{label}</span>
           {items.length > 0 && (
-            <Badge variant="secondary" className="h-3.5 px-1 text-[9px] font-medium">{items.length}</Badge>
+            <Badge variant="secondary" className="h-3.5 px-1 text-xs font-medium">{items.length}</Badge>
           )}
         </div>
       </div>
       {items.length > 0 ? (
-        <ol className="space-y-0.5">
+        <ol className="space-y-1">
           {items.map((item, index) => (
-            <li key={`${label}-${index}`} className="flex items-start gap-1 text-[11px] leading-snug text-foreground">
-              <span className="mt-px text-[10px] font-semibold text-muted-foreground">{index + 1}.</span>
+            <li key={`${label}-${index}`} className="flex items-start gap-1 text-xs leading-snug text-foreground">
+              <span className="mt-px text-xs font-medium text-muted-foreground">{index + 1}.</span>
               <span className="break-words">{item}</span>
             </li>
           ))}
         </ol>
       ) : (
-        <span className="text-[11px] text-muted-foreground/60 italic pl-0.5">{placeholder}</span>
+        <span className="text-xs text-muted-foreground/60 italic pl-1">{placeholder}</span>
       )}
     </div>
   );
@@ -675,13 +675,13 @@ function ReadOnlyTextarea({ value, placeholder = "—" }: { value: string; place
         {value || <span className="text-muted-foreground/60 italic text-xs">{placeholder}</span>}
       </div>
       {hasOverflow && !isTextExpanded && (
-        <div className="absolute bottom-5 left-0 right-0 h-4 bg-gradient-to-t from-muted/30 to-transparent pointer-events-none" />
+        <div className="absolute bottom-5 left-0 right-0 h-4 bg-muted/30 pointer-events-none" />
       )}
       {hasOverflow && (
         <Button
           variant="ghost"
           size="sm"
-          className="h-5 px-1.5 text-[10px] font-medium text-muted-foreground hover:text-primary mt-0.5"
+          className="h-5 px-2 text-xs font-medium text-muted-foreground hover:text-primary mt-1"
           onClick={(e) => {
             e.stopPropagation();
             setIsTextExpanded(!isTextExpanded);
@@ -689,12 +689,12 @@ function ReadOnlyTextarea({ value, placeholder = "—" }: { value: string; place
         >
           {isTextExpanded ? (
             <>
-              <ChevronDown className="h-3 w-3 mr-0.5 rotate-180" />
+              <ChevronDown className="h-3 w-3 mr-1 rotate-180" />
               Retrair
             </>
           ) : (
             <>
-              <ChevronDown className="h-3 w-3 mr-0.5" />
+              <ChevronDown className="h-3 w-3 mr-1" />
               Expandir
             </>
           )}
@@ -909,7 +909,7 @@ export function UtiPatientCard({
     <>
       <div 
         className={cn(
-          "relative border rounded-lg shadow-md hover:shadow-lg transition-all duration-200",
+          "relative border rounded-lg shadow-md hover:shadow-md transition-all duration-200",
           colors.card,
           patient.admissionStatus === 'alta_dada' && "ring-1 ring-released/40 bg-released-soft/30 grayscale-[15%] opacity-95",
           patient.admissionStatus === 'obito' && "ring-1 ring-ring/50 bg-muted/50 grayscale-[35%] opacity-90",
@@ -924,8 +924,8 @@ export function UtiPatientCard({
           <div className="flex items-center justify-between p-2 gap-1">
             <div className="flex items-center gap-2">
               {/* Bed Number */}
-              <div className={cn("shrink-0 px-1.5 py-0.5 rounded border", colors.bedBg)}>
-                <span className={cn("patient-id text-xs font-bold", colors.bedText)}>{patient.bedNumber}</span>
+              <div className={cn("shrink-0 px-2 py-1 rounded-md border", colors.bedBg)}>
+                <span className={cn("patient-id text-xs font-semibold", colors.bedText)}>{patient.bedNumber}</span>
               </div>
               {/* Vacant Message */}
               <div className="flex items-center gap-2 text-muted-foreground">
@@ -952,9 +952,9 @@ export function UtiPatientCard({
           {/* Header - Collapsed View - FULLY EDITABLE */}
           <div className="flex items-stretch">
             {/* Main Content - Collapsed View */}
-            <div className="flex-1 p-1.5 space-y-1.5 min-w-0">
+            <div className="flex-1 p-2 space-y-2 min-w-0">
               {/* Row 1: Identification Header - Mobile optimized */}
-              <div className="flex flex-wrap items-center gap-1 md:gap-1.5">
+              <div className="flex flex-wrap items-center gap-1 md:gap-2">
                 {/* Collapse/Expand Toggle Button */}
                 <Button
                   variant="ghost"
@@ -971,9 +971,9 @@ export function UtiPatientCard({
                 </Button>
                 
                 {/* Bed Number - Compact (fixed by bed map allocation) */}
-                <div className={cn("shrink-0 px-1.5 py-0.5 rounded border", colors.bedBg)}>
+                <div className={cn("shrink-0 px-2 py-1 rounded-md border", colors.bedBg)}>
                   <span
-                    className={cn("patient-id block text-xs font-bold min-w-8 md:min-w-10 text-center cursor-default", colors.bedText)}
+                    className={cn("patient-id block text-xs font-semibold min-w-8 md:min-w-10 text-center cursor-default", colors.bedText)}
                     title="Leito fixo no mapa. Alterações ocorrem apenas por realocação/transferência."
                   >
                     {patient.bedNumber || "LEITO"}
@@ -981,22 +981,22 @@ export function UtiPatientCard({
                 </div>
                 
                 {/* Patient Name + Age - Flexible grow */}
-                <div className="flex-1 flex items-baseline gap-1 md:gap-1.5 min-w-0">
+                <div className="flex-1 flex items-baseline gap-1 md:gap-2 min-w-0">
                   {namesHidden ? (
-                    <span className="patient-id text-xs md:text-sm font-semibold truncate tracking-widest opacity-70">{displayName}</span>
+                    <span className="patient-id text-xs md:text-sm font-medium truncate tracking-widest opacity-70">{displayName}</span>
                   ) : (
                     /* Nome do paciente é IMUTÁVEL pelo mapa de leitos.
                        Edição só é permitida via cockpit de prontuário (Edição Avançada → Ficha cadastral),
                        que sincroniza patients.name e registra no histórico. */
                     <span
-                      className="patient-id text-xs md:text-sm font-semibold truncate cursor-default"
+                      className="patient-id text-xs md:text-sm font-medium truncate cursor-default"
                       title="O nome do paciente é fixo no mapa de leitos. Para alterar, use Edição Avançada → Ficha cadastral."
                     >
                       {patient.name || <span className="italic text-muted-foreground">SEM NOME</span>}
                     </span>
                   )}
                   <div
-                    className="shrink-0 text-[10px] md:text-xs text-muted-foreground cursor-default"
+                    className="shrink-0 text-xs md:text-xs text-muted-foreground cursor-default"
                     title="Idade atualizada automaticamente pelo cadastro do paciente."
                   >
                     {patient.age ? formatAgeDisplay(patient.age) : "IDADE"}
@@ -1029,13 +1029,13 @@ export function UtiPatientCard({
                     return (
                       <div
                         className={cn(
-                          "shrink-0 flex items-center justify-center gap-1 w-[70px] md:w-[80px] px-2 py-0.5 rounded-md border",
+                          "shrink-0 flex items-center justify-center gap-1 w-[70px] md:w-[80px] px-2 py-1 rounded-md border",
                           containerCls
                         )}
                         title="DIH — Verde ≤7 dias · Amarelo 8–10 · Vermelho >10"
                       >
-                        <span className={cn("text-[9px] font-bold", textCls)}>DIH:</span>
-                        <span className={cn("text-xs font-bold min-w-[20px] text-center", textCls)}>
+                        <span className={cn("text-xs font-semibold", textCls)}>DIH:</span>
+                        <span className={cn("text-xs font-semibold min-w-[20px] text-center", textCls)}>
                           {daysInUti}
                         </span>
                         {dihLevel === "red" ? (
@@ -1049,22 +1049,22 @@ export function UtiPatientCard({
 
                   {/* UTI Admission Date — somente leitura (edite via Edição Avançada) */}
                   <div
-                    className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded cursor-not-allowed"
+                    className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-2 py-1 rounded-md cursor-not-allowed"
                     title="Edite em Edição Avançada"
                   >
-                    <span className="text-[9px]">{admissionLabel}:</span>
-                    <span className="text-[10px] font-medium w-20 truncate">
+                    <span className="text-xs">{admissionLabel}:</span>
+                    <span className="text-xs font-medium w-20 truncate">
                       {patient.utiAdmissionDate?.[0] || "—"}
                     </span>
                   </div>
 
                   {/* Discharge Prediction — somente leitura (edite via Edição Avançada / Evolução) */}
                   <div
-                    className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded cursor-not-allowed"
+                    className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-2 py-1 rounded-md cursor-not-allowed"
                     title="Edite em Edição Avançada ou via Evolução Médica"
                   >
-                    <span className="text-[9px]">Previsão de Alta:</span>
-                    <span className="text-[10px] font-medium w-20 truncate">
+                    <span className="text-xs">Previsão de Alta:</span>
+                    <span className="text-xs font-medium w-20 truncate">
                       {previsaoAltaDate || "—"}
                     </span>
                   </div>
@@ -1075,8 +1075,8 @@ export function UtiPatientCard({
 
               {/* Row 2: 4 columns on desktop, 2x2 grid on mobile - Collapsible */}
               {!isCollapsed && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-1 md:gap-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
-                  <div className={cn("rounded-lg p-1 md:p-1.5 shadow-sm border backdrop-blur-sm hover:shadow-md transition-shadow", colors.col1)}>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-1 md:gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div className={cn("rounded-lg p-1 md:p-2 shadow-sm border backdrop-blur-sm hover:shadow-md transition-shadow-sm", colors.col1)}>
                     <InlineEditableArray
                       items={diagnosticos}
                       onUpdate={(items) => handleUpdateField("diagnoses", items)}
@@ -1094,7 +1094,7 @@ export function UtiPatientCard({
                       highlightColorVariant={colorVariant}
                     />
                   </div>
-                  <div className={cn("rounded-lg p-1 md:p-1.5 shadow-sm border backdrop-blur-sm hover:shadow-md transition-shadow", colors.col2)}>
+                  <div className={cn("rounded-lg p-1 md:p-2 shadow-sm border backdrop-blur-sm hover:shadow-md transition-shadow-sm", colors.col2)}>
                     <InlineEditableArray
                       items={antecedentes}
                       onUpdate={(items) => handleUpdateField("medicalHistory", items)}
@@ -1112,7 +1112,7 @@ export function UtiPatientCard({
                       highlightColorVariant={colorVariant}
                     />
                   </div>
-                  <div className={cn("rounded-lg p-1 md:p-1.5 shadow-sm border backdrop-blur-sm hover:shadow-md transition-shadow", colors.col3)}>
+                  <div className={cn("rounded-lg p-1 md:p-2 shadow-sm border backdrop-blur-sm hover:shadow-md transition-shadow-sm", colors.col3)}>
                     <InlineEditableArray
                       items={condutasDia}
                       onUpdate={(items) => handleUpdateField("utiDailyConducts", items)}
@@ -1130,7 +1130,7 @@ export function UtiPatientCard({
                       highlightColorVariant={colorVariant}
                     />
                   </div>
-                  <div className={cn("rounded-lg p-1 md:p-1.5 shadow-sm border backdrop-blur-sm hover:shadow-md transition-all", colors.col4)}>
+                  <div className={cn("rounded-lg p-1 md:p-2 shadow-sm border backdrop-blur-sm hover:shadow-md transition-all", colors.col4)}>
                     <InlineEditableArray
                       items={pendencias}
                       onUpdate={(items) => handleUpdateField("pendencies", items)}
@@ -1154,7 +1154,7 @@ export function UtiPatientCard({
 
             {/* Right Actions + Expand Button - Horizontal when collapsed, Vertical when expanded */}
             <div className={cn(
-              "flex items-center justify-center gap-0.5 px-1 py-1 border-l border-border/30 bg-muted/20 transition-all",
+              "flex items-center justify-center gap-1 px-1 py-1 border-l border-border/30 bg-muted/20 transition-all",
               isCollapsed ? "flex-row" : "flex-col"
             )}>
               {canDeleteExtra && onDelete && (
@@ -1183,13 +1183,13 @@ export function UtiPatientCard({
                     <ArrowLeftRight className="h-3 w-3 transition-transform duration-300 group-hover:scale-110" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-popover/95 backdrop-blur-sm border shadow-2xl z-50 w-64 p-1.5">
+                <DropdownMenuContent align="end" className="bg-popover/95 backdrop-blur-sm border shadow-md z-50 w-64 p-2">
                   {/* ============ BLOCO MOVIMENTAÇÃO ============ */}
                   {patient.name ? (
-                    <div className="rounded-lg border border-border/60 bg-gradient-to-br from-muted/30 to-transparent p-1.5 space-y-0.5">
-                      <div className="flex items-center gap-1.5 px-2 pt-0.5 pb-1">
+                    <div className="rounded-lg border border-border/60 bg-muted/30 p-2 space-y-1">
+                      <div className="flex items-center gap-2 px-2 pt-1 pb-1">
                         <Shuffle className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           Movimentação
                         </span>
                       </div>
@@ -1197,7 +1197,7 @@ export function UtiPatientCard({
                       {/* MONITORAMENTO DE SINAIS (acesso direto — antes indisponivel na UTI) */}
                       <DropdownMenuItem
                         onClick={() => navigate(`/monitoramento?patientId=${patient.id}`)}
-                        className="group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-released-border/60 hover:bg-gradient-to-r hover:from-released-soft hover:to-transparent transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm"
+                        className="group/item flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-released-border/60 hover:bg-gradient-to-r hover:from-released-soft hover:to-transparent transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm"
                       >
                         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-released-soft group-hover/item:bg-released transition-colors">
                           <Activity className="h-3.5 w-3.5 text-released-on-soft" />
@@ -1206,7 +1206,7 @@ export function UtiPatientCard({
                           <span className="text-released-on-soft leading-tight">
                             Monitoramento de sinais
                           </span>
-                          <span className="text-[10px] font-normal text-muted-foreground leading-tight">
+                          <span className="text-xs font-normal text-muted-foreground leading-tight">
                             Registrar e acompanhar sinais vitais
                           </span>
                         </div>
@@ -1215,16 +1215,16 @@ export function UtiPatientCard({
                       {/* REMANEJAR LEITO (mesmo setor) */}
                       <DropdownMenuItem
                         onClick={() => setIsReallocationDialogOpen(true)}
-                        className="group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-border/60 hover:bg-gradient-to-r hover:from-muted hover:to-transparent transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm"
+                        className="group/item flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-border/60 hover:bg-gradient-to-r hover:from-muted hover:to-transparent transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm"
                       >
                         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted group-hover/item:bg-secondary transition-colors">
                           <ArrowLeftRight className="h-3.5 w-3.5 text-foreground" />
                         </div>
                         <div className="flex flex-col items-start min-w-0">
                           <span className="text-foreground leading-tight">
-                            Remanejar leito <span className="text-[10px] font-normal text-foreground/70">(mesmo setor)</span>
+                            Remanejar leito <span className="text-xs font-normal text-foreground/70">(mesmo setor)</span>
                           </span>
-                          <span className="text-[10px] font-normal text-muted-foreground leading-tight">
+                          <span className="text-xs font-normal text-muted-foreground leading-tight">
                             Realocar ou permutar entre leitos da unidade
                           </span>
                         </div>
@@ -1250,7 +1250,7 @@ export function UtiPatientCard({
                             onClick={() => { if (!isDisabled) setIsReleasePreAdmissionOpen(true); }}
                             title={isDisabled ? 'Sinalize a movimentação no Painel Clínico antes de desalocar o leito.' : undefined}
                             className={cn(
-                              "group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium border border-transparent transition-all duration-200",
+                              "group/item flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium border border-transparent transition-all duration-200",
                               isDisabled
                                 ? "cursor-not-allowed opacity-50"
                                 : "cursor-pointer hover:translate-x-0.5 hover:shadow-sm",
@@ -1276,7 +1276,7 @@ export function UtiPatientCard({
                               )}>
                                 Desalocar leito
                               </span>
-                              <span className="text-[10px] font-normal text-muted-foreground leading-tight">
+                              <span className="text-xs font-normal text-muted-foreground leading-tight">
                                 {sub}
                               </span>
                             </div>
@@ -1285,12 +1285,12 @@ export function UtiPatientCard({
                       })()}
 
 
-                      <p className="px-2.5 pt-1 text-[10px] leading-snug text-muted-foreground/80 border-t border-border/40 mt-1">
+                      <p className="px-3 pt-1 text-xs leading-snug text-muted-foreground/80 border-t border-border/40 mt-1">
                         Altas, óbitos e transferências são <strong>sinalizadas no Painel Clínico</strong>.
                       </p>
                     </div>
                   ) : (
-                    <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal px-3 py-2">
+                    <DropdownMenuLabel className="text-xs text-muted-foreground font-normal px-3 py-2">
                       Leito vago — sem ações disponíveis.
                     </DropdownMenuLabel>
                   )}
@@ -1314,11 +1314,11 @@ export function UtiPatientCard({
           <CollapsibleContent>
             <div className="border-t border-border/30 p-3 space-y-3 bg-muted/5">
               
-              {/* 🔴 CRÍTICO - Patient safety items */}
+              {/* CRÍTICO - Patient safety items */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-3.5 w-3.5 text-critical" />
-                  <span className="text-[10px] font-bold text-critical-on-soft tracking-wider">Crítico</span>
+                  <span className="text-xs font-semibold text-critical-on-soft tracking-wider">Crítico</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <InlineEditableArray
@@ -1345,11 +1345,11 @@ export function UtiPatientCard({
                 </div>
               </div>
 
-              {/* 🔵 CLÍNICO - Clinical evolution */}
+              {/* CLÍNICO - Clinical evolution */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Stethoscope className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-[10px] font-bold text-foreground tracking-wider">Clínico</span>
+                  <span className="text-xs font-semibold text-foreground tracking-wider">Clínico</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <InlineEditableArray
@@ -1369,11 +1369,11 @@ export function UtiPatientCard({
                 </div>
               </div>
 
-              {/* 📝 HISTÓRIA - Admission history */}
+              {/* HISTÓRIA - Admission history */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-[10px] font-bold text-muted-foreground tracking-wider">História admissional</span>
+                  <span className="text-xs font-semibold text-muted-foreground tracking-wider">História admissional</span>
                 </div>
                 <div className="bg-muted/30 border border-border/30 rounded-md p-2">
                   <ReadOnlyTextarea
@@ -1383,11 +1383,11 @@ export function UtiPatientCard({
                 </div>
               </div>
 
-              {/* 📁 ADMINISTRATIVO */}
+              {/* ADMINISTRATIVO */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-[10px] font-bold text-muted-foreground tracking-wider">Administrativo</span>
+                  <span className="text-xs font-semibold text-muted-foreground tracking-wider">Administrativo</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                   <ReadOnlyArray
@@ -1403,18 +1403,18 @@ export function UtiPatientCard({
                     colorClass="bg-muted/30 border border-border/30"
                   />
                   <div className="bg-muted/30 border border-border/30 rounded-md p-2 cursor-not-allowed" title="Edite em Edição Avançada">
-                    <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">{admissionLabel}</span>
+                    <span className="text-xs font-medium text-muted-foreground tracking-wide block mb-1">{admissionLabel}</span>
                     <span className="text-sm font-medium block min-h-[20px]">
                       {getFieldArray("utiAdmissionDate")[0] || "—"}
                     </span>
                   </div>
                   <div className="bg-muted/30 border border-border/30 rounded-md p-2 cursor-not-allowed" title="Edite em Edição Avançada ou via Evolução Médica">
-                    <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">Previsão de alta</span>
+                    <span className="text-xs font-medium text-muted-foreground tracking-wide block mb-1">Previsão de alta</span>
                     <span className="text-sm font-medium block min-h-[20px]">
                       {previsaoAltaDate || "—"}
                     {isWithin24h(previsaoAlta[0]) && (
-                      <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-warning/15 border border-warning/40 px-1.5 py-0.5 text-[9px] font-semibold text-warning-on-soft">
-                        ⚠ Alta amanhã
+                      <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-warning/15 border border-warning/40 px-2 py-1 text-xs font-medium text-warning-on-soft">
+                        Alta amanhã
                       </span>
                     )}
                     </span>
@@ -1534,7 +1534,7 @@ export function UtiPatientCard({
                     description: `${patient.bedNumber} foi removido do setor.`,
                   });
                 } catch (err: any) {
-                  // 🔒 Antes: erro aqui travava a tela sem aviso (diálogo não
+                  // Antes: erro aqui travava a tela sem aviso (diálogo não
                   // fechava, nenhum feedback) — parecia "não dá pra excluir"
                   // mesmo quando o motivo era claro (ex: leito ocupado).
                   console.error("[UtiPatientCard] falha ao excluir leito extra:", err);

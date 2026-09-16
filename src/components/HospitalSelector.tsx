@@ -48,7 +48,7 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
 
   if (loading) {
     return (
-      <div className={cn("animate-pulse bg-muted rounded-xl h-12", className)} />
+      <div className={cn("animate-pulse bg-muted rounded-lg h-12", className)} />
     );
   }
 
@@ -66,16 +66,16 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 min-h-[52px] bg-card border border-border rounded-xl hover:border-primary/40 hover:shadow-sm hover:shadow-primary/5 active:bg-muted/30 transition-all duration-200 text-left group"
+        className="w-full flex items-center gap-3 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3 min-h-[52px] bg-card border border-border rounded-lg hover:border-primary/40 hover:shadow-sm hover:shadow-md active:bg-muted/30 transition-all duration-200 text-left group"
       >
-        <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/15 shrink-0 group-hover:from-primary/15 group-hover:to-primary/10 transition-colors">
+        <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-primary/10 border border-primary/15 shrink-0 group-hover:from-primary/15 group-hover:to-primary/10 transition-colors">
           <HospitalIcon className="h-4 w-4 text-primary" strokeWidth={2.2} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[9px] text-muted-foreground tracking-[0.15em] leading-none mb-0.5">
+          <p className="text-xs text-muted-foreground tracking-[0.15em] leading-none mb-1">
             Unidade hospitalar
           </p>
-          <p className="text-sm font-semibold text-foreground truncate">
+          <p className="text-sm font-medium text-foreground truncate">
             {selected?.name || "Selecione um hospital"}
           </p>
         </div>
@@ -95,7 +95,7 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl shadow-xl shadow-primary/10 z-[70] overflow-hidden"
+            className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-md shadow-md z-[70] overflow-hidden"
           >
             {/* Search */}
             <div className="p-3 border-b border-border/60">
@@ -106,7 +106,7 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar hospital..."
-                  className="w-full pl-9 pr-3 py-2.5 sm:py-2 text-base sm:text-sm bg-muted/40 border border-border rounded-lg text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
+                  className="w-full pl-8 pr-3 py-3 sm:py-2 text-base sm:text-sm bg-muted/40 border border-border rounded-lg text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
                   autoFocus
                 />
               </div>
@@ -132,7 +132,7 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
                       setSearch("");
                     }}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 sm:py-2.5 text-left hover:bg-primary/5 active:bg-primary/10 transition-colors",
+                      "w-full flex items-center gap-3 px-4 py-3 sm:py-3 text-left hover:bg-primary/5 active:bg-primary/10 transition-colors",
                       hospital.id === selectedHospitalId && "bg-primary/8"
                     )}
                   >
@@ -144,7 +144,7 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
                         {hospital.name}
                       </p>
                       {hospital.address && (
-                        <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+                        <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-1">
                           <MapPin className="h-2.5 w-2.5 shrink-0" />
                           {hospital.state_abbreviation} · {hospital.address}
                         </p>

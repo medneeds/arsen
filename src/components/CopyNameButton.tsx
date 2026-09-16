@@ -39,7 +39,7 @@ export function CopyNameButton({ value, className, label = "Copiar nome do pacie
       title={label}
       aria-label={label}
       className={cn(
-        "inline-flex h-5 w-5 items-center justify-center rounded",
+        "inline-flex h-5 w-5 items-center justify-center rounded-md",
         "text-muted-foreground/60 hover:text-foreground hover:bg-muted/60",
         "opacity-70 hover:opacity-100 transition-all print:hidden",
         className,

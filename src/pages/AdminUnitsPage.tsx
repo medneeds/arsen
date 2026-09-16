@@ -202,7 +202,7 @@ export default function AdminUnitsPage() {
       <div className="container mx-auto py-6 px-4 max-w-5xl">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
+            <h1 className="text-2xl font-semibold flex items-center gap-2">
               <Building2 className="h-6 w-6" />
               Gerenciar Unidades Hospitalares
             </h1>
@@ -298,7 +298,7 @@ export default function AdminUnitsPage() {
           <Card className="mb-6 border-warning-border bg-warning-soft">
             <CardContent className="pt-6">
               <p className="text-warning-on-soft">
-                ⚠️ Cadastre pelo menos um estado antes de criar unidades hospitalares.
+                Cadastre pelo menos um estado antes de criar unidades hospitalares.
               </p>
             </CardContent>
           </Card>

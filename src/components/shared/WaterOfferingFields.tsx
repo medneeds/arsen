@@ -109,7 +109,7 @@ export function buildWaterInstruction(state: WaterOfferingState): string {
   const parts = [
     total !== null ? `Total estimado ${total}mL/24h` : "Volume conforme demanda",
     temp ? `Temperatura ${temp.toLowerCase()}` : null,
-    state.restriction ? `⚠ Restrição hídrica: máx ${state.restrictionLimit}mL/24h` : null,
+    state.restriction ? `Restrição hídrica: máx ${state.restrictionLimit}mL/24h` : null,
     state.notes || null,
   ].filter(Boolean);
   return parts.join(" · ");
@@ -142,10 +142,10 @@ export function WaterOfferingFields({
     <div className="space-y-3">
       {/* Tipo de água */}
       <div>
-        <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+        <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1">
           <Droplet className="h-3 w-3" /> Tipo de água
         </Label>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mt-1.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
           {WATER_TYPES.map(t => (
             <button
               key={t.key}
@@ -158,8 +158,8 @@ export function WaterOfferingFields({
                   : "border-border bg-background hover:border-muted-foreground/40"
               )}
             >
-              <p className="text-xs font-semibold">{t.label}</p>
-              <p className="text-[10px] text-muted-foreground leading-tight">{t.detail}</p>
+              <p className="text-xs font-medium">{t.label}</p>
+              <p className="text-xs text-muted-foreground leading-tight">{t.detail}</p>
             </button>
           ))}
         </div>
@@ -167,7 +167,7 @@ export function WaterOfferingFields({
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div>
-          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Via</Label>
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Via</Label>
           <Select value={value.route} onValueChange={(v) => set("route", v as WaterRoute)}>
             <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent className="z-[90]">
@@ -179,7 +179,7 @@ export function WaterOfferingFields({
         </div>
 
         <div>
-          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Volume / oferta (mL)</Label>
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Volume / oferta (mL)</Label>
           <Input
             type="number"
             inputMode="numeric"
@@ -190,7 +190,7 @@ export function WaterOfferingFields({
         </div>
 
         <div>
-          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Fracionamento</Label>
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Fracionamento</Label>
           <Select value={value.fraction} onValueChange={(v) => set("fraction", v)}>
             <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent className="z-[90]">
@@ -202,7 +202,7 @@ export function WaterOfferingFields({
         </div>
 
         <div>
-          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Temperatura</Label>
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Temperatura</Label>
           <Select value={value.temperature} onValueChange={(v) => set("temperature", v as WaterTemperature)}>
             <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent className="z-[90]">
@@ -215,13 +215,13 @@ export function WaterOfferingFields({
       </div>
 
       <div className="flex flex-wrap items-center gap-3 pt-1">
-        <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+        <label className="flex items-center gap-2 text-xs cursor-pointer">
           <Checkbox checked={value.restriction} onCheckedChange={(v) => set("restriction", !!v)} />
           Restrição hídrica
         </label>
         {value.restriction && (
           <div className="flex items-center gap-1">
-            <Label className="text-[10px] text-muted-foreground">Máx mL/24h</Label>
+            <Label className="text-xs text-muted-foreground">Máx mL/24h</Label>
             <Input
               type="number"
               value={value.restrictionLimit}
@@ -240,15 +240,15 @@ export function WaterOfferingFields({
           : "border-border bg-muted/30"
       )}>
         <div className="flex flex-col">
-          <span className={cn("text-[10px] uppercase tracking-wider font-semibold", accentTextClassName)}>
+          <span className={cn("text-xs uppercase tracking-wider font-medium", accentTextClassName)}>
             Total estimado
           </span>
-          <span className="font-semibold">
+          <span className="font-medium">
             {total !== null ? `${total}mL / 24h` : "Volume conforme demanda (não calculável)"}
           </span>
         </div>
         {overLimit && (
-          <div className="flex items-center gap-1 text-critical-on-soft text-[11px]">
+          <div className="flex items-center gap-1 text-critical-on-soft text-xs">
             <AlertTriangle className="h-3.5 w-3.5" />
             Excede o limite de restrição
           </div>

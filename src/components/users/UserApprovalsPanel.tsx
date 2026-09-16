@@ -263,7 +263,7 @@ export function UserApprovalsPanel() {
             {format(new Date(p.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
           </div>
           {p.approved_at && (
-            <div className="text-[10px] mt-0.5">
+            <div className="text-xs mt-1">
               Decidido em {format(new Date(p.approved_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
             </div>
           )}
@@ -320,7 +320,7 @@ export function UserApprovalsPanel() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-warning-on-soft font-medium">Pendentes</p>
-              <p className="text-2xl font-bold text-warning-on-soft">{counters.pending}</p>
+              <p className="text-2xl font-semibold text-warning-on-soft">{counters.pending}</p>
             </div>
             <Clock className="h-8 w-8 text-warning/50" />
           </div>
@@ -329,7 +329,7 @@ export function UserApprovalsPanel() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-released-on-soft font-medium">Aprovados</p>
-              <p className="text-2xl font-bold text-released-on-soft">{counters.approved}</p>
+              <p className="text-2xl font-semibold text-released-on-soft">{counters.approved}</p>
             </div>
             <CheckCircle2 className="h-8 w-8 text-released/50" />
           </div>
@@ -338,7 +338,7 @@ export function UserApprovalsPanel() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-critical-on-soft font-medium">Recusados</p>
-              <p className="text-2xl font-bold text-critical-on-soft">{counters.rejected}</p>
+              <p className="text-2xl font-semibold text-critical-on-soft">{counters.rejected}</p>
             </div>
             <XCircle className="h-8 w-8 text-critical/50" />
           </div>
@@ -347,7 +347,7 @@ export function UserApprovalsPanel() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-medium">Total</p>
-              <p className="text-2xl font-bold">{counters.all}</p>
+              <p className="text-2xl font-semibold">{counters.all}</p>
             </div>
             <ShieldCheck className="h-8 w-8 text-muted-foreground/50" />
           </div>
@@ -362,7 +362,7 @@ export function UserApprovalsPanel() {
             placeholder="Buscar por nome, email ou CRM..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            className="pl-8"
           />
         </div>
         <Button variant="outline" onClick={fetchProfiles} disabled={loading}>
@@ -377,7 +377,7 @@ export function UserApprovalsPanel() {
             <Clock className="h-4 w-4" />
             Pendentes
             {counters.pending > 0 && (
-              <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-[10px]">
+              <Badge variant="destructive" className="ml-1 h-5 px-2 text-xs">
                 {counters.pending}
               </Badge>
             )}
@@ -392,15 +392,15 @@ export function UserApprovalsPanel() {
         </TabsList>
 
         <TabsContent value={tab} className="mt-4">
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="text-xs font-bold">Solicitante</TableHead>
-                  <TableHead className="text-xs font-bold">Profissional</TableHead>
-                  <TableHead className="text-xs font-bold">Status</TableHead>
-                  <TableHead className="text-xs font-bold">Solicitado em</TableHead>
-                  <TableHead className="text-xs font-bold text-right">Ações</TableHead>
+                  <TableHead className="text-xs font-semibold">Solicitante</TableHead>
+                  <TableHead className="text-xs font-semibold">Profissional</TableHead>
+                  <TableHead className="text-xs font-semibold">Status</TableHead>
+                  <TableHead className="text-xs font-semibold">Solicitado em</TableHead>
+                  <TableHead className="text-xs font-semibold text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -412,7 +412,7 @@ export function UserApprovalsPanel() {
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-12">
+                    <TableCell colSpan={5} className="text-center py-8">
                       <ShieldCheck className="h-8 w-8 mx-auto text-muted-foreground/50" />
                       <p className="mt-2 text-sm text-muted-foreground">
                         Nenhum cadastro nesta categoria
@@ -513,7 +513,7 @@ export function UserApprovalsPanel() {
                 <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
               </div>
             ) : history.length === 0 ? (
-              <div className="py-12 text-center">
+              <div className="py-8 text-center">
                 <History className="h-8 w-8 mx-auto text-muted-foreground/50" />
                 <p className="mt-2 text-sm text-muted-foreground">
                   Sem registros de auditoria para este usuário
@@ -527,7 +527,7 @@ export function UserApprovalsPanel() {
                     className="border rounded-lg p-3 bg-card hover:bg-muted/30 transition"
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <Badge variant="outline" className="text-[10px] font-mono">
+                      <Badge variant="outline" className="text-xs font-mono">
                         {h.action}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
@@ -545,14 +545,14 @@ export function UserApprovalsPanel() {
                     )}
                     {(h.old_data || h.new_data) && (
                       <details className="mt-2">
-                        <summary className="text-[10px] cursor-pointer text-muted-foreground hover:text-foreground">
+                        <summary className="text-xs cursor-pointer text-muted-foreground hover:text-foreground">
                           Ver detalhes (diff)
                         </summary>
-                        <div className="grid grid-cols-2 gap-2 mt-1 text-[10px] font-mono">
-                          <pre className="bg-critical/5 border border-critical/10 rounded p-2 overflow-auto">
+                        <div className="grid grid-cols-2 gap-2 mt-1 text-xs font-mono">
+                          <pre className="bg-critical/5 border border-critical/10 rounded-md p-2 overflow-auto">
                             {JSON.stringify(h.old_data || {}, null, 2)}
                           </pre>
-                          <pre className="bg-released/5 border border-released/10 rounded p-2 overflow-auto">
+                          <pre className="bg-released/5 border border-released/10 rounded-md p-2 overflow-auto">
                             {JSON.stringify(h.new_data || {}, null, 2)}
                           </pre>
                         </div>

@@ -109,15 +109,15 @@ export function PatientDocumentsPanel({
     <div className="space-y-4">
       {/* TIMELINE GERAL (5 últimos) */}
       {!hideTimeline && timeline.length > 0 && (
-        <section className="rounded-xl border border-border/60 bg-card/50">
-          <header className="flex items-center justify-between px-4 py-2.5 border-b border-border/40">
+        <section className="rounded-lg border border-border/60 bg-card/50">
+          <header className="flex items-center justify-between px-4 py-3 border-b border-border/40">
             <div className="flex items-center gap-2">
               <Clock className="h-3.5 w-3.5 text-primary" />
-              <h3 className="text-xs font-semibold tracking-wide text-foreground/80">
+              <h3 className="text-xs font-medium tracking-wide text-foreground/80">
                 Últimos documentos
               </h3>
             </div>
-            <span className="text-[10px] text-muted-foreground">{docs.length} no total</span>
+            <span className="text-xs text-muted-foreground">{docs.length} no total</span>
           </header>
           <ul className="divide-y divide-border/40">
             {timeline.map((doc) => (
@@ -133,12 +133,12 @@ export function PatientDocumentsPanel({
       )}
 
       {!hideTimeline && timeline.length === 0 && (
-        <div className="rounded-xl border border-dashed border-border bg-muted/20 p-6 text-center">
+        <div className="rounded-lg border border-dashed border-border bg-muted/20 p-6 text-center">
           <FileText className="h-7 w-7 mx-auto mb-2 text-muted-foreground/40" />
           <p className="text-sm text-muted-foreground">
             Nenhum documento clínico registrado ainda
           </p>
-          <p className="text-xs text-muted-foreground/70 mt-0.5">
+          <p className="text-xs text-muted-foreground/70 mt-1">
             Comece criando uma nova solicitação abaixo
           </p>
         </div>
@@ -147,7 +147,7 @@ export function PatientDocumentsPanel({
       {/* ACORDEÕES POR TIPO */}
       <Accordion
         type="multiple"
-        className="space-y-1.5"
+        className="space-y-2"
         defaultValue={visibleTypes.filter((t) => (byType[t]?.length || 0) > 0).slice(0, 2)}
       >
         {visibleTypes.map((type) => {
@@ -164,8 +164,8 @@ export function PatientDocumentsPanel({
               )}
             >
               <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/30 rounded-lg group">
-                <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                  <div className={cn("p-1.5 rounded-md shrink-0", meta.bg)}>
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className={cn("p-2 rounded-md shrink-0", meta.bg)}>
                     <Icon className={cn("h-3.5 w-3.5", meta.tone)} />
                   </div>
                   <span className="text-sm font-medium text-foreground/90 text-left">
@@ -173,13 +173,13 @@ export function PatientDocumentsPanel({
                   </span>
                   <Badge
                     variant="secondary"
-                    className="text-[10px] h-4 px-1.5 ml-auto mr-2"
+                    className="text-xs h-4 px-2 ml-auto mr-2"
                   >
                     {items.length}
                   </Badge>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-3 pt-0 pb-3 space-y-1.5">
+              <AccordionContent className="px-3 pt-0 pb-3 space-y-2">
                 {items.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic px-1 py-2">
                     Nenhuma solicitação registrada.
@@ -202,7 +202,7 @@ export function PatientDocumentsPanel({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="w-full h-8 text-xs gap-1.5 mt-2"
+                    className="w-full h-8 text-xs gap-2 mt-2"
                     onClick={() => onNewByType(type)}
                   >
                     <Plus className="h-3.5 w-3.5" />
@@ -235,7 +235,7 @@ function TimelineRow({
   return (
     <li className={cn("flex items-center gap-3 px-3 py-2 group transition-colors", onOpen && "hover:bg-muted/40 cursor-pointer")}>
       {!compact && (
-        <div className={cn("p-1.5 rounded-md shrink-0", meta.bg)}>
+        <div className={cn("p-2 rounded-md shrink-0", meta.bg)}>
           <Icon className={cn("h-3.5 w-3.5", meta.tone)} />
         </div>
       )}
@@ -245,14 +245,14 @@ function TimelineRow({
         className="flex-1 min-w-0 text-left"
       >
         <p className="text-xs font-medium text-foreground/90 truncate">{doc.label}</p>
-        <p className="text-[10px] text-muted-foreground mt-0.5">
+        <p className="text-xs text-muted-foreground mt-1">
           {compact ? meta.shortLabel + " · " : ""}
           {formatDate(doc.createdAt)}
           {doc.authorName ? ` · ${doc.authorName}` : ""}
           {doc.patientBed ? ` · ${doc.patientBed}` : ""}
         </p>
       </button>
-      <Badge variant="outline" className={cn("text-[9px] h-4 px-1.5 shrink-0", status.cls)}>
+      <Badge variant="outline" className={cn("text-xs h-4 px-2 shrink-0", status.cls)}>
         <span className={cn("h-1 w-1 rounded-full mr-1", status.dot)} />
         {status.label}
       </Badge>

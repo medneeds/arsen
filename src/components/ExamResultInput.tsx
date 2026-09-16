@@ -106,7 +106,7 @@ const ExamResultInput: React.FC<ExamResultInputProps> = ({
 
   return (
     <div className="space-y-3">
-      <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
+      <p className="text-xs font-medium text-foreground uppercase tracking-wider">
         Resultado / Laudo
       </p>
 
@@ -129,7 +129,7 @@ const ExamResultInput: React.FC<ExamResultInputProps> = ({
             size="sm"
             onClick={() => imageInputRef.current?.click()}
             disabled={uploading}
-            className="gap-1.5 text-xs"
+            className="gap-2 text-xs"
           >
             <ImageIcon className="h-3.5 w-3.5" />
             Anexar Imagem
@@ -140,13 +140,13 @@ const ExamResultInput: React.FC<ExamResultInputProps> = ({
             size="sm"
             onClick={() => pdfInputRef.current?.click()}
             disabled={uploading}
-            className="gap-1.5 text-xs"
+            className="gap-2 text-xs"
           >
             <FileText className="h-3.5 w-3.5" />
             Anexar PDF
           </Button>
           {uploading && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Enviando...
             </div>
@@ -181,17 +181,17 @@ const ExamResultInput: React.FC<ExamResultInputProps> = ({
       {/* Attached files list */}
       {resultFiles.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             Arquivos Anexados ({resultFiles.length})
           </p>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {resultFiles.map((file, idx) => (
               <div
                 key={idx}
                 className="flex items-center gap-2 p-2 rounded-lg border bg-background text-xs group"
               >
                 {file.type === "image" ? (
-                  <div className="h-10 w-10 rounded border overflow-hidden shrink-0 bg-muted">
+                  <div className="h-10 w-10 rounded-md border overflow-hidden shrink-0 bg-muted">
                     <img
                       src={file.url}
                       alt={file.name}
@@ -199,14 +199,14 @@ const ExamResultInput: React.FC<ExamResultInputProps> = ({
                     />
                   </div>
                 ) : (
-                  <div className="h-10 w-10 rounded border flex items-center justify-center shrink-0 bg-critical-soft">
+                  <div className="h-10 w-10 rounded-md border flex items-center justify-center shrink-0 bg-critical-soft">
                     <File className="h-5 w-5 text-critical" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-foreground truncate">{file.name}</p>
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                    <Badge variant="outline" className="text-[9px] px-1 py-0">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Badge variant="outline" className="text-xs px-1 py-0">
                       {file.type === "image" ? "IMAGEM" : "PDF"}
                     </Badge>
                     {file.size && <span>{formatFileSize(file.size)}</span>}

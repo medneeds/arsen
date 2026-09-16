@@ -267,7 +267,7 @@ export function HydrationWizard({
             type="button"
             onClick={() => setMode("iv")}
             className={cn(
-              "flex-1 text-xs font-semibold py-1.5 rounded transition-all",
+              "flex-1 text-xs font-medium py-2 rounded-md transition-all",
               mode === "iv" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -277,7 +277,7 @@ export function HydrationWizard({
             type="button"
             onClick={() => setMode("enteral")}
             className={cn(
-              "flex-1 text-xs font-semibold py-1.5 rounded transition-all",
+              "flex-1 text-xs font-medium py-2 rounded-md transition-all",
               mode === "enteral" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -290,8 +290,8 @@ export function HydrationWizard({
             <>
               {/* Solução */}
               <div>
-                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Solução</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-1.5">
+                <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Solução</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
                   {SOLUTIONS.map(s => (
                     <button
                       key={s.key}
@@ -304,8 +304,8 @@ export function HydrationWizard({
                           : "border-border bg-background hover:border-border"
                       )}
                     >
-                      <p className="text-xs font-semibold">{s.label}</p>
-                      <p className="text-[10px] text-muted-foreground leading-tight">{s.detail}</p>
+                      <p className="text-xs font-medium">{s.label}</p>
+                      <p className="text-xs text-muted-foreground leading-tight">{s.detail}</p>
                     </button>
                   ))}
                 </div>
@@ -314,11 +314,11 @@ export function HydrationWizard({
               {solution === "custom" && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 rounded-md bg-muted/30 border border-border">
                   <div>
-                    <Label className="text-[10px]">Base</Label>
+                    <Label className="text-xs">Base</Label>
                     <Input value={base} onChange={(e) => setBase(e.target.value)} className="h-7 text-xs" />
                   </div>
                   <div>
-                    <Label className="text-[10px]">Aditivos</Label>
+                    <Label className="text-xs">Aditivos</Label>
                     <Input value={additives} onChange={(e) => setAdditives(e.target.value)} className="h-7 text-xs" />
                   </div>
                 </div>
@@ -326,11 +326,11 @@ export function HydrationWizard({
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div>
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Volume / fase (mL)</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Volume / fase (mL)</Label>
                   <Input type="number" value={volumePhase} onChange={(e) => setVolumePhase(e.target.value)} className="h-7 text-xs" />
                 </div>
                 <div>
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Fases / intervalo</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Fases / intervalo</Label>
                   <Select value={String(phases)} onValueChange={(v) => setPhases(Number(v))}>
                     <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent className="z-[90]">
@@ -343,7 +343,7 @@ export function HydrationWizard({
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Tempo / fase</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Tempo / fase</Label>
                   <div className="flex gap-1">
                     <Input type="number" value={phaseTimeValue} onChange={(e) => setPhaseTimeValue(e.target.value)} className="h-7 text-xs" />
                     <Select value={phaseTimeUnit} onValueChange={(v) => setPhaseTimeUnit(v as "h" | "min")}>
@@ -356,9 +356,9 @@ export function HydrationWizard({
                   </div>
                 </div>
                 <div>
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Gotejamento</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Gotejamento</Label>
                   <div className="flex gap-1 items-center">
-                    <div className="h-7 px-2 flex items-center rounded-md border border-border bg-muted/30 text-xs font-semibold flex-1">
+                    <div className="h-7 px-2 flex items-center rounded-md border border-border bg-muted/30 text-xs font-medium flex-1">
                       {isFinite(dripValue) && dripValue > 0 ? dripValue.toFixed(0) : "—"}
                     </div>
                     <Select value={dripUnit} onValueChange={(v) => setDripUnit(v as "gtt/min" | "mL/h")}>
@@ -374,7 +374,7 @@ export function HydrationWizard({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
                 <div>
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Acesso</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Acesso</Label>
                   <Select value={access} onValueChange={setAccess}>
                     <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent className="z-[90]">
@@ -385,11 +385,11 @@ export function HydrationWizard({
                   </Select>
                 </div>
                 <div className="flex items-center gap-3 sm:col-span-2 mt-1">
-                  <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
                     <Checkbox checked={prn} onCheckedChange={(v) => setPrn(!!v)} />
                     Se necessário
                   </label>
-                  <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
                     <Checkbox checked={criterio} onCheckedChange={(v) => setCriterio(!!v)} />
                     A critério médico
                   </label>
@@ -397,13 +397,13 @@ export function HydrationWizard({
               </div>
 
               <div>
-                <Label className="text-[10px]">Observações (opcional)</Label>
+                <Label className="text-xs">Observações (opcional)</Label>
                 <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="min-h-[40px] text-xs" placeholder="Ex: manter acesso pérvio, cuidado em IC descompensada..." />
               </div>
 
               {/* Pré-visualização IV */}
               <div className="rounded-md border border-border bg-muted/40 p-2 space-y-1">
-                <p className="text-[10px] uppercase tracking-wider text-foreground font-semibold flex items-center gap-1">
+                <p className="text-xs uppercase tracking-wider text-foreground font-medium flex items-center gap-1">
                   <Sparkles className="h-3 w-3" /> Pré-visualização
                 </p>
                 <div className="grid grid-cols-2 gap-2 text-xs">
@@ -411,7 +411,7 @@ export function HydrationWizard({
                   <div><span className="text-muted-foreground">Volume total (24h):</span> <strong>{volumeTotal}mL</strong></div>
                 </div>
                 <p className="text-xs font-medium pt-1">{previewEntry.name}</p>
-                <p className="text-[11px] text-muted-foreground">{previewEntry.instructions}</p>
+                <p className="text-xs text-muted-foreground">{previewEntry.instructions}</p>
               </div>
             </>
           ) : (
@@ -423,11 +423,11 @@ export function HydrationWizard({
                 accentTextClassName="text-foreground"
               />
               <div className="rounded-md border border-border bg-muted/40 p-2 space-y-1">
-                <p className="text-[10px] uppercase tracking-wider text-foreground font-semibold flex items-center gap-1">
+                <p className="text-xs uppercase tracking-wider text-foreground font-medium flex items-center gap-1">
                   <Sparkles className="h-3 w-3" /> Pré-visualização
                 </p>
                 <p className="text-xs font-medium">{previewEntry.name}</p>
-                <p className="text-[11px] text-muted-foreground">{previewEntry.instructions}</p>
+                <p className="text-xs text-muted-foreground">{previewEntry.instructions}</p>
               </div>
             </>
           )}
@@ -448,7 +448,7 @@ export function HydrationWizard({
 
         <DialogFooter className="pt-2 gap-2">
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button size="sm" onClick={handleConfirmAll} className="gap-1.5">
+          <Button size="sm" onClick={handleConfirmAll} className="gap-2">
             <Sparkles className="h-3.5 w-3.5" />
             Adicionar {totalToSend > 1 ? `${totalToSend} itens` : "à prescrição"}
           </Button>

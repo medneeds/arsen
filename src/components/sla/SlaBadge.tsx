@@ -86,7 +86,7 @@ export function SlaBadge({
           variant="outline"
           className={cn(
             "gap-1 border font-mono tabular-nums",
-            compact ? "h-5 px-1.5 text-[10px]" : "h-6 px-2 text-xs",
+            compact ? "h-5 px-2 text-xs" : "h-6 px-2 text-xs",
             styles[level],
             className,
           )}

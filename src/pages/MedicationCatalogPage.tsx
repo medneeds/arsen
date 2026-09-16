@@ -191,7 +191,7 @@ export default function MedicationCatalogPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
             <Pill className="h-6 w-6 text-primary" />
             Catálogo Clínico de Medicamentos
           </h1>
@@ -227,25 +227,25 @@ export default function MedicationCatalogPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="border-border">
           <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-primary">{stats.total}</p>
+            <p className="text-2xl font-semibold text-primary">{stats.total}</p>
             <p className="text-xs text-muted-foreground">Medicamentos</p>
           </CardContent>
         </Card>
         <Card className="border-border">
           <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-destructive">{stats.highAlert}</p>
+            <p className="text-2xl font-semibold text-destructive">{stats.highAlert}</p>
             <p className="text-xs text-muted-foreground">Alto Alerta</p>
           </CardContent>
         </Card>
         <Card className="border-border">
           <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-warning-on-soft">{stats.controlled}</p>
+            <p className="text-2xl font-semibold text-warning-on-soft">{stats.controlled}</p>
             <p className="text-xs text-muted-foreground">Controlados</p>
           </CardContent>
         </Card>
         <Card className="border-border">
           <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-muted-foreground">{stats.classes}</p>
+            <p className="text-2xl font-semibold text-muted-foreground">{stats.classes}</p>
             <p className="text-xs text-muted-foreground">Classes</p>
           </CardContent>
         </Card>
@@ -259,7 +259,7 @@ export default function MedicationCatalogPage() {
             placeholder="Buscar por nome genérico, comercial ou código ATC..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-8"
           />
         </div>
         <Select value={classFilter} onValueChange={setClassFilter}>
@@ -291,33 +291,33 @@ export default function MedicationCatalogPage() {
               open={expandedId === med.id}
               onOpenChange={(open) => setExpandedId(open ? med.id : null)}
             >
-              <Card className={`border-border transition-shadow ${expandedId === med.id ? 'shadow-md ring-1 ring-primary/20' : 'hover:shadow-sm'} ${med.high_alert ? 'border-l-4 border-l-destructive' : ''}`}>
+              <Card className={`border-border transition-shadow-sm ${expandedId === med.id ? 'shadow-md ring-1 ring-primary/20' : 'hover:shadow-sm'} ${med.high_alert ? 'border-l-4 border-l-destructive' : ''}`}>
                 <CollapsibleTrigger asChild>
                   <CardHeader className="cursor-pointer p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2 flex-wrap">
+                        <CardTitle className="text-base font-medium text-foreground flex items-center gap-2 flex-wrap">
                           {med.generic_name}
                           {med.high_alert && (
-                            <Badge variant="destructive" className="text-[10px] px-1.5 py-0 gap-1">
+                            <Badge variant="destructive" className="text-xs px-2 py-0 gap-1">
                               <AlertTriangle className="h-3 w-3" /> ALTO ALERTA
                             </Badge>
                           )}
                           {med.controlled && (
-                            <Badge className="text-[10px] px-1.5 py-0 gap-1 bg-warning hover:bg-warning">
+                            <Badge className="text-xs px-2 py-0 gap-1 bg-warning hover:bg-warning">
                               <Shield className="h-3 w-3" /> CONTROLADO
                             </Badge>
                           )}
                           {med.requires_dilution && (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
+                            <Badge variant="outline" className="text-xs px-2 py-0 gap-1">
                               <Beaker className="h-3 w-3" /> DILUIÇÃO
                             </Badge>
                           )}
                         </CardTitle>
-                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
                           <span className="text-xs text-muted-foreground">{med.therapeutic_class}</span>
                           {med.atc_code && (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
+                            <Badge variant="secondary" className="text-xs px-2 py-0 font-mono">
                               {med.atc_code}
                             </Badge>
                           )}
@@ -331,7 +331,7 @@ export default function MedicationCatalogPage() {
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="flex gap-1">
                           {Array.from(new Set(med.presentations.map((p) => p.route))).map((route) => (
-                            <Badge key={route} className={`text-[10px] px-1.5 py-0 ${routeColors[route] || 'bg-muted text-muted-foreground'}`}>
+                            <Badge key={route} className={`text-xs px-2 py-0 ${routeColors[route] || 'bg-muted text-muted-foreground'}`}>
                               {route}
                             </Badge>
                           ))}
@@ -352,7 +352,7 @@ export default function MedicationCatalogPage() {
                     {/* Notes */}
                     {med.notes && (
                       <div className="bg-muted/50 rounded-lg p-3 flex gap-2 text-sm">
-                        <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                        <Info className="h-4 w-4 text-primary mt-1 shrink-0" />
                         <span className="text-foreground">{med.notes}</span>
                       </div>
                     )}
@@ -367,15 +367,15 @@ export default function MedicationCatalogPage() {
 
                     {/* Presentations table */}
                     <div>
-                      <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                      <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
                         <Syringe className="h-4 w-4" />
                         Apresentações ({med.presentations.length})
                         {canEdit ? (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-2 gap-1">
+                          <Badge variant="outline" className="text-xs px-2 py-0 ml-2 gap-1">
                             <Pencil className="h-3 w-3" /> Edição liberada
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-2 gap-1 text-muted-foreground">
+                          <Badge variant="outline" className="text-xs px-2 py-0 ml-2 gap-1 text-muted-foreground">
                             <Lock className="h-3 w-3" /> Somente leitura
                           </Badge>
                         )}
@@ -405,7 +405,7 @@ export default function MedicationCatalogPage() {
                                     <td className="px-3 py-2 text-foreground">{p.form}</td>
                                     <td className="px-3 py-2 text-foreground font-mono text-xs">{p.concentration}</td>
                                     <td className="px-3 py-2">
-                                      <Badge className={`text-[10px] px-1.5 py-0 ${routeColors[p.route] || 'bg-muted text-muted-foreground'}`}>
+                                      <Badge className={`text-xs px-2 py-0 ${routeColors[p.route] || 'bg-muted text-muted-foreground'}`}>
                                         {p.route}
                                       </Badge>
                                     </td>
@@ -455,8 +455,8 @@ export default function MedicationCatalogPage() {
                                         <td className="px-3 py-2 text-foreground text-xs max-w-[200px]">{p.standard_dilution || "—"}</td>
                                         <td className="px-3 py-2 text-foreground text-xs">{p.max_daily_dose || "—"}</td>
                                         <td className="px-3 py-2 text-foreground text-xs">{p.infusion_time || "—"}</td>
-                                        <td className="px-3 py-2 text-center">{p.iv_bolus ? <span className="text-foreground font-bold text-xs">✓ Bolus</span> : <span className="text-muted-foreground text-xs">—</span>}</td>
-                                        <td className="px-3 py-2 text-center">{p.pharmacy_suggestion_enabled ? <span className="text-released-on-soft font-bold text-xs">✓ Ativo</span> : <span className="text-muted-foreground text-xs">—</span>}</td>
+                                        <td className="px-3 py-2 text-center">{p.iv_bolus ? <span className="text-foreground font-semibold text-xs">Bolus</span> : <span className="text-muted-foreground text-xs">—</span>}</td>
+                                        <td className="px-3 py-2 text-center">{p.pharmacy_suggestion_enabled ? <span className="text-released-on-soft font-semibold text-xs">Ativo</span> : <span className="text-muted-foreground text-xs">—</span>}</td>
                                       </>
                                     )}
                                     {canEdit && (
@@ -503,7 +503,7 @@ export default function MedicationCatalogPage() {
                         </div>
                       </div>
                       {canEdit && (
-                        <p className="text-[11px] text-muted-foreground mt-2">
+                        <p className="text-xs text-muted-foreground mt-2">
                           Diluição padrão, dose máxima e tempo de infusão alimentam as sugestões "Padrão" da prescrição.
                         </p>
                       )}
@@ -514,7 +514,7 @@ export default function MedicationCatalogPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs text-muted-foreground">Nomes comerciais:</span>
                         {med.aliases.map((a) => (
-                          <Badge key={a.id} variant="outline" className="text-[10px] px-1.5 py-0">
+                          <Badge key={a.id} variant="outline" className="text-xs px-2 py-0">
                             {a.alias_name}
                             {a.alias_type === 'abbreviation' && ' (abrev.)'}
                           </Badge>

@@ -177,14 +177,14 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
         </DialogHeader>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="space-y-5 mt-2">
+          <div className="space-y-4 mt-2">
             {/* Queixa Principal */}
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-foreground">
+              <Label className="text-sm font-medium text-foreground">
                 Queixa Principal
               </Label>
               <Textarea
@@ -197,7 +197,7 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
 
             {/* História Clínica */}
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-foreground">
+              <Label className="text-sm font-medium text-foreground">
                 História Clínica
               </Label>
               <Textarea
@@ -210,7 +210,7 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
 
             {/* Hipótese Diagnóstica */}
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-foreground">
+              <Label className="text-sm font-medium text-foreground">
                 Hipótese Diagnóstica
               </Label>
               <Textarea
@@ -223,13 +223,13 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
 
             {/* CID e Macrodiagnóstico */}
             <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
-              <p className="text-sm font-semibold flex items-center gap-2 text-foreground">
+              <p className="text-sm font-medium flex items-center gap-2 text-foreground">
                 <Stethoscope className="h-4 w-4 text-primary" />
                 Classificação CID-10
               </p>
               
               <div className="space-y-2">
-                <Label className="text-xs font-semibold text-foreground">
+                <Label className="text-xs font-medium text-foreground">
                   CID Primário <span className="text-destructive">*</span>
                 </Label>
                 <CidSearchInput
@@ -266,7 +266,7 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
 
             {/* Conduta Inicial */}
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-foreground">
+              <Label className="text-sm font-medium text-foreground">
                 Conduta Inicial
               </Label>
               <Textarea
@@ -280,7 +280,7 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
             {/* Actions */}
             <div className="flex items-center justify-between pt-2 border-t border-border">
               {existingId && (
-                <div className="flex items-center gap-1.5 text-xs text-released-on-soft">
+                <div className="flex items-center gap-2 text-xs text-released-on-soft">
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Registro existente
                 </div>

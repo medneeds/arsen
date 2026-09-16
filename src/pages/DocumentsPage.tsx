@@ -114,11 +114,11 @@ export default function DocumentsPage() {
   );
 
   return (
-    <div className="bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="bg-background">
       <div className="p-6 md:p-8 space-y-8 max-w-7xl">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-semibold tracking-tight bg-primary bg-clip-text text-transparent">
             Documentos
           </h1>
           <p className="text-muted-foreground text-lg">
@@ -130,7 +130,7 @@ export default function DocumentsPage() {
         </div>
 
         {/* Search Bar */}
-        <Card className="border-primary/20 shadow-lg">
+        <Card className="border-primary/20 shadow-md">
           <CardContent className="p-6">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -139,7 +139,7 @@ export default function DocumentsPage() {
                 placeholder="Buscar documentos por categoria ou descrição..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-14 text-base bg-background/50 border-border/50 focus:border-primary transition-all"
+                className="pl-8 h-14 text-base bg-background/50 border-border/50 focus:border-primary transition-all"
               />
             </div>
           </CardContent>
@@ -149,7 +149,7 @@ export default function DocumentsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredDocuments.length === 0 ? (
             <Card className="col-span-full border-dashed">
-              <CardContent className="flex flex-col items-center justify-center py-16">
+              <CardContent className="flex flex-col items-center justify-center py-8">
                 <Search className="h-16 w-16 text-muted-foreground/50 mb-4" />
                 <p className="text-center text-muted-foreground text-lg">
                   Nenhum documento encontrado com esse termo
@@ -160,7 +160,7 @@ export default function DocumentsPage() {
             filteredDocuments.map((doc, index) => (
               <Card
                 key={doc.id}
-                className="group hover:shadow-xl hover:border-primary/40 transition-all duration-300 cursor-pointer overflow-hidden animate-fade-in"
+                className="group hover:shadow-md hover:border-primary/40 transition-all duration-300 cursor-pointer overflow-hidden animate-fade-in"
                 style={{ animationDelay: `${index * 80}ms` }}
                 onClick={() => navigate(doc.route)}
               >
@@ -168,11 +168,11 @@ export default function DocumentsPage() {
                   <div className="p-6 space-y-4">
                     {/* Icon and Title */}
                     <div className="flex items-start gap-4">
-                      <div className={`flex-shrink-0 w-14 h-14 rounded-xl ${doc.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                      <div className={`flex-shrink-0 w-14 h-14 rounded-lg ${doc.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
                         <doc.icon className={`h-7 w-7 ${doc.color}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors mb-1">
+                        <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors mb-1">
                           {doc.title}
                         </h3>
                         <p className="text-sm text-muted-foreground line-clamp-2">

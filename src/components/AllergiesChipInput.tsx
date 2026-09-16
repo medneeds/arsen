@@ -90,12 +90,12 @@ export function AllergiesChipInput({
   const overflow = Math.max(0, realItems.length - maxInline);
 
   const baseChip =
-    "inline-flex items-center gap-1 h-5 px-1.5 rounded-md text-[10px] font-semibold uppercase border";
+    "inline-flex items-center gap-1 h-5 px-2 rounded-md text-xs font-medium uppercase border";
 
   return (
     <div
       className={cn(
-        "flex items-center gap-1 min-h-7 px-1.5 py-0.5 rounded-md border bg-background transition-colors",
+        "flex items-center gap-1 min-h-7 px-2 py-1 rounded-md border bg-background transition-colors",
         empty
           ? "border-warning/60 bg-warning-soft/30"
           : isNDAM
@@ -117,7 +117,7 @@ export function AllergiesChipInput({
           <button
             type="button"
             aria-label="Remover NDAM"
-            className="ml-0.5 hover:text-released-on-soft"
+            className="ml-1 hover:text-released-on-soft"
             onClick={(e) => {
               e.stopPropagation();
               clearAll();
@@ -142,7 +142,7 @@ export function AllergiesChipInput({
               <button
                 type="button"
                 aria-label={`Remover ${item}`}
-                className="ml-0.5 shrink-0 hover:opacity-70"
+                className="ml-1 shrink-0 hover:opacity-70"
                 onClick={(e) => {
                   e.stopPropagation();
                   removeAt(idx);
@@ -173,19 +173,19 @@ export function AllergiesChipInput({
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3 text-destructive" />
                     Alergias ({realItems.length})
                   </span>
                   <button
                     type="button"
-                    className="text-[10px] text-muted-foreground hover:text-destructive uppercase"
+                    className="text-xs text-muted-foreground hover:text-destructive uppercase tracking-wider"
                     onClick={clearAll}
                   >
                     Limpar
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-1.5 max-h-48 overflow-auto">
+                <div className="flex flex-wrap gap-2 max-h-48 overflow-auto">
                   {realItems.map((item, idx) => (
                     <span
                       key={`pop-${item}-${idx}`}
@@ -199,7 +199,7 @@ export function AllergiesChipInput({
                       <button
                         type="button"
                         aria-label={`Remover ${item}`}
-                        className="ml-0.5 hover:opacity-70"
+                        className="ml-1 hover:opacity-70"
                         onClick={() => removeAt(idx)}
                       >
                         <X className="h-2.5 w-2.5" />
@@ -229,7 +229,7 @@ export function AllergiesChipInput({
             </Popover>
           )}
 
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-1">
             {!empty && <Plus className="h-3 w-3 text-muted-foreground shrink-0" aria-hidden />}
             <Input
               ref={inputRef}
@@ -251,7 +251,7 @@ export function AllergiesChipInput({
           {empty && (
             <button
               type="button"
-              className="text-[10px] font-semibold uppercase text-released-on-soft hover:underline px-1"
+              className="text-xs font-medium uppercase tracking-wider text-released-on-soft hover:underline px-1"
               onClick={(e) => {
                 e.stopPropagation();
                 setNDAM();

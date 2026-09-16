@@ -290,7 +290,7 @@ export function PreRegistrationApprovalsPanel() {
         </TableCell>
         <TableCell>
           <Badge variant="outline" className={`${meta.cls} gap-1`}>{meta.label}</Badge>
-          <div className="text-[10px] text-muted-foreground mt-1">
+          <div className="text-xs text-muted-foreground mt-1">
             {format(new Date(i.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
           </div>
         </TableCell>
@@ -371,7 +371,7 @@ export function PreRegistrationApprovalsPanel() {
             <div className="flex items-center justify-between">
               <div>
                 <p className={`text-xs font-medium ${cls === "muted" ? "text-muted-foreground" : `text-${cls}-700`}`}>{label}</p>
-                <p className={`text-2xl font-bold ${cls === "muted" ? "" : `text-${cls}-700`}`}>
+                <p className={`text-2xl font-semibold ${cls === "muted" ? "" : `text-${cls}-700`}`}>
                   {(counters as any)[k]}
                 </p>
               </div>
@@ -389,7 +389,7 @@ export function PreRegistrationApprovalsPanel() {
             placeholder="Buscar por nome, email, CPF ou CRM..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            className="pl-8"
           />
         </div>
         <Button variant="outline" onClick={fetchItems} disabled={loading}>
@@ -404,7 +404,7 @@ export function PreRegistrationApprovalsPanel() {
             <Clock className="h-4 w-4" />
             Pendentes
             {counters.pending > 0 && (
-              <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-[10px]">
+              <Badge variant="destructive" className="ml-1 h-5 px-2 text-xs">
                 {counters.pending}
               </Badge>
             )}
@@ -418,15 +418,15 @@ export function PreRegistrationApprovalsPanel() {
           <TabsTrigger value="all">Todos</TabsTrigger>
         </TabsList>
         <TabsContent value={tab} className="mt-4">
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="text-xs font-bold">Solicitante</TableHead>
-                  <TableHead className="text-xs font-bold">Documentos</TableHead>
-                  <TableHead className="text-xs font-bold">Função / Unidade</TableHead>
-                  <TableHead className="text-xs font-bold">Status</TableHead>
-                  <TableHead className="text-xs font-bold text-right">Ações</TableHead>
+                  <TableHead className="text-xs font-semibold">Solicitante</TableHead>
+                  <TableHead className="text-xs font-semibold">Documentos</TableHead>
+                  <TableHead className="text-xs font-semibold">Função / Unidade</TableHead>
+                  <TableHead className="text-xs font-semibold">Status</TableHead>
+                  <TableHead className="text-xs font-semibold text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -438,7 +438,7 @@ export function PreRegistrationApprovalsPanel() {
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-12 text-sm text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-8 text-sm text-muted-foreground">
                       Nenhum pré-cadastro nesta categoria.
                     </TableCell>
                   </TableRow>
@@ -493,7 +493,7 @@ export function PreRegistrationApprovalsPanel() {
                       <Label className="text-xs uppercase tracking-wide text-released-on-soft">
                         Senha de primeiro acesso
                       </Label>
-                      <p className="font-mono text-2xl font-bold tracking-widest text-released-on-soft">
+                      <p className="font-mono text-2xl font-semibold tracking-widest text-released-on-soft">
                         {FIRST_ACCESS_PASSWORD}
                       </p>
                     </div>

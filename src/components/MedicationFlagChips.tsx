@@ -47,7 +47,7 @@ export function MedicationFlagChips({ name, route, className, size = "xs" }: Med
   if (items.length === 0) return null;
 
   const iconSize = size === "xs" ? "h-2.5 w-2.5" : "h-3 w-3";
-  const textSize = size === "xs" ? "text-[9px]" : "text-[10px]";
+  const textSize = size === "xs" ? "text-xs" : "text-xs";
 
   return (
     <span className={cn("inline-flex items-center gap-1 flex-wrap", className)}>
@@ -58,7 +58,7 @@ export function MedicationFlagChips({ name, route, className, size = "xs" }: Med
             <TooltipTrigger asChild>
               <span
                 className={cn(
-                  "inline-flex items-center gap-0.5 px-1 py-px rounded border border-border/50 bg-muted/40 text-muted-foreground font-medium leading-none cursor-help",
+                  "inline-flex items-center gap-1 px-1 py-px rounded-md border border-border/50 bg-muted/40 text-muted-foreground font-medium leading-none cursor-help",
                   textSize
                 )}
               >

@@ -159,7 +159,7 @@ export default function AdminStatesPage() {
       <div className="container mx-auto py-6 px-4 max-w-4xl">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
+            <h1 className="text-2xl font-semibold flex items-center gap-2">
               <MapPin className="h-6 w-6" />
               Gerenciar Estados
             </h1>

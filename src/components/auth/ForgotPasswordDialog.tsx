@@ -121,7 +121,7 @@ export function ForgotPasswordDialog({
             <div>
               <Label
                 htmlFor="forgot-email"
-                className="text-[10px] font-medium text-muted-foreground mb-1.5 block tracking-[0.15em]"
+                className="text-xs font-medium text-muted-foreground mb-2 block tracking-[0.15em]"
               >
                 E-MAIL DE CADASTRO
               </Label>
@@ -133,7 +133,7 @@ export function ForgotPasswordDialog({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu.email@hospital.com.br"
-                  className="pl-10 h-12 text-base sm:h-11 sm:text-sm"
+                  className="pl-8 h-12 text-base sm:h-11 sm:text-sm"
                   disabled={loading}
                   autoFocus
                   autoCapitalize="none"
@@ -142,14 +142,14 @@ export function ForgotPasswordDialog({
                   inputMode="email"
                 />
               </div>
-              <p className="mt-1.5 text-[10px] text-muted-foreground preserve-case">
+              <p className="mt-2 text-xs text-muted-foreground preserve-case">
                 Use o e-mail informado no cadastro pela coordenação.
               </p>
             </div>
 
             <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/30 p-3">
-              <ShieldCheck className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-              <p className="text-[11px] text-muted-foreground preserve-case leading-relaxed">
+              <ShieldCheck className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+              <p className="text-xs text-muted-foreground preserve-case leading-relaxed">
                 Por segurança, o link é único e expira após o uso. Se você não cadastrou e-mail,
                 procure a coordenação para validação manual.
               </p>

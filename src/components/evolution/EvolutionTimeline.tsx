@@ -206,7 +206,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
   };
 
   const handlePrintEvolution = async (evo: EvolutionRecord) => {
-    // 🔒 Abrir janela ANTES de qualquer await — popup blocker bloqueia
+    // Abrir janela ANTES de qualquer await — popup blocker bloqueia
     // window.open chamado após awaits fora do tick do clique do usuário.
     const printWin1 = window.open("", "_blank", "width=1024,height=768");
     if (printWin1) printWin1.document.write("<html><body style='font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#475569'>Preparando evolução…</body></html>");
@@ -377,17 +377,17 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
         {/* Toolbar: title + filters */}
         <div className="flex items-center gap-2 flex-wrap">
           <FileText className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-semibold text-foreground">
+          <span className="text-sm font-medium text-foreground">
             Timeline ({filteredEvolutions.length}{filteredEvolutions.length !== evolutions.length && ` de ${evolutions.length}`})
           </span>
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex items-center gap-2">
             <div className="relative">
               <Search className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 placeholder="Buscar..."
-                className="h-7 pl-7 pr-2 text-xs w-36"
+                className="h-7 pl-6 pr-2 text-xs w-36"
               />
             </div>
             <Button
@@ -399,7 +399,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
               <Filter className="h-3 w-3" />
               Filtros
               {activeFilterCount > 0 && (
-                <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px]">{activeFilterCount}</Badge>
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">{activeFilterCount}</Badge>
               )}
             </Button>
             {activeFilterCount > 0 && (
@@ -453,7 +453,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
         {dayGroups.map(group => {
           const isDayCollapsed = collapsedDays.has(group.dayNumber);
           return (
-            <div key={group.dayNumber} className="space-y-1.5">
+            <div key={group.dayNumber} className="space-y-2">
               {/* Day header */}
               <button
                 type="button"
@@ -464,9 +464,9 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                 )}
               >
                 <Calendar className="h-4 w-4 text-primary" />
-                <span className="text-xs font-bold text-primary">{group.dayLabel}</span>
-                <span className="text-[10px] text-muted-foreground">— {group.date}</span>
-                <span className="text-[10px] text-muted-foreground ml-auto">
+                <span className="text-xs font-semibold text-primary">{group.dayLabel}</span>
+                <span className="text-xs text-muted-foreground">— {group.date}</span>
+                <span className="text-xs text-muted-foreground ml-auto">
                   {group.evolutions.length} {group.evolutions.length === 1 ? "evolução" : "evoluções"}
                 </span>
                 {isDayCollapsed ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />}
@@ -487,48 +487,48 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
 
           return (
             <div key={evo.id} className={cn(
-              "rounded-xl border bg-card transition-all",
+              "rounded-lg border bg-card transition-all",
               evo.status === "suspended" && "opacity-60",
-              isCurrent && !isExpanded && "border-primary/50 shadow-sm shadow-primary/10",
+              isCurrent && !isExpanded && "border-primary/50 shadow-sm shadow-md",
               isExpanded ? "border-primary/30" : !isCurrent && "border-border"
             )}>
               {/* Collapsed header */}
               <button
                 type="button"
-                className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-muted/30 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-3 text-left hover:bg-muted/30 transition-colors"
                 onClick={() => toggleExpand(evo.id)}
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <div className="flex flex-col items-center gap-0.5">
+                  <div className="flex flex-col items-center gap-1">
                     <div className="w-2 h-2 rounded-full bg-primary" />
                     <div className="w-px h-3 bg-border" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-semibold text-foreground">
+                      <span className="text-xs font-medium text-foreground">
                         {format(new Date(evo.created_at), "dd/MM/yyyy", { locale: ptBR })}
                       </span>
                       {isCurrent && (
-                        <Badge className="text-[9px] px-1.5 py-0 h-4 bg-primary text-primary-foreground gap-0.5">
+                        <Badge className="text-xs px-2 py-0 h-4 bg-primary text-primary-foreground gap-1">
                           <Star className="h-2.5 w-2.5 fill-current" />
                           Atual
                         </Badge>
                       )}
                       {evo.status === "validated" && evo.validated_at && (
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                           Validada em {format(new Date(evo.validated_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                         </span>
                       )}
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         por <strong className="text-foreground">{evo.created_by_name || "Médico"}</strong>
                       </span>
                       {isAdmission && (
-                        <Badge className="text-[9px] px-1.5 py-0 h-4 bg-released text-white gap-0.5 uppercase tracking-wider">
+                        <Badge className="text-xs px-2 py-0 h-4 bg-released text-white gap-1 uppercase tracking-wider">
                           {group.dayLabel} — Admissão Hospitalar
                         </Badge>
                       )}
-                      <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0", config.color)}>
-                        <StatusIcon className="h-2.5 w-2.5 mr-0.5" />
+                      <Badge variant="outline" className={cn("text-xs px-2 py-0", config.color)}>
+                        <StatusIcon className="h-2.5 w-2.5 mr-1" />
                         {config.label}
                       </Badge>
                       {(() => {
@@ -536,19 +536,19 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         if (!k) return null;
                         const m = COMPLEMENTARY_BADGE[k];
                         return (
-                          <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 gap-0.5", m.badgeClass)}>
+                          <Badge variant="outline" className={cn("text-xs px-2 py-0 gap-1", m.badgeClass)}>
                             <Zap className="h-2.5 w-2.5" />
                             {m.label}
                           </Badge>
                         );
                       })()}
                       {hasUnsaved && (
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-warning/10 text-warning-on-soft border-warning/30">
+                        <Badge variant="outline" className="text-xs px-2 py-0 bg-warning/10 text-warning-on-soft border-warning/30">
                           Não salvo
                         </Badge>
                       )}
                     </div>
-                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                    <p className="text-xs text-muted-foreground truncate mt-1">
                       {buildSummary(evo)}
                     </p>
                   </div>
@@ -566,7 +566,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       variant="ghost" size="icon" className="h-6 w-6"
                       onClick={async e => {
                         e.stopPropagation();
-                        // 🔒 Abrir janela ANTES de qualquer await — popup blocker
+                        // Abrir janela ANTES de qualquer await — popup blocker
                         const printWinBtn = window.open("", "_blank", "width=1024,height=768");
                         if (printWinBtn) printWinBtn.document.write("<html><body style='font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#475569'>Preparando evolução…</body></html>");
                         // Resolve identidade canônica (registry + guarda anti-NI)
@@ -670,7 +670,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       <div className={cn("space-y-2 rounded-lg border p-3", m.borderClass, m.bgClass)}>
                         <div className="flex items-center gap-2">
                           <Zap className={cn("h-3.5 w-3.5", m.iconColor)} />
-                          <span className="text-xs font-semibold text-foreground">Descritivo — {m.label}</span>
+                          <span className="text-xs font-medium text-foreground">Descritivo — {m.label}</span>
                         </div>
                         <RichTextEditor
                           value={data.soap.subjective || ""}
@@ -685,7 +685,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 text-xs gap-1.5"
+                                className="h-7 text-xs gap-2"
                                 onClick={() => handleSave(evo.id)}
                                 disabled={savingId === evo.id}
                               >
@@ -696,7 +696,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             )}
                             <Button
                               size="sm"
-                              className="h-7 text-xs gap-1.5 bg-released hover:bg-released"
+                              className="h-7 text-xs gap-2 bg-released hover:bg-released"
                               onClick={() => setValidateDialogId(evo.id)}
                               disabled={savingId === evo.id}
                             >

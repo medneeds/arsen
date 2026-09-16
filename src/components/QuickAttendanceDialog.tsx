@@ -74,11 +74,11 @@ export function QuickAttendanceDialog({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-5 pt-5 pb-3 border-b">
+        <DialogHeader className="px-4 pt-4 pb-3 border-b">
           <DialogTitle className="flex items-center gap-2 text-base">
             <Zap className="h-4 w-4 text-warning" />
             Atendimento Rápido
-            <Badge variant="outline" className="text-[10px] ml-1">{patientBed}</Badge>
+            <Badge variant="outline" className="text-xs ml-1">{patientBed}</Badge>
             <span className="text-sm font-normal text-muted-foreground truncate">— {patientName}</span>
           </DialogTitle>
         </DialogHeader>
@@ -86,7 +86,7 @@ export function QuickAttendanceDialog({
         <ScrollArea className="flex-1 min-h-0">
           {!selectedPreset ? (
             /* ── Preset Selection Grid ── */
-            <div className="p-5 space-y-3">
+            <div className="p-4 space-y-3">
               <p className="text-xs text-muted-foreground">Selecione o perfil clínico para gerar o checklist de atendimento inicial:</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {QUICK_PRESETS.map(preset => (
@@ -94,17 +94,17 @@ export function QuickAttendanceDialog({
                     key={preset.id}
                     onClick={() => handleSelectPreset(preset)}
                     className={cn(
-                      "flex flex-col items-start gap-1.5 p-3 rounded-xl border text-left transition-all",
+                      "flex flex-col items-start gap-2 p-3 rounded-lg border text-left transition-all",
                       "hover:shadow-md hover:border-primary/40 hover:bg-primary/5",
                       "border-border bg-card"
                     )}
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{preset.icon}</span>
-                      <span className="text-xs font-bold">{preset.label}</span>
+                      <span className="text-xs font-semibold">{preset.label}</span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground leading-snug">{preset.description}</p>
-                    <Badge className={cn("text-[9px] mt-1 text-white", preset.color)}>
+                    <p className="text-xs text-muted-foreground leading-snug">{preset.description}</p>
+                    <Badge className={cn("text-xs mt-1 text-white", preset.color)}>
                       {preset.items.length} itens
                     </Badge>
                   </button>
@@ -113,7 +113,7 @@ export function QuickAttendanceDialog({
             </div>
           ) : (
             /* ── Editable Checklist ── */
-            <div className="p-5 space-y-4">
+            <div className="p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setSelectedPreset(null)}>
@@ -130,17 +130,17 @@ export function QuickAttendanceDialog({
                 const catInfo = CATEGORY_LABELS[cat];
                 return (
                   <div key={cat}>
-                    <div className="flex items-center gap-1.5 mb-2">
+                    <div className="flex items-center gap-2 mb-2">
                       <span className="text-sm">{catInfo?.icon}</span>
-                      <h4 className="text-xs font-bold text-foreground">{catInfo?.label || cat}</h4>
-                      <Badge variant="secondary" className="text-[9px]">{items.filter(i => checkedItems[i.id]).length}/{items.length}</Badge>
+                      <h4 className="text-xs font-semibold text-foreground">{catInfo?.label || cat}</h4>
+                      <Badge variant="secondary" className="text-xs">{items.filter(i => checkedItems[i.id]).length}/{items.length}</Badge>
                     </div>
                     <div className="space-y-1">
                       {items.map(item => (
                         <label
                           key={item.id}
                           className={cn(
-                            "flex items-start gap-2.5 p-2 rounded-lg border cursor-pointer transition-all",
+                            "flex items-start gap-3 p-2 rounded-lg border cursor-pointer transition-all",
                             checkedItems[item.id]
                               ? "border-primary/30 bg-primary/5"
                               : "border-transparent hover:bg-muted/50"
@@ -149,12 +149,12 @@ export function QuickAttendanceDialog({
                           <Checkbox
                             checked={checkedItems[item.id]}
                             onCheckedChange={() => toggleItem(item.id)}
-                            className="mt-0.5"
+                            className="mt-1"
                           />
                           <div className="min-w-0">
-                            <span className={cn("text-xs", checkedItems[item.id] ? "font-semibold" : "font-medium")}>{item.label}</span>
+                            <span className={cn("text-xs", checkedItems[item.id] ? "font-medium" : "font-medium")}>{item.label}</span>
                             {item.details && (
-                              <p className="text-[10px] text-muted-foreground mt-0.5">{item.details}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{item.details}</p>
                             )}
                           </div>
                         </label>
@@ -167,9 +167,9 @@ export function QuickAttendanceDialog({
 
               {/* Destination */}
               <div className="space-y-2">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <ArrowRight className="h-3.5 w-3.5 text-primary" />
-                  <h4 className="text-xs font-bold">Destino do Paciente</h4>
+                  <h4 className="text-xs font-semibold">Destino do Paciente</h4>
                 </div>
                 <Select value={destination} onValueChange={setDestination}>
                   <SelectTrigger className="h-9 text-xs">
@@ -187,9 +187,9 @@ export function QuickAttendanceDialog({
         </ScrollArea>
 
         {selectedPreset && (
-          <DialogFooter className="px-5 py-3 border-t">
+          <DialogFooter className="px-4 py-3 border-t">
             <Button variant="outline" size="sm" onClick={handleClose} className="text-xs">Cancelar</Button>
-            <Button size="sm" onClick={handleApply} className="text-xs gap-1.5">
+            <Button size="sm" onClick={handleApply} className="text-xs gap-2">
               <Check className="h-3.5 w-3.5" />
               Aplicar ({selectedCount} itens)
             </Button>

@@ -109,7 +109,7 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] sm:text-xs font-semibold uppercase tracking-wide transition-all duration-200 border",
+            "inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs sm:text-xs font-medium uppercase tracking-wide transition-all duration-200 border",
             variant === "dark"
               ? "bg-white/10 text-white border-white/20 hover:bg-white/20 hover:border-white/30"
               : "bg-background text-foreground border-border hover:bg-muted hover:border-primary/40 shadow-sm"
@@ -125,20 +125,20 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
       <PopoverContent
         align="start"
         sideOffset={6}
-        className="w-72 p-0 border-border/60 shadow-lg"
+        className="w-72 p-0 border-border/60 shadow-md"
       >
-        <div className="px-3 py-2.5 border-b border-border/60 bg-muted/40">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <div className="px-3 py-3 border-b border-border/60 bg-muted/40">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
             Trocar de setor
           </p>
         </div>
         {isGestor && (
-          <div className="p-1.5 border-b border-border/60">
+          <div className="p-2 border-b border-border/60">
             <button
               type="button"
               onClick={handleSelectAll}
               className={cn(
-                "w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-md text-[11px] font-semibold transition-all",
+                "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md text-xs font-medium transition-all",
                 allActive
                   ? "bg-primary/10 text-primary"
                   : "text-foreground hover:bg-muted"
@@ -150,13 +150,13 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
               </div>
               {allActive && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
             </button>
-            <p className="text-[9px] text-muted-foreground/70 mt-1 px-1">
+            <p className="text-xs text-muted-foreground/70 mt-1 px-1">
               Visão consolidada — Painel do Gestor
             </p>
           </div>
         )}
         <ScrollArea className="max-h-[60vh]">
-          <div className="p-1.5">
+          <div className="p-2">
             {SECTOR_HIERARCHY.map((group) => {
               const isGroupOpen = openGroups[group.group] ?? false;
               const groupHasActive = group.sectors.some((s) => s.department === currentDepartment);
@@ -170,17 +170,17 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
                 return (
                   <div
                     key={group.group}
-                    className="mb-0.5 last:mb-0 w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-muted/30 cursor-not-allowed select-none"
+                    className="mb-1 last:mb-0 w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md bg-muted/30 cursor-not-allowed select-none"
                     title={LOCKED_TOOLTIP}
                     aria-disabled="true"
                   >
-                    <div className="flex items-center gap-1.5 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
                       <Lock className="h-3 w-3 text-muted-foreground/70 flex-shrink-0" strokeWidth={2.2} />
-                      <span className="text-[10px] font-bold uppercase tracking-[0.14em] truncate text-muted-foreground/70">
+                      <span className="text-xs font-semibold uppercase tracking-[0.14em] truncate text-muted-foreground/70">
                         {group.group}
                       </span>
                     </div>
-                    <span className="text-[9px] font-medium text-muted-foreground/50 italic preserve-case">
+                    <span className="text-xs font-medium text-muted-foreground/50 italic preserve-case">
                       Em breve
                     </span>
                   </div>
@@ -192,15 +192,15 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
                   key={group.group}
                   open={isGroupOpen}
                   onOpenChange={() => toggleGroup(group.group)}
-                  className="mb-0.5 last:mb-0"
+                  className="mb-1 last:mb-0"
                 >
                   <CollapsibleTrigger
                     className={cn(
-                      "w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md transition-colors",
+                      "w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md transition-colors",
                       groupHasActive ? "bg-primary/5" : "hover:bg-muted/60"
                     )}
                   >
-                    <div className="flex items-center gap-1.5 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
                       <ChevronRight
                         className={cn(
                           "h-3 w-3 text-muted-foreground transition-transform flex-shrink-0",
@@ -209,21 +209,21 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
                       />
                       <span
                         className={cn(
-                          "text-[10px] font-bold uppercase tracking-[0.14em] truncate",
+                          "text-xs font-semibold uppercase tracking-[0.14em] truncate",
                           groupHasActive ? "text-primary" : "text-muted-foreground/80"
                         )}
                       >
                         {group.group}
                       </span>
                     </div>
-                    <span className="text-[9px] font-semibold text-muted-foreground/60 tabular-nums">
+                    <span className="text-xs font-medium text-muted-foreground/60 tabular-nums">
                       {activeCount > 0
                         ? `${activeCount}/${unlockedSectors.length}`
                         : `${unlockedSectors.length}${unlockedSectors.length !== group.sectors.length ? `/${group.sectors.length}` : ""}`}
                     </span>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-                    <div className="grid grid-cols-1 gap-0.5 pl-4 pr-1 pt-0.5 pb-1">
+                    <div className="grid grid-cols-1 gap-1 pl-4 pr-1 pt-1 pb-1">
                       {group.sectors.map((sector) => {
                         const isActive = currentDepartment === sector.department;
                         const locked = isDepartmentLocked(sector.department);
@@ -231,7 +231,7 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
                           return (
                             <div
                               key={sector.name}
-                              className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium text-muted-foreground/60 cursor-not-allowed select-none bg-muted/20"
+                              className="flex items-center justify-between gap-2 px-3 py-2 rounded-md text-xs font-medium text-muted-foreground/60 cursor-not-allowed select-none bg-muted/20"
                               title={LOCKED_TOOLTIP}
                               aria-disabled="true"
                             >
@@ -246,7 +246,7 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
                             type="button"
                             onClick={() => handleSelect(sector.department, sector.link)}
                             className={cn(
-                              "flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all duration-150 text-left",
+                              "flex items-center justify-between gap-2 px-3 py-2 rounded-md text-xs font-medium transition-all duration-150 text-left",
                               isActive
                                 ? "bg-primary/10 text-primary"
                                 : "text-foreground hover:bg-muted"

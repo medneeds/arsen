@@ -235,7 +235,7 @@ export default function IAPage() {
             type="button"
             onClick={onClick}
             className={cn(
-              "group relative flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border text-[9px] uppercase tracking-wide transition-all",
+              "group relative flex flex-col items-center gap-1 w-full py-2 rounded-lg border text-xs uppercase tracking-wide transition-all",
               active
                 ? toneActive[tone]
                 : "bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -255,24 +255,24 @@ export default function IAPage() {
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
-        className="p-0 gap-0 max-w-5xl w-[94vw] h-[90vh] flex flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl"
+        className="p-0 gap-0 max-w-5xl w-[94vw] h-[90vh] flex flex-col overflow-hidden rounded-lg border bg-background shadow-md"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <TooltipProvider>
           {/* Header */}
-          <div className="border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-4 py-2.5 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 flex items-center justify-center shadow-md shadow-primary/20">
+          <div className="border-b bg-primary/10 px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center shadow-md shadow-md">
                 <Sparkles className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-base font-bold text-foreground uppercase leading-none">Assistente Examinus</h1>
-                <p className="text-[10px] text-muted-foreground uppercase mt-0.5">Formatador inteligente de exames</p>
+                <h1 className="text-base font-semibold text-foreground uppercase tracking-wider leading-none">Assistente Examinus</h1>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">Formatador inteligente de exames</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
               {messages.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={clearConversation} className="h-8 text-[11px] uppercase">
+                <Button variant="ghost" size="sm" onClick={clearConversation} className="h-8 text-xs uppercase tracking-wider">
                   <Eraser className="h-3.5 w-3.5 mr-1" /> Limpar
                 </Button>
               )}
@@ -282,8 +282,8 @@ export default function IAPage() {
           {/* Body: sidebar (esquerda) + conteúdo */}
           <div className="flex-1 flex min-h-0">
             {/* Toolbar lateral esquerda */}
-            <aside className="w-[72px] shrink-0 border-r bg-muted/30 px-2 py-2.5 flex flex-col gap-1.5 overflow-y-auto">
-              <p className="text-[8px] uppercase tracking-wider text-muted-foreground/70 text-center mb-0.5">Saída IA</p>
+            <aside className="w-[72px] shrink-0 border-r bg-muted/30 px-2 py-3 flex flex-col gap-2 overflow-y-auto">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground/70 text-center mb-1">Saída IA</p>
               <ToolBtn
                 label="Pipe" hint="Separar parâmetros com barra ( | ) em vez de espaço"
                 icon={SeparatorVertical} active={usePipeSeparator}
@@ -311,7 +311,7 @@ export default function IAPage() {
               />
 
               <div className="h-px bg-border my-1" />
-              <p className="text-[8px] uppercase tracking-wider text-muted-foreground/70 text-center mb-0.5">Entrada</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground/70 text-center mb-1">Entrada</p>
               <ToolBtn
                 label={inputUppercase ? "ABC" : "Abc"}
                 hint={inputUppercase ? "Entrada em CAIXA ALTA — desativar para texto normal" : "Forçar texto digitado/colado em CAIXA ALTA"}
@@ -335,33 +335,33 @@ export default function IAPage() {
                   {messages.length === 0 && (
                     <div className="text-center py-6 px-2">
                       <div className="relative inline-block mb-3">
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-primary/20 to-transparent rounded-full blur-xl animate-pulse" />
-                        <div className="relative inline-flex items-center justify-center p-4 rounded-full bg-gradient-to-br from-primary via-primary/90 to-primary/70 shadow-xl shadow-primary/20 border border-primary/20">
+                        <div className="absolute inset-0 bg-primary/40 rounded-full blur-xl animate-pulse" />
+                        <div className="relative inline-flex items-center justify-center p-4 rounded-full bg-primary shadow-md shadow-md border border-primary/20">
                           <Sparkles className="h-9 w-9 text-primary-foreground" />
                         </div>
                       </div>
-                      <h2 className="text-lg font-bold mb-1 uppercase">Olá! Sou o Examinus</h2>
+                      <h2 className="text-lg font-semibold mb-1 uppercase tracking-wider">Olá! Sou o Examinus</h2>
                       <p className="text-muted-foreground text-xs mb-4 max-w-xl mx-auto">
                         Cole laudos, anexe PDFs ou imagens. Configure os toggles ao lado para personalizar a saída.
                       </p>
-                      <div className="grid sm:grid-cols-2 gap-2.5 max-w-2xl mx-auto text-left">
-                        <div className="p-3 rounded-xl bg-card border border-border/60 shadow-sm">
+                      <div className="grid sm:grid-cols-2 gap-3 max-w-2xl mx-auto text-left">
+                        <div className="p-3 rounded-lg bg-card border border-border/60 shadow-sm">
                           <div className="flex items-start gap-2">
-                            <span className="text-xl">🧪</span>
+                            <span className="text-xl"></span>
                             <div>
-                              <h3 className="font-bold text-xs mb-0.5 uppercase">Laboratoriais</h3>
-                              <p className="text-[10px] text-muted-foreground leading-snug">
+                              <h3 className="font-semibold text-xs mb-1 uppercase tracking-wider">Laboratoriais</h3>
+                              <p className="text-xs text-muted-foreground leading-snug">
                                 Hemograma, bioquímica, gaso e cultura em linha única compacta
                               </p>
                             </div>
                           </div>
                         </div>
-                        <div className="p-3 rounded-xl bg-card border border-border/60 shadow-sm">
+                        <div className="p-3 rounded-lg bg-card border border-border/60 shadow-sm">
                           <div className="flex items-start gap-2">
-                            <span className="text-xl">🖼️</span>
+                            <span className="text-xl"></span>
                             <div>
-                              <h3 className="font-bold text-xs mb-0.5 uppercase">Imagem</h3>
-                              <p className="text-[10px] text-muted-foreground leading-snug">
+                              <h3 className="font-semibold text-xs mb-1 uppercase tracking-wider">Imagem</h3>
+                              <p className="text-xs text-muted-foreground leading-snug">
                                 TC, RX, US e RM com extração apenas dos achados anormais
                               </p>
                             </div>
@@ -381,20 +381,20 @@ export default function IAPage() {
                     >
                       <div
                         className={cn(
-                          "group relative max-w-[92%] rounded-2xl px-4 py-3 shadow-sm",
+                          "group relative max-w-[92%] rounded-lg px-4 py-3 shadow-sm",
                           message.role === "user"
                             ? "bg-primary text-primary-foreground"
                             : "bg-card border border-border"
                         )}
                       >
-                        <pre className="whitespace-pre-wrap break-words font-mono text-[12.5px] leading-relaxed">
+                        <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed">
                           {message.content}
                         </pre>
                         {message.role === "assistant" && (
                           <div className="absolute -top-3 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
                               variant="secondary" size="sm"
-                              className="h-7 px-2 text-[10px] uppercase shadow-md"
+                              className="h-7 px-2 text-xs uppercase tracking-wider shadow-md"
                               onClick={() => copyToClipboard(message.content, `n-${index}`)}
                             >
                               {copiedIndex === `n-${index}` ? <Check className="h-3 w-3 mr-1 text-released" /> : <Copy className="h-3 w-3 mr-1" />}
@@ -402,7 +402,7 @@ export default function IAPage() {
                             </Button>
                             <Button
                               variant="secondary" size="sm"
-                              className="h-7 px-2 text-[10px] uppercase shadow-md"
+                              className="h-7 px-2 text-xs uppercase tracking-wider shadow-md"
                               onClick={() => copyToClipboard(message.content, `u-${index}`, true)}
                             >
                               {copiedIndex === `u-${index}` ? <Check className="h-3 w-3 mr-1 text-released" /> : <CaseUpper className="h-3 w-3 mr-1" />}
@@ -416,10 +416,10 @@ export default function IAPage() {
 
                   {isLoading && messages[messages.length - 1]?.role === "user" && (
                     <div className="flex justify-start">
-                      <div className="bg-card border border-border rounded-2xl px-4 py-3 shadow-sm">
+                      <div className="bg-card border border-border rounded-lg px-4 py-3 shadow-sm">
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                          <span className="text-xs text-muted-foreground uppercase">Formatando…</span>
+                          <span className="text-xs text-muted-foreground uppercase tracking-wider">Formatando…</span>
                         </div>
                       </div>
                     </div>
@@ -429,18 +429,18 @@ export default function IAPage() {
 
               {/* Input */}
               <div className="border-t bg-card/40 backdrop-blur-sm">
-                <form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 py-2.5">
+                <form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 py-3">
                   {selectedFile && (
                     <div className="mb-2 p-2 bg-primary/5 border border-primary/20 rounded-lg flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {filePreview ? (
-                          <img src={filePreview} alt="Preview" className="h-9 w-9 rounded object-cover" />
+                          <img src={filePreview} alt="Preview" className="h-9 w-9 rounded-md object-cover" />
                         ) : (
                           <FileText className="h-7 w-7 text-primary" />
                         )}
                         <div className="min-w-0">
-                          <p className="font-medium text-[11px] truncate max-w-[260px]">{selectedFile.name}</p>
-                          <p className="text-[9px] text-muted-foreground">
+                          <p className="font-medium text-xs truncate max-w-[260px]">{selectedFile.name}</p>
+                          <p className="text-xs text-muted-foreground">
                             {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                           </p>
                         </div>
@@ -479,7 +479,7 @@ export default function IAPage() {
                       }}
                       placeholder={selectedFile ? "Mensagem opcional…" : "Cole o laudo do exame, ou anexe PDF/imagem pelo botão lateral…"}
                       className={cn(
-                        "min-h-[72px] max-h-[220px] resize-y text-[12.5px] font-mono shadow-sm pr-12",
+                        "min-h-[72px] max-h-[220px] resize-y text-xs font-mono shadow-sm pr-8",
                         inputUppercase && "uppercase"
                       )}
                       onKeyDown={(e) => {
@@ -500,7 +500,7 @@ export default function IAPage() {
                       {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
                   </div>
-                  <p className="text-[9px] text-muted-foreground mt-1 text-center uppercase tracking-wide">
+                  <p className="text-xs text-muted-foreground mt-1 text-center uppercase tracking-wide">
                     Enter envia • Shift+Enter quebra linha • PDF até 20MB • Toggles de saída na lateral esquerda
                   </p>
                 </form>

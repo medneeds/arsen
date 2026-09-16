@@ -186,11 +186,11 @@ export default function HandoversPage() {
       <div className="p-4 sm:p-6 space-y-6">
         {/* Page Header */}
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary via-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/30">
+          <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center shadow-md shadow-md">
             <ClipboardList className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">
+            <h1 className="text-2xl font-semibold text-foreground tracking-tight">
               Passagens de Plantão
             </h1>
             <p className="text-sm text-muted-foreground tracking-wide">
@@ -199,7 +199,7 @@ export default function HandoversPage() {
           </div>
         </div>
             {isLoading ? (
-              <div className="flex items-center justify-center py-12">
+              <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : handovers.length === 0 ? (
@@ -218,7 +218,7 @@ export default function HandoversPage() {
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 space-y-2">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <CardTitle className="text-base font-bold">
+                              <CardTitle className="text-base font-semibold">
                                 {formatHandoverDatetime(handover.handover_datetime)}
                               </CardTitle>
                             </div>
@@ -279,7 +279,7 @@ export default function HandoversPage() {
                         <CardContent className="space-y-4 pt-0">
                           {handover.notes && (
                             <div className="p-3 bg-muted/50 rounded-lg">
-                              <p className="text-xs font-semibold text-muted-foreground mb-1">
+                              <p className="text-xs font-medium text-muted-foreground mb-1">
                                 Observações
                               </p>
                               <p className="text-sm text-foreground whitespace-pre-wrap">
@@ -291,27 +291,27 @@ export default function HandoversPage() {
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             {Object.entries(handover.snapshot_data.sectors).map(([sector, count]) => (
                               <div key={sector} className="p-3 bg-muted/30 rounded-lg">
-                                <p className="text-xs font-semibold text-muted-foreground mb-1">
+                                <p className="text-xs font-medium text-muted-foreground mb-1">
                                   {getSectorLabel(sector)}
                                 </p>
-                                <p className="text-lg font-bold text-foreground">{count}</p>
+                                <p className="text-lg font-semibold text-foreground">{count}</p>
                               </div>
                             ))}
                           </div>
 
                           <div className="space-y-2">
-                            <p className="text-xs font-semibold text-muted-foreground">
+                            <p className="text-xs font-medium text-muted-foreground">
                               Pacientes Registrados ({handover.snapshot_data.patients.filter(p => p.name.trim() !== "").length})
                             </p>
-                            <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
+                            <div className="space-y-2 max-h-[300px] overflow-y-auto">
                               {handover.snapshot_data.patients
                                 .filter(p => p.name.trim() !== "")
                                 .map((patient) => (
                                   <div
                                     key={patient.id}
-                                    className="p-2 bg-muted/20 rounded text-xs space-y-1"
+                                    className="p-2 bg-muted/20 rounded-md text-xs space-y-1"
                                   >
-                                    <div className="patient-id font-semibold">
+                                    <div className="patient-id font-medium">
                                       LEITO {patient.bedNumber} - {patient.name}, <span className="preserve-case">{formatAgeDisplay(patient.age)}</span>
                                     </div>
                                     {patient.diagnoses.length > 0 && (

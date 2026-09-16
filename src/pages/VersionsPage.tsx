@@ -198,11 +198,11 @@ export default function VersionsPage() {
       {/* Page Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-muted/20 to-muted/10 flex items-center justify-center">
+          <div className="h-12 w-12 rounded-lg bg-muted/20 flex items-center justify-center">
             <History className="h-6 w-6 text-foreground" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-3xl font-semibold tracking-tight">
               Versões Salvas
             </h1>
             <p className="text-muted-foreground text-sm">
@@ -221,13 +221,13 @@ export default function VersionsPage() {
           placeholder="Buscar por descrição..."
           value={searchDescription}
           onChange={(e) => setSearchDescription(e.target.value)}
-          className="pl-10"
+          className="pl-8"
         />
       </div>
 
       {/* Date Filters */}
-      <Card className="border-primary/20 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-muted/50 to-transparent">
+      <Card className="border-primary/20 shadow-md">
+        <CardHeader className="bg-muted/50">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">Filtros de Busca</CardTitle>
@@ -239,7 +239,7 @@ export default function VersionsPage() {
         <CardContent className="pt-6 space-y-6">
           {/* Quick Period Buttons */}
           <div className="space-y-3">
-            <Label className="text-sm font-semibold">Período Rápido</Label>
+            <Label className="text-sm font-medium">Período Rápido</Label>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant={selectedPeriod === "all" ? "default" : "outline"}
@@ -353,7 +353,7 @@ export default function VersionsPage() {
           <div className="flex gap-2 pt-2">
             <Button
               onClick={handleApplyFilters}
-              className="flex-1 uppercase font-semibold"
+              className="flex-1 uppercase tracking-wider font-medium"
               size="lg"
             >
               <Filter className="mr-2 h-4 w-4" />
@@ -362,7 +362,7 @@ export default function VersionsPage() {
             <Button
               variant="outline"
               onClick={handleClearFilters}
-              className="flex-1 uppercase"
+              className="flex-1 uppercase tracking-wider"
               size="lg"
             >
               Limpar Filtro
@@ -372,10 +372,10 @@ export default function VersionsPage() {
       </Card>
 
       {filteredVersions.length === 0 ? (
-        <Card className="shadow-lg">
-          <CardContent className="flex flex-col items-center justify-center py-16">
+        <Card className="shadow-md">
+          <CardContent className="flex flex-col items-center justify-center py-8">
             <Clock className="h-16 w-16 text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground font-semibold text-lg">
+            <p className="text-muted-foreground font-medium text-lg">
               {searchDescription || appliedStartDate || appliedEndDate 
                 ? "Nenhuma versão encontrada" 
                 : "Nenhuma versão salva ainda"}
@@ -390,7 +390,7 @@ export default function VersionsPage() {
       ) : (
         <div className="grid gap-4">
           {filteredVersions.map((version) => (
-            <Card key={version.id} className="shadow-lg hover:shadow-xl transition-all duration-300 border-primary/20">
+            <Card key={version.id} className="shadow-md hover:shadow-md transition-all duration-300 border-primary/20">
               <CardHeader>
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3 flex-1">
@@ -450,8 +450,8 @@ export default function VersionsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="uppercase">Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmRestore} className="uppercase">
+            <AlertDialogCancel className="uppercase tracking-wider">Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRestore} className="uppercase tracking-wider">
               Restaurar
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -461,11 +461,11 @@ export default function VersionsPage() {
       <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="uppercase flex items-center gap-2">
+            <DialogTitle className="uppercase tracking-wider flex items-center gap-2">
               <Eye className="h-5 w-5 text-primary" />
               Prévia da Versão
             </DialogTitle>
-            <DialogDescription className="uppercase">
+            <DialogDescription className="uppercase tracking-wider">
               {previewVersion?.description} • {previewVersion?.snapshot_data.length} pacientes
             </DialogDescription>
           </DialogHeader>
@@ -476,43 +476,43 @@ export default function VersionsPage() {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <CardTitle className="text-lg flex items-center gap-2 uppercase">
+                      <CardTitle className="text-lg flex items-center gap-2 uppercase tracking-wider">
                         Leito {patient.bedNumber} - {patient.name}
                         {patient.age && <span className="text-sm text-muted-foreground">({formatAgeDisplay(patient.age)})</span>}
                       </CardTitle>
-                      <Badge variant="outline" className="uppercase">{sectorLabelFromCode(patient.sector)}</Badge>
+                      <Badge variant="outline" className="uppercase tracking-wider">{sectorLabelFromCode(patient.sector)}</Badge>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
                   {patient.diagnoses && (
                     <div>
-                      <p className="font-semibold text-muted-foreground mb-1 uppercase">Hipóteses Diagnósticas:</p>
-                      <p className="uppercase">{patient.diagnoses}</p>
+                      <p className="font-medium text-muted-foreground mb-1 uppercase tracking-wider">Hipóteses Diagnósticas:</p>
+                      <p className="uppercase tracking-wider">{patient.diagnoses}</p>
                     </div>
                   )}
                   {patient.medicalHistory && (
                     <div>
-                      <p className="font-semibold text-muted-foreground mb-1 uppercase">Antecedentes:</p>
-                      <p className="uppercase">{patient.medicalHistory}</p>
+                      <p className="font-medium text-muted-foreground mb-1 uppercase tracking-wider">Antecedentes:</p>
+                      <p className="uppercase tracking-wider">{patient.medicalHistory}</p>
                     </div>
                   )}
                   {patient.relevantExams && (
                     <div>
-                      <p className="font-semibold text-muted-foreground mb-1 uppercase">Exames Relevantes:</p>
-                      <p className="uppercase">{patient.relevantExams}</p>
+                      <p className="font-medium text-muted-foreground mb-1 uppercase tracking-wider">Exames Relevantes:</p>
+                      <p className="uppercase tracking-wider">{patient.relevantExams}</p>
                     </div>
                   )}
                   {patient.pendencies && (
                     <div>
-                      <p className="font-semibold text-muted-foreground mb-1 uppercase">Pendências:</p>
-                      <p className="uppercase">{patient.pendencies}</p>
+                      <p className="font-medium text-muted-foreground mb-1 uppercase tracking-wider">Pendências:</p>
+                      <p className="uppercase tracking-wider">{patient.pendencies}</p>
                     </div>
                   )}
                   {patient.schedule && (
                     <div>
-                      <p className="font-semibold text-muted-foreground mb-1 uppercase">Programação:</p>
-                      <p className="uppercase">{patient.schedule}</p>
+                      <p className="font-medium text-muted-foreground mb-1 uppercase tracking-wider">Programação:</p>
+                      <p className="uppercase tracking-wider">{patient.schedule}</p>
                     </div>
                   )}
                 </CardContent>

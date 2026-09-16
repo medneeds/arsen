@@ -105,7 +105,7 @@ export function EditTherapeuticTemplateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-lg font-bold tracking-wide">
+          <DialogTitle className="text-lg font-semibold tracking-wide">
             {isEditing ? "Editar template" : "Novo template terapêutico"}
           </DialogTitle>
           <DialogDescription className="text-xs tracking-wider">
@@ -116,8 +116,8 @@ export function EditTherapeuticTemplateDialog({
         <div className="flex-1 overflow-y-auto space-y-4 py-2">
           {/* Protocol Type */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Tipo de protocolo</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Tipo de protocolo</Label>
               <Select value={protocolType} onValueChange={setProtocolType}>
                 <SelectTrigger className="text-sm">
                   <SelectValue />
@@ -132,8 +132,8 @@ export function EditTherapeuticTemplateDialog({
               </Select>
             </div>
             {protocolType === "OUTRO" && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Especificar</Label>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">Especificar</Label>
                 <Input
                   value={customProtocol}
                   onChange={(e) => setCustomProtocol(e.target.value)}
@@ -145,8 +145,8 @@ export function EditTherapeuticTemplateDialog({
           </div>
 
           {/* Name */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">Nome do template</Label>
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">Nome do template</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -157,8 +157,8 @@ export function EditTherapeuticTemplateDialog({
           </div>
 
           {/* Description */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">Descrição (opcional)</Label>
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">Descrição (opcional)</Label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -170,7 +170,7 @@ export function EditTherapeuticTemplateDialog({
           {/* Items */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-xs font-semibold">
+              <Label className="text-xs font-medium">
                 Itens do Protocolo ({items.filter((i) => i.trim()).length})
               </Label>
               <Button type="button" size="sm" variant="outline" onClick={addItem} className="h-7 px-2 text-xs gap-1">
@@ -178,10 +178,10 @@ export function EditTherapeuticTemplateDialog({
                 Adicionar
               </Button>
             </div>
-            <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
               {items.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-muted-foreground font-mono w-5 text-right flex-shrink-0">
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground font-mono w-5 text-right flex-shrink-0">
                     {String(idx + 1).padStart(2, "0")}
                   </span>
                   <Input
@@ -214,7 +214,7 @@ export function EditTherapeuticTemplateDialog({
           <Button
             onClick={handleSave}
             disabled={!name.trim() || items.filter((i) => i.trim()).length === 0}
-            className="text-xs font-bold"
+            className="text-xs font-semibold"
           >
             {isEditing ? "Salvar Alterações" : "Criar Template"}
           </Button>

@@ -102,7 +102,7 @@ export function CancelTransferSignalDialog({
                   <CheckCircle2 className="h-7 w-7 text-released-on-soft" />
                 </div>
                 <div>
-                  <p className="font-semibold text-base">Sinalização suspensa</p>
+                  <p className="font-medium text-base">Sinalização suspensa</p>
                   <p className="text-sm text-muted-foreground mt-1 max-w-sm">
                     {patientName} permanece internado(a) no leito atual. A sinalização de
                     transferência {transferKind} foi suspensa e o motivo ficou registrado na
@@ -136,9 +136,9 @@ export function CancelTransferSignalDialog({
               </DialogHeader>
 
               <div className="space-y-3 text-sm">
-                <div className="rounded-md border border-warning-border/60 bg-warning-soft/60 p-3 space-y-1.5 text-[12.5px] text-warning-on-soft">
-                  <p className="font-semibold">O que vai acontecer:</p>
-                  <ul className="list-disc pl-5 space-y-0.5">
+                <div className="rounded-md border border-warning-border/60 bg-warning-soft/60 p-3 space-y-2 text-xs text-warning-on-soft">
+                  <p className="font-medium">O que vai acontecer:</p>
+                  <ul className="list-disc pl-4 space-y-1">
                     <li>O paciente volta ao status <strong>internado</strong> no leito atual.</li>
                     {transferKind === "interna" ? (
                       <li>O registro na fila do setor destino é <strong>cancelado</strong> — o setor deixa de ver este paciente como aguardando alocação.</li>
@@ -150,8 +150,8 @@ export function CancelTransferSignalDialog({
                   </ul>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="cancel-transfer-reason" className="text-xs font-semibold">
+                <div className="space-y-2">
+                  <Label htmlFor="cancel-transfer-reason" className="text-xs font-medium">
                     Motivo da suspensão <span className="text-destructive">*</span>
                   </Label>
                   <Textarea
@@ -163,7 +163,7 @@ export function CancelTransferSignalDialog({
                     disabled={submitting}
                     className="text-sm"
                   />
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {reason.trim().length}/10 caracteres mínimos
                   </p>
                 </div>

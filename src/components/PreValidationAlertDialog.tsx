@@ -90,16 +90,16 @@ export function PreValidationAlertDialog({
                   )}
                 >
                   <div className="flex items-start gap-2">
-                    <Icon className={cn("h-4 w-4 mt-0.5 flex-shrink-0", meta.tone)} />
+                    <Icon className={cn("h-4 w-4 mt-1 flex-shrink-0", meta.tone)} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge
                           variant={alert.severity === "high" ? "destructive" : "secondary"}
-                          className="text-[10px] px-1.5 py-0"
+                          className="text-xs px-2 py-0"
                         >
                           {meta.label}
                         </Badge>
-                        <span className="font-semibold text-foreground">{alert.title}</span>
+                        <span className="font-medium text-foreground">{alert.title}</span>
                       </div>
                       <p className="mt-1 text-muted-foreground leading-snug">{alert.detail}</p>
                     </div>
@@ -115,7 +115,7 @@ export function PreValidationAlertDialog({
             <Checkbox
               checked={acknowledged}
               onCheckedChange={(v) => setAcknowledged(v === true)}
-              className="mt-0.5"
+              className="mt-1"
             />
             <span>
               <strong>Estou ciente</strong> dos alertas acima e assumo a responsabilidade clínica

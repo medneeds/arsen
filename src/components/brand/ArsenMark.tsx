@@ -106,7 +106,7 @@ export function ArsenLockup({
     <div
       className={[
         "flex text-primary",
-        vertical ? "flex-col items-center gap-2" : "flex-row items-center gap-2.5",
+        vertical ? "flex-col items-center gap-2" : "flex-row items-center gap-3",
         className ?? "",
       ].join(" ")}
     >

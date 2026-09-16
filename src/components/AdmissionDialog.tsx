@@ -39,12 +39,12 @@ const draftKeyFor = (registryId: string) => `admission_draft:v2:${registryId}`;
 /** Label com sinalização forte de obrigatoriedade */
 const ReqLabel = ({ children, missing }: { children: React.ReactNode; missing?: boolean }) => (
   <Label className={cn(
-    "text-xs flex items-center gap-1.5",
+    "text-xs flex items-center gap-2",
     missing ? "text-critical-on-soft" : "text-foreground"
   )}>
     <span>{children}</span>
     <span className={cn(
-      "inline-flex items-center gap-0.5 rounded px-1 py-px text-[9px] font-bold uppercase tracking-wider",
+      "inline-flex items-center gap-1 rounded-md px-1 py-px text-xs font-semibold uppercase tracking-wider",
       missing
         ? "bg-critical-soft text-critical-on-soft ring-1 ring-critical"
         : "bg-critical-soft text-critical-on-soft ring-1 ring-critical"
@@ -131,11 +131,11 @@ const formatBr = (iso: string) => {
 
 const GroupHeader = ({ step, title }: { step: number; title: string }) => (
   <div className="flex items-center gap-3 pt-2 first:pt-0">
-    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-released text-white text-xs font-bold">
+    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-released text-white text-xs font-semibold">
       {step}
     </span>
-    <h3 className="text-sm font-bold uppercase tracking-wide text-foreground whitespace-nowrap">{title}</h3>
-    <div className="h-px flex-1 bg-gradient-to-r from-released-soft/40 to-transparent" />
+    <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground whitespace-nowrap">{title}</h3>
+    <div className="h-px flex-1 bg-released-soft/40" />
   </div>
 );
 
@@ -161,8 +161,8 @@ const Section = ({
     <section className={cn("rounded-lg border p-4 space-y-3", tones[tone])}>
       <header className="flex items-center gap-2 -mt-1">
         <Icon className={cn("h-4 w-4", iconTones[tone])} />
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">{title}</h4>
-        {hint && <span className="ml-auto text-[10px] text-muted-foreground">{hint}</span>}
+        <h4 className="text-xs font-medium uppercase tracking-wide text-foreground">{title}</h4>
+        {hint && <span className="ml-auto text-xs text-muted-foreground">{hint}</span>}
       </header>
       {children}
     </section>
@@ -700,8 +700,8 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     <Dialog open={open} onOpenChange={requestClose}>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-[55rem] max-h-[92vh] overflow-y-auto overflow-x-hidden p-0 gap-0">
         {/* Cabeçalho elegante — identidade unificada */}
-        <DialogHeader className="px-6 pt-5 pb-4 border-b bg-gradient-to-r from-released-soft/10 via-card to-card space-y-3">
-          <DialogTitle className="flex items-center gap-2 uppercase text-foreground">
+        <DialogHeader className="px-6 pt-4 pb-4 border-b bg-released-soft/10 space-y-3">
+          <DialogTitle className="flex items-center gap-2 uppercase tracking-wider text-foreground">
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-released/15 text-released-on-soft">
               <Stethoscope className="h-4 w-4" />
             </span>
@@ -728,7 +728,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
 
           {/* Faixa de status: rascunho automático + pendências */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-muted border border-border px-2.5 py-1 text-[11px] text-foreground">
+            <span className="inline-flex items-center gap-2 rounded-full bg-muted border border-border px-3 py-1 text-xs text-foreground">
               <Save className="h-3 w-3" />
               {draftSavedAt
                 ? <>Rascunho salvo automaticamente às <strong>{draftSavedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</strong> — você pode sair e continuar depois</>
@@ -736,19 +736,19 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
             </span>
             {draftSavedAt && (
               <button type="button" onClick={discardDraft}
-                className="inline-flex items-center gap-1 text-[11px] text-critical-on-soft hover:text-critical-on-soft hover:underline">
+                className="inline-flex items-center gap-1 text-xs text-critical-on-soft hover:text-critical-on-soft hover:underline">
                 <Trash2 className="h-3 w-3" /> Descartar rascunho
               </button>
             )}
             {attempted && missingList.length > 0 && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-critical-soft border border-critical-border px-2.5 py-1 text-[11px] text-critical-on-soft">
+              <span className="inline-flex items-center gap-2 rounded-full bg-critical-soft border border-critical-border px-3 py-1 text-xs text-critical-on-soft">
                 <AlertTriangle className="h-3 w-3" />
                 Faltam: <strong>{missingList.join(" • ")}</strong>
               </span>
             )}
             {/* Aviso persistente: enquanto não assinar, a admissão NÃO existe no sistema */}
             {!isSaved && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-warning-soft border border-warning-border px-2.5 py-1 text-[11px] text-warning-on-soft">
+              <span className="inline-flex items-center gap-2 rounded-full bg-warning-soft border border-warning-border px-3 py-1 text-xs text-warning-on-soft">
                 <AlertTriangle className="h-3 w-3" />
                 Admissão <strong>ainda não registrada</strong> — clique em “Assinar e Admitir (D0)” para salvar e liberar a impressão
               </span>
@@ -756,7 +756,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
           </div>
         </DialogHeader>
 
-        <div className="px-4 sm:px-6 py-5 min-w-0 overflow-x-hidden">
+        <div className="px-4 sm:px-6 py-4 min-w-0 overflow-x-hidden">
           <div className="w-full min-w-0 space-y-6">
 
             {/* ───── Anamnese ───── */}
@@ -803,8 +803,8 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                     )}>
                       {imc ? (
                         <>
-                          <span className="font-semibold text-foreground">{imc.value}</span>
-                          <span className={cn("text-[11px] uppercase tracking-wide", imc.color)}>{imc.label}</span>
+                          <span className="font-medium text-foreground">{imc.value}</span>
+                          <span className={cn("text-xs uppercase tracking-wide", imc.color)}>{imc.label}</span>
                         </>
                       ) : (
                         <span className="text-xs">Preencha peso e altura</span>
@@ -877,8 +877,8 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                   placeholder={"Ex.:\nSepse de foco pulmonar\nSuspeita de TEP associado\nDM2 descompensado"}
                   className="mt-1 font-mono text-xs"
                 />
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  📝 Cada linha vira uma hipótese no card do paciente. Esse campo passa a ser <strong>somente leitura no mapa</strong> e só é atualizado por nova evolução clínica.
+                <p className="text-xs text-muted-foreground mt-1">
+                  Cada linha vira uma hipótese no card do paciente. Esse campo passa a ser <strong>somente leitura no mapa</strong> e só é atualizado por nova evolução clínica.
                 </p>
               </Section>
 
@@ -907,7 +907,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                     Sem previsão
                   </label>
                 </div>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Resultado: <strong className="text-foreground">{dischargePredictionLabel}</strong>
                 </p>
               </Section>
@@ -927,14 +927,14 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                 </Section>
 
                 <Section icon={ShieldCheck} title="Ficha SAPS 3 — Aviso" tone="amber">
-                  <p className="text-[11px] text-foreground leading-relaxed">
+                  <p className="text-xs text-foreground leading-relaxed">
                     A admissão UTI/UCI gera automaticamente uma <strong>Ficha SAPS 3 pendente</strong>, com prazo de{" "}
                     <strong className="text-warning-on-soft">24 horas</strong> a partir da pré-admissão (janela operacional / AMIB).
                     A admissão pode ser <strong>validada e impressa normalmente</strong>; a SAPS 3 segue como tarefa paralela
                     no Painel Clínico até ser finalizada em <code>/saps3</code>.
                   </p>
                   <label className="flex items-start gap-2 rounded-md border border-warning-border bg-warning-soft/70 p-3 cursor-pointer select-none">
-                    <Checkbox checked={sapsAck} onCheckedChange={v => setSapsAck(v === true)} className="mt-0.5" />
+                    <Checkbox checked={sapsAck} onCheckedChange={v => setSapsAck(v === true)} className="mt-1" />
                     <span className="text-xs text-foreground">
                       <strong className="uppercase tracking-wide text-warning-on-soft">Ciência (opcional)</strong> — declaro estar
                       ciente de que a ficha SAPS 3 está pendente e deve ser finalizada em até 24 h.
@@ -965,7 +965,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
               variant="outline"
               onClick={handleSaveDraft}
               disabled={submitting}
-              className="w-full sm:w-auto gap-2 border-warning text-warning-on-soft hover:bg-warning-soft uppercase"
+              className="w-full sm:w-auto gap-2 border-warning text-warning-on-soft hover:bg-warning-soft uppercase tracking-wider"
               title="Salva o rascunho e libera os módulos clínicos (evolução, prescrição, requisições, docs e histórico) para preenchimento posterior."
             >
               Salvar Rascunho
@@ -973,7 +973,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
             <Button
               onClick={() => setPasswordConfirmOpen(true)}
               disabled={submitting || !canValidate}
-              className="w-full sm:w-auto gap-2 bg-released hover:bg-released text-white uppercase"
+              className="w-full sm:w-auto gap-2 bg-released hover:bg-released text-white uppercase tracking-wider"
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardCheck className="h-4 w-4" />}
               Assinar e Admitir (D0)

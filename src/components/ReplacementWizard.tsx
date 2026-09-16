@@ -546,7 +546,7 @@ export function ReplacementWizard({
 
   const Chip = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
     <button type="button" onClick={onClick} className={cn(
-      "px-2.5 py-1 rounded-md border text-xs font-medium transition-all",
+      "px-3 py-1 rounded-md border text-xs font-medium transition-all",
       active ? "bg-primary text-white border-border" : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/60"
     )}>{children}</button>
   );
@@ -565,14 +565,14 @@ export function ReplacementWizard({
 
         <div className="space-y-3">
           <div>
-            <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Distúrbio</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-1.5">
+            <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Distúrbio</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
               {DISORDERS.map(d => (
                 <button key={d.key} type="button" onClick={() => setDisorder(d.key)}
                   className={cn("text-left p-2 rounded-md border transition-all",
                     disorder === d.key ? "border-border bg-muted" : "border-border bg-background hover:border-border")}>
-                  <p className="text-xs font-semibold">{d.label}</p>
-                  <p className="text-[10px] text-muted-foreground">{d.detail}</p>
+                  <p className="text-xs font-medium">{d.label}</p>
+                  <p className="text-xs text-muted-foreground">{d.detail}</p>
                 </button>
               ))}
             </div>
@@ -580,30 +580,30 @@ export function ReplacementWizard({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
-              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Gravidade</Label>
-              <div className="flex gap-1.5 mt-1.5 flex-wrap">
+              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Gravidade</Label>
+              <div className="flex gap-2 mt-2 flex-wrap">
                 <Chip active={severity === "leve"} onClick={() => setSeverity("leve")}>Leve</Chip>
                 <Chip active={severity === "moderada"} onClick={() => setSeverity("moderada")}>Moderada</Chip>
                 <Chip active={severity === "grave"} onClick={() => setSeverity("grave")}>Grave</Chip>
               </div>
             </div>
             <div>
-              <Label className="text-[10px]">Valor laboratorial atual (opcional)</Label>
+              <Label className="text-xs">Valor laboratorial atual (opcional)</Label>
               <Input value={value} onChange={(e) => setValue(e.target.value)} className="h-7 text-xs" placeholder={LAB_PLACEHOLDERS[disorder]} />
             </div>
           </div>
 
           <div>
-            <Label className="text-[10px]">Observações</Label>
+            <Label className="text-xs">Observações</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="min-h-[40px] text-xs" placeholder="Ex: paciente em VM, função renal..." />
           </div>
 
           {/* Lista de prescrições sugeridas */}
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground flex items-center gap-1 mb-1.5">
+            <p className="text-xs font-medium uppercase tracking-wider text-foreground flex items-center gap-1 mb-2">
               <Sparkles className="h-3 w-3" /> Prescrição sugerida — escolha uma opção
             </p>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {suggestions.map((s) => {
                 const isActive = selected?.id === s.id;
                 return (
@@ -620,17 +620,17 @@ export function ReplacementWizard({
                   >
                     <div className="flex items-start gap-2">
                       <div className={cn(
-                        "mt-0.5 h-4 w-4 rounded-full border flex items-center justify-center shrink-0",
+                        "mt-1 h-4 w-4 rounded-full border flex items-center justify-center shrink-0",
                         isActive ? "bg-primary border-border" : "border-muted-foreground/40"
                       )}>
                         {isActive && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-foreground">{s.title}</p>
-                        <p className="text-[11px] text-muted-foreground italic leading-snug mt-0.5">{s.rationale}</p>
-                        <div className="mt-1.5 space-y-0.5 border-t border-border/40 pt-1.5">
+                        <p className="text-xs font-medium text-foreground">{s.title}</p>
+                        <p className="text-xs text-muted-foreground italic leading-snug mt-1">{s.rationale}</p>
+                        <div className="mt-2 space-y-1 border-t border-border/40 pt-2">
                           {s.items.map((it, i) => (
-                            <div key={i} className="text-[11px]">
+                            <div key={i} className="text-xs">
                               <span className="font-medium text-foreground">{it.name}</span>
                               <span className="text-muted-foreground"> — {it.dose} · {it.route} · {it.posology}</span>
                             </div>
@@ -665,7 +665,7 @@ export function ReplacementWizard({
             size="sm"
             disabled={queue.items.length === 0 && entries.length === 0}
             onClick={handleConfirmAll}
-            className="gap-1.5 bg-primary hover:bg-primary text-white"
+            className="gap-2 bg-primary hover:bg-primary text-white"
           >
             <Sparkles className="h-3.5 w-3.5" />
             {queue.items.length > 0

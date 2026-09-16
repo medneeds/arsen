@@ -38,18 +38,18 @@ function KpiCard({ icon: Icon, label, value, hint, tone = "neutral", badge }: Kp
   const t = toneClasses[tone];
   return (
     <Card className={cn("border", t.border, t.bg)}>
-      <CardContent className="py-3 px-3.5">
+      <CardContent className="py-3 px-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 mb-1">
+            <div className="flex items-center gap-2 mb-1">
               <Icon className={cn("h-3.5 w-3.5", t.text)} />
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium truncate">{label}</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium truncate">{label}</p>
             </div>
-            <p className={cn("text-2xl font-bold leading-tight", t.text)}>{value}</p>
-            {hint && <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{hint}</p>}
+            <p className={cn("text-2xl font-semibold leading-tight", t.text)}>{value}</p>
+            {hint && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{hint}</p>}
           </div>
           {badge && (
-            <Badge variant="outline" className={cn("text-[9px] h-4 shrink-0", t.text, t.border)}>
+            <Badge variant="outline" className={cn("text-xs h-4 shrink-0", t.text, t.border)}>
               {badge}
             </Badge>
           )}
@@ -63,7 +63,7 @@ export function NirKpiStrip({ metrics }: Props) {
   const tone = occupancyTone(metrics.occupancyRate);
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2.5">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
       <KpiCard
         icon={Activity}
         label="Ocupação geral"

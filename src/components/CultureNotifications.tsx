@@ -126,17 +126,17 @@ export function CultureNotifications() {
           <div
             key={notif.id}
             className={cn(
-              "bg-background border-2 border-border rounded-xl p-3 shadow-2xl",
+              "bg-background border-2 border-border rounded-lg p-3 shadow-md",
               "animate-in slide-in-from-right-5 fade-in-0 duration-300"
             )}
           >
             <div className="flex items-start gap-2">
-              <div className="p-1.5 rounded-lg bg-primary/10 shrink-0 mt-0.5">
+              <div className="p-2 rounded-lg bg-primary/10 shrink-0 mt-1">
                 <Microscope className="h-4 w-4 text-foreground" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1">
-                  <p className="text-xs font-bold text-foreground">Nova cultura disponível</p>
+                  <p className="text-xs font-semibold text-foreground">Nova cultura disponível</p>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -146,22 +146,22 @@ export function CultureNotifications() {
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
-                <p className="text-[11px] font-semibold text-foreground truncate">{notif.patient_name}</p>
-                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                  <Badge variant="outline" className="text-[9px]">
+                <p className="text-xs font-medium text-foreground truncate">{notif.patient_name}</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Badge variant="outline" className="text-xs">
                     {getSectorDisplayLabel(notif.patient_sector)} · {notif.patient_bed}
                   </Badge>
                   <span>{CULTURE_TYPES[notif.culture_type] || notif.culture_type}</span>
                 </div>
                 {notif.microorganism && (
-                  <p className="text-[10px] text-critical-on-soft font-semibold mt-1">
-                    🦠 {notif.microorganism}
+                  <p className="text-xs text-critical-on-soft font-medium mt-1">
+                    {notif.microorganism}
                   </p>
                 )}
                 <Button
                   size="sm"
                   variant="outline"
-                  className="mt-2 h-6 text-[10px] gap-1 w-full border-border text-foreground hover:bg-muted"
+                  className="mt-2 h-6 text-xs gap-1 w-full border-border text-foreground hover:bg-muted"
                   onClick={() => handleView(notif)}
                 >
                   <Eye className="h-3 w-3" /> Ver resultado completo
@@ -185,12 +185,12 @@ export function CultureNotifications() {
           {viewDetail && (
             <div className="space-y-3">
               <div className="p-3 rounded-lg bg-muted/50 border space-y-1">
-                <p className="text-sm font-bold text-foreground">{viewDetail.patient_name}</p>
+                <p className="text-sm font-semibold text-foreground">{viewDetail.patient_name}</p>
                 <div className="text-xs text-muted-foreground">
                   <span>{getSectorDisplayLabel(viewDetail.patient_sector)} · Leito {viewDetail.patient_bed}</span>
                   <span className="ml-3">{CULTURE_TYPES[viewDetail.culture_type] || viewDetail.culture_type}</span>
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Registrado em {format(new Date(viewDetail.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                   {viewDetail.uploaded_by_name && ` por ${viewDetail.uploaded_by_name}`}
                 </p>
@@ -198,21 +198,21 @@ export function CultureNotifications() {
 
               {viewDetail.microorganism && (
                 <div className="p-3 rounded-lg bg-critical-soft/50 border border-critical-border">
-                  <p className="text-xs font-semibold text-critical-on-soft mb-0.5">Microrganismo</p>
+                  <p className="text-xs font-medium text-critical-on-soft mb-1">Microrganismo</p>
                   <p className="text-sm font-medium text-foreground">{viewDetail.microorganism}</p>
                 </div>
               )}
 
               {viewDetail.antibiogram && (
                 <div className="p-3 rounded-lg bg-muted/50 border border-border">
-                  <p className="text-xs font-semibold text-foreground mb-0.5">Antibiograma</p>
+                  <p className="text-xs font-medium text-foreground mb-1">Antibiograma</p>
                   <p className="text-sm text-foreground whitespace-pre-wrap">{viewDetail.antibiogram}</p>
                 </div>
               )}
 
               {viewDetail.result_text && (
                 <div className="p-3 rounded-lg border bg-muted/30">
-                  <p className="text-xs font-semibold text-foreground mb-0.5">Observações</p>
+                  <p className="text-xs font-medium text-foreground mb-1">Observações</p>
                   <p className="text-sm text-foreground whitespace-pre-wrap">{viewDetail.result_text}</p>
                 </div>
               )}

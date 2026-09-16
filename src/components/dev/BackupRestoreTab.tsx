@@ -617,7 +617,7 @@ export function BackupRestoreTab() {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold uppercase flex items-center gap-2">
+          <h1 className="text-2xl font-semibold uppercase tracking-wider flex items-center gap-2">
             <FileArchive className="w-6 h-6" />
             Backup & Restauração
           </h1>
@@ -630,10 +630,10 @@ export function BackupRestoreTab() {
       {/* Aviso técnico permanente */}
       <Card className="border-warning-border bg-warning-soft">
         <CardContent className="pt-4 text-sm text-warning-on-soft flex gap-3">
-          <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+          <AlertTriangle className="w-5 h-5 shrink-0 mt-1" />
           <div className="space-y-1">
             <strong>Atenção — limitações desta versão:</strong>
-            <ul className="list-disc ml-5 space-y-0.5">
+            <ul className="list-disc ml-4 space-y-1">
               <li>O backup contém <strong>dados</strong>, não o esquema (DDL). A instância destino deve ter as mesmas migrations aplicadas.</li>
               <li>Senhas dos usuários <strong>não são exportadas</strong>; após restauração, cada usuário recebe email para definir nova senha.</li>
               <li>MFA, sessões ativas e identidades sociais (Google/Apple) precisam ser reconfigurados manualmente.</li>
@@ -648,7 +648,7 @@ export function BackupRestoreTab() {
         <Card className="border-critical bg-critical-soft">
           <CardContent className="pt-4 text-sm text-critical-on-soft flex items-start justify-between gap-3">
             <div className="flex gap-3">
-              <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
+              <ShieldAlert className="w-5 h-5 shrink-0 mt-1" />
               <div>
                 <strong>Modo manutenção ATIVO.</strong> Todas as escritas estão bloqueadas para usuários comuns.
                 Se um restore travou e não foi finalizado, use o botão ao lado para liberar o sistema.
@@ -756,7 +756,7 @@ export function BackupRestoreTab() {
                       className="max-w-xs"
                     />
                     <p className="text-xs text-warning-on-soft">
-                      ⚠️ Backups incrementais NÃO capturam deleções após a data de corte. Combine com um backup completo periódico.
+                      Backups incrementais NÃO capturam deleções após a data de corte. Combine com um backup completo periódico.
                     </p>
                   </div>
                 )}
@@ -797,7 +797,7 @@ export function BackupRestoreTab() {
                   className="max-w-sm"
                 />
 
-                <div className="max-h-72 overflow-auto border rounded bg-background">
+                <div className="max-h-72 overflow-auto border rounded-md bg-background">
                   {tablesLoading ? (
                     <div className="p-3 text-xs text-muted-foreground flex items-center gap-2">
                       <Loader2 className="w-3 h-3 animate-spin" /> Carregando…
@@ -814,7 +814,7 @@ export function BackupRestoreTab() {
                         const someOn = catSelected > 0 && !allOn;
                         return (
                           <div key={cat.key} className="border rounded-md bg-muted/20">
-                            <div className="flex items-center justify-between gap-2 px-2 py-1.5 border-b bg-muted/40">
+                            <div className="flex items-center justify-between gap-2 px-2 py-2 border-b bg-muted/40">
                               <div className="flex items-center gap-2 min-w-0">
                                 <Checkbox
                                   checked={allOn ? true : (someOn ? "indeterminate" as any : false)}
@@ -828,8 +828,8 @@ export function BackupRestoreTab() {
                                     });
                                   }}
                                 />
-                                <span className="text-xs font-semibold truncate">{cat.label}</span>
-                                <Badge variant="outline" className="text-[9px] h-4 px-1">
+                                <span className="text-xs font-medium truncate">{cat.label}</span>
+                                <Badge variant="outline" className="text-xs h-4 px-1">
                                   {catSelected}/{cat.tables.length}
                                 </Badge>
                               </div>
@@ -840,7 +840,7 @@ export function BackupRestoreTab() {
                                 const isSpecial = SPECIAL_TABLES.has(t);
                                 return (
                                   <label key={t}
-                                    className="flex items-center gap-2 text-xs px-2 py-1 rounded hover:bg-muted/60 cursor-pointer">
+                                    className="flex items-center gap-2 text-xs px-2 py-1 rounded-md hover:bg-muted/60 cursor-pointer">
                                     <Checkbox
                                       checked={checked}
                                       disabled={creating}
@@ -854,7 +854,7 @@ export function BackupRestoreTab() {
                                     />
                                     <span className="font-mono truncate flex-1" title={t}>{t}</span>
                                     {isSpecial && (
-                                      <Badge variant="outline" className="text-[9px] h-4 px-1 border-border text-foreground">
+                                      <Badge variant="outline" className="text-xs h-4 px-1 border-border text-foreground">
                                         config
                                       </Badge>
                                     )}
@@ -883,7 +883,7 @@ export function BackupRestoreTab() {
 
                 {(selectedTables.size !== allTables.length || !includeAuthUsers) && (
                   <p className="text-xs text-warning-on-soft">
-                    ⚠️ Backup PARCIAL: só restaurará as tabelas listadas
+                    Backup PARCIAL: só restaurará as tabelas listadas
                     {!includeAuthUsers ? " e NÃO recriará contas de usuário" : ""}. Combine com um backup completo para restauração total.
                   </p>
                 )}
@@ -927,17 +927,17 @@ export function BackupRestoreTab() {
                       <div className="flex items-center gap-2 flex-wrap">
                         {statusBadge(j.status)}
                         {j.manifest?.incremental?.enabled && (
-                          <Badge variant="outline" className="text-[10px] border-warning text-warning-on-soft">
+                          <Badge variant="outline" className="text-xs border-warning text-warning-on-soft">
                             INCR desde {j.manifest.incremental.since ? formatDate(j.manifest.incremental.since) : "?"}
                           </Badge>
                         )}
                         {j.manifest?.partial?.enabled && (
-                          <Badge variant="outline" className="text-[10px] border-border text-foreground">
+                          <Badge variant="outline" className="text-xs border-border text-foreground">
                             PARCIAL ({j.manifest.partial.selected_tables?.length ?? "?"} tab.)
                           </Badge>
                         )}
                         {j.manifest?.partial && j.manifest.partial.include_auth_users === false && (
-                          <Badge variant="outline" className="text-[10px] border-critical text-critical-on-soft">
+                          <Badge variant="outline" className="text-xs border-critical text-critical-on-soft">
                             SEM AUTH
                           </Badge>
                         )}
@@ -945,14 +945,14 @@ export function BackupRestoreTab() {
                         <span className="text-xs text-muted-foreground">por {j.created_by_email ?? "—"}</span>
                       </div>
                       <div className="text-xs text-muted-foreground flex gap-3 flex-wrap">
-                        <span>📦 {formatBytes(j.file_size_bytes)}</span>
+                        <span>{formatBytes(j.file_size_bytes)}</span>
                         <span>⏱ {formatDuration(j.duration_ms)}</span>
-                        <span>👥 {j.auth_user_count ?? 0} usuários</span>
-                        <span>🗂 {j.table_counts ? Object.values(j.table_counts).reduce((a, b) => a + b, 0).toLocaleString("pt-BR") : 0} registros</span>
+                        <span>{j.auth_user_count ?? 0} usuários</span>
+                        <span>{j.table_counts ? Object.values(j.table_counts).reduce((a, b) => a + b, 0).toLocaleString("pt-BR") : 0} registros</span>
                       </div>
                       {j.reason && <p className="text-xs italic text-foreground truncate">{j.reason}</p>}
                       {j.error && <p className="text-xs text-critical-on-soft break-all">Erro: {j.error}</p>}
-                      {j.checksum_sha256 && <p className="text-[10px] font-mono text-muted-foreground truncate">sha256: {j.checksum_sha256}</p>}
+                      {j.checksum_sha256 && <p className="text-xs font-mono text-muted-foreground truncate">sha256: {j.checksum_sha256}</p>}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {j.status === "completed" && j.storage_path && (
@@ -973,7 +973,7 @@ export function BackupRestoreTab() {
           {!canRestore && (
             <Card className="border-critical-border bg-critical-soft">
               <CardContent className="pt-4 text-sm text-critical-on-soft flex gap-3">
-                <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
+                <ShieldAlert className="w-5 h-5 shrink-0 mt-1" />
                 <div>
                   A restauração é restrita a <strong>Super Administradores</strong>. Admin comum pode apenas
                   baixar backups. Solicite ao super admin se precisar restaurar.
@@ -1124,8 +1124,8 @@ export function BackupRestoreTab() {
                             <div className="mt-2 space-y-3">
                               {tableRows.length > 0 && (
                                 <div>
-                                  <p className="text-[11px] font-semibold uppercase text-muted-foreground mb-1">Erros por tabela</p>
-                                  <div className="border rounded overflow-hidden">
+                                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Erros por tabela</p>
+                                  <div className="border rounded-md overflow-hidden">
                                     <table className="w-full text-xs">
                                       <thead className="bg-muted">
                                         <tr>
@@ -1139,7 +1139,7 @@ export function BackupRestoreTab() {
                                           <tr key={t} className="border-t">
                                             <td className="px-2 py-1 font-mono">{t}</td>
                                             <td className="px-2 py-1 text-right">{s?.processed ?? 0}</td>
-                                            <td className={`px-2 py-1 text-right font-semibold ${(s?.errors ?? 0) > 0 ? "text-critical-on-soft" : "text-muted-foreground"}`}>
+                                            <td className={`px-2 py-1 text-right font-medium ${(s?.errors ?? 0) > 0 ? "text-critical-on-soft" : "text-muted-foreground"}`}>
                                               {s?.errors ?? 0}
                                             </td>
                                           </tr>
@@ -1151,16 +1151,16 @@ export function BackupRestoreTab() {
                               )}
                               {errorSamples.length > 0 && (
                                 <div>
-                                  <p className="text-[11px] font-semibold uppercase text-muted-foreground mb-1">
+                                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">
                                     Amostras de erro (últimas {errorSamples.length}, cap 50)
                                   </p>
-                                  <ScrollArea className="h-48 border rounded bg-muted">
+                                  <ScrollArea className="h-48 border rounded-md bg-muted">
                                     <ul className="divide-y">
                                       {errorSamples.slice().reverse().map((s, i) => (
                                         <li key={i} className="p-2 text-xs">
-                                          <div className="flex items-center gap-2 flex-wrap text-[10px] text-muted-foreground">
+                                          <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
                                             <span className="font-mono">{s.at ? formatDate(s.at) : "—"}</span>
-                                            <Badge variant="outline" className="text-[10px]">{s.table}</Badge>
+                                            <Badge variant="outline" className="text-xs">{s.table}</Badge>
                                             <span className="font-mono truncate">{s.part}</span>
                                           </div>
                                           <p className="text-critical-on-soft break-all mt-1">{s.message}</p>
@@ -1172,10 +1172,10 @@ export function BackupRestoreTab() {
                               )}
                               {nulledFkEntries.length > 0 && (
                                 <div>
-                                  <p className="text-[11px] font-semibold uppercase text-muted-foreground mb-1">
+                                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">
                                     Campos de FK anulados (linha preservada)
                                   </p>
-                                  <div className="border rounded overflow-hidden">
+                                  <div className="border rounded-md overflow-hidden">
                                     <table className="w-full text-xs">
                                       <thead className="bg-warning-soft">
                                         <tr>
@@ -1187,7 +1187,7 @@ export function BackupRestoreTab() {
                                         {nulledFkEntries.map(([k, n]) => (
                                           <tr key={k} className="border-t">
                                             <td className="px-2 py-1 font-mono">{k}</td>
-                                            <td className="px-2 py-1 text-right font-semibold text-warning-on-soft">{n}</td>
+                                            <td className="px-2 py-1 text-right font-medium text-warning-on-soft">{n}</td>
                                           </tr>
                                         ))}
                                       </tbody>
@@ -1197,10 +1197,10 @@ export function BackupRestoreTab() {
                               )}
                               {noLinkTotal > 0 && (
                                 <div>
-                                  <p className="text-[11px] font-semibold uppercase text-muted-foreground mb-1">
+                                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">
                                     Linhas sem vínculo de paciente preservadas para revisão ({noLinkTotal})
                                   </p>
-                                  <div className="border rounded overflow-hidden">
+                                  <div className="border rounded-md overflow-hidden">
                                     <table className="w-full text-xs">
                                       <thead className="bg-muted">
                                         <tr>
@@ -1212,7 +1212,7 @@ export function BackupRestoreTab() {
                                         {noLinkEntries.map(([t, n]) => (
                                           <tr key={t} className="border-t">
                                             <td className="px-2 py-1 font-mono">{t}</td>
-                                            <td className="px-2 py-1 text-right font-semibold text-foreground">{n}</td>
+                                            <td className="px-2 py-1 text-right font-medium text-foreground">{n}</td>
                                           </tr>
                                         ))}
                                       </tbody>
@@ -1305,10 +1305,10 @@ export function BackupRestoreTab() {
                   checked={restoreMirror}
                   disabled={restoreDryRun}
                   onCheckedChange={(c) => setRestoreMirror(!!c)}
-                  className="mt-0.5"
+                  className="mt-1"
                 />
                 <Label htmlFor="mirror" className="text-sm cursor-pointer text-critical-on-soft">
-                  <div className="flex items-center gap-2 font-bold">
+                  <div className="flex items-center gap-2 font-semibold">
                     <AlertTriangle className="w-4 h-4" />Modo ESPELHO (destrutivo)
                   </div>
                   <p className="mt-1 font-normal">
@@ -1326,11 +1326,11 @@ export function BackupRestoreTab() {
                 if (restoreDryRun || restoreMirror || !isFullBackup) return null;
                 return (
                   <div className="border-2 border-warning bg-warning-soft rounded-md p-3 flex items-start gap-2">
-                    <AlertTriangle className="w-5 h-5 text-warning-on-soft flex-shrink-0 mt-0.5" />
+                    <AlertTriangle className="w-5 h-5 text-warning-on-soft flex-shrink-0 mt-1" />
                     <div className="text-sm text-warning-on-soft space-y-1">
-                      <p className="font-bold">Atenção: este restore NÃO devolve o banco ao estado do backup.</p>
+                      <p className="font-semibold">Atenção: este restore NÃO devolve o banco ao estado do backup.</p>
                       <p>Sem o <strong>Modo ESPELHO</strong>, o restore apenas mescla (upsert por PK):</p>
-                      <ul className="list-disc ml-5 text-xs">
+                      <ul className="list-disc ml-4 text-xs">
                         <li>Registros do backup <strong>sobrescrevem</strong> os existentes com mesma chave.</li>
                         <li>Registros criados <strong>depois</strong> do backup <strong>permanecem no banco</strong>.</li>
                       </ul>
@@ -1352,7 +1352,7 @@ export function BackupRestoreTab() {
                         const someOn = catSelected > 0 && !allOn;
                         return (
                           <div key={cat.key} className="border rounded-md bg-muted/20">
-                            <div className="flex items-center justify-between gap-2 px-2 py-1.5 border-b bg-muted/40">
+                            <div className="flex items-center justify-between gap-2 px-2 py-2 border-b bg-muted/40">
                               <div className="flex items-center gap-2 min-w-0">
                                 <Checkbox
                                   checked={allOn ? true : (someOn ? "indeterminate" as any : false)}
@@ -1363,15 +1363,15 @@ export function BackupRestoreTab() {
                                     setRestoreTables(next);
                                   }}
                                 />
-                                <span className="text-xs font-semibold truncate">{cat.label}</span>
-                                <Badge variant="outline" className="text-[9px] h-4 px-1">
+                                <span className="text-xs font-medium truncate">{cat.label}</span>
+                                <Badge variant="outline" className="text-xs h-4 px-1">
                                   {catSelected}/{cat.tables.length}
                                 </Badge>
                               </div>
                             </div>
                             <div className="grid grid-cols-2 gap-1 p-2">
                               {cat.tables.map((t) => (
-                                <label key={t} className="flex items-center gap-2 text-xs hover:bg-muted px-1 rounded cursor-pointer">
+                                <label key={t} className="flex items-center gap-2 text-xs hover:bg-muted px-1 rounded-md cursor-pointer">
                                   <Checkbox
                                     checked={restoreTables.has(t)}
                                     onCheckedChange={(c) => {
@@ -1401,20 +1401,20 @@ export function BackupRestoreTab() {
             <div className="space-y-3">
               <Card className="border-critical-border bg-critical-soft">
                 <CardContent className="pt-4 text-sm text-critical-on-soft space-y-2">
-                  <p className="font-bold flex items-center gap-2"><AlertTriangle className="w-4 h-4" />O que vai acontecer:</p>
-                  <ul className="list-disc ml-5 space-y-1">
+                  <p className="font-semibold flex items-center gap-2"><AlertTriangle className="w-4 h-4" />O que vai acontecer:</p>
+                  <ul className="list-disc ml-4 space-y-1">
                     {!restoreDryRun && <li>O sistema entrará em <strong>modo manutenção</strong> — usuários comuns ficam bloqueados até finalizar.</li>}
-                    {!restoreDryRun && restoreMirror && <li className="font-bold text-critical-on-soft">MODO ESPELHO ATIVO: todas as linhas das tabelas do plano serão <strong>APAGADAS (TRUNCATE)</strong> antes da inserção. Linhas criadas após o backup <strong>serão perdidas</strong>.</li>}
+                    {!restoreDryRun && restoreMirror && <li className="font-semibold text-critical-on-soft">MODO ESPELHO ATIVO: todas as linhas das tabelas do plano serão <strong>APAGADAS (TRUNCATE)</strong> antes da inserção. Linhas criadas após o backup <strong>serão perdidas</strong>.</li>}
                     {!restoreDryRun && !restoreMirror && <li>Linhas do backup serão <strong>UPSERT</strong> (insert ou overwrite) por chave primária. Linhas que existem só no destino <strong>não</strong> são apagadas.</li>}
                     {!restoreDryRun && <li>Triggers, RLS e constraints ficam <strong>ativos</strong> durante a operação — falhas individuais são reportadas.</li>}
                     <li>Senhas, MFA e identidades sociais <strong>não são restauradas</strong>.</li>
                     <li>Usuários de auth (auth.users) <strong>não são tocados</strong> nesta versão.</li>
-                    {restoreDryRun && <li className="font-bold">Em dry-run, NENHUMA gravação ocorre. Apenas validação de manifest, parts e JSON.</li>}
+                    {restoreDryRun && <li className="font-semibold">Em dry-run, NENHUMA gravação ocorre. Apenas validação de manifest, parts e JSON.</li>}
                   </ul>
 
                   {!restoreDryRun && !restoreMirror && (
-                    <div className="mt-2 border-2 border-warning bg-warning-soft rounded p-2 text-warning-on-soft">
-                      <p className="font-bold flex items-center gap-2">
+                    <div className="mt-2 border-2 border-warning bg-warning-soft rounded-md p-2 text-warning-on-soft">
+                      <p className="font-semibold flex items-center gap-2">
                         <AlertTriangle className="w-4 h-4" />Modo de mesclagem ativo
                       </p>
                       <p className="text-xs mt-1">
@@ -1448,7 +1448,7 @@ export function BackupRestoreTab() {
                   </div>
                   <div>
                     <Label htmlFor="rconfirm" className="text-sm">
-                      Digite <code className="bg-critical-soft px-1 rounded">RESTAURAR AGORA</code> para confirmar
+                      Digite <code className="bg-critical-soft px-1 rounded-md">RESTAURAR AGORA</code> para confirmar
                     </Label>
                     <Input id="rconfirm" value={restoreConfirm} onChange={(e) => setRestoreConfirm(e.target.value.toUpperCase())} />
                   </div>
@@ -1458,12 +1458,12 @@ export function BackupRestoreTab() {
                       !restoreTarget?.manifest?.incremental?.enabled;
                     if (restoreDryRun || restoreMirror || !isFullBackup) return null;
                     return (
-                      <div className="flex items-start gap-2 border-2 border-warning bg-warning-soft rounded p-3">
+                      <div className="flex items-start gap-2 border-2 border-warning bg-warning-soft rounded-md p-3">
                         <Checkbox
                           id="mergeack"
                           checked={restoreMergeAck}
                           onCheckedChange={(c) => setRestoreMergeAck(!!c)}
-                          className="mt-0.5"
+                          className="mt-1"
                         />
                         <Label htmlFor="mergeack" className="text-sm cursor-pointer text-warning-on-soft">
                           Entendo que este restore é uma <strong>mesclagem</strong> (upsert por PK) e <strong>não substitui</strong> o estado atual do banco. Dados criados após o backup <strong>permanecerão</strong>.

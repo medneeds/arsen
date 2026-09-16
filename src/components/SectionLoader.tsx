@@ -19,8 +19,8 @@ export function SectionLoader({ message, subMessage, size = "md" }: SectionLoade
 
   return (
     <div
-      className={`flex flex-col items-center justify-center gap-4 rounded-xl border border-border/40 bg-card/60 animate-in fade-in duration-300 ${
-        isSmall ? "py-10 px-4" : "py-16 px-6"
+      className={`flex flex-col items-center justify-center gap-4 rounded-lg border border-border/40 bg-card/60 animate-in fade-in duration-300 ${
+        isSmall ? "py-8 px-4" : "py-8 px-6"
       }`}
       role="status"
       aria-live="polite"
@@ -45,13 +45,13 @@ export function SectionLoader({ message, subMessage, size = "md" }: SectionLoade
 
       {/* Texto */}
       <div className="text-center space-y-1">
-        <p className={`font-bold uppercase tracking-[0.15em] text-foreground ${isSmall ? "text-[10px]" : "text-[11px]"}`}>
+        <p className={`font-semibold uppercase tracking-[0.15em] text-foreground ${isSmall ? "text-xs" : "text-xs"}`}>
           {message ?? "Carregando"}
         </p>
         {subMessage && (
-          <p className={`text-muted-foreground flex items-center justify-center gap-1.5 ${isSmall ? "text-[10px]" : "text-xs"}`}>
+          <p className={`text-muted-foreground flex items-center justify-center gap-2 ${isSmall ? "text-xs" : "text-xs"}`}>
             {subMessage}
-            <span className="inline-flex gap-0.5 items-end">
+            <span className="inline-flex gap-1 items-end">
               <span className="w-1 h-1 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:0ms]" />
               <span className="w-1 h-1 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:150ms]" />
               <span className="w-1 h-1 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:300ms]" />

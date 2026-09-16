@@ -35,14 +35,14 @@ export default function AjudaPage() {
   }, [query]);
 
   return (
-    <div className="container max-w-6xl mx-auto px-4 py-6 md:py-10">
+    <div className="container max-w-6xl mx-auto px-4 py-6 md:py-8">
       {/* Back / Home bar */}
       <div className="flex items-center justify-between gap-2 mb-4">
         <Button
           variant="ghost"
           size="sm"
           onClick={handleBack}
-          className="gap-1.5 text-muted-foreground hover:text-foreground"
+          className="gap-2 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar
@@ -51,7 +51,7 @@ export default function AjudaPage() {
           variant="outline"
           size="sm"
           onClick={() => navigate("/")}
-          className="gap-1.5"
+          className="gap-2"
         >
           <HomeIcon className="h-4 w-4" />
           Início
@@ -60,11 +60,11 @@ export default function AjudaPage() {
 
       {/* Header */}
       <div className="flex items-start gap-4 mb-6">
-        <div className="h-12 w-12 rounded-xl bg-primary/10 grid place-items-center flex-shrink-0">
+        <div className="h-12 w-12 rounded-lg bg-primary/10 grid place-items-center flex-shrink-0">
           <HelpCircle className="h-6 w-6 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl md:text-2xl font-bold leading-tight">Dúvidas Frequentes</h1>
+          <h1 className="text-xl md:text-2xl font-semibold leading-tight">Dúvidas Frequentes</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Guias didáticos sobre as operações mais comuns da plataforma. Clique em uma dúvida para abrir o passo a passo em slides.
           </p>
@@ -78,7 +78,7 @@ export default function AjudaPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar por dúvida, ex: desalocar, transferência, alta…"
-          className="pl-9"
+          className="pl-8"
         />
       </div>
 
@@ -89,10 +89,10 @@ export default function AjudaPage() {
         return (
           <section key={cat} className="mb-8">
             <div className="flex items-center gap-2 mb-3">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 {cat}
               </h2>
-              <span className="text-[10px] text-muted-foreground/70">({items.length})</span>
+              <span className="text-xs text-muted-foreground/70">({items.length})</span>
               <div className="flex-1 h-px bg-border/60" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -104,7 +104,7 @@ export default function AjudaPage() {
                     type="button"
                     onClick={() => setActive(entry)}
                     className={cn(
-                      "group text-left rounded-xl border bg-card hover:bg-card/80 p-4 transition-all duration-200",
+                      "group text-left rounded-lg border bg-card hover:bg-card/80 p-4 transition-all duration-200",
                       "hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40",
                       "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                     )}
@@ -119,9 +119,9 @@ export default function AjudaPage() {
                         <Icon className="h-5 w-5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-sm leading-tight">{entry.title}</div>
+                        <div className="font-medium text-sm leading-tight">{entry.title}</div>
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{entry.short}</p>
-                        <div className="text-[10px] text-muted-foreground mt-2 uppercase tracking-wider font-medium">
+                        <div className="text-xs text-muted-foreground mt-2 uppercase tracking-wider font-medium">
                           {entry.slides.length} slides
                         </div>
                       </div>
@@ -135,7 +135,7 @@ export default function AjudaPage() {
       })}
 
       {filtered.length === 0 && (
-        <div className="text-center text-sm text-muted-foreground py-12">
+        <div className="text-center text-sm text-muted-foreground py-8">
           Nenhuma dúvida encontrada para "{query}".
         </div>
       )}

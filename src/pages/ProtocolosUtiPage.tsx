@@ -52,11 +52,11 @@ export default function ProtocolosUtiPage() {
   const coming = protocols.filter(p => p.status === "em_breve").length;
 
   return (
-    <div className="bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="bg-background">
       <div className="p-6 md:p-8 space-y-8 max-w-6xl">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-released-soft to-muted bg-clip-text text-transparent">
+          <h1 className="text-4xl font-semibold tracking-tight bg-released-soft bg-clip-text text-transparent">
             Protocolos Assistenciais UTI
           </h1>
           <p className="text-muted-foreground text-lg">
@@ -69,7 +69,7 @@ export default function ProtocolosUtiPage() {
         </div>
 
         {/* Search */}
-        <Card className="border-primary/20 shadow-lg">
+        <Card className="border-primary/20 shadow-md">
           <CardContent className="p-6">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -78,7 +78,7 @@ export default function ProtocolosUtiPage() {
                 placeholder="Buscar protocolo ou categoria..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-14 text-lg border-2 focus:border-primary/50"
+                className="pl-8 h-14 text-lg border-2 focus:border-primary/50"
               />
             </div>
           </CardContent>
@@ -89,17 +89,17 @@ export default function ProtocolosUtiPage() {
           {filteredProtocols.map((protocol, idx) => (
             <Card
               key={idx}
-              className={`group transition-all duration-200 hover:shadow-lg ${
+              className={`group transition-all duration-200 hover:shadow-md ${
                 protocol.status === "em_breve"
                   ? "opacity-60 border-dashed"
                   : "hover:border-primary/40 cursor-pointer"
               }`}
             >
-              <CardContent className="p-5 flex flex-col gap-3">
+              <CardContent className="p-4 flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-primary shrink-0" />
-                    <h3 className="font-semibold text-sm leading-tight">{protocol.title}</h3>
+                    <h3 className="font-medium text-sm leading-tight">{protocol.title}</h3>
                   </div>
                   {protocol.status === "atualizado" ? (
                     <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
@@ -121,7 +121,7 @@ export default function ProtocolosUtiPage() {
         </div>
 
         {filteredProtocols.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
+          <div className="text-center py-8 text-muted-foreground">
             <FileText className="h-12 w-12 mx-auto mb-4 opacity-30" />
             <p className="text-lg">Nenhum protocolo encontrado</p>
           </div>

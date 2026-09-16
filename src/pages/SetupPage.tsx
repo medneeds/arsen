@@ -72,7 +72,7 @@ export default function SetupPage() {
           <div className="h-16 w-16 rounded-full bg-released-soft flex items-center justify-center mb-4">
             <Shield className="h-8 w-8 text-released-on-soft" />
           </div>
-          <h1 className="text-2xl font-bold">SETUP INICIAL</h1>
+          <h1 className="text-2xl font-semibold">SETUP INICIAL</h1>
           <p className="text-sm text-muted-foreground mt-1">CONFIGURE O ADMINISTRADOR DO SISTEMA</p>
         </div>
 

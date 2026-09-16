@@ -209,11 +209,11 @@ const InternmentHistoryPage = () => {
       {/* Page Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-warning-soft/20 to-warning-soft/10 flex items-center justify-center">
+          <div className="h-12 w-12 rounded-lg bg-warning-soft/20 flex items-center justify-center">
             <History className="h-6 w-6 text-warning-on-soft" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-3xl font-semibold tracking-tight">
               Histórico de Solicitações
             </h1>
             <p className="text-muted-foreground text-sm">
@@ -226,8 +226,8 @@ const InternmentHistoryPage = () => {
       <Separator className="my-6" />
 
       {/* Filters Card */}
-      <Card className="border-primary/20 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-muted/50 to-transparent">
+      <Card className="border-primary/20 shadow-md">
+        <CardHeader className="bg-muted/50">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">Filtros de Busca</CardTitle>
@@ -239,7 +239,7 @@ const InternmentHistoryPage = () => {
         <CardContent className="pt-6 space-y-6">
           {/* Search by Name */}
           <div className="space-y-3">
-            <Label htmlFor="search-name" className="text-sm font-semibold flex items-center gap-2">
+            <Label htmlFor="search-name" className="text-sm font-medium flex items-center gap-2">
               <Search className="h-4 w-4" />
               Buscar por nome do paciente
             </Label>
@@ -256,7 +256,7 @@ const InternmentHistoryPage = () => {
 
           {/* Quick Period Buttons */}
           <div className="space-y-3">
-            <Label className="text-sm font-semibold">Período Rápido</Label>
+            <Label className="text-sm font-medium">Período Rápido</Label>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant={selectedPeriod === "all" ? "default" : "outline"}
@@ -368,7 +368,7 @@ const InternmentHistoryPage = () => {
           <div className="flex gap-2 pt-2">
             <Button
               onClick={handleApplyFilters}
-              className="flex-1 font-semibold"
+              className="flex-1 font-medium"
               size="lg"
             >
               <Filter className="mr-2 h-4 w-4" />
@@ -387,7 +387,7 @@ const InternmentHistoryPage = () => {
       </Card>
 
       {/* Results Table */}
-      <Card className="shadow-lg">
+      <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="text-lg">Solicitações Encontradas</CardTitle>
           <CardDescription className="text-xs">
@@ -399,20 +399,20 @@ const InternmentHistoryPage = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30">
-                  <TableHead className="font-bold">Nome do Paciente</TableHead>
-                  <TableHead className="font-bold">Idade</TableHead>
-                  <TableHead className="font-bold">Destino</TableHead>
-                  <TableHead className="font-bold">Data</TableHead>
-                  <TableHead className="text-right font-bold">Ações</TableHead>
+                  <TableHead className="font-semibold">Nome do Paciente</TableHead>
+                  <TableHead className="font-semibold">Idade</TableHead>
+                  <TableHead className="font-semibold">Destino</TableHead>
+                  <TableHead className="font-semibold">Data</TableHead>
+                  <TableHead className="text-right font-semibold">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredRequests.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                       <div className="flex flex-col items-center gap-2">
                         <History className="h-12 w-12 text-muted-foreground/50" />
-                        <p className="font-semibold">Nenhuma Solicitação Encontrada</p>
+                        <p className="font-medium">Nenhuma Solicitação Encontrada</p>
                         <p className="text-xs">Tente ajustar os filtros de busca</p>
                       </div>
                     </TableCell>
@@ -423,13 +423,13 @@ const InternmentHistoryPage = () => {
                       <TableCell className="patient-id font-medium">
                         {request.patient_name}
                       </TableCell>
-                      <TableCell className="uppercase">
+                      <TableCell className="uppercase tracking-wider">
                         {request.patient_age || "-"}
                       </TableCell>
-                      <TableCell className="uppercase max-w-xs truncate">
+                      <TableCell className="uppercase tracking-wider max-w-xs truncate">
                         {request.destination}
                       </TableCell>
-                      <TableCell className="uppercase text-xs">
+                      <TableCell className="uppercase tracking-wider text-xs">
                         {formatDate(request.created_at)}
                       </TableCell>
                       <TableCell className="text-right">
@@ -438,7 +438,7 @@ const InternmentHistoryPage = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleView(request)}
-                            className="gap-2 uppercase hover:bg-primary/10 hover:text-primary"
+                            className="gap-2 uppercase tracking-wider hover:bg-primary/10 hover:text-primary"
                           >
                             <Eye className="h-3 w-3" />
                             Ver
@@ -447,7 +447,7 @@ const InternmentHistoryPage = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleDelete(request.id)}
-                            className="gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 uppercase"
+                            className="gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 uppercase tracking-wider"
                           >
                             <Trash2 className="h-3 w-3" />
                             Excluir
@@ -467,7 +467,7 @@ const InternmentHistoryPage = () => {
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="uppercase flex items-center gap-2">
+            <DialogTitle className="uppercase tracking-wider flex items-center gap-2">
               <Eye className="h-5 w-5 text-primary" />
               Detalhes da Solicitação
             </DialogTitle>
@@ -477,25 +477,25 @@ const InternmentHistoryPage = () => {
             <div className="space-y-4">
               <Card className="bg-muted/30 border-primary/20">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm uppercase">Dados do Paciente</CardTitle>
+                  <CardTitle className="text-sm uppercase tracking-wider">Dados do Paciente</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-muted-foreground uppercase text-xs">Nome:</span>
+                      <span className="text-muted-foreground uppercase tracking-wider text-xs">Nome:</span>
                       <p className="patient-id font-medium">{selectedRequest.patient_name}</p>
                     </div>
                     <div>
-                      <span className="text-muted-foreground uppercase text-xs">Idade:</span>
-                      <p className="font-medium uppercase">{selectedRequest.patient_age || "-"}</p>
+                      <span className="text-muted-foreground uppercase tracking-wider text-xs">Idade:</span>
+                      <p className="font-medium uppercase tracking-wider">{selectedRequest.patient_age || "-"}</p>
                     </div>
                     <div>
-                      <span className="text-muted-foreground uppercase text-xs">Sexo:</span>
-                      <p className="font-medium uppercase">{selectedRequest.patient_sex || "-"}</p>
+                      <span className="text-muted-foreground uppercase tracking-wider text-xs">Sexo:</span>
+                      <p className="font-medium uppercase tracking-wider">{selectedRequest.patient_sex || "-"}</p>
                     </div>
                     <div>
-                      <span className="text-muted-foreground uppercase text-xs">Prontuário:</span>
-                      <p className="font-medium uppercase">{selectedRequest.patient_record || "-"}</p>
+                      <span className="text-muted-foreground uppercase tracking-wider text-xs">Prontuário:</span>
+                      <p className="font-medium uppercase tracking-wider">{selectedRequest.patient_record || "-"}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -503,20 +503,20 @@ const InternmentHistoryPage = () => {
 
               <Card className="border-primary/20">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm uppercase">Destino</CardTitle>
+                  <CardTitle className="text-sm uppercase tracking-wider">Destino</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm uppercase font-medium">{selectedRequest.destination}</p>
+                  <p className="text-sm uppercase tracking-wider font-medium">{selectedRequest.destination}</p>
                 </CardContent>
               </Card>
 
               <Card className="border-primary/20">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm uppercase">Conteúdo da Solicitação</CardTitle>
+                  <CardTitle className="text-sm uppercase tracking-wider">Conteúdo da Solicitação</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="bg-muted/20 p-4 rounded-md border">
-                    <pre className="whitespace-pre-wrap font-mono text-xs uppercase">
+                    <pre className="whitespace-pre-wrap font-mono text-xs uppercase tracking-wider">
                       {selectedRequest.content}
                     </pre>
                   </div>
@@ -527,12 +527,12 @@ const InternmentHistoryPage = () => {
                 <CardContent className="pt-4">
                   <div className="grid grid-cols-2 gap-4 text-xs">
                     <div>
-                      <span className="text-muted-foreground uppercase">Data de Criação:</span>
-                      <p className="font-medium uppercase">{formatDate(selectedRequest.created_at)}</p>
+                      <span className="text-muted-foreground uppercase tracking-wider">Data de Criação:</span>
+                      <p className="font-medium uppercase tracking-wider">{formatDate(selectedRequest.created_at)}</p>
                     </div>
                     <div>
-                      <span className="text-muted-foreground uppercase">Última Atualização:</span>
-                      <p className="font-medium uppercase">{formatDate(selectedRequest.updated_at)}</p>
+                      <span className="text-muted-foreground uppercase tracking-wider">Última Atualização:</span>
+                      <p className="font-medium uppercase tracking-wider">{formatDate(selectedRequest.updated_at)}</p>
                     </div>
                   </div>
                 </CardContent>

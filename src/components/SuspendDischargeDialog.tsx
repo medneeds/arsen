@@ -111,7 +111,7 @@ export function SuspendDischargeDialog({
                   <CheckCircle2 className="h-7 w-7 text-released-on-soft" />
                 </div>
                 <div>
-                  <p className="font-semibold text-base">
+                  <p className="font-medium text-base">
                     {isObito ? "Óbito suspenso" : "Alta suspensa"}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1 max-w-sm">
@@ -151,10 +151,10 @@ export function SuspendDischargeDialog({
 
               <div className="space-y-3 text-sm">
                 <div className={isObito
-                  ? "rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-1.5 text-[12.5px] text-destructive"
-                  : "rounded-md border border-warning-border/60 bg-warning-soft/60 p-3 space-y-1.5 text-[12.5px] text-warning-on-soft"}>
-                  <p className="font-semibold">O que vai acontecer:</p>
-                  <ul className="list-disc pl-5 space-y-0.5">
+                  ? "rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-2 text-xs text-destructive"
+                  : "rounded-md border border-warning-border/60 bg-warning-soft/60 p-3 space-y-2 text-xs text-warning-on-soft"}>
+                  <p className="font-medium">O que vai acontecer:</p>
+                  <ul className="list-disc pl-4 space-y-1">
                     <li>
                       {isObito ? "A declaração de óbito" : "O documento de alta"} deixa de constar como vigente no cockpit.
                     </li>
@@ -163,13 +163,13 @@ export function SuspendDischargeDialog({
                     <li>O paciente continua no <strong>mesmo leito</strong>, sem qualquer alteração em prescrição, evolução ou sinais vitais.</li>
                     <li>O documento original é <strong>preservado no histórico</strong> com o motivo da suspensão e seu nome (auditoria imutável).</li>
                     {isObito && (
-                      <li className="font-semibold">Use apenas em caso de engano de registro — esta ação fica permanentemente auditada.</li>
+                      <li className="font-medium">Use apenas em caso de engano de registro — esta ação fica permanentemente auditada.</li>
                     )}
                   </ul>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="suspend-reason" className="text-xs font-semibold">
+                <div className="space-y-2">
+                  <Label htmlFor="suspend-reason" className="text-xs font-medium">
                     Motivo da suspensão <span className="text-destructive">*</span>
                   </Label>
                   <Textarea
@@ -185,7 +185,7 @@ export function SuspendDischargeDialog({
                     disabled={submitting}
                     className="text-sm"
                   />
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {reason.trim().length}/{minLen} caracteres mínimos
                   </p>
                 </div>

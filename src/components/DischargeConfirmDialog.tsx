@@ -55,7 +55,7 @@ export function DischargeConfirmDialog({
               <DialogTitle className="text-base">
                 Confirmar registro de {movementLabel}
               </DialogTitle>
-              <DialogDescription className="text-xs mt-0.5">
+              <DialogDescription className="text-xs mt-1">
                 Revise atentamente os dados e o que acontecerá no sistema antes de confirmar.
               </DialogDescription>
             </div>
@@ -65,10 +65,10 @@ export function DischargeConfirmDialog({
         <div className="space-y-3 py-1">
           {/* Resumo dos dados */}
           <section className="rounded-lg border bg-muted/30 p-3 space-y-2">
-            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] font-medium text-muted-foreground">
               <FileText className="h-3 w-3" /> Resumo do registro
             </div>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
               <SummaryRow icon={User} label="Paciente" value={patient?.name || "—"} />
               <SummaryRow icon={Bed} label="Leito / Setor" value={`${patient?.bedNumber || "—"} • ${patient?.sector || "—"}`} />
               <SummaryRow icon={FileSignature} label="Documento" value={DOC_LABEL[docType]} />
@@ -83,18 +83,18 @@ export function DischargeConfirmDialog({
           {/* Bloqueio por campos obrigatórios */}
           {isBlocked && (
             <section className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-2">
-              <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-semibold text-destructive">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-medium text-destructive">
                 <AlertTriangle className="h-3.5 w-3.5" /> Pendências obrigatórias bloqueando o registro
               </div>
               <ul className="space-y-1 text-xs text-destructive">
                 {blockingMissing.map((m, i) => (
-                  <li key={i} className="flex items-start gap-1.5">
+                  <li key={i} className="flex items-start gap-2">
                     <span className="mt-1 h-1 w-1 rounded-full bg-destructive shrink-0" />
-                    <span><strong className="font-semibold">{m.label}</strong> — {m.reason}</span>
+                    <span><strong className="font-medium">{m.label}</strong> — {m.reason}</span>
                   </li>
                 ))}
               </ul>
-              <p className="text-[10px] uppercase tracking-wider text-destructive/80 pt-1">
+              <p className="text-xs uppercase tracking-wider text-destructive/80 pt-1">
                 Volte ao formulário, preencha os itens acima e tente novamente.
               </p>
             </section>
@@ -102,14 +102,14 @@ export function DischargeConfirmDialog({
 
           {/* Avisos suaves (opcionais não preenchidos) */}
           {!isBlocked && softMissing.length > 0 && (
-            <section className="rounded-lg border border-warning/40 bg-warning/5 p-3 space-y-1.5">
-              <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-semibold text-warning">
+            <section className="rounded-lg border border-warning/40 bg-warning/5 p-3 space-y-2">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-medium text-warning">
                 <Info className="h-3.5 w-3.5" /> Campos opcionais não preenchidos
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Os itens abaixo <strong>não impedem</strong> o registro, mas são úteis para auditoria e comunicação:
               </p>
-              <ul className="text-[11px] text-muted-foreground grid grid-cols-2 gap-x-3 gap-y-0.5 pl-1">
+              <ul className="text-xs text-muted-foreground grid grid-cols-2 gap-x-3 gap-y-1 pl-1">
                 {softMissing.map((m, i) => (
                   <li key={i}>• {m.label}</li>
                 ))}
@@ -119,10 +119,10 @@ export function DischargeConfirmDialog({
 
           {/* Explicação didática do que acontece */}
           <section className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
-            <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-semibold text-primary">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-medium text-primary">
               <Info className="h-3.5 w-3.5" /> O que acontece quando você confirmar
             </div>
-            <ol className="space-y-1.5 text-xs text-foreground/85 leading-relaxed">
+            <ol className="space-y-2 text-xs text-foreground/85 leading-relaxed">
               <Step n={1} icon={FileSignature}>
                 O <strong>{DOC_LABEL[docType]}</strong> será <strong>assinado eletronicamente</strong> com seu nome, CRM e data/hora atuais, e gravado de forma <strong>imutável</strong> no prontuário do paciente.
               </Step>
@@ -139,7 +139,7 @@ export function DischargeConfirmDialog({
                 A liberação efetiva do leito e a baixa censitária ocorrem em <strong>etapa separada</strong>, executada pela equipe de regulação/recepção. Nada é apagado neste momento.
               </Step>
             </ol>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground pt-1 border-t border-primary/20">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground pt-1 border-t border-primary/20">
               Se sinalizar por engano, dá pra <strong className="text-foreground">suspender depois</strong>, direto no Cockpit do paciente (com senha e motivo) — confira os dados antes de confirmar mesmo assim.
             </p>
           </section>
@@ -168,10 +168,10 @@ function SummaryRow({
   icon: Icon, label, value, className,
 }: { icon: any; label: string; value: string; className?: string }) {
   return (
-    <div className={cn("flex items-start gap-1.5", className)}>
-      <Icon className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+    <div className={cn("flex items-start gap-2", className)}>
+      <Icon className="h-3 w-3 mt-1 text-muted-foreground shrink-0" />
       <div className="min-w-0 flex-1">
-        <dt className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</dt>
+        <dt className="text-xs uppercase tracking-wider text-muted-foreground">{label}</dt>
         <dd className="text-xs font-medium truncate" title={value}>{value}</dd>
       </div>
     </div>
@@ -181,11 +181,11 @@ function SummaryRow({
 function Step({ n, icon: Icon, children }: { n: number; icon: any; children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-2">
-      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/15 text-primary text-[10px] font-bold shrink-0 mt-0.5">
+      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/15 text-primary text-xs font-semibold shrink-0 mt-1">
         {n}
       </span>
       <div className="flex-1">
-        <Icon className="h-3 w-3 inline-block mr-1 text-primary/70 -mt-0.5" />
+        <Icon className="h-3 w-3 inline-block mr-1 text-primary/70 -mt-1" />
         {children}
       </div>
     </li>

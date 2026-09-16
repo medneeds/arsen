@@ -107,32 +107,32 @@ export const ConductHistoryDialog = memo(function ConductHistoryDialog({
               {Object.entries(grouped).map(([dateKey, entries]) => (
                 <div key={dateKey}>
                   <div className="sticky top-0 bg-background z-10 pb-1 mb-2">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {dateKey}
                     </span>
                   </div>
                   <div className="relative border-l-2 border-muted ml-2 space-y-3">
                     {entries.map((entry) => (
-                      <div key={entry.id} className="relative pl-5">
+                      <div key={entry.id} className="relative pl-4">
                         <div className="absolute -left-[5px] top-2 h-2 w-2 rounded-full bg-primary" />
-                        <div className="bg-accent/30 rounded-lg p-3 space-y-1.5">
+                        <div className="bg-accent/30 rounded-lg p-3 space-y-2">
                           <div className="flex items-center justify-between gap-2 flex-wrap">
                             <Badge
                               variant="secondary"
-                              className={`text-[10px] ${fieldColorMap[entry.field_name] || ""}`}
+                              className={`text-xs ${fieldColorMap[entry.field_name] || ""}`}
                             >
                               {getFieldLabel(entry.field_name)}
                             </Badge>
-                            <span className="text-[10px] text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                               {format(parseISO(entry.created_at), "HH:mm:ss", { locale: ptBR })}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <User className="h-3 w-3" />
                             {extractUsername(entry.changed_by_email)}
                           </div>
                           {entry.old_value && (
-                            <div className="text-[10px]">
+                            <div className="text-xs">
                               <span className="text-muted-foreground">De: </span>
                               <span className="line-through text-muted-foreground/70 break-all">
                                 {entry.old_value.length > 200
@@ -142,7 +142,7 @@ export const ConductHistoryDialog = memo(function ConductHistoryDialog({
                             </div>
                           )}
                           {entry.new_value && (
-                            <div className="text-[10px]">
+                            <div className="text-xs">
                               <span className="text-muted-foreground">Para: </span>
                               <span className="text-foreground break-all">
                                 {entry.new_value.length > 200

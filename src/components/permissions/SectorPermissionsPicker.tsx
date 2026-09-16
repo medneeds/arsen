@@ -32,17 +32,17 @@ export function SectorPermissionsPicker({ selected, onChange }: SectorPermission
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
           <Layers className="h-3.5 w-3.5" /> Setores Acessíveis
         </label>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-xs">
             {selected.size} de {DEPARTMENTS.length}
           </Badge>
-          <Button type="button" size="sm" variant="ghost" className="h-7 text-[11px]" onClick={selectAll}>
+          <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={selectAll}>
             Selecionar todos
           </Button>
-          <Button type="button" size="sm" variant="ghost" className="h-7 text-[11px]" onClick={clearAll}>
+          <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={clearAll}>
             Limpar
           </Button>
         </div>
@@ -68,15 +68,15 @@ export function SectorPermissionsPicker({ selected, onChange }: SectorPermission
                     onClick={(e) => e.stopPropagation()}
                   />
                   <div className="flex flex-col items-start text-left min-w-0">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-foreground">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-foreground">
                       {group.label}
                     </span>
-                    <span className="text-[10px] text-muted-foreground truncate">
+                    <span className="text-xs text-muted-foreground truncate">
                       {group.description}
                     </span>
                   </div>
                 </div>
-                <Badge variant={count > 0 ? "default" : "outline"} className="text-[10px] shrink-0">
+                <Badge variant={count > 0 ? "default" : "outline"} className="text-xs shrink-0">
                   {count}/{group.departments.length}
                 </Badge>
               </button>

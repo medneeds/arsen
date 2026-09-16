@@ -46,11 +46,11 @@ export function PharmacySuggestionDialog({
           <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-released-soft">
             <Beaker className="h-5 w-5 text-released-on-soft" />
           </div>
-          <DialogTitle className="text-center text-[14px]">
+          <DialogTitle className="text-center text-sm">
             Sugestão da Farmácia Clínica
           </DialogTitle>
-          <p className="text-center text-[12px] text-muted-foreground leading-snug mt-0.5">
-            <span className="font-semibold text-foreground">{suggestion.medicationName}</span>
+          <p className="text-center text-xs text-muted-foreground leading-snug mt-1">
+            <span className="font-medium text-foreground">{suggestion.medicationName}</span>
             {suggestion.presentation && (
               <span className="text-muted-foreground"> · {suggestion.presentation}</span>
             )}
@@ -58,13 +58,13 @@ export function PharmacySuggestionDialog({
         </DialogHeader>
 
         {hasData ? (
-          <div className="rounded-lg border border-border/70 bg-muted/30 divide-y divide-border/60 text-[12px] my-1">
+          <div className="rounded-lg border border-border/70 bg-muted/30 divide-y divide-border/60 text-xs my-1">
             {/* Bolus */}
             {suggestion.ivBolus && (
-              <div className="flex items-center gap-2.5 px-3 py-2.5">
+              <div className="flex items-center gap-3 px-3 py-3">
                 <Syringe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="text-muted-foreground">Administração</span>
-                <span className="ml-auto font-semibold text-foreground">
+                <span className="ml-auto font-medium text-foreground">
                   Bolus EV
                 </span>
               </div>
@@ -72,10 +72,10 @@ export function PharmacySuggestionDialog({
 
             {/* Diluição — só quando não for bolus */}
             {!suggestion.ivBolus && suggestion.standardDilution && (
-              <div className="flex items-center gap-2.5 px-3 py-2.5">
+              <div className="flex items-center gap-3 px-3 py-3">
                 <Beaker className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="text-muted-foreground">Diluição padrão</span>
-                <span className="ml-auto font-semibold text-foreground text-right">
+                <span className="ml-auto font-medium text-foreground text-right">
                   {suggestion.standardDilution}
                 </span>
               </div>
@@ -83,10 +83,10 @@ export function PharmacySuggestionDialog({
 
             {/* Tempo de infusão — só quando não for bolus */}
             {!suggestion.ivBolus && suggestion.infusionTime && (
-              <div className="flex items-center gap-2.5 px-3 py-2.5">
+              <div className="flex items-center gap-3 px-3 py-3">
                 <Clock className="h-3.5 w-3.5 text-warning shrink-0" />
                 <span className="text-muted-foreground">Tempo de infusão</span>
-                <span className="ml-auto font-semibold text-foreground">
+                <span className="ml-auto font-medium text-foreground">
                   {suggestion.infusionTime}
                 </span>
               </div>
@@ -94,22 +94,22 @@ export function PharmacySuggestionDialog({
 
             {/* Dose máxima diária */}
             {suggestion.maxDailyDose && (
-              <div className="flex items-center gap-2.5 px-3 py-2.5">
+              <div className="flex items-center gap-3 px-3 py-3">
                 <AlertTriangle className="h-3.5 w-3.5 text-warning shrink-0" />
                 <span className="text-muted-foreground">Dose máx./dia</span>
-                <span className="ml-auto font-semibold text-foreground">
+                <span className="ml-auto font-medium text-foreground">
                   {suggestion.maxDailyDose}
                 </span>
               </div>
             )}
           </div>
         ) : (
-          <p className="text-center text-[12px] text-muted-foreground py-2">
+          <p className="text-center text-xs text-muted-foreground py-2">
             Nenhuma sugestão específica cadastrada para esta apresentação.
           </p>
         )}
 
-        <p className="text-[10.5px] text-muted-foreground text-center leading-relaxed">
+        <p className="text-xs text-muted-foreground text-center leading-relaxed">
           Sugerido pela Farmácia Clínica · Você pode editar os campos após aplicar.
         </p>
 
@@ -129,8 +129,8 @@ export function PharmacySuggestionDialog({
 /** Badge exibido nos campos que foram preenchidos pela sugestão farmacêutica */
 export function PharmacyFilledBadge() {
   return (
-    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-released-soft text-released-on-soft border border-released-border">
-      ✦ Sugestão Farmácia · Editável
+    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-released-soft text-released-on-soft border border-released-border">
+      Sugestão Farmácia · Editável
     </span>
   );
 }

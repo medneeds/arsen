@@ -40,21 +40,21 @@ interface UtiSectorSectionProps {
 const DEFAULT_SECTOR_INFO = {
   title: "Leitos",
   subtitle: "Mapa de leitos",
-  icon: "🏥",
+  icon: "",
   gradientClass: "bg-primary/15 border-l-4 border-l-primary",
 };
 
 const sectorInfo: Record<string, typeof DEFAULT_SECTOR_INFO> = {
-  red:     { title: "UTI 1",   subtitle: "Cuidados Intensivos", icon: "🏥", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
-  yellow:  { title: "UTI 2",   subtitle: "Cuidados Semi-Intensivos", icon: "🏥", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
-  blue:    { title: "UCI 1",   subtitle: "Cuidados Intermediários", icon: "🔵", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
-  outside: { title: "UCI 2",   subtitle: "Cuidados Intermediários", icon: "🔵", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
-  ucc:     { title: "UCC",     subtitle: "Unidade Coronariana", icon: "❤️", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
-  neuro_01:{ title: "Neuro 01",subtitle: "Neurologia", icon: "🧠", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
-  neuro_02:{ title: "Neuro 02",subtitle: "Neurologia", icon: "🧠", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
-  clinica_cirurgica:    { title: "Clínica Cirúrgica",    subtitle: "Internação", icon: "🏥", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
-  enfermaria_transicao: { title: "Enf. Transição",       subtitle: "Internação", icon: "🏥", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
-  enfermaria_vascular:  { title: "Enf. Vascular",        subtitle: "Internação", icon: "🏥", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
+  red:     { title: "UTI 1",   subtitle: "Cuidados Intensivos", icon: "", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
+  yellow:  { title: "UTI 2",   subtitle: "Cuidados Semi-Intensivos", icon: "", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
+  blue:    { title: "UCI 1",   subtitle: "Cuidados Intermediários", icon: "", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
+  outside: { title: "UCI 2",   subtitle: "Cuidados Intermediários", icon: "", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
+  ucc:     { title: "UCC",     subtitle: "Unidade Coronariana", icon: "", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
+  neuro_01:{ title: "Neuro 01",subtitle: "Neurologia", icon: "", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
+  neuro_02:{ title: "Neuro 02",subtitle: "Neurologia", icon: "", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
+  clinica_cirurgica:    { title: "Clínica Cirúrgica",    subtitle: "Internação", icon: "", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
+  enfermaria_transicao: { title: "Enf. Transição",       subtitle: "Internação", icon: "", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
+  enfermaria_vascular:  { title: "Enf. Vascular",        subtitle: "Internação", icon: "", gradientClass: "bg-primary/15 border-l-4 border-l-primary" },
 };
 
 interface UtiRowProps {
@@ -129,7 +129,7 @@ export function UtiSectorSection({
   allPatients = [],
   currentUtiUnit
 }: UtiSectorSectionProps) {
-  // 🔒 Fallback seguro — evita crash quando setor não está mapeado em sectorInfo
+  // Fallback seguro — evita crash quando setor não está mapeado em sectorInfo
   const info = sectorInfo[sector] ?? DEFAULT_SECTOR_INFO;
   const displayTitle = customTitle || info.title;
   const displayIcon = customIcon || info.icon;
@@ -203,8 +203,8 @@ export function UtiSectorSection({
   // Drag-and-drop for beds removed - beds are fixed, vacancy toggle used instead
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-2 print:space-y-0.5 print:break-inside-avoid">
-      <div className={`${headerClass} rounded-xl p-2 border border-border/50 shadow-md print:p-1 print:mb-0.5 print:rounded-md transition-all duration-200 min-h-[48px] print:h-auto flex items-center`}>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-2 print:space-y-1 print:break-inside-avoid">
+      <div className={`${headerClass} rounded-lg p-2 border border-border/50 shadow-md print:p-1 print:mb-1 print:rounded-md transition-all duration-200 min-h-[48px] print:h-auto flex items-center`}>
         <div className="flex items-center justify-between w-full gap-3">
           {/* Checkbox de seleção em massa removido do cabeçalho a pedido — não é necessário */}
           <CollapsibleTrigger asChild>
@@ -212,7 +212,7 @@ export function UtiSectorSection({
               <ChevronDown className={`h-5 w-5 transition-transform print:hidden ${chevronClass} ${isOpen ? '' : '-rotate-90'}`} />
               <div className="flex items-center gap-2 print:gap-1">
                 <span className="text-lg print:text-sm">{displayIcon}</span>
-                <h2 className={`text-lg font-bold print:text-[10px] ${titleClass}`}>{displayTitle}</h2>
+                <h2 className={`text-lg font-semibold print:text-xs ${titleClass}`}>{displayTitle}</h2>
               </div>
             </button>
           </CollapsibleTrigger>
@@ -266,7 +266,7 @@ export function UtiSectorSection({
               </Button>
             )}
             <div className={`flex items-center justify-center h-8 w-8 backdrop-blur-sm rounded-lg border print:h-6 print:w-6 ${counterClass}`}>
-              <p className={`text-base font-bold print:text-[10px] ${titleClass}`}>
+              <p className={`text-base font-semibold print:text-xs ${titleClass}`}>
                 {regularBedCount(patients)}
                 {sectorCapacity(sector) > 0 && (
                   <span className="text-xs font-normal opacity-60">/{sectorCapacity(sector)}</span>
@@ -277,12 +277,12 @@ export function UtiSectorSection({
         </div>
       </div>
 
-      <CollapsibleContent className="space-y-2 print:space-y-0.5">
+      <CollapsibleContent className="space-y-2 print:space-y-1">
 
         {displayPatients.length === 0 ? (
           <EmptySectorState
             sectorName={displayTitle}
-            sectorIcon={typeof customIcon === 'string' ? customIcon : "🏥"}
+            sectorIcon={typeof customIcon === 'string' ? customIcon : ""}
             onAddBed={onAddExtraBed}
           />
         ) : (

@@ -400,7 +400,7 @@ export function CultureRequestDialog({
 
               {/* PRINCIPAL — Culturas em evidência */}
               <div className="rounded-lg border-2 border-released/30 ring-1 ring-released/10 bg-released/5 p-4 space-y-3">
-                <div className="flex items-center gap-2 text-sm font-semibold text-released-on-soft uppercase tracking-wider">
+                <div className="flex items-center gap-2 text-sm font-medium text-released-on-soft uppercase tracking-wider">
                   <Microscope className="h-4 w-4" /> Culturas solicitadas
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -413,7 +413,7 @@ export function CultureRequestDialog({
                     return (
                       <div
                         key={item.key}
-                        className={`border rounded-md p-2.5 transition-colors ${isChecked ? "border-released/60 bg-card" : "border-border bg-card/60 hover:bg-accent/40"}`}
+                        className={`border rounded-md p-3 transition-colors ${isChecked ? "border-released/60 bg-card" : "border-border bg-card/60 hover:bg-accent/40"}`}
                       >
                         <div className="flex items-center gap-2">
                           <Checkbox
@@ -462,39 +462,39 @@ export function CultureRequestDialog({
 
               {/* Antecedentes — compactos */}
               <div className="rounded-lg border bg-card p-4 space-y-3">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Antecedentes</div>
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Antecedentes</div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <Label className="text-xs">Internado nos últimos 30 dias?</Label>
                     <RadioGroup
                       value={String(data.hospitalized_last_30d ?? "")}
                       onValueChange={(v) => setData({ ...data, hospitalized_last_30d: v === "true" })}
                       className="flex gap-3"
                     >
-                      <div className="flex items-center gap-1.5"><RadioGroupItem value="true" id="h30-s" /><Label htmlFor="h30-s" className="text-xs">Sim</Label></div>
-                      <div className="flex items-center gap-1.5"><RadioGroupItem value="false" id="h30-n" /><Label htmlFor="h30-n" className="text-xs">Não</Label></div>
+                      <div className="flex items-center gap-2"><RadioGroupItem value="true" id="h30-s" /><Label htmlFor="h30-s" className="text-xs">Sim</Label></div>
+                      <div className="flex items-center gap-2"><RadioGroupItem value="false" id="h30-n" /><Label htmlFor="h30-n" className="text-xs">Não</Label></div>
                     </RadioGroup>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <Label className="text-xs">ATB nas últimas 24h?</Label>
                     <RadioGroup
                       value={String(data.used_antibiotic_last_24h ?? "")}
                       onValueChange={(v) => setData({ ...data, used_antibiotic_last_24h: v === "true" })}
                       className="flex gap-3"
                     >
-                      <div className="flex items-center gap-1.5"><RadioGroupItem value="true" id="atb24-s" /><Label htmlFor="atb24-s" className="text-xs">Sim</Label></div>
-                      <div className="flex items-center gap-1.5"><RadioGroupItem value="false" id="atb24-n" /><Label htmlFor="atb24-n" className="text-xs">Não</Label></div>
+                      <div className="flex items-center gap-2"><RadioGroupItem value="true" id="atb24-s" /><Label htmlFor="atb24-s" className="text-xs">Sim</Label></div>
+                      <div className="flex items-center gap-2"><RadioGroupItem value="false" id="atb24-n" /><Label htmlFor="atb24-n" className="text-xs">Não</Label></div>
                     </RadioGroup>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <Label className="text-xs">Tipo de uso</Label>
                     <RadioGroup
                       value={data.antibiotic_use || ""}
                       onValueChange={(v) => setData({ ...data, antibiotic_use: v as "profilatico" | "terapeutico" })}
                       className="flex gap-3"
                     >
-                      <div className="flex items-center gap-1.5"><RadioGroupItem value="profilatico" id="atbu-p" /><Label htmlFor="atbu-p" className="text-xs">Profilático</Label></div>
-                      <div className="flex items-center gap-1.5"><RadioGroupItem value="terapeutico" id="atbu-t" /><Label htmlFor="atbu-t" className="text-xs">Terapêutico</Label></div>
+                      <div className="flex items-center gap-2"><RadioGroupItem value="profilatico" id="atbu-p" /><Label htmlFor="atbu-p" className="text-xs">Profilático</Label></div>
+                      <div className="flex items-center gap-2"><RadioGroupItem value="terapeutico" id="atbu-t" /><Label htmlFor="atbu-t" className="text-xs">Terapêutico</Label></div>
                     </RadioGroup>
                   </div>
                 </div>
@@ -569,8 +569,8 @@ export function CultureRequestDialog({
               onClick={() => executePrint(false)}
               className="w-full text-left rounded-md border border-border bg-card hover:bg-muted/50 px-4 py-3 transition"
             >
-              <div className="text-sm font-semibold">Via única (A4 retrato)</div>
-              <div className="text-xs text-muted-foreground mt-0.5">
+              <div className="text-sm font-medium">Via única (A4 retrato)</div>
+              <div className="text-xs text-muted-foreground mt-1">
                 Formato tradicional — uma solicitação por folha.
               </div>
             </button>
@@ -578,10 +578,10 @@ export function CultureRequestDialog({
               onClick={() => executePrint(true)}
               className="w-full text-left rounded-md border-2 border-released/60 bg-released-soft hover:bg-released-soft px-4 py-3 transition"
             >
-              <div className="text-sm font-semibold text-released-on-soft">
+              <div className="text-sm font-medium text-released-on-soft">
                 2 vias na mesma folha (A4 paisagem) — recomendado
               </div>
-              <div className="text-xs text-released-on-soft/80 mt-0.5">
+              <div className="text-xs text-released-on-soft/80 mt-1">
                 Duas solicitações idênticas lado a lado, separadas por linha de corte. Economiza papel e padroniza o envio.
               </div>
             </button>

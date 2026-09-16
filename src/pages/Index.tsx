@@ -114,7 +114,7 @@ function SortableOutsidePatientCard(props: SortableOutsidePatientCardProps) {
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-2">
       <button
-        className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded flex-shrink-0 print:hidden"
+        className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded-md flex-shrink-0 print:hidden"
         {...attributes}
         {...listeners}
       >
@@ -134,7 +134,7 @@ function DynamicHeader({ children }: { children: React.ReactNode }) {
   
   return (
     <header 
-      className="border-b border-white/10 bg-gradient-to-r from-[#0a1628] via-[#0f2847] to-[#1a3a5c] backdrop-blur-xl fixed top-0 right-0 z-50 shadow-lg print:static print:border-b print:shadow-none print:mb-1 print:pb-0.5 transition-[left] duration-200 ease-linear"
+      className="border-b border-white/10 bg-gradient-to-r from-[#0a1628] via-[#0f2847] to-[#1a3a5c] backdrop-blur-xl fixed top-0 right-0 z-50 shadow-md print:static print:border-b print:shadow-none print:mb-1 print:pb-1 transition-[left] duration-200 ease-linear"
       style={{
         left: isMobile ? 0 : (state === 'collapsed' ? 'var(--sidebar-width-icon)' : 'var(--sidebar-width)')
       }}
@@ -235,7 +235,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
   const { patients: dbPatients, isLoading: patientsLoading, updatePatient: dbUpdatePatient, createPatient: dbCreatePatient, deletePatient: dbDeletePatient, releaseBedPreAdmission: dbReleaseBedPreAdmission, reorderPatients: dbReorderPatients, refetch } = usePatients(undefined, activeSector);
   const [patients, setPatients] = useState<Patient[]>(dbPatients);
 
-  // 🔒 Alerta de alta iminente — notifica uma vez por sessão quando alta < 24h
+  // Alerta de alta iminente — notifica uma vez por sessão quando alta < 24h
   useDischargeAlert(patients);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const preAdmissionRef = useRef<PreAdmissionSectionHandle>(null);
@@ -975,7 +975,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
         
         <div className={printMode ? 'print-hide' : ''}>
           {/* Main Content — sem cabeçalho duplicado; ações ficam no BreadcrumbBar */}
-          <main className="w-full max-w-full px-1.5 sm:px-4 py-2 sm:py-6 print:py-0 print:px-1 print:pt-3 overflow-x-hidden">
+          <main className="w-full max-w-full px-2 sm:px-4 py-2 sm:py-6 print:py-0 print:px-1 print:pt-3 overflow-x-hidden">
             <div className="space-y-2 sm:space-y-4 print:space-y-1">
               {/* Unified breadcrumb bar com ações integradas.
                   Embutido no NIR, o hospedeiro ja tem o proprio cabecalho —
@@ -1033,7 +1033,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button variant="outline" size="icon" onClick={handlePrintSelected}
-                                className="h-8 w-8 bg-gradient-to-br from-critical via-warning to-stable text-white border-0 hover:shadow-lg hover:scale-105 transition-all">
+                                className="h-8 w-8 bg-critical text-white border-0 hover:shadow-md hover:scale-105 transition-all">
                                 <Printer className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
@@ -1091,11 +1091,11 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                 return (
                   <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border bg-muted/30 px-3 py-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium shrink-0">
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium shrink-0">
                         Setor exibido
                       </span>
                       <SectorSelector variant="light" navigateOnSelect={false} />
-                      <span className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap">
+                      <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
                         {ocupados}/{doSetor.length} leitos ocupados
                       </span>
                     </div>
@@ -1207,7 +1207,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
           </main>
 
           {/* Floating bottom controls — Tela cheia + Ocultar nomes (LGPD) */}
-          <div className="fixed bottom-5 right-5 z-40 flex items-center gap-1.5 rounded-full border border-border/60 bg-card/95 backdrop-blur-md shadow-lg p-1 print:hidden">
+          <div className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border border-border/60 bg-card/95 backdrop-blur-md shadow-md p-1 print:hidden">
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>

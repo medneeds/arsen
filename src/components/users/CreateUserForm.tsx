@@ -536,7 +536,7 @@ export function CreateUserForm({ onCreated }: Props) {
     if (submitting) return null;
     if (draftStatus === "saving") {
       return (
-        <span className="preserve-case inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <span className="preserve-case inline-flex items-center gap-2 text-xs text-muted-foreground">
           <CloudUpload className="h-3 w-3 animate-pulse" /> Salvando rascunho…
         </span>
       );
@@ -544,13 +544,13 @@ export function CreateUserForm({ onCreated }: Props) {
     if (draftStatus === "saved" || draftStatus === "restored") {
       const when = draftSavedAt ? new Date(draftSavedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
       return (
-        <span className="preserve-case inline-flex items-center gap-1.5 text-[11px] text-released-on-soft">
+        <span className="preserve-case inline-flex items-center gap-2 text-xs text-released-on-soft">
           <CheckCircle2 className="h-3 w-3" /> Rascunho salvo{when ? ` às ${when}` : ""}
         </span>
       );
     }
     return (
-      <span className="preserve-case inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
+      <span className="preserve-case inline-flex items-center gap-2 text-xs text-muted-foreground/60">
         <CloudOff className="h-3 w-3" /> Sem rascunho
       </span>
     );
@@ -561,11 +561,11 @@ export function CreateUserForm({ onCreated }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow">
+          <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center shadow-sm">
             <UserPlus className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-bold">Cadastrar novo usuário</h2>
+            <h2 className="text-lg font-semibold">Cadastrar novo usuário</h2>
             <p className="text-xs text-muted-foreground">
               Cria o acesso de um colaborador segmentado por unidade, perfil e setores.
             </p>
@@ -578,7 +578,7 @@ export function CreateUserForm({ onCreated }: Props) {
               type="button"
               variant="ghost"
               size="sm"
-              className="h-7 px-2 text-[11px] gap-1"
+              className="h-7 px-2 text-xs gap-1"
               onClick={() => {
                 clearDraft();
                 toast.success("Rascunho descartado");
@@ -604,7 +604,7 @@ export function CreateUserForm({ onCreated }: Props) {
 
         <TabsContent value="password" className="mt-3">
           <div className="rounded-lg border bg-muted/30 p-3 flex items-center gap-3">
-            <Label className="text-xs font-bold uppercase shrink-0">Senha</Label>
+            <Label className="text-xs font-semibold uppercase tracking-wider shrink-0">Senha</Label>
             <Input
               value={password}
               onChange={(e) => setPassword(e.target.value.slice(0, 12))}
@@ -619,7 +619,7 @@ export function CreateUserForm({ onCreated }: Props) {
               <Copy className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             De 6 a 12 caracteres — letras maiúsculas/minúsculas, números e especiais permitidos. O usuário deverá trocar a senha no primeiro login.
           </p>
         </TabsContent>
@@ -633,8 +633,8 @@ export function CreateUserForm({ onCreated }: Props) {
 
       {/* Identificação */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label className="text-xs font-bold uppercase">Nome completo *</Label>
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold uppercase tracking-wider">Nome completo *</Label>
           <Input
             ref={fullNameRef}
             value={fullName}
@@ -643,8 +643,8 @@ export function CreateUserForm({ onCreated }: Props) {
             autoComplete="name"
           />
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs font-bold uppercase">E-mail *</Label>
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold uppercase tracking-wider">E-mail *</Label>
           <Input
             ref={emailRef}
             type="email"
@@ -654,8 +654,8 @@ export function CreateUserForm({ onCreated }: Props) {
             autoComplete="email"
           />
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs font-bold uppercase flex items-center gap-1.5"><IdCard className="h-3.5 w-3.5" /> CPF *</Label>
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2"><IdCard className="h-3.5 w-3.5" /> CPF *</Label>
           <div className="relative">
             <Input
               ref={cpfRef}
@@ -665,7 +665,7 @@ export function CreateUserForm({ onCreated }: Props) {
               inputMode="numeric"
               aria-invalid={!!cpfError}
               aria-describedby="cpf-help"
-              className={cpfError ? "border-destructive focus-visible:ring-destructive pr-9" : "pr-9"}
+              className={cpfError ? "border-destructive focus-visible:ring-destructive pr-8" : "pr-8"}
             />
             {cpfChecking && (
               <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
@@ -676,13 +676,13 @@ export function CreateUserForm({ onCreated }: Props) {
           </div>
           <p
             id="cpf-help"
-            className={`text-[11px] min-h-[14px] ${cpfError ? "text-destructive font-medium" : "text-muted-foreground"}`}
+            className={`text-xs min-h-[14px] ${cpfError ? "text-destructive font-medium" : "text-muted-foreground"}`}
           >
             {cpfError ?? (cpfChecking ? "Verificando disponibilidade…" : "Informe um CPF válido (não cadastrado).")}
           </p>
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs font-bold uppercase flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> Telefone *</Label>
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> Telefone *</Label>
           <Input
             ref={phoneRef}
             value={phone}
@@ -692,12 +692,12 @@ export function CreateUserForm({ onCreated }: Props) {
             autoComplete="tel"
           />
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs font-bold uppercase flex items-center gap-1.5"><Stethoscope className="h-3.5 w-3.5" /> CRM / Registro</Label>
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2"><Stethoscope className="h-3.5 w-3.5" /> CRM / Registro</Label>
           <Input value={crm} onChange={(e) => setCrm(e.target.value)} placeholder="Opcional" />
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs font-bold uppercase flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" /> Unidade Hospitalar *</Label>
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2"><Building2 className="h-3.5 w-3.5" /> Unidade Hospitalar *</Label>
           {loadingUnits ? (
             <Skeleton className="h-10 w-full" />
           ) : (
@@ -719,14 +719,14 @@ export function CreateUserForm({ onCreated }: Props) {
 
       {/* Perfil + Role */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1.5 md:col-span-2">
-          <Label className="text-xs font-bold uppercase flex items-center gap-1.5">
+        <div className="space-y-2 md:col-span-2">
+          <Label className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2">
             <Shield className="h-3.5 w-3.5" /> Perfis de Acesso *
           </Label>
-          <p className="preserve-case text-[11px] text-muted-foreground -mt-0.5">
+          <p className="preserve-case text-xs text-muted-foreground -mt-1">
             Selecione um ou mais perfis. O <strong>primeiro</strong> é o principal — define a tela de pouso padrão e os setores sugeridos. Quando há mais de um, o usuário escolherá no login qual usar.
           </p>
-          <div className="flex flex-wrap gap-1.5 pt-1">
+          <div className="flex flex-wrap gap-2 pt-1">
             {ACCESS_PROFILES.map((p) => {
               const checked = accessProfiles.includes(p.value);
               const isPrimary = checked && accessProfiles[0] === p.value;
@@ -751,7 +751,7 @@ export function CreateUserForm({ onCreated }: Props) {
                       return [p.value, ...prev.filter((x) => x !== p.value)];
                     });
                   }}
-                  className={`preserve-case text-xs px-2.5 py-1 rounded-full border transition-all ${
+                  className={`preserve-case text-xs px-3 py-1 rounded-full border transition-all ${
                     isPrimary
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
                       : checked
@@ -760,21 +760,21 @@ export function CreateUserForm({ onCreated }: Props) {
                   }`}
                   title={isPrimary ? "Perfil principal (duplo clique para mudar)" : checked ? "Duplo clique para definir como principal" : "Clique para adicionar"}
                 >
-                  {isPrimary && "★ "}{p.shortLabel ?? p.label}
+                  {isPrimary && ""}{p.shortLabel ?? p.label}
                 </button>
               );
             })}
           </div>
-          <p className="preserve-case text-[10px] text-muted-foreground/80">
-            Clique para adicionar/remover • Duplo clique para definir como principal (★)
+          <p className="preserve-case text-xs text-muted-foreground/80">
+            Clique para adicionar/remover • Duplo clique para definir como principal ()
           </p>
         </div>
         <div className="hidden" aria-hidden="true">
           {/* compat: alguns rascunhos antigos ainda referenciam accessProfile singular */}
           <input type="hidden" value={accessProfile} readOnly />
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs font-bold uppercase">Role do Sistema *</Label>
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold uppercase tracking-wider">Role do Sistema *</Label>
           <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -791,9 +791,9 @@ export function CreateUserForm({ onCreated }: Props) {
       {/* Setores */}
       {isGlobal ? (
         <div className="rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 p-4 flex items-start gap-3">
-          <Shield className="h-5 w-5 text-primary mt-0.5" />
+          <Shield className="h-5 w-5 text-primary mt-1" />
           <div className="text-sm">
-            <p className="font-bold uppercase tracking-wider text-primary">Perfil global</p>
+            <p className="font-semibold uppercase tracking-wider text-primary">Perfil global</p>
             <p className="text-xs text-muted-foreground mt-1">
               {role === "admin" ? "Coordenadores (admin)" : "Gestores"} têm acesso a todos os setores automaticamente —
               nenhuma seleção é necessária.
@@ -818,7 +818,7 @@ export function CreateUserForm({ onCreated }: Props) {
             return (
               <>
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider">
+                  <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider">
                     {hasError ? (
                       <XCircle className="h-4 w-4 text-destructive" />
                     ) : pct === 100 ? (
@@ -841,10 +841,10 @@ export function CreateUserForm({ onCreated }: Props) {
                   </span>
                 </div>
                 <Progress value={pct} className="h-1.5" />
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5 pt-1">
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 pt-1">
                   {submitSteps.map((s) => (
-                    <li key={s.key} className="flex items-start gap-2 text-[12px]">
-                      <span className="mt-0.5 shrink-0">
+                    <li key={s.key} className="flex items-start gap-2 text-xs">
+                      <span className="mt-1 shrink-0">
                         {s.status === "done" && <CheckCircle2 className="h-3.5 w-3.5 text-released" />}
                         {s.status === "running" && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />}
                         {s.status === "pending" && <Circle className="h-3.5 w-3.5 text-muted-foreground/40" />}
@@ -868,7 +868,7 @@ export function CreateUserForm({ onCreated }: Props) {
                           {s.label}
                         </span>
                         {s.detail && (
-                          <span className="block text-[10.5px] text-muted-foreground">{s.detail}</span>
+                          <span className="block text-xs text-muted-foreground">{s.detail}</span>
                         )}
                       </span>
                     </li>
@@ -882,7 +882,7 @@ export function CreateUserForm({ onCreated }: Props) {
 
       {/* Resumo + ação */}
       <div className="flex items-center justify-between gap-4 pt-2 border-t">
-        <div className="flex flex-wrap gap-2 text-[11px]">
+        <div className="flex flex-wrap gap-2 text-xs">
           <Badge variant="outline">{mode === "password" ? "Acesso imediato" : "Convite"}</Badge>
           <Badge variant="outline">Perfil: {accessProfile}</Badge>
           <Badge variant="outline">Role: {role}</Badge>

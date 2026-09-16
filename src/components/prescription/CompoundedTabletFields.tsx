@@ -60,23 +60,23 @@ export function CompoundedTabletFields({ item }: Props) {
   return (
     <div
       className={cn(
-        "rounded-md border px-2 py-1.5 mt-1 text-[11px] leading-relaxed",
+        "rounded-md border px-2 py-2 mt-1 text-xs leading-relaxed",
         hardBlock
           ? "bg-critical-soft/80 border-critical-border border-l-[3px] border-l-rose-500"
           : "bg-warning-soft/60 border-warning-border/70 border-l-[3px] border-l-amber-500"
       )}
     >
-      <div className="flex items-center gap-1.5 mb-0.5">
+      <div className="flex items-center gap-2 mb-1">
         <div
           className={cn(
-            "flex items-center justify-center h-4 w-4 rounded text-white shrink-0",
+            "flex items-center justify-center h-4 w-4 rounded-md text-white shrink-0",
             hardBlock ? "bg-critical" : "bg-warning"
           )}
         >
           {hardBlock ? <AlertTriangle className="h-2.5 w-2.5" /> : <Pill className="h-2.5 w-2.5" />}
         </div>
         <span className={cn(
-          "text-[10px] font-bold uppercase tracking-[0.08em]",
+          "text-xs font-semibold uppercase tracking-[0.08em]",
           hardBlock ? "text-critical-on-soft" : "text-warning-on-soft"
         )}>
           {hardBlock ? 'NÃO TRITURAR — administração por sonda inviável' : 'NÃO TRITURAR — técnica específica aplicada'}
@@ -84,18 +84,18 @@ export function CompoundedTabletFields({ item }: Props) {
       </div>
 
       {hardBlock ? (
-        <div className="text-critical-on-soft space-y-0.5">
+        <div className="text-critical-on-soft space-y-1">
           <p><strong>Motivo:</strong> {block!.reason}</p>
           {block!.alternative && <p><strong>Sugestão:</strong> {block!.alternative}</p>}
-          <p className="text-[10px] text-critical-on-soft/80 italic">
+          <p className="text-xs text-critical-on-soft/80 italic">
             Considere trocar a apresentação ou a via antes de prescrever.
           </p>
         </div>
       ) : (
-        <div className="text-warning-on-soft space-y-0.5">
+        <div className="text-warning-on-soft space-y-1">
           <p><strong>Técnica:</strong> {block!.technique!.label}</p>
-          <p className="text-[10px]"><strong>Motivo:</strong> {block!.reason}</p>
-          <p className="text-[10px] text-warning-on-soft/80">
+          <p className="text-xs"><strong>Motivo:</strong> {block!.reason}</p>
+          <p className="text-xs text-warning-on-soft/80">
             Instrução aplicada automaticamente — ajuste em "Observações adicionais" se necessário.
           </p>
         </div>

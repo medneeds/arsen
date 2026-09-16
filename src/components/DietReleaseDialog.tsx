@@ -137,7 +137,7 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
             </div>
             <div>
               <span>Autorização de Dieta</span>
-              <p className="patient-id text-sm font-normal text-muted-foreground mt-0.5">
+              <p className="patient-id text-sm font-normal text-muted-foreground mt-1">
                 {patient.name} • Leito {patient.bedNumber}
               </p>
             </div>
@@ -150,8 +150,8 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
         <div className="space-y-6 py-4">
           {/* Seção 1: Via da Dieta */}
           <div className="space-y-3 p-4 rounded-lg bg-muted border border-border">
-            <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-released text-white flex items-center justify-center text-xs font-bold">1</span>
+            <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-released text-white flex items-center justify-center text-xs font-semibold">1</span>
               Via da Dieta
             </Label>
             <RadioGroup
@@ -192,8 +192,8 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
 
           {/* Seção 2: Tipo de Dieta */}
           <div className="space-y-3 p-4 rounded-lg bg-muted border border-border">
-            <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-released text-white flex items-center justify-center text-xs font-bold">2</span>
+            <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-released text-white flex items-center justify-center text-xs font-semibold">2</span>
               Tipo de Dieta
             </Label>
             <div className="flex flex-wrap gap-2 pt-1">
@@ -225,8 +225,8 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
 
           {/* Seção 3: Restrições/Comorbidades */}
           <div className="space-y-3 p-4 rounded-lg bg-muted border border-border">
-            <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-released text-white flex items-center justify-center text-xs font-bold">3</span>
+            <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-released text-white flex items-center justify-center text-xs font-semibold">3</span>
               Restrições / Comorbidades
             </Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
@@ -247,7 +247,7 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
                     className="sr-only"
                   />
                   <div className={cn(
-                    "w-4 h-4 rounded border-2 flex items-center justify-center",
+                    "w-4 h-4 rounded-md border-2 flex items-center justify-center",
                     selectedRestrictions.includes(restriction.id)
                       ? "bg-warning border-warning"
                       : "border-border"
@@ -282,8 +282,8 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
 
           {/* Seção 4: Dados do Paciente */}
           <div className="space-y-3 p-4 rounded-lg bg-muted border border-border">
-            <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-released text-white flex items-center justify-center text-xs font-bold">4</span>
+            <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-released text-white flex items-center justify-center text-xs font-semibold">4</span>
               Data de Nascimento
             </Label>
             <Input
@@ -297,12 +297,12 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
 
           {/* Seção 5: Médico Responsável */}
           <div className="space-y-3 p-4 rounded-lg bg-muted border border-border">
-            <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-released text-white flex items-center justify-center text-xs font-bold">5</span>
+            <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-released text-white flex items-center justify-center text-xs font-semibold">5</span>
               Médico Responsável
             </Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Nome Completo</Label>
                 <Input
                   placeholder="Dr(a). Nome Completo"
@@ -311,7 +311,7 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
                   className="text-sm"
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">CRM</Label>
                 <Input
                   placeholder="CRM-MA 00000"

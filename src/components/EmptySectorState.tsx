@@ -9,9 +9,9 @@ interface EmptySectorStateProps {
 
 export function EmptySectorState({ sectorName, sectorIcon, onAddBed }: EmptySectorStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-10 px-4 bg-card/50 rounded-lg border border-dashed border-border/60 animate-fade-in">
+    <div className="flex flex-col items-center justify-center py-8 px-4 bg-card/50 rounded-lg border border-dashed border-border/60 animate-fade-in">
       <div className="relative mb-4">
-        <div className="h-16 w-16 rounded-2xl bg-muted/80 flex items-center justify-center">
+        <div className="h-16 w-16 rounded-lg bg-muted/80 flex items-center justify-center">
           <BedDouble className="h-8 w-8 text-muted-foreground/50" />
         </div>
         <span className="absolute -top-1 -right-1 text-xl">{sectorIcon}</span>
@@ -27,7 +27,7 @@ export function EmptySectorState({ sectorName, sectorIcon, onAddBed }: EmptySect
           variant="outline"
           size="sm"
           onClick={onAddBed}
-          className="gap-1.5 text-xs hover:scale-105 active:scale-95 transition-transform"
+          className="gap-2 text-xs hover:scale-105 active:scale-95 transition-transform"
         >
           <Plus className="h-3.5 w-3.5" />
           Adicionar Leito

@@ -51,11 +51,11 @@ export function NirDischargeForecast({ hospitalUnitId }: Props) {
             <CalendarClock className="h-4 w-4 text-primary" />
             Previsão de altas
           </CardTitle>
-          <div className="flex items-center gap-1.5">
-            <Badge variant="outline" className="text-[10px] gap-1">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs gap-1">
               <TrendingUp className="h-3 w-3" /> {next72} em 72h
             </Badge>
-            <Badge variant="secondary" className="text-[10px]">{total} previstas</Badge>
+            <Badge variant="secondary" className="text-xs">{total} previstas</Badge>
           </div>
         </div>
       </CardHeader>
@@ -71,11 +71,11 @@ export function NirDischargeForecast({ hospitalUnitId }: Props) {
         ) : (
           <>
             {/* Bucket summary */}
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 mb-3">
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
               {(Object.keys(BUCKET_META) as DischargePrediction["bucket"][]).map((k) => (
-                <div key={k} className={cn("rounded-md border px-2 py-1.5 text-center", BUCKET_META[k].tone)}>
-                  <p className="text-[9px] uppercase tracking-wider font-medium opacity-80">{BUCKET_META[k].label}</p>
-                  <p className="text-base font-bold leading-tight mt-0.5">{counts[k]}</p>
+                <div key={k} className={cn("rounded-md border px-2 py-2 text-center", BUCKET_META[k].tone)}>
+                  <p className="text-xs uppercase tracking-wider font-medium opacity-80">{BUCKET_META[k].label}</p>
+                  <p className="text-base font-semibold leading-tight mt-1">{counts[k]}</p>
                 </div>
               ))}
             </div>
@@ -84,20 +84,20 @@ export function NirDischargeForecast({ hospitalUnitId }: Props) {
               <div className="space-y-3 pr-3">
                 {grouped.map(({ bucket, items }) => (
                   <div key={bucket}>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Badge variant="outline" className={cn("text-[10px]", BUCKET_META[bucket].tone)}>{BUCKET_META[bucket].label}</Badge>
-                      <span className="text-[10px] text-muted-foreground">{items.length} paciente(s)</span>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="outline" className={cn("text-xs", BUCKET_META[bucket].tone)}>{BUCKET_META[bucket].label}</Badge>
+                      <span className="text-xs text-muted-foreground">{items.length} paciente(s)</span>
                     </div>
                     <ul className="divide-y border rounded-md">
                       {items.map((p) => (
-                        <li key={p.id} className="px-2.5 py-1.5 flex items-center justify-between gap-2">
+                        <li key={p.id} className="px-3 py-2 flex items-center justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="patient-id text-xs font-semibold truncate">{p.name}</p>
-                            <p className="text-[10px] text-muted-foreground truncate capitalize">
+                            <p className="patient-id text-xs font-medium truncate">{p.name}</p>
+                            <p className="text-xs text-muted-foreground truncate capitalize">
                               {p.sector || "—"} · Leito {p.bed_number || "—"}
                             </p>
                           </div>
-                          <span className="text-[10px] text-foreground/80 truncate max-w-[40%] text-right" title={p.uti_discharge_prediction || ""}>
+                          <span className="text-xs text-foreground/80 truncate max-w-[40%] text-right" title={p.uti_discharge_prediction || ""}>
                             {p.uti_discharge_prediction}
                           </span>
                         </li>

@@ -28,7 +28,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [checkingTerms, setCheckingTerms] = useState(true);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  // 🔒 Persistir no sessionStorage para sobreviver a F5/reload da página.
+  // Persistir no sessionStorage para sobreviver a F5/reload da página.
   // Sem isso, cada reload reseta o estado e força a re-seleção do setor.
 
   // Verificar se é um usuário genérico legado (não precisa de aprovação nem termos)

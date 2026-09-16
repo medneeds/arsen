@@ -833,7 +833,7 @@ const TAB_ORDER: PrescriptionCategory[] = [
 export function getCategoryContainerClass(category?: string): string {
   const base = "relative rounded-md p-2 border";
   // Azul institucional unificado (mesmo tom da plataforma — slate-50 + border-l blue-700)
-  const blue = `${base} bg-muted/70 border-border/70 border-l-[3px] border-l-[hsl(217,60%,38%)](217,55%,55%)]`;
+  const blue = `${base} bg-muted/70 border-border/70 border-l-[3px] border-l-[hsl(217,60%,38%)]`;
   switch (category) {
     case 'high_alert':
       // CONVENÇÃO ISMP — mantém vermelho para sinal cromático de segurança no container
@@ -914,9 +914,9 @@ function MedicationAutocomplete({
             onBlur={() => setTimeout(() => setFocused(false), 200)}
             placeholder={placeholder}
             className={cn(
-              "pl-9 bg-background/60 h-7 text-xs transition-colors",
+              "pl-8 bg-background/60 h-7 text-xs transition-colors",
               category ? `${accent.border} ${accent.ring}` : "border-border/50 focus:border-primary/50",
-              onAssistantClick && "pr-9"
+              onAssistantClick && "pr-8"
             )}
           />
           {onAssistantClick && (
@@ -925,7 +925,7 @@ function MedicationAutocomplete({
                 <button
                   type="button"
                   onClick={onAssistantClick}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 rounded-md flex items-center justify-center bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/30 text-primary hover:from-primary/25 hover:to-primary/10 transition-all"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 rounded-md flex items-center justify-center bg-primary/15 border border-primary/30 text-primary hover:from-primary/25 hover:to-primary/10 transition-all"
                   aria-label={assistantTooltip || "Abrir assistente"}
                 >
                   <Sparkles className="h-3 w-3" />
@@ -939,7 +939,7 @@ function MedicationAutocomplete({
         </div>
       </div>
       {focused && filtered.length > 0 && (
-        <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-border bg-popover shadow-lg max-h-64 overflow-y-auto">
+        <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-border bg-popover shadow-md max-h-64 overflow-y-auto">
           {filtered.map((med) => {
             const fav = favCount(med.id);
             return (
@@ -948,7 +948,7 @@ function MedicationAutocomplete({
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleSelect(med)}
-                className="w-full px-3 py-2.5 text-left hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 border-b border-border/30 last:border-0"
+                className="w-full px-3 py-3 text-left hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 border-b border-border/30 last:border-0"
               >
                 <div className="min-w-0">
                   <span className="text-sm font-medium text-foreground block truncate">
@@ -958,7 +958,7 @@ function MedicationAutocomplete({
                   </span>
                   <span className="text-xs text-muted-foreground block truncate">
                     {med.isStandard && (
-                      <Badge variant="outline" className="mr-1 text-[9px] px-1 py-0 h-4 border-released/60 text-released-on-soft bg-released/10">
+                      <Badge variant="outline" className="mr-1 text-xs px-1 py-0 h-4 border-released/60 text-released-on-soft bg-released/10">
                         PADRÃO HMDM
                       </Badge>
                     )}
@@ -966,7 +966,7 @@ function MedicationAutocomplete({
                   </span>
                 </div>
                 {med.defaultRoute !== '-' && (
-                  <Badge variant="outline" className="text-[10px] shrink-0">{med.defaultRoute}</Badge>
+                  <Badge variant="outline" className="text-xs shrink-0">{med.defaultRoute}</Badge>
                 )}
               </button>
             );
@@ -1039,13 +1039,13 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
   return (
     <div className="space-y-2">
       {/* Category chips — pop-up categories open dialogs; others filter the search */}
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap">
         {/* "Todas" reset chip */}
         <button
           type="button"
           onClick={() => { setSelectedCat('all'); inputRef.current?.focus(); }}
           className={cn(
-            "text-[10px] font-medium px-2.5 py-1 rounded-full border transition-all",
+            "text-xs font-medium px-3 py-1 rounded-full border transition-all",
             selectedCat === 'all'
               ? "bg-foreground text-background border-foreground"
               : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60"
@@ -1065,7 +1065,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
               onClick={() => handleChipClick(cat)}
               title={isPopup ? `Abrir guia de ${config.label}` : `Filtrar busca por ${config.label}`}
               className={cn(
-                "text-[10px] font-medium px-2.5 py-1 rounded-full border transition-all flex items-center gap-1",
+                "text-xs font-medium px-3 py-1 rounded-full border transition-all flex items-center gap-1",
                 active
                   ? cn("border-current", config.color, config.bgColor)
                   : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60",
@@ -1074,7 +1074,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
             >
               <Icon className="h-3 w-3" />
               {config.shortLabel ?? config.label}
-              {isPopup && <span className="text-[8px] opacity-60 ml-0.5">▸</span>}
+              {isPopup && <span className="text-xs opacity-60 ml-1">▸</span>}
             </button>
           );
         })}
@@ -1095,11 +1095,11 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
                 ? "Buscar em todas as categorias..."
                 : `Buscar em ${CATEGORY_CONFIG[selectedCat]?.label.toLowerCase()}...`
             }
-            className="pl-9 bg-background/60 border-border/50 h-9 text-sm focus:border-primary/50 transition-colors"
+            className="pl-8 bg-background/60 border-border/50 h-9 text-sm focus:border-primary/50 transition-colors"
           />
         </div>
         {focused && filtered.length > 0 && (
-          <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-border bg-popover shadow-lg max-h-72 overflow-y-auto">
+          <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-border bg-popover shadow-md max-h-72 overflow-y-auto">
             {filtered.map((med) => {
               const catConfig = CATEGORY_CONFIG[med.category];
               const fav = favCount(med.id);
@@ -1119,24 +1119,24 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
                     </span>
                     <span className="text-xs text-muted-foreground block truncate">
                       {med.isStandard && (
-                        <Badge variant="outline" className="mr-1 text-[9px] px-1 py-0 h-4 border-released/60 text-released-on-soft bg-released/10">
+                        <Badge variant="outline" className="mr-1 text-xs px-1 py-0 h-4 border-released/60 text-released-on-soft bg-released/10">
                           PADRÃO HMDM
                         </Badge>
                       )}
                       <span className="normal-case">{formatPresentation(med.presentation)}</span>
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     {fav > 0 && (
-                      <Badge variant="outline" className="text-[9px] px-1.5 border-warning/50 text-warning-on-soft">
+                      <Badge variant="outline" className="text-xs px-2 border-warning/50 text-warning-on-soft">
                         {fav}×
                       </Badge>
                     )}
                     {catConfig && (
-                      <Badge variant="outline" className={cn("text-[9px] px-1.5", catConfig.color)}>{catConfig.label}</Badge>
+                      <Badge variant="outline" className={cn("text-xs px-2", catConfig.color)}>{catConfig.label}</Badge>
                     )}
                     {med.defaultRoute !== '-' && (
-                      <Badge variant="outline" className="text-[9px]">{med.defaultRoute}</Badge>
+                      <Badge variant="outline" className="text-xs">{med.defaultRoute}</Badge>
                     )}
                   </div>
                 </button>
@@ -1148,7 +1148,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
 
       {/* Free text for nonstandard */}
       {selectedCat === 'nonstandard' && (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <Input
             value={freeText}
             onChange={(e) => setFreeText(e.target.value)}
@@ -1174,10 +1174,10 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
 // Renderizado no modo expandido para itens da categoria 'nutrition' no lugar
 // dos campos de medicação. Todos os campos são OPCIONAIS.
 const NutFieldLabel = ({ children }: { children: React.ReactNode }) => (
-  <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">{children}</span>
+  <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">{children}</span>
 );
 const NutTinyInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
-  <Input {...props} className={cn("h-6 text-[11px] bg-white border-border", props.className)} />
+  <Input {...props} className={cn("h-6 text-xs bg-white border-border", props.className)} />
 );
 // Input com sufixo de unidade fixo à direita (ex.: "1500 mL")
 const NutSuffixInput = ({
@@ -1198,9 +1198,9 @@ const NutSuffixInput = ({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="h-7 text-[12px] font-semibold pr-9 bg-white border-released-border focus-visible:ring-released/60"
+      className="h-7 text-xs font-medium pr-8 bg-white border-released-border focus-visible:ring-released/60"
     />
-    <span className="absolute right-2 text-[10px] font-medium text-released-on-soft pointer-events-none select-none">
+    <span className="absolute right-2 text-xs font-medium text-released-on-soft pointer-events-none select-none">
       {suffix}
     </span>
   </div>
@@ -1268,7 +1268,7 @@ function NutritionFields({
     <div className="flex items-center gap-1">
       <NutFieldLabel>{label}:</NutFieldLabel>
       <Select value={value || ''} onValueChange={onChange}>
-        <SelectTrigger className={cn("h-7 text-[12px] font-semibold bg-white border-released-border focus-visible:ring-released/60", width)}>
+        <SelectTrigger className={cn("h-7 text-xs font-medium bg-white border-released-border focus-visible:ring-released/60", width)}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -1287,7 +1287,7 @@ function NutritionFields({
           type="button"
           onClick={() => onChange(o.v)}
           className={cn(
-            "px-2 text-[10px] font-semibold transition",
+            "px-2 text-xs font-medium transition",
             value === o.v
               ? "bg-released text-white"
               : "text-released-on-soft hover:bg-released-soft"
@@ -1302,7 +1302,7 @@ function NutritionFields({
   // Bloco "Intervalo ↔ Etapas" (switch)
   const scheduleMode: 'interval' | 'steps' = item.nutScheduleMode ?? 'interval';
   const ScheduleSwitch = (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       <MiniToggle
         value={scheduleMode}
         options={[{ v: 'interval', label: 'Intervalo' }, { v: 'steps', label: 'Etapas' }]}
@@ -1310,7 +1310,7 @@ function NutritionFields({
       />
       {scheduleMode === 'interval' ? (
         <Select value={item.dietInterval || ''} onValueChange={(v) => onUpdate(item.id, 'dietInterval', v)}>
-          <SelectTrigger className="h-7 text-[12px] font-semibold bg-white border-released-border w-28">
+          <SelectTrigger className="h-7 text-xs font-medium bg-white border-released-border w-28">
             <SelectValue placeholder="—" />
           </SelectTrigger>
           <SelectContent>
@@ -1319,7 +1319,7 @@ function NutritionFields({
         </Select>
       ) : (
         <Select value={item.nutSteps || ''} onValueChange={(v) => onUpdate(item.id, 'nutSteps', v)}>
-          <SelectTrigger className="h-7 text-[12px] font-semibold bg-white border-released-border w-28">
+          <SelectTrigger className="h-7 text-xs font-medium bg-white border-released-border w-28">
             <SelectValue placeholder="—" />
           </SelectTrigger>
           <SelectContent>
@@ -1347,15 +1347,15 @@ function NutritionFields({
     return Math.round(vd / n);
   })();
   const PerIntake = (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       <NutFieldLabel>Por tomada:</NutFieldLabel>
-      <span className="text-[12px] font-semibold text-released-on-soft whitespace-nowrap">
+      <span className="text-xs font-medium text-released-on-soft whitespace-nowrap">
         {volPorTomada !== null ? `≈ ${volPorTomada} mL` : '—'}
       </span>
     </div>
   );
   const RateSwitch = (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       <NutFieldLabel>Correr em:</NutFieldLabel>
       <MiniToggle
         value={rateMode}
@@ -1377,7 +1377,7 @@ function NutritionFields({
   const GuidanceBlock = item.guidance ? (
     <div className="space-y-1">
       <NutFieldLabel>Orientação do assistente:</NutFieldLabel>
-      <p className="rounded-md border border-released-border/70 bg-released-soft/50 px-2.5 py-2 text-[11px] leading-relaxed text-released-on-soft">
+      <p className="rounded-md border border-released-border/70 bg-released-soft/50 px-3 py-2 text-xs leading-relaxed text-released-on-soft">
         {item.guidance}
       </p>
     </div>
@@ -1391,7 +1391,7 @@ function NutritionFields({
         value={item.instructions}
         onChange={(e) => onUpdate(item.id, 'instructions', e.target.value)}
         onKeyDown={(e) => e.stopPropagation()}
-        className="min-h-[44px] text-[11px] bg-muted/10 border-border/20 italic focus:not-italic"
+        className="min-h-[44px] text-xs bg-muted/10 border-border/20 italic focus:not-italic"
         placeholder="Orientações à equipe (restrições, alergias, conduta em caso de intolerância, metas calóricas, observações específicas...)"
       />
     </div>
@@ -1405,14 +1405,14 @@ function NutritionFields({
     };
     return (
       <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-2")}>
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <NutFieldLabel>Modalidade:</NutFieldLabel>
           <Select value={subtype} onValueChange={(v) => {
             setSubtype(v);
             const label = MODALITY_LABELS[v] || v;
             onUpdate(item.id, 'name', label);
           }}>
-            <SelectTrigger className="h-6 text-[11px] bg-white border-released-border w-44">
+            <SelectTrigger className="h-6 text-xs bg-white border-released-border w-44">
               <SelectValue>{MODALITY_LABELS[subtype] || subtype}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -1423,7 +1423,7 @@ function NutritionFields({
               <SelectItem value="zero" className="text-xs">Zero (jejum)</SelectItem>
             </SelectContent>
           </Select>
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-released-soft text-released-on-soft font-semibold uppercase tracking-wide">manual</span>
+          <span className="text-xs px-2 py-1 rounded-md bg-released-soft text-released-on-soft font-medium uppercase tracking-wide">manual</span>
         </div>
         {RecommendationsField}
       </div>
@@ -1436,10 +1436,10 @@ function NutritionFields({
   return (
     <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-2")}>
       {/* Header com tipo de modalidade (somente leitura visual) */}
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap">
         <NutFieldLabel>Modalidade:</NutFieldLabel>
         <Select value={subtype} onValueChange={setSubtype}>
-          <SelectTrigger className="h-6 text-[11px] bg-white border-border w-44">
+          <SelectTrigger className="h-6 text-xs bg-white border-border w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -1457,7 +1457,7 @@ function NutritionFields({
       {/* ============== ORAL ============== */}
       {subtype === 'diet_oral' && (
         <>
-          <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
+          <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
             <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
             <SelectField label="Tipo" value={item.dietType} options={ORAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-40" />
             <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-44" />
@@ -1472,7 +1472,7 @@ function NutritionFields({
       {/* ============== ENTERAL ============== */}
       {subtype === 'diet_enteral' && (
         <>
-          <div className="space-y-1.5 px-2.5 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
+          <div className="space-y-2 px-3 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
             <div className="flex items-center gap-2 flex-wrap">
               <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
               <SelectField label="Tipo" value={item.dietType} options={ENTERAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
@@ -1486,7 +1486,7 @@ function NutritionFields({
                 const vd = parseFloat((item.nutVolDay || '').replace(',', '.'));
                 const st = parseInt(item.nutSteps || '', 10);
                 if (!isNaN(vd) && vd > 0 && st > 0) {
-                  return <span className="text-[10px] font-semibold text-released-on-soft whitespace-nowrap">≈ {Math.round(vd / st)} mL/etapa</span>;
+                  return <span className="text-xs font-medium text-released-on-soft whitespace-nowrap">≈ {Math.round(vd / st)} mL/etapa</span>;
                 }
                 return null;
               })()}
@@ -1501,13 +1501,13 @@ function NutritionFields({
       {/* ============== PARENTERAL ============== */}
       {subtype === 'diet_parenteral' && (
         <>
-          <div className="space-y-1.5 px-2.5 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
+          <div className="space-y-2 px-3 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
             <div className="flex items-center gap-2 flex-wrap">
               <Droplets className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
               <SelectField label="Tipo" value={item.dietType} options={ENTERAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
               <div className="flex items-center gap-1">
                 <NutFieldLabel>Via:</NutFieldLabel>
-                <Input value="Endovenosa" disabled className="h-7 text-[12px] font-semibold bg-released-soft/60 border-released-border w-36" />
+                <Input value="Endovenosa" disabled className="h-7 text-xs font-medium bg-released-soft/60 border-released-border w-36" />
               </div>
               <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
             </div>
@@ -1518,7 +1518,7 @@ function NutritionFields({
                 const vd = parseFloat((item.nutVolDay || '').replace(',', '.'));
                 const st = parseInt(item.nutSteps || '', 10);
                 if (!isNaN(vd) && vd > 0 && st > 0) {
-                  return <span className="text-[10px] font-semibold text-released-on-soft whitespace-nowrap">≈ {Math.round(vd / st)} mL/etapa</span>;
+                  return <span className="text-xs font-medium text-released-on-soft whitespace-nowrap">≈ {Math.round(vd / st)} mL/etapa</span>;
                 }
                 return null;
               })()}
@@ -1533,13 +1533,13 @@ function NutritionFields({
       {/* ============== ZERO ============== */}
       {subtype === 'zero' && (
         <>
-          <div className="px-2.5 py-2 rounded-md bg-warning-soft/70 border border-warning-border/60 border-l-[3px] border-l-amber-500/70 space-y-1">
+          <div className="px-3 py-2 rounded-md bg-warning-soft/70 border border-warning-border/60 border-l-[3px] border-l-amber-500/70 space-y-1">
             <NutFieldLabel>Motivo do jejum:</NutFieldLabel>
             <Input
               value={item.nutZeroReason || ''}
               onChange={(e) => onUpdate(item.id, 'nutZeroReason', e.target.value)}
               placeholder="pré-operatório, broncoaspiração, íleo, avaliação..."
-              className="h-7 text-[12px] font-semibold bg-white border-warning-border"
+              className="h-7 text-xs font-medium bg-white border-warning-border"
             />
           </div>
           {RecommendationsField}
@@ -1549,7 +1549,7 @@ function NutritionFields({
       {/* ============== SUPLEMENTAÇÃO ============== */}
       {subtype === 'supplement' && (
         <>
-          <div className="space-y-1.5 px-2.5 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
+          <div className="space-y-2 px-3 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
             <div className="flex items-center gap-2 flex-wrap">
               <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
               <SelectField label="Tipo" value={item.dietType} options={SUPPLEMENT_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
@@ -1571,12 +1571,12 @@ function NutritionFields({
       {/* ============== LEGADO: água ============== */}
       {subtype === 'water' && (
         <>
-          <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
+          <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
             <Droplets className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
             <NutFieldLabel>Vol/adm:</NutFieldLabel>
             <NutSuffixInput value={item.nutWaterVolPerAdmin || ''} onChange={(v) => onUpdate(item.id, 'nutWaterVolPerAdmin', v)} suffix="mL" placeholder="50" />
             <NutFieldLabel>Frequência:</NutFieldLabel>
-            <Input value={item.nutWaterFreq || ''} onChange={(e) => onUpdate(item.id, 'nutWaterFreq', e.target.value)} placeholder="antes/após dieta e meds" className="h-7 text-[12px] bg-white border-released-border w-48" />
+            <Input value={item.nutWaterFreq || ''} onChange={(e) => onUpdate(item.id, 'nutWaterFreq', e.target.value)} placeholder="antes/após dieta e meds" className="h-7 text-xs bg-white border-released-border w-48" />
             <NutFieldLabel>Meta/24h:</NutFieldLabel>
             <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="800" />
           </div>
@@ -1587,7 +1587,7 @@ function NutritionFields({
       {/* ============== LEGADO: NPT ============== */}
       {subtype === 'npt' && (
         <>
-          <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
+          <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
             <Droplets className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
             <NutFieldLabel>Vol total:</NutFieldLabel>
             <NutSuffixInput value={item.volumeTotal || ''} onChange={(v) => onUpdate(item.id, 'volumeTotal', v)} suffix="mL" placeholder="2000" />
@@ -1613,7 +1613,7 @@ function FlagToggle({ flag, active, onToggle }: {
           type="button"
           onClick={onToggle}
           className={cn(
-            "text-[9px] font-bold px-1.5 py-0.5 rounded border transition-all",
+            "text-xs font-semibold px-2 py-1 rounded-md border transition-all",
             active ? flag.color : "bg-muted/30 text-muted-foreground/50 border-border/30"
           )}
         >
@@ -1656,7 +1656,7 @@ function HydrationFields({
   onUpdate: (id: string, field: keyof PrescriptionItem, value: string) => void;
 }) {
   const FieldLabel = ({ children }: { children: React.ReactNode }) => (
-    <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">{children}</span>
+    <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">{children}</span>
   );
 
   const phases = intervalToPhases(item.posology);
@@ -1675,7 +1675,7 @@ function HydrationFields({
   const volTotal24 = volPhase * phases;
 
   // Auto-sync calculated drip rate into infusionRate.
-  // ⚠️ Não incluir `onUpdate` nas deps — a referência muda a cada render do pai
+  // Não incluir `onUpdate` nas deps — a referência muda a cada render do pai
   // e dispararia este effect em loop, causando re-renders que roubam o foco
   // do <Input> ativo (sintoma: clique no campo não habilita digitação).
   const calcRateStr = isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '';
@@ -1700,21 +1700,21 @@ function HydrationFields({
   const isOral = isOralLikeRoute(item.route);
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <div className="relative flex items-center gap-x-3 gap-y-2 flex-wrap rounded-md p-2 bg-muted/50 border border-border/60 border-l-[3px] border-l-blue-500/70">
         <NutFieldLabel>Volume / fase:</NutFieldLabel>
         <Input
           type="number"
           value={item.volumeTotal || ''}
           onChange={(e) => onUpdate(item.id, 'volumeTotal', e.target.value)}
-          className="h-6 text-[11px] bg-white border-border w-16 text-center font-medium focus-visible:ring-1 focus-visible:ring-ring"
+          className="h-6 text-xs bg-white border-border w-16 text-center font-medium focus-visible:ring-1 focus-visible:ring-ring"
           placeholder="mL"
         />
-        <span className="text-[10px] text-muted-foreground">mL</span>
+        <span className="text-xs text-muted-foreground">mL</span>
 
         <NutFieldLabel>Fases / intervalo:</NutFieldLabel>
         <Select value={interval} onValueChange={handlePhasesChange}>
-          <SelectTrigger className="h-6 text-[11px] bg-white border-border w-36 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-6 text-xs bg-white border-border w-36 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
           <SelectContent>
             {HYDRATION_PHASE_OPTIONS.map(o => (
               <SelectItem key={o.interval} value={o.interval} className="text-xs">
@@ -1731,11 +1731,11 @@ function HydrationFields({
               type="number"
               value={item.infusionTime || ''}
               onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)}
-              className="h-6 text-[11px] bg-white border-border w-14 text-center focus-visible:ring-1 focus-visible:ring-ring"
+              className="h-6 text-xs bg-white border-border w-14 text-center focus-visible:ring-1 focus-visible:ring-ring"
               placeholder="—"
             />
             <Select value={tUnit} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-white border-border w-16 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-6 text-xs bg-white border-border w-16 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="h" className="text-xs">h</SelectItem>
                 <SelectItem value="min" className="text-xs">min</SelectItem>
@@ -1743,11 +1743,11 @@ function HydrationFields({
             </Select>
 
             <NutFieldLabel>Gotejamento:</NutFieldLabel>
-            <div className="h-6 px-2 flex items-center rounded-md border border-border bg-white text-[11px] font-semibold w-16 justify-center">
+            <div className="h-6 px-2 flex items-center rounded-md border border-border bg-white text-xs font-medium w-16 justify-center">
               {isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '—'}
             </div>
             <Select value={dripMode} onValueChange={(v) => onUpdate(item.id, 'infusionMode', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-white border-border w-20 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-6 text-xs bg-white border-border w-20 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="BIC" className="text-xs">mL/h</SelectItem>
                 <SelectItem value="gts" className="text-xs">gts/min</SelectItem>
@@ -1758,20 +1758,20 @@ function HydrationFields({
 
         <NutFieldLabel>Via:</NutFieldLabel>
         <Select value={item.route || 'EV'} onValueChange={(v) => onUpdate(item.id, 'route', v)}>
-          <SelectTrigger className="h-6 text-[11px] bg-white border-border w-20 font-semibold focus:ring-1 focus:ring-ring">
+          <SelectTrigger className="h-6 text-xs bg-white border-border w-20 font-medium focus:ring-1 focus:ring-ring">
             <SelectValue>{routeShort(item.route || 'EV')}</SelectValue>
           </SelectTrigger>
           <SelectContent className="max-h-72">
             {ROUTES.map((r) => (
               <SelectItem key={r} value={r} className="text-xs">
-                <span className="font-semibold mr-1.5">{routeShort(r)}</span>
+                <span className="font-medium mr-2">{routeShort(r)}</span>
                 <span className="text-muted-foreground">— {routeLabel(r)}</span>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        <span className="basis-full text-right text-[10px] font-medium text-foreground mt-1">
+        <span className="basis-full text-right text-xs font-medium text-foreground mt-1">
           Total: {volTotal24}mL / 24h
         </span>
       </div>
@@ -1781,7 +1781,7 @@ function HydrationFields({
         <Textarea
           value={item.instructions || ''}
           onChange={(e) => onUpdate(item.id, 'instructions', e.target.value)}
-          className="min-h-[56px] text-[11px] bg-white border-border mt-0.5 focus-visible:ring-1 focus-visible:ring-ring"
+          className="min-h-[56px] text-xs bg-white border-border mt-1 focus-visible:ring-1 focus-visible:ring-ring"
           placeholder="Ex.: manter acesso pérvio; observar sinais de sobrecarga; reavaliar em 24h; trocar equipo a cada 72h..."
         />
       </div>
@@ -1834,16 +1834,16 @@ function CombinedItemsBlock({
   const isInhalation = item.category === 'inhalation';
 
   return (
-    <div className="mt-1 space-y-1.5">
+    <div className="mt-1 space-y-2">
       {combined.map((sub) => (
         <div key={sub.id} className="flex items-start gap-2 pl-3 border-l-2 border-dashed border-primary/30 ml-1">
           <div className="flex-1 space-y-1">
             {/* Nome da substância combinada */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-semibold text-foreground/80">+</span>
-              <span className="text-[11px] font-semibold">{sub.name}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-foreground/80">+</span>
+              <span className="text-xs font-medium">{sub.name}</span>
               {sub.presentation && (
-                <span className="text-[10px] text-muted-foreground">({sub.presentation})</span>
+                <span className="text-xs text-muted-foreground">({sub.presentation})</span>
               )}
             </div>
             {/* Campos específicos por categoria */}
@@ -1851,15 +1851,15 @@ function CombinedItemsBlock({
               {isInhalation ? (
                 <>
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-muted-foreground">Dose:</span>
+                    <span className="text-xs text-muted-foreground">Dose:</span>
                     <Input
                       value={sub.nebDose || ''}
                       onChange={e => updateSub(sub.id, 'nebDose', e.target.value)}
-                      className="h-6 text-[11px] w-14 text-center"
+                      className="h-6 text-xs w-14 text-center"
                       placeholder="—"
                     />
                     <Select value={sub.nebDoseUnit || 'gts'} onValueChange={v => updateSub(sub.id, 'nebDoseUnit', v)}>
-                      <SelectTrigger className="h-6 text-[11px] w-16">
+                      <SelectTrigger className="h-6 text-xs w-16">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1874,26 +1874,26 @@ function CombinedItemsBlock({
               ) : (
                 <>
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-muted-foreground">Qtd:</span>
+                    <span className="text-xs text-muted-foreground">Qtd:</span>
                     <Input
                       value={sub.quantity || ''}
                       onChange={e => updateSub(sub.id, 'quantity', e.target.value)}
-                      className="h-6 text-[11px] w-12 text-center"
+                      className="h-6 text-xs w-12 text-center"
                       placeholder="1"
                     />
                     <Input
                       value={sub.quantityUnit || ''}
                       onChange={e => updateSub(sub.id, 'quantityUnit', e.target.value)}
-                      className="h-6 text-[11px] w-16"
+                      className="h-6 text-xs w-16"
                       placeholder="amp/mL"
                     />
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-muted-foreground">Dose:</span>
+                    <span className="text-xs text-muted-foreground">Dose:</span>
                     <Input
                       value={sub.dose || ''}
                       onChange={e => updateSub(sub.id, 'dose', e.target.value)}
-                      className="h-6 text-[11px] w-24"
+                      className="h-6 text-xs w-24"
                       placeholder="ex: 19,1%"
                     />
                   </div>
@@ -1904,7 +1904,7 @@ function CombinedItemsBlock({
           <button
             type="button"
             onClick={() => removeSub(sub.id)}
-            className="text-muted-foreground/50 hover:text-destructive transition-colors mt-0.5 shrink-0"
+            className="text-muted-foreground/50 hover:text-destructive transition-colors mt-1 shrink-0"
             title="Remover substância combinada"
           >
             <X className="h-3 w-3" />
@@ -1923,7 +1923,7 @@ function CombinedItemsBlock({
           <button
             type="button"
             onClick={() => setAdding(false)}
-            className="text-[10px] text-muted-foreground mt-1 hover:text-foreground"
+            className="text-xs text-muted-foreground mt-1 hover:text-foreground"
           >
             Cancelar
           </button>
@@ -1932,7 +1932,7 @@ function CombinedItemsBlock({
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="flex items-center gap-1 text-[10px] text-primary/70 hover:text-primary transition-colors ml-1 pl-1"
+          className="flex items-center gap-1 text-xs text-primary/70 hover:text-primary transition-colors ml-1 pl-1"
           title={`Adicionar substância combinada em ${categoryLabel}`}
         >
           <PlusCircle className="h-3 w-3" />
@@ -2159,11 +2159,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               ? "border-released-border/50 bg-released-soft/30"
               : "border-border/40 bg-muted/20",
           selected && "ring-2 ring-primary/40 border-primary/30",
-          isDragging && "shadow-lg"
+          isDragging && "shadow-md"
         )}
       >
         {/* Linha principal — sempre visível */}
-        <div className="flex items-center gap-2 px-2.5 py-2">
+        <div className="flex items-center gap-2 px-3 py-2">
           <ValidationDot />
           <button
             className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0 touch-none"
@@ -2187,7 +2187,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 type="button"
                 onClick={() => setIndividualExpanded(v => !v)}
                 className={cn(
-                  "shrink-0 inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+                  "shrink-0 inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors",
                   individualExpanded
                     ? "border-released/60 bg-released-soft text-released-on-soft"
                     : "border-border/50 bg-secondary text-secondary-foreground hover:border-released/50 hover:bg-released-soft"
@@ -2199,10 +2199,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               </button>
             )}
             {item.status === 'suspended' && item.suspensionReason && (
-              <p className="text-[10px] text-destructive/70 italic truncate">Motivo: {item.suspensionReason}</p>
+              <p className="text-xs text-destructive/70 italic truncate">Motivo: {item.suspensionReason}</p>
             )}
           </div>
-          {item.dose !== '-' && <Badge variant="outline" className="text-[10px]">{item.dose}</Badge>}
+          {item.dose !== '-' && <Badge variant="outline" className="text-xs">{item.dose}</Badge>}
           {isSimple ? (
             <Popover>
               <PopoverTrigger asChild>
@@ -2210,7 +2210,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   type="button"
                   disabled={isLocked || item.status === 'suspended'}
                   className={cn(
-                    "shrink-0 inline-flex items-center gap-1 rounded-md border border-border/50 bg-secondary text-secondary-foreground text-[10px] px-1.5 py-0.5 hover:border-primary/50 hover:bg-secondary/80 transition-colors",
+                    "shrink-0 inline-flex items-center gap-1 rounded-md border border-border/50 bg-secondary text-secondary-foreground text-xs px-2 py-1 hover:border-primary/50 hover:bg-secondary/80 transition-colors",
                     (isLocked || item.status === 'suspended') && "opacity-60 cursor-not-allowed"
                   )}
                   title="Ajustar aprazamento"
@@ -2220,7 +2220,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </button>
               </PopoverTrigger>
             <PopoverContent className="w-64 p-3" align="end">
-              <p className="text-[11px] font-semibold text-muted-foreground mb-2">Aprazamento</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Aprazamento</p>
               {(() => {
                 // Unificação 22/07/2026: as marcações SN/ACM/AG saíram das flags
                 // e vivem aqui. Regras confirmadas pelo gestor:
@@ -2242,7 +2242,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         opcao entre os intervalos nao a encontrava, porque ela
                         existia apenas como toggle abaixo. Aqui ela liga/desliga o
                         modificador, preservando o intervalo escolhido. (23/07/2026.) */}
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-3 gap-2">
                       {PRESCRIPTION_INTERVALS.map(p => p.value)
                         .map(opt => {
                           const isAcm = opt === 'ACM';
@@ -2259,11 +2259,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                                 ? onUpdate(item.id, 'posology', withPRN(item.posology, !prnOn))
                                 : pickInterval(opt)}
                               className={cn(
-                                "text-[10px] px-2 py-1 rounded-md border transition-colors",
+                                "text-xs px-2 py-1 rounded-md border transition-colors",
                                 selected && isPrn
-                                  ? "border-warning bg-warning/15 text-warning-on-soft font-semibold"
+                                  ? "border-warning bg-warning/15 text-warning-on-soft font-medium"
                                   : selected
-                                    ? "border-primary bg-primary/10 text-primary font-semibold"
+                                    ? "border-primary bg-primary/10 text-primary font-medium"
                                     : "border-border/50 hover:border-primary/40 hover:bg-muted",
                                 acmLocked && !isAcm && "opacity-40 cursor-not-allowed hover:border-border/50 hover:bg-transparent"
                               )}
@@ -2275,10 +2275,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     </div>
 
                     {/* Modificador condicional — soma-se ao intervalo escolhido */}
-                    <div className="mt-2.5 flex items-center justify-between gap-2 rounded-md border border-border/50 px-2 py-1.5">
+                    <div className="mt-3 flex items-center justify-between gap-2 rounded-md border border-border/50 px-2 py-2">
                       <div className="min-w-0">
-                        <p className="text-[10px] font-medium text-foreground">S/N</p>
-                        <p className="text-[9px] text-muted-foreground leading-tight">
+                        <p className="text-xs font-medium text-foreground">S/N</p>
+                        <p className="text-xs text-muted-foreground leading-tight">
                           {acmLocked ? 'Indisponível com ACM' : 'Se necessário — combina com o intervalo'}
                         </p>
                       </div>
@@ -2287,9 +2287,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         disabled={acmLocked}
                         onClick={() => onUpdate(item.id, 'posology', withPRN(item.posology, !prnOn))}
                         className={cn(
-                          "text-[10px] px-2 py-1 rounded-md border transition-colors shrink-0",
+                          "text-xs px-2 py-1 rounded-md border transition-colors shrink-0",
                           prnOn
-                            ? "border-warning bg-warning/15 text-warning-on-soft font-semibold"
+                            ? "border-warning bg-warning/15 text-warning-on-soft font-medium"
                             : "border-border/50 hover:border-warning/60 hover:bg-muted",
                           acmLocked && "opacity-40 cursor-not-allowed"
                         )}
@@ -2298,8 +2298,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       </button>
                     </div>
 
-                    <div className="mt-2.5">
-                      <label className="text-[10px] font-medium text-muted-foreground">Personalizado</label>
+                    <div className="mt-3">
+                      <label className="text-xs font-medium text-muted-foreground">Personalizado</label>
                       <Input
                         value={item.posology === '-' ? '' : item.posology}
                         disabled={acmLocked}
@@ -2314,20 +2314,20 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             </PopoverContent>
           </Popover>
         ) : (
-          item.posology !== '-' && <Badge variant="secondary" className="text-[10px]">{item.posology}</Badge>
+          item.posology !== '-' && <Badge variant="secondary" className="text-xs">{item.posology}</Badge>
         )}
         {item.isExtra && (
-          <Badge variant="outline" className="text-[9px] px-1.5 bg-warning-soft text-warning-on-soft border-warning-border">EXTRA</Badge>
+          <Badge variant="outline" className="text-xs px-2 bg-warning-soft text-warning-on-soft border-warning-border">EXTRA</Badge>
         )}
         {item.printOnly && (
-          <Badge variant="outline" className="text-[9px] px-1.5 bg-muted text-foreground border-border gap-1">
+          <Badge variant="outline" className="text-xs px-2 bg-muted text-foreground border-border gap-1">
             <Printer className="h-2.5 w-2.5" /> SÓ IMPRESSÃO
           </Badge>
         )}
         {item.status === 'suspended' && (
-           <Badge variant="destructive" className="text-[9px] px-1.5">Suspenso</Badge>
+           <Badge variant="destructive" className="text-xs px-2">Suspenso</Badge>
         )}
-        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           {PRESCRIPTION_FLAGS.map(f => (
             <FlagToggle
               key={f.key}
@@ -2343,13 +2343,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
 
       {/* Painel sanfonado de faixas — só para item de esquema de correção */}
       {isSlidingSchemeItem && individualExpanded && !isLocked && item.status !== 'suspended' && (
-        <div className="border-t border-released-border/60 bg-released-soft/50 px-3 py-2.5 space-y-1.5">
-          <p className="text-[10px] font-semibold text-released-on-soft uppercase tracking-wide mb-2">
+        <div className="border-t border-released-border/60 bg-released-soft/50 px-3 py-3 space-y-2">
+          <p className="text-xs font-medium text-released-on-soft uppercase tracking-wide mb-2">
             Faixas de correção — editáveis
           </p>
           {slidingRows.map((row, i) => (
             <div key={i} className="flex items-center gap-2">
-              <span className="text-[10px] text-muted-foreground w-48 shrink-0 truncate" title={row.label}>
+              <span className="text-xs text-muted-foreground w-48 shrink-0 truncate" title={row.label}>
                 {row.label}:
               </span>
               <Input
@@ -2361,13 +2361,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   );
                   onUpdate(item.id, 'instructions', serializeSlidingInstructions(updated));
                 }}
-                className="h-6 text-[11px] flex-1 min-w-0 bg-white border-released-border focus-visible:ring-released"
+                className="h-6 text-xs flex-1 min-w-0 bg-white border-released-border focus-visible:ring-released"
                 placeholder="Ex: 2 UI SC"
               />
             </div>
           ))}
           {slidingRows.length === 0 && (
-            <p className="text-[10px] text-muted-foreground italic">Nenhuma faixa encontrada. Edite o campo de instruções manualmente.</p>
+            <p className="text-xs text-muted-foreground italic">Nenhuma faixa encontrada. Edite o campo de instruções manualmente.</p>
           )}
         </div>
       )}
@@ -2397,34 +2397,34 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           selected && "ring-2 ring-primary/40",
         )}
       >
-        <div className="flex items-start gap-2 px-2.5 py-2">
+        <div className="flex items-start gap-2 px-3 py-2">
           <ValidationDot />
-          <button className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground shrink-0 touch-none mt-0.5" {...attributes} {...listeners}>
+          <button className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground shrink-0 touch-none mt-1" {...attributes} {...listeners}>
             <GripVertical className="h-3.5 w-3.5" />
           </button>
-          <Checkbox checked={selected} onCheckedChange={() => onToggleSelect(item.id)} className="shrink-0 mt-0.5" />
-          <span className="text-[10px] font-mono text-muted-foreground w-5 text-right shrink-0 mt-0.5">{index + 1}.</span>
+          <Checkbox checked={selected} onCheckedChange={() => onToggleSelect(item.id)} className="shrink-0 mt-1" />
+          <span className="text-xs font-mono text-muted-foreground w-5 text-right shrink-0 mt-1">{index + 1}.</span>
           <div className="flex-1 min-w-0">
             {/* Cabeçalho do item de insulinoterapia */}
-            <div className="flex items-center gap-1.5 flex-wrap mb-2">
+            <div className="flex items-center gap-2 flex-wrap mb-2">
               <AlertTriangle className="h-3 w-3 text-critical-on-soft shrink-0" />
-              <span className={cn("text-xs font-bold text-foreground", item.status === 'suspended' && "line-through")}>
+              <span className={cn("text-xs font-semibold text-foreground", item.status === 'suspended' && "line-through")}>
                 INSULINOTERAPIA
               </span>
               <span className="text-xs text-muted-foreground font-normal">—</span>
-              <span className={cn("text-xs font-semibold text-critical-on-soft", item.status === 'suspended' && "line-through")}>
+              <span className={cn("text-xs font-medium text-critical-on-soft", item.status === 'suspended' && "line-through")}>
                 {desc.headline}
               </span>
-              <Badge variant="outline" className="text-[8px] px-1 bg-critical-soft text-critical-on-soft border-critical-border">MAV</Badge>
+              <Badge variant="outline" className="text-xs px-1 bg-critical-soft text-critical-on-soft border-critical-border">MAV</Badge>
               {plan.scheme === 'iv_continuous' && (
-                <Badge variant="outline" className="text-[8px] px-1 bg-warning-soft text-warning-on-soft border-warning-border">BIC</Badge>
+                <Badge variant="outline" className="text-xs px-1 bg-warning-soft text-warning-on-soft border-warning-border">BIC</Badge>
               )}
-              <div className="ml-auto flex items-center gap-1.5">
+              <div className="ml-auto flex items-center gap-2">
                 {canInlineEdit && (
                   <button
                     type="button"
                     onClick={() => setIndividualExpanded(v => !v)}
-                    className="text-[10px] px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+                    className="text-xs px-2 py-1 rounded-md border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
                     title="Ajustar faixas sem reabrir o assistente"
                   >
                     {showInline ? '↑ Fechar ajuste' : '↓ Ajustar faixas'}
@@ -2433,24 +2433,24 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 <button
                   type="button"
                   onClick={() => onEditInsulin?.(item.id)}
-                  className="text-[10px] px-2 py-0.5 rounded border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors font-medium"
+                  className="text-xs px-2 py-1 rounded-md border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors font-medium"
                 >
-                  ✏ Editar esquema
+                  Editar esquema
                 </button>
               </div>
             </div>
 
             {/* Doses em grid compacto */}
-            <div className="grid gap-x-3 gap-y-0.5 text-[11px] leading-relaxed"
+            <div className="grid gap-x-3 gap-y-1 text-xs leading-relaxed"
               style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}
             >
               {desc.lines.map((l, i) => (
                 <div key={i} className={cn(
-                  "flex items-baseline gap-1.5",
-                  l.startsWith('  •') ? "pl-3 text-muted-foreground text-[10px]" : ""
+                  "flex items-baseline gap-2",
+                  l.startsWith('  •') ? "pl-3 text-muted-foreground text-xs" : ""
                 )}>
                   {!l.startsWith('  •') && (
-                    <span className="shrink-0 h-1.5 w-1.5 rounded-full bg-critical/70 mt-1.5" />
+                    <span className="shrink-0 h-1.5 w-1.5 rounded-full bg-critical/70 mt-2" />
                   )}
                   <span>{l.replace(/^ {2}• /, '').replace(/^• /, '')}</span>
                 </div>
@@ -2471,7 +2471,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               </div>
             )}
             {isLocked && supportsInline && (
-              <p className="mt-1 text-[10px] text-released-on-soft">
+              <p className="mt-1 text-xs text-released-on-soft">
                 Item validado — para alterar, suspenda e reescreva ou aguarde a renovação 05h.
               </p>
             )}
@@ -2590,7 +2590,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         ref={setNodeRef}
         style={style}
         className={cn(
-          "flex items-center gap-2 px-2.5 py-1.5 rounded-lg border group transition-all cursor-pointer",
+          "flex items-center gap-2 px-3 py-2 rounded-lg border group transition-all cursor-pointer",
           item.status === 'suspended'
             ? "border-destructive/30 bg-destructive/5 opacity-60"
             : "border-border/40 bg-card/50 hover:border-primary/20",
@@ -2615,10 +2615,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           onCheckedChange={() => onToggleSelect(item.id)}
           className="shrink-0"
         />
-        <span className="text-[10px] font-mono text-muted-foreground w-5 text-right shrink-0">{index + 1}.</span>
-        <div className="flex-1 min-w-0 flex items-center gap-1.5">
-          <span className={cn("text-xs font-semibold text-foreground shrink-0", item.status === 'suspended' && "line-through")}>
-            {item.highAlert && <AlertTriangle className="inline h-2.5 w-2.5 mr-0.5 text-critical" />}
+        <span className="text-xs font-mono text-muted-foreground w-5 text-right shrink-0">{index + 1}.</span>
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <span className={cn("text-xs font-medium text-foreground shrink-0", item.status === 'suspended' && "line-through")}>
+            {item.highAlert && <AlertTriangle className="inline h-2.5 w-2.5 mr-1 text-critical" />}
             {item.name}
             {item.presentation && item.presentation !== '-' && (
               <span className="font-normal text-muted-foreground normal-case"> ({formatPresentation(item.presentation)})</span>
@@ -2628,27 +2628,27 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             ))}
           </span>
           {compactParts.length > 0 && (
-            <span className="text-[10px] text-muted-foreground truncate">
+            <span className="text-xs text-muted-foreground truncate">
               <span className="text-muted-foreground/50 mx-1">|</span>
               {compactParts.join(' | ')}
             </span>
           )}
           {routePosology.length > 0 && (
-            <span className="text-[10px] font-medium text-foreground/70 shrink-0">
+            <span className="text-xs font-medium text-foreground/70 shrink-0">
               <span className="text-muted-foreground/50 mx-1">|</span>
               {routePosology.join(' | ')}
             </span>
           )}
           <MedicationFlagChips name={item.name} route={item.route} className="shrink-0" size="xs" />
           {item.isExtra && (
-            <Badge variant="outline" className="text-[8px] px-1 shrink-0 bg-muted/50 text-muted-foreground border-border/50">EXTRA</Badge>
+            <Badge variant="outline" className="text-xs px-1 shrink-0 bg-muted/50 text-muted-foreground border-border/50">EXTRA</Badge>
           )}
           {item.printOnly && (
-            <Badge variant="outline" className="text-[8px] px-1 shrink-0 bg-muted text-foreground border-border">SÓ IMPRESSÃO</Badge>
+            <Badge variant="outline" className="text-xs px-1 shrink-0 bg-muted text-foreground border-border">SÓ IMPRESSÃO</Badge>
           )}
           {item.flags.length > 0 && item.flags.map(fk => {
             const f = PRESCRIPTION_FLAGS.find(pf => pf.key === fk);
-            return f ? <Badge key={fk} variant="outline" className="text-[8px] px-1 shrink-0 text-muted-foreground border-border/50">{f.label}</Badge> : null;
+            return f ? <Badge key={fk} variant="outline" className="text-xs px-1 shrink-0 text-muted-foreground border-border/50">{f.label}</Badge> : null;
           })}
         </div>
         {/* Aprazamento removido — feito manualmente pela enfermagem */}
@@ -2669,12 +2669,12 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           : "border-border/50 bg-card/50 hover:border-primary/20",
         item.highAlert && item.status !== 'suspended' && "border-critical-border/50 bg-critical-soft/30",
         selected && "ring-2 ring-primary/40 border-primary/30",
-        isDragging && "shadow-lg",
+        isDragging && "shadow-md",
       )}
     >
-      <div className="flex items-start gap-2 p-2.5">
+      <div className="flex items-start gap-2 p-3">
         {/* Left: validation dot + drag + checkbox */}
-        <div className="flex flex-col items-center gap-1.5 shrink-0 pt-1">
+        <div className="flex flex-col items-center gap-2 shrink-0 pt-1">
           <ValidationDot />
           <button
             className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors touch-none"
@@ -2688,25 +2688,25 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             onCheckedChange={() => onToggleSelect(item.id)}
           />
         </div>
-        <span className="text-xs font-mono text-muted-foreground w-6 text-center shrink-0 pt-1.5">
+        <span className="text-xs font-mono text-muted-foreground w-6 text-center shrink-0 pt-2">
           {index + 1}.
         </span>
 
         {/* Center: main content */}
-        <div className="flex-1 min-w-0 space-y-1.5">
+        <div className="flex-1 min-w-0 space-y-2">
           {/* Name row with flags */}
           <div className="flex items-center gap-2 flex-wrap">
             {isCompact && individualExpanded && (
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setIndividualExpanded(false); }}
-                className="shrink-0 p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                className="shrink-0 p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                 title="Compactar"
               >
                 <ChevronUp className="h-4 w-4" />
               </button>
             )}
-            <p className={cn("text-sm font-semibold text-foreground", item.status === 'suspended' && "line-through")}>
+            <p className={cn("text-sm font-medium text-foreground", item.status === 'suspended' && "line-through")}>
               {item.highAlert && <AlertTriangle className="inline h-3 w-3 mr-1 text-critical" />}
               {item.name}
               {item.presentation && item.presentation !== '-' && (
@@ -2738,24 +2738,24 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   size="sm"
                   variant="ghost"
                   onClick={(e) => { e.stopPropagation(); apply(); }}
-                  className="h-5 px-2 text-[10px] rounded border border-border/60 text-foreground/80 hover:bg-muted hover:text-foreground"
+                  className="h-5 px-2 text-xs rounded-md border border-border/60 text-foreground/80 hover:bg-muted hover:text-foreground"
                 >
                   Sugerir
                 </Button>
               );
             })()}
             {item.isExtra && (
-              <Badge variant="outline" className="text-[9px] px-1.5 bg-warning-soft text-warning-on-soft border-warning-border">EXTRA</Badge>
+              <Badge variant="outline" className="text-xs px-2 bg-warning-soft text-warning-on-soft border-warning-border">EXTRA</Badge>
             )}
             {item.status === 'suspended' && (
-              <Badge variant="destructive" className="text-[9px] px-1.5">Suspenso</Badge>
+              <Badge variant="destructive" className="text-xs px-2">Suspenso</Badge>
             )}
             {isLocked && item.status !== 'suspended' && (
-              <Badge variant="outline" className="text-[9px] px-1.5 bg-released-soft text-released-on-soft border-released-border">
+              <Badge variant="outline" className="text-xs px-2 bg-released-soft text-released-on-soft border-released-border">
                 VALIDADO · BLOQUEADO
               </Badge>
             )}
-            <div className="flex gap-0.5 ml-auto">
+            <div className="flex gap-1 ml-auto">
               {PRESCRIPTION_FLAGS.map(f => (
                 <FlagToggle
                   key={f.key}
@@ -2768,9 +2768,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             </div>
           </div>
           {item.status === 'suspended' && item.suspensionReason && (
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-destructive/10 border border-destructive/20">
+            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-destructive/10 border border-destructive/20">
               <Pause className="h-3 w-3 text-destructive/70 shrink-0" />
-              <p className="text-[10px] text-destructive/80 italic">
+              <p className="text-xs text-destructive/80 italic">
                 Motivo: {item.suspensionReason}
                 {item.suspendedAt && <span className="ml-1 text-destructive/50">({item.suspendedAt})</span>}
               </p>
@@ -2780,18 +2780,18 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             {...(isLocked ? ({ inert: '' } as any) : {})}
             className={cn(
               isLocked && "opacity-80",
-              !isLocked && missingFields.length > 0 && "rounded-md ring-1 ring-critical/70 ring-offset-1 ring-offset-background p-1.5 -m-1.5"
+              !isLocked && missingFields.length > 0 && "rounded-md ring-1 ring-critical/70 ring-offset-1 ring-offset-background p-2 -m-2"
             )}
             aria-disabled={isLocked || undefined}
           >
           {!isLocked && missingFields.length > 0 && item.status === 'active' && (
-            <div className="mb-1.5 flex items-start gap-1.5 px-2 py-1 rounded bg-critical-soft border border-critical-border">
-              <AlertTriangle className="h-3 w-3 mt-0.5 text-critical-on-soft shrink-0" />
+            <div className="mb-2 flex items-start gap-2 px-2 py-1 rounded-md bg-critical-soft border border-critical-border">
+              <AlertTriangle className="h-3 w-3 mt-1 text-critical-on-soft shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-critical-on-soft uppercase tracking-wide">
+                <p className="text-xs font-medium text-critical-on-soft uppercase tracking-wide">
                   Pendente para validação — preencha:
                 </p>
-                <p className="text-[10px] text-critical-on-soft/90">
+                <p className="text-xs text-critical-on-soft/90">
                   {missingFields.join(' · ')}
                 </p>
               </div>
@@ -2842,46 +2842,46 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               {item.category === 'antimicrobial' && (() => {
                 const dayLine = buildAtbDayLine(item);
                 return (
-                  <div className="flex items-center gap-2 flex-wrap pb-2 mb-1.5 px-2 py-1.5 rounded-md bg-gradient-to-r from-[hsl(217,55%,94%)]/80 via-[hsl(217,55%,97%)]/60 to-transparent(217,55%,18%)]/30(217,55%,16%)]/15 border border-[hsl(217,55%,82%)]/60(217,55%,30%)]/40 border-l-[3px] border-l-[hsl(217,70%,40%)]/80">
-                    <div className="flex items-center gap-1.5 text-[hsl(217,72%,28%)](217,55%,80%)] shrink-0">
+                  <div className="flex items-center gap-2 flex-wrap pb-2 mb-2 px-2 py-2 rounded-md bg-gradient-to-r from-[hsl(217,55%,94%)]/80 via-[hsl(217,55%,97%)]/60 to-transparent(217,55%,18%)]/30(217,55%,16%)]/15 border border-[hsl(217,55%,82%)]/60 border-l-[3px] border-l-[hsl(217,70%,40%)]/80">
+                    <div className="flex items-center gap-2 text-[hsl(217,72%,28%)] shrink-0">
                       <div className="flex items-center justify-center h-5 w-5 rounded-md bg-[hsl(217,70%,40%)] text-white shadow-sm shadow-[hsl(217,70%,40%)]/30">
                         <Pill className="h-3 w-3" />
                       </div>
-                      <span className="text-[10px] font-bold uppercase tracking-[0.08em]">Antibiótico</span>
+                      <span className="text-xs font-semibold uppercase tracking-[0.08em]">Antibiótico</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-[hsl(217,72%,36%)]/80(217,55%,75%)]/80 font-medium">Início:</span>
+                      <span className="text-xs text-[hsl(217,72%,36%)]/80 font-medium">Início:</span>
                       <Input
                         type="date"
                         value={item.atbStartDate || ''}
                         onChange={(e) => onUpdate(item.id, 'atbStartDate' as any, e.target.value)}
-                        className="h-6 text-[11px] bg-white border-[hsl(217,55%,82%)]/70(217,55%,30%)]/60 w-[124px] px-1.5"
+                        className="h-6 text-xs bg-white border-[hsl(217,55%,82%)]/70 w-[124px] px-2"
                       />
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-[hsl(217,72%,36%)]/80(217,55%,75%)]/80 font-medium">Duração:</span>
+                      <span className="text-xs text-[hsl(217,72%,36%)]/80 font-medium">Duração:</span>
                       <Input
                         type="number"
                         min="1"
                         value={item.atbPlannedDays || ''}
                         onChange={(e) => onUpdate(item.id, 'atbPlannedDays' as any, e.target.value)}
-                        className="h-6 text-[11px] bg-white border-[hsl(217,55%,82%)]/70(217,55%,30%)]/60 w-12 text-center px-1"
+                        className="h-6 text-xs bg-white border-[hsl(217,55%,82%)]/70 w-12 text-center px-1"
                         placeholder="—"
                       />
-                      <span className="text-[10px] text-[hsl(217,72%,36%)]/70(217,55%,75%)]/70">dias</span>
+                      <span className="text-xs text-[hsl(217,72%,36%)]/70">dias</span>
                     </div>
                     <div className="flex items-center gap-1 flex-1 min-w-[160px]">
-                      <span className="text-[10px] text-[hsl(217,72%,36%)]/80(217,55%,75%)]/80 font-medium shrink-0">Sítio:</span>
+                      <span className="text-xs text-[hsl(217,72%,36%)]/80 font-medium shrink-0">Sítio:</span>
                       <Input
                         value={item.atbInfectionSite || ''}
                         onChange={(e) => onUpdate(item.id, 'atbInfectionSite' as any, e.target.value)}
-                        className="h-6 text-[11px] bg-white border-[hsl(217,55%,82%)]/70(217,55%,30%)]/60 flex-1 px-1.5"
+                        className="h-6 text-xs bg-white border-[hsl(217,55%,82%)]/70 flex-1 px-2"
                         placeholder="ex.: pneumonia comunitária"
                       />
                     </div>
-                    <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                    <div className="ml-auto flex items-center gap-2 shrink-0">
                       {dayLine && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[hsl(217,70%,40%)] text-white border border-[hsl(217,72%,36%)]/40 shadow-sm shadow-[hsl(217,70%,40%)]/20">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-[hsl(217,70%,40%)] text-white border border-[hsl(217,72%,36%)]/40 shadow-sm shadow-[hsl(217,70%,40%)]/20">
                           {dayLine.split(' — ')[0]} · {dayLine.match(/— (\d{2}\/\d{2})/)?.[1] || ''}
                         </span>
                       )}
@@ -2889,7 +2889,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         <button
                           type="button"
                           onClick={onOpenAntimicrobialGuide}
-                          className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-semibold bg-[hsl(217,70%,40%)] hover:bg-[hsl(217,72%,36%)] text-white border border-[hsl(217,72%,36%)]/50 transition-colors"
+                          className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-xs font-medium bg-[hsl(217,70%,40%)] hover:bg-[hsl(217,72%,36%)] text-white border border-[hsl(217,72%,36%)]/50 transition-colors"
                           title="Abrir Guia ATM (CCIH / Norma Zero)"
                         >
                           <Shield className="h-3 w-3" />
@@ -2907,21 +2907,21 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 const recon = getReconstitutionDefault(item.name);
                 if (!recon.required) return null;
                 return (
-                  <div className="flex items-center gap-1.5 flex-wrap px-2 py-1 rounded-md bg-muted/40 border border-border/60">
-                    <span className="text-[10px] text-foreground font-semibold uppercase tracking-wide">Reconstituir</span>
-                    <span className="text-[10px] text-muted-foreground">com</span>
+                  <div className="flex items-center gap-2 flex-wrap px-2 py-1 rounded-md bg-muted/40 border border-border/60">
+                    <span className="text-xs text-foreground font-medium uppercase tracking-wide">Reconstituir</span>
+                    <span className="text-xs text-muted-foreground">com</span>
                     <Input
                       value={item.reconstitutionVolume ?? recon.volumeMl ?? ''}
                       onChange={(e) => onUpdate(item.id, "reconstitutionVolume", e.target.value)}
                       placeholder="mL"
-                      className="h-6 text-[11px] bg-white border-border w-14 text-center"
+                      className="h-6 text-xs bg-white border-border w-14 text-center"
                     />
-                    <span className="text-[10px] text-muted-foreground">mL de</span>
+                    <span className="text-xs text-muted-foreground">mL de</span>
                     <Select
                       value={item.reconstitutionSolvent ?? recon.solvent ?? ''}
                       onValueChange={(v) => onUpdate(item.id, "reconstitutionSolvent", v)}
                     >
-                      <SelectTrigger className="h-6 text-[11px] bg-white border-border w-36"><SelectValue placeholder="solvente" /></SelectTrigger>
+                      <SelectTrigger className="h-6 text-xs bg-white border-border w-36"><SelectValue placeholder="solvente" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="AD" className="text-xs">AD</SelectItem>
                         <SelectItem value="SF 0,9%" className="text-xs">SF 0,9%</SelectItem>
@@ -2929,7 +2929,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         <SelectItem value="próprio diluente" className="text-xs">Próprio diluente do fabricante</SelectItem>
                       </SelectContent>
                     </Select>
-                    <span className="text-[10px] text-muted-foreground italic ml-auto">Sugestão do catálogo · ajustável</span>
+                    <span className="text-xs text-muted-foreground italic ml-auto">Sugestão do catálogo · ajustável</span>
                   </div>
                 );
               })()}
@@ -2942,8 +2942,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   "2 AMP" sozinho não diz a massa de cada unidade. Nunca bloqueia
                   validação; item.dose alimenta o impresso via buildSolutoToken. */}
               <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[10px] text-foreground font-medium shrink-0">Qtd:</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xs text-foreground font-medium shrink-0">Qtd:</span>
                   <Input
                     type="number"
                     inputMode="decimal"
@@ -2966,20 +2966,20 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         }
                       }
                     }}
-                    className="h-6 text-[11px] bg-white border-border px-1.5 text-center focus-visible:ring-1 focus-visible:ring-primary"
+                    className="h-6 text-xs bg-white border-border px-2 text-center focus-visible:ring-1 focus-visible:ring-primary"
                     style={{ width: `${Math.max(2.75, (String(item.quantity || '').length || 1) * 0.7 + 1.5)}ch`, minWidth: '3rem' }}
                     placeholder="1"
                     title={item.quantityUnit ? `Quantidade em ${item.quantityUnit}` : 'Quantidade'}
                   />
-                  <span className="text-[10px] text-foreground font-medium shrink-0 ml-1">Forma:</span>
+                  <span className="text-xs text-foreground font-medium shrink-0 ml-1">Forma:</span>
                   <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white border-border w-[78px] font-semibold focus:ring-1 focus:ring-primary" title={item.quantityUnit || 'Forma/unidade'}>
+                    <SelectTrigger className="h-6 text-xs bg-white border-border w-[78px] font-medium focus:ring-1 focus:ring-primary" title={item.quantityUnit || 'Forma/unidade'}>
                       <SelectValue placeholder="—">{quantityUnitShort(item.quantityUnit)}</SelectValue>
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
                       {QUANTITY_UNITS.map(u => (
                         <SelectItem key={u} value={u} className="text-xs">
-                          <span className="font-semibold mr-1.5">{quantityUnitShort(u)}</span>
+                          <span className="font-medium mr-2">{quantityUnitShort(u)}</span>
                           <span className="text-muted-foreground">— {u}</span>
                         </SelectItem>
                       ))}
@@ -3001,22 +3001,22 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   // têm layout próprio). Só condicionamos por massa/volume.
                   if (prescritoEmMassaOuVolume) return null;
                   return (
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-[10px] text-muted-foreground font-normal shrink-0">Dose:</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xs text-muted-foreground font-normal shrink-0">Dose:</span>
                       <Input
                         value={item.dose || ''}
                         onChange={(e) => onUpdate(item.id, "dose", e.target.value)}
                         placeholder="opcional — ex: 500mg"
                         title="Opcional. Detalhe a dose por unidade (ex.: '500mg' para '1 AMP') se quiser que apareça no impresso. Não é obrigatório — a Qtd já libera a validação."
-                        className="h-6 text-[11px] bg-muted/60 border-border/70 px-1.5 text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary focus-visible:text-foreground"
+                        className="h-6 text-xs bg-muted/60 border-border/70 px-2 text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary focus-visible:text-foreground"
                         style={{ width: `${Math.max(5, (String(item.dose || '').length || 12) * 0.6 + 1.5)}ch`, minWidth: '6.5rem', maxWidth: '14rem' }}
                       />
                     </div>
                   );
                 })()}
                 {renderDiluent && <>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-foreground font-medium">Diluente:</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-foreground font-medium">Diluente:</span>
                   <Select value={item.diluent || ''} onValueChange={(v) => {
                     onUpdate(item.id, "diluent", v);
                     const tempItem = { ...item, diluent: v };
@@ -3037,7 +3037,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       onUpdate(item.id, "diluentVolume", '');
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white border-border w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-xs bg-white border-border w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       <SelectItem value="sem_diluente" className="text-xs font-medium">Sem diluente</SelectItem>
                       <SelectItem value="diluente_proprio" className="text-xs font-medium">Diluente próprio</SelectItem>
@@ -3052,8 +3052,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   </Select>
                 </div>
                 {item.diluent && !isNoDiluent(item.diluent) && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-foreground font-medium">Vol. dil:</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-foreground font-medium">Vol. dil:</span>
                   <Input value={item.diluentVolume || ''} onChange={(e) => {
                     onUpdate(item.id, "diluentVolume", e.target.value);
                     const tempItem = { ...item, diluentVolume: e.target.value };
@@ -3062,35 +3062,35 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     const tempItem2 = { ...tempItem, volumeTotal: autoVol || item.volumeTotal || '' };
                     const autoConc = calcConcentration(tempItem2);
                     if (autoConc) onUpdate(item.id, "concentration", autoConc);
-                  }} className="h-6 text-[11px] bg-white border-border w-16 text-center focus-visible:ring-1 focus-visible:ring-primary" placeholder="mL" />
+                  }} className="h-6 text-xs bg-white border-border w-16 text-center focus-visible:ring-1 focus-visible:ring-primary" placeholder="mL" />
                 </div>
                 )}
                 </>}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-foreground font-medium">Via:</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-foreground font-medium">Via:</span>
                   <Select value={item.route} onValueChange={(v) => {
                     onUpdate(item.id, "route", v);
                     if (isIVRoute(v) && !item.infusionMode) {
                       onUpdate(item.id, "infusionMode", 'BIC');
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white border-border w-20 font-semibold focus:ring-1 focus:ring-primary">
+                    <SelectTrigger className="h-6 text-xs bg-white border-border w-20 font-medium focus:ring-1 focus:ring-primary">
                       <SelectValue>{routeShort(item.route)}</SelectValue>
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
                       {ROUTES.map((r) => (
                         <SelectItem key={r} value={r} className="text-xs">
-                          <span className="font-semibold mr-1.5">{routeShort(r)}</span>
+                          <span className="font-medium mr-2">{routeShort(r)}</span>
                           <span className="text-muted-foreground">— {routeLabel(r)}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-foreground font-medium">Int.:</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-foreground font-medium">Int.:</span>
                   <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white border-border font-semibold w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-xs bg-white border-border font-medium w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent className="max-h-72">{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
@@ -3100,25 +3100,25 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     só ajusta se quiser, e a validação deixa de exigir que ele
                     escreva nas Observações. (22/07/2026.) */}
                 {isOralSolidViaEnteral(item) && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-foreground font-medium whitespace-nowrap">Diluição:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-foreground font-medium whitespace-nowrap">Diluição:</span>
                     <Input
                       type="text"
                       inputMode="decimal"
                       value={item.enteralDilutionVolume ?? ''}
                       onChange={(e) => onUpdate(item.id, 'enteralDilutionVolume', e.target.value)}
                       placeholder={ENTERAL_DILUTION_DEFAULT_ML}
-                      className="h-6 w-14 text-[11px] bg-white border-border font-semibold text-center focus:ring-1 focus:ring-primary"
+                      className="h-6 w-14 text-xs bg-white border-border font-medium text-center focus:ring-1 focus:ring-primary"
                     />
-                    <span className="text-[10px] text-muted-foreground">mL de água</span>
+                    <span className="text-xs text-muted-foreground">mL de água</span>
                   </div>
                 )}
               </div>
 
               {renderIVOnly && (
-              <div className="flex items-center gap-2 flex-wrap pt-1.5 border-t border-border/40">
+              <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border/40">
                 <Droplets className="h-3 w-3 text-muted-foreground shrink-0" />
-                <span className="text-[10px] text-foreground font-semibold uppercase tracking-wide">Infusão EV</span>
+                <span className="text-xs text-foreground font-medium uppercase tracking-wide">Infusão EV</span>
                 {(() => {
                   // Bolus toggle: habilitado só p/ IV intermitente NÃO antimicrobiano e posologia ≠ Contínuo
                   const canBolusToggle =
@@ -3130,8 +3130,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   const nameLower = (item.name || '').toLowerCase();
                   const isBolusSafeDrug = /\b(atropina|adrenalina|epinefrina)\b/.test(nameLower);
                   return (
-                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md border border-warning-border bg-warning-soft/60">
-                      <span className={`text-[10px] font-medium ${!isBolus ? 'text-foreground' : 'text-muted-foreground'}`}>Tempo</span>
+                    <div className="flex items-center gap-2 px-2 py-1 rounded-md border border-warning-border bg-warning-soft/60">
+                      <span className={`text-xs font-medium ${!isBolus ? 'text-foreground' : 'text-muted-foreground'}`}>Tempo</span>
                       <Switch
                         checked={isBolus}
                         onCheckedChange={(v) => {
@@ -3144,9 +3144,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         }}
                         className="h-4 w-8 data-[state=checked]:bg-warning"
                       />
-                      <span className={`text-[10px] font-semibold ${isBolus ? 'text-warning-on-soft' : 'text-muted-foreground'}`}>Bolus</span>
+                      <span className={`text-xs font-medium ${isBolus ? 'text-warning-on-soft' : 'text-muted-foreground'}`}>Bolus</span>
                       {isBolus && !isBolusSafeDrug && (
-                        <span className="flex items-center gap-1 ml-1 text-[10px] text-warning-on-soft" title="Bolus EV é tipicamente reservado para drogas como atropina e adrenalina. Confirme a indicação antes de prescrever.">
+                        <span className="flex items-center gap-1 ml-1 text-xs text-warning-on-soft" title="Bolus EV é tipicamente reservado para drogas como atropina e adrenalina. Confirme a indicação antes de prescrever.">
                           <AlertTriangle className="h-3 w-3" />
                           confirmar indicação
                         </span>
@@ -3157,7 +3157,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 {item.ivBolus ? (
                   <>
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-muted-foreground font-medium">Vol. final:</span>
+                      <span className="text-xs text-muted-foreground font-medium">Vol. final:</span>
                       <Input
                         value={item.volumeTotal || ''}
                         onChange={(e) => {
@@ -3167,17 +3167,17 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                           const autoConc = calcConcentration(tempItem);
                           if (autoConc) onUpdate(item.id, "concentration", autoConc);
                         }}
-                        className="h-6 text-[11px] bg-white border-border w-16 text-center font-medium"
+                        className="h-6 text-xs bg-white border-border w-16 text-center font-medium"
                         placeholder="opcional"
                       />
-                      <span className="text-[10px] text-muted-foreground">mL</span>
+                      <span className="text-xs text-muted-foreground">mL</span>
                     </div>
-                    <span className="text-[10px] font-semibold text-warning-on-soft uppercase tracking-wide">EV em bolus</span>
+                    <span className="text-xs font-medium text-warning-on-soft uppercase tracking-wide">EV em bolus</span>
                   </>
                 ) : (
                   <>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">Vol. final:</span>
+                  <span className="text-xs text-muted-foreground font-medium">Vol. final:</span>
                   <Input
                     value={item.volumeTotal || ''}
                     onChange={(e) => {
@@ -3193,15 +3193,15 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                       }
                     }}
-                    className="h-6 text-[11px] bg-white border-border w-16 text-center font-medium"
+                    className="h-6 text-xs bg-white border-border w-16 text-center font-medium"
                     placeholder="opcional"
                     title="Volume final da solução (medicamento + diluente). Auto-calculado quando possível."
                   />
-                  <span className="text-[10px] text-muted-foreground">mL</span>
+                  <span className="text-xs text-muted-foreground">mL</span>
                 </div>
                 <span className="text-muted-foreground/40">│</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">Correr em:</span>
+                  <span className="text-xs text-muted-foreground font-medium">Correr em:</span>
                   <Input
                     value={item.infusionTime || ''}
                     onChange={(e) => {
@@ -3213,7 +3213,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                       }
                     }}
-                    className="h-6 text-[11px] bg-white border-border w-14 text-center"
+                    className="h-6 text-xs bg-white border-border w-14 text-center"
                     placeholder="—"
                   />
                   <Select value={item.infusionTimeUnit || 'min'} onValueChange={(v) => {
@@ -3223,7 +3223,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white border-border w-16">
+                    <SelectTrigger className="h-6 text-xs bg-white border-border w-16">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -3234,7 +3234,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </div>
                 <span className="text-muted-foreground/40">⇄</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">Vazão:</span>
+                  <span className="text-xs text-muted-foreground font-medium">Vazão:</span>
                   <Input
                     value={item.infusionRate || ''}
                     onChange={(e) => {
@@ -3246,7 +3246,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         if (autoTime) onUpdate(item.id, "infusionTime", autoTime);
                       }
                     }}
-                    className="h-6 text-[11px] bg-white border-border w-16 text-center font-medium"
+                    className="h-6 text-xs bg-white border-border w-16 text-center font-medium"
                     placeholder="—"
                   />
                   <Select value={item.infusionMode || 'BIC'} onValueChange={(v) => {
@@ -3257,7 +3257,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white border-border w-24">
+                    <SelectTrigger className="h-6 text-xs bg-white border-border w-24">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -3268,21 +3268,21 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </div>
                 <span className="text-muted-foreground/40">│</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">Conc. final:</span>
+                  <span className="text-xs text-muted-foreground font-medium">Conc. final:</span>
                   <Input
                     value={item.concentration || ''}
                     onChange={(e) => onUpdate(item.id, "concentration", e.target.value)}
-                    className="h-6 text-[11px] bg-white border-border w-24 text-center"
+                    className="h-6 text-xs bg-white border-border w-24 text-center"
                     placeholder="auto"
                   />
                 </div>
                 {item.volumeTotal && item.posology && item.posology !== 'Contínuo' && item.posology !== 'Dose única' && (
-                  <span className="text-[10px] text-muted-foreground ml-auto">
+                  <span className="text-xs text-muted-foreground ml-auto">
                     {posologyToIntervals(item.posology)}x/dia · {((parseDecimalBR(item.volumeTotal || '0') || 0) * posologyToIntervals(item.posology)).toFixed(0)}mL/24h
                   </span>
                 )}
                 {item.posology === 'Contínuo' && item.volumeTotal && (
-                  <span className="text-[10px] text-muted-foreground ml-auto">infusão contínua 24h</span>
+                  <span className="text-xs text-muted-foreground ml-auto">infusão contínua 24h</span>
                 )}
                   </>
                 )}
@@ -3296,11 +3296,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 const conc = calcConcentration(item);
                 if (!conc) return null;
                 return (
-                  <div className="flex items-center gap-1.5 px-2.5">
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/50 bg-muted/40 text-[10px] font-medium text-muted-foreground">
+                  <div className="flex items-center gap-2 px-3">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border/50 bg-muted/40 text-xs font-medium text-muted-foreground">
                       {item.category === 'antimicrobial' && <span className="atb-subchip">Concentração</span>}
                       {item.category !== 'antimicrobial' && <>Conc. final:</>}
-                      <span className="text-foreground font-semibold">{conc}</span>
+                      <span className="text-foreground font-medium">{conc}</span>
                     </span>
                   </div>
                 );
@@ -3311,18 +3311,18 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 const tokens = buildLine2Tokens(item);
                 if (tokens.length === 0) return null;
                 return (
-                  <div className="flex items-center flex-wrap gap-x-1.5 gap-y-1 px-2.5 py-1 rounded bg-muted/20 border border-border/20">
+                  <div className="flex items-center flex-wrap gap-x-2 gap-y-1 px-3 py-1 rounded-md bg-muted/20 border border-border/20">
                     {tokens.map((tok, i) => (
                       <React.Fragment key={i}>
                         {i > 0 && !tok.isBadge && !tokens[i - 1]?.isBadge && (
-                          <span className="text-[10px] text-muted-foreground/40 select-none">|</span>
+                          <span className="text-xs text-muted-foreground/40 select-none">|</span>
                         )}
                         {tok.isBadge ? (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary/15 text-foreground border border-border/30 tracking-wide">
+                          <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-primary/15 text-foreground border border-border/30 tracking-wide">
                             {tok.text}
                           </span>
                         ) : (
-                          <span className="text-[11px] text-foreground/80">{tok.text}</span>
+                          <span className="text-xs text-foreground/80">{tok.text}</span>
                         )}
                       </React.Fragment>
                     ))}
@@ -3334,7 +3334,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               <Input
                 value={item.instructions}
                 onChange={(e) => onUpdate(item.id, "instructions", e.target.value)}
-                className="h-7 text-[11px] bg-muted/10 border-border/20 text-muted-foreground italic pl-2.5 focus:text-foreground focus:not-italic"
+                className="h-7 text-xs bg-muted/10 border-border/20 text-muted-foreground italic pl-3 focus:text-foreground focus:not-italic"
                 placeholder="Observações adicionais..."
               />
             </>
@@ -3356,7 +3356,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               {item.flags.map(fk => {
                 const f = PRESCRIPTION_FLAGS.find(pf => pf.key === fk);
                 return f ? (
-                  <Badge key={fk} variant="outline" className={cn("text-[9px] px-1.5", f.color)}>
+                  <Badge key={fk} variant="outline" className={cn("text-xs px-2", f.color)}>
                     {f.fullLabel}
                   </Badge>
                 ) : null;
@@ -3426,13 +3426,13 @@ function SuspensionDialog({
             className="min-h-[80px] text-sm"
             autoFocus
           />
-          <div className="flex gap-1.5 flex-wrap">
+          <div className="flex gap-2 flex-wrap">
             {['Reação adversa', 'Alta médica', 'Substituição terapêutica', 'Suspensão temporária', 'Erro de prescrição'].map(r => (
               <button
                 key={r}
                 type="button"
                 onClick={() => setReason(r)}
-                className="text-[10px] px-2 py-0.5 rounded-full border border-border bg-muted/50 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                className="text-xs px-2 py-1 rounded-full border border-border bg-muted/50 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
               >
                 {r}
               </button>
@@ -3441,7 +3441,7 @@ function SuspensionDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={handleClose}>Cancelar</Button>
-          <Button size="sm" onClick={handleConfirm} disabled={!reason.trim()} className="gap-1.5 bg-warning hover:bg-warning text-white">
+          <Button size="sm" onClick={handleConfirm} disabled={!reason.trim()} className="gap-2 bg-warning hover:bg-warning text-white">
             <Pause className="h-3.5 w-3.5" /> Confirmar Suspensão
           </Button>
         </DialogFooter>
@@ -3478,7 +3478,7 @@ function ExtraPrescriptionDialog({
   doctorCrm?: string;
   sectorLabel?: string;
 }) {
-  // 🔒 Fix ReferenceError "UNIFIED_CATALOG is not defined": este diálogo
+  // Fix ReferenceError "UNIFIED_CATALOG is not defined": este diálogo
   // renderiza <SortablePrescriptionItemRow>, que precisa do catálogo por
   // categoria para os blocos de itens combinados (hidratação/inalação/
   // reposição). Antes, o código referenciava a constante UNIFIED_CATALOG
@@ -3773,7 +3773,7 @@ function ExtraPrescriptionDialog({
             <Zap className="h-5 w-5 text-warning" />
             Prescrição Extra
             {categoryConfigLabel && (
-              <Badge variant="outline" className="text-[10px] bg-warning-soft text-warning-on-soft border-warning-border ml-1">
+              <Badge variant="outline" className="text-xs bg-warning-soft text-warning-on-soft border-warning-border ml-1">
                 {categoryConfigLabel}
               </Badge>
             )}
@@ -3889,7 +3889,7 @@ function ExtraPrescriptionDialog({
                 items={extraItems.map(i => i.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {extraItems.map((item, idx) => (
                     <SortablePrescriptionItemRow
                       key={item.id}
@@ -3920,19 +3920,19 @@ function ExtraPrescriptionDialog({
 
         {/* Summary footer */}
         {extraItems.length > 0 && (
-          <div className="p-2.5 rounded-lg bg-muted/50 border border-border text-xs space-y-1">
+          <div className="p-3 rounded-lg bg-muted/50 border border-border text-xs space-y-1">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total de itens</span>
-              <span className="font-semibold">{extraItems.length}</span>
+              <span className="font-medium">{extraItems.length}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Itens "Agora" <span className="text-warning">(não renovam)</span></span>
-              <span className="font-semibold text-warning-on-soft">{agoraCount}</span>
+              <span className="font-medium text-warning-on-soft">{agoraCount}</span>
             </div>
             {scheduledCount > 0 && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Itens com horário <span className="text-primary">(entram na rotina)</span></span>
-                <span className="font-semibold text-primary">{scheduledCount}</span>
+                <span className="font-medium text-primary">{scheduledCount}</span>
               </div>
             )}
           </div>
@@ -3968,12 +3968,12 @@ function ExtraPrescriptionDialog({
             size="sm"
             onClick={handlePrintIsolated}
             disabled={extraItems.length === 0 || !patient}
-            className="gap-1.5 border-warning-border text-warning-on-soft hover:bg-warning-soft"
+            className="gap-2 border-warning-border text-warning-on-soft hover:bg-warning-soft"
             title="Imprime esta prescrição extra como anexo isolado (Norma Zero)"
           >
             <Printer className="h-3.5 w-3.5" /> Imprimir Anexo
           </Button>
-          <Button size="sm" onClick={handleConfirm} disabled={extraItems.length === 0} className="gap-1.5 bg-warning hover:bg-warning text-white">
+          <Button size="sm" onClick={handleConfirm} disabled={extraItems.length === 0} className="gap-2 bg-warning hover:bg-warning text-white">
             <Zap className="h-3.5 w-3.5" /> Adicionar {extraItems.length} item{extraItems.length !== 1 ? 's' : ''} à prescrição
           </Button>
         </DialogFooter>
@@ -4012,7 +4012,7 @@ function RenewalDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="p-3 rounded-lg bg-muted/50 border border-border space-y-1.5">
+          <div className="p-3 rounded-lg bg-muted/50 border border-border space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span>Itens ativos</span>
               <Badge variant="secondary">{activeCount}</Badge>
@@ -4020,7 +4020,7 @@ function RenewalDialog({
             {suspendedCount > 0 && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Itens suspensos</span>
-                <Badge variant="destructive" className="text-[10px]">{suspendedCount}</Badge>
+                <Badge variant="destructive" className="text-xs">{suspendedCount}</Badge>
               </div>
             )}
           </div>
@@ -4040,7 +4040,7 @@ function RenewalDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={onClose}>Cancelar</Button>
-          <Button size="sm" onClick={() => onConfirm(includeSuspended)} className="gap-1.5">
+          <Button size="sm" onClick={() => onConfirm(includeSuspended)} className="gap-2">
             <RefreshCw className="h-3.5 w-3.5" /> Renovar para {tomorrow}
           </Button>
         </DialogFooter>
@@ -4098,7 +4098,7 @@ function BatchActionBar({
   if (selectedCount === 0 || typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="fixed bottom-20 right-5 z-[70] flex items-center gap-2 px-3 py-2.5 rounded-xl bg-background/95 backdrop-blur-sm border border-border shadow-lg animate-in fade-in slide-in-from-bottom-3 duration-300">
+    <div className="fixed bottom-20 right-5 z-[70] flex items-center gap-2 px-3 py-3 rounded-lg bg-background/95 backdrop-blur-sm border border-border shadow-md animate-in fade-in slide-in-from-bottom-3 duration-300">
       <Checkbox
         checked={allSelected}
         onCheckedChange={() => allSelected ? onDeselectAll() : onSelectAll()}
@@ -4211,9 +4211,9 @@ function SignPrescriptionDialog({
           <div className="flex justify-between"><span className="text-muted-foreground">Data/Hora</span><span className="font-medium">{format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}</span></div>
         </div>
         <div className="flex items-center gap-2 justify-center">
-          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors", step >= 1 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30 text-muted-foreground")}>1</div>
+          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border-2 transition-colors", step >= 1 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30 text-muted-foreground")}>1</div>
           <div className={cn("w-12 h-0.5 transition-colors", step >= 2 ? "bg-primary" : "bg-muted-foreground/20")} />
-          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors", step >= 2 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30 text-muted-foreground")}>2</div>
+          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border-2 transition-colors", step >= 2 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30 text-muted-foreground")}>2</div>
         </div>
         {step === 1 ? (
           <div className="space-y-4">
@@ -4224,7 +4224,7 @@ function SignPrescriptionDialog({
             <div className="space-y-2">
               <Label htmlFor="sig-crm" className="text-xs font-medium">Número do CRM</Label>
               <Input id="sig-crm" value={crm} onChange={(e) => setCrm(e.target.value.replace(/\D/g, ''))} placeholder="Ex: 12345" maxLength={8} className="bg-muted/30" />
-              {crm && !/^\d{4,8}$/.test(crm) && <p className="text-[10px] text-destructive">CRM deve conter entre 4 e 8 dígitos</p>}
+              {crm && !/^\d{4,8}$/.test(crm) && <p className="text-xs text-destructive">CRM deve conter entre 4 e 8 dígitos</p>}
             </div>
           </div>
         ) : (
@@ -4236,7 +4236,7 @@ function SignPrescriptionDialog({
             <div className="space-y-2">
               <Label htmlFor="sig-pwd" className="text-xs font-medium">Senha</Label>
               <div className="relative">
-                <Input id="sig-pwd" type={showPassword ? "text" : "password"} value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} placeholder="Digite sua senha" className="bg-muted/30 pr-9" autoFocus />
+                <Input id="sig-pwd" type={showPassword ? "text" : "password"} value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} placeholder="Digite sua senha" className="bg-muted/30 pr-8" autoFocus />
                 <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword(!showPassword)}>
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -4245,12 +4245,12 @@ function SignPrescriptionDialog({
             <div className="space-y-2">
               <Label htmlFor="sig-pwd2" className="text-xs font-medium">Confirmar senha</Label>
               <div className="relative">
-                <Input id="sig-pwd2" type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }} placeholder="Confirme sua senha" className="bg-muted/30 pr-9" />
+                <Input id="sig-pwd2" type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }} placeholder="Confirme sua senha" className="bg-muted/30 pr-8" />
                 <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowConfirm(!showConfirm)}>
                   {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              {password && confirmPassword && password === confirmPassword && <p className="text-[10px] text-released-on-soft flex items-center gap-1"><Check className="h-3 w-3" /> Senhas coincidem</p>}
+              {password && confirmPassword && password === confirmPassword && <p className="text-xs text-released-on-soft flex items-center gap-1"><Check className="h-3 w-3" /> Senhas coincidem</p>}
             </div>
             {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" /> {error}</p>}
           </div>
@@ -4259,9 +4259,9 @@ function SignPrescriptionDialog({
           {step === 2 && <Button variant="ghost" size="sm" onClick={() => setStep(1)} disabled={verifying} className="mr-auto text-xs">Voltar</Button>}
           <Button variant="outline" size="sm" onClick={handleClose} disabled={verifying} className="text-xs">Cancelar</Button>
           {step === 1 ? (
-            <Button size="sm" onClick={handleStep1} disabled={!isStep1Valid} className="gap-1.5 text-xs">Próximo <Check className="h-3 w-3" /></Button>
+            <Button size="sm" onClick={handleStep1} disabled={!isStep1Valid} className="gap-2 text-xs">Próximo <Check className="h-3 w-3" /></Button>
           ) : (
-            <Button size="sm" onClick={handleSign} disabled={verifying || !password || !confirmPassword} className="gap-1.5 text-xs">
+            <Button size="sm" onClick={handleSign} disabled={verifying || !password || !confirmPassword} className="gap-2 text-xs">
               {verifying ? (<><span className="animate-spin h-3 w-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full inline-block" /> Verificando...</>) : (<><ShieldCheck className="h-3.5 w-3.5" /> Assinar Prescrição</>)}
             </Button>
           )}
@@ -4317,36 +4317,36 @@ function DrugInteractionDialog({
       const allergyAlerts = alerts.filter(a => a.type === 'allergy');
 
       if (alerts.length === 0) {
-        setResult("## 🟢 Nenhuma interação grave identificada\n\nA verificação automática não detectou interações graves, duplicatas ou alertas de alergia entre os medicamentos ativos desta prescrição.\n\n> Esta verificação usa uma lista de pares de alto risco validados clinicamente. Consulte sempre fontes especializadas para casos complexos.");
+        setResult("## Nenhuma interação grave identificada\n\nA verificação automática não detectou interações graves, duplicatas ou alertas de alergia entre os medicamentos ativos desta prescrição.\n\n> Esta verificação usa uma lista de pares de alto risco validados clinicamente. Consulte sempre fontes especializadas para casos complexos.");
         return;
       }
 
       let output = "";
 
       if (interactions.length > 0) {
-        output += "## 🔴 Interações Graves Identificadas\n\n";
+        output += "## Interações Graves Identificadas\n\n";
         interactions.forEach(a => {
           output += `**${a.message}**\n- Gravidade: ALTA\n- ${a.detail || "Monitorar rigorosamente."}\n\n`;
         });
       } else {
-        output += "## 🟢 Sem interações graves identificadas\n\nNenhuma interação de alto risco detectada.\n\n";
+        output += "## Sem interações graves identificadas\n\nNenhuma interação de alto risco detectada.\n\n";
       }
 
       if (duplicates.length > 0) {
-        output += "## 🟡 Duplicatas / Sobreposição Terapêutica\n\n";
+        output += "## Duplicatas / Sobreposição Terapêutica\n\n";
         duplicates.forEach(a => {
           output += `**${a.message}**\n- ${a.detail || "Verificar se a duplicação é intencional."}\n\n`;
         });
       }
 
       if (allergyAlerts.length > 0) {
-        output += "## 🚨 Alertas de Alergia\n\n";
+        output += "## Alertas de Alergia\n\n";
         allergyAlerts.forEach(a => {
           output += `**${a.message}**\n- ${a.detail || "Paciente tem alergia registrada."}\n\n`;
         });
       }
 
-      output += `## 📋 Resumo\n- Interações graves: ${interactions.length}\n- Duplicatas: ${duplicates.length}\n- Alertas de alergia: ${allergyAlerts.length}\n\n> Verificação automática baseada em lista de pares de alto risco. Consulte fontes especializadas para análise completa.`;
+      output += `## Resumo\n- Interações graves: ${interactions.length}\n- Duplicatas: ${duplicates.length}\n- Alertas de alergia: ${allergyAlerts.length}\n\n> Verificação automática baseada em lista de pares de alto risco. Consulte fontes especializadas para análise completa.`;
 
       setResult(output);
     } catch (err: any) {
@@ -4384,7 +4384,7 @@ function DrugInteractionDialog({
 
         <div className="flex-1 overflow-y-auto min-h-0">
           {loading && !result && (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="flex flex-col items-center justify-center py-8 gap-3">
               <Loader2 className="h-8 w-8 text-primary animate-spin" />
               <p className="text-sm text-muted-foreground">Analisando interações medicamentosas...</p>
             </div>
@@ -4392,7 +4392,7 @@ function DrugInteractionDialog({
 
           {error && (
             <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-1" />
               <span>{error}</span>
             </div>
           )}
@@ -4406,7 +4406,7 @@ function DrugInteractionDialog({
 
         <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t">
           {result && (
-            <Button variant="outline" size="sm" onClick={runCheck} disabled={loading} className="mr-auto gap-1.5 text-xs">
+            <Button variant="outline" size="sm" onClick={runCheck} disabled={loading} className="mr-auto gap-2 text-xs">
               <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} /> Reanalisar
             </Button>
           )}
@@ -4490,7 +4490,7 @@ const PrescricaoPage = () => {
   const sectorMapInit: Record<string, string> = { red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2" };
 
   const [patient, setPatient] = useState<PatientHeader>(() => {
-    // ⚠️  CRÍTICO: jamais usar dados-demo quando há patientId real na URL.
+    //  CRÍTICO: jamais usar dados-demo quando há patientId real na URL.
     // Demos antigos (L09/L10/L11 = "Maria das Graças", etc) provocavam o
     // cabeçalho do PDF a vir com nome de outro paciente em UTI 2 leito 10.
     // Os campos abaixo serão hidratados pelos efeitos de pré-admissão,
@@ -4515,7 +4515,7 @@ const PrescricaoPage = () => {
     };
   });
 
-  // 🔒 FIX: items demo NUNCA aparecem quando há patientId real na URL.
+  // FIX: items demo NUNCA aparecem quando há patientId real na URL.
   // Antes, initialDemoItems era sempre calculado por leito — mesmo com paciente
   // real — fazendo itens fictícios aparecerem por 1-2s antes da prescrição
   // real chegar, gerando sensação de bug/travamento para o usuário.
@@ -4703,13 +4703,13 @@ const PrescricaoPage = () => {
   // dependentes de `patient.name` re-disparem (auto-load das últimas 24h,
   // pré-admissão, lista de prescrições, dispensações).
   const urlPatientId = searchParams.get('patientId') || '';
-  // 🔒 Chave de afinidade ROBUSTA — UUID do patient_registry vinculado ao leito.
+  // Chave de afinidade ROBUSTA — UUID do patient_registry vinculado ao leito.
   // ATENÇÃO: `urlPatientId` é `patients.id` (linha do leito), NÃO é
   // `patient_registry.id`. Precisamos resolver o registry_id real consultando
   // a tabela `patients` — usar `urlPatientId` direto fazia todas as queries
   // de prescrição/validação/dispensação voltarem vazias (homônimos OK, mas
   // o paciente original também não achava o próprio histórico).
-  // 🔒 Resolução blindada via helper único — fonte da verdade para registry_id.
+  // Resolução blindada via helper único — fonte da verdade para registry_id.
   // Ver src/hooks/useResolvedRegistryId.ts para detalhes da garantia anti-vazamento.
   const { registryId: patientRegistryId } = useResolvedRegistryId(urlPatientId);
   const { encounterId: activeEncounterId } = useActiveEncounterId(urlPatientId);
@@ -4738,7 +4738,7 @@ const PrescricaoPage = () => {
       vitalSigns: undefined,
       riskClassification: undefined,
       allergies: '',
-      // ⚠️  Campos vindos do `patient_registry` (sincronizados pelo effect
+      //  Campos vindos do `patient_registry` (sincronizados pelo effect
       // logo abaixo via usePatientIdentifiers). Limpar aqui evita que dados
       // de identificação do paciente ANTERIOR (DN, sexo, mãe, endereço, CPF/CNS
       // exibidos no cabeçalho do PDF) "vazem" por 1-2 frames até o registry
@@ -5161,7 +5161,7 @@ const PrescricaoPage = () => {
       sigOverride?: DigitalSignature | null;
       silent?: boolean;
       /**
-       * 🔒 Fase C — quando true, se o registro atual está SIGNED e não há nova
+       * Fase C — quando true, se o registro atual está SIGNED e não há nova
        * assinatura (sig=null), em vez do skip B1 promove automaticamente para
        * `newVersion` (parent_id + bump version). Usado por mutações conscientes
        * sobre prescrição assinada (suspender/reativar item). Autosave NÃO usa.
@@ -5185,7 +5185,7 @@ const PrescricaoPage = () => {
       (initialPatientSector && (sectorMapInit[initialPatientSector] || initialPatientSector)) ||
       'GERAL';
     try {
-      // 🔒 Fase C — pré-checagem de status para decidir se update vira newVersion.
+      // Fase C — pré-checagem de status para decidir se update vira newVersion.
       // Roda apenas quando há id, modo update, sem nova assinatura e autoNewVersionIfSigned ligado.
       if (
         mode === 'update' &&
@@ -5251,7 +5251,7 @@ const PrescricaoPage = () => {
       }
 
       if (currentPrescriptionId) {
-        // 🔒 B1 — blindagem: nunca rebaixar uma prescrição já SIGNED via update.
+        // B1 — blindagem: nunca rebaixar uma prescrição já SIGNED via update.
         // Só permite update se for newVersion (tratado acima) OU se o caller traz uma
         // assinatura válida (sig). Autosave (sig=null) em registro signed → skip silencioso.
         // Fase C: se autoNewVersionIfSigned estava ligado, já foi promovido acima.
@@ -5354,7 +5354,7 @@ const PrescricaoPage = () => {
   const lastPersistedSerializedRef = useRef<string>('');
   const autosaveSkipFirstRef = useRef(true);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // 🔒 B2 — cache "existe signed hoje?" por (paciente+dia) para evitar query a cada keystroke.
+  // B2 — cache "existe signed hoje?" por (paciente+dia) para evitar query a cada keystroke.
   const signedTodayCacheRef = useRef<{ key: string; exists: boolean } | null>(null);
 
   const draftStorageKey = useMemo(() => {
@@ -5749,7 +5749,7 @@ const PrescricaoPage = () => {
     currentHospital?.id ?? null,
   );
 
-  // ⚠️  Sincroniza LEITO + UNIDADE em tempo real a partir da tabela `patients`.
+  //  Sincroniza LEITO + UNIDADE em tempo real a partir da tabela `patients`.
   // Antes deste sync, `patient.bed`/`patient.unit` só eram alimentados pelo
   // searchParam inicial ou por `loadPrescription` (que herdava o snapshot
   // antigo). Resultado: PDF do L07 saía com bed="L05" após troca rápida de
@@ -5770,7 +5770,7 @@ const PrescricaoPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [livePatientForBed?.bedNumber, livePatientForBed?.sector]);
 
-  // ⚠️  Sincroniza nome canônico, nome social, mãe, endereço, nascimento e sexo
+  //  Sincroniza nome canônico, nome social, mãe, endereço, nascimento e sexo
   // a partir do `patient_registry` resolvido (com guarda anti-NI). Isso garante
   // que o cabeçalho do PDF de prescrição/evolução jamais apareça com dados de
   // outro paciente — bug observado em UTI 2 leito 10 e potencialmente em
@@ -5839,7 +5839,7 @@ const PrescricaoPage = () => {
     }
   }, [registryAtendimento, patient.encounterCode]);
 
-  // 🔄 Fallback de identificação a partir da própria tabela `patients`
+  // Fallback de identificação a partir da própria tabela `patients`
   // (quando o registry não traz birth_date/idade — comum em pacientes NI e
   // em leitos onde o registry ainda não foi vinculado). Garante que o
   // cabeçalho exiba idade, data de admissão hospitalar e admissão UTI em
@@ -6223,7 +6223,7 @@ const PrescricaoPage = () => {
 
     if (isMAV && isControlled) {
       // ── MAV + Portaria 344 (opioides, midazolam, ketamina) ───────────
-      toast.error(`✓ ADICIONADO — ${med.name}`, {
+      toast.error(`ADICIONADO — ${med.name}`, {
         description: fromGlobalSearch
           ? `ALTA VIGILÂNCIA + CONTROLADO (${newItem.controlledList ?? '344'}). ${docLabel ?? 'Receita controlada'} será gerada na impressão.`
           : `ALTA VIGILÂNCIA + CONTROLADO (${newItem.controlledList ?? '344'}). ${docLabel ?? 'Receita controlada'} será gerada na impressão. Aplicando modelo MAV...`,
@@ -6236,7 +6236,7 @@ const PrescricaoPage = () => {
       }
     } else if (isMAV) {
       // ── Apenas MAV (insulinas, anticoagulantes, eletrólitos, BNM, aminas) ──
-      toast.success(`✓ ADICIONADO — ${med.name}`, {
+      toast.success(`ADICIONADO — ${med.name}`, {
         description: fromGlobalSearch
           ? "ALTA VIGILÂNCIA: dose, diluição e dupla checagem ficam sob sua responsabilidade."
           : "ALTA VIGILÂNCIA: aplicando modelo padronizado (diluição, dose, BIC, dupla checagem)...",
@@ -6248,7 +6248,7 @@ const PrescricaoPage = () => {
       }
     } else if (isControlled) {
       // ── Apenas Portaria 344 (benzo VO, Z-drugs, metilfenidato, tramadol, etc.) ──
-      toast.warning(`✓ ADICIONADO — ${med.name}`, {
+      toast.warning(`ADICIONADO — ${med.name}`, {
         description: `CONTROLADO Lista ${newItem.controlledList ?? '344'} — ${docLabel ?? 'Receita controlada'} será gerada automaticamente ao imprimir.`,
         duration: 4500,
       });
@@ -6918,16 +6918,16 @@ const PrescricaoPage = () => {
       if (!snap || snap.status !== 'draft') {
         throw new Error("Esta prescrição não está mais como rascunho.");
       }
-      // 🔒 Blindagem 1: nunca apagar se tiver assinatura digital (mesmo que status==='draft' por bug)
+      // Blindagem 1: nunca apagar se tiver assinatura digital (mesmo que status==='draft' por bug)
       if (snap.digital_signature) {
         throw new Error("Esta prescrição possui ASSINATURA DIGITAL e não pode ser excluída — mesmo marcada como rascunho.");
       }
-      // 🔒 Blindagem 1b: nunca apagar se houver QUALQUER item já validado pela farmácia (prescrição oficial do dia)
+      // Blindagem 1b: nunca apagar se houver QUALQUER item já validado pela farmácia (prescrição oficial do dia)
       const snapItems = Array.isArray((snap as any).items) ? ((snap as any).items as any[]) : [];
       if (snapItems.some(it => it && it.validated === true)) {
         throw new Error("Esta prescrição possui itens VALIDADOS pela farmácia — é a prescrição oficial do dia e não pode ser excluída.");
       }
-      // 🔒 Blindagem 2: nunca apagar se houver versões filhas (qualquer prescrição com parent_id apontando para esta)
+      // Blindagem 2: nunca apagar se houver versões filhas (qualquer prescrição com parent_id apontando para esta)
       const { data: children, error: childErr } = await supabase
         .from('prescriptions')
         .select('id, version, status')
@@ -6938,7 +6938,7 @@ const PrescricaoPage = () => {
         const desc = children.map((c: any) => `v${c.version} (${c.status})`).join(', ');
         throw new Error(`Esta prescrição tem ${children.length} versão(ões) derivada(s): ${desc}. Exclusão bloqueada para preservar o histórico clínico.`);
       }
-      // 🔒 Blindagem 3: nunca apagar se houver, para o mesmo paciente/unidade, uma prescrição assinada mais recente
+      // Blindagem 3: nunca apagar se houver, para o mesmo paciente/unidade, uma prescrição assinada mais recente
       const { data: signedAfter, error: signedErr } = await supabase
         .from('prescriptions')
         .select('id, version, status')
@@ -7012,7 +7012,7 @@ const PrescricaoPage = () => {
   const autoLoadAttemptedRef = useRef(false);
   const [autoLoadTriggered, setAutoLoadTriggered] = useState(false); // sinaliza que pode executar
 
-  // 🔒 Reset ao montar — garante que o auto-load dispare mesmo quando
+  // Reset ao montar — garante que o auto-load dispare mesmo quando
   // o componente é reusado pelo React (mesma key, mesmo patientId).
   // Acontece ao navegar entre módulos (Evolução → Prescrição) com o
   // mesmo paciente: sem este reset, autoLoadAttemptedRef ficaria true
@@ -7025,13 +7025,13 @@ const PrescricaoPage = () => {
     loadGenerationRef.current += 1;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // [] = executa apenas na montagem
-  // 🔒 FIX: autoLoadDone começa como false quando há paciente real na URL,
+  // FIX: autoLoadDone começa como false quando há paciente real na URL,
   // garantindo que o spinner cubra 100% da área de prescrição desde o primeiro
   // frame — sem piscar itens demo intermediários.
   // Sem paciente real (modo apresentação): começa true (sem loading desnecessário).
   const [autoLoadDone, setAutoLoadDone] = useState(!hasRealPatientUrl);
 
-  // 🔒 Safety timeout: se o auto-load não completar em 10s (rede lenta, erro
+  // Safety timeout: se o auto-load não completar em 10s (rede lenta, erro
   // silencioso, race condition), força autoLoadDone=true para não prender o
   // usuário indefinidamente no spinner.
   useEffect(() => {
@@ -7046,7 +7046,7 @@ const PrescricaoPage = () => {
   const loadGenerationRef = useRef(0); // incrementa a cada troca de paciente — cancela loads antigos
   const loadPrescriptionRef = useRef<((id: string) => Promise<void>) | null>(null);
 
-  // 🔒 ESPERA PROGRESSIVA: aguarda registry e encounter resolverem,
+  // ESPERA PROGRESSIVA: aguarda registry e encounter resolverem,
   // mas não aborta se encounter não chegar — usa fallback após 3s.
   // Isso garante que pacientes legados (sem encounter vinculado) também
   // tenham sua prescrição carregada.
@@ -7071,7 +7071,7 @@ const PrescricaoPage = () => {
     if (currentPrescriptionId) return;
     if (!patientRegistryId) return;
 
-    // 🔒 Aguardar encounter por até 3s antes de prosseguir sem ele.
+    // Aguardar encounter por até 3s antes de prosseguir sem ele.
     // Se encounter chegar: usa como filtro (ideal).
     // Se não chegar em 3s: dispara com fallback por registry_id apenas.
     const ENCOUNTER_WAIT_MS = 3000;
@@ -7351,7 +7351,7 @@ const PrescricaoPage = () => {
         .single();
       if (error) throw error;
       if (data) {
-        // ⚠️  Preserva LEITO + UNIDADE vivos (vindos do `patients` via
+        //  Preserva LEITO + UNIDADE vivos (vindos do `patients` via
         // usePatientLive) — nunca herda o snapshot histórico do `patient_data`,
         // que pode estar desatualizado se o paciente foi relocado desde a
         // gravação. Mesma blindagem usada para imprimir admissão/evolução.
@@ -7641,7 +7641,7 @@ const PrescricaoPage = () => {
         patient_data: patient as any,
         items: items as any,
         digital_signature: digitalSignature as any,
-        // 🔒 Status baseado na validação dos itens, não na assinatura digital.
+        // Status baseado na validação dos itens, não na assinatura digital.
         // A assinatura digital está sendo removida do fluxo — o indicador
         // de prescrição concluída deve depender da validação.
         status: (() => {
@@ -7749,7 +7749,7 @@ const PrescricaoPage = () => {
     return !cat.notification_type;
   });
 
-  // ⚠️  BUGFIX (07/08/2026): gate de prontidão do cabeçalho impresso.
+  //  BUGFIX (07/08/2026): gate de prontidão do cabeçalho impresso.
   //
   // O cabeçalho (nome, leito, prontuário, idade, peso, sexo, admissão,
   // nascimento, unidade, atendimento, alergias) é hidratado por buscas
@@ -8308,7 +8308,7 @@ const PrescricaoPage = () => {
     <div className="animate-fade-in">
       <ClinicalHeader moduleLabel="Prescrição Médica" />
       <div className="flex print:block">
-        <div className="flex-1 min-w-0 p-3 sm:p-6 space-y-4 sm:space-y-5">
+        <div className="flex-1 min-w-0 p-3 sm:p-6 space-y-4 sm:space-y-4">
         {/* SAPS pending alert removed */}
       {/* Print styles — hide everything except portal */}
       <style dangerouslySetInnerHTML={{ __html: `
@@ -8355,9 +8355,9 @@ const PrescricaoPage = () => {
       {/* Banner didático — peso e alergias obrigatórios para liberar a prescrição */}
       {(!patient.weight.trim() || !patient.allergies.trim()) && (
         <div className="print:hidden mb-2 flex items-start gap-2 rounded-lg border border-warning-border/70 bg-warning-soft/80 px-3 py-2 text-warning-on-soft">
-          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-          <div className="text-[12px] leading-snug">
-            <strong className="font-semibold">PESO e ALERGIAS</strong> são obrigatórios para liberar o ato de prescrição (validar, assinar ou imprimir).{' '}
+          <AlertTriangle className="h-4 w-4 mt-1 shrink-0" />
+          <div className="text-xs leading-snug">
+            <strong className="font-medium">PESO e ALERGIAS</strong> são obrigatórios para liberar o ato de prescrição (validar, assinar ou imprimir).{' '}
             <span className="opacity-80">
               Falta: {!patient.weight.trim() && !patient.allergies.trim() ? 'peso e alergias' : !patient.weight.trim() ? 'peso' : 'alergias'}.
             </span>
@@ -8374,38 +8374,38 @@ const PrescricaoPage = () => {
         if (todays.length === 0) return null;
         return (
           <div className="print:hidden mb-2 rounded-lg border border-released-border/70 bg-released-soft/40 px-3 py-2">
-            <div className="flex items-center justify-between gap-2 mb-1.5">
-              <div className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider uppercase text-released-on-soft">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2 text-xs font-medium tracking-wider uppercase text-released-on-soft">
                 <ShieldCheck className="h-3 w-3" />
                 Validadas hoje
                 <span className="font-mono text-released-on-soft/70">({todays.length})</span>
               </div>
-              <span className="text-[10px] text-released-on-soft/70 italic">
+              <span className="text-xs text-released-on-soft/70 italic">
                 Clique em "Abrir" para visualizar a versão no editor.
               </span>
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {todays.map(p => {
                 const isCurrent = currentPrescriptionId === p.id;
                 return (
                   <div
                     key={p.id}
                     className={cn(
-                      "flex items-center gap-1.5 rounded-md border bg-card/80 px-2 py-1 text-[11px] transition-colors",
+                      "flex items-center gap-2 rounded-md border bg-card/80 px-2 py-1 text-xs transition-colors",
                       isCurrent ? "border-primary ring-1 ring-primary/30" : "border-released-border/70 hover:border-released",
                     )}
                   >
-                    <Badge className="text-[9px] h-4 px-1.5 bg-released hover:bg-released shrink-0">v{p.version}</Badge>
-                    <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                    <Badge className="text-xs h-4 px-2 bg-released hover:bg-released shrink-0">v{p.version}</Badge>
+                    <span className="text-xs text-muted-foreground font-mono shrink-0">
                       {format(new Date(p.created_at), "HH:mm", { locale: ptBR })}
                     </span>
                     {isCurrent && (
-                      <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">Atual</Badge>
+                      <Badge variant="secondary" className="text-xs h-4 px-2 shrink-0">Atual</Badge>
                     )}
                     <button
                       type="button"
                       onClick={() => setPreviewPrescription(p)}
-                      className="shrink-0 p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                      className="shrink-0 p-1 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                       title="Visualizar prescrição"
                       aria-label="Visualizar prescrição"
                     >
@@ -8415,7 +8415,7 @@ const PrescricaoPage = () => {
                       <button
                         type="button"
                         onClick={() => loadPrescription(p.id)}
-                        className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border border-released-border/70 text-released-on-soft hover:bg-released-soft/60 transition-colors"
+                        className="shrink-0 px-2 py-1 rounded-md text-xs font-medium border border-released-border/70 text-released-on-soft hover:bg-released-soft/60 transition-colors"
                         title="Abrir esta versão no editor"
                       >
                         Abrir
@@ -8424,7 +8424,7 @@ const PrescricaoPage = () => {
                     <button
                       type="button"
                       onClick={() => restoreFromPrescription(p)}
-                      className="shrink-0 p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                      className="shrink-0 p-1 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                       title="Somar itens desta versão no rascunho atual (sem duplicar)"
                       aria-label="Restaurar somando itens"
                     >
@@ -8445,8 +8445,8 @@ const PrescricaoPage = () => {
       {allItemsValidated && (
         <div className="print:hidden mb-2 flex items-center gap-2 rounded-lg border border-released-border/70 bg-released-soft/80 px-3 py-2 text-released-on-soft">
           <ShieldCheck className="h-4 w-4 shrink-0" />
-          <div className="text-[12px] leading-snug min-w-0">
-            <strong className="font-semibold">PRESCRIÇÃO VALIDADA HOJE</strong>
+          <div className="text-xs leading-snug min-w-0">
+            <strong className="font-medium">PRESCRIÇÃO VALIDADA HOJE</strong>
             {". "}
             <span className="opacity-80">A assinatura legal é feita manualmente (carimbo + caneta) no PDF impresso.</span>
           </div>
@@ -8454,44 +8454,44 @@ const PrescricaoPage = () => {
       )}
 
       {/* ===== UNIFIED HEADER — title + context (peso/alergias/data/templates) + actions ===== */}
-      <div className="print:hidden rounded-xl border border-border bg-card/60 shadow-[0_4px_18px_-8px_hsl(var(--primary)/0.18),0_1px_2px_-1px_hsl(var(--foreground)/0.06)] hover:shadow-[0_6px_24px_-8px_hsl(var(--primary)/0.22),0_1px_2px_-1px_hsl(var(--foreground)/0.08)] transition-shadow duration-300">
+      <div className="print:hidden rounded-lg border border-border bg-card/60 shadow-[0_4px_18px_-8px_hsl(var(--primary)/0.18),0_1px_2px_-1px_hsl(var(--foreground)/0.06)] hover:shadow-[0_6px_24px_-8px_hsl(var(--primary)/0.22),0_1px_2px_-1px_hsl(var(--foreground)/0.08)] transition-shadow-sm duration-300">
         {/* Row 0 — Paciente em destaque (esq) · Título do módulo (dir) */}
-        <div className="hidden sm:flex items-center justify-between gap-4 px-3 pt-2.5 pb-2">
+        <div className="hidden sm:flex items-center justify-between gap-4 px-3 pt-3 pb-2">
           {/* ESQUERDA: identidade do paciente */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="flex flex-col items-center justify-center h-12 w-12 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
-              <span className="text-[7px] font-bold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
-              <span className="text-base font-extrabold text-primary leading-tight mt-0.5">
+              <span className="text-xs font-semibold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
+              <span className="text-base font-semibold text-primary leading-tight mt-1">
                 {patient.bed || "—"}
               </span>
             </div>
             <div className="min-w-0">
-              <p className="text-base font-extrabold text-foreground uppercase tracking-wide leading-tight truncate">
+              <p className="text-base font-semibold text-foreground uppercase tracking-wide leading-tight truncate">
                 {patient.name || "Paciente não identificado"}
               </p>
-              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+              <div className="flex items-center gap-2 flex-wrap mt-1">
                 {patient.unit && (
-                  <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold uppercase tracking-wide">
+                  <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium uppercase tracking-wide">
                     {patient.unit}
                   </span>
                 )}
                 {patient.age && (
-                  <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold">
+                  <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium">
                     {patient.age}
                   </span>
                 )}
                 {patient.birthDate && (
                   <>
-                    <span className="text-muted-foreground/40 text-[10px]">·</span>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-muted-foreground/40 text-xs">·</span>
+                    <span className="text-xs text-muted-foreground">
                       {(() => { try { const d = new Date(patient.birthDate + 'T12:00:00'); return isNaN(d.getTime()) ? patient.birthDate : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch { return patient.birthDate; } })()}
                     </span>
                   </>
                 )}
                 {registryProntuario && (
                   <>
-                    <span className="text-muted-foreground/40 text-[10px]">·</span>
-                    <span className="text-[10px] text-muted-foreground font-mono">
+                    <span className="text-muted-foreground/40 text-xs">·</span>
+                    <span className="text-xs text-muted-foreground font-mono">
                       Pront. {registryProntuario}
                     </span>
                   </>
@@ -8502,29 +8502,29 @@ const PrescricaoPage = () => {
 
           {/* DIREITA: título do módulo + número + data */}
           <div className="text-right shrink-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
               Prescrição Médica Diária
             </p>
-            <div className="flex items-center justify-end gap-1.5 mt-0.5 flex-wrap">
+            <div className="flex items-center justify-end gap-2 mt-1 flex-wrap">
               {currentPrescriptionId && (
-                <Badge variant="outline" className="text-[9px] h-4 px-1.5 text-primary border-primary/30">
+                <Badge variant="outline" className="text-xs h-4 px-2 text-primary border-primary/30">
                   Salva
                 </Badge>
               )}
               {patient.encounterCode && (
-                <span className="font-mono text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-                  <Hash className="inline h-2.5 w-2.5 mr-0.5" />{patient.encounterCode}
+                <span className="font-mono text-xs bg-muted text-muted-foreground px-2 py-1 rounded-md">
+                  <Hash className="inline h-2.5 w-2.5 mr-1" />{patient.encounterCode}
                 </span>
               )}
-              <span className="text-[9px] text-muted-foreground font-mono">{prescriptionDate}</span>
+              <span className="text-xs text-muted-foreground font-mono">{prescriptionDate}</span>
             </div>
           </div>
         </div>
 
         {/* Row 1 — Clinical context (peso, alergias, calendário, dose/kg, templates, atalhos) */}
-        <div className="flex items-center gap-1.5 flex-wrap px-2 sm:px-3 py-2 sm:border-t sm:border-border/40">
-          <div className="flex items-center gap-1.5">
-            <Label className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
+        <div className="flex items-center gap-2 flex-wrap px-2 sm:px-3 py-2 sm:border-t sm:border-border/40">
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
             <Input
               value={patient.weight}
               onChange={(e) => updatePatient("weight", e.target.value)}
@@ -8538,8 +8538,8 @@ const PrescricaoPage = () => {
           {(() => {
             const isNDAM = patient.allergies.trim().toUpperCase() === "NDAM";
             return (
-              <div className="flex items-center gap-1.5">
-                <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground font-medium flex items-center gap-1 whitespace-nowrap">
                   {isNDAM ? (
                     <ShieldCheck className="h-3 w-3 text-released-on-soft" />
                   ) : (
@@ -8556,21 +8556,21 @@ const PrescricaoPage = () => {
             );
           })()}
           {(!patient.weight.trim() || !patient.allergies.trim()) && (
-            <span className="inline-flex items-center gap-1 text-[10px] text-warning-on-soft font-medium">
+            <span className="inline-flex items-center gap-1 text-xs text-warning-on-soft font-medium">
               <AlertTriangle className="h-3 w-3" />
               Preencha {!patient.weight.trim() && !patient.allergies.trim() ? 'peso e alergias' : !patient.weight.trim() ? 'o peso' : 'as alergias'}
             </span>
           )}
 
-          <span className="h-5 w-px bg-border/60 mx-0.5" />
+          <span className="h-5 w-px bg-border/60 mx-1" />
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1 px-2">
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1 px-2">
                 <CalendarDays className="h-3 w-3" />
                 {historyDate ? format(historyDate, "dd/MM/yyyy") : "Calendário"}
                 {savedPrescriptions.length > 0 && (
-                  <span className="ml-0.5 text-[9px] font-mono text-muted-foreground">({savedPrescriptions.length})</span>
+                  <span className="ml-1 text-xs font-mono text-muted-foreground">({savedPrescriptions.length})</span>
                 )}
               </Button>
             </PopoverTrigger>
@@ -8597,7 +8597,7 @@ const PrescricaoPage = () => {
                     "relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-muted-foreground/60",
                 }}
               />
-              <div className="px-3 pb-2 -mt-1 flex items-center gap-3 text-[10px] text-muted-foreground">
+              <div className="px-3 pb-2 -mt-1 flex items-center gap-3 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
                   Validada
@@ -8615,11 +8615,11 @@ const PrescricaoPage = () => {
                 </div>
               )}
               <div className="border-t p-2 max-h-64 overflow-y-auto">
-                <div className="flex items-center justify-between mb-1.5 px-1">
-                  <h3 className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase">
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <h3 className="text-xs font-medium text-muted-foreground tracking-wider uppercase">
                     Prescrições anteriores
                   </h3>
-                  <span className="text-[10px] text-muted-foreground">{savedPrescriptions.length}</span>
+                  <span className="text-xs text-muted-foreground">{savedPrescriptions.length}</span>
                 </div>
                 {savedPrescriptions.length > 0 ? (
                   <div className="space-y-1">
@@ -8627,7 +8627,7 @@ const PrescricaoPage = () => {
                       <div
                         key={p.id}
                         className={cn(
-                          "w-full flex items-center gap-1 px-2 py-1.5 rounded-md border text-xs transition-colors",
+                          "w-full flex items-center gap-1 px-2 py-2 rounded-md border text-xs transition-colors",
                           currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border hover:bg-accent/50"
                         )}
                       >
@@ -8636,24 +8636,24 @@ const PrescricaoPage = () => {
                           onClick={() => setPreviewPrescription(p)}
                           className="flex-1 text-left min-w-0"
                         >
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap">
                             {p.isValidated ? (
-                              <Badge variant="default" className="text-[9px] h-4 px-1.5 bg-released hover:bg-released">
-                                ✓ Oficial validada
+                              <Badge variant="default" className="text-xs h-4 px-2 bg-released hover:bg-released">
+                                Oficial validada
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-warning text-warning-on-soft">
+                              <Badge variant="outline" className="text-xs h-4 px-2 border-warning text-warning-on-soft">
                                 Rascunho
                               </Badge>
                             )}
-                            <span className="text-[9px] text-muted-foreground">v{p.version}</span>
-                            <span className="text-[9px] text-muted-foreground ml-auto">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                            <span className="text-xs text-muted-foreground">v{p.version}</span>
+                            <span className="text-xs text-muted-foreground ml-auto">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
                           </div>
                         </button>
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setPreviewPrescription(p); }}
-                          className="shrink-0 p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                          className="shrink-0 p-1 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                           title="Visualizar prescrição"
                           aria-label="Visualizar prescrição"
                         >
@@ -8663,7 +8663,7 @@ const PrescricaoPage = () => {
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setDraftToDelete(p); setDraftDeleteReason(""); }}
-                            className="shrink-0 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                            className="shrink-0 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                             title="Excluir rascunho"
                             aria-label="Excluir rascunho"
                           >
@@ -8674,19 +8674,19 @@ const PrescricaoPage = () => {
                     ))}
                   </div>
                 ) : historyDate && prescriptionDateKeys.size > 0 ? (
-                  <div className="px-1 py-2 space-y-1.5">
-                    <p className="text-[11px] text-warning-on-soft font-medium">
+                  <div className="px-1 py-2 space-y-2">
+                    <p className="text-xs text-warning-on-soft font-medium">
                       Nenhuma prescrição nesta data.
                     </p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Existem prescrições deste paciente em {prescriptionDateKeys.size} {prescriptionDateKeys.size === 1 ? 'outra data' : 'outras datas'} (marcadas no calendário com ●).
                     </p>
-                    <Button variant="outline" size="sm" className="w-full h-7 text-[11px] mt-1" onClick={() => setHistoryDate(undefined)}>
+                    <Button variant="outline" size="sm" className="w-full h-7 text-xs mt-1" onClick={() => setHistoryDate(undefined)}>
                       Limpar filtro e ver todas
                     </Button>
                   </div>
                 ) : (
-                  <p className="text-[11px] text-muted-foreground italic px-1 py-2">Nenhuma prescrição encontrada{historyDate ? ' nesta data' : ''}.</p>
+                  <p className="text-xs text-muted-foreground italic px-1 py-2">Nenhuma prescrição encontrada{historyDate ? ' nesta data' : ''}.</p>
                 )}
               </div>
             </PopoverContent>
@@ -8695,7 +8695,7 @@ const PrescricaoPage = () => {
             <button
               type="button"
               onClick={() => setHistoryDate(undefined)}
-              className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-warning-border bg-warning-soft text-[10px] font-medium text-warning-on-soft hover:bg-warning-soft transition-colors"
+              className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-warning-border bg-warning-soft text-xs font-medium text-warning-on-soft hover:bg-warning-soft transition-colors"
               title="Existem prescrições em outras datas — clique para limpar o filtro"
             >
               <AlertTriangle className="h-3 w-3" />
@@ -8706,7 +8706,7 @@ const PrescricaoPage = () => {
             variant="outline"
             size="sm"
             onClick={() => { setDoseCalcInitialMed(undefined); setDoseCalcOpen(true); }}
-            className="h-7 text-[10px] gap-1 px-2 border-border/40 hover:bg-muted"
+            className="h-7 text-xs gap-1 px-2 border-border/40 hover:bg-muted"
             title="Calculadora de dose por peso/superfície corporal"
           >
             <Calculator className="h-3 w-3 text-muted-foreground" /> Dose/kg
@@ -8715,34 +8715,34 @@ const PrescricaoPage = () => {
             variant="outline"
             size="sm"
             onClick={() => setQuickTemplatesDialogOpen(true)}
-            className="h-7 text-[10px] gap-1 px-2 border-warning/40 hover:bg-warning-soft"
+            className="h-7 text-xs gap-1 px-2 border-warning/40 hover:bg-warning-soft"
             title="Templates clínicos prontos (Sepse, Pós-op, DPOC...)"
           >
             <Zap className="h-3 w-3 text-warning" /> Templates
             {quickTemplates.length > 0 && (
-              <span className="ml-0.5 text-[9px] font-mono text-muted-foreground">
+              <span className="ml-1 text-xs font-mono text-muted-foreground">
                 ({quickTemplates.length})
               </span>
             )}
           </Button>
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" onClick={() => setShortcutsHelpOpen(true)} className="h-7 px-1.5 text-[10px] gap-1 text-muted-foreground hover:text-foreground">
-                  <kbd className="px-1 py-0 rounded border border-border bg-muted text-[9px] font-mono">?</kbd>
+                <Button variant="ghost" size="sm" onClick={() => setShortcutsHelpOpen(true)} className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground">
+                  <kbd className="px-1 py-0 rounded-md border border-border bg-muted text-xs font-mono">?</kbd>
                   <span className="hidden md:inline">Atalhos</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-xs">Atalhos de teclado (?)</TooltipContent>
             </Tooltip>
-            <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-7 text-[10px] gap-1 px-2">
+            <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-7 text-xs gap-1 px-2">
               <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
             </Button>
           </div>
         </div>
 
         {/* Row 2 — Prescription actions (Nova, Extra, Interações, ATM, TEV, Validar | Compacto | Imprimir) */}
-        <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-[hsl(217,30%,88%)]/70(217,30%,22%)]/70 bg-gradient-to-r from-[hsl(217,45%,97%)] via-[hsl(217,40%,98.5%)] to-[hsl(217,45%,97%)](217,35%,12%)](217,30%,14%)](217,35%,12%)] rounded-b-xl [&_button.h-7]:hover:bg-[hsl(217,55%,40%)]/8 [&_button.h-7]:hover:text-[hsl(217,60%,32%)]&_button.h-7]:hover:text-[hsl(217,55%,75%)] [&_button.h-7]:transition-colors">
+        <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-[hsl(217,30%,88%)]/70 bg-gradient-to-r from-[hsl(217,45%,97%)] via-[hsl(217,40%,98.5%)] to-[hsl(217,45%,97%)] rounded-b-lg [&_button.h-7]:hover:bg-[hsl(217,55%,40%)]/8 [&_button.h-7]:hover:text-[hsl(217,60%,32%)]&_button.h-7]:hover:text-[hsl(217,55%,75%)] [&_button.h-7]:transition-colors">
 
           <Tooltip>
             <TooltipTrigger asChild>
@@ -8783,7 +8783,7 @@ const PrescricaoPage = () => {
           >
             <Syringe className="h-3 w-3" /> Extra
           </Button>
-          <span className="h-5 w-px bg-border/60 mx-0.5" />
+          <span className="h-5 w-px bg-border/60 mx-1" />
           <Button
             variant="ghost"
             size="sm"
@@ -8802,11 +8802,11 @@ const PrescricaoPage = () => {
           <Button variant="ghost" size="sm" onClick={() => setTevProtocolOpen(true)} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
             <Droplets className="h-3 w-3" /> TEV
           </Button>
-          <span className="h-5 w-px bg-border/60 mx-0.5" />
+          <span className="h-5 w-px bg-border/60 mx-1" />
           {isValidationSessionActive && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="inline-flex items-center gap-1 rounded-md border border-released/30 bg-released/10 px-2 py-0.5 text-[10px] font-medium text-released-on-soft">
+                <span className="inline-flex items-center gap-1 rounded-md border border-released/30 bg-released/10 px-2 py-1 text-xs font-medium text-released-on-soft">
                   <ShieldCheck className="h-3 w-3" />
                   Sessão validada · {sessionMinutesLeft}min
                 </span>
@@ -8865,7 +8865,7 @@ const PrescricaoPage = () => {
                     }
                     handlePrint();
                   }}
-                  className="gap-1.5 text-xs h-7 px-3 text-white font-semibold border-0 bg-gradient-to-br from-muted via-muted to-muted hover:from-muted hover:via-muted hover:to-muted shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
+                  className="gap-2 text-xs h-7 px-3 text-white font-medium border-0 bg-muted hover:from-muted hover:via-muted hover:to-muted shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
                 >
                   <Printer className="h-3.5 w-3.5" /> Imprimir
                 </Button>
@@ -8885,7 +8885,7 @@ const PrescricaoPage = () => {
       {/* Toolbar de ações migrada para o cabeçalho superior (acima do workbench). */}
 
       {/* ===== UNIFIED PRESCRIPTION WORKBENCH (itens + histórico + busca) ===== */}
-      <div className="rounded-xl border border-border bg-card overflow-visible print:hidden divide-y divide-border/40">
+      <div className="rounded-lg border border-border bg-card overflow-visible print:hidden divide-y divide-border/40">
 
         {/* Prescrições anteriores agora acessíveis via popup do Calendário no cabeçalho. */}
 
@@ -8915,15 +8915,15 @@ const PrescricaoPage = () => {
 
       {/* ===== DISPENSATION HISTORY ===== */}
       {dispensations.length > 0 && (
-        <div className="rounded-xl border border-border bg-card p-3 print:hidden">
-          <h2 className="text-xs font-semibold text-muted-foreground tracking-wider mb-2 flex items-center gap-2">
+        <div className="rounded-lg border border-border bg-card p-3 print:hidden">
+          <h2 className="text-xs font-medium text-muted-foreground tracking-wider mb-2 flex items-center gap-2">
             <Package className="h-3.5 w-3.5" /> Dispensações ({dispensations.length})
           </h2>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {dispensations.map(d => (
               <div key={d.id} className="shrink-0 p-2 rounded-lg border border-border text-xs">
-                <div className="font-mono font-bold text-primary">{d.dispensation_code}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">
+                <div className="font-mono font-semibold text-primary">{d.dispensation_code}</div>
+                <div className="text-xs text-muted-foreground mt-1">
                   {format(new Date(d.dispensed_at), "dd/MM HH:mm", { locale: ptBR })}
                   {d.dispensed_by_name && ` — ${d.dispensed_by_name}`}
                 </div>
@@ -8963,7 +8963,7 @@ const PrescricaoPage = () => {
                 return (
                   <div key={group.id} className="space-y-3">
                     <div className="flex items-center gap-2 pt-1">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                      <span className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">
                         {group.label}
                       </span>
                       <div className="flex-1 h-px bg-border/60" />
@@ -8977,7 +8977,7 @@ const PrescricaoPage = () => {
               if (catItems.length === 0 && !manualOpenCategories.has(cat)) return null;
 
               return (
-                <div key={cat} id={`prescription-cat-${cat}`} className="rounded-xl border border-border bg-card scroll-mt-24">
+                <div key={cat} id={`prescription-cat-${cat}`} className="rounded-lg border border-border bg-card scroll-mt-24">
                   {/* Category header with inline search */}
                   <div className={cn("flex items-center gap-2 px-3 py-2 border-b border-border/50", config.bgColor)}>
                     {catItems.length > 0 && (
@@ -9007,8 +9007,8 @@ const PrescricaoPage = () => {
                       </Tooltip>
                     )}
                     <IconComp className={cn("h-3.5 w-3.5 shrink-0", config.color)} />
-                    <span className="text-xs font-semibold text-foreground whitespace-nowrap" title={config.label}>{config.shortLabel ?? config.label}</span>
-                    <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">{catItems.length}</Badge>
+                    <span className="text-xs font-medium text-foreground whitespace-nowrap" title={config.label}>{config.shortLabel ?? config.label}</span>
+                    <Badge variant="secondary" className="text-xs h-4 px-2 shrink-0">{catItems.length}</Badge>
                     {compactView && catItems.length > 0 && !isSimpleCategory(cat) && (
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -9035,7 +9035,7 @@ const PrescricaoPage = () => {
                     )}
                     <div className="flex-1 ml-2">
                       {cat === 'nonstandard' ? (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <Input
                             value={activeTab === 'nonstandard' ? nonStdName : ''}
                             onChange={(e) => { setActiveTab('nonstandard'); setNonStdName(e.target.value); }}
@@ -9057,7 +9057,7 @@ const PrescricaoPage = () => {
                                   type="button"
                                   onClick={() => setNutritionConfirmOpen(true)}
                                   className={cn(
-                                    "relative w-full h-7 rounded-md bg-background/60 text-xs pl-9 pr-9 text-left text-muted-foreground transition-colors flex items-center",
+                                    "relative w-full h-7 rounded-md bg-background/60 text-xs pl-8 pr-8 text-left text-muted-foreground transition-colors flex items-center",
                                     "border", nutAccent.border, nutAccent.ring,
                                     "hover:bg-released-soft/40"
                                   )}
@@ -9066,7 +9066,7 @@ const PrescricaoPage = () => {
                                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                                   <span className="truncate">Adicionar nutrição — manual · guiada · assistente</span>
                                   <span
-                                    className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 rounded-md flex items-center justify-center bg-gradient-to-br from-released/20 to-released/5 border border-released/40 text-released-on-soft"
+                                    className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 rounded-md flex items-center justify-center bg-released/20 border border-released/40 text-released-on-soft"
                                     aria-hidden
                                   >
                                     <Sparkles className="h-3 w-3" />
@@ -9142,8 +9142,8 @@ const PrescricaoPage = () => {
                     <div className="border-b border-border/50 bg-muted/20 p-3 space-y-3">
                       {/* Profile buttons */}
                       <div>
-                        <p className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-2">Perfis de Cuidados</p>
-                        <div className="flex flex-wrap gap-1.5">
+                        <p className="text-xs font-medium text-muted-foreground tracking-wider mb-2">Perfis de Cuidados</p>
+                        <div className="flex flex-wrap gap-2">
                           {CARE_PROFILES.map(profile => {
                             const ProfileIcon = CATEGORY_ICONS[profile.icon] || ClipboardList;
                             const applied = appliedCareProfiles.has(profile.id);
@@ -9154,7 +9154,7 @@ const PrescricaoPage = () => {
                                     variant={applied ? "default" : "outline"}
                                     size="sm"
                                     className={cn(
-                                      "h-7 text-[11px] gap-1.5 transition-all",
+                                      "h-7 text-xs gap-2 transition-all",
                                       applied && "opacity-70"
                                     )}
                                     onClick={() => applyCareProfile(profile)}
@@ -9177,8 +9177,8 @@ const PrescricaoPage = () => {
 
                       {/* Free recommendation input */}
                       <div>
-                        <p className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-1.5">Recomendação Avulsa</p>
-                        <div className="flex items-start gap-1.5">
+                        <p className="text-xs font-medium text-muted-foreground tracking-wider mb-2">Recomendação Avulsa</p>
+                        <div className="flex items-start gap-2">
                           <Textarea
                             value={freeRecommendation}
                             onChange={(e) => setFreeRecommendation(e.target.value)}
@@ -9208,7 +9208,7 @@ const PrescricaoPage = () => {
 
                   {/* Items */}
                   {catItems.length > 0 && (
-                    <div className="p-2 space-y-1.5">
+                    <div className="p-2 space-y-2">
                       {catItems.map((item, i) => {
                         // Calcula o item de inalação imediatamente anterior (mesma categoria)
                         const prevInhal = item.category === 'inhalation' && i > 0 && catItems[i - 1].category === 'inhalation'
@@ -9327,17 +9327,17 @@ const PrescricaoPage = () => {
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <label className="text-xs font-medium">Motivo da exclusão <span className="text-destructive">*</span></label>
             <textarea
               value={draftDeleteReason}
               onChange={(e) => setDraftDeleteReason(e.target.value)}
               placeholder="Ex.: Rascunho duplicado / criado por engano / paciente trocado..."
               rows={3}
-              className="w-full text-xs rounded-md border border-input bg-background px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full text-xs rounded-md border border-input bg-background px-2 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
               disabled={draftDeleting}
             />
-            <p className="text-[10px] text-muted-foreground">Mínimo 5 caracteres. Será gravado na auditoria.</p>
+            <p className="text-xs text-muted-foreground">Mínimo 5 caracteres. Será gravado na auditoria.</p>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={draftDeleting}>Cancelar</AlertDialogCancel>
@@ -9361,9 +9361,9 @@ const PrescricaoPage = () => {
               Visualização compacta da prescrição
               {previewPrescription && (
                 previewPrescription.isValidated ? (
-                  <Badge className="text-[9px] h-4 px-1.5 bg-released hover:bg-released">✓ Oficial validada</Badge>
+                  <Badge className="text-xs h-4 px-2 bg-released hover:bg-released">Oficial validada</Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-warning text-warning-on-soft">Rascunho</Badge>
+                  <Badge variant="outline" className="text-xs h-4 px-2 border-warning text-warning-on-soft">Rascunho</Badge>
                 )
               )}
             </DialogTitle>
@@ -9371,45 +9371,45 @@ const PrescricaoPage = () => {
               {previewPrescription && (
                 <>
                   <strong>{previewPrescription.patient_name}</strong> · v{previewPrescription.version} · {format(new Date(previewPrescription.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                  {previewPrescription.digital_signature && <> · 🔏 Assinada</>}
+                  {previewPrescription.digital_signature && <> · Assinada</>}
                 </>
               )}
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto -mx-6 px-6">
             {previewPrescription && previewPrescription.items.length > 0 ? (
-              <table className="w-full text-[11px] border-collapse">
+              <table className="w-full text-xs border-collapse">
                 <thead className="sticky top-0 bg-background z-10">
-                  <tr className="border-b text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <th className="py-1.5 pr-2 w-6">#</th>
-                    <th className="py-1.5 pr-2">Item</th>
-                    <th className="py-1.5 pr-2">Via</th>
-                    <th className="py-1.5 pr-2">Posologia</th>
-                    <th className="py-1.5 pr-2 w-12 text-center">Status</th>
+                  <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
+                    <th className="py-2 pr-2 w-6">#</th>
+                    <th className="py-2 pr-2">Item</th>
+                    <th className="py-2 pr-2">Via</th>
+                    <th className="py-2 pr-2">Posologia</th>
+                    <th className="py-2 pr-2 w-12 text-center">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {previewPrescription.items.map((it, idx) => (
                     <tr key={it.id} className={cn("border-b last:border-0 align-top", it.status === 'suspended' && "opacity-50 line-through")}>
-                      <td className="py-1.5 pr-2 text-muted-foreground tabular-nums">{idx + 1}</td>
-                      <td className="py-1.5 pr-2">
-                        <div className="font-medium uppercase">{it.name || '—'}</div>
+                      <td className="py-2 pr-2 text-muted-foreground tabular-nums">{idx + 1}</td>
+                      <td className="py-2 pr-2">
+                        <div className="font-medium uppercase tracking-wider">{it.name || '—'}</div>
                         {(it.dose || it.presentation) && (
-                          <div className="text-[10px] text-muted-foreground">{[it.presentation, it.dose].filter(Boolean).join(' · ')}</div>
+                          <div className="text-xs text-muted-foreground">{[it.presentation, it.dose].filter(Boolean).join(' · ')}</div>
                         )}
                         {it.instructions && (
-                          <div className="text-[10px] text-muted-foreground italic mt-0.5">{it.instructions}</div>
+                          <div className="text-xs text-muted-foreground italic mt-1">{it.instructions}</div>
                         )}
                       </td>
-                      <td className="py-1.5 pr-2 uppercase text-[10px]">{it.route || '—'}</td>
-                      <td className="py-1.5 pr-2 text-[10px]">{it.posology || '—'}</td>
-                      <td className="py-1.5 pr-2 text-center">
+                      <td className="py-2 pr-2 uppercase tracking-wider text-xs">{it.route || '—'}</td>
+                      <td className="py-2 pr-2 text-xs">{it.posology || '—'}</td>
+                      <td className="py-2 pr-2 text-center">
                         {it.validated ? (
-                          <Badge className="text-[9px] h-4 px-1 bg-released hover:bg-released">VAL</Badge>
+                          <Badge className="text-xs h-4 px-1 bg-released hover:bg-released">VAL</Badge>
                         ) : it.status === 'suspended' ? (
-                          <Badge variant="outline" className="text-[9px] h-4 px-1">SUSP</Badge>
+                          <Badge variant="outline" className="text-xs h-4 px-1">SUSP</Badge>
                         ) : (
-                          <span className="text-muted-foreground text-[10px]">—</span>
+                          <span className="text-muted-foreground text-xs">—</span>
                         )}
                       </td>
                     </tr>
@@ -9431,12 +9431,12 @@ const PrescricaoPage = () => {
             const willMerge = hasCurrentValidated;
             return (
               <div className={cn(
-                "mx-6 mb-2 rounded-md border px-3 py-2 text-[11px] leading-snug",
+                "mx-6 mb-2 rounded-md border px-3 py-2 text-xs leading-snug",
                 willMerge
                   ? "border-warning-border/70 bg-warning-soft/70 text-warning-on-soft"
                   : "border-border/70 bg-muted/70 text-foreground",
               )}>
-                <strong className="font-semibold">
+                <strong className="font-medium">
                   {willMerge ? "Há prescrição validada hoje" : "Restauração integral"}
                 </strong>
                 {": "}
@@ -9455,7 +9455,7 @@ const PrescricaoPage = () => {
                 return (
                   <Button
                     size="sm"
-                    className="gap-1.5 bg-warning hover:bg-warning text-white"
+                    className="gap-2 bg-warning hover:bg-warning text-white"
                     onClick={() => { restoreFromPrescription(previewPrescription); setPreviewPrescription(null); }}
                     title="Soma os itens desta versão no rascunho atual, ignorando duplicados"
                   >
@@ -9467,7 +9467,7 @@ const PrescricaoPage = () => {
               return (
                 <Button
                   size="sm"
-                  className="gap-1.5"
+                  className="gap-2"
                   onClick={() => { loadPrescription(previewPrescription.id); setPreviewPrescription(null); }}
                   title="Restaura por completo — substitui o corpo da prescrição atual"
                 >
@@ -9509,9 +9509,9 @@ const PrescricaoPage = () => {
                 <div className="h-8 w-8 rounded-md bg-released-soft flex items-center justify-center">
                   <Pencil className="h-4 w-4 text-released-on-soft" />
                 </div>
-                <span className="text-sm font-semibold text-foreground">Adição manual</span>
+                <span className="text-sm font-medium text-foreground">Adição manual</span>
               </div>
-              <p className="text-[11.5px] text-foreground leading-snug">
+              <p className="text-xs text-foreground leading-snug">
                 Escreva livremente a conduta nutricional. Salvo como item de nutrição genérico com seu texto nas recomendações.
               </p>
             </button>
@@ -9530,9 +9530,9 @@ const PrescricaoPage = () => {
                 <div className="h-8 w-8 rounded-md bg-released-soft flex items-center justify-center">
                   <ClipboardList className="h-4 w-4 text-released-on-soft" />
                 </div>
-                <span className="text-sm font-semibold text-foreground">Solicitação guiada</span>
+                <span className="text-sm font-medium text-foreground">Solicitação guiada</span>
               </div>
-              <p className="text-[11.5px] text-foreground leading-snug">
+              <p className="text-xs text-foreground leading-snug">
                 Escolha a modalidade (Oral, Enteral, Parenteral, Suplementação ou Zero) e preencha os campos estruturados.
               </p>
             </button>
@@ -9550,9 +9550,9 @@ const PrescricaoPage = () => {
                 <div className="h-8 w-8 rounded-md bg-released flex items-center justify-center">
                   <Sparkles className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-sm font-semibold text-released-on-soft">Assistente clínico</span>
+                <span className="text-sm font-medium text-released-on-soft">Assistente clínico</span>
               </div>
-              <p className="text-[11.5px] text-released-on-soft/90 leading-snug">
+              <p className="text-xs text-released-on-soft/90 leading-snug">
                 Sugere estratégia, volume e cuidados com base no paciente (peso, condição clínica e via disponível).
               </p>
             </button>
@@ -9578,9 +9578,9 @@ const PrescricaoPage = () => {
 
           <div className="space-y-3">
             {/* 1) Modalidade — chips compactos */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-released-on-soft uppercase tracking-wide">Modalidade</label>
-              <div className="flex flex-wrap gap-1.5">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-released-on-soft uppercase tracking-wide">Modalidade</label>
+              <div className="flex flex-wrap gap-2">
                 {([
                   { v: 'diet_oral',       label: 'Oral' },
                   { v: 'diet_enteral',    label: 'Enteral' },
@@ -9593,7 +9593,7 @@ const PrescricaoPage = () => {
                     type="button"
                     onClick={() => setNutritionManualType(opt.v)}
                     className={cn(
-                      "h-8 px-3 rounded-md border text-[12px] font-semibold transition",
+                      "h-8 px-3 rounded-md border text-xs font-medium transition",
                       nutritionManualType === opt.v
                         ? "bg-released text-white border-released shadow-sm"
                         : "bg-white text-released-on-soft border-released-border hover:bg-released-soft"
@@ -9606,8 +9606,8 @@ const PrescricaoPage = () => {
             </div>
 
             {/* 2) Recomendações (opcional) */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-released-on-soft uppercase tracking-wide">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-released-on-soft uppercase tracking-wide">
                 Recomendações <span className="text-muted-foreground font-normal normal-case">(opcional)</span>
               </label>
               <Textarea
@@ -9615,10 +9615,10 @@ const PrescricaoPage = () => {
                 onChange={(e) => setNutritionManualRecs(e.target.value)}
                 placeholder="Orientações à equipe (descritivo da dieta, restrições, alergias, conduta em caso de intolerância, metas calóricas, observações específicas...)"
                 rows={5}
-                className="resize-none text-[12px] italic focus:not-italic"
+                className="resize-none text-xs italic focus:not-italic"
                 autoFocus
               />
-              <p className="text-[10.5px] text-muted-foreground">Campo opcional — basta selecionar a modalidade para validar.</p>
+              <p className="text-xs text-muted-foreground">Campo opcional — basta selecionar a modalidade para validar.</p>
             </div>
           </div>
 
@@ -9664,7 +9664,7 @@ const PrescricaoPage = () => {
                 toast.success('Conduta nutricional adicionada');
               }}
             >
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              <Plus className="h-3.5 w-3.5 mr-2" />
               Adicionar
             </Button>
           </DialogFooter>
@@ -9715,9 +9715,9 @@ const PrescricaoPage = () => {
                   <div className="h-7 w-7 rounded-md bg-released-soft flex items-center justify-center">
                     <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft" />
                   </div>
-                  <span className="text-sm font-semibold text-foreground">{m.label}</span>
+                  <span className="text-sm font-medium text-foreground">{m.label}</span>
                 </div>
-                <p className="text-[11px] text-foreground leading-snug pl-9">{m.desc}</p>
+                <p className="text-xs text-foreground leading-snug pl-8">{m.desc}</p>
               </button>
             ))}
           </div>
@@ -9763,7 +9763,7 @@ const PrescricaoPage = () => {
               Escolha o item que deseja ajustar — diluente, acesso, modo e tempo de infusão.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-1.5 max-h-72 overflow-y-auto">
+          <div className="space-y-2 max-h-72 overflow-y-auto">
             {items
               .filter(i => i.category === assistantPickerCat && !i.suspendedAt)
               .map(i => (
@@ -9773,7 +9773,7 @@ const PrescricaoPage = () => {
                   className="w-full text-left px-3 py-2 rounded-md border border-border hover:bg-accent hover:border-primary/40 transition-colors"
                 >
                   <div className="text-xs font-medium text-foreground">{i.name}</div>
-                  <div className="text-[10px] text-muted-foreground">
+                  <div className="text-xs text-muted-foreground">
                     {[i.dose, i.route, i.posology].filter(Boolean).join(" · ") || "sem parâmetros definidos"}
                   </div>
                 </button>
@@ -9806,7 +9806,7 @@ const PrescricaoPage = () => {
       />
 
         {!autoLoadDone && (hasRealPatientUrl || !!patient.name) && !currentPrescriptionId && (
-          <div className="flex flex-col items-center justify-center py-16 px-6 gap-7 rounded-xl border border-border/50 bg-card/60 animate-in fade-in duration-300">
+          <div className="flex flex-col items-center justify-center py-8 px-6 gap-6 rounded-lg border border-border/50 bg-card/60 animate-in fade-in duration-300">
 
             {/* Spinner com ícone central */}
             <div className="relative w-16 h-16">
@@ -9821,9 +9821,9 @@ const PrescricaoPage = () => {
 
             {/* Chip do paciente */}
             {patient.bed && (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/60 bg-background text-xs text-muted-foreground">
+              <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full border border-border/60 bg-background text-xs text-muted-foreground">
                 <BedDouble className="h-3.5 w-3.5 text-primary shrink-0" />
-                <span className="font-semibold text-primary">{patient.bed}</span>
+                <span className="font-medium text-primary">{patient.bed}</span>
                 <span className="text-border">·</span>
                 <span className="font-medium text-foreground uppercase tracking-wide truncate max-w-[220px]">
                   {patient.name}
@@ -9832,13 +9832,13 @@ const PrescricaoPage = () => {
             )}
 
             {/* Texto */}
-            <div className="text-center space-y-1.5">
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-foreground">
+            <div className="text-center space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-foreground">
                 Carregando prescrição
               </p>
-              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+              <p className="text-xs text-muted-foreground flex items-center justify-center gap-2">
                 Buscando a última versão validada
-                <span className="inline-flex gap-0.5 items-center">
+                <span className="inline-flex gap-1 items-center">
                   <span className="w-1 h-1 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:0ms]" />
                   <span className="w-1 h-1 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:150ms]" />
                   <span className="w-1 h-1 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:300ms]" />
@@ -9857,11 +9857,11 @@ const PrescricaoPage = () => {
         {items.length === 0 && autoLoadDone && !currentPrescriptionId && (() => {
           const admissionTpls = quickTemplates.filter(t => t.clinical_category === 'admissao');
           return (
-            <div className="rounded-xl border border-dashed border-border bg-gradient-to-br from-primary/5 via-background to-muted/20 p-6">
-              <div className="text-center mb-5">
+            <div className="rounded-lg border border-dashed border-border bg-primary/5 p-6">
+              <div className="text-center mb-4">
                 <Pill className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
                 <p className="text-sm font-medium text-foreground">Comece a prescrição em 1 clique</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground mt-1">
                   Aplique um modelo de admissão, abra um assistente ou use a busca acima
                 </p>
               </div>
@@ -9875,10 +9875,10 @@ const PrescricaoPage = () => {
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <UtensilsCrossed className="h-4 w-4 text-released-on-soft" />
-                    <span className="text-xs font-bold text-released-on-soft">Nutrição</span>
+                    <span className="text-xs font-semibold text-released-on-soft">Nutrição</span>
                     <Sparkles className="h-3 w-3 text-released ml-auto opacity-60 group-hover:opacity-100" />
                   </div>
-                  <p className="text-[10px] text-muted-foreground leading-tight">Zero · Oral · Enteral · NPT</p>
+                  <p className="text-xs text-muted-foreground leading-tight">Zero · Oral · Enteral · NPT</p>
                 </button>
                 <button
                   type="button"
@@ -9887,10 +9887,10 @@ const PrescricaoPage = () => {
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <Droplets className="h-4 w-4 text-foreground" />
-                    <span className="text-xs font-bold text-foreground">Hidratação</span>
+                    <span className="text-xs font-semibold text-foreground">Hidratação</span>
                     <Sparkles className="h-3 w-3 text-muted-foreground ml-auto opacity-60 group-hover:opacity-100" />
                   </div>
-                  <p className="text-[10px] text-muted-foreground leading-tight">SF · RL · SG · Soluções preparadas</p>
+                  <p className="text-xs text-muted-foreground leading-tight">SF · RL · SG · Soluções preparadas</p>
                 </button>
                 <button
                   type="button"
@@ -9899,17 +9899,17 @@ const PrescricaoPage = () => {
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <FlaskConical className="h-4 w-4 text-foreground" />
-                    <span className="text-xs font-bold text-foreground">Reposição / Correção</span>
+                    <span className="text-xs font-semibold text-foreground">Reposição / Correção</span>
                     <Sparkles className="h-3 w-3 text-muted-foreground ml-auto opacity-60 group-hover:opacity-100" />
                   </div>
-                  <p className="text-[10px] text-muted-foreground leading-tight">HipoK · HipoMg · HipoNa · HiperK</p>
+                  <p className="text-xs text-muted-foreground leading-tight">HipoK · HipoMg · HipoNa · HiperK</p>
                 </button>
               </div>
               {admissionTpls.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-2 px-1">
                     <Zap className="h-3.5 w-3.5 text-warning" />
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                       Modelos de admissão
                     </span>
                   </div>
@@ -9921,18 +9921,18 @@ const PrescricaoPage = () => {
                         onClick={() => applyQuickTemplate(tpl)}
                         className="group text-left rounded-lg border border-border bg-card hover:border-primary hover:shadow-md hover:-translate-y-0.5 transition-all p-3"
                       >
-                        <div className="flex items-start justify-between gap-2 mb-1.5">
-                          <h4 className="text-xs font-bold text-foreground leading-tight uppercase tracking-wide line-clamp-2">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h4 className="text-xs font-semibold text-foreground leading-tight uppercase tracking-wide line-clamp-2">
                             {tpl.name}
                           </h4>
                           <Plus className="h-3.5 w-3.5 text-primary shrink-0 opacity-60 group-hover:opacity-100" />
                         </div>
                         {tpl.description && (
-                          <p className="text-[10px] text-muted-foreground line-clamp-2 mb-2">
+                          <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
                             {tpl.description}
                           </p>
                         )}
-                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Pill className="h-2.5 w-2.5" />
                           <span>{tpl.items.length} itens</span>
                           {tpl.use_count > 0 && (
@@ -9948,7 +9948,7 @@ const PrescricaoPage = () => {
                   <button
                     type="button"
                     onClick={() => setQuickTemplatesDialogOpen(true)}
-                    className="mt-3 w-full text-[11px] text-primary hover:underline font-medium"
+                    className="mt-3 w-full text-xs text-primary hover:underline font-medium"
                   >
                     Ver todos os templates →
                   </button>
@@ -10008,13 +10008,13 @@ const PrescricaoPage = () => {
       })()}
 
       {/* ===== FOOTER SUMMARY ===== */}
-      <div className="rounded-xl border border-[hsl(217,30%,84%)]/70(217,30%,24%)]/70 bg-gradient-to-b from-[hsl(217,45%,98%)] to-[hsl(217,40%,96%)](217,35%,13%)](217,32%,11%)] p-4 flex items-center justify-between print:hidden shadow-[0_4px_16px_-6px_hsl(217,50%,30%,0.18)](217,80%,5%,0.45)] ring-1 ring-[hsl(217,55%,90%)]/40(217,40%,22%)]/40">
+      <div className="rounded-lg border border-[hsl(217,30%,84%)]/70 bg-gradient-to-b from-[hsl(217,45%,98%)] to-[hsl(217,40%,96%)] p-4 flex items-center justify-between print:hidden shadow-[0_4px_16px_-6px_hsl(217,50%,30%,0.18)] ring-1 ring-[hsl(217,55%,90%)]/40">
         <div className="flex items-center gap-4 flex-wrap">
           <Badge variant="outline" className="gap-1 text-xs">
             <Pill className="h-3 w-3" /> {totalItems} itens
           </Badge>
           {suspendedItemsCount > 0 && (
-            <Badge variant="destructive" className="gap-1 text-[10px]">
+            <Badge variant="destructive" className="gap-1 text-xs">
               <Pause className="h-3 w-3" /> {suspendedItemsCount} suspenso{suspendedItemsCount > 1 ? 's' : ''}
             </Badge>
           )}
@@ -10032,7 +10032,7 @@ const PrescricaoPage = () => {
             variant="outline"
             onClick={handleSaveDraft}
             disabled={savingDraft || renewalPendingCount === 0 || !patient.name.trim()}
-            className="gap-1.5 text-xs"
+            className="gap-2 text-xs"
             title={
               renewalPendingCount === 0
                 ? "Nenhum item pendente — só salva rascunho com itens ainda não validados"
@@ -10049,7 +10049,7 @@ const PrescricaoPage = () => {
             onClick={requestValidateAll}
             disabled={allItemsValidated}
             className={cn(
-              "gap-1.5 text-xs",
+              "gap-2 text-xs",
               !prescriptionLocked && "bg-released hover:bg-released text-white"
             )}
             title={allItemsValidated ? "Todos os itens já validados" : prescriptionLocked ? "Validar itens pendentes" : "Validar prescrição"}
@@ -10070,7 +10070,7 @@ const PrescricaoPage = () => {
               }
               handlePrint();
             }}
-            className="gap-1.5 text-xs text-white font-semibold border-0 bg-gradient-to-br from-muted via-muted to-muted hover:from-muted hover:via-muted hover:to-muted shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
+            className="gap-2 text-xs text-white font-medium border-0 bg-muted hover:from-muted hover:via-muted hover:to-muted shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
             title="Imprimir a prescrição validada e, quando aplicável, as guias regulatórias"
           >
             <Printer className="h-3.5 w-3.5" /> Imprimir
@@ -10122,9 +10122,9 @@ const PrescricaoPage = () => {
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="max-h-[55vh] overflow-y-auto space-y-1.5 pr-1">
+                <div className="max-h-[55vh] overflow-y-auto space-y-2 pr-1">
                   {structured.length > 0 && (
-                    <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mt-1 mb-1">
+                    <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mt-1 mb-1">
                       Cuidados estruturados
                     </div>
                   )}
@@ -10143,18 +10143,18 @@ const PrescricaoPage = () => {
                           checked={checked}
                           disabled={already}
                           onCheckedChange={() => toggleCarePreviewKey(key)}
-                          className="mt-0.5"
+                          className="mt-1"
                         />
                         <span className="flex-1 leading-snug">
                           {opt.name}
-                          {already && <span className="ml-1.5 text-[10px] italic">(já incluído)</span>}
+                          {already && <span className="ml-2 text-xs italic">(já incluído)</span>}
                         </span>
                       </label>
                     );
                   })}
 
                   {extras.length > 0 && (
-                    <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mt-3 mb-1">
+                    <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mt-3 mb-1">
                       Recomendações adicionais
                     </div>
                   )}
@@ -10173,11 +10173,11 @@ const PrescricaoPage = () => {
                           checked={checked}
                           disabled={already}
                           onCheckedChange={() => toggleCarePreviewKey(key)}
-                          className="mt-0.5"
+                          className="mt-1"
                         />
                         <span className="flex-1 leading-snug">
                           {text}
-                          {already && <span className="ml-1.5 text-[10px] italic">(já incluído)</span>}
+                          {already && <span className="ml-2 text-xs italic">(já incluído)</span>}
                         </span>
                       </label>
                     );
@@ -10234,20 +10234,20 @@ const PrescricaoPage = () => {
           {dispensationSlip && (
             <div className="border border-border rounded-lg p-4 space-y-3" id="dispensation-slip">
               <div className="text-center border-b border-border pb-2">
-                <div className="text-xs font-bold tracking-wider uppercase text-foreground">Guia de Dispensação Farmacêutica</div>
-                <div className="font-mono text-lg font-extrabold text-primary mt-1">{dispensationSlip.code}</div>
+                <div className="text-xs font-semibold tracking-wider uppercase text-foreground">Guia de Dispensação Farmacêutica</div>
+                <div className="font-mono text-lg font-semibold text-primary mt-1">{dispensationSlip.code}</div>
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                <div><span className="text-muted-foreground">Paciente:</span> <span className="font-semibold text-foreground">{dispensationSlip.patientName}</span></div>
-                <div><span className="text-muted-foreground">Leito:</span> <span className="font-semibold text-foreground">{dispensationSlip.bed}</span></div>
+                <div><span className="text-muted-foreground">Paciente:</span> <span className="font-medium text-foreground">{dispensationSlip.patientName}</span></div>
+                <div><span className="text-muted-foreground">Leito:</span> <span className="font-medium text-foreground">{dispensationSlip.bed}</span></div>
                 <div><span className="text-muted-foreground">Data/Hora:</span> <span className="font-medium text-foreground">{dispensationSlip.date}</span></div>
                 {patient.encounterCode && <div><span className="text-muted-foreground">Atendimento:</span> <span className="font-mono font-medium text-foreground">{patient.encounterCode}</span></div>}
               </div>
               <div className="border-t border-border pt-2">
-                <div className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-1.5">ITENS DISPENSADOS ({dispensationSlip.items.length})</div>
+                <div className="text-xs font-medium text-muted-foreground tracking-wider mb-2">ITENS DISPENSADOS ({dispensationSlip.items.length})</div>
                 <div className="space-y-1">
                   {dispensationSlip.items.map((item, i) => (
-                    <div key={item.id} className="flex items-start gap-2 text-xs py-0.5 border-b border-border/30 last:border-0">
+                    <div key={item.id} className="flex items-start gap-2 text-xs py-1 border-b border-border/30 last:border-0">
                       <span className="font-mono text-muted-foreground w-5 shrink-0 text-right">{i + 1}.</span>
                       <div className="flex-1 min-w-0">
                         <span className="font-medium text-foreground">{item.name}</span>
@@ -10268,7 +10268,7 @@ const PrescricaoPage = () => {
                   ))}
                 </div>
               </div>
-              <div className="flex items-center justify-between pt-2 border-t border-border text-[10px] text-muted-foreground">
+              <div className="flex items-center justify-between pt-2 border-t border-border text-xs text-muted-foreground">
                 <span>Dispensado por: {user?.email?.split('@')[0] || '—'}</span>
                 <span>Arsen · Dispensação Digital</span>
               </div>
@@ -10302,7 +10302,7 @@ const PrescricaoPage = () => {
                   printW.print();
                 }
               }
-            }} className="gap-1.5">
+            }} className="gap-2">
               <Printer className="h-3.5 w-3.5" /> Imprimir Guia
             </Button>
           </DialogFooter>
@@ -10584,17 +10584,17 @@ const PrescricaoPage = () => {
                 <label
                   key={opt.id}
                   className={cn(
-                    "flex items-start gap-2.5 p-2.5 rounded-md border cursor-pointer",
+                    "flex items-start gap-3 p-3 rounded-md border cursor-pointer",
                     regulatoria
-                      ? "border-[hsl(217,55%,82%)](217,55%,30%)]/40 bg-[hsl(217,55%,96%)]/60(217,55%,16%)]/15 hover:bg-[hsl(217,55%,94%)]/80"
+                      ? "border-[hsl(217,55%,82%)]/40 bg-[hsl(217,55%,96%)]/60 hover:bg-[hsl(217,55%,94%)]/80"
                       : "border-border hover:bg-muted/30",
                   )}
                 >
-                  <Checkbox checked={marcado} onCheckedChange={(v) => alternar(!!v)} className="mt-0.5" />
+                  <Checkbox checked={marcado} onCheckedChange={(v) => alternar(!!v)} className="mt-1" />
                   <div className="text-xs">
                     <div className={cn(
-                      "font-semibold",
-                      regulatoria && "text-[hsl(217,72%,32%)](217,55%,78%)]",
+                      "font-medium",
+                      regulatoria && "text-[hsl(217,72%,32%)]",
                     )}>
                       {opt.label}
                     </div>
@@ -10606,7 +10606,7 @@ const PrescricaoPage = () => {
           </div>
           <DialogFooter className="gap-2">
             <Button variant="ghost" size="sm" onClick={() => setPrintGuidesOpen(false)}>Cancelar</Button>
-            <Button size="sm" onClick={() => executePrintSelection()} className="gap-1.5" disabled={!printPrescription && !printGuideAtm && !printGuidePsy}>
+            <Button size="sm" onClick={() => executePrintSelection()} className="gap-2" disabled={!printPrescription && !printGuideAtm && !printGuidePsy}>
               <Printer className="h-3.5 w-3.5" /> Imprimir selecionados
             </Button>
           </DialogFooter>
@@ -10675,7 +10675,7 @@ const PrescricaoPage = () => {
               flags: plan.scheme === 'iv_continuous' ? ['bi' as PrescriptionFlag] : baseItem.flags,
             };
             setItems(prev => [...stripGenericScheme(prev), grouped]);
-            toast.success(`✓ ${desc.headline}`, {
+            toast.success(`${desc.headline}`, {
               description: 'ALTA VIGILÂNCIA · esquema completo gerado para enfermagem.',
               duration: 4000,
             });
@@ -10783,7 +10783,7 @@ const PrescricaoPage = () => {
       {/* Pop-up: sugerir incluir esquema padrão de correção de insulina ao adicionar controle glicêmico */}
       <AlertDialog open={insulinSchemePromptOpen} onOpenChange={setInsulinSchemePromptOpen}>
         <AlertDialogContent className="max-w-sm w-[calc(100vw-2rem)] p-4">
-          <AlertDialogHeader className="space-y-1.5">
+          <AlertDialogHeader className="space-y-2">
             <AlertDialogTitle className="flex items-center gap-2 text-sm">
               <Syringe className="h-4 w-4 text-primary shrink-0" />
               Incluir esquema de correção de insulina?
@@ -10793,15 +10793,15 @@ const PrescricaoPage = () => {
                 <p className="text-xs text-muted-foreground leading-snug">
                   Insulina Regular SC conforme HGT — esquema padrão:
                 </p>
-                <div className="rounded-md border bg-muted/40 px-2 py-1.5 font-mono text-[10px] leading-5 space-y-0">
-                  <div className="flex justify-between gap-2"><span className="text-destructive font-semibold">&lt;70 mg/dL</span><span>SG 50% 40 mL EV + reavaliar 15 min</span></div>
+                <div className="rounded-md border bg-muted/40 px-2 py-2 font-mono text-xs leading-5 space-y-0">
+                  <div className="flex justify-between gap-2"><span className="text-destructive font-medium">&lt;70 mg/dL</span><span>SG 50% 40 mL EV + reavaliar 15 min</span></div>
                   <div className="flex justify-between gap-2"><span className="text-muted-foreground">70–149</span><span>não administrar</span></div>
                   <div className="flex justify-between gap-2"><span>150–200</span><span>2 UI SC</span></div>
                   <div className="flex justify-between gap-2"><span>201–250</span><span>4 UI SC</span></div>
                   <div className="flex justify-between gap-2"><span>251–300</span><span>6 UI SC</span></div>
                   <div className="flex justify-between gap-2"><span>301–350</span><span>8 UI SC</span></div>
                   <div className="flex justify-between gap-2"><span>351–400</span><span>10 UI SC + comunicar médico</span></div>
-                  <div className="flex justify-between gap-2"><span className="text-destructive font-semibold">&gt;400</span><span>chamar médico imediatamente</span></div>
+                  <div className="flex justify-between gap-2"><span className="text-destructive font-medium">&gt;400</span><span>chamar médico imediatamente</span></div>
                 </div>
               </div>
             </AlertDialogDescription>
@@ -10836,7 +10836,7 @@ const PrescricaoPage = () => {
                 toast.success('Esquema de correção adicionado aos Cuidados');
               }}
             >
-              <Syringe className="h-3.5 w-3.5 mr-1.5" /> Sim, adicionar aos Cuidados
+              <Syringe className="h-3.5 w-3.5 mr-2" /> Sim, adicionar aos Cuidados
             </AlertDialogAction>
             <div className="flex gap-2">
               <AlertDialogCancel className="flex-1 h-8 text-xs">Não, somente HGT</AlertDialogCancel>
@@ -10875,8 +10875,8 @@ const PrescricaoPage = () => {
               <div className="space-y-2 text-sm">
                 {atbAttachNotice.names.length > 0 && (
                   <div className="rounded-md border bg-muted/40 p-2 text-xs">
-                    <div className="font-semibold mb-1">Itens incluídos:</div>
-                    <ul className="list-disc pl-4 space-y-0.5">
+                    <div className="font-medium mb-1">Itens incluídos:</div>
+                    <ul className="list-disc pl-4 space-y-1">
                       {atbAttachNotice.names.map((n, i) => <li key={i}>{n}</li>)}
                     </ul>
                   </div>
@@ -10894,7 +10894,7 @@ const PrescricaoPage = () => {
                     ser reimpressa diariamente — apenas no D1, na troca de esquema ou no escalonamento.
                   </p>
                 )}
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   A duração programada (7, 10, 14 dias) e o sítio infeccioso ficam visíveis no cabeçalho
                   roxo do item — você pode editar a qualquer momento.
                 </p>
@@ -10926,8 +10926,8 @@ const PrescricaoPage = () => {
                   (com novo registro de duração e indicação clínica).
                 </div>
                 <div className="rounded-md border bg-muted/40 p-2 text-xs">
-                  <div className="font-semibold mb-1">Esquemas que terminam hoje:</div>
-                  <ul className="list-disc pl-4 space-y-0.5">
+                  <div className="font-medium mb-1">Esquemas que terminam hoje:</div>
+                  <ul className="list-disc pl-4 space-y-1">
                     {atbEndNotice.schemes.map((s, i) => {
                       const [y, m, d] = s.startDate.split('-');
                       const startBr = (y && m && d) ? `${d}/${m}/${y}` : s.startDate;
@@ -10939,7 +10939,7 @@ const PrescricaoPage = () => {
                     })}
                   </ul>
                 </div>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Este aviso aparece apenas uma vez por paciente a cada dia. Nenhuma alteração foi feita
                   na prescrição — a decisão clínica é sua.
                 </p>
@@ -10985,7 +10985,7 @@ const PrescricaoPage = () => {
                   type="button"
                   onClick={() => setTemplateScopeFilter(s)}
                   className={cn(
-                    "text-[10px] font-medium px-2.5 py-1 rounded-full border transition-all",
+                    "text-xs font-medium px-3 py-1 rounded-full border transition-all",
                     templateScopeFilter === s
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60"
@@ -11046,24 +11046,24 @@ const PrescricaoPage = () => {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-sm font-semibold text-foreground">{tpl.name}</h4>
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">
+                        <h4 className="text-sm font-medium text-foreground">{tpl.name}</h4>
+                        <Badge variant="outline" className="text-xs px-2 py-0 h-4">
                           {tpl.clinical_category}
                         </Badge>
                         <Badge
                           variant={tpl.scope === "shared" ? "secondary" : "outline"}
-                          className="text-[9px] px-1.5 py-0 h-4"
+                          className="text-xs px-2 py-0 h-4"
                         >
                           {tpl.scope === "shared" ? "Hospital" : "Pessoal"}
                         </Badge>
                         {tpl.use_count > 0 && (
-                          <span className="text-[9px] text-muted-foreground">
+                          <span className="text-xs text-muted-foreground">
                             usado {tpl.use_count}x
                           </span>
                         )}
                       </div>
                       {tpl.description && (
-                        <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                           {tpl.description}
                         </p>
                       )}
@@ -11071,14 +11071,14 @@ const PrescricaoPage = () => {
                         {tpl.items.slice(0, 6).map((it, i) => (
                           <span
                             key={i}
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-muted/60 text-foreground border border-border/50"
+                            className="text-xs px-2 py-1 rounded-md bg-muted/60 text-foreground border border-border/50"
                           >
                             {it.name}
                             {it.dose ? ` · ${it.dose}` : ""}
                           </span>
                         ))}
                         {tpl.items.length > 6 && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/40 text-muted-foreground">
+                          <span className="text-xs px-2 py-1 rounded-md bg-muted/40 text-muted-foreground">
                             +{tpl.items.length - 6}
                           </span>
                         )}
@@ -11087,7 +11087,7 @@ const PrescricaoPage = () => {
                     <div className="flex flex-col gap-1 shrink-0">
                       <Button
                         size="sm"
-                        className="h-7 text-[11px] gap-1"
+                        className="h-7 text-xs gap-1"
                         onClick={() => applyQuickTemplate(tpl)}
                       >
                         <Plus className="h-3 w-3" /> Aplicar
@@ -11096,7 +11096,7 @@ const PrescricaoPage = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 text-[10px] text-destructive hover:text-destructive"
+                          className="h-6 text-xs text-destructive hover:text-destructive"
                           onClick={() => deleteQuickTemplate(tpl.id)}
                         >
                           <Trash2 className="h-3 w-3" />
@@ -11155,12 +11155,12 @@ const PrescricaoPage = () => {
               { keys: ["Esc"], desc: "Fechar diálogos" },
               { keys: ["?"], desc: "Mostrar este painel" },
             ].map((s) => (
-              <div key={s.desc} className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-accent/40 transition-colors">
+              <div key={s.desc} className="flex items-center justify-between py-2 px-2 rounded-md hover:bg-accent/40 transition-colors">
                 <span className="text-sm text-foreground">{s.desc}</span>
                 <div className="flex items-center gap-1">
                   {s.keys.map((k, i) => (
                     <span key={i} className="flex items-center gap-1">
-                      <kbd className="inline-flex items-center justify-center min-w-[28px] h-6 px-1.5 rounded border border-border bg-muted text-[11px] font-mono font-medium text-muted-foreground shadow-sm">
+                      <kbd className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-md border border-border bg-muted text-xs font-mono font-medium text-muted-foreground shadow-sm">
                         {k}
                       </kbd>
                       {i < s.keys.length - 1 && <span className="text-muted-foreground text-xs">+</span>}
@@ -11170,8 +11170,8 @@ const PrescricaoPage = () => {
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-muted-foreground text-center mt-1">
-            Atalhos não disparam enquanto você digita em campos de texto (exceto <kbd className="px-1 py-0.5 rounded border border-border bg-muted text-[10px] font-mono">Ctrl/⌘+K</kbd>).
+          <p className="text-xs text-muted-foreground text-center mt-1">
+            Atalhos não disparam enquanto você digita em campos de texto (exceto <kbd className="px-1 py-1 rounded-md border border-border bg-muted text-xs font-mono">Ctrl/⌘+K</kbd>).
           </p>
         </DialogContent>
       </Dialog>
@@ -11223,7 +11223,7 @@ const PrescricaoPage = () => {
                     Selecionar todos ({repeatSelectedIds.size}/{repeatSourceItems.length})
                   </label>
                 </div>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   Itens copiados sem validação — você revalida no fluxo padrão
                 </span>
               </div>
@@ -11248,7 +11248,7 @@ const PrescricaoPage = () => {
                         });
                       }}
                     >
-                      <Checkbox checked={checked} className="mt-0.5" onClick={(e) => e.stopPropagation()} onCheckedChange={() => {
+                      <Checkbox checked={checked} className="mt-1" onClick={(e) => e.stopPropagation()} onCheckedChange={() => {
                         setRepeatSelectedIds(prev => {
                           const n = new Set(prev);
                           if (n.has(item.id)) n.delete(item.id);
@@ -11259,25 +11259,25 @@ const PrescricaoPage = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           {catConfig && (
-                            <Badge variant="outline" className="text-[9px] h-4 px-1.5">
+                            <Badge variant="outline" className="text-xs h-4 px-2">
                               {catConfig.label}
                             </Badge>
                           )}
-                          <span className="text-sm font-semibold text-foreground">{item.name}</span>
+                          <span className="text-sm font-medium text-foreground">{item.name}</span>
                           {item.highAlert && (
-                            <Badge variant="destructive" className="text-[9px] h-4 px-1.5 gap-1">
+                            <Badge variant="destructive" className="text-xs h-4 px-2 gap-1">
                               <AlertTriangle className="h-2.5 w-2.5" /> Alta vigilância
                             </Badge>
                           )}
                         </div>
-                        <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
+                        <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
                           {item.presentation && <span>{item.presentation}</span>}
                           {item.dose && <span>· {item.dose}</span>}
                           {item.route && <span>· {item.route}</span>}
                           {item.posology && <span>· {item.posology}</span>}
                         </div>
                         {item.instructions && (
-                          <div className="text-[10px] text-muted-foreground/80 mt-1 italic line-clamp-2">
+                          <div className="text-xs text-muted-foreground/80 mt-1 italic line-clamp-2">
                             {item.instructions}
                           </div>
                         )}
@@ -11485,7 +11485,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
             <td style={cellStyle}>{patient.unit || '—'}</td>
             <td style={headerCellStyle}>Atendimento</td>
             <td style={cellStyle}>{patient.encounterCode ? `#${patient.encounterCode}` : '—'}</td>
-            <td style={{ ...headerCellStyle, color: '#dc2626', fontSize: '6pt' }}>⚠ ALERGIAS</td>
+            <td style={{ ...headerCellStyle, color: '#dc2626', fontSize: '6pt' }}>ALERGIAS</td>
             <td style={{ ...cellStyle, fontWeight: 700, color: '#991b1b', fontSize: '7.5pt', backgroundColor: '#fef2f2' }}>{patient.allergies || 'NDAM'}</td>
           </tr>
         </tbody>

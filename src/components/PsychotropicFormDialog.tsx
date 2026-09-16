@@ -310,7 +310,7 @@ export function PsychotropicFormDialog({
           <div className="space-y-3 print:hidden">
             {/* Aviso de modo somente-leitura */}
             <div className="rounded-md border border-border bg-muted/60 p-3 flex items-start gap-2">
-              <ShieldAlert className="h-4 w-4 text-foreground mt-0.5 shrink-0" />
+              <ShieldAlert className="h-4 w-4 text-foreground mt-1 shrink-0" />
               <div className="text-xs text-foreground">
                 <strong>Modo somente-impressão.</strong> CID puxado da admissão · Quantidade calculada para 24h ·
                 Indicação clínica e duração não se aplicam (validade fixa de 24h). Para ajustes, edite o item no corpo da prescrição.
@@ -319,7 +319,7 @@ export function PsychotropicFormDialog({
 
             {blockingEntries.length > 0 && (
               <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
-                <AlertTriangle className="h-4 w-4 mt-0.5" />
+                <AlertTriangle className="h-4 w-4 mt-1" />
                 <span>{blockingEntries.length} medicamento(s) sem tipo de notificação resolvido — não podem ser impressos.</span>
               </div>
             )}
@@ -331,7 +331,7 @@ export function PsychotropicFormDialog({
             />
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t">
-              <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5">
+              <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="gap-2">
                 <X className="h-3.5 w-3.5" /> Fechar
               </Button>
               <Button
@@ -339,7 +339,7 @@ export function PsychotropicFormDialog({
                 size="sm"
                 onClick={handlePrint}
                 disabled={!canPrint}
-                className="gap-1.5 bg-primary hover:bg-primary"
+                className="gap-2 bg-primary hover:bg-primary"
               >
                 <Printer className="h-3.5 w-3.5" /> Imprimir Receituário
               </Button>
@@ -359,7 +359,7 @@ export function PsychotropicFormDialog({
 
             <div className="flex flex-wrap gap-2">
               {(Object.keys(NOTIFICATION_META) as NotificationType[]).map(k => (
-                <Badge key={k} variant="outline" className={cn("text-[10px]", NOTIFICATION_META[k].bg)}>
+                <Badge key={k} variant="outline" className={cn("text-xs", NOTIFICATION_META[k].bg)}>
                   {NOTIFICATION_META[k].label} — {NOTIFICATION_META[k].description}
                 </Badge>
               ))}
@@ -367,7 +367,7 @@ export function PsychotropicFormDialog({
 
             {blockingEntries.length > 0 && (
               <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
-                <AlertTriangle className="h-4 w-4 mt-0.5" />
+                <AlertTriangle className="h-4 w-4 mt-1" />
                 <span>{blockingEntries.length} medicamento(s) sem tipo de notificação definido. Selecione antes de imprimir.</span>
               </div>
             )}
@@ -377,12 +377,12 @@ export function PsychotropicFormDialog({
               return (
                 <div key={entry.id} className={cn("rounded-lg border p-4 space-y-3", meta?.bg || 'border-border')}>
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <h3 className="text-sm font-medium flex items-center gap-2">
                       {meta && (
                         <Badge variant="outline" className={cn("text-xs", meta.bg)}>{meta.label}</Badge>
                       )}
                       {entry.locked && (
-                        <Badge variant="outline" className="text-[10px] bg-muted text-foreground border-border gap-1">
+                        <Badge variant="outline" className="text-xs bg-muted text-foreground border-border gap-1">
                           <Lock className="h-2.5 w-2.5" /> Da prescrição
                         </Badge>
                       )}
@@ -397,7 +397,7 @@ export function PsychotropicFormDialog({
 
                   <div className="grid grid-cols-4 gap-2">
                     <div className="col-span-2">
-                      <Label className="text-[10px] flex items-center gap-1">
+                      <Label className="text-xs flex items-center gap-1">
                         Medicamento (DCB / Comercial)
                         {entry.autoFilled.has('medication') && <Sparkles className="h-2.5 w-2.5 text-muted-foreground" />}
                       </Label>
@@ -410,26 +410,26 @@ export function PsychotropicFormDialog({
                       />
                     </div>
                     <div>
-                      <Label className="text-[10px]">Forma Farmacêutica</Label>
+                      <Label className="text-xs">Forma Farmacêutica</Label>
                       <Input value={entry.pharmaceuticalForm} onChange={e => updateEntry(entry.id, 'pharmaceuticalForm', e.target.value)} placeholder="Comprimido, Ampola..." className="h-8 text-xs" />
                     </div>
                     <div>
-                      <Label className="text-[10px]">Concentração</Label>
+                      <Label className="text-xs">Concentração</Label>
                       <Input value={entry.concentration} onChange={e => updateEntry(entry.id, 'concentration', e.target.value)} placeholder="5mg, 10mg/mL..." className="h-8 text-xs" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-4 gap-2">
                     <div>
-                      <Label className="text-[10px]">Quantidade</Label>
+                      <Label className="text-xs">Quantidade</Label>
                       <Input value={entry.quantity} onChange={e => updateEntry(entry.id, 'quantity', e.target.value)} placeholder="30" className="h-8 text-xs" />
                     </div>
                     <div>
-                      <Label className="text-[10px]">Quantidade (extenso)</Label>
+                      <Label className="text-xs">Quantidade (extenso)</Label>
                       <Input value={entry.quantityText} onChange={e => updateEntry(entry.id, 'quantityText', e.target.value)} placeholder="trinta" className="h-8 text-xs" />
                     </div>
                     <div>
-                      <Label className="text-[10px]">Tipo de Notificação</Label>
+                      <Label className="text-xs">Tipo de Notificação</Label>
                       <Select value={entry.notificationType ?? ''} onValueChange={v => updateEntry(entry.id, 'notificationType', v as NotificationType)}>
                         <SelectTrigger className={cn("h-8 text-xs", !entry.notificationType && "border-destructive/60")}>
                           <SelectValue placeholder="Selecione..." />
@@ -442,39 +442,39 @@ export function PsychotropicFormDialog({
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-[10px]">CID-10</Label>
+                      <Label className="text-xs">CID-10</Label>
                       <Input value={entry.cid10} onChange={e => updateEntry(entry.id, 'cid10', e.target.value)} placeholder="F32.1" className="h-8 text-xs" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-4 gap-2">
                     <div>
-                      <Label className="text-[10px]">Dose</Label>
+                      <Label className="text-xs">Dose</Label>
                       <Input value={entry.dose} onChange={e => updateEntry(entry.id, 'dose', e.target.value)} className="h-8 text-xs" />
                     </div>
                     <div>
-                      <Label className="text-[10px]">Via</Label>
+                      <Label className="text-xs">Via</Label>
                       <Input value={entry.route} onChange={e => updateEntry(entry.id, 'route', e.target.value)} className="h-8 text-xs" />
                     </div>
                     <div>
-                      <Label className="text-[10px]">Posologia</Label>
+                      <Label className="text-xs">Posologia</Label>
                       <Input value={entry.posology} onChange={e => updateEntry(entry.id, 'posology', e.target.value)} className="h-8 text-xs" />
                     </div>
                     <div>
-                      <Label className="text-[10px]">Duração</Label>
+                      <Label className="text-xs">Duração</Label>
                       <Input value={entry.treatmentDuration} onChange={e => updateEntry(entry.id, 'treatmentDuration', e.target.value)} placeholder="30 dias" className="h-8 text-xs" />
                     </div>
                   </div>
 
                   <div>
-                    <Label className="text-[10px]">Indicação Clínica / Justificativa</Label>
+                    <Label className="text-xs">Indicação Clínica / Justificativa</Label>
                     <Textarea value={entry.clinicalIndication} onChange={e => updateEntry(entry.id, 'clinicalIndication', e.target.value)} placeholder="Indicação clínica para uso desta medicação controlada..." className="text-xs min-h-[50px] resize-none" />
                   </div>
                 </div>
               );
             })}
 
-            <Button variant="outline" size="sm" onClick={addEntry} className="gap-1.5 w-full text-xs">
+            <Button variant="outline" size="sm" onClick={addEntry} className="gap-2 w-full text-xs">
               <Plus className="h-3.5 w-3.5" /> Adicionar Medicação
             </Button>
 
@@ -485,7 +485,7 @@ export function PsychotropicFormDialog({
                 size="sm"
                 onClick={handlePrint}
                 disabled={!canPrint}
-                className="gap-1.5"
+                className="gap-2"
               >
                 <Printer className="h-3.5 w-3.5" /> Imprimir Guia
               </Button>
@@ -521,23 +521,23 @@ function ReadOnlyPreview({
         const meta = NOTIFICATION_META[type];
         return (
           <div key={type} className={cn("rounded-md border", meta.bg)}>
-            <div className="flex items-center justify-between px-3 py-1.5 border-b border-current/10">
-              <span className="text-xs font-bold uppercase tracking-wide" style={{ color: meta.color }}>
+            <div className="flex items-center justify-between px-3 py-2 border-b border-current/10">
+              <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: meta.color }}>
                 {meta.label}
               </span>
-              <span className="text-[10px] text-muted-foreground">{list.length} item(s)</span>
+              <span className="text-xs text-muted-foreground">{list.length} item(s)</span>
             </div>
             <div className="divide-y divide-current/10">
               {list.map(e => (
-                <div key={e.id} className="px-3 py-2 grid grid-cols-12 gap-2 text-[11px]">
-                  <div className="col-span-4 font-semibold truncate" title={e.medication}>{e.medication}</div>
+                <div key={e.id} className="px-3 py-2 grid grid-cols-12 gap-2 text-xs">
+                  <div className="col-span-4 font-medium truncate" title={e.medication}>{e.medication}</div>
                   <div className="col-span-2 text-muted-foreground">{e.concentration || '—'}</div>
                   <div className="col-span-2"><span className="text-muted-foreground">Dose: </span>{e.dose || '—'}</div>
                   <div className="col-span-1"><span className="text-muted-foreground">Via: </span>{e.route || '—'}</div>
                   <div className="col-span-2"><span className="text-muted-foreground">Posol.: </span>{e.posology || '—'}</div>
                   <div className="col-span-1 text-right"><span className="text-muted-foreground">24h: </span><strong>{e.quantity || '—'}</strong></div>
-                  <div className="col-span-12 text-[10px] text-muted-foreground flex gap-3">
-                    <span>CID-10: <strong className="text-foreground">{e.cid10 || (cidPrimary ? cidPrimary : '⚠ não definido na admissão')}</strong></span>
+                  <div className="col-span-12 text-xs text-muted-foreground flex gap-3">
+                    <span>CID-10: <strong className="text-foreground">{e.cid10 || (cidPrimary ? cidPrimary : 'não definido na admissão')}</strong></span>
                     <span>Validade: <strong className="text-foreground">24h</strong></span>
                   </div>
                 </div>
@@ -593,11 +593,11 @@ function MedicationCombobox({
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => { setQuery(''); setOpen(true); }}
           placeholder={loading ? 'Carregando catálogo...' : 'Digite ao menos 2 letras...'}
-          className="h-8 text-xs pl-7"
+          className="h-8 text-xs pl-6"
         />
       </div>
       {open && query.length >= 2 && (
-        <div className="absolute z-50 mt-1 w-[420px] max-h-64 overflow-y-auto rounded-md border bg-popover shadow-lg">
+        <div className="absolute z-50 mt-1 w-[420px] max-h-64 overflow-y-auto rounded-md border bg-popover shadow-md">
           {filtered.length === 0 ? (
             <div className="p-3 text-xs text-muted-foreground">
               Medicamento não encontrado no catálogo. Contate a farmácia para cadastro.
@@ -608,11 +608,11 @@ function MedicationCombobox({
                 key={`${c.catalogId}-${c.presentationId ?? 'std'}`}
                 type="button"
                 onClick={() => { onSelect(c); setOpen(false); setQuery(''); }}
-                className="w-full text-left px-3 py-1.5 text-xs hover:bg-accent flex items-center justify-between gap-2"
+                className="w-full text-left px-3 py-2 text-xs hover:bg-accent flex items-center justify-between gap-2"
               >
                 <span className="truncate">{c.label}</span>
                 {c.notification_type && (
-                  <Badge variant="outline" className={cn("text-[9px] shrink-0", NOTIFICATION_META[c.notification_type].bg)}>
+                  <Badge variant="outline" className={cn("text-xs shrink-0", NOTIFICATION_META[c.notification_type].bg)}>
                     {c.notification_type === 'Receita Amarela' ? 'A' : c.notification_type === 'Receita Azul' ? 'B' : 'C1'}
                   </Badge>
                 )}
@@ -641,7 +641,7 @@ function PrintablePsychotropicForm({
   const pages: Array<{ type: NotificationType; entries: PsychotropicEntry[] }> = [];
   for (const t of groupOrder) if (grouped[t].length > 0) pages.push({ type: t, entries: grouped[t] });
 
-  // 🔒 Norma Zero — bloqueia a geração do formulário de notificação de
+  // Norma Zero — bloqueia a geração do formulário de notificação de
   // psicotrópicos/controlados se identificação estiver incompleta. Este
   // layout não exibe "data de nascimento", então esse campo é excluído.
   // Especialmente crítico: notificação de controlados tem exigência legal

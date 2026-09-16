@@ -59,12 +59,12 @@ export function ShiftRenewalAlert({
           "flex items-start gap-3 mb-3"
         )}
       >
-        <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+        <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-1" />
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-destructive">
+          <div className="text-sm font-medium text-destructive">
             Renovação de plantão pendente
           </div>
-          <div className="text-xs text-muted-foreground mt-0.5">
+          <div className="text-xs text-muted-foreground mt-1">
             {pendingCount} de {activeCount} {pendingCount === 1 ? "item ativo precisa" : "itens ativos precisam"} ser revalidad{pendingCount === 1 ? "o" : "os"} após a troca de plantão das <strong>05:00</strong>.
           </div>
         </div>
@@ -91,12 +91,12 @@ export function ShiftRenewalAlert({
         "flex items-start gap-3 mb-3"
       )}
     >
-      <Clock className="h-5 w-5 text-warning-on-soft shrink-0 mt-0.5 animate-pulse" />
+      <Clock className="h-5 w-5 text-warning-on-soft shrink-0 mt-1 animate-pulse" />
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold text-warning-on-soft">
+        <div className="text-sm font-medium text-warning-on-soft">
           Troca de plantão em {minutesToRenewal} min
         </div>
-        <div className="text-xs text-warning-on-soft/80 mt-0.5">
+        <div className="text-xs text-warning-on-soft/80 mt-1">
           Às <strong>05:00</strong> a prescrição precisará ser revalidada. Considere revisar e revalidar antecipadamente os {activeCount} {activeCount === 1 ? "item ativo" : "itens ativos"}.
         </div>
       </div>

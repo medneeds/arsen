@@ -107,10 +107,10 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
               <FileText className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1">
-              <DialogTitle className="text-lg font-bold tracking-wide text-primary">
+              <DialogTitle className="text-lg font-semibold tracking-wide text-primary">
                 {selectedTemplate ? selectedTemplate.name : "Templates terapêuticos"}
               </DialogTitle>
-              <p className="text-sm font-semibold text-foreground mt-0.5 tracking-wide">
+              <p className="text-sm font-medium text-foreground mt-1 tracking-wide">
                 {patientName}
               </p>
             </div>
@@ -131,7 +131,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
                 placeholder="Pesquisar protocolos..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="pl-8"
               />
             </div>
             <ScrollArea className="h-[350px]">
@@ -147,13 +147,13 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
                     <div
                       key={template.id}
                       onClick={() => handleSelectTemplate(template)}
-                      className="group p-3.5 rounded-xl border border-border/40 bg-card/50 hover:bg-accent/15 hover:border-primary/40 hover:shadow-md hover:scale-[1.01] transition-all duration-200 cursor-pointer"
+                      className="group p-4 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/15 hover:border-primary/40 hover:shadow-md hover:scale-[1.01] transition-all duration-200 cursor-pointer"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <Badge
-                              className={`text-[10px] ${PROTOCOL_COLORS[template.protocol_type] || "bg-muted text-foreground"}`}
+                              className={`text-xs ${PROTOCOL_COLORS[template.protocol_type] || "bg-muted text-foreground"}`}
                             >
                               {template.protocol_type}
                             </Badge>
@@ -161,9 +161,9 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
                               {template.items.length} itens
                             </span>
                           </div>
-                          <p className="text-sm font-semibold">{template.name}</p>
+                          <p className="text-sm font-medium">{template.name}</p>
                           {template.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{template.description}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{template.description}</p>
                           )}
                         </div>
                       </div>
@@ -197,17 +197,17 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
             <Button
               onClick={handleApply}
               disabled={selectedItems.length === 0}
-              className="w-full tracking-wider font-bold shadow-lg"
+              className="w-full tracking-wider font-semibold shadow-md"
             >
-              ⚡ APLICAR {selectedItems.length > 0 && `(${selectedItems.length} ITENS)`}
+              APLICAR {selectedItems.length > 0 && `(${selectedItems.length} ITENS)`}
             </Button>
 
             <ScrollArea className="h-[320px]">
-              <div className="space-y-1.5 pr-2">
+              <div className="space-y-2 pr-2">
                 {editableItems.map((item, idx) => (
                   <div
                     key={idx}
-                    className="group flex items-center space-x-3 p-3 rounded-xl border border-border/40 bg-card/50 hover:bg-accent/10 hover:border-primary/30 transition-all duration-200"
+                    className="group flex items-center space-x-3 p-3 rounded-lg border border-border/40 bg-card/50 hover:bg-accent/10 hover:border-primary/30 transition-all duration-200"
                   >
                     <Checkbox
                       id={`item-${idx}`}
@@ -223,18 +223,18 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
                           if (e.key === "Enter") setEditingIndex(null);
                         }}
                         autoFocus
-                        className="flex-1 text-sm uppercase h-8"
+                        className="flex-1 text-sm uppercase tracking-wider h-8"
                       />
                     ) : (
                       <Label
                         htmlFor={`item-${idx}`}
-                        className="text-sm cursor-pointer flex-1 uppercase"
+                        className="text-sm cursor-pointer flex-1 uppercase tracking-wider"
                         onDoubleClick={() => setEditingIndex(idx)}
                       >
                         {item}
                       </Label>
                     )}
-                    <span className="text-[10px] text-muted-foreground font-mono">
+                    <span className="text-xs text-muted-foreground font-mono">
                       #{String(idx + 1).padStart(2, "0")}
                     </span>
                   </div>
@@ -245,7 +245,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
         )}
 
         <DialogFooter className="pt-3 border-t">
-          <Button variant="outline" onClick={handleClose} className="uppercase text-xs">
+          <Button variant="outline" onClick={handleClose} className="uppercase tracking-wider text-xs">
             Fechar
           </Button>
         </DialogFooter>

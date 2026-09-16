@@ -471,7 +471,7 @@ export function DataPrivacyPanel() {
       <Card className="border-warning-border bg-warning-soft">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-warning-on-soft shrink-0 mt-0.5" />
+            <AlertCircle className="h-5 w-5 text-warning-on-soft shrink-0 mt-1" />
             <div className="space-y-1">
               <p className="font-medium text-warning-on-soft">
                 Informações sobre seus Direitos

@@ -81,17 +81,17 @@ function InlineClinicalList({ title, icon, content, accentColor }: InlineClinica
   const lines = content.split('\n').filter(Boolean);
   
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-1.5">
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
         {icon}
-        <span className={`text-[10px] font-medium uppercase tracking-wide text-${accentColor}`}>{title}</span>
-        <Badge variant="secondary" className="text-[9px] h-3.5 px-1">
+        <span className={`text-xs font-medium uppercase tracking-wide text-${accentColor}`}>{title}</span>
+        <Badge variant="secondary" className="text-xs h-3.5 px-1">
           {lines.length}
         </Badge>
       </div>
-      <div className="space-y-0.5">
+      <div className="space-y-1">
         {lines.map((line, index) => (
-          <div key={index} className="flex items-start gap-1.5 text-sm">
+          <div key={index} className="flex items-start gap-2 text-sm">
             <span className="text-muted-foreground text-xs font-mono">{index + 1}.</span>
             <span className="leading-snug">{line}</span>
           </div>
@@ -111,9 +111,9 @@ function InlineAdmissionHistory({ content }: InlineAdmissionHistoryProps) {
   
   return (
     <div className="rounded-lg border border-primary/30 overflow-hidden">
-      <div className="p-2.5 bg-primary/10 flex items-center gap-2">
+      <div className="p-3 bg-primary/10 flex items-center gap-2">
         <FileText className="h-4 w-4 text-primary" />
-        <span className="text-xs font-semibold uppercase tracking-wide text-primary">História Admissional</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-primary">História Admissional</span>
       </div>
       <div className="p-3 bg-primary/5">
         <p className="text-sm whitespace-pre-wrap leading-relaxed">
@@ -274,12 +274,12 @@ export function BedAllocationNotifications() {
             {/* Where the patient is */}
             <div className="bg-primary/10 rounded-lg p-3 border border-border/20">
               <div className="flex items-start gap-3">
-                <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-1">
                   <User className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
                 <p className="text-sm">
                   Um médico da porta registrou um novo paciente. O paciente está atualmente na seção{" "}
-                  <span className="font-semibold text-foreground">"Fora das Alas"</span>, aguardando sua aprovação para alocação.
+                  <span className="font-medium text-foreground">"Fora das Alas"</span>, aguardando sua aprovação para alocação.
                 </p>
               </div>
             </div>
@@ -287,11 +287,11 @@ export function BedAllocationNotifications() {
             {/* What the leader can do */}
             <div className="bg-warning/10 rounded-lg p-3 border border-warning/20">
               <div className="flex items-start gap-3">
-                <div className="h-6 w-6 rounded-full bg-warning/20 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="h-6 w-6 rounded-full bg-warning/20 flex items-center justify-center shrink-0 mt-1">
                   <Clock className="h-3.5 w-3.5 text-warning" />
                 </div>
                 <p className="text-sm">
-                  Você pode <span className="font-semibold text-warning-on-soft">aguardar a discussão do caso</span> antes de decidir, ou <span className="font-semibold text-released-on-soft">aprovar diretamente</span> a alocação para o setor solicitado.
+                  Você pode <span className="font-medium text-warning-on-soft">aguardar a discussão do caso</span> antes de decidir, ou <span className="font-medium text-released-on-soft">aprovar diretamente</span> a alocação para o setor solicitado.
                 </p>
               </div>
             </div>
@@ -299,12 +299,12 @@ export function BedAllocationNotifications() {
             {/* How to access */}
             <div className="bg-primary/10 rounded-lg p-3 border border-primary/20">
               <div className="flex items-start gap-3">
-                <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-1">
                   <Bed className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <p className="text-sm">
                   Para revisar, acesse{" "}
-                  <span className="font-semibold text-primary">"Solicitações de Alocação"</span>{" "}
+                  <span className="font-medium text-primary">"Solicitações de Alocação"</span>{" "}
                   clicando no ícone de leito no cabeçalho.
                 </p>
               </div>
@@ -338,7 +338,7 @@ export function BedAllocationNotifications() {
         </PopoverTrigger>
         <PopoverContent className="w-96 p-0" align="end">
           <div className="p-4 border-b">
-            <h3 className="font-semibold">Solicitações de Alocação</h3>
+            <h3 className="font-medium">Solicitações de Alocação</h3>
             <p className="text-sm text-muted-foreground">
               {pendingCount} pendente{pendingCount !== 1 ? "s" : ""}
             </p>
@@ -371,7 +371,7 @@ export function BedAllocationNotifications() {
                           </Badge>
                         </div>
                         {request.requesting_doctor_name && (
-                          <div className="flex items-center gap-1.5 mt-1 text-xs text-released-on-soft">
+                          <div className="flex items-center gap-2 mt-1 text-xs text-released-on-soft">
                             <Stethoscope className="h-3 w-3" />
                             <span>{request.requesting_doctor_name}</span>
                             {request.requesting_office_number && (
@@ -413,7 +413,7 @@ export function BedAllocationNotifications() {
                           </Badge>
                         </div>
                         {request.requesting_doctor_name && (
-                          <div className="flex items-center gap-1.5 mt-1 text-xs text-released-on-soft">
+                          <div className="flex items-center gap-2 mt-1 text-xs text-released-on-soft">
                             <Stethoscope className="h-3 w-3" />
                             <span>{request.requesting_doctor_name}</span>
                             {request.requesting_office_number && (
@@ -446,7 +446,7 @@ export function BedAllocationNotifications() {
           {selectedRequest && (
             <>
               {/* Header with patient name and sector badge */}
-              <div className={`bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 border-b border-l-4 ${getSectorBorderColor(selectedRequest.requested_sector)}`}>
+              <div className={`bg-primary/10 p-4 border-b border-l-4 ${getSectorBorderColor(selectedRequest.requested_sector)}`}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
@@ -454,7 +454,7 @@ export function BedAllocationNotifications() {
                         <User className="h-6 w-6 text-primary" />
                       </div>
                       <div>
-                        <h2 className="text-xl font-bold truncate">
+                        <h2 className="text-xl font-semibold truncate">
                           {selectedRequest.patient?.name || "Paciente"}
                         </h2>
                         {selectedRequest.patient?.age && (
@@ -465,20 +465,20 @@ export function BedAllocationNotifications() {
                   </div>
                   <Badge 
                     variant="outline" 
-                    className={`${getSectorColor(selectedRequest.requested_sector)} text-sm px-3 py-1.5 shrink-0`}
+                    className={`${getSectorColor(selectedRequest.requested_sector)} text-sm px-3 py-2 shrink-0`}
                   >
-                    <Bed className="h-3.5 w-3.5 mr-1.5" />
+                    <Bed className="h-3.5 w-3.5 mr-2" />
                     {selectedRequest.requested_sector}
                   </Badge>
                 </div>
                 
                 {/* Requesting Doctor Info */}
                 {(selectedRequest.requesting_doctor_name || selectedRequest.requesting_office_number) && (
-                  <div className="mt-3 p-2.5 rounded-lg bg-released/10 border border-released/20">
+                  <div className="mt-3 p-3 rounded-lg bg-released/10 border border-released/20">
                     <div className="flex items-center gap-3 text-sm flex-wrap">
                       <Stethoscope className="h-4 w-4 text-released-on-soft shrink-0" />
                       <span className="text-muted-foreground">Solicitante:</span>
-                      <span className="font-semibold text-released-on-soft">
+                      <span className="font-medium text-released-on-soft">
                         {selectedRequest.requesting_doctor_name || "Não informado"}
                       </span>
                       {selectedRequest.requesting_office_number && (
@@ -486,7 +486,7 @@ export function BedAllocationNotifications() {
                           <span className="text-muted-foreground">|</span>
                           <Building className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
                           <span className="text-muted-foreground">Consultório:</span>
-                          <span className="font-semibold text-released-on-soft">
+                          <span className="font-medium text-released-on-soft">
                             {selectedRequest.requesting_office_number}
                           </span>
                         </>
@@ -597,7 +597,7 @@ export function BedAllocationNotifications() {
                     Aguardando Discussão
                   </Button>
                   <Button
-                    className="flex-1 h-11 bg-released hover:bg-released text-white shadow-lg shadow-green-600/20"
+                    className="flex-1 h-11 bg-released hover:bg-released text-white shadow-md shadow-md"
                     onClick={() => handleApprove(selectedRequest)}
                   >
                     <Check className="h-4 w-4 mr-2" />

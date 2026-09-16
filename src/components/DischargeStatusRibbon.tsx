@@ -82,9 +82,9 @@ export function DischargeStatusRibbon({ status, className }: DischargeStatusRibb
             role="status"
             aria-label={entry.tooltipTitle}
             className={cn(
-              "group relative inline-flex items-center gap-1.5 rounded-full select-none",
+              "group relative inline-flex items-center gap-2 rounded-full select-none",
               "bg-gradient-to-r text-white",
-              "px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] leading-none",
+              "px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] leading-none",
               "ring-1 ring-white/80",
               "transition-all duration-300 ease-out cursor-help",
               "hover:-translate-y-0.5 hover:scale-[1.04]",
@@ -101,7 +101,7 @@ export function DischargeStatusRibbon({ status, className }: DischargeStatusRibb
             />
             <span className="whitespace-nowrap">{entry.label}</span>
             <Info
-              className="h-3 w-3 -ml-0.5 opacity-70 transition-opacity duration-300 group-hover:opacity-100 print:hidden"
+              className="h-3 w-3 -ml-1 opacity-70 transition-opacity duration-300 group-hover:opacity-100 print:hidden"
               strokeWidth={2.6}
             />
           </span>
@@ -110,7 +110,7 @@ export function DischargeStatusRibbon({ status, className }: DischargeStatusRibb
           side="top"
           align="center"
           sideOffset={8}
-          className="w-[280px] p-0 overflow-hidden rounded-lg border border-border/60 bg-popover shadow-xl"
+          className="w-[280px] p-0 overflow-hidden rounded-lg border border-border/60 bg-popover shadow-md"
         >
           {/* Header colorido com o mesmo gradiente da pílula */}
           <div
@@ -120,35 +120,35 @@ export function DischargeStatusRibbon({ status, className }: DischargeStatusRibb
             )}
           >
             <Icon className="h-4 w-4 shrink-0" strokeWidth={2.6} />
-            <p className="text-[12px] font-semibold leading-tight tracking-wide">
+            <p className="text-xs font-medium leading-tight tracking-wide">
               {entry.tooltipTitle}
             </p>
           </div>
 
           {/* Corpo didático */}
-          <div className="px-3 py-2.5 space-y-2.5">
-            <div className="space-y-0.5">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="px-3 py-3 space-y-3">
+            <div className="space-y-1">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 O que significa
               </p>
-              <p className="text-[11px] leading-snug text-foreground">{entry.what}</p>
+              <p className="text-xs leading-snug text-foreground">{entry.what}</p>
             </div>
 
-            <div className="space-y-0.5">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="space-y-1">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Próximo passo
               </p>
-              <p className="text-[11px] leading-snug text-foreground">{entry.next}</p>
+              <p className="text-xs leading-snug text-foreground">{entry.next}</p>
             </div>
 
             {/* Call-to-action: como desalocar */}
-            <div className="flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-2">
-              <MousePointerClick className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" strokeWidth={2.4} />
-              <p className="text-[10.5px] leading-snug text-foreground">
+            <div className="flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 px-3 py-2">
+              <MousePointerClick className="h-3.5 w-3.5 mt-1 shrink-0 text-primary" strokeWidth={2.4} />
+              <p className="text-xs leading-snug text-foreground">
                 Para desalocar, abra o menu{" "}
-                <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 px-1.5 py-0.5 align-middle">
+                <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 px-2 py-1 align-middle">
                   <ArrowRightLeft className="h-2.5 w-2.5 text-primary" strokeWidth={2.8} />
-                  <span className="text-[10px] font-semibold text-primary">Movimentações</span>
+                  <span className="text-xs font-medium text-primary">Movimentações</span>
                 </span>{" "}
                 no cabeçalho do card.
               </p>

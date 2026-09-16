@@ -93,8 +93,8 @@ export function MovementConfirmDialog({
               <ShieldCheck className={cn("h-5 w-5", t.icon)} />
             </div>
             <div className="flex-1 min-w-0">
-              <DialogTitle className="text-base uppercase break-words leading-snug">{title}</DialogTitle>
-              <DialogDescription className="text-xs mt-0.5 break-words leading-relaxed">{description}</DialogDescription>
+              <DialogTitle className="text-base uppercase tracking-wider break-words leading-snug">{title}</DialogTitle>
+              <DialogDescription className="text-xs mt-1 break-words leading-relaxed">{description}</DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -103,17 +103,17 @@ export function MovementConfirmDialog({
           {/* Resumo dos dados */}
           {summary.length > 0 && (
             <section className="rounded-lg border bg-muted/30 p-3 space-y-2">
-              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] font-medium text-muted-foreground">
                 <FileText className="h-3 w-3" /> Resumo da ação
               </div>
-              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs min-w-0">
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs min-w-0">
                 {summary.map((s, i) => {
                   const Icon = s.icon;
                   return (
-                    <div key={i} className={cn("flex items-start gap-1.5 min-w-0", s.fullWidth && "sm:col-span-2")}>
-                      {Icon && <Icon className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />}
+                    <div key={i} className={cn("flex items-start gap-2 min-w-0", s.fullWidth && "sm:col-span-2")}>
+                      {Icon && <Icon className="h-3 w-3 mt-1 text-muted-foreground shrink-0" />}
                       <div className="min-w-0 flex-1">
-                        <dt className="text-[9px] uppercase tracking-wider text-muted-foreground">{s.label}</dt>
+                        <dt className="text-xs uppercase tracking-wider text-muted-foreground">{s.label}</dt>
                         <dd className="text-xs font-medium break-words" title={s.value}>{s.value || "—"}</dd>
                       </div>
                     </div>
@@ -126,18 +126,18 @@ export function MovementConfirmDialog({
           {/* Bloqueios (vermelho) */}
           {isBlocked && (
             <section className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-2">
-              <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-semibold text-destructive">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-medium text-destructive">
                 <AlertTriangle className="h-3.5 w-3.5" /> Pendências obrigatórias bloqueando a ação
               </div>
               <ul className="space-y-1 text-xs text-destructive">
                 {blockers.map((b, i) => (
-                  <li key={i} className="flex items-start gap-1.5">
+                  <li key={i} className="flex items-start gap-2">
                     <span className="mt-1 h-1 w-1 rounded-full bg-destructive shrink-0" />
-                    <span><strong className="font-semibold">{b.label}</strong> — {b.reason}</span>
+                    <span><strong className="font-medium">{b.label}</strong> — {b.reason}</span>
                   </li>
                 ))}
               </ul>
-              <p className="text-[10px] uppercase tracking-wider text-destructive/80 pt-1">
+              <p className="text-xs uppercase tracking-wider text-destructive/80 pt-1">
                 Volte ao formulário, preencha os itens acima e tente novamente.
               </p>
             </section>
@@ -145,14 +145,14 @@ export function MovementConfirmDialog({
 
           {/* Avisos (amarelo) — só aparecem se não houver bloqueio */}
           {!isBlocked && warnings.length > 0 && (
-            <section className="rounded-lg border border-warning/40 bg-warning/5 p-3 space-y-1.5">
-              <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-semibold text-warning">
+            <section className="rounded-lg border border-warning/40 bg-warning/5 p-3 space-y-2">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-medium text-warning">
                 <Info className="h-3.5 w-3.5" /> Avisos importantes
               </div>
-              <ul className="text-[11px] text-foreground/80 space-y-0.5 pl-1">
+              <ul className="text-xs text-foreground/80 space-y-1 pl-1">
                 {warnings.map((w, i) => (
                   <li key={i} className="leading-relaxed">
-                    • <strong className="font-semibold">{w.label}</strong>
+                    • <strong className="font-medium">{w.label}</strong>
                     {w.detail ? <span className="text-muted-foreground"> — {w.detail}</span> : null}
                   </li>
                 ))}
@@ -163,19 +163,19 @@ export function MovementConfirmDialog({
           {/* Consequências (didáticas) */}
           {consequences.length > 0 && (
             <section className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
-              <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-semibold text-primary">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-medium text-primary">
                 <Info className="h-3.5 w-3.5" /> O que acontece quando você confirmar
               </div>
-              <ol className="space-y-1.5 text-xs text-foreground/85 leading-relaxed">
+              <ol className="space-y-2 text-xs text-foreground/85 leading-relaxed">
                 {consequences.map((c, i) => {
                   const Icon = c.icon;
                   return (
                     <li key={i} className="flex items-start gap-2">
-                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/15 text-primary text-[10px] font-bold shrink-0 mt-0.5">
+                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/15 text-primary text-xs font-semibold shrink-0 mt-1">
                         {i + 1}
                       </span>
                       <div className="flex-1">
-                        {Icon && <Icon className="h-3 w-3 inline-block mr-1 text-primary/70 -mt-0.5" />}
+                        {Icon && <Icon className="h-3 w-3 inline-block mr-1 text-primary/70 -mt-1" />}
                         {c.text}
                       </div>
                     </li>
@@ -183,7 +183,7 @@ export function MovementConfirmDialog({
                 })}
               </ol>
               {finalNote && (
-                <div className="text-[10px] text-muted-foreground pt-1 border-t border-primary/20">
+                <div className="text-xs text-muted-foreground pt-1 border-t border-primary/20">
                   {finalNote}
                 </div>
               )}

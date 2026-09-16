@@ -23,7 +23,7 @@ export function MobileMenuFab() {
       className={cn(
         "md:hidden fixed left-3 z-40",
         "h-12 w-12 rounded-full",
-        "bg-primary text-primary-foreground shadow-lg shadow-primary/30",
+        "bg-primary text-primary-foreground shadow-md shadow-md",
         "border border-primary/30",
         "flex items-center justify-center",
         "active:scale-95 transition-all duration-200",

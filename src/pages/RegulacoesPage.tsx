@@ -31,11 +31,11 @@ export default function RegulacoesPage() {
   };
 
   return (
-    <div className="bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="bg-background">
       <div className="p-6 md:p-8 space-y-8 max-w-6xl">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-released-soft to-released-soft bg-clip-text text-transparent">
+          <h1 className="text-4xl font-semibold tracking-tight bg-released-soft bg-clip-text text-transparent">
             Regulações SUS
           </h1>
           <p className="text-muted-foreground text-lg">
@@ -47,7 +47,7 @@ export default function RegulacoesPage() {
         </div>
 
         {/* Search Bar */}
-        <Card className="border-primary/20 shadow-lg">
+        <Card className="border-primary/20 shadow-md">
           <CardContent className="p-6">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -56,7 +56,7 @@ export default function RegulacoesPage() {
                 placeholder="Buscar por título ou tipo de documento..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-14 text-base bg-background/50 border-border/50 focus:border-primary transition-all"
+                className="pl-8 h-14 text-base bg-background/50 border-border/50 focus:border-primary transition-all"
               />
             </div>
           </CardContent>
@@ -66,7 +66,7 @@ export default function RegulacoesPage() {
         <div className="space-y-3">
           {filteredDocuments.length === 0 ? (
             <Card className="border-dashed">
-              <CardContent className="flex flex-col items-center justify-center py-16">
+              <CardContent className="flex flex-col items-center justify-center py-8">
                 <Search className="h-16 w-16 text-muted-foreground/50 mb-4" />
                 <p className="text-center text-muted-foreground text-lg">
                   Nenhum documento encontrado com esse termo
@@ -77,22 +77,22 @@ export default function RegulacoesPage() {
             filteredDocuments.map((doc, index) => (
               <Card
                 key={doc.file}
-                className="group hover:shadow-xl hover:border-primary/40 transition-all duration-300 animate-fade-in"
+                className="group hover:shadow-md hover:border-primary/40 transition-all duration-300 animate-fade-in"
                 style={{ animationDelay: `${index * 40}ms` }}
               >
                 <CardContent className="p-0">
                   <button
                     onClick={() => handleDownload(doc.file)}
-                    className="w-full flex items-center gap-4 p-5 text-left transition-colors hover:bg-accent/50"
+                    className="w-full flex items-center gap-4 p-4 text-left transition-colors hover:bg-accent/50"
                   >
                     <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-released/10 flex items-center justify-center group-hover:bg-released/20 transition-colors">
                       <Download className="h-6 w-6 text-released" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                      <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
                         {doc.title}
                       </h3>
-                      <p className="text-sm text-muted-foreground mt-0.5">
+                      <p className="text-sm text-muted-foreground mt-1">
                         {doc.description}
                       </p>
                     </div>

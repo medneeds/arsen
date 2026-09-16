@@ -56,23 +56,23 @@ export function CompactPatientHeader({
       className={cn(
         "patient-id flex items-center gap-3 flex-wrap",
         "rounded-lg border border-border/60 bg-card/80",
-        "px-3 py-1.5 print:hidden",
+        "px-3 py-2 print:hidden",
         className,
       )}
     >
       {/* Identity */}
       <div className="flex items-center gap-2 min-w-0">
         <div className="h-7 w-7 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-          <span className="text-[11px] font-bold text-primary">
+          <span className="text-xs font-semibold text-primary">
             {name ? name.charAt(0).toUpperCase() : "?"}
           </span>
         </div>
         <div className="min-w-0 leading-tight">
-          <p className="text-sm font-semibold text-foreground truncate flex items-center gap-1">
+          <p className="text-sm font-medium text-foreground truncate flex items-center gap-1">
             <span className="truncate">{name || "Paciente não identificado"}</span>
             <CopyNameButton value={name} />
           </p>
-          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
             <BedDouble className="h-3 w-3" />
             {bed || "—"} · {unit || "—"}
             {age && <span>· {age}</span>}
@@ -85,8 +85,8 @@ export function CompactPatientHeader({
 
       {/* CID chips */}
       {!hideCid && (
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
             CID
           </span>
           <CidChip
@@ -126,14 +126,14 @@ export function CompactPatientHeader({
       {/* Right-side meta */}
       <div className="ml-auto flex items-center gap-3 shrink-0">
         {weight && (
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             <span className="font-medium text-foreground">{weight}kg</span>
           </span>
         )}
         {allergies && (
           <Badge
             variant={hasAllergy ? "destructive" : "secondary"}
-            className="text-[10px] gap-1 h-5"
+            className="text-xs gap-1 h-5"
           >
             {hasAllergy && <AlertTriangle className="h-3 w-3" />}
             {allergies}
@@ -187,12 +187,12 @@ function CidChip({ value, onChange, label, tone = "muted", placeholder, icon }: 
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1 px-2 h-6 rounded-md border text-[10px] font-medium transition-colors",
+            "inline-flex items-center gap-1 px-2 h-6 rounded-md border text-xs font-medium transition-colors",
             toneClass,
           )}
         >
           {label && (
-            <span className="text-[9px] opacity-70 font-bold">{label}</span>
+            <span className="text-xs opacity-70 font-semibold">{label}</span>
           )}
           <span>{placeholder ?? "Adicionar"}</span>
         </button>
@@ -217,7 +217,7 @@ function CidChip({ value, onChange, label, tone = "muted", placeholder, icon }: 
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1 px-2 h-6 rounded-md border text-[10px] font-medium transition-colors",
+            "inline-flex items-center gap-1 px-2 h-6 rounded-md border text-xs font-medium transition-colors",
             toneClass,
           )}
         >
@@ -246,15 +246,15 @@ function CidChip({ value, onChange, label, tone = "muted", placeholder, icon }: 
         type="button"
         title={value}
         className={cn(
-          "inline-flex items-center gap-1 px-2 h-6 rounded-md border text-[10px] font-mono transition-colors max-w-[180px]",
+          "inline-flex items-center gap-1 px-2 h-6 rounded-md border text-xs font-mono transition-colors max-w-[180px]",
           toneClass,
           isReadOnly && "cursor-default hover:bg-muted",
         )}
       >
         {label && (
-          <span className="text-[9px] opacity-70 font-bold font-sans">{label}</span>
+          <span className="text-xs opacity-70 font-semibold font-sans">{label}</span>
         )}
-        <span className="font-semibold">{code}</span>
+        <span className="font-medium">{code}</span>
         {desc && (
           <span className="font-sans truncate opacity-80 max-w-[120px]">
             · {desc}
@@ -285,7 +285,7 @@ function CidPopover({
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent className="w-80 p-3" align="start">
         <div className="space-y-2">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
             {currentValue ? "Alterar CID-10" : "Selecionar CID-10"}
           </p>
           <CidSearchInput
@@ -299,7 +299,7 @@ function CidPopover({
             <button
               type="button"
               onClick={onClear}
-              className="w-full mt-1 inline-flex items-center justify-center gap-1.5 text-[11px] text-destructive hover:bg-destructive/10 rounded-md py-1.5 transition-colors"
+              className="w-full mt-1 inline-flex items-center justify-center gap-2 text-xs text-destructive hover:bg-destructive/10 rounded-md py-2 transition-colors"
             >
               <X className="h-3 w-3" /> Remover CID
             </button>

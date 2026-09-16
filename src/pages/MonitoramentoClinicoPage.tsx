@@ -338,15 +338,15 @@ export default function MonitoramentoClinicoPage() {
     toast.success("Registro salvo com sucesso");
     // Check for alerts
     if (risk === "high") {
-      toast.warning("⚠️ NEWS2 alto — risco de deterioração clínica!", { duration: 8000 });
+      toast.warning("NEWS2 alto — risco de deterioração clínica!", { duration: 8000 });
     } else if (risk === "medium") {
       toast.warning("Atenção: NEWS2 médio — aumentar frequência de monitoramento", { duration: 6000 });
     }
     if (form.lactate && Number(form.lactate) > 4) {
-      toast.error("🚨 Lactato elevado (>4 mmol/L) — avaliar perfusão!", { duration: 8000 });
+      toast.error("Lactato elevado (>4 mmol/L) — avaliar perfusão!", { duration: 8000 });
     }
     if (form.potassium && (Number(form.potassium) > 6.0 || Number(form.potassium) < 2.5)) {
-      toast.error("🚨 Potássio crítico — risco de arritmia!", { duration: 8000 });
+      toast.error("Potássio crítico — risco de arritmia!", { duration: 8000 });
     }
 
     // Reset form
@@ -422,7 +422,7 @@ export default function MonitoramentoClinicoPage() {
 
         {!selectedPatientId ? (
           <Card>
-            <CardContent className="py-16 text-center text-muted-foreground">
+            <CardContent className="py-8 text-center text-muted-foreground">
               <Stethoscope className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p>Selecione um paciente para visualizar ou registrar sinais vitais</p>
             </CardContent>
@@ -500,7 +500,7 @@ export default function MonitoramentoClinicoPage() {
                       <div className={`flex items-center justify-between rounded-lg px-3 py-2 ${riskLabels[computedNEWS2.risk]?.className}`}>
                         <div className="flex items-center gap-2">
                           <AlertTriangle className="h-4 w-4" />
-                          <span className="text-sm font-semibold">NEWS2: {computedNEWS2.score}</span>
+                          <span className="text-sm font-medium">NEWS2: {computedNEWS2.score}</span>
                         </div>
                         <span className="text-sm font-medium">Risco {riskLabels[computedNEWS2.risk]?.label}</span>
                       </div>
@@ -574,7 +574,7 @@ export default function MonitoramentoClinicoPage() {
             {/* ── TAB: Tendências ── */}
             <TabsContent value="tendencias">
               {records.length === 0 ? (
-                <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum registro no período selecionado</CardContent></Card>
+                <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhum registro no período selecionado</CardContent></Card>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <TrendChart title="Pressão arterial" data={chartData} lines={[
@@ -603,7 +603,7 @@ export default function MonitoramentoClinicoPage() {
             {/* ── TAB: Gasometria ── */}
             <TabsContent value="gasometria">
               {records.length === 0 ? (
-                <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum registro no período selecionado</CardContent></Card>
+                <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhum registro no período selecionado</CardContent></Card>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <TrendChart title="pH" data={chartData} lines={[{ key: "ph", color: "#8b5cf6", label: "pH" }]} domain={[7.0, 7.6]} refLines={[{ y: 7.35, label: "↓", color: "#ef4444" }, { y: 7.45, label: "↑", color: "#f97316" }]} />
@@ -617,7 +617,7 @@ export default function MonitoramentoClinicoPage() {
             {/* ── TAB: Laboratório ── */}
             <TabsContent value="laboratorio">
               {records.length === 0 ? (
-                <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum registro no período selecionado</CardContent></Card>
+                <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhum registro no período selecionado</CardContent></Card>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <TrendChart title="Hemoglobina (g/dL)" data={chartData} lines={[{ key: "hb", color: "#ef4444", label: "Hb" }]} refLines={[{ y: 7, label: "Transfundir", color: "#ef4444" }]} />

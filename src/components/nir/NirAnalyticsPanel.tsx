@@ -47,11 +47,11 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
   return (
     <Tabs defaultValue="trend" className="space-y-3">
       <TabsList className="grid grid-cols-2 md:grid-cols-5 h-auto">
-        <TabsTrigger value="trend" className="text-xs gap-1.5"><TrendingUp className="h-3.5 w-3.5" />Tendência</TabsTrigger>
-        <TabsTrigger value="heatmap" className="text-xs gap-1.5"><Flame className="h-3.5 w-3.5" />Mapa de calor</TabsTrigger>
-        <TabsTrigger value="stuck" className="text-xs gap-1.5"><Lock className="h-3.5 w-3.5" />Represados</TabsTrigger>
-        <TabsTrigger value="flow" className="text-xs gap-1.5"><ArrowRightLeft className="h-3.5 w-3.5" />Fluxo</TabsTrigger>
-        <TabsTrigger value="outcomes" className="text-xs gap-1.5"><PieIcon className="h-3.5 w-3.5" />Desfechos</TabsTrigger>
+        <TabsTrigger value="trend" className="text-xs gap-2"><TrendingUp className="h-3.5 w-3.5" />Tendência</TabsTrigger>
+        <TabsTrigger value="heatmap" className="text-xs gap-2"><Flame className="h-3.5 w-3.5" />Mapa de calor</TabsTrigger>
+        <TabsTrigger value="stuck" className="text-xs gap-2"><Lock className="h-3.5 w-3.5" />Represados</TabsTrigger>
+        <TabsTrigger value="flow" className="text-xs gap-2"><ArrowRightLeft className="h-3.5 w-3.5" />Fluxo</TabsTrigger>
+        <TabsTrigger value="outcomes" className="text-xs gap-2"><PieIcon className="h-3.5 w-3.5" />Desfechos</TabsTrigger>
       </TabsList>
 
       {/* Tendência ─ tempo médio de regulação */}
@@ -105,7 +105,7 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
           <CardContent>
             <ScrollArea className="w-full">
               <div className="min-w-[640px]">
-                <div className="grid grid-cols-[40px_repeat(24,1fr)] gap-0.5 text-[9px]">
+                <div className="grid grid-cols-[40px_repeat(24,1fr)] gap-1 text-xs">
                   <div />
                   {HOURS.map((h) => (
                     <div key={h} className="text-center text-muted-foreground font-medium">{h}h</div>
@@ -118,7 +118,7 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
                         return (
                           <div
                             key={`${wd}-${h}`}
-                            className={cn("aspect-square rounded-sm flex items-center justify-center text-[8px] font-bold text-white", heatmapColor(v, heatmapMax))}
+                            className={cn("aspect-square rounded-md flex items-center justify-center text-xs font-semibold text-white", heatmapColor(v, heatmapMax))}
                             title={`${wd} ${h}h — ${v} solicitação(ões)`}
                           >
                             {v > 0 ? v : ""}
@@ -130,13 +130,13 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
                 </div>
               </div>
             </ScrollArea>
-            <div className="flex items-center gap-2 mt-3 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
               <span>Menos</span>
-              <span className="h-2 w-3 rounded-sm bg-muted/40" />
-              <span className="h-2 w-3 rounded-sm bg-released/40" />
-              <span className="h-2 w-3 rounded-sm bg-warning/60" />
-              <span className="h-2 w-3 rounded-sm bg-warning/70" />
-              <span className="h-2 w-3 rounded-sm bg-critical/80" />
+              <span className="h-2 w-3 rounded-md bg-muted/40" />
+              <span className="h-2 w-3 rounded-md bg-released/40" />
+              <span className="h-2 w-3 rounded-md bg-warning/60" />
+              <span className="h-2 w-3 rounded-md bg-warning/70" />
+              <span className="h-2 w-3 rounded-md bg-critical/80" />
               <span>Mais</span>
             </div>
           </CardContent>
@@ -149,7 +149,7 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               Pacientes aguardando vaga há +24h
-              <Badge variant="destructive" className="text-[10px]">{metrics.stuck24h.length}</Badge>
+              <Badge variant="destructive" className="text-xs">{metrics.stuck24h.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -164,14 +164,14 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
                     return (
                       <li key={r.id} className="px-3 py-2 flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="patient-id text-xs font-semibold truncate">{r.patient_name}</p>
-                          <p className="text-[10px] text-muted-foreground truncate">
+                          <p className="patient-id text-xs font-medium truncate">{r.patient_name}</p>
+                          <p className="text-xs text-muted-foreground truncate">
                             {getSectorDisplayLabel(r.origin_sector) || r.origin_sector || "—"} → {getSectorDisplayLabel(r.destination_sector) || r.destination_sector || "—"} · {r.priority || "s/ prioridade"}
                           </p>
                         </div>
                         <Badge
                           variant={hours > 48 ? "destructive" : "outline"}
-                          className={cn("text-[10px] shrink-0", isUti && hours > 48 && "animate-pulse")}
+                          className={cn("text-xs shrink-0", isUti && hours > 48 && "animate-pulse")}
                         >
                           {hours}h
                         </Badge>
@@ -188,7 +188,7 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               Leitos bloqueados há +7 dias
-              <Badge variant="outline" className="text-[10px]">{metrics.longBlocked7d.length}</Badge>
+              <Badge variant="outline" className="text-xs">{metrics.longBlocked7d.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -200,10 +200,10 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
                   {metrics.longBlocked7d.map((b: any) => (
                     <li key={b.id} className="px-3 py-2 flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="patient-id text-xs font-semibold truncate">Leito {b.bed_number} — {getSectorDisplayLabel(b.sector) || b.sector}</p>
-                        <p className="text-[10px] text-muted-foreground truncate">{b.block_reason || "Sem motivo registrado"}</p>
+                        <p className="patient-id text-xs font-medium truncate">Leito {b.bed_number} — {getSectorDisplayLabel(b.sector) || b.sector}</p>
+                        <p className="text-xs text-muted-foreground truncate">{b.block_reason || "Sem motivo registrado"}</p>
                       </div>
-                      <Badge variant="outline" className="text-[10px] shrink-0 border-critical/40 text-critical-on-soft">
+                      <Badge variant="outline" className="text-xs shrink-0 border-critical/40 text-critical-on-soft">
                         {Math.round(b.blockedHours / 24)}d
                       </Badge>
                     </li>
@@ -231,7 +231,7 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
                   const pct = (f.count / max) * 100;
                   return (
                     <li key={i} className="px-3 py-2">
-                      <div className="flex items-center justify-between text-[11px] mb-1">
+                      <div className="flex items-center justify-between text-xs mb-1">
                         <span className="truncate font-medium">{getSectorDisplayLabel(f.origin) || f.origin} → {getSectorDisplayLabel(f.destination) || f.destination}</span>
                         <span className="text-muted-foreground">{f.count}</span>
                       </div>

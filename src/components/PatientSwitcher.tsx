@@ -99,7 +99,7 @@ export function PatientSwitcher({ variant = "dark" }: PatientSwitcherProps) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold transition-all max-w-[200px]",
+            "flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all max-w-[200px]",
             variant === "dark"
               ? "text-white hover:bg-white/10"
               : "text-foreground hover:bg-muted"
@@ -121,7 +121,7 @@ export function PatientSwitcher({ variant = "dark" }: PatientSwitcherProps) {
                 onClick={() => handleSwitch(p)}
                 className={cn(
                   "text-xs cursor-pointer",
-                  p.name === patientName && "bg-primary/10 font-semibold"
+                  p.name === patientName && "bg-primary/10 font-medium"
                 )}
               >
                 <span className="patient-id text-muted-foreground font-mono mr-2 w-8 text-right shrink-0">{p.bed_number}</span>

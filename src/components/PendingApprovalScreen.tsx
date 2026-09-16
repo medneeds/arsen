@@ -20,7 +20,7 @@ export function PendingApprovalScreen() {
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Usuário';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-muted via-muted to-muted flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-muted flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Gradient orbs */}
@@ -79,7 +79,7 @@ export function PendingApprovalScreen() {
         className="relative z-10 max-w-lg w-full"
       >
         {/* Glass card */}
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-8 shadow-2xl">
+        <div className="bg-white/10 backdrop-blur-xl rounded-lg border border-white/20 p-8 shadow-md">
           {/* Logo */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -88,17 +88,17 @@ export function PendingApprovalScreen() {
             className="text-center mb-8"
           >
             <div className="flex items-center justify-center gap-2 mb-3">
-              <span className="text-4xl font-black bg-gradient-to-r from-muted via-muted to-muted bg-clip-text text-transparent tracking-tight">
+              <span className="text-4xl font-semibold bg-muted bg-clip-text text-transparent tracking-tight">
                 {whitelabel.platform.name}
               </span>
-              <span className="text-xs font-medium text-muted-foreground bg-primary/20 px-2 py-0.5 rounded-full">
+              <span className="text-xs font-medium text-muted-foreground bg-primary/20 px-2 py-1 rounded-full">
                 {whitelabel.platform.version}
               </span>
             </div>
             <p className="text-sm text-muted-foreground/80 italic">
               {whitelabel.platform.slogan}
             </p>
-            <p className="text-[11px] text-white/50 mt-2 uppercase tracking-wider">
+            <p className="text-xs text-white/50 mt-2 uppercase tracking-wider">
               {whitelabel.institution.hospitalShortName}
             </p>
           </motion.div>
@@ -111,7 +111,7 @@ export function PendingApprovalScreen() {
             className="flex justify-center mb-6"
           >
             <div className="relative">
-              <div className="h-24 w-24 rounded-full bg-gradient-to-br from-warning-soft/20 to-warning-soft/20 flex items-center justify-center border-2 border-warning/50">
+              <div className="h-24 w-24 rounded-full bg-warning-soft/20 flex items-center justify-center border-2 border-warning/50">
                 <Clock className="h-12 w-12 text-warning" />
               </div>
               <motion.div
@@ -136,7 +136,7 @@ export function PendingApprovalScreen() {
             transition={{ delay: 0.4 }}
             className="text-center mb-6"
           >
-            <h2 className="text-xl font-bold text-white mb-2">
+            <h2 className="text-xl font-semibold text-white mb-2">
               Olá, <span className="text-muted-foreground">{username}</span>!
             </h2>
             <p className="text-white/70 text-sm">
@@ -149,14 +149,14 @@ export function PendingApprovalScreen() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-warning/10 border border-warning/30 rounded-xl p-5 mb-6"
+            className="bg-warning/10 border border-warning/30 rounded-lg p-4 mb-6"
           >
             <div className="flex items-start gap-4">
               <div className="h-10 w-10 rounded-full bg-warning/20 flex items-center justify-center flex-shrink-0">
                 <UserCheck className="h-5 w-5 text-warning" />
               </div>
               <div>
-                <h3 className="text-warning font-semibold mb-1">
+                <h3 className="text-warning font-medium mb-1">
                   Aguardando Aprovação
                 </h3>
                 <p className="text-white/70 text-sm leading-relaxed">
@@ -175,15 +175,15 @@ export function PendingApprovalScreen() {
             className="space-y-3 mb-8"
           >
             <div className="flex items-center gap-3 text-white/60 text-sm">
-              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-muted-foreground">1</div>
+              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold text-muted-foreground">1</div>
               <span>Aguarde o contato do administrador</span>
             </div>
             <div className="flex items-center gap-3 text-white/60 text-sm">
-              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-muted-foreground">2</div>
+              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold text-muted-foreground">2</div>
               <span>Após aprovação, faça login novamente</span>
             </div>
             <div className="flex items-center gap-3 text-white/60 text-sm">
-              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-muted-foreground">3</div>
+              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold text-muted-foreground">3</div>
               <span>Acesse todas as funcionalidades do sistema</span>
             </div>
           </motion.div>
@@ -226,7 +226,7 @@ export function PendingApprovalScreen() {
           <p className="text-white/30 text-xs">
             {whitelabel.credits.developerLabel} <span className="text-muted-foreground/60 font-medium">{whitelabel.credits.developerName}</span>
           </p>
-          <p className="text-white/20 text-[10px] mt-1">
+          <p className="text-white/20 text-xs mt-1">
             {currentTime.toLocaleDateString('pt-BR')} • {currentTime.toLocaleTimeString('pt-BR')}
           </p>
         </motion.div>

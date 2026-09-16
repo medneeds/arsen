@@ -138,7 +138,7 @@ export default function AuditLogsPage() {
         <p className="text-xs font-medium text-muted-foreground mb-1">Campos alterados:</p>
         <div className="flex flex-wrap gap-1">
           {log.changed_fields.map((field, idx) => (
-            <Badge key={idx} variant="outline" className="text-[10px]">
+            <Badge key={idx} variant="outline" className="text-xs">
               {field}
             </Badge>
           ))}
@@ -152,19 +152,19 @@ export default function AuditLogsPage() {
 
     return (
       <div className="space-y-2 mt-4">
-        <p className="text-sm font-semibold text-foreground">Detalhes das Alterações:</p>
+        <p className="text-sm font-medium text-foreground">Detalhes das Alterações:</p>
         {changedFields.map((field) => (
           <div key={field} className="bg-muted rounded-lg p-3 border">
             <p className="text-xs font-medium text-foreground mb-2">{field}</p>
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-critical-soft rounded p-2 border border-critical-border">
-                <p className="text-[10px] text-critical-on-soft font-medium mb-1">ANTES</p>
+              <div className="bg-critical-soft rounded-md p-2 border border-critical-border">
+                <p className="text-xs text-critical-on-soft font-medium mb-1">ANTES</p>
                 <p className="text-xs text-foreground break-all">
                   {oldData?.[field] !== undefined ? String(oldData[field]) : "(vazio)"}
                 </p>
               </div>
-              <div className="bg-released-soft rounded p-2 border border-released-border">
-                <p className="text-[10px] text-released-on-soft font-medium mb-1">DEPOIS</p>
+              <div className="bg-released-soft rounded-md p-2 border border-released-border">
+                <p className="text-xs text-released-on-soft font-medium mb-1">DEPOIS</p>
                 <p className="text-xs text-foreground break-all">
                   {newData?.[field] !== undefined ? String(newData[field]) : "(vazio)"}
                 </p>
@@ -182,11 +182,11 @@ export default function AuditLogsPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#013ba6] to-[#0152d4] flex items-center justify-center shadow-lg">
+            <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-[#013ba6] to-[#0152d4] flex items-center justify-center shadow-md">
               <Shield className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-foreground">Trilha de Auditoria</h1>
+              <h1 className="text-xl md:text-2xl font-semibold text-foreground">Trilha de Auditoria</h1>
               <p className="text-sm text-muted-foreground">Conformidade LGPD e CFM 1.821/2007</p>
             </div>
           </div>
@@ -207,7 +207,7 @@ export default function AuditLogsPage() {
         <Card className="border-warning-border bg-warning-soft">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-warning-on-soft flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="h-5 w-5 text-warning-on-soft flex-shrink-0 mt-1" />
               <div>
                 <p className="text-sm font-medium text-warning-on-soft">
                   Registro Imutável de Auditoria
@@ -237,7 +237,7 @@ export default function AuditLogsPage() {
                   placeholder="Buscar por usuário, tabela ou ID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
+                  className="pl-8"
                 />
               </div>
 
@@ -309,13 +309,13 @@ export default function AuditLogsPage() {
                       return (
                         <TableRow key={log.id} className="hover:bg-muted">
                           <TableCell className="text-xs">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-2">
                               <Clock className="h-3 w-3 text-muted-foreground" />
                               {formatDate(log.created_at)}
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge className={`${actionInfo.color} border text-[10px] gap-1`}>
+                            <Badge className={`${actionInfo.color} border text-xs gap-1`}>
                               {actionInfo.icon}
                               {actionInfo.label}
                             </Badge>
@@ -324,13 +324,13 @@ export default function AuditLogsPage() {
                             {TABLE_LABELS[log.table_name] || log.table_name}
                           </TableCell>
                           <TableCell className="text-xs">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-2">
                               <User className="h-3 w-3 text-muted-foreground" />
                               <span className="truncate max-w-[150px]">
                                 {log.user_email || "Sistema"}
                               </span>
                               {log.user_role && (
-                                <Badge variant="outline" className="text-[9px] ml-1">
+                                <Badge variant="outline" className="text-xs ml-1">
                                   {log.user_role}
                                 </Badge>
                               )}
@@ -360,30 +360,30 @@ export default function AuditLogsPage() {
                                   <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                       <div className="bg-muted rounded-lg p-3">
-                                        <p className="text-[10px] text-muted-foreground font-medium">Data/Hora</p>
+                                        <p className="text-xs text-muted-foreground font-medium">Data/Hora</p>
                                         <p className="text-sm font-medium">{formatDate(selectedLog.created_at)}</p>
                                       </div>
                                       <div className="bg-muted rounded-lg p-3">
-                                        <p className="text-[10px] text-muted-foreground font-medium">Ação</p>
+                                        <p className="text-xs text-muted-foreground font-medium">Ação</p>
                                         <Badge className={`${ACTION_LABELS[selectedLog.action]?.color} mt-1`}>
                                           {ACTION_LABELS[selectedLog.action]?.label}
                                         </Badge>
                                       </div>
                                       <div className="bg-muted rounded-lg p-3">
-                                        <p className="text-[10px] text-muted-foreground font-medium">Tabela</p>
+                                        <p className="text-xs text-muted-foreground font-medium">Tabela</p>
                                         <p className="text-sm font-medium">
                                           {TABLE_LABELS[selectedLog.table_name] || selectedLog.table_name}
                                         </p>
                                       </div>
                                       <div className="bg-muted rounded-lg p-3">
-                                        <p className="text-[10px] text-muted-foreground font-medium">ID do Registro</p>
+                                        <p className="text-xs text-muted-foreground font-medium">ID do Registro</p>
                                         <p className="text-xs font-mono">{selectedLog.record_id || "-"}</p>
                                       </div>
                                       <div className="bg-muted rounded-lg p-3 col-span-2">
-                                        <p className="text-[10px] text-muted-foreground font-medium">Usuário</p>
+                                        <p className="text-xs text-muted-foreground font-medium">Usuário</p>
                                         <p className="text-sm font-medium">{selectedLog.user_email || "Sistema"}</p>
                                         {selectedLog.user_role && (
-                                          <Badge variant="outline" className="text-[10px] mt-1">
+                                          <Badge variant="outline" className="text-xs mt-1">
                                             Role: {selectedLog.user_role}
                                           </Badge>
                                         )}
@@ -402,7 +402,7 @@ export default function AuditLogsPage() {
 
                                     {selectedLog.action === 'INSERT' && selectedLog.new_data && (
                                       <div className="mt-4">
-                                        <p className="text-sm font-semibold text-foreground mb-2">Dados Criados:</p>
+                                        <p className="text-sm font-medium text-foreground mb-2">Dados Criados:</p>
                                         <pre className="bg-muted rounded-lg p-3 text-xs overflow-auto max-h-48 border">
                                           {JSON.stringify(selectedLog.new_data, null, 2)}
                                         </pre>
@@ -411,7 +411,7 @@ export default function AuditLogsPage() {
 
                                     {selectedLog.action === 'DELETE' && selectedLog.old_data && (
                                       <div className="mt-4">
-                                        <p className="text-sm font-semibold text-foreground mb-2">Dados Excluídos:</p>
+                                        <p className="text-sm font-medium text-foreground mb-2">Dados Excluídos:</p>
                                         <pre className="bg-critical-soft rounded-lg p-3 text-xs overflow-auto max-h-48 border border-critical-border">
                                           {JSON.stringify(selectedLog.old_data, null, 2)}
                                         </pre>

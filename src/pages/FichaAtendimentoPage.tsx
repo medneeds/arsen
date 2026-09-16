@@ -439,7 +439,7 @@ const FichaAtendimentoPage = () => {
       {/* Preview */}
       <div className="border border-border rounded-lg p-4 bg-card space-y-3 print:hidden">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-sm">
+          <h3 className="font-medium text-sm">
             {patientData?.name || patientName}
           </h3>
           <Badge variant="outline" className="text-xs gap-1">
@@ -455,7 +455,7 @@ const FichaAtendimentoPage = () => {
                 <Badge variant={enc.type === "classificacao_risco" ? "destructive" : enc.type === "prescricao" ? "default" : "secondary"} className="text-xs">
                   {idx + 1}/{encounters.length}
                 </Badge>
-                <span className="text-xs font-semibold">{sectorLabelFromCode(enc.sector) || enc.sector}</span>
+                <span className="text-xs font-medium">{sectorLabelFromCode(enc.sector) || enc.sector}</span>
                 {enc.professionalName && (
                   <span className="text-xs text-muted-foreground">
                     {enc.professionalName}{enc.professionalCRM ? ` — CRM ${enc.professionalCRM}` : ""}
@@ -585,7 +585,7 @@ function PrintableFicha({
     </div>
   );
 
-  // 🔒 Norma Zero — bloqueia a geração da Ficha de Atendimento se a
+  // Norma Zero — bloqueia a geração da Ficha de Atendimento se a
   // identificação do paciente estiver incompleta.
   const missingFields = getNormaZeroMissingFields({
     name: patient.name,

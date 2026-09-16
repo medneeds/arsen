@@ -352,7 +352,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
             description: "Para documentos em imagem, CPF e CNS não são extraídos automaticamente (LGPD). Preencha esses campos manualmente.",
           });
         } else {
-          toast({ title: "✅ Dados extraídos com sucesso!", description: "Revise os campos preenchidos pela IA" });
+          toast({ title: "Dados extraídos com sucesso!", description: "Revise os campos preenchidos pela IA" });
         }
       }
     } catch (err) {
@@ -397,7 +397,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
       }
       if (duplicateMatch) {
         toast({
-          title: "🚫 Cadastro bloqueado",
+          title: "Cadastro bloqueado",
           description: `CPF já cadastrado: ${duplicateMatch.full_name} (${duplicateMatch.medical_record || "sem prontuário"})`,
           variant: "destructive",
         });
@@ -545,7 +545,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
         ? `Prontuário ${prontuario} • Aguardando leito em ${form.destination_sector} (classificação de risco pendente)`
         : `Prontuário ${prontuario} • Aguardando classificação de risco`;
 
-      toast({ title: "✅ Paciente cadastrado!", description: successMessage });
+      toast({ title: "Paciente cadastrado!", description: successMessage });
       setForm(EMPTY_FORM);
       setPreviewImage(null);
       setDuplicateMatch(null);
@@ -580,7 +580,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
             <div className="mt-1 flex items-center gap-2 text-xs">
               <MapPin className="h-3.5 w-3.5 text-primary" />
               <span className="text-muted-foreground">Pré-cadastro direcionado para:</span>
-              <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary font-semibold uppercase tracking-wide">
+              <span className="px-2 py-1 rounded-md bg-primary/10 text-primary font-medium uppercase tracking-wide">
                 {defaultDestinationSector}
               </span>
             </div>
@@ -599,11 +599,11 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
               onCheckedChange={(c) => toggleUnidentified(!!c)}
             />
             <label htmlFor="ni-toggle" className="flex-1 cursor-pointer">
-              <div className="flex items-center gap-2 font-semibold text-sm">
+              <div className="flex items-center gap-2 font-medium text-sm">
                 <UserX className="h-4 w-4 text-warning-on-soft" />
                 Paciente NÃO IDENTIFICADO
               </div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
+              <p className="text-xs text-muted-foreground mt-1">
                 Será gerado código NI-AAAA-NNNNNN. Demais campos ficam vazios e podem ser preenchidos depois.
               </p>
             </label>
@@ -638,7 +638,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
             {form.is_unidentified ? (
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 p-3 rounded-md bg-warning/10 border border-warning/30 text-xs flex items-start gap-2">
-                  <ShieldAlert className="h-4 w-4 text-warning-on-soft shrink-0 mt-0.5" />
+                  <ShieldAlert className="h-4 w-4 text-warning-on-soft shrink-0 mt-1" />
                   <div>
                     <strong>Modo Não Identificado:</strong> ao salvar, será gerado um código <code>NI-AAAA-NNNNNN</code> + prontuário oficial.
                     Preencha apenas as características visíveis para auxiliar identificação posterior.
@@ -676,26 +676,26 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
 
                 {/* Bloco NI + dados administrativos do PIS (sempre visível em modo NI; opcional) */}
                 <div className="col-span-2 mt-2 p-3 rounded-md border-2 border-primary/30 bg-primary/5 space-y-2">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                  <div className="flex items-center gap-2 text-xs font-medium text-primary">
                     <FileUp className="h-3.5 w-3.5" />
                     Dados Administrativos do PIS (opcional)
                   </div>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Quando a recepção já gerou ficha PIS para o paciente NI, você pode preservar o número
                     do prontuário PIS e observações abaixo. Não desfaz o status de NI.
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="col-span-2">
-                      <Label className="text-[11px]">Nº Prontuário PIS / sistema externo</Label>
+                      <Label className="text-xs">Nº Prontuário PIS / sistema externo</Label>
                       <Input
                         value={form.medical_record}
                         onChange={e => updateField("medical_record", e.target.value)}
                         placeholder="Ex: 123456 (será preservado como nº legado/PIS)"
-                        className="h-8 text-xs uppercase"
+                        className="h-8 text-xs uppercase tracking-wider"
                       />
                     </div>
                     <div className="col-span-2">
-                      <Label className="text-[11px]">Observações administrativas</Label>
+                      <Label className="text-xs">Observações administrativas</Label>
                       <Textarea
                         value={form.notes}
                         onChange={e => updateField("notes", e.target.value)}
@@ -710,7 +710,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
-                  <Label className="text-xs font-semibold">Nome Completo *</Label>
+                  <Label className="text-xs font-medium">Nome Completo *</Label>
                   <Input
                     value={form.patient_name}
                     onChange={e => updateField("patient_name", normalizePatientNameInput(e.target.value))}
@@ -720,21 +720,21 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                       updateField("patient_name", normalizePatientName(pasted));
                     }}
                     placeholder="NOME COMPLETO COMO NO DOCUMENTO"
-                    className={`uppercase font-semibold tracking-wide ${/[^A-Z0-9 -]/.test(form.patient_name) ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                    className={`uppercase font-medium tracking-wide ${/[^A-Z0-9 -]/.test(form.patient_name) ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   />
                   {/[^A-Z0-9 -]/.test(form.patient_name) ? (
-                    <p className="text-[10px] text-destructive mt-1">
+                    <p className="text-xs text-destructive mt-1">
                       Nome contém caracteres não permitidos. Remova acentos, cedilha e símbolos especiais.
                     </p>
                   ) : (
-                    <p className="text-[10px] text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Armazenado sem acentos ou caracteres especiais (ex: JOAO SILVA).
                     </p>
                   )}
                 </div>
                 <div className="col-span-2">
                   <Label className="text-xs">Nome Social</Label>
-                  <Input value={form.social_name} onChange={e => updateField("social_name", normalizePatientNameInput(e.target.value))} className="uppercase" />
+                  <Input value={form.social_name} onChange={e => updateField("social_name", normalizePatientNameInput(e.target.value))} className="uppercase tracking-wider" />
                 </div>
                 <div className="col-span-2">
                   <Label className="text-xs">Nome da Mãe</Label>
@@ -749,17 +749,17 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                     className={`uppercase ${/[^A-Z0-9 -]/.test(form.mother_name) ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   />
                   {/[^A-Z0-9 -]/.test(form.mother_name) && (
-                    <p className="text-[10px] text-destructive mt-1">
+                    <p className="text-xs text-destructive mt-1">
                       Nome contém caracteres não permitidos.
                     </p>
                   )}
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold">Data de Nascimento *</Label>
+                  <Label className="text-xs font-medium">Data de Nascimento *</Label>
                   <Input type="date" value={form.birth_date} onChange={e => updateField("birth_date", e.target.value)} />
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold">Sexo *</Label>
+                  <Label className="text-xs font-medium">Sexo *</Label>
                   <Select value={form.sex} onValueChange={v => updateField("sex", v)}>
                     <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
@@ -784,11 +784,11 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                     placeholder="Deixe em branco se não tiver"
                     inputMode="numeric"
                   />
-                  <p className="text-[10px] text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Paciente sem documento: deixe vazio. Não preencha com dados de terceiros.
                   </p>
                   {duplicateMatch && (
-                    <p className="text-[11px] text-destructive mt-1 flex items-center gap-1">
+                    <p className="text-xs text-destructive mt-1 flex items-center gap-1">
                       <ShieldAlert className="h-3 w-3" /> CPF já existe: {duplicateMatch.full_name}
                     </p>
                   )}
@@ -807,9 +807,9 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                     placeholder={mrMode === "legacy" ? "Obrigatório — nº do sistema antigo" : "Auto: AA-UUU-SSSSSS-DV"}
                     className={cn(mrMode === "legacy" && !form.medical_record.trim() && "border-warning/60")}
                   />
-                  <p className="text-[10px] text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {mrMode === "legacy"
-                      ? "⚠ Unidade em modo legado: informe o número do sistema antigo."
+                      ? "Unidade em modo legado: informe o número do sistema antigo."
                       : "Vazio → será gerado automaticamente no formato seguro."}
                   </p>
                 </div>
@@ -819,16 +819,16 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                 </div>
                 <div className="col-span-2">
                   <Label className="text-xs">Endereço</Label>
-                  <Input value={form.address} onChange={e => updateField("address", normalizeAddressInput(e.target.value))} className="uppercase" />
+                  <Input value={form.address} onChange={e => updateField("address", normalizeAddressInput(e.target.value))} className="uppercase tracking-wider" />
                 </div>
                 <div>
                   <Label className="text-xs">Bairro</Label>
-                  <Input value={form.neighborhood} onChange={e => updateField("neighborhood", normalizeAddressInput(e.target.value))} className="uppercase" />
+                  <Input value={form.neighborhood} onChange={e => updateField("neighborhood", normalizeAddressInput(e.target.value))} className="uppercase tracking-wider" />
                 </div>
                 <div className="grid grid-cols-[1fr_90px] gap-2">
                   <div>
                     <Label className="text-xs">Cidade</Label>
-                    <Input value={form.city} onChange={e => updateField("city", normalizeAddressInput(e.target.value))} className="uppercase" />
+                    <Input value={form.city} onChange={e => updateField("city", normalizeAddressInput(e.target.value))} className="uppercase tracking-wider" />
                   </div>
                   <div>
                     <Label className="text-xs">Estado (UF)</Label>
@@ -837,7 +837,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                       onChange={e => updateField("state", normalizePatientNameInput(e.target.value).slice(0, 2))}
                       maxLength={2}
                       placeholder="UF"
-                      className="uppercase"
+                      className="uppercase tracking-wider"
                     />
                   </div>
                 </div>
@@ -848,7 +848,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
           {/* Tab 3: Destination */}
           <TabsContent value="destino" className="space-y-4 mt-4">
             <div>
-              <Label className="text-xs font-semibold">Pedido de Leito (selecione um ou mais setores)</Label>
+              <Label className="text-xs font-medium">Pedido de Leito (selecione um ou mais setores)</Label>
               <div className="grid grid-cols-2 gap-2 mt-2">
                 {SECTORS.map(s => {
                   const selected = form.destination_sector.split(", ").filter(Boolean);

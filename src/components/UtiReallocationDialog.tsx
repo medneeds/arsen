@@ -66,7 +66,7 @@ export function UtiReallocationDialog({
       const isUti1 = p.sector === "red";
       const isEmpty = !p.name || p.name.trim() === "";
       const isNotCurrentPatient = p.id !== patient?.id;
-      // 🔒 Excluir leitos EXTRA que foram arquivados (excluídos pelo gestor)
+      // Excluir leitos EXTRA que foram arquivados (excluídos pelo gestor)
       // Leitos extras arquivados têm bedNumber começando com EXTRA e estão
       // vazios mas não devem aparecer como opção de realocação.
       const isArchivedExtra = isExtraBed(p.bedNumber) && isEmpty;
@@ -81,7 +81,7 @@ export function UtiReallocationDialog({
       const isUti2 = p.sector === "yellow";
       const isEmpty = !p.name || p.name.trim() === "";
       const isNotCurrentPatient = p.id !== patient?.id;
-      // 🔒 Excluir leitos EXTRA arquivados
+      // Excluir leitos EXTRA arquivados
       const isArchivedExtra = isExtraBed(p.bedNumber) && isEmpty;
       return isUti2 && isEmpty && isNotCurrentPatient && !isArchivedExtra;
     }).sort((a, b) => {
@@ -147,7 +147,7 @@ export function UtiReallocationDialog({
         ? 'pre_admitido'
         : (patient.admissionStatus ?? 'admitido');
 
-      // 🔒 ORDEM CORRIGIDA: repoint ANTES de qualquer update no banco.
+      // ORDEM CORRIGIDA: repoint ANTES de qualquer update no banco.
       // Antes: update target → repoint → clear source (se repoint falhasse,
       //   dados já estavam escritos no destino — estado inconsistente).
       // Agora: repoint → update target → clear source (atômico: se repoint

@@ -198,7 +198,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
     }
   };
 
-  // 🔒 CONTROLE DE PERMISSÃO: desalocação excepcional (sem sinalização) é
+  // CONTROLE DE PERMISSÃO: desalocação excepcional (sem sinalização) é
   // restrita a gestores e admins. Médicos e demais perfis veem o cadeado
   // com instrução para sinalizar pelo Painel Clínico antes de desalocar.
   const canDoExceptional = userRole === 'gestor' || userRole === 'admin';
@@ -243,12 +243,12 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                     {blockReleaseHard ? (
                       /* ── CADEADO: usuário sem permissão para desalocação excepcional ── */
                       <div className="space-y-3">
-                        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-border bg-muted/30 py-8 px-4">
+                        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-border bg-muted/30 py-8 px-4">
                           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted border-2 border-border">
                             <Lock className="h-7 w-7 text-muted-foreground" />
                           </div>
                           <div className="text-center space-y-1">
-                            <p className="text-sm font-bold text-foreground">Ação restrita</p>
+                            <p className="text-sm font-semibold text-foreground">Ação restrita</p>
                             <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
                               A desalocação excepcional de pacientes <strong>sem sinalização</strong> é exclusiva para gestores.
                             </p>
@@ -256,11 +256,11 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                         </div>
 
                         <div className="rounded-md border border-primary/40 bg-primary/5 p-3">
-                          <p className="font-semibold text-foreground mb-2 flex items-center gap-1.5 text-sm">
+                          <p className="font-medium text-foreground mb-2 flex items-center gap-2 text-sm">
                             <Stethoscope className="h-4 w-4 text-primary" />
                             O fluxo correto é sinalizar primeiro
                           </p>
-                          <ol className="list-decimal pl-5 space-y-1 text-xs text-foreground/90">
+                          <ol className="list-decimal pl-4 space-y-1 text-xs text-foreground/90">
                             <li>Abra o <strong>Painel Clínico</strong> e localize o paciente.</li>
                             <li>Clique no card → <strong>Movimentações e Desfechos</strong>.</li>
                             <li>Escolha: <strong>Alta Médica</strong>, <strong>Óbito</strong> ou <strong>Transferência</strong>.</li>
@@ -270,7 +270,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                           <Button
                             type="button"
                             size="sm"
-                            className="mt-3 w-full gap-1.5"
+                            className="mt-3 w-full gap-2"
                             onClick={() => {
                               const id = patient.id;
                               const url = id ? `/painel-clinico?patientId=${id}` : "/painel-clinico";
@@ -288,21 +288,21 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                       /* ── GESTOR/ADMIN: fluxo excepcional com aviso ── */
                       <>
                         <div className="rounded-md border-2 border-warning/70 bg-warning-soft p-3 text-warning-on-soft">
-                          <p className="font-bold text-sm flex items-center gap-1.5">
+                          <p className="font-semibold text-sm flex items-center gap-2">
                             <AlertTriangle className="h-4 w-4" />
                             Pare — este paciente ainda NÃO foi sinalizado
                           </p>
-                          <p className="mt-1.5 text-xs">
+                          <p className="mt-2 text-xs">
                             O paciente está marcado como <strong>admitido</strong> e não há alta, óbito ou transferência sinalizada. <strong>O caminho correto é sinalizar a saída antes de liberar o leito.</strong>
                           </p>
                         </div>
 
                         <div className="rounded-md border border-primary/40 bg-primary/5 p-3">
-                          <p className="font-semibold text-foreground mb-2 flex items-center gap-1.5 text-sm">
+                          <p className="font-medium text-foreground mb-2 flex items-center gap-2 text-sm">
                             <Stethoscope className="h-4 w-4 text-primary" />
                             Como sinalizar pelo Painel Clínico
                           </p>
-                          <ol className="list-decimal pl-5 space-y-1 text-xs text-foreground/90">
+                          <ol className="list-decimal pl-4 space-y-1 text-xs text-foreground/90">
                             <li>Abra o <strong>Painel Clínico</strong> e localize o paciente no setor.</li>
                             <li>Clique no card → <strong>"Movimentações e Desfechos"</strong>.</li>
                             <li>Escolha: <strong>Alta Médica</strong>, <strong>Óbito</strong>, <strong>Transferência Interna</strong> ou <strong>Externa</strong>.</li>
@@ -312,7 +312,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                           <Button
                             type="button"
                             size="sm"
-                            className="mt-3 w-full gap-1.5"
+                            className="mt-3 w-full gap-2"
                             onClick={() => {
                               const id = patient.id;
                               const url = id ? `/painel-clinico?patientId=${id}` : "/painel-clinico";
@@ -328,13 +328,13 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                             type="button"
                             size="sm"
                             variant="outline"
-                            className="mt-2 w-full gap-1.5 border-warning text-warning-on-soft hover:bg-warning-soft"
+                            className="mt-2 w-full gap-2 border-warning text-warning-on-soft hover:bg-warning-soft"
                             onClick={goToFormStep}
                           >
                             <UserMinus className="h-4 w-4" />
                             Prosseguir com desalocação excepcional (gestor)
                           </Button>
-                          <p className="text-[10px] text-muted-foreground mt-1 leading-snug text-center">
+                          <p className="text-xs text-muted-foreground mt-1 leading-snug text-center">
                             Use apenas se o paciente já saiu fisicamente. Ação registrada no histórico com justificativa e senha obrigatórias.
                           </p>
                         </div>
@@ -447,11 +447,11 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       finalNote={
         <div className="space-y-3">
           <div>
-            <Label className="text-xs font-semibold mb-2 block">Motivo da liberação</Label>
-            <RadioGroup value={reason} onValueChange={setReason} className="space-y-1.5">
+            <Label className="text-xs font-medium mb-2 block">Motivo da liberação</Label>
+            <RadioGroup value={reason} onValueChange={setReason} className="space-y-2">
               {REASON_OPTIONS.map((opt) => (
                 <div key={opt.value} className="flex items-start gap-2">
-                  <RadioGroupItem value={opt.value} id={`release-reason-${opt.value}`} className="mt-0.5" />
+                  <RadioGroupItem value={opt.value} id={`release-reason-${opt.value}`} className="mt-1" />
                   <Label htmlFor={`release-reason-${opt.value}`} className="text-xs font-normal cursor-pointer leading-snug">
                     {opt.label}
                   </Label>
@@ -460,7 +460,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
             </RadioGroup>
           </div>
           <div>
-            <Label className="text-xs font-semibold mb-1 block">
+            <Label className="text-xs font-medium mb-1 block">
               Observação {reason === "outro" ? <span className="text-destructive">(obrigatória)</span> : <span className="text-muted-foreground font-normal">(opcional)</span>}
             </Label>
               <Textarea

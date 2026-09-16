@@ -109,7 +109,7 @@ export function ResidualHistoryTab() {
             <ShieldAlert className="h-4 w-4" /> Como funciona
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-xs text-warning-on-soft/80 space-y-1.5">
+        <CardContent className="text-xs text-warning-on-soft/80 space-y-2">
           <p>
             Detecta <strong>evoluções clínicas</strong> cujo <code className="font-mono">(setor, leito)</code> corresponde
             a um leito <strong>atualmente ocupado por outro paciente</strong> (ou com <code className="font-mono">patient_id</code> nulo).
@@ -167,27 +167,26 @@ export function ResidualHistoryTab() {
                 )}
                 {!loading && filtered.length === 0 && (
                   <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">
-                    Nenhum leito com evolução residual. ✅
-                  </td></tr>
+                    Nenhum leito com evolução residual.                   </td></tr>
                 )}
                 {filtered.map((b) => (
                   <tr key={`${b.sector}|${b.bed}`} className="border-b border-border/50 hover:bg-muted/30">
-                    <td className="p-2 font-mono flex items-center gap-1.5">
+                    <td className="p-2 font-mono flex items-center gap-2">
                       <BedDouble className="h-3 w-3 text-muted-foreground" /> {b.bed}
                     </td>
-                    <td className="uppercase text-muted-foreground">{b.sector}</td>
+                    <td className="uppercase tracking-wider text-muted-foreground">{b.sector}</td>
                     <td className="font-medium">{b.currentPatientName ?? "—"}</td>
                     <td>
                       <div className="flex flex-wrap gap-1">
                         {b.originPatients.map((o, i) => (
-                          <Badge key={i} variant="outline" className="text-[10px] font-normal">
+                          <Badge key={i} variant="outline" className="text-xs font-normal">
                             {o.name} {o.patient_id ? "" : <span className="ml-1 text-warning-on-soft">(NULL)</span>} · {o.count}
                           </Badge>
                         ))}
                       </div>
                     </td>
                     <td className="text-center">
-                      <Badge variant="secondary" className="text-[10px] font-mono">
+                      <Badge variant="secondary" className="text-xs font-mono">
                         {b.contaminatedCount}
                       </Badge>
                     </td>
@@ -219,14 +218,14 @@ export function ResidualHistoryTab() {
               <div className="space-y-3 text-xs">
                 <p className="text-muted-foreground">
                   Ocupante atual: <strong>{preview?.bed.currentPatientName ?? "—"}</strong> ·{" "}
-                  Setor: <strong className="uppercase">{preview?.bed.sector}</strong>
+                  Setor: <strong className="uppercase tracking-wider">{preview?.bed.sector}</strong>
                 </p>
                 <p className="text-muted-foreground">
                   As evoluções abaixo serão <strong>arquivadas</strong> (não apagadas). Continuam acessíveis no histórico longitudinal do paciente original.
                 </p>
 
                 <div className="rounded-md border border-border bg-muted/30 p-2 max-h-[280px] overflow-auto">
-                  <table className="w-full text-[11px]">
+                  <table className="w-full text-xs">
                     <thead className="text-muted-foreground">
                       <tr>
                         <th className="text-left p-1">Paciente origem</th>
@@ -239,16 +238,16 @@ export function ResidualHistoryTab() {
                       {preview?.rows.map((r) => (
                         <tr key={r.id} className="border-t border-border/40">
                           <td className="p-1">{r.patient_name}</td>
-                          <td className="uppercase">{r.patient_sector}</td>
+                          <td className="uppercase tracking-wider">{r.patient_sector}</td>
                           <td className="font-mono">{r.patient_bed}</td>
-                          <td className="text-[10px]">{fmtDate(r.created_at)}</td>
+                          <td className="text-xs">{fmtDate(r.created_at)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
 
-                <div className="flex gap-4 text-[11px] font-medium">
+                <div className="flex gap-4 text-xs font-medium">
                   <span>Evoluções a arquivar: <strong>{preview?.rows.length ?? 0}</strong></span>
                   <span className="text-muted-foreground">Motivo: <code className="font-mono">dev_console_residual_cleanup</code></span>
                 </div>

@@ -269,7 +269,7 @@ const ValidacaoFarmaceuticaPage = () => {
               placeholder="Buscar paciente ou medicamento..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9 bg-white/15 border-white/25 text-primary-foreground placeholder:text-primary-foreground/60 focus-visible:ring-white/40"
+              className="pl-8 h-9 bg-white/15 border-white/25 text-primary-foreground placeholder:text-primary-foreground/60 focus-visible:ring-white/40"
             />
           </div>
         }
@@ -285,11 +285,11 @@ const ValidacaoFarmaceuticaPage = () => {
           { key: "rejected", label: "Rejeitadas", icon: XCircle, color: "text-destructive" },
           { key: "requires_changes", label: "Ajustes", icon: AlertTriangle, color: "text-warning-on-soft" },
         ].map((kpi) => (
-          <Card key={kpi.key} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab(kpi.key)}>
+          <Card key={kpi.key} className="cursor-pointer hover:shadow-md transition-shadow-sm" onClick={() => setActiveTab(kpi.key)}>
             <CardContent className="p-4 flex items-center gap-3">
               <kpi.icon className={cn("h-8 w-8", kpi.color)} />
               <div>
-                <p className="text-2xl font-bold text-foreground">{counts[kpi.key as keyof typeof counts]}</p>
+                <p className="text-2xl font-semibold text-foreground">{counts[kpi.key as keyof typeof counts]}</p>
                 <p className="text-xs text-muted-foreground">{kpi.label}</p>
               </div>
             </CardContent>
@@ -309,11 +309,11 @@ const ValidacaoFarmaceuticaPage = () => {
 
         <TabsContent value={activeTab} className="mt-4 space-y-3">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
+            <div className="text-center py-8 text-muted-foreground">
               <ShieldCheck className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p>Nenhuma prescrição encontrada</p>
             </div>
@@ -340,7 +340,7 @@ const ValidacaoFarmaceuticaPage = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="patient-id font-semibold text-foreground truncate">{p.patient_name}</h3>
+                          <h3 className="patient-id font-medium text-foreground truncate">{p.patient_name}</h3>
                           <Badge variant="outline" className={cn("text-xs border", config.color)}>
                             <StatusIcon className="h-3 w-3 mr-1" />
                             {config.label}
@@ -392,11 +392,11 @@ const ValidacaoFarmaceuticaPage = () => {
           </DialogHeader>
 
           {selectedPrescription && (
-            <div className="space-y-5">
+            <div className="space-y-4">
               {/* Global Checks */}
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <Activity className="h-4 w-4 text-primary" />
                     Checklist Global
                   </CardTitle>
@@ -429,7 +429,7 @@ const ValidacaoFarmaceuticaPage = () => {
               {/* High Alert Warning */}
               {highAlertItems.length > 0 && (
                 <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
-                  <p className="text-sm font-semibold text-destructive flex items-center gap-2">
+                  <p className="text-sm font-medium text-destructive flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4" />
                     {highAlertItems.length} medicamento(s) de ALTO ALERTA — verificação dupla obrigatória
                   </p>
@@ -444,7 +444,7 @@ const ValidacaoFarmaceuticaPage = () => {
               {/* Item-by-item review */}
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold">
+                  <CardTitle className="text-sm font-medium">
                     Revisão por Item ({activeItems.length})
                   </CardTitle>
                 </CardHeader>
@@ -471,16 +471,16 @@ const ValidacaoFarmaceuticaPage = () => {
                                 {item.name}
                               </span>
                               {item.category && (
-                                <Badge variant="secondary" className="text-[10px]">
+                                <Badge variant="secondary" className="text-xs">
                                   {item.category}
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-xs text-muted-foreground mt-0.5">
+                            <p className="text-xs text-muted-foreground mt-1">
                               {[item.dose, item.route, item.posology, item.schedule].filter(Boolean).join(" • ")}
                             </p>
                             {item.instructions && (
-                              <p className="text-xs text-muted-foreground/70 italic mt-0.5">{item.instructions}</p>
+                              <p className="text-xs text-muted-foreground/70 italic mt-1">{item.instructions}</p>
                             )}
                           </div>
                           <div className="flex items-center gap-1 shrink-0">

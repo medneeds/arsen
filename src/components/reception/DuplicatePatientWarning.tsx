@@ -116,7 +116,7 @@ export function DuplicatePatientWarning({ fullName, birthDate, cpf, onUseExistin
       <div className="flex items-center gap-2">
         <AlertTriangle className={cn("h-4 w-4 shrink-0", isHighConfidence ? "text-destructive" : "text-warning-on-soft")} />
         <p className={cn(
-          "text-xs font-semibold",
+          "text-xs font-medium",
           isHighConfidence ? "text-destructive" : "text-warning-on-soft"
         )}>
           {isHighConfidence
@@ -129,12 +129,12 @@ export function DuplicatePatientWarning({ fullName, birthDate, cpf, onUseExistin
       </div>
 
       {isHighConfidence && (
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Para evitar duplicatas, use o paciente existente ou confirme que são pessoas diferentes.
         </p>
       )}
 
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         {matches.map((m) => (
           <div
             key={m.id}
@@ -151,10 +151,10 @@ export function DuplicatePatientWarning({ fullName, birthDate, cpf, onUseExistin
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-medium truncate">{m.full_name}</p>
-                <p className="text-[10px] text-muted-foreground">
-                  {m.medical_record && <span className="font-mono mr-1.5">{m.medical_record}</span>}
+                <p className="text-xs text-muted-foreground">
+                  {m.medical_record && <span className="font-mono mr-2">{m.medical_record}</span>}
                   {m.birth_date && <span>DN: {format(new Date(m.birth_date + "T00:00:00"), "dd/MM/yyyy")}</span>}
-                  {m.cpf && <span className="ml-1.5">CPF: {m.cpf}</span>}
+                  {m.cpf && <span className="ml-2">CPF: {m.cpf}</span>}
                 </p>
               </div>
             </div>
@@ -162,7 +162,7 @@ export function DuplicatePatientWarning({ fullName, birthDate, cpf, onUseExistin
               size="sm"
               variant={isHighConfidence ? "default" : "outline"}
               className={cn(
-                "h-7 text-[10px] shrink-0",
+                "h-7 text-xs shrink-0",
                 isHighConfidence
                   ? ""
                   : "border-warning/40 text-warning-on-soft hover:bg-warning/10"
@@ -183,7 +183,7 @@ export function DuplicatePatientWarning({ fullName, birthDate, cpf, onUseExistin
         <Button
           size="sm"
           variant="outline"
-          className="w-full h-7 text-[10px] text-muted-foreground"
+          className="w-full h-7 text-xs text-muted-foreground"
           type="button"
           onClick={() => {
             onHighConfidenceFound?.(false);

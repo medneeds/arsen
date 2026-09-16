@@ -36,7 +36,7 @@ export function RoleProfileSelector({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Role */}
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
             <Shield className="h-3.5 w-3.5" /> Papel no Sistema (RLS)
           </label>
           <Select value={role} onValueChange={(v) => onRoleChange(v as AppRole)}>
@@ -49,10 +49,10 @@ export function RoleProfileSelector({
                 return (
                   <SelectItem key={r.value} value={r.value}>
                     <div className="flex items-start gap-2">
-                      <Icon className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                      <Icon className="h-4 w-4 mt-1 text-muted-foreground shrink-0" />
                       <div className="flex flex-col">
                         <span className="font-medium text-sm">{r.label}</span>
-                        <span className="text-[10px] text-muted-foreground">{r.description}</span>
+                        <span className="text-xs text-muted-foreground">{r.description}</span>
                       </div>
                     </div>
                   </SelectItem>
@@ -60,14 +60,14 @@ export function RoleProfileSelector({
               })}
             </SelectContent>
           </Select>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Define o nível técnico de acesso aos dados (políticas RLS).
           </p>
         </div>
 
         {/* Access Profile */}
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
             <Layers className="h-3.5 w-3.5" /> Perfil de Acesso (Sidebar)
           </label>
           <Select value={accessProfile} onValueChange={(v) => onAccessProfileChange(v as AccessProfile)}>
@@ -80,10 +80,10 @@ export function RoleProfileSelector({
                 return (
                   <SelectItem key={p.value} value={p.value}>
                     <div className="flex items-start gap-2">
-                      <Icon className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                      <Icon className="h-4 w-4 mt-1 text-muted-foreground shrink-0" />
                       <div className="flex flex-col">
                         <span className="font-medium text-sm">{p.label}</span>
-                        <span className="text-[10px] text-muted-foreground">{p.description}</span>
+                        <span className="text-xs text-muted-foreground">{p.description}</span>
                       </div>
                     </div>
                   </SelectItem>
@@ -91,7 +91,7 @@ export function RoleProfileSelector({
               })}
             </SelectContent>
           </Select>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Define a interface exibida (sidebar, dashboards, rota inicial).
           </p>
         </div>
@@ -111,7 +111,7 @@ export function RoleProfileSelector({
             type="button"
             size="sm"
             variant="outline"
-            className="h-6 text-[11px]"
+            className="h-6 text-xs"
             onClick={() => onRoleChange(suggestedRole)}
           >
             Aplicar sugestão

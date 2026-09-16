@@ -733,7 +733,7 @@ const AdminDashboardPage = () => {
         const noteParts = [
           `Cadastro Express • Entrada ${(enc as any).encounter_code}`,
           payload.chiefComplaint && `Queixa: ${payload.chiefComplaint}`,
-          payload.documentsPending && "⚠ Documentação pendente",
+          payload.documentsPending && "Documentação pendente",
         ].filter(Boolean).join(" • ");
         const { error: paErr } = await supabase
           .from("pre_admissions" as any)
@@ -815,8 +815,8 @@ const AdminDashboardPage = () => {
               >
                 <Search className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Buscar paciente / atendimento</span>
-                <kbd className="hidden md:inline-flex h-5 items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[9px] font-medium text-muted-foreground">
-                  <span className="text-[10px]">⌘</span>K
+                <kbd className="hidden md:inline-flex h-5 items-center gap-1 rounded-md border bg-muted px-2 font-mono text-xs font-medium text-muted-foreground">
+                  <span className="text-xs">⌘</span>K
                 </kbd>
               </Button>
               <Badge variant="secondary" className="text-xs bg-white/15 text-primary-foreground border-white/20">
@@ -830,17 +830,17 @@ const AdminDashboardPage = () => {
         <div className="flex-1 overflow-auto p-4">
           <div className="max-w-6xl mx-auto space-y-6">
             {/* HERO superior — ações primárias e consulta de prontuário (sempre visível, acima das tabs) */}
-            <Card className="border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-critical-soft/5 shadow-sm">
+            <Card className="border border-primary/20 bg-primary/5 shadow-sm">
               <CardContent className="p-4 space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-stretch">
                   {/* Novo Cadastro Completo — prevalente (col-span-2) */}
                   <Button
                     onClick={() => setShowRegisterDialog(true)}
-                    className="sm:col-span-2 h-12 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm font-semibold"
+                    className="sm:col-span-2 h-12 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm font-medium"
                   >
                     <UserPlus className="h-4 w-4" />
                     Novo Cadastro Completo
-                    <span className="hidden md:inline text-[11px] opacity-80 font-normal ml-1">· prontuário + dados completos</span>
+                    <span className="hidden md:inline text-xs opacity-80 font-normal ml-1">· prontuário + dados completos</span>
                   </Button>
                   {/* Cadastro Express — paciente sem identificação (NI) */}
                   <Button
@@ -886,10 +886,10 @@ const AdminDashboardPage = () => {
                 funcionando — ver handleTabChange.
               */}
               <TabsList className="mb-4">
-                <TabsTrigger value="inicio" className="gap-1.5">
+                <TabsTrigger value="inicio" className="gap-2">
                   <ClipboardList className="h-3.5 w-3.5" /> Painel do Dia
                 </TabsTrigger>
-                <TabsTrigger value="prontuarios" className="gap-1.5">
+                <TabsTrigger value="prontuarios" className="gap-2">
                   <FileText className="h-3.5 w-3.5" /> Prontuários
                 </TabsTrigger>
               </TabsList>
@@ -914,7 +914,7 @@ const AdminDashboardPage = () => {
                       <CardTitle className="text-sm flex items-center gap-2">
                         <Search className="h-3.5 w-3.5 text-primary" />
                         Resultados da busca
-                        <Badge variant="secondary" className="text-[10px]">{searchResults.length}</Badge>
+                        <Badge variant="secondary" className="text-xs">{searchResults.length}</Badge>
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -985,8 +985,8 @@ const AdminDashboardPage = () => {
               <Card className="border-primary/30 bg-primary/5">
                 <CardContent className="p-3 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Paciente selecionado</p>
-                    <p className="text-sm font-semibold truncate">{selectedPatient.full_name}</p>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Paciente selecionado</p>
+                    <p className="text-sm font-medium truncate">{selectedPatient.full_name}</p>
                     <p className="text-xs text-muted-foreground font-mono">{selectedPatient.medical_record}</p>
                   </div>
                   <Button size="sm" onClick={() => setShowNewEncounter(true)}>
@@ -1035,7 +1035,7 @@ const AdminDashboardPage = () => {
                                   {enc.encounter_code}
                                 </Badge>
                               </div>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                                 <span>{format(new Date(enc.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
                               </div>
                             </div>
@@ -1118,13 +1118,13 @@ const AdminDashboardPage = () => {
                 onCheckedChange={(c) => toggleUnidentified(!!c)}
               />
               <label htmlFor="ni-toggle-recepcao" className="flex-1 cursor-pointer">
-                <div className="flex items-center gap-2 font-semibold text-sm">
+                <div className="flex items-center gap-2 font-medium text-sm">
                   <UserX className="h-4 w-4 text-warning-on-soft" />
                   Paciente NÃO IDENTIFICADO
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground mt-1">
                   Gera código padronizado (NI-AAAA-NNNNNN) e cadastra como
-                  <span className="font-mono font-semibold"> &nbsp;NÃO IDENTIFICADO (NI-...) </span>
+                  <span className="font-mono font-medium"> &nbsp;NÃO IDENTIFICADO (NI-...) </span>
                   para evitar variações de digitação.
                 </p>
               </label>
@@ -1135,10 +1135,10 @@ const AdminDashboardPage = () => {
             {registerForm.is_unidentified ? (
               <>
                 <div className="md:col-span-2 p-3 rounded-md bg-warning/10 border border-warning/30 text-xs flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-warning-on-soft shrink-0 mt-0.5" />
+                  <AlertTriangle className="h-4 w-4 text-warning-on-soft shrink-0 mt-1" />
                   <div>
                     O nome será cadastrado automaticamente como
-                    <span className="font-mono font-semibold"> NÃO IDENTIFICADO (NI-AAAA-NNNNNN)</span>.
+                    <span className="font-mono font-medium"> NÃO IDENTIFICADO (NI-AAAA-NNNNNN)</span>.
                     Preencha as características físicas para auxiliar a identificação posterior.
                   </div>
                 </div>
@@ -1233,9 +1233,9 @@ const AdminDashboardPage = () => {
                     onChange={(e) => setRegisterForm(prev => ({ ...prev, medical_record: e.target.value }))}
                     className={cn(mrMode === "legacy" && !registerForm.medical_record.trim() && "border-warning/60")}
                   />
-                  <p className="text-[10px] text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {mrMode === "legacy"
-                      ? "⚠ Unidade em modo legado: informe o número do sistema antigo. Será preservado em numero_prontuario_legado."
+                      ? "Unidade em modo legado: informe o número do sistema antigo. Será preservado em numero_prontuario_legado."
                       : "Vazio → será gerado automaticamente no formato seguro."}
                   </p>
                 </div>
@@ -1376,7 +1376,7 @@ const AdminDashboardPage = () => {
                   <User className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <p className="font-bold">{selectedPatient.full_name}</p>
+                  <p className="font-semibold">{selectedPatient.full_name}</p>
                   {selectedPatient.social_name && (
                     <p className="text-sm text-muted-foreground">Nome social: {selectedPatient.social_name}</p>
                   )}
@@ -1424,7 +1424,7 @@ const AdminDashboardPage = () => {
               </div>
 
               {selectedPatient.allergies && (
-                <div className="p-2 rounded bg-critical-soft border border-critical-border">
+                <div className="p-2 rounded-md bg-critical-soft border border-critical-border">
                   <p className="text-xs font-medium text-critical-on-soft flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" /> Alergias
                   </p>
@@ -1475,22 +1475,22 @@ const AdminDashboardPage = () => {
                 <Label className="mb-2 block">Setor de Destino *</Label>
                 <p className="text-xs text-muted-foreground mb-3">
                   Selecione o setor de internação de destino. O paciente aparece
-                  em <span className="font-semibold">"Aguardando Admissão"</span> daquele setor,
+                  em <span className="font-medium">"Aguardando Admissão"</span> daquele setor,
                   onde o NIR ou o médico efetiva a admissão no leito.
                 </p>
                 <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
                   {DESTINATION_GROUPS.map((group) => (
                     <div key={group}>
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">
                         {group}
                       </p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {DESTINATION_SECTORS.filter(s => s.group === group && !s.legacyOnly).map((sector) => (
                           <button
                             key={sector.value}
                             onClick={() => setDestinationSector(sector.value)}
                             className={cn(
-                              "flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all hover:bg-accent/50 cursor-pointer",
+                              "flex items-center gap-2 p-3 rounded-lg border text-left transition-all hover:bg-accent/50 cursor-pointer",
                               destinationSector === sector.value && "ring-2 ring-primary bg-primary/5 border-primary/30"
                             )}
                           >
@@ -1506,8 +1506,8 @@ const AdminDashboardPage = () => {
                   const def = DESTINATION_SECTORS.find(s => s.value === destinationSector);
                   if (!def) return null;
                   return (
-                    <div className="mt-3 p-2.5 rounded-md bg-primary/10 border border-border/30 text-xs text-foreground">
-                      ✓ Paciente entrará em <strong>"Aguardando Admissão"</strong> de{" "}
+                    <div className="mt-3 p-3 rounded-md bg-primary/10 border border-border/30 text-xs text-foreground">
+                      Paciente entrará em <strong>"Aguardando Admissão"</strong> de{" "}
                       <strong>{def.label}</strong>. NIR ou médico do setor poderá efetivar a admissão no leito.
                     </div>
                   );

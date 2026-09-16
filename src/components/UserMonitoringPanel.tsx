@@ -276,7 +276,7 @@ export function UserMonitoringPanel() {
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-released-soft to-released-soft flex items-center justify-center shadow">
+            <div className="h-10 w-10 rounded-lg bg-released-soft flex items-center justify-center shadow-sm">
               <Activity className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -302,7 +302,7 @@ export function UserMonitoringPanel() {
           
           <div className="flex items-center gap-2 bg-released/10 border border-released/20 rounded-lg px-4 py-2">
             <Users className="h-5 w-5 text-released-on-soft" />
-            <span className="text-2xl font-bold text-released-on-soft">{onlineCount}</span>
+            <span className="text-2xl font-semibold text-released-on-soft">{onlineCount}</span>
             <span className="text-sm text-released-on-soft">online</span>
           </div>
         </div>
@@ -340,7 +340,7 @@ export function UserMonitoringPanel() {
                       {config.icon}
                     </div>
                     <div>
-                      <p className="text-2xl font-bold">{count}</p>
+                      <p className="text-2xl font-semibold">{count}</p>
                       <p className="text-xs">{config.label}</p>
                     </div>
                   </div>
@@ -424,48 +424,48 @@ export function UserMonitoringPanel() {
           {/* Statistics Tab */}
           <TabsContent value="stats" className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-br from-muted/10 to-muted/5 border-border/20">
+              <Card className="bg-muted/10 border-border/20">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <LogIn className="h-8 w-8 text-foreground" />
                     <div>
-                      <p className="text-3xl font-bold text-foreground">{loginStats.todayLogins}</p>
+                      <p className="text-3xl font-semibold text-foreground">{loginStats.todayLogins}</p>
                       <p className="text-xs text-muted-foreground">Logins hoje</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-muted/10 to-muted/5 border-border/20">
+              <Card className="bg-muted/10 border-border/20">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <UserCheck className="h-8 w-8 text-foreground" />
                     <div>
-                      <p className="text-3xl font-bold text-foreground">{loginStats.uniqueUsersToday}</p>
+                      <p className="text-3xl font-semibold text-foreground">{loginStats.uniqueUsersToday}</p>
                       <p className="text-xs text-muted-foreground">Usuários únicos hoje</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-released-soft/10 to-released-soft/5 border-released/20">
+              <Card className="bg-released-soft/10 border-released/20">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <TrendingUp className="h-8 w-8 text-released-on-soft" />
                     <div>
-                      <p className="text-3xl font-bold text-released-on-soft">{loginStats.weekLogins}</p>
+                      <p className="text-3xl font-semibold text-released-on-soft">{loginStats.weekLogins}</p>
                       <p className="text-xs text-muted-foreground">Logins na semana</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-warning-soft/10 to-warning-soft/5 border-warning/20">
+              <Card className="bg-warning-soft/10 border-warning/20">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <Clock className="h-8 w-8 text-warning-on-soft" />
                     <div>
-                      <p className="text-xl font-bold text-warning-on-soft">{loginStats.peakHour}</p>
+                      <p className="text-xl font-semibold text-warning-on-soft">{loginStats.peakHour}</p>
                       <p className="text-xs text-muted-foreground">Horário de pico</p>
                     </div>
                   </div>
@@ -530,7 +530,7 @@ export function UserMonitoringPanel() {
 
             {/* Info notice */}
             <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg border">
-              <AlertCircle className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-muted-foreground shrink-0 mt-1" />
               <div className="text-sm text-muted-foreground">
                 <p className="font-medium">Sobre as estatísticas</p>
                 <p>

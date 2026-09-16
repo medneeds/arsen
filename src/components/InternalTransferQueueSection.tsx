@@ -26,7 +26,7 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
   const { rows, refresh } = useInternalTransferQueue(sectorCode);
-  // 🔒 Buscar TODOS os pacientes do hospital (sem filtro de setor)
+  // Buscar TODOS os pacientes do hospital (sem filtro de setor)
   // para encontrar leitos vagos em qualquer setor destino da transferência.
   // usePatients() sem parâmetros retorna apenas o setor ativo do usuário.
   const { patients } = usePatients(undefined, undefined);
@@ -115,7 +115,7 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
             <button className="w-full flex items-center justify-between px-4 py-3 text-left">
               <div className="flex items-center gap-2">
                 <ArrowRightLeft className="h-4 w-4 text-foreground" />
-                <span className="text-sm font-semibold text-foreground">
+                <span className="text-sm font-medium text-foreground">
                   AGUARDANDO ALOCAÇÃO POR TRANSFERÊNCIA INTERNA
                 </span>
                 <Badge variant="secondary" className="ml-1">{rows.length}</Badge>
@@ -133,14 +133,14 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
                       Origem: {sectorLabelFromCode(r.source_sector ?? "")} • Leito {r.source_bed ?? "—"}
                       {r.encounter_code && <> • <strong>Atend. #{r.encounter_code}</strong></>}
                     </p>
-                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                      <Badge variant="outline" className="text-[10px]">{classificationLabel(r.classification)}</Badge>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <Badge variant="outline" className="text-xs">{classificationLabel(r.classification)}</Badge>
                       {r.requires_saps && (
-                        <Badge className="text-[10px] bg-warning hover:bg-warning/90"><AlertTriangle className="h-3 w-3 mr-0.5" />SAPS após alocação</Badge>
+                        <Badge className="text-xs bg-warning hover:bg-warning/90"><AlertTriangle className="h-3 w-3 mr-1" />SAPS após alocação</Badge>
                       )}
-                      <Badge variant="outline" className="text-[10px]"><Clock className="h-3 w-3 mr-0.5" />{new Date(r.signaled_at).toLocaleString("pt-BR")}</Badge>
+                      <Badge variant="outline" className="text-xs"><Clock className="h-3 w-3 mr-1" />{new Date(r.signaled_at).toLocaleString("pt-BR")}</Badge>
                     </div>
-                    {r.reason && <p className="text-[11px] text-muted-foreground mt-1 italic">"{r.reason}"</p>}
+                    {r.reason && <p className="text-xs text-muted-foreground mt-1 italic">"{r.reason}"</p>}
                   </div>
                   <div className="flex items-center gap-2">
                     <Button size="sm" onClick={() => { setTarget(r); setBedId(""); }}>

@@ -284,7 +284,7 @@ Gerado pelo sistema ARSen em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-6 pt-5 pb-3 border-b">
+        <DialogHeader className="px-6 pt-4 pb-3 border-b">
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5 text-warning" />
             Registro de OPME
@@ -296,10 +296,10 @@ Gerado pelo sistema ARSen em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
         </DialogHeader>
 
         <ScrollArea className="flex-1 px-6">
-          <div className="space-y-5 py-4">
+          <div className="space-y-4 py-4">
 
             <div className="space-y-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Identificação do Procedimento</h3>
+              <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Identificação do Procedimento</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
                   <Label className="text-xs">Cirurgia / Procedimento</Label>
@@ -328,7 +328,7 @@ Gerado pelo sistema ARSen em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Materiais Utilizados</h3>
+                <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Materiais Utilizados</h3>
                 <Button size="sm" variant="outline" onClick={addMaterial} className="h-7 text-xs gap-1">
                   <Plus className="h-3.5 w-3.5" /> Adicionar material
                 </Button>
@@ -337,7 +337,7 @@ Gerado pelo sistema ARSen em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
               {materiais.map((mat, idx) => (
                 <div key={mat.id} className="border rounded-lg p-3 space-y-3 bg-muted/20">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-muted-foreground">Material {idx + 1}</span>
+                    <span className="text-xs font-medium text-muted-foreground">Material {idx + 1}</span>
                     {materiais.length > 1 && (
                       <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:text-destructive" onClick={() => removeMaterial(mat.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
@@ -346,36 +346,36 @@ Gerado pelo sistema ARSen em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="col-span-2">
-                      <Label className="text-[11px]">Descrição</Label>
-                      <Input value={mat.descricao} onChange={(e) => updateMaterial(mat.id, "descricao", e.target.value)} placeholder="Ex: Cateter Medikath 7F..." className="mt-0.5 text-xs h-8" />
+                      <Label className="text-xs">Descrição</Label>
+                      <Input value={mat.descricao} onChange={(e) => updateMaterial(mat.id, "descricao", e.target.value)} placeholder="Ex: Cateter Medikath 7F..." className="mt-1 text-xs h-8" />
                     </div>
                     <div>
-                      <Label className="text-[11px]">Quantidade</Label>
-                      <Input type="number" min="1" value={mat.quantidade} onChange={(e) => updateMaterial(mat.id, "quantidade", e.target.value)} className="mt-0.5 text-xs h-8" />
+                      <Label className="text-xs">Quantidade</Label>
+                      <Input type="number" min="1" value={mat.quantidade} onChange={(e) => updateMaterial(mat.id, "quantidade", e.target.value)} className="mt-1 text-xs h-8" />
                     </div>
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Rastreabilidade da Etiqueta</p>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Rastreabilidade da Etiqueta</p>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <Label className="text-[11px]">Referência</Label>
-                        <Input value={mat.referencia} onChange={(e) => updateMaterial(mat.id, "referencia", e.target.value)} placeholder="Cód. de referência" className="mt-0.5 text-xs h-8 font-mono" />
+                        <Label className="text-xs">Referência</Label>
+                        <Input value={mat.referencia} onChange={(e) => updateMaterial(mat.id, "referencia", e.target.value)} placeholder="Cód. de referência" className="mt-1 text-xs h-8 font-mono" />
                       </div>
                       <div>
-                        <Label className="text-[11px]">Lote</Label>
-                        <Input value={mat.lote} onChange={(e) => updateMaterial(mat.id, "lote", e.target.value)} placeholder="Nº do lote" className="mt-0.5 text-xs h-8 font-mono" />
+                        <Label className="text-xs">Lote</Label>
+                        <Input value={mat.lote} onChange={(e) => updateMaterial(mat.id, "lote", e.target.value)} placeholder="Nº do lote" className="mt-1 text-xs h-8 font-mono" />
                       </div>
                       <div>
-                        <Label className="text-[11px]">Fabricação</Label>
-                        <Input value={mat.fabricacao} onChange={(e) => updateMaterial(mat.id, "fabricacao", e.target.value)} placeholder="MM/AAAA" className="mt-0.5 text-xs h-8 font-mono" />
+                        <Label className="text-xs">Fabricação</Label>
+                        <Input value={mat.fabricacao} onChange={(e) => updateMaterial(mat.id, "fabricacao", e.target.value)} placeholder="MM/AAAA" className="mt-1 text-xs h-8 font-mono" />
                       </div>
                       <div>
-                        <Label className="text-[11px]">Validade</Label>
-                        <Input value={mat.validade} onChange={(e) => updateMaterial(mat.id, "validade", e.target.value)} placeholder="MM/AAAA" className="mt-0.5 text-xs h-8 font-mono" />
+                        <Label className="text-xs">Validade</Label>
+                        <Input value={mat.validade} onChange={(e) => updateMaterial(mat.id, "validade", e.target.value)} placeholder="MM/AAAA" className="mt-1 text-xs h-8 font-mono" />
                       </div>
                       <div className="col-span-2">
-                        <Label className="text-[11px]">Registro ANVISA</Label>
-                        <Input value={mat.registro_anvisa} onChange={(e) => updateMaterial(mat.id, "registro_anvisa", e.target.value)} placeholder="Nº do registro ANVISA" className="mt-0.5 text-xs h-8 font-mono" />
+                        <Label className="text-xs">Registro ANVISA</Label>
+                        <Input value={mat.registro_anvisa} onChange={(e) => updateMaterial(mat.id, "registro_anvisa", e.target.value)} placeholder="Nº do registro ANVISA" className="mt-1 text-xs h-8 font-mono" />
                       </div>
                     </div>
                   </div>
@@ -386,7 +386,7 @@ Gerado pelo sistema ARSen em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
             <Separator />
 
             <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Intercorrências com o Material</Label>
+              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Intercorrências com o Material</Label>
               <Textarea value={intercorrencias} onChange={(e) => setIntercorrencias(e.target.value)} placeholder="Citar material e justificativa (deixar em branco se não houve intercorrências)" className="text-xs min-h-[64px] resize-none" />
             </div>
 
@@ -395,10 +395,10 @@ Gerado pelo sistema ARSen em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
 
         <DialogFooter className="px-6 py-3 border-t gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button variant="outline" onClick={handlePrint} className="gap-1.5">
+          <Button variant="outline" onClick={handlePrint} className="gap-2">
             <Printer className="h-4 w-4" /> Pré-visualizar PDF
           </Button>
-          <Button onClick={handleSave} disabled={saving} className="gap-1.5">
+          <Button onClick={handleSave} disabled={saving} className="gap-2">
             <Save className="h-4 w-4" /> {saving ? "Salvando..." : "Salvar e Imprimir"}
           </Button>
         </DialogFooter>

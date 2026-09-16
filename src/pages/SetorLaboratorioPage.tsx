@@ -241,17 +241,17 @@ const SetorLaboratorioPage = () => {
 
   const getPriorityBadge = (priority: string) => {
     if (priority === "urgente") return (
-      <Badge className="bg-critical/15 text-critical-on-soft border-critical-border text-[10px] font-bold animate-pulse">
+      <Badge className="bg-critical/15 text-critical-on-soft border-critical-border text-xs font-semibold animate-pulse">
         <AlertTriangle className="h-3 w-3 mr-1" /> URGENTE
       </Badge>
     );
     if (priority === "rotina") return (
-      <Badge variant="outline" className="text-[10px] text-foreground border-border bg-primary/10">
+      <Badge variant="outline" className="text-xs text-foreground border-border bg-primary/10">
         <Clock className="h-3 w-3 mr-1" /> Rotina
       </Badge>
     );
     return (
-      <Badge variant="outline" className="text-[10px] text-foreground border-border bg-primary/10">
+      <Badge variant="outline" className="text-xs text-foreground border-border bg-primary/10">
         <CalendarIcon className="h-3 w-3 mr-1" /> Programado
       </Badge>
     );
@@ -277,7 +277,7 @@ const SetorLaboratorioPage = () => {
         }
       />
 
-    <div className="p-4 sm:p-6 space-y-5">
+    <div className="p-4 sm:p-6 space-y-4">
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -285,8 +285,8 @@ const SetorLaboratorioPage = () => {
           <CardContent className="p-3 flex items-center gap-3">
             <Clock className="h-8 w-8 text-warning" />
             <div>
-              <p className="text-2xl font-bold text-warning-on-soft">{stats.pending}</p>
-              <p className="text-[10px] text-warning-on-soft uppercase tracking-wider font-medium">Pendentes</p>
+              <p className="text-2xl font-semibold text-warning-on-soft">{stats.pending}</p>
+              <p className="text-xs text-warning-on-soft uppercase tracking-wider font-medium">Pendentes</p>
             </div>
           </CardContent>
         </Card>
@@ -294,8 +294,8 @@ const SetorLaboratorioPage = () => {
           <CardContent className="p-3 flex items-center gap-3">
             <Loader2 className="h-8 w-8 text-muted-foreground" />
             <div>
-              <p className="text-2xl font-bold text-foreground">{stats.inProgress}</p>
-              <p className="text-[10px] text-foreground uppercase tracking-wider font-medium">Em Execução</p>
+              <p className="text-2xl font-semibold text-foreground">{stats.inProgress}</p>
+              <p className="text-xs text-foreground uppercase tracking-wider font-medium">Em Execução</p>
             </div>
           </CardContent>
         </Card>
@@ -303,8 +303,8 @@ const SetorLaboratorioPage = () => {
           <CardContent className="p-3 flex items-center gap-3">
             <CheckCircle2 className="h-8 w-8 text-released" />
             <div>
-              <p className="text-2xl font-bold text-released-on-soft">{stats.completed}</p>
-              <p className="text-[10px] text-released-on-soft uppercase tracking-wider font-medium">Concluídos</p>
+              <p className="text-2xl font-semibold text-released-on-soft">{stats.completed}</p>
+              <p className="text-xs text-released-on-soft uppercase tracking-wider font-medium">Concluídos</p>
             </div>
           </CardContent>
         </Card>
@@ -312,15 +312,15 @@ const SetorLaboratorioPage = () => {
           <CardContent className="p-3 flex items-center gap-3">
             <AlertTriangle className="h-8 w-8 text-critical" />
             <div>
-              <p className="text-2xl font-bold text-critical-on-soft">{stats.urgent}</p>
-              <p className="text-[10px] text-critical-on-soft uppercase tracking-wider font-medium">Urgentes</p>
+              <p className="text-2xl font-semibold text-critical-on-soft">{stats.urgent}</p>
+              <p className="text-xs text-critical-on-soft uppercase tracking-wider font-medium">Urgentes</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Date Range Filter */}
-      <div className="flex flex-wrap items-center gap-3 p-3 rounded-xl border border-border/60 bg-muted/30">
+      <div className="flex flex-wrap items-center gap-3 p-3 rounded-lg border border-border/60 bg-muted/30">
         <CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0" />
         <span className="text-xs font-medium text-muted-foreground shrink-0">Período:</span>
         <Popover>
@@ -382,7 +382,7 @@ const SetorLaboratorioPage = () => {
             size="sm"
             onClick={() => setSelectedCategory(cat.key)}
             className={cn(
-              "gap-1.5 text-xs whitespace-nowrap shrink-0",
+              "gap-2 text-xs whitespace-nowrap shrink-0",
               selectedCategory === cat.key && "bg-warning hover:bg-warning text-white"
             )}
           >
@@ -400,26 +400,26 @@ const SetorLaboratorioPage = () => {
             placeholder="Buscar por paciente, leito ou exame..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            className="pl-8"
           />
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full grid grid-cols-5">
-          <TabsTrigger value="pending" className="gap-1.5 text-xs">
+          <TabsTrigger value="pending" className="gap-2 text-xs">
             <Clock className="h-3.5 w-3.5" /> Pendentes ({stats.pending})
           </TabsTrigger>
-          <TabsTrigger value="acknowledged" className="gap-1.5 text-xs">
+          <TabsTrigger value="acknowledged" className="gap-2 text-xs">
             <Eye className="h-3.5 w-3.5" /> Ciência ({stats.acknowledged})
           </TabsTrigger>
-          <TabsTrigger value="in_progress" className="gap-1.5 text-xs">
+          <TabsTrigger value="in_progress" className="gap-2 text-xs">
             <Loader2 className="h-3.5 w-3.5" /> Execução ({stats.inProgress})
           </TabsTrigger>
-          <TabsTrigger value="completed" className="gap-1.5 text-xs">
+          <TabsTrigger value="completed" className="gap-2 text-xs">
             <CheckCircle2 className="h-3.5 w-3.5" /> Concluídos ({stats.completed})
           </TabsTrigger>
-          <TabsTrigger value="all" className="gap-1.5 text-xs">
+          <TabsTrigger value="all" className="gap-2 text-xs">
             <TestTubes className="h-3.5 w-3.5" /> Todos
           </TabsTrigger>
         </TabsList>
@@ -427,11 +427,11 @@ const SetorLaboratorioPage = () => {
         {["pending", "acknowledged", "in_progress", "completed", "all"].map((tab) => (
           <TabsContent key={tab} value={tab} className="mt-4 space-y-2">
             {loading ? (
-              <div className="flex items-center justify-center py-16">
+              <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-warning" />
               </div>
             ) : filteredRequests.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
+              <div className="text-center py-8 text-muted-foreground">
                 <TestTubes className="h-12 w-12 mx-auto mb-3 opacity-30" />
                 <p className="font-medium">Nenhuma requisição encontrada</p>
                 <p className="text-sm mt-1">
@@ -460,34 +460,34 @@ const SetorLaboratorioPage = () => {
                     <CardContent className="p-3 sm:p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className="patient-id font-bold text-sm text-foreground truncate">{req.patient_name}</span>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="patient-id font-semibold text-sm text-foreground truncate">{req.patient_name}</span>
                             {req.patient_bed && (
-                              <Badge variant="outline" className="text-[10px] shrink-0">
+                              <Badge variant="outline" className="text-xs shrink-0">
                                 {req.patient_sector && `${getSectorLabel(req.patient_sector)} · `}Leito {req.patient_bed}
                               </Badge>
                             )}
                             {getPriorityBadge(req.priority)}
                           </div>
 
-                          <div className="flex flex-wrap gap-1 mb-1.5">
+                          <div className="flex flex-wrap gap-1 mb-2">
                             {items.slice(0, 5).map((item: any, idx: number) => {
                               const name = item.name || item;
                               const cat = classifyLabExam(name);
                               const catConfig = LAB_CATEGORIES.find(c => c.key === cat);
                               return (
-                                <Badge key={idx} variant="secondary" className="text-[10px] gap-1">
+                                <Badge key={idx} variant="secondary" className="text-xs gap-1">
                                   {catConfig && <catConfig.icon className="h-2.5 w-2.5" />}
                                   {name}
                                 </Badge>
                               );
                             })}
                             {items.length > 5 && (
-                              <Badge variant="secondary" className="text-[10px]">+{items.length - 5}</Badge>
+                              <Badge variant="secondary" className="text-xs">+{items.length - 5}</Badge>
                             )}
                           </div>
 
-                          <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
                             <span>Solicitado: {timeSince}</span>
                             {req.requested_by_name && <span>por {req.requested_by_name}</span>}
                             {req.clinical_indication && (
@@ -496,13 +496,13 @@ const SetorLaboratorioPage = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center gap-2 shrink-0">
                           <span className={cn(
                             "inline-block h-2.5 w-2.5 rounded-full",
                             statusCfg.dotColor,
                             statusCfg.pulsing && "animate-pulse-soft"
                           )} />
-                          <Badge className={cn("text-[10px] border", statusCfg.color)}>
+                          <Badge className={cn("text-xs border", statusCfg.color)}>
                             <statusCfg.icon className={cn("h-3 w-3 mr-1", req.status === "in_progress" && "animate-spin")} />
                             {statusCfg.label}
                           </Badge>
@@ -534,7 +534,7 @@ const SetorLaboratorioPage = () => {
             <div className="space-y-4">
               <div className="p-3 rounded-lg bg-muted/50 border space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="patient-id font-bold text-foreground">{selectedRequest.patient_name}</span>
+                  <span className="patient-id font-semibold text-foreground">{selectedRequest.patient_name}</span>
                   {getPriorityBadge(selectedRequest.priority)}
                 </div>
                 <div className="text-xs text-muted-foreground flex gap-3">
@@ -549,7 +549,7 @@ const SetorLaboratorioPage = () => {
                 )}
                 {selectedRequest.notes && selectedRequest.notes.includes("[PROGRAMADO:") && (
                   <div className="text-xs p-2 rounded-md bg-muted/50 border border-border">
-                    <strong className="text-foreground">📅 Agendamento:</strong>{" "}
+                    <strong className="text-foreground">Agendamento:</strong>{" "}
                     <span className="text-foreground">
                       {selectedRequest.notes.match(/\[PROGRAMADO: ([^\]]+)\]/)?.[1] || ""}
                     </span>
@@ -566,8 +566,8 @@ const SetorLaboratorioPage = () => {
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wider">Exames Solicitados</p>
-                <div className="space-y-1.5">
+                <p className="text-xs font-medium text-foreground mb-2 uppercase tracking-wider">Exames Solicitados</p>
+                <div className="space-y-2">
                   {(Array.isArray(selectedRequest.items) ? selectedRequest.items : []).map((item: any, idx: number) => {
                     const name = item.name || item;
                     const cat = classifyLabExam(name);
@@ -601,7 +601,7 @@ const SetorLaboratorioPage = () => {
               )}
 
               {selectedRequest.completed_by && selectedRequest.status === "completed" && (
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Concluído por: {selectedRequest.completed_by}
                 </p>
               )}
@@ -613,7 +613,7 @@ const SetorLaboratorioPage = () => {
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-1.5 text-xs mr-auto"
+                className="gap-2 text-xs mr-auto"
                 onClick={() => printRequisitionGuideWithGasometriaPrompt(selectedRequest, (s) => getSectorLabel(s))}
               >
                 <Printer className="h-3.5 w-3.5" /> Imprimir Guia

@@ -119,10 +119,10 @@ const ClinicalDashboardPage = () => {
       const movements = allMovements.filter((m) => m.patient_sector === activeSector);
 
       // Build occupancy data for active sector only
-      // 🔒 Excluir leitos EXTRA vagos (arquivados pelo gestor) do total.
+      // Excluir leitos EXTRA vagos (arquivados pelo gestor) do total.
       // Leitos EXTRA são temporários — quando removidos ficam como registros
       // vazios com bedNumber 'EXTRA*'. Não devem contar na capacidade do setor.
-      // 🔒 Total = capacidade FIXA do setor (SECTOR_BED_CONFIG).
+      // Total = capacidade FIXA do setor (SECTOR_BED_CONFIG).
       // Evita que leitos fora do range configurado (L19, L20...) ou leitos EXTRA
       // inflacionem o denominador da ocupação.
       const occupied = patients.filter((p) => p.name && p.name.trim() !== "").length;
@@ -315,21 +315,21 @@ const ClinicalDashboardPage = () => {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="space-y-5"
+              className="space-y-4"
             >
               {/* KPI Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-                  <Card className="border-border/60 bg-card/80 backdrop-blur-sm hover:shadow-md transition-shadow">
+                  <Card className="border-border/60 bg-card/80 backdrop-blur-sm hover:shadow-md transition-shadow-sm">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-[11px] font-medium text-muted-foreground tracking-wider">Ocupação {SECTOR_LABELS[activeSector]}</p>
-                          <p className="text-2xl font-bold text-foreground mt-1">{occupancyRate}%</p>
-                          <p className="text-[10px] text-muted-foreground">{totalOccupied}/{totalBeds} leitos</p>
+                          <p className="text-xs font-medium text-muted-foreground tracking-wider">Ocupação {SECTOR_LABELS[activeSector]}</p>
+                          <p className="text-2xl font-semibold text-foreground mt-1">{occupancyRate}%</p>
+                          <p className="text-xs text-muted-foreground">{totalOccupied}/{totalBeds} leitos</p>
                         </div>
                         <div className={cn(
-                          "h-10 w-10 rounded-xl flex items-center justify-center",
+                          "h-10 w-10 rounded-lg flex items-center justify-center",
                           occupancyRate > 85 ? "bg-critical/15" : occupancyRate > 60 ? "bg-warning/15" : "bg-released/15"
                         )}>
                           <BedDouble className={cn(
@@ -343,16 +343,16 @@ const ClinicalDashboardPage = () => {
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-                  <Card className="border-border/60 bg-card/80 backdrop-blur-sm hover:shadow-md transition-shadow">
+                  <Card className="border-border/60 bg-card/80 backdrop-blur-sm hover:shadow-md transition-shadow-sm">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-[11px] font-medium text-muted-foreground tracking-wider">Alertas</p>
-                          <p className="text-2xl font-bold text-foreground mt-1">{criticalAlerts.length + warningAlerts.length}</p>
-                          <p className="text-[10px] text-muted-foreground">{criticalAlerts.length} crítico(s)</p>
+                          <p className="text-xs font-medium text-muted-foreground tracking-wider">Alertas</p>
+                          <p className="text-2xl font-semibold text-foreground mt-1">{criticalAlerts.length + warningAlerts.length}</p>
+                          <p className="text-xs text-muted-foreground">{criticalAlerts.length} crítico(s)</p>
                         </div>
                         <div className={cn(
-                          "h-10 w-10 rounded-xl flex items-center justify-center",
+                          "h-10 w-10 rounded-lg flex items-center justify-center",
                           criticalAlerts.length > 0 ? "bg-critical/15" : "bg-released/15"
                         )}>
                           <AlertTriangle className={cn(
@@ -366,15 +366,15 @@ const ClinicalDashboardPage = () => {
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                  <Card className="border-border/60 bg-card/80 backdrop-blur-sm hover:shadow-md transition-shadow">
+                  <Card className="border-border/60 bg-card/80 backdrop-blur-sm hover:shadow-md transition-shadow-sm">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-[11px] font-medium text-muted-foreground tracking-wider">Solicitações</p>
-                          <p className="text-2xl font-bold text-foreground mt-1">{pendingBedRequests}</p>
-                          <p className="text-[10px] text-muted-foreground">pedido(s) de leito</p>
+                          <p className="text-xs font-medium text-muted-foreground tracking-wider">Solicitações</p>
+                          <p className="text-2xl font-semibold text-foreground mt-1">{pendingBedRequests}</p>
+                          <p className="text-xs text-muted-foreground">pedido(s) de leito</p>
                         </div>
-                        <div className="h-10 w-10 rounded-xl flex items-center justify-center bg-primary/10">
+                        <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
                           <ClipboardList className="h-5 w-5 text-primary" />
                         </div>
                       </div>
@@ -383,15 +383,15 @@ const ClinicalDashboardPage = () => {
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-                  <Card className="border-border/60 bg-card/80 backdrop-blur-sm hover:shadow-md transition-shadow">
+                  <Card className="border-border/60 bg-card/80 backdrop-blur-sm hover:shadow-md transition-shadow-sm">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-[11px] font-medium text-muted-foreground tracking-wider">Movimentações</p>
-                          <p className="text-2xl font-bold text-foreground mt-1">{recentMovements.length}</p>
-                          <p className="text-[10px] text-muted-foreground">últimas registradas</p>
+                          <p className="text-xs font-medium text-muted-foreground tracking-wider">Movimentações</p>
+                          <p className="text-2xl font-semibold text-foreground mt-1">{recentMovements.length}</p>
+                          <p className="text-xs text-muted-foreground">últimas registradas</p>
                         </div>
-                        <div className="h-10 w-10 rounded-xl flex items-center justify-center bg-primary/15">
+                        <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/15">
                           <ArrowRightLeft className="h-5 w-5 text-muted-foreground" />
                         </div>
                       </div>
@@ -405,7 +405,7 @@ const ClinicalDashboardPage = () => {
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                 <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
                   <CardHeader className="pb-3 pt-4 px-4">
-                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 text-primary" />
                       Ocupação — {SECTOR_LABELS[activeSector]}
                     </CardTitle>
@@ -413,9 +413,9 @@ const ClinicalDashboardPage = () => {
                   <CardContent className="px-4 pb-4">
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-foreground">{activeSectorOcc.occupied} de {activeSectorOcc.total} leitos ocupados</span>
+                        <span className="text-xs font-medium text-foreground">{activeSectorOcc.occupied} de {activeSectorOcc.total} leitos ocupados</span>
                         <span className={cn(
-                          "text-sm font-bold",
+                          "text-sm font-semibold",
                           occupancyRate > 85 ? "text-critical" : occupancyRate > 60 ? "text-warning" : "text-released"
                         )}>{occupancyRate}%</span>
                       </div>
@@ -448,12 +448,12 @@ const ClinicalDashboardPage = () => {
                   <Card className="border-border/60 bg-card/80 backdrop-blur-sm h-full">
                     <CardHeader className="pb-3 pt-4 px-4">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <CardTitle className="text-sm font-medium flex items-center gap-2">
                           <Stethoscope className="h-4 w-4 text-primary" />
                           Alertas clínicos e solicitações
                         </CardTitle>
                         {alerts.length > 0 && (
-                          <Badge variant="secondary" className="text-[10px] px-2 py-0.5">
+                          <Badge variant="secondary" className="text-xs px-2 py-1">
                             {alerts.length}
                           </Badge>
                         )}
@@ -484,22 +484,22 @@ const ClinicalDashboardPage = () => {
                                   config.bg
                                 )}
                               >
-                                <Icon className={cn("h-4 w-4 mt-0.5 flex-shrink-0", config.text)} />
+                                <Icon className={cn("h-4 w-4 mt-1 flex-shrink-0", config.text)} />
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <span className={cn("text-xs font-semibold", config.text)}>{alert.title}</span>
+                                    <span className={cn("text-xs font-medium", config.text)}>{alert.title}</span>
                                     {alert.bed && (
-                                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">
+                                      <Badge variant="outline" className="text-xs px-2 py-0 h-4">
                                         {alert.bed}
                                       </Badge>
                                     )}
                                     {alert.sector && (
-                                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">
+                                      <Badge variant="outline" className="text-xs px-2 py-0 h-4">
                                         {getSectorDisplayLabel(alert.sector) || alert.sector}
                                       </Badge>
                                     )}
                                   </div>
-                                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{alert.description}</p>
+                                  <p className="text-xs text-muted-foreground mt-1 truncate">{alert.description}</p>
                                 </div>
                               </motion.div>
                             );
@@ -518,7 +518,7 @@ const ClinicalDashboardPage = () => {
                 >
                   <Card className="border-border/60 bg-card/80 backdrop-blur-sm h-full">
                     <CardHeader className="pb-3 pt-4 px-4">
-                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
                         <ArrowRightLeft className="h-4 w-4 text-primary" />
                         Atividade recente
                       </CardTitle>
@@ -530,7 +530,7 @@ const ClinicalDashboardPage = () => {
                           <p className="text-xs text-muted-foreground">Nenhuma movimentação registrada</p>
                         </div>
                       ) : (
-                        <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1">
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
                           {recentMovements.map((mov, i) => {
                             const typeConfig = movementTypeLabels[mov.movement_type] || { label: mov.movement_type, color: "text-foreground" };
                             return (
@@ -539,20 +539,20 @@ const ClinicalDashboardPage = () => {
                                 initial={{ opacity: 0, x: 8 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 0.45 + i * 0.05 }}
-                                className="flex items-start gap-2.5 py-2 px-2.5 rounded-lg hover:bg-muted/40 transition-colors border border-transparent hover:border-border/40"
+                                className="flex items-start gap-3 py-2 px-3 rounded-lg hover:bg-muted/40 transition-colors border border-transparent hover:border-border/40"
                               >
-                                <div className="h-2 w-2 rounded-full bg-primary/60 mt-1.5 flex-shrink-0" />
+                                <div className="h-2 w-2 rounded-full bg-primary/60 mt-2 flex-shrink-0" />
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className={cn("text-[11px] font-semibold", typeConfig.color)}>
+                                  <div className="flex items-center gap-2">
+                                    <span className={cn("text-xs font-medium", typeConfig.color)}>
                                       {typeConfig.label}
                                     </span>
                                     {mov.patient_bed && (
-                                      <span className="text-[9px] text-muted-foreground">• {mov.patient_bed}</span>
+                                      <span className="text-xs text-muted-foreground">• {mov.patient_bed}</span>
                                     )}
                                   </div>
-                                  <p className="patient-id text-[11px] text-foreground/80 truncate">{mov.patient_name}</p>
-                                  <p className="text-[9px] text-muted-foreground mt-0.5">
+                                  <p className="patient-id text-xs text-foreground/80 truncate">{mov.patient_name}</p>
+                                  <p className="text-xs text-muted-foreground mt-1">
                                     {formatDistanceToNow(new Date(mov.created_at), { addSuffix: true, locale: ptBR })}
                                   </p>
                                 </div>
@@ -577,7 +577,7 @@ const ClinicalDashboardPage = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => navigate("/mapa")}
-                  className="text-xs gap-1.5 h-8"
+                  className="text-xs gap-2 h-8"
                 >
                   <BedDouble className="h-3.5 w-3.5" />
                   Abrir mapa de leitos
@@ -587,7 +587,7 @@ const ClinicalDashboardPage = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => navigate("/painel-clinico")}
-                    className="text-xs gap-1.5 h-8"
+                    className="text-xs gap-2 h-8"
                   >
                     <ClipboardList className="h-3.5 w-3.5" />
                     Abrir painel clínico

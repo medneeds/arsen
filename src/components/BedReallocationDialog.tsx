@@ -189,12 +189,12 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 uppercase">
+          <DialogTitle className="flex items-center gap-2 uppercase tracking-wider">
             <Shuffle className="h-5 w-5 text-primary" />
             Realocar / Permutar leito
           </DialogTitle>
           <DialogDescription>
-            <span className="font-semibold">{patient.name}</span> · Leito atual{" "}
+            <span className="font-medium">{patient.name}</span> · Leito atual{" "}
             <Badge variant="outline" className="font-mono">{patient.bedNumber}</Badge>{" "}
             · Setor <span className="font-medium">{sectorLabel}</span> (movimentação interna ao setor — leitos são fixos)
           </DialogDescription>
@@ -241,7 +241,7 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
                             "rounded-lg border p-3 text-center font-mono text-sm transition-all",
                             "hover:border-primary hover:bg-primary/5",
                             isSel
-                              ? "border-primary bg-primary/10 ring-2 ring-primary/40 font-semibold"
+                              ? "border-primary bg-primary/10 ring-2 ring-primary/40 font-medium"
                               : "border-border bg-background"
                           )}
                         >
@@ -266,7 +266,7 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
                 </div>
               ) : (
                 <ScrollArea className="h-[280px] pr-2">
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {swapCandidates.map((s) => {
                       const occupied = !!s.name?.trim();
                       const isSel = selectedSwap?.id === s.id;
@@ -286,9 +286,9 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
                           <div className="flex items-center gap-3 min-w-0">
                             <Badge variant="outline" className="font-mono shrink-0">{s.bed_number}</Badge>
                             {occupied ? (
-                              <span className="font-medium uppercase truncate">{s.name}</span>
+                              <span className="font-medium uppercase tracking-wider truncate">{s.name}</span>
                             ) : (
-                              <span className="text-released-on-soft text-xs uppercase font-semibold">Leito vago</span>
+                              <span className="text-released-on-soft text-xs uppercase tracking-wider font-medium">Leito vago</span>
                             )}
                           </div>
                           <ArrowRightLeft className="h-4 w-4 text-muted-foreground shrink-0" />

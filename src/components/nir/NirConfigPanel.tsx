@@ -60,11 +60,11 @@ export function NirConfigPanel({ bedsBySector }: NirConfigPanelProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+        <h3 className="text-lg font-medium text-foreground flex items-center gap-2">
           <Settings2 className="h-4 w-4 text-primary" />
           Configuração — estrutura de leitos
         </h3>
-        <Badge variant="outline" className="text-[11px]">
+        <Badge variant="outline" className="text-xs">
           {divergentes.length === 0
             ? "Todos os setores conferem"
             : `${divergentes.length} setor${divergentes.length > 1 ? "es" : ""} a revisar`}
@@ -72,7 +72,7 @@ export function NirConfigPanel({ bedsBySector }: NirConfigPanelProps) {
       </div>
 
       <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground flex items-start gap-2">
-        <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
+        <Info className="h-3.5 w-3.5 mt-1 shrink-0 text-primary" />
         <span>
           A capacidade prevista vive na configuração da plataforma; os leitos são
           registros do banco. Quando os dois divergem, o mapa mostra leitos que a
@@ -85,7 +85,7 @@ export function NirConfigPanel({ bedsBySector }: NirConfigPanelProps) {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground">
+            <tr className="border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
               <th className="text-left font-medium py-2 px-2">Setor</th>
               <th className="text-left font-medium py-2 px-2">Numeração</th>
               <th className="text-right font-medium py-2 px-2">Previstos</th>
@@ -120,19 +120,19 @@ export function NirConfigPanel({ bedsBySector }: NirConfigPanelProps) {
                   </td>
                   <td className="py-2 px-2">
                     {l.semConfig ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-destructive">
+                      <span className="inline-flex items-center gap-1 text-xs text-destructive">
                         <AlertTriangle className="h-3 w-3" /> Sem configuração
                       </span>
                     ) : faltando ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-warning-on-soft">
+                      <span className="inline-flex items-center gap-1 text-xs text-warning-on-soft">
                         <AlertTriangle className="h-3 w-3" /> Faltam {Math.abs(l.diferenca!)}
                       </span>
                     ) : sobrando ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-foreground">
+                      <span className="inline-flex items-center gap-1 text-xs text-foreground">
                         +{l.diferenca} além do previsto
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-released-on-soft">
+                      <span className="inline-flex items-center gap-1 text-xs text-released-on-soft">
                         <CheckCircle2 className="h-3 w-3" /> Confere
                       </span>
                     )}
@@ -144,7 +144,7 @@ export function NirConfigPanel({ bedsBySector }: NirConfigPanelProps) {
         </table>
       </div>
 
-      <p className="text-[10px] text-muted-foreground leading-relaxed">
+      <p className="text-xs text-muted-foreground leading-relaxed">
         Leitos <strong>além do previsto</strong> costumam ser macas extras, e são
         legítimos. <strong>Faltar</strong> leito significa que o setor tem menos
         registros do que a unidade opera — e é o caso que merece conferência.{" "}

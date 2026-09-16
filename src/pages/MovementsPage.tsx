@@ -317,7 +317,7 @@ export default function MovementsPage() {
       <div className="p-4 md:p-6 space-y-6">
         <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Histórico de Movimentações</h1>
+            <h1 className="text-3xl font-semibold text-foreground">Histórico de Movimentações</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Registro de altas, óbitos e transferências de pacientes
             </p>
@@ -341,21 +341,21 @@ export default function MovementsPage() {
                     handleSearch();
                   }
                 }}
-                className="pl-10 uppercase"
+                className="pl-8 uppercase tracking-wider"
               />
             </div>
             {pendingSearch.trim() && (
               <Button
                 onClick={handleSearch}
                 disabled={isSearching}
-                className="h-10 px-5 gap-2 shrink-0 shadow-sm transition-all duration-200"
+                className="h-10 px-4 gap-2 shrink-0 shadow-sm transition-all duration-200"
               >
                 {isSearching ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Search className="h-4 w-4" />
                 )}
-                <span className="text-sm font-medium uppercase">Buscar</span>
+                <span className="text-sm font-medium uppercase tracking-wider">Buscar</span>
               </Button>
             )}
           </div>
@@ -365,7 +365,7 @@ export default function MovementsPage() {
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold uppercase text-sm">Filtros de Data</h3>
+                <h3 className="font-medium uppercase tracking-wider text-sm">Filtros de Data</h3>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -375,7 +375,7 @@ export default function MovementsPage() {
                   variant={selectedPeriod === "all" ? "default" : "outline"}
                   size="sm"
                   onClick={() => handlePeriodChange("all")}
-                  className="uppercase text-xs"
+                  className="uppercase tracking-wider text-xs"
                 >
                   Todos
                 </Button>
@@ -383,7 +383,7 @@ export default function MovementsPage() {
                   variant={selectedPeriod === "today" ? "default" : "outline"}
                   size="sm"
                   onClick={() => handlePeriodChange("today")}
-                  className="uppercase text-xs"
+                  className="uppercase tracking-wider text-xs"
                 >
                   Hoje
                 </Button>
@@ -391,7 +391,7 @@ export default function MovementsPage() {
                   variant={selectedPeriod === "week" ? "default" : "outline"}
                   size="sm"
                   onClick={() => handlePeriodChange("week")}
-                  className="uppercase text-xs"
+                  className="uppercase tracking-wider text-xs"
                 >
                   Última Semana
                 </Button>
@@ -399,7 +399,7 @@ export default function MovementsPage() {
                   variant={selectedPeriod === "month" ? "default" : "outline"}
                   size="sm"
                   onClick={() => handlePeriodChange("month")}
-                  className="uppercase text-xs"
+                  className="uppercase tracking-wider text-xs"
                 >
                   Último Mês
                 </Button>
@@ -407,7 +407,7 @@ export default function MovementsPage() {
                   variant={selectedPeriod === "quarter" ? "default" : "outline"}
                   size="sm"
                   onClick={() => handlePeriodChange("quarter")}
-                  className="uppercase text-xs"
+                  className="uppercase tracking-wider text-xs"
                 >
                   Último Trimestre
                 </Button>
@@ -416,7 +416,7 @@ export default function MovementsPage() {
               {/* Date Pickers */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium uppercase">Data Inicial</label>
+                  <label className="text-sm font-medium uppercase tracking-wider">Data Inicial</label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -446,7 +446,7 @@ export default function MovementsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium uppercase">Data Final</label>
+                  <label className="text-sm font-medium uppercase tracking-wider">Data Final</label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -480,7 +480,7 @@ export default function MovementsPage() {
               <div className="flex gap-2 pt-2">
                 <Button
                   onClick={handleApplyFilters}
-                  className="flex-1 uppercase font-semibold"
+                  className="flex-1 uppercase tracking-wider font-medium"
                   size="lg"
                 >
                   <Filter className="mr-2 h-4 w-4" />
@@ -489,7 +489,7 @@ export default function MovementsPage() {
                 <Button
                   variant="outline"
                   onClick={handleClearFilters}
-                  className="flex-1 uppercase"
+                  className="flex-1 uppercase tracking-wider"
                   size="lg"
                 >
                   Limpar Filtro
@@ -545,7 +545,7 @@ export default function MovementsPage() {
                               <Icon className="h-5 w-5" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <CardTitle className="patient-id text-base font-semibold truncate">
+                              <CardTitle className="patient-id text-base font-medium truncate">
                                 {movement.patient_name}
                               </CardTitle>
                               <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
@@ -560,7 +560,7 @@ export default function MovementsPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2 flex-wrap justify-end">
-                            <Badge variant="outline" className={cn("uppercase text-[10px] tracking-wider", badgeTone)}>
+                            <Badge variant="outline" className={cn("uppercase text-xs tracking-wider", badgeTone)}>
                               {def?.label ?? movement.movement_type}
                             </Badge>
                             {movement.patient_snapshot && (
@@ -571,7 +571,7 @@ export default function MovementsPage() {
                                   setSelectedPatient(movement.patient_snapshot);
                                   setIsSnapshotDialogOpen(true);
                                 }}
-                                className="h-7 gap-1.5"
+                                className="h-7 gap-2"
                               >
                                 <FileText className="h-3.5 w-3.5" />
                                 Ver Dados
@@ -586,7 +586,7 @@ export default function MovementsPage() {
                                     `/alta-desfecho?patient=${encodeURIComponent(movement.patient_name)}&bed=${encodeURIComponent(movement.patient_bed ?? "")}`,
                                   )
                                 }
-                                className="h-7 gap-1.5"
+                                className="h-7 gap-2"
                               >
                                 <FileText className="h-3.5 w-3.5" />
                                 Sumário
@@ -597,7 +597,7 @@ export default function MovementsPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleReallocatePatient(movement)}
-                                className="h-7 gap-1.5"
+                                className="h-7 gap-2"
                               >
                                 <RotateCcw className="h-3.5 w-3.5" />
                                 Realocar
@@ -612,7 +612,7 @@ export default function MovementsPage() {
                             <span className="text-xs font-medium text-muted-foreground min-w-[110px] uppercase tracking-wider">
                               Destino
                             </span>
-                            <span className="text-sm font-medium uppercase">{movement.destination}</span>
+                            <span className="text-sm font-medium uppercase tracking-wider">{movement.destination}</span>
                           </div>
                         )}
                         {movement.responsible_doctor && (
@@ -620,7 +620,7 @@ export default function MovementsPage() {
                             <span className="text-xs font-medium text-muted-foreground min-w-[110px] uppercase tracking-wider">
                               Médico Resp.
                             </span>
-                            <span className="text-sm font-medium uppercase">{movement.responsible_doctor}</span>
+                            <span className="text-sm font-medium uppercase tracking-wider">{movement.responsible_doctor}</span>
                           </div>
                         )}
                         {movement.notes && (
@@ -628,7 +628,7 @@ export default function MovementsPage() {
                             <span className="text-xs font-medium text-muted-foreground min-w-[110px] uppercase tracking-wider">
                               Observações
                             </span>
-                            <span className="text-sm uppercase">{movement.notes}</span>
+                            <span className="text-sm uppercase tracking-wider">{movement.notes}</span>
                           </div>
                         )}
                         <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">

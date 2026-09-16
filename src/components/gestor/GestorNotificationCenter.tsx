@@ -131,7 +131,7 @@ export function GestorNotificationCenter({ data }: Props) {
           {total > 0 && (
             <Badge
               variant={criticalCount > 0 ? "destructive" : "secondary"}
-              className="h-5 px-1.5 text-[10px]"
+              className="h-5 px-2 text-xs"
             >
               {total}
             </Badge>
@@ -141,39 +141,39 @@ export function GestorNotificationCenter({ data }: Props) {
       <PopoverContent align="end" className="w-96 p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
           <div>
-            <p className="text-sm font-semibold">Notificações do Gestor</p>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-sm font-medium">Notificações do Gestor</p>
+            <p className="text-xs text-muted-foreground">
               {criticalCount} crítica(s) · {total - criticalCount} alerta(s)
             </p>
           </div>
         </div>
         <ScrollArea className="max-h-96">
           {total === 0 ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">
+            <div className="py-8 text-center text-sm text-muted-foreground">
               <Bell className="h-8 w-8 mx-auto mb-2 opacity-30" />
               Nenhuma notificação ativa.
-              <p className="text-[11px] mt-1">Operação dentro das metas.</p>
+              <p className="text-xs mt-1">Operação dentro das metas.</p>
             </div>
           ) : (
-            <ul className="p-2 space-y-1.5">
+            <ul className="p-2 space-y-2">
               {notifications.map((n) => {
                 const Icon = n.icon;
                 return (
                   <li
                     key={n.id}
-                    className={cn("rounded-md border p-2.5 flex gap-2.5", LEVEL_STYLES[n.level])}
+                    className={cn("rounded-md border p-3 flex gap-3", LEVEL_STYLES[n.level])}
                   >
                     <Icon
                       className={cn(
-                        "h-4 w-4 mt-0.5 shrink-0",
+                        "h-4 w-4 mt-1 shrink-0",
                         n.level === "critical" && "text-critical",
                         n.level === "warning" && "text-warning",
                         n.level === "info" && "text-muted-foreground",
                       )}
                     />
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-foreground">{n.title}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{n.message}</p>
+                      <p className="text-xs font-medium text-foreground">{n.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{n.message}</p>
                     </div>
                   </li>
                 );

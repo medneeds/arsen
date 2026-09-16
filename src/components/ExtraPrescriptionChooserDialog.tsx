@@ -27,8 +27,8 @@ export interface ExtraCategoryOption {
 // (convenção ISMP-Brasil para Medicamentos de Alta Vigilância).
 const BLUE_BASE = {
   color: 'text-[hsl(217,70%,40%)]',
-  bg: 'bg-[hsl(217,55%,96%)](217,55%,12%)]/30',
-  border: 'border-[hsl(217,55%,82%)](217,55%,30%)] hover:border-[hsl(217,60%,60%)]',
+  bg: 'bg-[hsl(217,55%,96%)]/30',
+  border: 'border-[hsl(217,55%,82%)] hover:border-[hsl(217,60%,60%)]',
 };
 
 const OPTIONS: ExtraCategoryOption[] = [
@@ -137,11 +137,11 @@ export function ExtraPrescriptionChooserDialog({
                 onClick={() => { onPick(opt.value); onClose(); }}
                 className={`text-left rounded-lg border-2 p-3 transition-all ${opt.bg} ${opt.border}`}
               >
-                <div className="flex items-start gap-2.5">
-                  <Icon className={`h-5 w-5 mt-0.5 shrink-0 ${opt.color}`} />
+                <div className="flex items-start gap-3">
+                  <Icon className={`h-5 w-5 mt-1 shrink-0 ${opt.color}`} />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-foreground">{opt.label}</div>
-                    <div className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                    <div className="text-sm font-medium text-foreground">{opt.label}</div>
+                    <div className="text-xs text-muted-foreground leading-snug mt-1">
                       {opt.description}
                     </div>
                   </div>

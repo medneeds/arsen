@@ -358,7 +358,7 @@ export function SatRequestDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
           {/* Identificação retrátil — paciente já carregado */}
           <CollapsibleInfoCard
             title="Identificação do paciente"
@@ -391,11 +391,11 @@ export function SatRequestDialog({
 
           {/* Avaliação do ferimento */}
           <div className="space-y-3">
-            <Label className="text-sm font-semibold">1. Tipo de ferimento</Label>
+            <Label className="text-sm font-medium">1. Tipo de ferimento</Label>
             <RadioGroup value={wound} onValueChange={(v) => setWound(v as WoundClass)} className="space-y-2">
               {(Object.keys(WOUND_LABEL) as WoundClass[]).map((k) => (
-                <label key={k} className="flex items-start gap-2 cursor-pointer p-2 rounded border border-border/50 hover:bg-muted/40">
-                  <RadioGroupItem value={k} id={`wound-${k}`} className="mt-0.5" />
+                <label key={k} className="flex items-start gap-2 cursor-pointer p-2 rounded-md border border-border/50 hover:bg-muted/40">
+                  <RadioGroupItem value={k} id={`wound-${k}`} className="mt-1" />
                   <span className="text-xs leading-snug">{WOUND_LABEL[k]}</span>
                 </label>
               ))}
@@ -430,11 +430,11 @@ export function SatRequestDialog({
 
           {/* Status vacinal */}
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">2. Situação vacinal</Label>
+            <Label className="text-sm font-medium">2. Situação vacinal</Label>
             <RadioGroup value={vac} onValueChange={(v) => setVac(v as VaccinationStatus)} className="space-y-2">
               {(Object.keys(VACCINATION_LABEL) as VaccinationStatus[]).map((k) => (
-                <label key={k} className="flex items-start gap-2 cursor-pointer p-2 rounded border border-border/50 hover:bg-muted/40">
-                  <RadioGroupItem value={k} id={`vac-${k}`} className="mt-0.5" />
+                <label key={k} className="flex items-start gap-2 cursor-pointer p-2 rounded-md border border-border/50 hover:bg-muted/40">
+                  <RadioGroupItem value={k} id={`vac-${k}`} className="mt-1" />
                   <span className="text-xs leading-snug">{VACCINATION_LABEL[k]}</span>
                 </label>
               ))}
@@ -460,20 +460,20 @@ export function SatRequestDialog({
 
           {/* Recomendação automática */}
           <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-warning-on-soft">
+            <div className="flex items-center gap-2 text-xs font-medium text-warning-on-soft">
               <AlertTriangle className="h-3.5 w-3.5" />
               Conduta sugerida (PNI/MS)
             </div>
             <p className="text-xs text-foreground/80">{recommendation.rationale}</p>
             <div className="flex flex-wrap gap-2 pt-1">
-              {recommendation.vat && <Badge variant="outline" className="text-[10px]">Vacina dT</Badge>}
+              {recommendation.vat && <Badge variant="outline" className="text-xs">Vacina dT</Badge>}
               {recommendation.sat && (
-                <Badge variant="outline" className="text-[10px] border-warning/40">
+                <Badge variant="outline" className="text-xs border-warning/40">
                   {allergyHistory === "sim" ? "IGHAT 250 UI IM" : "SAT 5.000 UI IM"}
                 </Badge>
               )}
               {!recommendation.vat && !recommendation.sat && (
-                <Badge variant="outline" className="text-[10px]">Apenas cuidados locais</Badge>
+                <Badge variant="outline" className="text-xs">Apenas cuidados locais</Badge>
               )}
             </div>
           </div>
@@ -482,7 +482,7 @@ export function SatRequestDialog({
 
           {/* Produto efetivamente solicitado */}
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">4. Produto solicitado</Label>
+            <Label className="text-sm font-medium">4. Produto solicitado</Label>
             <Select value={product} onValueChange={(v) => setProduct(v as Product)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -524,10 +524,10 @@ export function SatRequestDialog({
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={handlePrint} disabled={submitting}>
-            <Printer className="h-4 w-4 mr-1.5" /> Imprimir
+            <Printer className="h-4 w-4 mr-2" /> Imprimir
           </Button>
           <Button onClick={handleSubmit} disabled={submitting}>
-            {submitting ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Syringe className="h-4 w-4 mr-1.5" />}
+            {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Syringe className="h-4 w-4 mr-2" />}
             Registrar solicitação
           </Button>
         </DialogFooter>

@@ -197,7 +197,7 @@ function getMissingFields(e: AntimicrobialEntry): string[] {
   return missing;
 }
 
-const Req = () => <span className="text-critical ml-0.5" aria-label="obrigatório">*</span>;
+const Req = () => <span className="text-critical ml-1" aria-label="obrigatório">*</span>;
 
 function createEmptyEntry(
   item?: PrescriptionItem | MedicationEntry,
@@ -293,10 +293,10 @@ function AntimicrobialCombobox({
                   className="text-xs"
                 >
                   <Check className={cn("mr-2 h-3.5 w-3.5", value === med.name ? "opacity-100 text-[hsl(217,70%,40%)]" : "opacity-0")} />
-                  <Pill className="mr-1.5 h-3 w-3 text-[hsl(217,65%,45%)] shrink-0" />
+                  <Pill className="mr-2 h-3 w-3 text-[hsl(217,65%,45%)] shrink-0" />
                   <div className="flex flex-col flex-1 min-w-0">
                     <span className="font-medium truncate">{med.name}</span>
-                    <span className="text-[10px] text-muted-foreground truncate">
+                    <span className="text-xs text-muted-foreground truncate">
                       {med.presentation} · {med.defaultDose} {med.defaultPosology} {med.defaultRoute}
                     </span>
                   </div>
@@ -755,7 +755,7 @@ export function AntimicrobialGuideDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-5xl w-[96vw] h-[88vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="px-6 py-3 border-b shrink-0 bg-[hsl(217,55%,96%)]/50(217,75%,12%)]/15">
+          <DialogHeader className="px-6 py-3 border-b shrink-0 bg-[hsl(217,55%,96%)]/50">
             <DialogTitle className="flex items-center gap-2 text-base">
               <Shield className="h-5 w-5 text-[hsl(217,65%,45%)]" />
               GUIA DE USO DE ANTIMICROBIANOS — CCIH
@@ -769,7 +769,7 @@ export function AntimicrobialGuideDialog({
           <ScrollArea className="flex-1 min-h-0">
             <div className="px-6 py-4 space-y-4">
               {/* Patient Summary */}
-              <div className="rounded-lg border border-[hsl(217,55%,82%)]/70 bg-[hsl(217,55%,96%)]/50(217,75%,12%)]/15(217,70%,28%)]/30 p-3">
+              <div className="rounded-lg border border-[hsl(217,55%,82%)]/70 bg-[hsl(217,55%,96%)]/50 p-3">
                 <div className="grid grid-cols-4 gap-2 text-xs">
                   <div><span className="text-muted-foreground">Paciente:</span> <strong>{patient.name}</strong></div>
                   <div><span className="text-muted-foreground">Leito:</span> <strong>{patient.bed}</strong></div>
@@ -777,7 +777,7 @@ export function AntimicrobialGuideDialog({
                   <div><span className="text-muted-foreground">Peso:</span> <strong>{patient.weight ? `${patient.weight}kg` : "—"}</strong></div>
                 </div>
                 {patient.allergies && (
-                  <div className="mt-1.5 flex items-center gap-1 text-xs text-critical-on-soft">
+                  <div className="mt-2 flex items-center gap-1 text-xs text-critical-on-soft">
                     <AlertTriangle className="h-3 w-3" /> Alergias: <strong>{patient.allergies}</strong>
                   </div>
                 )}
@@ -787,19 +787,19 @@ export function AntimicrobialGuideDialog({
               {mode === 'prescribe' && (
                 <div className="rounded-lg border border-warning-border bg-warning-soft/60 p-3 text-xs">
                   <div className="flex items-start gap-2">
-                    <AlertCircle className="h-4 w-4 text-warning-on-soft shrink-0 mt-0.5" />
+                    <AlertCircle className="h-4 w-4 text-warning-on-soft shrink-0 mt-1" />
                     <div className="flex-1">
-                      <div className="font-semibold text-warning-on-soft mb-1">
+                      <div className="font-medium text-warning-on-soft mb-1">
                         Para anexar à prescrição é obrigatório preencher:
                       </div>
-                      <div className="flex flex-wrap gap-1.5 text-[10.5px]">
+                      <div className="flex flex-wrap gap-2 text-xs">
                         {Object.values(REQUIRED_LABELS).map(l => (
-                          <span key={l} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-warning-border bg-white">
+                          <span key={l} className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-warning-border bg-white">
                             <Req />{l}
                           </span>
                         ))}
                       </div>
-                      <div className="text-[10.5px] text-warning-on-soft mt-1.5">
+                      <div className="text-xs text-warning-on-soft mt-2">
                         Itens marcados com <Req /> são exigidos pela CCIH/ANVISA. O botão "Anexar" só libera quando todos estiverem preenchidos em <strong>cada</strong> antimicrobiano.
                       </div>
                     </div>
@@ -821,12 +821,12 @@ export function AntimicrobialGuideDialog({
                     <X className="h-3.5 w-3.5" />
                   </button>
                   <div className="flex items-start gap-2 pr-6">
-                    <Beaker className="h-4 w-4 text-warning-on-soft shrink-0 mt-0.5" />
+                    <Beaker className="h-4 w-4 text-warning-on-soft shrink-0 mt-1" />
                     <div className="flex-1 space-y-1">
-                      <div className="font-semibold text-warning-on-soft">
+                      <div className="font-medium text-warning-on-soft">
                         Reconstituição: sugestão revisável
                       </div>
-                      <div className="text-[11px] text-warning-on-soft/90 leading-snug">
+                      <div className="text-xs text-warning-on-soft/90 leading-snug">
                         Antibióticos com evidência convergente (bula ANVISA / Sanford / ASHP) trazem
                         diluente, volume, diluição final e tempo de infusão <strong>pré-preenchidos</strong>.
                         Todos os campos são <strong>editáveis</strong> — confira sempre antes de validar.
@@ -857,16 +857,16 @@ export function AntimicrobialGuideDialog({
                   className={cardCls}
                 >
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <h3 className="text-sm font-semibold flex items-center gap-2 min-w-0">
+                    <h3 className="text-sm font-medium flex items-center gap-2 min-w-0">
                       <Badge variant="outline" className="text-[hsl(217,70%,40%)] border-[hsl(217,55%,72%)] shrink-0">ATM {idx + 1}</Badge>
                       <span className="truncate">{entry.medication || "Novo antimicrobiano"}</span>
                       {mode === 'prescribe' && (
                         isComplete ? (
-                          <Badge variant="outline" className="text-released-on-soft border-released-border bg-released-soft gap-1 text-[10px] font-normal">
+                          <Badge variant="outline" className="text-released-on-soft border-released-border bg-released-soft gap-1 text-xs font-normal">
                             <CheckCircle2 className="h-3 w-3" /> Pronto p/ anexar
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-warning-on-soft border-warning-border bg-warning-soft gap-1 text-[10px] font-normal">
+                          <Badge variant="outline" className="text-warning-on-soft border-warning-border bg-warning-soft gap-1 text-xs font-normal">
                             <AlertCircle className="h-3 w-3" /> Faltam {missing.length} campo(s)
                           </Badge>
                         )
@@ -880,8 +880,8 @@ export function AntimicrobialGuideDialog({
                   </div>
 
                   {showThisError && !isComplete && (
-                    <div className="flex items-start gap-1.5 text-[11px] text-warning-on-soft bg-warning-soft/70 border border-warning-border rounded px-2 py-1.5">
-                      <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    <div className="flex items-start gap-2 text-xs text-warning-on-soft bg-warning-soft/70 border border-warning-border rounded-md px-2 py-2">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-1" />
                       <div>
                         <strong>Para anexar este antimicrobiano, preencha:</strong> {missing.join(', ')}.
                       </div>
@@ -890,7 +890,7 @@ export function AntimicrobialGuideDialog({
                   {/* Antimicrobial picker (combobox) */}
                   <div className="grid grid-cols-4 gap-2">
                     <div className="col-span-2">
-                      <Label className="text-[10px]">Antimicrobiano (selecionar ou digitar){mode === 'prescribe' && <Req />}</Label>
+                      <Label className="text-xs">Antimicrobiano (selecionar ou digitar){mode === 'prescribe' && <Req />}</Label>
                       {!catalogReady ? (
                         <div className="h-9 flex items-center px-3 text-xs text-muted-foreground border rounded-md bg-muted/30">
                           Carregando catálogo...
@@ -904,12 +904,12 @@ export function AntimicrobialGuideDialog({
                         />
                       )}
                       {entry.presentation && (
-                        <div className="text-[10px] text-muted-foreground mt-0.5 truncate">{entry.presentation}</div>
+                        <div className="text-xs text-muted-foreground mt-1 truncate">{entry.presentation}</div>
                       )}
                     </div>
                     {/* Fase 1: Dose = Input numérico + Select de unidade (lista fechada) */}
                     <div>
-                      <Label className="text-[10px]">Dose{mode === 'prescribe' && <Req />}</Label>
+                      <Label className="text-xs">Dose{mode === 'prescribe' && <Req />}</Label>
                       <div className="flex gap-1">
                         <Input
                           value={entry.doseValue}
@@ -931,7 +931,7 @@ export function AntimicrobialGuideDialog({
                       </div>
                     </div>
                     <div>
-                      <Label className="text-[10px]">Via{mode === 'prescribe' && <Req />}</Label>
+                      <Label className="text-xs">Via{mode === 'prescribe' && <Req />}</Label>
                       <Input value={entry.route} onChange={e => updateEntry(entry.id, "route", e.target.value)} className="h-8 text-xs" />
                     </div>
                   </div>
@@ -939,7 +939,7 @@ export function AntimicrobialGuideDialog({
                   <div className="grid grid-cols-4 gap-2">
                     {/* Fase 2: Posologia = Select com lista canônica (inclui 48/48h, 72/72h) */}
                     <div>
-                      <Label className="text-[10px]">Posologia{mode === 'prescribe' && <Req />}</Label>
+                      <Label className="text-xs">Posologia{mode === 'prescribe' && <Req />}</Label>
                       <Select value={entry.posology} onValueChange={v => updateEntry(entry.id, "posology", v)}>
                         <SelectTrigger className="h-8 text-xs">
                           <SelectValue placeholder="Selecionar..." />
@@ -947,7 +947,7 @@ export function AntimicrobialGuideDialog({
                         <SelectContent>
                           {ANTIMICROBIAL_INTERVAL_GROUPS.map(g => (
                             <React.Fragment key={g.key}>
-                              <div className="text-[9px] uppercase tracking-wider text-muted-foreground px-2 pt-1.5 pb-0.5">{g.title}</div>
+                              <div className="text-xs uppercase tracking-wider text-muted-foreground px-2 pt-2 pb-1">{g.title}</div>
                               {g.items.map(i => (
                                 <SelectItem key={i.value} value={i.value} className="text-xs">{i.label}</SelectItem>
                               ))}
@@ -963,23 +963,23 @@ export function AntimicrobialGuideDialog({
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-[10px]">Data de Início{mode === 'prescribe' && <Req />}</Label>
+                      <Label className="text-xs">Data de Início{mode === 'prescribe' && <Req />}</Label>
                       <Input type="date" value={entry.startDate} onChange={e => updateEntry(entry.id, "startDate", e.target.value)} className="h-8 text-xs" />
                     </div>
                     <div>
-                      <Label className="text-[10px]">Duração Prevista (dias)</Label>
+                      <Label className="text-xs">Duração Prevista (dias)</Label>
                       <Input value={entry.plannedDuration} onChange={e => updateEntry(entry.id, "plannedDuration", e.target.value)} placeholder="Ex: 7" className="h-8 text-xs" />
                       {(() => {
                         const end = computeEndDate(entry.startDate, entry.plannedDuration);
                         return end ? (
-                          <div className="text-[10px] text-released-on-soft mt-0.5">
+                          <div className="text-xs text-released-on-soft mt-1">
                             Previsão de fim: <strong>{end}</strong>
                           </div>
                         ) : null;
                       })()}
                     </div>
                     <div>
-                      <Label className="text-[10px]">Classe de Restrição</Label>
+                      <Label className="text-xs">Classe de Restrição</Label>
                       <Select value={entry.ccihApproval} onValueChange={v => updateEntry(entry.id, "ccihApproval", v)}>
                         <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -998,10 +998,10 @@ export function AntimicrobialGuideDialog({
                   {/* Fase 3: Setor/Unidade editável (pré-preenchido com o setor atual do paciente) */}
                   <div className="grid grid-cols-4 gap-2">
                     <div className="col-span-2">
-                      <Label className="text-[10px]">
+                      <Label className="text-xs">
                         Setor / Unidade do paciente
                         {patient?.unit && entry.unit && entry.unit !== patient.unit && (
-                          <span className="text-warning-on-soft ml-1.5 text-[9px]">
+                          <span className="text-warning-on-soft ml-2 text-xs">
                             (sobrescrito — atual: {patient.unit})
                           </span>
                         )}
@@ -1012,7 +1012,7 @@ export function AntimicrobialGuideDialog({
                         placeholder={patient?.unit || "Ex: UTI-A"}
                         className="h-8 text-xs"
                       />
-                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                      <div className="text-xs text-muted-foreground mt-1">
                         Pré-preenchido com o setor atual. Edite só se este ATB seguir o paciente em transferência.
                       </div>
                     </div>
@@ -1020,19 +1020,19 @@ export function AntimicrobialGuideDialog({
 
                   {/* ===== Bloco "Sugestão revisável" — Reconstituição & Diluição ===== */}
                   {hasRecon && (
-                    <div className="rounded-lg border border-warning-border/70 bg-warning-soft/40 p-2.5 space-y-2">
+                    <div className="rounded-lg border border-warning-border/70 bg-warning-soft/40 p-3 space-y-2">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
                           <Beaker className="h-3.5 w-3.5 text-warning-on-soft shrink-0" />
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-warning-on-soft">
+                          <span className="text-xs font-medium uppercase tracking-wide text-warning-on-soft">
                             Reconstituição / Diluição
                           </span>
-                          <Badge variant="outline" className="border-warning bg-warning-soft/70 text-warning-on-soft text-[9px] gap-0.5 px-1.5">
+                          <Badge variant="outline" className="border-warning bg-warning-soft/70 text-warning-on-soft text-xs gap-1 px-2">
                             <Info className="h-2.5 w-2.5" /> SUGESTÃO — REVISE
                           </Badge>
                         </div>
                         {entry.reconSource && (
-                          <span className="text-[10px] text-warning-on-soft/80">
+                          <span className="text-xs text-warning-on-soft/80">
                             Fonte: <strong>{entry.reconSource}</strong>
                           </span>
                         )}
@@ -1063,7 +1063,7 @@ export function AntimicrobialGuideDialog({
                         return (
                       <div className="grid grid-cols-5 gap-2">
                         <div>
-                          <Label className="text-[10px]">Solvente (reconstituir em)</Label>
+                          <Label className="text-xs">Solvente (reconstituir em)</Label>
                           <Select
                             value={solventValue}
                             onValueChange={v => updateEntry(entry.id, "reconSolvent", v)}
@@ -1072,7 +1072,7 @@ export function AntimicrobialGuideDialog({
                             <SelectContent>
                               {solventExtra && (
                                 <SelectItem value={solventExtra} className="text-xs italic text-warning-on-soft">
-                                  {solventExtra} <span className="text-[9px]">(sugestão do catálogo)</span>
+                                  {solventExtra} <span className="text-xs">(sugestão do catálogo)</span>
                                 </SelectItem>
                               )}
                               {SOLVENT_OPTS.map(o => (
@@ -1082,7 +1082,7 @@ export function AntimicrobialGuideDialog({
                           </Select>
                         </div>
                         <div>
-                          <Label className="text-[10px]">Vol. reconstit. (mL)</Label>
+                          <Label className="text-xs">Vol. reconstit. (mL)</Label>
                           <Input
                             value={entry.reconVolume ?? ''}
                             onChange={e => updateEntry(entry.id, "reconVolume", e.target.value)}
@@ -1091,7 +1091,7 @@ export function AntimicrobialGuideDialog({
                           />
                         </div>
                         <div>
-                          <Label className="text-[10px]">Diluente final</Label>
+                          <Label className="text-xs">Diluente final</Label>
                           <Select
                             value={diluentValue}
                             onValueChange={v => updateEntry(entry.id, "reconFinalDiluent", v)}
@@ -1100,7 +1100,7 @@ export function AntimicrobialGuideDialog({
                             <SelectContent>
                               {diluentExtra && (
                                 <SelectItem value={diluentExtra} className="text-xs italic text-warning-on-soft">
-                                  {diluentExtra} <span className="text-[9px]">(sugestão do catálogo)</span>
+                                  {diluentExtra} <span className="text-xs">(sugestão do catálogo)</span>
                                 </SelectItem>
                               )}
                               {DILUENT_OPTS.map(o => (
@@ -1110,7 +1110,7 @@ export function AntimicrobialGuideDialog({
                           </Select>
                         </div>
                         <div>
-                          <Label className="text-[10px]">Vol. final (mL)</Label>
+                          <Label className="text-xs">Vol. final (mL)</Label>
                           <Input
                             value={entry.reconFinalVolume ?? ''}
                             onChange={e => updateEntry(entry.id, "reconFinalVolume", e.target.value)}
@@ -1119,7 +1119,7 @@ export function AntimicrobialGuideDialog({
                           />
                         </div>
                         <div>
-                          <Label className="text-[10px]">Tempo infusão (min)</Label>
+                          <Label className="text-xs">Tempo infusão (min)</Label>
                           <Input
                             value={entry.reconInfusionTime ?? ''}
                             onChange={e => updateEntry(entry.id, "reconInfusionTime", e.target.value)}
@@ -1132,8 +1132,8 @@ export function AntimicrobialGuideDialog({
                       })()}
 
                       {entry.reconNotes && (
-                        <div className="flex items-start gap-1.5 text-[10.5px] text-warning-on-soft/90 bg-warning-soft/40 border border-warning-border/70 rounded px-2 py-1.5">
-                          <AlertCircle className="h-3 w-3 shrink-0 mt-0.5" />
+                        <div className="flex items-start gap-2 text-xs text-warning-on-soft/90 bg-warning-soft/40 border border-warning-border/70 rounded-md px-2 py-2">
+                          <AlertCircle className="h-3 w-3 shrink-0 mt-1" />
                           <span>{entry.reconNotes}</span>
                         </div>
                       )}
@@ -1144,7 +1144,7 @@ export function AntimicrobialGuideDialog({
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label className="text-[10px]">Sítio de Infecção / Indicação Clínica{mode === 'prescribe' && <Req />}</Label>
+                      <Label className="text-xs">Sítio de Infecção / Indicação Clínica{mode === 'prescribe' && <Req />}</Label>
                       <Select value={entry.infectionSite} onValueChange={v => updateEntry(entry.id, "infectionSite", v)}>
                         <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                         <SelectContent>
@@ -1155,14 +1155,14 @@ export function AntimicrobialGuideDialog({
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-[10px]">Antibiótico Prévio (se troca)</Label>
+                      <Label className="text-xs">Antibiótico Prévio (se troca)</Label>
                       <Input value={entry.previousAntibiotic} onChange={e => updateEntry(entry.id, "previousAntibiotic", e.target.value)} placeholder="Medicamento anterior" className="h-8 text-xs" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <Label className="text-[10px]">Cultura Coletada?</Label>
+                      <Label className="text-xs">Cultura Coletada?</Label>
                       <Select value={entry.cultureCollected} onValueChange={v => updateEntry(entry.id, "cultureCollected", v)}>
                         <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -1173,14 +1173,14 @@ export function AntimicrobialGuideDialog({
                       </Select>
                     </div>
                     <div className="col-span-2">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <Label className="text-[10px]">Resultado da Cultura / Antibiograma</Label>
+                      <div className="flex items-center justify-between mb-1">
+                        <Label className="text-xs">Resultado da Cultura / Antibiograma</Label>
                         {patientId && (
                           <Button
                             type="button" variant="outline" size="sm"
                             onClick={() => importCultureResults(entry.id)}
                             disabled={!!loadingImport[entry.id] || availableCultures.length === 0}
-                            className="h-6 text-[10px] gap-1 px-2 border-released-border text-released-on-soft hover:bg-released-soft"
+                            className="h-6 text-xs gap-1 px-2 border-released-border text-released-on-soft hover:bg-released-soft"
                           >
                             {loadingImport[entry.id] === 'cultures' ? <Loader2 className="h-3 w-3 animate-spin" /> : <FlaskConical className="h-3 w-3" />}
                             Importar Culturas ({availableCultures.length})
@@ -1193,14 +1193,14 @@ export function AntimicrobialGuideDialog({
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <Label className="text-[10px]">Justificativa Clínica{mode === 'prescribe' && <Req />}</Label>
+                      <Label className="text-xs">Justificativa Clínica{mode === 'prescribe' && <Req />}</Label>
                       {patientId && (
                         <div className="flex items-center gap-1">
-                          <Button type="button" variant="outline" size="sm" onClick={() => importAdmissionHistory(entry.id)} disabled={!!loadingImport[entry.id]} className="h-6 text-[10px] gap-1 px-2">
+                          <Button type="button" variant="outline" size="sm" onClick={() => importAdmissionHistory(entry.id)} disabled={!!loadingImport[entry.id]} className="h-6 text-xs gap-1 px-2">
                             {loadingImport[entry.id] === 'history' ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
                             Importar Hx Admissional
                           </Button>
-                          <Button type="button" variant="outline" size="sm" onClick={() => importEvolution(entry.id)} disabled={!!loadingImport[entry.id]} className="h-6 text-[10px] gap-1 px-2">
+                          <Button type="button" variant="outline" size="sm" onClick={() => importEvolution(entry.id)} disabled={!!loadingImport[entry.id]} className="h-6 text-xs gap-1 px-2">
                             {loadingImport[entry.id] === 'evolution' ? <Loader2 className="h-3 w-3 animate-spin" /> : <ClipboardList className="h-3 w-3" />}
                             Importar Evolução
                           </Button>
@@ -1211,14 +1211,14 @@ export function AntimicrobialGuideDialog({
                   </div>
 
                   <div>
-                    <Label className="text-[10px]">Observações CCIH</Label>
+                    <Label className="text-xs">Observações CCIH</Label>
                     <Textarea value={entry.ccihNotes} onChange={e => updateEntry(entry.id, "ccihNotes", e.target.value)} placeholder="Observações da Comissão de Controle de Infecção Hospitalar..." className="text-xs min-h-[40px] resize-none" />
                   </div>
                 </div>
                 );
               })}
 
-              <Button variant="outline" size="sm" onClick={addEntry} className="gap-1.5 w-full text-xs">
+              <Button variant="outline" size="sm" onClick={addEntry} className="gap-2 w-full text-xs">
                 <Plus className="h-3.5 w-3.5" /> Adicionar Antimicrobiano
               </Button>
             </div>
@@ -1226,7 +1226,7 @@ export function AntimicrobialGuideDialog({
 
           {/* === STICKY FOOTER === */}
           <DialogFooter className="px-6 py-3 border-t bg-background shrink-0 flex-row sm:justify-between gap-2">
-            <div className="text-[11px] self-center flex items-center gap-2 flex-wrap">
+            <div className="text-xs self-center flex items-center gap-2 flex-wrap">
               {mode === 'prescribe' ? (
                 allValid ? (
                   <span className="inline-flex items-center gap-1 text-released-on-soft font-medium">
@@ -1248,11 +1248,11 @@ export function AntimicrobialGuideDialog({
                 {mode === 'prescribe' ? 'Cancelar' : 'Fechar'}
               </Button>
               {mode === 'prescribe' && draftKey && (
-                <Button variant="ghost" size="sm" onClick={handleSaveDraft} className="gap-1.5 text-xs">
+                <Button variant="ghost" size="sm" onClick={handleSaveDraft} className="gap-2 text-xs">
                   Salvar rascunho
                 </Button>
               )}
-              <Button variant="outline" size="sm" onClick={handlePrintOnly} className="gap-1.5">
+              <Button variant="outline" size="sm" onClick={handlePrintOnly} className="gap-2">
                 <Printer className="h-3.5 w-3.5" /> Imprimir somente a Guia
               </Button>
               {mode === 'prescribe' && onConfirm && (
@@ -1261,7 +1261,7 @@ export function AntimicrobialGuideDialog({
                     variant="outline" size="sm"
                     onClick={handleAttachOnly}
                     title={allValid ? "Anexar à prescrição" : "Clique para ver o que falta preencher"}
-                    className="gap-1.5 border-[hsl(217,55%,72%)] text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,96%)](217,72%,36%)](217,60%,60%)]"
+                    className="gap-2 border-[hsl(217,55%,72%)] text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,96%)]"
                   >
                     <Shield className="h-3.5 w-3.5" /> Anexar antibióticos à prescrição
                   </Button>
@@ -1269,7 +1269,7 @@ export function AntimicrobialGuideDialog({
                     size="sm"
                     onClick={handleAttachAndPrint}
                     title={allValid ? "Anexar e imprimir Guia ATM" : "Clique para ver o que falta preencher"}
-                    className="gap-1.5 bg-[hsl(217,70%,40%)] hover:bg-[hsl(217,72%,36%)] text-white"
+                    className="gap-2 bg-[hsl(217,70%,40%)] hover:bg-[hsl(217,72%,36%)] text-white"
                   >
                     <Printer className="h-3.5 w-3.5" /> Anexar + Imprimir Guia
                   </Button>
@@ -1351,12 +1351,12 @@ function buildAtmBodyHtml({
                 e.reconInfusionTime ? `Infundir em ${esc(e.reconInfusionTime)} min` : null,
               ].filter(Boolean).join(' · ');
               const source = e.reconSource ? ` <span style="font-size:8pt;color:#92400e">(fonte: ${esc(e.reconSource)})</span>` : '';
-              const notes = e.reconNotes ? `<div style="font-size:8pt;color:#92400e;margin-top:2px">⚠ ${esc(e.reconNotes)}</div>` : '';
+              const notes = e.reconNotes ? `<div style="font-size:8pt;color:#92400e;margin-top:2px">${esc(e.reconNotes)}</div>` : '';
               return `<tr><th>Reconstituição</th><td colspan="5">${reconLine}${source}${notes}</td></tr>`;
             })()}
             <tr>
               <th>Cultura</th>
-              <td>${e.cultureCollected === 'sim' ? '✓ Sim' : e.cultureCollected === 'pendente' ? '⏳ Pendente' : '✗ Não'}</td>
+              <td>${e.cultureCollected === 'sim' ? 'Sim' : e.cultureCollected === 'pendente' ? '⏳ Pendente' : 'Não'}</td>
               <th>Resultado</th><td colspan="3">${esc(e.cultureResult)}</td>
             </tr>
             <tr>

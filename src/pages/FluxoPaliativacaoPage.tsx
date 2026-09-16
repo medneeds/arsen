@@ -34,7 +34,7 @@ export default function FluxoPaliativacaoPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen bg-background">
       <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-start gap-4">
@@ -49,11 +49,11 @@ export default function FluxoPaliativacaoPage() {
           
           <div className="flex-1 space-y-3">
             <div className="flex items-center gap-3">
-              <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
+              <div className="flex-shrink-0 w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Workflow className="h-7 w-7 text-muted-foreground" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-semibold tracking-tight bg-primary bg-clip-text text-transparent">
                   Fluxo de Paliativação
                 </h1>
                 <p className="text-muted-foreground text-lg mt-1">
@@ -76,7 +76,7 @@ export default function FluxoPaliativacaoPage() {
         <Separator className="my-6" />
 
         {/* ESCALA DE AVD (KATZ) */}
-        <Card className="border-border/20 shadow-lg">
+        <Card className="border-border/20 shadow-md">
           <CardHeader className="bg-primary/5">
             <div className="flex items-center gap-3">
               <Activity className="h-6 w-6 text-muted-foreground" />
@@ -92,7 +92,7 @@ export default function FluxoPaliativacaoPage() {
           </CardHeader>
           <CardContent className="p-8 space-y-6">
             <div className="bg-primary/10 border border-border/20 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+              <h3 className="text-lg font-medium text-foreground mb-3 flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5" />
                 Objetivo:
               </h3>
@@ -102,15 +102,15 @@ export default function FluxoPaliativacaoPage() {
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4">Itens Avaliados:</h3>
+              <h3 className="text-lg font-medium text-foreground mb-4">Itens Avaliados:</h3>
               <div className="grid gap-3">
                 {katzItems.map((item, index) => (
                   <div key={index} className="flex items-start gap-3 p-4 bg-muted/30 rounded-lg border border-border">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-foreground font-bold">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-foreground font-semibold">
                       {index + 1}
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-semibold text-foreground">{item.item}</h4>
+                      <h4 className="font-medium text-foreground">{item.item}</h4>
                       <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
                     </div>
                   </div>
@@ -119,18 +119,18 @@ export default function FluxoPaliativacaoPage() {
             </div>
 
             <div className="bg-warning/10 border border-warning/20 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-warning-on-soft mb-4">Pontuação:</h3>
+              <h3 className="text-lg font-medium text-warning-on-soft mb-4">Pontuação:</h3>
               <ul className="space-y-3 text-foreground">
                 <li className="flex items-start gap-2">
-                  <span className="text-warning font-bold">•</span>
+                  <span className="text-warning font-semibold">•</span>
                   <span><strong>Cada item recebe 1 ponto</strong> se o paciente realiza sozinho.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-released font-bold">•</span>
+                  <span className="text-released font-semibold">•</span>
                   <span><strong>Máximo: 6 pontos</strong> (Independência total).</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-critical font-bold">•</span>
+                  <span className="text-critical font-semibold">•</span>
                   <span><strong>Mínimo: 0 pontos</strong> (Dependência total).</span>
                 </li>
               </ul>
@@ -139,7 +139,7 @@ export default function FluxoPaliativacaoPage() {
         </Card>
 
         {/* NECPAL */}
-        <Card className="border-border/20 shadow-lg">
+        <Card className="border-border/20 shadow-md">
           <CardHeader className="bg-primary/5">
             <div className="flex items-center gap-3">
               <Users className="h-6 w-6 text-muted-foreground" />
@@ -155,7 +155,7 @@ export default function FluxoPaliativacaoPage() {
           </CardHeader>
           <CardContent className="p-8 space-y-6">
             <div className="bg-primary/10 border border-border/20 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+              <h3 className="text-lg font-medium text-foreground mb-3 flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5" />
                 Objetivo:
               </h3>
@@ -165,15 +165,15 @@ export default function FluxoPaliativacaoPage() {
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4">Componentes Principais:</h3>
+              <h3 className="text-lg font-medium text-foreground mb-4">Componentes Principais:</h3>
               <div className="space-y-3">
                 {necpalCriteria.map((criterion, index) => (
                   <div key={index} className="flex items-start gap-3 p-4 bg-muted/30 rounded-lg border border-border">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-foreground font-bold">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-foreground font-semibold">
                       {index + 1}
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-semibold text-foreground">{criterion.criterion}</h4>
+                      <h4 className="font-medium text-foreground">{criterion.criterion}</h4>
                       <p className="text-sm text-muted-foreground mt-1">{criterion.description}</p>
                     </div>
                   </div>
@@ -182,7 +182,7 @@ export default function FluxoPaliativacaoPage() {
             </div>
 
             <div className="bg-released/10 border border-released/20 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-released-on-soft mb-4">Classificação:</h3>
+              <h3 className="text-lg font-medium text-released-on-soft mb-4">Classificação:</h3>
               <p className="text-foreground leading-relaxed">
                 Se o paciente responder <strong className="text-critical-on-soft">"NÃO"</strong> à pergunta surpresa 
                 e apresentar outros critérios → <strong className="text-released-on-soft">NECPAL POSITIVO</strong> → 
@@ -193,7 +193,7 @@ export default function FluxoPaliativacaoPage() {
         </Card>
 
         {/* PERGUNTA SURPRESA */}
-        <Card className="border-critical/20 shadow-lg">
+        <Card className="border-critical/20 shadow-md">
           <CardHeader className="bg-critical/5">
             <div className="flex items-center gap-3">
               <HelpCircle className="h-6 w-6 text-critical" />
@@ -210,18 +210,18 @@ export default function FluxoPaliativacaoPage() {
           <CardContent className="p-8 space-y-6">
             <div className="bg-critical/10 border border-critical/20 rounded-lg p-8 text-center">
               <HelpCircle className="h-12 w-12 text-critical mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-foreground mb-2">Formulação:</h3>
-              <p className="text-xl text-critical-on-soft font-semibold leading-relaxed">
+              <h3 className="text-2xl font-semibold text-foreground mb-2">Formulação:</h3>
+              <p className="text-xl text-critical-on-soft font-medium leading-relaxed">
                 "Eu me surpreenderia se este paciente morresse no próximo ano?"
               </p>
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4">Interpretação:</h3>
+              <h3 className="text-lg font-medium text-foreground mb-4">Interpretação:</h3>
               <div className="grid gap-4">
                 <div className="p-6 bg-critical/10 border border-critical/20 rounded-lg">
-                  <h4 className="font-semibold text-critical-on-soft mb-2 flex items-center gap-2">
-                    <span className="text-2xl">✗</span>
+                  <h4 className="font-medium text-critical-on-soft mb-2 flex items-center gap-2">
+                    <span className="text-2xl"></span>
                     Não, eu não me surpreenderia
                   </h4>
                   <p className="text-foreground">
@@ -230,8 +230,8 @@ export default function FluxoPaliativacaoPage() {
                 </div>
 
                 <div className="p-6 bg-released/10 border border-released/20 rounded-lg">
-                  <h4 className="font-semibold text-released-on-soft mb-2 flex items-center gap-2">
-                    <span className="text-2xl">✓</span>
+                  <h4 className="font-medium text-released-on-soft mb-2 flex items-center gap-2">
+                    <span className="text-2xl"></span>
                     Sim, eu me surpreenderia
                   </h4>
                   <p className="text-foreground">
@@ -244,7 +244,7 @@ export default function FluxoPaliativacaoPage() {
         </Card>
 
         {/* RESUMO INTEGRADO */}
-        <Card className="border-primary/20 shadow-lg">
+        <Card className="border-primary/20 shadow-md">
           <CardHeader className="bg-primary/5">
             <CardTitle className="text-2xl flex items-center gap-2">
               <Workflow className="h-6 w-6 text-primary" />
@@ -256,14 +256,14 @@ export default function FluxoPaliativacaoPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50 hover:bg-muted/50">
-                    <TableHead className="font-bold w-[200px]">Ferramenta</TableHead>
-                    <TableHead className="font-bold">Objetivo</TableHead>
-                    <TableHead className="font-bold">Quando Usar</TableHead>
+                    <TableHead className="font-semibold w-[200px]">Ferramenta</TableHead>
+                    <TableHead className="font-semibold">Objetivo</TableHead>
+                    <TableHead className="font-semibold">Quando Usar</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   <TableRow className="hover:bg-primary/5">
-                    <TableCell className="font-semibold text-foreground">
+                    <TableCell className="font-medium text-foreground">
                       ABVD (Katz)
                     </TableCell>
                     <TableCell>
@@ -274,7 +274,7 @@ export default function FluxoPaliativacaoPage() {
                     </TableCell>
                   </TableRow>
                   <TableRow className="hover:bg-primary/5">
-                    <TableCell className="font-semibold text-foreground">
+                    <TableCell className="font-medium text-foreground">
                       NECPAL
                     </TableCell>
                     <TableCell>
@@ -285,7 +285,7 @@ export default function FluxoPaliativacaoPage() {
                     </TableCell>
                   </TableRow>
                   <TableRow className="hover:bg-critical/5">
-                    <TableCell className="font-semibold text-critical-on-soft">
+                    <TableCell className="font-medium text-critical-on-soft">
                       Pergunta Surpresa
                     </TableCell>
                     <TableCell>

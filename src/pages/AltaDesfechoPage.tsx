@@ -128,37 +128,37 @@ function DischargeSummaryTab({ patient }: { patient: PatientCtx }) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Nome do Paciente</Label>
                 <Input value={form.patientName} onChange={e => setForm(f => ({ ...f, patientName: e.target.value }))} placeholder="Nome completo" className="text-xs h-9" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Leito</Label>
                 <Input value={form.patientBed} onChange={e => setForm(f => ({ ...f, patientBed: e.target.value }))} placeholder="Ex: V01" className="text-xs h-9" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Prontuário</Label>
                 <Input value={form.medicalRecord} onChange={e => setForm(f => ({ ...f, medicalRecord: e.target.value }))} placeholder="Nº prontuário" className="text-xs h-9" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Médico Responsável</Label>
                 <Input value={form.attendingPhysician} onChange={e => setForm(f => ({ ...f, attendingPhysician: e.target.value }))} placeholder="Dr(a)..." className="text-xs h-9" />
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Data Admissão</Label>
                 <Input type="date" value={form.admissionDate} onChange={e => setForm(f => ({ ...f, admissionDate: e.target.value }))} className="text-xs h-9" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Data Alta</Label>
                 <Input type="date" value={form.dischargeDate} onChange={e => setForm(f => ({ ...f, dischargeDate: e.target.value }))} className="text-xs h-9" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">CRM</Label>
                 <Input value={form.crm} onChange={e => setForm(f => ({ ...f, crm: e.target.value }))} placeholder="CRM" className="text-xs h-9" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Tipo de Alta</Label>
                 <Select value={form.dischargeType} onValueChange={v => setForm(f => ({ ...f, dischargeType: v }))}>
                   <SelectTrigger className="text-xs h-9"><SelectValue /></SelectTrigger>
@@ -186,7 +186,7 @@ function DischargeSummaryTab({ patient }: { patient: PatientCtx }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Diagnóstico de Admissão</Label>
               <Input value={form.admissionDiagnosis} onChange={e => setForm(f => ({ ...f, admissionDiagnosis: e.target.value }))} placeholder="Diagnóstico inicial na admissão" className="text-xs h-9" />
             </div>
@@ -209,12 +209,12 @@ function DischargeSummaryTab({ patient }: { patient: PatientCtx }) {
             <CardTitle className="text-sm flex items-center gap-2">
               <ClipboardList className="h-4 w-4 text-primary" />
               Sumário de Alta
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-normal ml-1">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground font-normal ml-1">
                 (síntese clínica do internamento)
               </span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1.5">
+          <CardContent className="space-y-2">
             <Label className="text-xs">
               Sumário clínico — diferente das orientações ao paciente
             </Label>
@@ -224,7 +224,7 @@ function DischargeSummaryTab({ patient }: { patient: PatientCtx }) {
               placeholder="Motivo da internação, evolução, exames relevantes, tratamentos realizados, condição clínica na alta..."
               className="text-xs min-h-[140px]"
             />
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Este texto compõe o sumário oficial enviado ao histórico do paciente e ao PDF Norma Zero.
             </p>
           </CardContent>
@@ -248,7 +248,7 @@ function DischargeSummaryTab({ patient }: { patient: PatientCtx }) {
               </div>
             ))}
             <Button variant="outline" size="sm" onClick={addProcedure} className="text-xs h-8"><Plus className="h-3 w-3 mr-1" />Adicionar procedimento</Button>
-            <div className="space-y-1.5 pt-2">
+            <div className="space-y-2 pt-2">
               <Label className="text-xs">Complicações durante internação</Label>
               <Textarea value={form.complications} onChange={e => setForm(f => ({ ...f, complications: e.target.value }))} placeholder="Descrever complicações, se houver" className="text-xs min-h-[60px]" />
             </div>
@@ -264,20 +264,20 @@ function DischargeSummaryTab({ patient }: { patient: PatientCtx }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Orientações ao paciente/família</Label>
               <Textarea value={form.orientations} onChange={e => setForm(f => ({ ...f, orientations: e.target.value }))} placeholder="Cuidados domiciliares, sinais de alerta, dieta, atividade física..." className="text-xs min-h-[80px]" />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Data de Retorno</Label>
                 <Input type="date" value={form.returnDate} onChange={e => setForm(f => ({ ...f, returnDate: e.target.value }))} className="text-xs h-9" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Especialidade para Retorno</Label>
                 <Input value={form.returnSpecialty} onChange={e => setForm(f => ({ ...f, returnSpecialty: e.target.value }))} placeholder="Ex: Cardiologia" className="text-xs h-9" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Restrições</Label>
                 <Input value={form.restrictions} onChange={e => setForm(f => ({ ...f, restrictions: e.target.value }))} placeholder="Atividades, dieta..." className="text-xs h-9" />
               </div>
@@ -318,10 +318,10 @@ function DischargeSummaryTab({ patient }: { patient: PatientCtx }) {
         {/* Actions */}
         <div className="flex gap-3 justify-end">
           <Button variant="outline" onClick={handlePrint} className="text-xs h-9">
-            <Printer className="h-3.5 w-3.5 mr-1.5" />Imprimir Sumário
+            <Printer className="h-3.5 w-3.5 mr-2" />Imprimir Sumário
           </Button>
           <Button onClick={handleSave} className="text-xs h-9">
-            <Save className="h-3.5 w-3.5 mr-1.5" />Salvar Sumário de Alta
+            <Save className="h-3.5 w-3.5 mr-2" />Salvar Sumário de Alta
           </Button>
         </div>
       </div>
@@ -368,7 +368,7 @@ function ReferralTab({ patient }: { patient: PatientCtx }) {
             onClick={() => setReferralType("primaria")}
             className="text-xs h-9"
           >
-            <Building2 className="h-3.5 w-3.5 mr-1.5" />
+            <Building2 className="h-3.5 w-3.5 mr-2" />
             Atenção Primária (UBS/ESF)
           </Button>
           <Button
@@ -376,7 +376,7 @@ function ReferralTab({ patient }: { patient: PatientCtx }) {
             onClick={() => setReferralType("especializada")}
             className="text-xs h-9"
           >
-            <Stethoscope className="h-3.5 w-3.5 mr-1.5" />
+            <Stethoscope className="h-3.5 w-3.5 mr-2" />
             Atenção Especializada
           </Button>
         </div>
@@ -391,19 +391,19 @@ function ReferralTab({ patient }: { patient: PatientCtx }) {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Nome</Label>
                 <Input value={form.patientName} onChange={e => setForm(f => ({ ...f, patientName: e.target.value }))} className="text-xs h-9" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Prontuário</Label>
                 <Input value={form.medicalRecord} onChange={e => setForm(f => ({ ...f, medicalRecord: e.target.value }))} className="text-xs h-9" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Data Nascimento</Label>
                 <Input type="date" value={form.birthDate} onChange={e => setForm(f => ({ ...f, birthDate: e.target.value }))} className="text-xs h-9" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">CNS</Label>
                 <Input value={form.cns} onChange={e => setForm(f => ({ ...f, cns: e.target.value }))} className="text-xs h-9" />
               </div>
@@ -420,20 +420,20 @@ function ReferralTab({ patient }: { patient: PatientCtx }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Diagnóstico / CID-10</Label>
               <Input value={form.diagnosisCid} onChange={e => setForm(f => ({ ...f, diagnosisCid: e.target.value }))} placeholder="Ex: I21.0 - Infarto agudo do miocárdio" className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Resumo clínico e evolução</Label>
               <Textarea value={form.clinicalSummary} onChange={e => setForm(f => ({ ...f, clinicalSummary: e.target.value }))} placeholder="Breve resumo do quadro clínico, intervenções e evolução" className="text-xs min-h-[80px]" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Medicamentos em uso</Label>
                 <Textarea value={form.currentMedications} onChange={e => setForm(f => ({ ...f, currentMedications: e.target.value }))} placeholder="Lista de medicamentos atuais" className="text-xs min-h-[60px]" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Exames relevantes</Label>
                 <Textarea value={form.relevantExams} onChange={e => setForm(f => ({ ...f, relevantExams: e.target.value }))} placeholder="Resultados relevantes" className="text-xs min-h-[60px]" />
               </div>
@@ -450,22 +450,22 @@ function ReferralTab({ patient }: { patient: PatientCtx }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Motivo do encaminhamento</Label>
               <Textarea value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} placeholder="Motivo e orientações para a unidade de destino" className="text-xs min-h-[60px]" />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">{referralType === "primaria" ? "UBS/ESF de Destino" : "Serviço de Destino"}</Label>
                 <Input value={form.targetUnit} onChange={e => setForm(f => ({ ...f, targetUnit: e.target.value }))} className="text-xs h-9" />
               </div>
               {referralType === "especializada" && (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label className="text-xs">Especialidade</Label>
                   <Input value={form.targetSpecialty} onChange={e => setForm(f => ({ ...f, targetSpecialty: e.target.value }))} className="text-xs h-9" />
                 </div>
               )}
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Urgência</Label>
                 <Select value={form.urgency} onValueChange={v => setForm(f => ({ ...f, urgency: v }))}>
                   <SelectTrigger className="text-xs h-9"><SelectValue /></SelectTrigger>
@@ -479,19 +479,19 @@ function ReferralTab({ patient }: { patient: PatientCtx }) {
             </div>
             <Separator />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Médico Referente</Label>
                 <Input value={form.referringPhysician} onChange={e => setForm(f => ({ ...f, referringPhysician: e.target.value }))} className="text-xs h-9" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">CRM</Label>
                 <Input value={form.referringCrm} onChange={e => setForm(f => ({ ...f, referringCrm: e.target.value }))} className="text-xs h-9" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Unidade de Origem</Label>
                 <Input value={form.referringUnit} onChange={e => setForm(f => ({ ...f, referringUnit: e.target.value }))} className="text-xs h-9" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Telefone Contato</Label>
                 <Input value={form.contactPhone} onChange={e => setForm(f => ({ ...f, contactPhone: e.target.value }))} className="text-xs h-9" />
               </div>
@@ -501,10 +501,10 @@ function ReferralTab({ patient }: { patient: PatientCtx }) {
 
         <div className="flex gap-3 justify-end">
           <Button variant="outline" className="text-xs h-9">
-            <Printer className="h-3.5 w-3.5 mr-1.5" />Imprimir Guia
+            <Printer className="h-3.5 w-3.5 mr-2" />Imprimir Guia
           </Button>
           <Button onClick={handleSend} className="text-xs h-9">
-            <Send className="h-3.5 w-3.5 mr-1.5" />Registrar Encaminhamento
+            <Send className="h-3.5 w-3.5 mr-2" />Registrar Encaminhamento
           </Button>
         </div>
       </div>
@@ -588,18 +588,18 @@ function TransferTab({ patient }: { patient: PatientCtx }) {
                 onClick={() => { setTransferType("interna"); setDestination(""); }}
                 className="flex-1 text-xs h-9"
               >
-                <ArrowLeftRight className="h-3.5 w-3.5 mr-1.5" /> Interna (intra-hospitalar)
+                <ArrowLeftRight className="h-3.5 w-3.5 mr-2" /> Interna (intra-hospitalar)
               </Button>
               <Button
                 variant={transferType === "externa" ? "default" : "outline"}
                 onClick={() => { setTransferType("externa"); setDestination(""); }}
                 className="flex-1 text-xs h-9"
               >
-                <Building2 className="h-3.5 w-3.5 mr-1.5" /> Externa (interhospitalar)
+                <Building2 className="h-3.5 w-3.5 mr-2" /> Externa (interhospitalar)
               </Button>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Destino *</Label>
               <Select value={destination} onValueChange={setDestination}>
                 <SelectTrigger className="text-xs h-9"><SelectValue placeholder="Selecione o destino" /></SelectTrigger>
@@ -618,22 +618,22 @@ function TransferTab({ patient }: { patient: PatientCtx }) {
               )}
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Motivo da transferência</Label>
               <Input value={reason} onChange={e => setReason(e.target.value)} placeholder="Ex: necessidade de UTI, especialidade indisponível..." className="text-xs h-9" />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Observações</Label>
               <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} className="text-xs" placeholder="Condições do paciente, monitorização, equipamentos necessários..." />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Médico Responsável</Label>
                 <Input value={responsibleDoctor} onChange={e => setResponsibleDoctor(e.target.value)} className="text-xs h-9" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">CRM</Label>
                 <Input value={doctor?.crm || ""} disabled className="text-xs h-9 bg-muted" />
               </div>
@@ -641,7 +641,7 @@ function TransferTab({ patient }: { patient: PatientCtx }) {
 
             <div className="flex justify-end gap-2 pt-2">
               <Button onClick={handleSave} disabled={isSaving} className="text-xs h-9">
-                <Save className="h-3.5 w-3.5 mr-1.5" />
+                <Save className="h-3.5 w-3.5 mr-2" />
                 {isSaving ? "Registrando..." : "Registrar Transferência"}
               </Button>
             </div>
@@ -661,13 +661,13 @@ function DeathOutcomeTab({ patient }: { patient: PatientCtx }) {
         {/* Section Toggle */}
         <div className="flex flex-wrap gap-2">
           <Button variant={activeSection === "declaracao" ? "default" : "outline"} onClick={() => setActiveSection("declaracao")} className="text-xs h-9">
-            <FileText className="h-3.5 w-3.5 mr-1.5" />Declaração de Óbito
+            <FileText className="h-3.5 w-3.5 mr-2" />Declaração de Óbito
           </Button>
           <Button variant={activeSection === "morte_encefalica" ? "default" : "outline"} onClick={() => setActiveSection("morte_encefalica")} className="text-xs h-9">
-            <Brain className="h-3.5 w-3.5 mr-1.5" />Protocolo de Morte Encefálica
+            <Brain className="h-3.5 w-3.5 mr-2" />Protocolo de Morte Encefálica
           </Button>
           <Button variant={activeSection === "cihdott" ? "default" : "outline"} onClick={() => setActiveSection("cihdott")} className="text-xs h-9">
-            <Heart className="h-3.5 w-3.5 mr-1.5" />Notificação CIHDOTT
+            <Heart className="h-3.5 w-3.5 mr-2" />Notificação CIHDOTT
           </Button>
         </div>
 
@@ -712,19 +712,19 @@ function DeathDeclarationSection({ patient }: { patient: PatientCtx }) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Nome</Label>
               <Input value={form.patientName} onChange={e => setForm(f => ({ ...f, patientName: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Prontuário</Label>
               <Input value={form.medicalRecord} onChange={e => setForm(f => ({ ...f, medicalRecord: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Data Nascimento</Label>
               <Input type="date" value={form.birthDate} onChange={e => setForm(f => ({ ...f, birthDate: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Sexo</Label>
               <Select value={form.sex} onValueChange={v => setForm(f => ({ ...f, sex: v }))}>
                 <SelectTrigger className="text-xs h-9"><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -736,7 +736,7 @@ function DeathDeclarationSection({ patient }: { patient: PatientCtx }) {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 mt-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Nome da Mãe</Label>
               <Input value={form.motherName} onChange={e => setForm(f => ({ ...f, motherName: e.target.value }))} className="text-xs h-9" />
             </div>
@@ -753,15 +753,15 @@ function DeathDeclarationSection({ patient }: { patient: PatientCtx }) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Data do Óbito</Label>
               <Input type="date" value={form.deathDate} onChange={e => setForm(f => ({ ...f, deathDate: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Hora do Óbito</Label>
               <Input type="time" value={form.deathTime} onChange={e => setForm(f => ({ ...f, deathTime: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Tipo</Label>
               <Select value={form.deathType} onValueChange={v => setForm(f => ({ ...f, deathType: v }))}>
                 <SelectTrigger className="text-xs h-9"><SelectValue /></SelectTrigger>
@@ -772,7 +772,7 @@ function DeathDeclarationSection({ patient }: { patient: PatientCtx }) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Local</Label>
               <Select value={form.deathLocation} onValueChange={v => setForm(f => ({ ...f, deathLocation: v }))}>
                 <SelectTrigger className="text-xs h-9"><SelectValue /></SelectTrigger>
@@ -828,11 +828,11 @@ function DeathDeclarationSection({ patient }: { patient: PatientCtx }) {
           </div>
           <Separator />
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Médico Atestante</Label>
               <Input value={form.physicianName} onChange={e => setForm(f => ({ ...f, physicianName: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">CRM</Label>
               <Input value={form.physicianCrm} onChange={e => setForm(f => ({ ...f, physicianCrm: e.target.value }))} className="text-xs h-9" />
             </div>
@@ -841,8 +841,8 @@ function DeathDeclarationSection({ patient }: { patient: PatientCtx }) {
       </Card>
 
       <div className="flex gap-3 justify-end">
-        <Button variant="outline" className="text-xs h-9"><Printer className="h-3.5 w-3.5 mr-1.5" />Imprimir DO</Button>
-        <Button className="text-xs h-9" onClick={() => toast.success("Declaração de óbito registrada")}><Save className="h-3.5 w-3.5 mr-1.5" />Registrar Óbito</Button>
+        <Button variant="outline" className="text-xs h-9"><Printer className="h-3.5 w-3.5 mr-2" />Imprimir DO</Button>
+        <Button className="text-xs h-9" onClick={() => toast.success("Declaração de óbito registrada")}><Save className="h-3.5 w-3.5 mr-2" />Registrar Óbito</Button>
       </div>
     </div>
   );
@@ -896,19 +896,19 @@ function BrainDeathProtocolSection() {
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-xs">Data</Label>
             <Input type="date" value={(form as any)[`${prefix}Date`]} onChange={e => setForm(f => ({ ...f, [`${prefix}Date`]: e.target.value }))} className="text-xs h-9" />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-xs">Hora</Label>
             <Input type="time" value={(form as any)[`${prefix}Time`]} onChange={e => setForm(f => ({ ...f, [`${prefix}Time`]: e.target.value }))} className="text-xs h-9" />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-xs">Médico Examinador</Label>
             <Input value={(form as any)[`${prefix}Physician`]} onChange={e => setForm(f => ({ ...f, [`${prefix}Physician`]: e.target.value }))} className="text-xs h-9" />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-xs">CRM</Label>
             <Input value={(form as any)[`${prefix}Crm`]} onChange={e => setForm(f => ({ ...f, [`${prefix}Crm`]: e.target.value }))} className="text-xs h-9" />
           </div>
@@ -946,11 +946,11 @@ function BrainDeathProtocolSection() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Paciente</Label>
               <Input value={form.patientName} onChange={e => setForm(f => ({ ...f, patientName: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Causa do Coma</Label>
               <Input value={form.causeOfComa} onChange={e => setForm(f => ({ ...f, causeOfComa: e.target.value }))} placeholder="Causa conhecida e irreversível" className="text-xs h-9" />
             </div>
@@ -985,7 +985,7 @@ function BrainDeathProtocolSection() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Tipo de Exame</Label>
               <Select value={form.complementaryExam} onValueChange={v => setForm(f => ({ ...f, complementaryExam: v }))}>
                 <SelectTrigger className="text-xs h-9"><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -997,11 +997,11 @@ function BrainDeathProtocolSection() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Data/Hora</Label>
               <Input type="datetime-local" value={form.complementaryDate} onChange={e => setForm(f => ({ ...f, complementaryDate: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Resultado</Label>
               <Select value={form.complementaryResult} onValueChange={v => setForm(f => ({ ...f, complementaryResult: v }))}>
                 <SelectTrigger className="text-xs h-9"><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -1017,8 +1017,8 @@ function BrainDeathProtocolSection() {
       </Card>
 
       <div className="flex gap-3 justify-end">
-        <Button variant="outline" className="text-xs h-9"><Printer className="h-3.5 w-3.5 mr-1.5" />Imprimir Termo</Button>
-        <Button className="text-xs h-9 bg-critical hover:bg-critical" onClick={() => toast.success("Protocolo de ME registrado. CIHDOTT será notificada.")}><Save className="h-3.5 w-3.5 mr-1.5" />Concluir Protocolo ME</Button>
+        <Button variant="outline" className="text-xs h-9"><Printer className="h-3.5 w-3.5 mr-2" />Imprimir Termo</Button>
+        <Button className="text-xs h-9 bg-critical hover:bg-critical" onClick={() => toast.success("Protocolo de ME registrado. CIHDOTT será notificada.")}><Save className="h-3.5 w-3.5 mr-2" />Concluir Protocolo ME</Button>
       </div>
     </div>
   );
@@ -1088,19 +1088,19 @@ function CihdottSection() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Paciente</Label>
               <Input value={form.patientName} onChange={e => setForm(f => ({ ...f, patientName: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Prontuário</Label>
               <Input value={form.medicalRecord} onChange={e => setForm(f => ({ ...f, medicalRecord: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Idade</Label>
               <Input value={form.age} onChange={e => setForm(f => ({ ...f, age: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Causa do Óbito / ME</Label>
               <Input value={form.causeOfDeath} onChange={e => setForm(f => ({ ...f, causeOfDeath: e.target.value }))} className="text-xs h-9" />
             </div>
@@ -1118,7 +1118,7 @@ function CihdottSection() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Tipo Sanguíneo</Label>
               <Select value={form.bloodType} onValueChange={v => setForm(f => ({ ...f, bloodType: v }))}>
                 <SelectTrigger className="text-xs h-9"><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -1129,11 +1129,11 @@ function CihdottSection() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Peso (kg)</Label>
               <Input value={form.weight} onChange={e => setForm(f => ({ ...f, weight: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Altura (cm)</Label>
               <Input value={form.height} onChange={e => setForm(f => ({ ...f, height: e.target.value }))} className="text-xs h-9" />
             </div>
@@ -1153,7 +1153,7 @@ function CihdottSection() {
               </div>
             ))}
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-xs">Outras contraindicações</Label>
             <Input value={form.otherContraindications} onChange={e => setForm(f => ({ ...f, otherContraindications: e.target.value }))} className="text-xs h-9" />
           </div>
@@ -1171,9 +1171,9 @@ function CihdottSection() {
         <CardContent>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
             {organOptions.map(organ => (
-              <div key={organ} className="flex items-center gap-1.5">
+              <div key={organ} className="flex items-center gap-2">
                 <Checkbox checked={form.organsOffered.includes(organ)} onCheckedChange={() => toggleOrgan(organ)} />
-                <Label className="text-[10px]">{organ}</Label>
+                <Label className="text-xs">{organ}</Label>
               </div>
             ))}
           </div>
@@ -1190,25 +1190,25 @@ function CihdottSection() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Data Entrevista</Label>
               <Input type="date" value={form.familyApproachDate} onChange={e => setForm(f => ({ ...f, familyApproachDate: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Hora</Label>
               <Input type="time" value={form.familyApproachTime} onChange={e => setForm(f => ({ ...f, familyApproachTime: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Familiar Responsável</Label>
               <Input value={form.familyContactName} onChange={e => setForm(f => ({ ...f, familyContactName: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Grau de Parentesco</Label>
               <Input value={form.familyRelationship} onChange={e => setForm(f => ({ ...f, familyRelationship: e.target.value }))} className="text-xs h-9" />
             </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Consentimento</Label>
               <Select value={form.familyConsented} onValueChange={v => setForm(f => ({ ...f, familyConsented: v }))}>
                 <SelectTrigger className="text-xs h-9"><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -1219,12 +1219,12 @@ function CihdottSection() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Telefone</Label>
               <Input value={form.familyPhone} onChange={e => setForm(f => ({ ...f, familyPhone: e.target.value }))} className="text-xs h-9" />
             </div>
             {form.familyConsented === "nao" && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Motivo da Recusa</Label>
                 <Input value={form.refusalReason} onChange={e => setForm(f => ({ ...f, refusalReason: e.target.value }))} className="text-xs h-9" />
               </div>
@@ -1243,19 +1243,19 @@ function CihdottSection() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Data Notificação</Label>
               <Input type="date" value={form.centralNotifiedDate} onChange={e => setForm(f => ({ ...f, centralNotifiedDate: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Hora</Label>
               <Input type="time" value={form.centralNotifiedTime} onChange={e => setForm(f => ({ ...f, centralNotifiedTime: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Responsável na Central</Label>
               <Input value={form.centralContactPerson} onChange={e => setForm(f => ({ ...f, centralContactPerson: e.target.value }))} className="text-xs h-9" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Nº Protocolo</Label>
               <Input value={form.protocolNumber} onChange={e => setForm(f => ({ ...f, protocolNumber: e.target.value }))} className="text-xs h-9" />
             </div>
@@ -1264,8 +1264,8 @@ function CihdottSection() {
       </Card>
 
       <div className="flex gap-3 justify-end">
-        <Button variant="outline" className="text-xs h-9"><Printer className="h-3.5 w-3.5 mr-1.5" />Imprimir Notificação</Button>
-        <Button className="text-xs h-9 bg-released hover:bg-released" onClick={() => toast.success("Notificação CIHDOTT registrada com sucesso")}><Save className="h-3.5 w-3.5 mr-1.5" />Registrar Notificação</Button>
+        <Button variant="outline" className="text-xs h-9"><Printer className="h-3.5 w-3.5 mr-2" />Imprimir Notificação</Button>
+        <Button className="text-xs h-9 bg-released hover:bg-released" onClick={() => toast.success("Notificação CIHDOTT registrada com sucesso")}><Save className="h-3.5 w-3.5 mr-2" />Registrar Notificação</Button>
       </div>
     </div>
   );
@@ -1327,7 +1327,7 @@ export default function AltaDesfechoPage() {
               <ArrowRight className="h-5 w-5 text-primary" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-lg font-bold text-foreground">Alta, Movimentações e Desfechos</h1>
+              <h1 className="text-lg font-semibold text-foreground">Alta, Movimentações e Desfechos</h1>
               <p className="text-xs text-muted-foreground truncate">
                 {hasPatient
                   ? `${patientName}${patientBed ? ` • Leito ${patientBed}` : ""}${patientSector ? ` • ${patientSector.toUpperCase()}` : ""}`
@@ -1339,19 +1339,19 @@ export default function AltaDesfechoPage() {
 
         <Tabs defaultValue="sumario" className="w-full">
           <TabsList className="grid w-full grid-cols-4 h-10">
-            <TabsTrigger value="sumario" className="text-xs gap-1.5">
+            <TabsTrigger value="sumario" className="text-xs gap-2">
               <ClipboardList className="h-3.5 w-3.5" />
               Sumário de Alta
             </TabsTrigger>
-            <TabsTrigger value="referencia" className="text-xs gap-1.5">
+            <TabsTrigger value="referencia" className="text-xs gap-2">
               <Send className="h-3.5 w-3.5" />
               Referência / Regulação
             </TabsTrigger>
-            <TabsTrigger value="movimentacoes" className="text-xs gap-1.5">
+            <TabsTrigger value="movimentacoes" className="text-xs gap-2">
               <ArrowLeftRight className="h-3.5 w-3.5" />
               Movimentações
             </TabsTrigger>
-            <TabsTrigger value="obito" className="text-xs gap-1.5">
+            <TabsTrigger value="obito" className="text-xs gap-2">
               <AlertTriangle className="h-3.5 w-3.5" />
               Óbito
             </TabsTrigger>

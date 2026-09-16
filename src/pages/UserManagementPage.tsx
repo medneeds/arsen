@@ -393,7 +393,7 @@ export default function UserManagementPage() {
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-foreground">Acesso Restrito</h2>
+            <h2 className="text-xl font-semibold text-foreground">Acesso Restrito</h2>
             <p className="text-muted-foreground mt-2">
               Você não tem permissão para acessar esta página.
             </p>
@@ -409,11 +409,11 @@ export default function UserManagementPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
+            <div className="h-12 w-12 rounded-lg bg-primary flex items-center justify-center shadow-md">
               <Users className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground tracking-tight">
+              <h1 className="text-2xl font-semibold text-foreground tracking-tight">
                 Gestão de Usuários
               </h1>
               <p className="text-sm text-muted-foreground">
@@ -440,7 +440,7 @@ export default function UserManagementPage() {
             <TabsTrigger value="approvals" className="gap-2">
               <ShieldCheck className="h-4 w-4" /> Aprovações
               {pendingCount > 0 && (
-                <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-[10px]">
+                <Badge variant="destructive" className="ml-1 h-5 px-2 text-xs">
                   {pendingCount}
                 </Badge>
               )}
@@ -448,7 +448,7 @@ export default function UserManagementPage() {
             <TabsTrigger value="prereg" className="gap-2">
               <Inbox className="h-4 w-4" /> Pré-cadastros
               {preRegPending > 0 && (
-                <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-[10px]">
+                <Badge variant="destructive" className="ml-1 h-5 px-2 text-xs">
                   {preRegPending}
                 </Badge>
               )}
@@ -480,7 +480,7 @@ export default function UserManagementPage() {
                   placeholder="Buscar por nome, email ou CRM..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-8"
                 />
               </div>
 
@@ -504,16 +504,16 @@ export default function UserManagementPage() {
             </div>
 
             {/* Users Table */}
-            <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+            <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead className="font-bold text-xs">Usuário</TableHead>
-                    <TableHead className="font-bold text-xs">CRM</TableHead>
-                    <TableHead className="font-bold text-xs">Status</TableHead>
-                    <TableHead className="font-bold text-xs">Papel</TableHead>
-                    <TableHead className="font-bold text-xs">Cadastro</TableHead>
-                    <TableHead className="font-bold text-xs text-right">Ações</TableHead>
+                    <TableHead className="font-semibold text-xs">Usuário</TableHead>
+                    <TableHead className="font-semibold text-xs">CRM</TableHead>
+                    <TableHead className="font-semibold text-xs">Status</TableHead>
+                    <TableHead className="font-semibold text-xs">Papel</TableHead>
+                    <TableHead className="font-semibold text-xs">Cadastro</TableHead>
+                    <TableHead className="font-semibold text-xs text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -655,14 +655,14 @@ export default function UserManagementPage() {
 
           {(currentUserRole === "admin" || isGestor) && (
             <TabsContent value="create">
-              <div className="rounded-xl border bg-card shadow-sm p-6">
+              <div className="rounded-lg border bg-card shadow-sm p-6">
                 <CreateUserForm onCreated={fetchUsers} />
               </div>
             </TabsContent>
           )}
 
           <TabsContent value="audit">
-            <div className="rounded-xl border bg-card shadow-sm p-6">
+            <div className="rounded-lg border bg-card shadow-sm p-6">
               <UserAuditHistoryPanel />
             </div>
           </TabsContent>
@@ -701,7 +701,7 @@ export default function UserManagementPage() {
                     <Stethoscope className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg">{selectedUser.full_name || "Sem nome"}</h3>
+                    <h3 className="font-semibold text-lg">{selectedUser.full_name || "Sem nome"}</h3>
                     <Badge variant="outline" className={STATUS_CONFIG[selectedUser.status]?.color || ""}>
                       {STATUS_CONFIG[selectedUser.status]?.icon}
                       {STATUS_CONFIG[selectedUser.status]?.label}
@@ -711,31 +711,31 @@ export default function UserManagementPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
                       <Mail className="h-3 w-3" /> Email/Login
                     </p>
                     <p className="text-sm font-mono">{selectedUser.email?.replace("@sistema.local", "") || "—"}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
                       <Stethoscope className="h-3 w-3" /> CRM
                     </p>
                     <p className="text-sm font-mono">{selectedUser.crm || "—"}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
                       <Building2 className="h-3 w-3" /> Especialidade
                     </p>
                     <p className="text-sm">{selectedUser.specialty || "—"}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
                       <Phone className="h-3 w-3" /> Telefone
                     </p>
                     <p className="text-sm">{selectedUser.phone || "—"}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
                       <Calendar className="h-3 w-3" /> Data de Cadastro
                     </p>
                     <p className="text-sm">
@@ -744,7 +744,7 @@ export default function UserManagementPage() {
                   </div>
                   {selectedUser.approved_at && (
                     <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
                         <CheckCircle className="h-3 w-3" /> Data de Aprovação
                       </p>
                       <p className="text-sm">
@@ -757,7 +757,7 @@ export default function UserManagementPage() {
 
               {/* Role Management */}
               <div className="space-y-2 pt-4 border-t">
-                <p className="text-xs text-muted-foreground font-semibold">Papel no Sistema</p>
+                <p className="text-xs text-muted-foreground font-medium">Papel no Sistema</p>
                 <Select
                   value={selectedUser.role || "medico"}
                   onValueChange={(value) => handleUpdateRole(selectedUser.id, value)}

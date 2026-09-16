@@ -40,11 +40,11 @@ export default function SignupRedirectPage() {
   if (role !== "admin" && !isGestor) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-card border rounded-2xl p-8 text-center shadow-lg">
+        <div className="max-w-md w-full bg-card border rounded-lg p-8 text-center shadow-md">
           <div className="mx-auto h-14 w-14 rounded-full bg-critical/10 flex items-center justify-center mb-4">
             <ShieldAlert className="h-7 w-7 text-critical-on-soft" />
           </div>
-          <h1 className="text-xl font-bold text-foreground mb-2">
+          <h1 className="text-xl font-semibold text-foreground mb-2">
             Acesso restrito
           </h1>
           <p className="text-sm text-muted-foreground mb-6">

@@ -223,7 +223,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total filtrado</p>
-              <p className="text-lg font-bold">{total.toLocaleString("pt-BR")}</p>
+              <p className="text-lg font-semibold">{total.toLocaleString("pt-BR")}</p>
             </div>
           </CardContent>
         </Card>
@@ -234,7 +234,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Identificados (página)</p>
-              <p className="text-lg font-bold">{stats.identificados}</p>
+              <p className="text-lg font-semibold">{stats.identificados}</p>
             </div>
           </CardContent>
         </Card>
@@ -245,7 +245,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
             </div>
             <div>
               <p className="text-xs text-muted-foreground">NI (página)</p>
-              <p className="text-lg font-bold">{stats.ni}</p>
+              <p className="text-lg font-semibold">{stats.ni}</p>
             </div>
           </CardContent>
         </Card>
@@ -308,7 +308,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
           {/* Filtros secundários */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
             <div>
-              <Label className="text-[10px] uppercase text-muted-foreground">Sexo</Label>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Sexo</Label>
               <Select value={sexFilter} onValueChange={(v) => setSexFilter(v as SexFilter)}>
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -320,23 +320,23 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
               </Select>
             </div>
             <div>
-              <Label className="text-[10px] uppercase text-muted-foreground">Cidade</Label>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Cidade</Label>
               <Input className="h-9" placeholder="Ex.: São Luís" value={cityFilter} onChange={(e) => setCityFilter(e.target.value)} />
             </div>
             <div>
-              <Label className="text-[10px] uppercase text-muted-foreground">Idade mín.</Label>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Idade mín.</Label>
               <Input className="h-9" type="number" min={0} max={130} placeholder="0" value={ageMin} onChange={(e) => setAgeMin(e.target.value)} />
             </div>
             <div>
-              <Label className="text-[10px] uppercase text-muted-foreground">Idade máx.</Label>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Idade máx.</Label>
               <Input className="h-9" type="number" min={0} max={130} placeholder="130" value={ageMax} onChange={(e) => setAgeMax(e.target.value)} />
             </div>
             <div>
-              <Label className="text-[10px] uppercase text-muted-foreground">Criado de</Label>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Criado de</Label>
               <Input className="h-9" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             </div>
             <div>
-              <Label className="text-[10px] uppercase text-muted-foreground">Criado até</Label>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Criado até</Label>
               <Input className="h-9" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
             </div>
           </div>
@@ -386,14 +386,14 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
                       Carregando prontuários...
                     </TableCell>
                   </TableRow>
                 ) : rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
                       Nenhum prontuário encontrado com os filtros atuais
                     </TableCell>
@@ -402,19 +402,19 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
                   rows.map((p) => (
                     <TableRow key={p.id} className={cn(p.is_unidentified && "bg-warning/5")}>
                       <TableCell>
-                        <Badge variant="outline" className="font-mono text-[10px]">
+                        <Badge variant="outline" className="font-mono text-xs">
                           {p.medical_record || "—"}
                         </Badge>
                         {p.is_unidentified && (
-                          <Badge className="ml-1 bg-warning/15 text-warning-on-soft border border-warning/30 text-[9px] font-mono">
+                          <Badge className="ml-1 bg-warning/15 text-warning-on-soft border border-warning/30 text-xs font-mono">
                             {p.unidentified_code || "NI"}
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell>
-                        <p className="font-semibold text-sm">{p.full_name}</p>
+                        <p className="font-medium text-sm">{p.full_name}</p>
                         {p.social_name && (
-                          <p className="text-[11px] text-muted-foreground">Nome social: {p.social_name}</p>
+                          <p className="text-xs text-muted-foreground">Nome social: {p.social_name}</p>
                         )}
                       </TableCell>
                       <TableCell className="text-xs">{p.cpf || "—"}</TableCell>
@@ -430,7 +430,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
                           {p.is_unidentified && (
                             <Button
                               size="sm" variant="outline"
-                              className="h-7 text-[10px] border-warning/40 text-warning-on-soft hover:bg-warning/10"
+                              className="h-7 text-xs border-warning/40 text-warning-on-soft hover:bg-warning/10"
                               onClick={() => openPromote(p)}
                             >
                               <UserCheck className="h-3 w-3 mr-1" /> Identificar
@@ -451,7 +451,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
                             <Activity className="h-3.5 w-3.5" />
                           </Button>
                           <Button
-                            size="sm" variant="outline" className="h-7 text-[10px]"
+                            size="sm" variant="outline" className="h-7 text-xs"
                             onClick={() => onStartEncounter(p)}
                           >
                             <Play className="h-3 w-3 mr-1" /> Atender
@@ -512,7 +512,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
               Identificar Paciente
             </DialogTitle>
             <DialogDescription>
-              Vinculando dados ao prontuário <span className="font-mono font-semibold">{promoteTarget?.medical_record}</span>
+              Vinculando dados ao prontuário <span className="font-mono font-medium">{promoteTarget?.medical_record}</span>
               {promoteTarget?.unidentified_code && (
                 <> (código original: <span className="font-mono">{promoteTarget.unidentified_code}</span>)</>
               )}.

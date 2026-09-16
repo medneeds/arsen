@@ -120,7 +120,7 @@ export function ClearSignalingTab() {
             <ShieldAlert className="h-4 w-4" /> Como funciona
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-xs text-warning-on-soft/80 space-y-1.5">
+        <CardContent className="text-xs text-warning-on-soft/80 space-y-2">
           <p>
             Esta ação remove <strong>somente</strong> as sinalizações de saída ainda pendentes:
             movimentações <code className="font-mono">ALTA</code> / <code className="font-mono">ÓBITO</code> / <code className="font-mono">TRANSFERÊNCIA</code> com <code className="font-mono">release_status='pending_release'</code> e documentos de alta/óbito.
@@ -154,7 +154,7 @@ export function ClearSignalingTab() {
             <Button
               size="sm"
               variant="destructive"
-              className="gap-1.5"
+              className="gap-2"
               disabled={selected.size === 0}
               onClick={() => openPreview(Array.from(selected))}
             >
@@ -206,15 +206,15 @@ export function ClearSignalingTab() {
                     <td className="font-mono">{r.bed_number ?? "—"}</td>
                     <td className="text-muted-foreground">{r.sector ?? "—"}</td>
                     <td>
-                      <Badge variant="secondary" className="text-[10px] font-mono">
+                      <Badge variant="secondary" className="text-xs font-mono">
                         {r.admission_status ?? "—"}
                       </Badge>
                     </td>
                     <td className="text-center">{r.movementsCount}</td>
                     <td className="text-center">{r.documentsCount}</td>
                     <td className="text-muted-foreground">
-                      {r.lastMovementType ? <span className="font-mono text-[10px]">{r.lastMovementType}</span> : "—"}
-                      <div className="text-[10px]">{fmtDate(r.lastSignalAt)}</div>
+                      {r.lastMovementType ? <span className="font-mono text-xs">{r.lastMovementType}</span> : "—"}
+                      <div className="text-xs">{fmtDate(r.lastSignalAt)}</div>
                     </td>
                     <td className="text-right p-2">
                       <Button
@@ -249,7 +249,7 @@ export function ClearSignalingTab() {
                 </p>
 
                 <div className="rounded-md border border-border bg-muted/30 p-2 max-h-[280px] overflow-auto">
-                  <table className="w-full text-[11px]">
+                  <table className="w-full text-xs">
                     <thead className="text-muted-foreground">
                       <tr>
                         <th className="text-left p-1">Paciente</th>
@@ -266,7 +266,7 @@ export function ClearSignalingTab() {
                           <td className="font-mono">{r.bed ?? "—"}</td>
                           <td className="text-center">{r.movementsToDelete}</td>
                           <td className="text-center">{r.documentsToDelete}</td>
-                          <td className="font-mono text-[10px]">
+                          <td className="font-mono text-xs">
                             {r.previousStatus ?? "—"} {r.statusReset ? "→ admitido" : "(preservado)"}
                           </td>
                         </tr>
@@ -275,7 +275,7 @@ export function ClearSignalingTab() {
                   </table>
                 </div>
 
-                <div className="flex gap-4 text-[11px] font-medium">
+                <div className="flex gap-4 text-xs font-medium">
                   <span>Pacientes: <strong>{preview?.totals.patientsAffected ?? 0}</strong></span>
                   <span>Movimentações: <strong>{preview?.totals.movementsDeleted ?? 0}</strong></span>
                   <span>Documentos: <strong>{preview?.totals.documentsDeleted ?? 0}</strong></span>

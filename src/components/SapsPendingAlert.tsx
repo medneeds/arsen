@@ -99,7 +99,7 @@ export function SapsPendingAlert({
   return (
     <div
       className={cn(
-        "rounded-xl border-l-4 p-3 mb-3 shadow-sm flex items-center gap-3 print:hidden animate-pulse-slow",
+        "rounded-lg border-l-4 p-3 mb-3 shadow-sm flex items-center gap-3 print:hidden animate-pulse-slow",
         elapsed.over
           ? "border-critical bg-critical-soft"
           : elapsed.criticalSoon
@@ -117,12 +117,12 @@ export function SapsPendingAlert({
       />
       <div className="flex-1 min-w-0">
         <p className={cn(
-          "text-sm font-semibold",
+          "text-sm font-medium",
           elapsed.over ? "text-critical-on-soft" : "text-warning-on-soft",
         )}>
           SAPS 3 PENDENTE — {pending.patient_name}
         </p>
-        <p className="text-xs text-muted-foreground flex items-center gap-3 mt-0.5">
+        <p className="text-xs text-muted-foreground flex items-center gap-3 mt-1">
           <span className="inline-flex items-center gap-1">
             <Clock className="h-3 w-3" /> Pendente há {elapsed.label}
           </span>
@@ -138,7 +138,7 @@ export function SapsPendingAlert({
         size="sm"
         variant={elapsed.over ? "destructive" : "default"}
         onClick={handleComplete}
-        className="shrink-0 gap-1.5"
+        className="shrink-0 gap-2"
       >
         <ClipboardList className="h-4 w-4" />
         Completar SAPS 3

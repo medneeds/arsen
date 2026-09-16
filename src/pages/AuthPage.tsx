@@ -132,7 +132,7 @@ export default function AuthPage() {
         // como causa de travamento no carregamento. O setor passa a ser
         // escolhido de forma explicita em /setores.
 
-        // 🔐 Primeiro acesso: senha padrão 123456 → exige troca + escolha de username
+        // Primeiro acesso: senha padrão 123456 → exige troca + escolha de username
         const mustChange = (profileRow as { must_change_password?: boolean } | null)?.must_change_password === true;
         if (mustChange && userId) {
           toast.success("Bem-vindo(a)! Configure seu acesso.");
@@ -245,7 +245,7 @@ export default function AuthPage() {
           showLoadingScreen && "opacity-0",
         )}
       >
-        <section className="order-1 flex flex-col px-7 py-9 sm:px-10 lg:order-2 lg:w-[54%] lg:px-14 lg:py-14 relative overflow-hidden">
+        <section className="order-1 flex flex-col px-6 py-8 sm:px-8 lg:order-2 lg:w-[54%] lg:px-8 lg:py-8 relative overflow-hidden">
           {/* Campo navy em tres camadas de profundidade: o gradiente do fundo,
               a marca recortada em escala gigante e um feixe que nasce na fenda
               do apice. A marca nao aparece inteira — sangra nas bordas e lê como
@@ -288,19 +288,19 @@ export default function AuthPage() {
             >
               Arsen
             </p>
-            <p className="preserve-case mt-2 text-[10.5px] font-light tracking-[0.28em] text-[#E2EEF9]/[0.46]">
+            <p className="preserve-case mt-2 text-xs font-normal tracking-[0.28em] text-[#E2EEF9]/[0.46]">
               PLATAFORMA CLÍNICA
             </p>
           </div>
         </section>
 
-        <section className="order-2 flex flex-1 flex-col px-7 py-9 sm:px-10 lg:order-1 lg:px-14 lg:py-14">
+        <section className="order-2 flex flex-1 flex-col px-6 py-8 sm:px-8 lg:order-1 lg:px-8 lg:py-8">
           <ArsenMark size={32} className="text-primary" />
 
           <div className="mt-auto w-full max-w-sm">
             <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
               <div>
-                <Label htmlFor="username" className="text-[10px] font-medium text-muted-foreground mb-1.5 block tracking-[0.15em]">
+                <Label htmlFor="username" className="text-xs font-medium text-muted-foreground mb-2 block tracking-[0.15em]">
                   USUÁRIO, CPF OU E-MAIL
                 </Label>
                 <div className="relative">
@@ -311,7 +311,7 @@ export default function AuthPage() {
                     value={loginData.username}
                     onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
                     placeholder="Usuário, CPF ou e-mail"
-                    className="preserve-case pl-10 h-12 text-base sm:h-11 sm:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
+                    className="preserve-case pl-8 h-12 text-base sm:h-11 sm:text-sm bg-muted/40 border border-border rounded-lg font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
                     disabled={loading}
                     autoComplete="username"
                     autoFocus
@@ -324,7 +324,7 @@ export default function AuthPage() {
               </div>
 
               <div>
-                <Label htmlFor="password" className="text-[10px] font-medium text-muted-foreground mb-1.5 block tracking-[0.15em]">
+                <Label htmlFor="password" className="text-xs font-medium text-muted-foreground mb-2 block tracking-[0.15em]">
                   SENHA
                 </Label>
                 <div className="relative">
@@ -335,7 +335,7 @@ export default function AuthPage() {
                     value={loginData.password}
                     onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                     placeholder="Digite sua senha"
-                    className="pl-10 pr-12 h-12 text-base sm:h-11 sm:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
+                    className="pl-8 pr-8 h-12 text-base sm:h-11 sm:text-sm bg-muted/40 border border-border rounded-lg font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
                     disabled={loading}
                     autoComplete="current-password"
                     autoCapitalize="none"
@@ -356,7 +356,7 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => setForgotOpen(true)}
-                    className="preserve-case text-xs sm:text-[11px] py-1 px-1 -mr-1 text-primary hover:text-primary/80 hover:underline transition-colors"
+                    className="preserve-case text-xs sm:text-xs py-1 px-1 -mr-1 text-primary hover:text-primary/80 hover:underline transition-colors"
                     disabled={loading}
                   >
                     Esqueceu a senha?
@@ -367,7 +367,7 @@ export default function AuthPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="preserve-case w-full h-12 sm:h-11 bg-gradient-to-b from-primary to-primary/90 hover:from-primary/95 hover:to-primary/80 text-primary-foreground font-medium text-sm rounded-xl transition-all duration-300 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 group border border-primary/20"
+                className="preserve-case w-full h-12 sm:h-11 bg-primary hover:from-primary/95 hover:to-primary/80 text-primary-foreground font-medium text-sm rounded-lg transition-all duration-300 shadow-md shadow-md hover:shadow-md hover:shadow-md group border border-primary/20"
               >
                 {loading ? "Entrando..." : (
                   <span className="inline-flex items-center gap-2">
@@ -379,11 +379,11 @@ export default function AuthPage() {
             </form>
           </div>
 
-          <div className="mt-auto w-full max-w-sm pt-11">
-            <p className="preserve-case text-[11px] text-muted-foreground">
+          <div className="mt-auto w-full max-w-sm pt-8">
+            <p className="preserve-case text-xs text-muted-foreground">
               {whitelabel.institution.hospitalName}
             </p>
-            <p className="preserve-case mt-0.5 text-[11px] font-light text-muted-foreground/70">
+            <p className="preserve-case mt-1 text-xs font-normal text-muted-foreground/70">
               {whitelabel.institution.hospitalShortName} &nbsp;·&nbsp;{" "}
               {whitelabel.institution.city}, {whitelabel.institution.state}
             </p>

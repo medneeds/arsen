@@ -194,11 +194,11 @@ export default function MedicalCodesPage() {
       {/* Page Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-muted/20 to-muted/10 flex items-center justify-center">
+          <div className="h-12 w-12 rounded-lg bg-muted/20 flex items-center justify-center">
             <FileCode className="h-6 w-6 text-foreground" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-3xl font-semibold tracking-tight">
               {categoryLabels[category as keyof typeof categoryLabels]}
             </h1>
             <p className="text-muted-foreground text-sm">
@@ -211,7 +211,7 @@ export default function MedicalCodesPage() {
       <Separator className="my-6" />
 
       {/* Search and Add */}
-      <Card className="border-primary/20 shadow-lg">
+      <Card className="border-primary/20 shadow-md">
         <CardHeader>
           <CardTitle className="text-lg">Pesquisar códigos</CardTitle>
           <CardDescription className="text-xs">
@@ -226,7 +226,7 @@ export default function MedicalCodesPage() {
                 placeholder="Buscar por código, nome ou descritivo..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-12"
+                className="pl-8 h-12"
               />
             </div>
             <Button 
@@ -242,24 +242,24 @@ export default function MedicalCodesPage() {
       </Card>
 
       {/* Table */}
-      <Card className="shadow-lg">
+      <Card className="shadow-md">
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">
-                <TableHead className="font-bold w-32">Código</TableHead>
-                <TableHead className="font-bold w-64">Nome</TableHead>
-                <TableHead className="font-bold">Descritivo no sistema</TableHead>
-                <TableHead className="font-bold w-24 text-right">Ações</TableHead>
+                <TableHead className="font-semibold w-32">Código</TableHead>
+                <TableHead className="font-semibold w-64">Nome</TableHead>
+                <TableHead className="font-semibold">Descritivo no sistema</TableHead>
+                <TableHead className="font-semibold w-24 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCodes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                       <FileCode className="h-12 w-12 text-muted-foreground/50" />
-                      <p className="font-semibold">Nenhum Código Cadastrado</p>
+                      <p className="font-medium">Nenhum Código Cadastrado</p>
                       <p className="text-xs">Clique em "Adicionar" para criar um novo código</p>
                     </div>
                   </TableCell>
@@ -267,7 +267,7 @@ export default function MedicalCodesPage() {
               ) : (
                 filteredCodes.map((code) => (
                   <TableRow key={code.id} className="hover:bg-muted/20 transition-colors">
-                    <TableCell className="font-mono font-semibold text-primary">
+                    <TableCell className="font-mono font-medium text-primary">
                       <div className="group relative flex items-center gap-2">
                         <span>{code.code}</span>
                         <Button
@@ -338,7 +338,7 @@ export default function MedicalCodesPage() {
           <Separator className="my-4" />
           <div className="grid gap-6 py-4">
             <div className="grid gap-3">
-              <Label htmlFor="code" className="text-sm font-semibold">
+              <Label htmlFor="code" className="text-sm font-medium">
                 Código
               </Label>
               <Input
@@ -352,7 +352,7 @@ export default function MedicalCodesPage() {
               />
             </div>
             <div className="grid gap-3">
-              <Label htmlFor="name" className="text-sm font-semibold">
+              <Label htmlFor="name" className="text-sm font-medium">
                 Nome
               </Label>
               <Input
@@ -366,7 +366,7 @@ export default function MedicalCodesPage() {
               />
             </div>
             <div className="grid gap-3">
-              <Label htmlFor="description" className="text-sm font-semibold">
+              <Label htmlFor="description" className="text-sm font-medium">
                 Descritivo no sistema
               </Label>
               <Textarea

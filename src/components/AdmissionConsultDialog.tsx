@@ -71,8 +71,8 @@ const fmtDateTime = (iso?: string | null) => {
 const Field = ({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) =>
   value && value.trim() ? (
     <div>
-      <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{label}</div>
-      <div className={cn("text-sm text-foreground whitespace-pre-wrap leading-relaxed mt-0.5", mono && "font-mono")}>
+      <div className="text-xs uppercase tracking-wider font-medium text-muted-foreground">{label}</div>
+      <div className={cn("text-sm text-foreground whitespace-pre-wrap leading-relaxed mt-1", mono && "font-mono")}>
         {value}
       </div>
     </div>
@@ -96,10 +96,10 @@ const Section = ({
     emerald: "text-released-on-soft", amber: "text-warning-on-soft", red: "text-critical-on-soft",
   } as const;
   return (
-    <section className={cn("rounded-lg border p-3.5 space-y-2.5", tones[tone])}>
+    <section className={cn("rounded-lg border p-4 space-y-3", tones[tone])}>
       <header className="flex items-center gap-2">
         <Icon className={cn("h-3.5 w-3.5", iconTones[tone])} />
-        <h4 className="text-[11px] font-semibold uppercase tracking-wide text-foreground">{title}</h4>
+        <h4 className="text-xs font-medium uppercase tracking-wide text-foreground">{title}</h4>
       </header>
       <div className="space-y-2">{children}</div>
     </section>
@@ -317,12 +317,12 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
         <DialogContent className="max-w-3xl max-h-[92vh] p-0 gap-0 overflow-hidden">
           {/* Header */}
           <DialogHeader className={cn(
-            "px-6 pt-5 pb-4 border-b",
+            "px-6 pt-4 pb-4 border-b",
             isSuspended
-              ? "bg-gradient-to-r from-critical-soft/70 via-white to-white"
-              : "bg-gradient-to-r from-released-soft/70 via-white to-white",
+              ? "bg-critical-soft/70"
+              : "bg-released-soft/70",
           )}>
-            <DialogTitle className="flex items-center gap-2 uppercase text-foreground">
+            <DialogTitle className="flex items-center gap-2 uppercase tracking-wider text-foreground">
               <span className={cn(
                 "inline-flex h-8 w-8 items-center justify-center rounded-md",
                 isSuspended ? "bg-critical-soft text-critical-on-soft" : "bg-released-soft text-released-on-soft",
@@ -331,11 +331,11 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
               </span>
               Admissão Hospitalar — {patient.name}
               {isSuspended ? (
-                <Badge className="ml-2 bg-critical-soft text-critical-on-soft border border-critical-border uppercase">
+                <Badge className="ml-2 bg-critical-soft text-critical-on-soft border border-critical-border uppercase tracking-wider">
                   <Ban className="h-3 w-3 mr-1" /> Suspensa
                 </Badge>
               ) : (
-                <Badge className="ml-2 bg-released-soft text-released-on-soft border border-released-border uppercase">
+                <Badge className="ml-2 bg-released-soft text-released-on-soft border border-released-border uppercase tracking-wider">
                   <CheckCircle2 className="h-3 w-3 mr-1" /> Validada (D0)
                 </Badge>
               )}
@@ -356,9 +356,9 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
 
           {/* Body */}
           <ScrollArea className="max-h-[68vh]">
-            <div className="px-6 py-5 space-y-4">
+            <div className="px-6 py-4 space-y-4">
               {loading ? (
-                <div className="flex items-center justify-center py-10 text-muted-foreground gap-2">
+                <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" /> Carregando admissão…
                 </div>
               ) : !d0 ? (
@@ -420,13 +420,13 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
                       <div className="space-y-2">
                         {addenda.map((a) => (
                           <div key={a.id} className="rounded-md border border-border bg-white p-3">
-                            <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                            <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground mb-2">
                               <FilePlus2 className="h-3 w-3 text-foreground" />
                               <span>Adendo</span>
                               <span>•</span>
                               <span>{fmtDateTime(a.validated_at || a.created_at)}</span>
                               <span>•</span>
-                              <span className="font-semibold text-foreground">{a.validated_by_name || a.created_by_name || "—"}</span>
+                              <span className="font-medium text-foreground">{a.validated_by_name || a.created_by_name || "—"}</span>
                             </div>
                             <p className="text-sm text-foreground whitespace-pre-wrap">
                               {(a.soap_data as any)?.addendum || ""}
@@ -442,7 +442,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
           </ScrollArea>
 
           {/* Footer */}
-          <DialogFooter className="px-6 py-3.5 border-t bg-muted/70 gap-2 sm:justify-between">
+          <DialogFooter className="px-6 py-4 border-t bg-muted/70 gap-2 sm:justify-between">
             <Button variant="outline" onClick={handlePrint} disabled={!d0} className="gap-2">
               <Printer className="h-4 w-4" /> Imprimir (Norma Zero)
             </Button>
@@ -472,7 +472,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
       <Dialog open={adendoOpen} onOpenChange={setAdendoOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 uppercase text-foreground">
+            <DialogTitle className="flex items-center gap-2 uppercase tracking-wider text-foreground">
               <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-foreground">
                 <FilePlus2 className="h-3.5 w-3.5" />
               </span>
@@ -501,7 +501,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
       <AlertDialog open={suspendOpen} onOpenChange={setSuspendOpen}>
         <AlertDialogContent className="max-w-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 uppercase text-critical-on-soft">
+            <AlertDialogTitle className="flex items-center gap-2 uppercase tracking-wider text-critical-on-soft">
               <ShieldAlert className="h-5 w-5 text-critical-on-soft" /> Suspender Admissão
             </AlertDialogTitle>
             <AlertDialogDescription className="text-xs">

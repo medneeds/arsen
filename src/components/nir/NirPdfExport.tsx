@@ -121,7 +121,7 @@ export function NirPdfExport({ metrics, predictions = [] }: Props) {
       variant="outline"
       size="sm"
       onClick={handlePrint}
-      className="h-9 gap-1.5 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground"
+      className="h-9 gap-2 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground"
     >
       <Printer className="h-3.5 w-3.5" />
       Exportar PDF

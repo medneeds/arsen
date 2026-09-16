@@ -100,15 +100,15 @@ export function NirAlertBar({ metrics, onOpenAlert }: Props) {
         >
           <a.icon className="h-4 w-4 shrink-0" />
           <div className="flex flex-col items-start text-left">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm font-bold leading-none">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold leading-none">
                 {a.key === "saturated" ? `${a.count}%` : a.count}
               </span>
-              <span className="text-[11px] font-medium">{a.label}</span>
+              <span className="text-xs font-medium">{a.label}</span>
             </div>
-            <span className="text-[10px] opacity-80 leading-tight">{a.detail}</span>
+            <span className="text-xs opacity-80 leading-tight">{a.detail}</span>
           </div>
-          <Badge variant="outline" className="ml-1 h-4 text-[9px] border-current">VER</Badge>
+          <Badge variant="outline" className="ml-1 h-4 text-xs border-current">VER</Badge>
         </Button>
       ))}
     </div>

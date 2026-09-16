@@ -140,7 +140,7 @@ export function DoorPatientNotifications() {
         </PopoverTrigger>
         <PopoverContent className="w-80 p-0" align="end">
           <div className="p-4 border-b">
-            <h3 className="font-semibold">Minhas Solicitações</h3>
+            <h3 className="font-medium">Minhas Solicitações</h3>
             <p className="text-sm text-muted-foreground">
               {myRequests.length} solicitaç{myRequests.length !== 1 ? "ões" : "ão"}
             </p>

@@ -370,7 +370,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         throw new Error(`Leito ${finalBed} já está ocupado. Atualize o mapa e selecione outro leito.`);
       }
 
-      // 🔒 ARQUIVAMENTO DEFENSIVO: antes de admitir novo paciente, garantir que
+      // ARQUIVAMENTO DEFENSIVO: antes de admitir novo paciente, garantir que
       // dados do ocupante anterior do leito estejam arquivados e encounter fechado.
       // Seguro mesmo para leitos vagos (archive em leito limpo não faz nada).
       if (existingBedRow?.id) {
@@ -553,8 +553,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         {/* Patient Header */}
         <div className="flex items-start justify-between gap-3 p-3 rounded-lg bg-muted/50 border">
           <div>
-            <p className="patient-id font-bold text-sm">{pa.patient_name}</p>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+            <p className="patient-id font-semibold text-sm">{pa.patient_name}</p>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
               {age !== null && <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{age} anos</span>}
               {pa.sex && <span>• {pa.sex}</span>}
               {pa.medical_record && <span>• Pront: {pa.medical_record}</span>}
@@ -576,10 +576,10 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           {(vs.pa_sistolica || vs.fc || vs.fr || vs.tax || vs.spo2) && (
             <Card className="col-span-2">
               <CardContent className="p-3">
-                <p className="text-xs font-semibold flex items-center gap-1 mb-2">
+                <p className="text-xs font-medium flex items-center gap-1 mb-2">
                   <Activity className="h-3.5 w-3.5 text-primary" /> Sinais Vitais
                 </p>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-[11px]">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-xs">
                   {vs.pa_sistolica && <div><span className="text-muted-foreground">PA:</span> {vs.pa_sistolica}/{vs.pa_diastolica}</div>}
                   {vs.fc && <div><span className="text-muted-foreground">FC:</span> {vs.fc}</div>}
                   {vs.fr && <div><span className="text-muted-foreground">FR:</span> {vs.fr}</div>}
@@ -595,11 +595,11 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           {pa.glasgow_score && (
             <Card>
               <CardContent className="p-3">
-                <p className="text-xs font-semibold flex items-center gap-1 mb-1">
+                <p className="text-xs font-medium flex items-center gap-1 mb-1">
                   <Brain className="h-3.5 w-3.5 text-muted-foreground" /> Glasgow
                 </p>
-                <p className="text-lg font-bold">{pa.glasgow_score}<span className="text-xs font-normal text-muted-foreground">/15</span></p>
-                <div className="text-[10px] text-muted-foreground">
+                <p className="text-lg font-semibold">{pa.glasgow_score}<span className="text-xs font-normal text-muted-foreground">/15</span></p>
+                <div className="text-xs text-muted-foreground">
                   {gd.ocular && <span>O:{gd.ocular} </span>}
                   {gd.verbal && <span>V:{gd.verbal} </span>}
                   {gd.motor && <span>M:{gd.motor}</span>}
@@ -612,9 +612,9 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           {(pa.allergies || pa.flu_symptoms || pa.oxygen_therapy || pa.pain_scale !== null) && (
             <Card className="col-span-2">
               <CardContent className="p-3">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                   {pa.pain_scale !== null && pa.pain_scale !== undefined && (
-                    <div><span className="text-muted-foreground">Dor:</span> <span className="font-semibold">{pa.pain_scale}/10</span></div>
+                    <div><span className="text-muted-foreground">Dor:</span> <span className="font-medium">{pa.pain_scale}/10</span></div>
                   )}
                   {pa.allergies && <div><span className="text-muted-foreground">Alergias:</span> {pa.allergies}</div>}
                   {pa.flu_symptoms && <div className="flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-warning" /> Sintomas gripais{pa.flu_symptoms_detail ? `: ${pa.flu_symptoms_detail}` : ""}</div>}
@@ -626,8 +626,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
 
           {pa.triage_notes && (
             <Card className="col-span-2">
-              <CardContent className="p-3 text-[11px]">
-                <span className="font-semibold">Obs. Triagem:</span> {pa.triage_notes}
+              <CardContent className="p-3 text-xs">
+                <span className="font-medium">Obs. Triagem:</span> {pa.triage_notes}
               </CardContent>
             </Card>
           )}
@@ -638,7 +638,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         {/* Allocation */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold flex items-center gap-2">
+            <p className="text-sm font-medium flex items-center gap-2">
               <BedDouble className="h-4 w-4" /> Alocação
             </p>
             <div className="flex items-center gap-2">
@@ -663,10 +663,10 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           {/* Sector full alert */}
           {bedsLoaded && sectorFullAlert && !extraBedRequested && (
             <Card className="border-destructive/40 bg-destructive/10">
-              <CardContent className="p-3 flex items-start gap-2.5">
-                <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+              <CardContent className="p-3 flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-destructive mt-1 shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-destructive">Setor lotado — Admissão bloqueada</p>
+                  <p className="text-sm font-medium text-destructive">Setor lotado — Admissão bloqueada</p>
                   <p className="text-muted-foreground mt-1 text-xs">
                     Todos os leitos regulares de <span className="font-medium">{SECTORS.find(s => s.value === selectedSector)?.label}</span> estão ocupados. 
                     Solicite uma maca extra para alocação provisória ou altere o setor.
@@ -675,7 +675,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 text-xs gap-1.5 border-warning/50 text-warning-on-soft hover:bg-warning/10"
+                      className="h-7 text-xs gap-2 border-warning/50 text-warning-on-soft hover:bg-warning/10"
                       onClick={() => {
                         setExtraBedRequested(true);
                         setSelectedBed("EXTRA");
@@ -705,10 +705,10 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           {/* Extra bed confirmed */}
           {bedsLoaded && sectorFullAlert && extraBedRequested && (
             <Card className="border-warning/40 bg-warning/10">
-              <CardContent className="p-3 flex items-start gap-2.5">
-                <BedDouble className="h-5 w-5 text-warning-on-soft mt-0.5 shrink-0" />
+              <CardContent className="p-3 flex items-start gap-3">
+                <BedDouble className="h-5 w-5 text-warning-on-soft mt-1 shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-warning-on-soft">Maca extra solicitada</p>
+                  <p className="text-sm font-medium text-warning-on-soft">Maca extra solicitada</p>
                   <p className="text-muted-foreground mt-1 text-xs">
                     O paciente será alocado provisoriamente em maca extra no setor <span className="font-medium">{SECTORS.find(s => s.value === selectedSector)?.label}</span>.
                     Transfira para leito regular assim que houver disponibilidade.
@@ -716,7 +716,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="mt-1 h-6 text-[10px] text-muted-foreground px-1"
+                    className="mt-1 h-6 text-xs text-muted-foreground px-1"
                     onClick={() => { setExtraBedRequested(false); setSelectedBed(""); }}
                   >
                     Cancelar maca extra
@@ -728,17 +728,17 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
 
           {/* Bed grid (UTI + non-UTI unificado) */}
           {bedsLoaded && !sectorFullAlert && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-xs">Selecione o leito</Label>
                 {selectedBed && selectedBed !== "EXTRA" && (
-                  <Badge variant="outline" className="text-[10px] border-primary/40 text-primary bg-primary/10">
+                  <Badge variant="outline" className="text-xs border-primary/40 text-primary bg-primary/10">
                     {selectedBed}
                   </Badge>
                 )}
               </div>
               <div className="rounded-md border bg-muted/30 p-2 max-h-[180px] overflow-y-auto">
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                   {availableBeds.map(bed => {
                     if (bed === "EXTRA") {
                       const isSel = selectedBed === "EXTRA";
@@ -748,7 +748,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                           type="button"
                           onClick={() => setSelectedBed("EXTRA")}
                           className={cn(
-                            "rounded-md border px-1.5 py-1.5 text-[10px] font-semibold transition-all flex flex-col items-center gap-0.5",
+                            "rounded-md border px-2 py-2 text-xs font-medium transition-all flex flex-col items-center gap-1",
                             isSel
                               ? "border-warning bg-warning/15 text-warning-on-soft ring-2 ring-warning/30"
                               : "border-dashed border-warning/40 text-warning-on-soft hover:bg-warning/10"
@@ -768,7 +768,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                         disabled={isOccupied}
                         onClick={() => setSelectedBed(bed)}
                         className={cn(
-                          "rounded-md border px-1.5 py-1.5 text-[11px] font-semibold transition-all flex flex-col items-center gap-0.5 leading-tight",
+                          "rounded-md border px-2 py-2 text-xs font-medium transition-all flex flex-col items-center gap-1 leading-tight",
                           isOccupied
                             ? "border-destructive/30 bg-destructive/10 text-destructive/70 cursor-not-allowed"
                             : isSel
@@ -778,7 +778,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                       >
                         <BedDouble className="h-3 w-3" />
                         {bed}
-                        <span className="text-[9px] font-normal opacity-80">
+                        <span className="text-xs font-normal opacity-80">
                           {isOccupied ? "Ocupado" : "Livre"}
                         </span>
                       </button>
@@ -787,18 +787,18 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                 </div>
               </div>
               {isUtiAdmission && (
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   O leito escolhido será reservado e aparecerá pré-selecionado no SAPS 3.
                 </p>
               )}
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <Label className="text-xs flex items-center gap-1.5">
+          <div className="space-y-2">
+            <Label className="text-xs flex items-center gap-2">
               <Calendar className="h-3 w-3" />
               Data e hora da admissão
-              <span className="text-[10px] font-normal text-muted-foreground">(sugerida — confirme ou edite)</span>
+              <span className="text-xs font-normal text-muted-foreground">(sugerida — confirme ou edite)</span>
             </Label>
             <div className="flex gap-2">
               <Popover>
@@ -859,15 +859,15 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                 className="h-9 w-28 text-xs"
               />
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Por padrão, usamos o momento atual. Ajuste se a admissão efetiva ocorreu em outro horário.
             </p>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs">Previsão de alta</Label>
-              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={noDischargePrediction}
@@ -902,9 +902,9 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                     }
                   }}
                   placeholder="Dias"
-                  className="h-9 text-xs pr-10"
+                  className="h-9 text-xs pr-8"
                 />
-                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">dias</span>
+                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">dias</span>
               </div>
               <Popover>
                 <PopoverTrigger asChild>
@@ -943,12 +943,12 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                 </PopoverContent>
               </Popover>
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Digite os dias para ver a data, ou escolha a data para calcular os dias automaticamente.
             </p>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-xs">Observações da admissão (opcional)</Label>
             <Textarea
               value={admissionNotes}

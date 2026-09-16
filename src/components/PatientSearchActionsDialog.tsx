@@ -482,8 +482,8 @@ export function PatientSearchActionsDialog({
                 <User className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <DialogTitle className="text-base uppercase truncate">{patient.full_name}</DialogTitle>
-                <DialogDescription className="text-xs mt-0.5 flex items-center gap-1.5 flex-wrap">
+                <DialogTitle className="text-base uppercase tracking-wider truncate">{patient.full_name}</DialogTitle>
+                <DialogDescription className="text-xs mt-1 flex items-center gap-2 flex-wrap">
                   {age !== null && <span>{age}a</span>}
                   {patient.sex && <span>• {patient.sex}</span>}
                   {patient.medical_record && <span>• Pront: {patient.medical_record}</span>}
@@ -506,8 +506,8 @@ export function PatientSearchActionsDialog({
                 >
                   <History className="h-4 w-4 text-primary" />
                   <div className="text-left">
-                    <div className="text-sm font-semibold">Consultar histórico</div>
-                    <div className="text-[11px] text-muted-foreground">
+                    <div className="text-sm font-medium">Consultar histórico</div>
+                    <div className="text-xs text-muted-foreground">
                       Abre a linha do tempo longitudinal do paciente.
                     </div>
                   </div>
@@ -519,8 +519,8 @@ export function PatientSearchActionsDialog({
                 >
                   <FilePlus className="h-4 w-4" />
                   <div className="text-left">
-                    <div className="text-sm font-semibold">Abrir novo atendimento</div>
-                    <div className="text-[11px] opacity-90">
+                    <div className="text-sm font-medium">Abrir novo atendimento</div>
+                    <div className="text-xs opacity-90">
                       Gera um código único de atendimento (12 dígitos) vinculado a este prontuário.
                     </div>
                   </div>
@@ -530,7 +530,7 @@ export function PatientSearchActionsDialog({
           )}
 
           {step === "checking" && (
-            <div className="flex flex-col items-center justify-center py-10 gap-3">
+            <div className="flex flex-col items-center justify-center py-8 gap-3">
               <Loader2 className="h-7 w-7 animate-spin text-primary" />
               <p className="text-sm text-muted-foreground">Verificando atendimentos ativos...</p>
             </div>
@@ -541,10 +541,10 @@ export function PatientSearchActionsDialog({
               {/* Banner principal */}
               {activeEncounterInfo.isObito ? (
                 <div className="flex items-start gap-3 rounded-lg border-2 border-destructive/40 bg-destructive/5 p-3">
-                  <Skull className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                  <Skull className="h-5 w-5 text-destructive mt-1 shrink-0" />
                   <div>
-                    <p className="text-sm font-bold text-destructive">Óbito registrado</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-sm font-semibold text-destructive">Óbito registrado</p>
+                    <p className="text-xs text-muted-foreground mt-1">
                       Este paciente possui um registro de óbito ativo. Não é possível abrir novo atendimento.
                       Em caso de erro de sinalização, um gestor ou administrador pode forçar a abertura com justificativa.
                     </p>
@@ -552,12 +552,12 @@ export function PatientSearchActionsDialog({
                 </div>
               ) : (
                 <div className="flex items-start gap-3 rounded-lg border-2 border-warning/50 bg-warning-soft p-3">
-                  <Lock className="h-5 w-5 text-warning-on-soft mt-0.5 shrink-0" />
+                  <Lock className="h-5 w-5 text-warning-on-soft mt-1 shrink-0" />
                   <div>
-                    <p className="text-sm font-bold text-warning-on-soft">
+                    <p className="text-sm font-semibold text-warning-on-soft">
                       Atendimento ativo encontrado
                     </p>
-                    <p className="text-xs text-warning-on-soft mt-0.5 leading-relaxed">
+                    <p className="text-xs text-warning-on-soft mt-1 leading-relaxed">
                       Este paciente já possui um atendimento em aberto. Para admiti-lo em um novo setor,
                       é necessário encerrar o atendimento atual (alta, transferência externa ou óbito)
                       antes de abrir um novo.
@@ -567,12 +567,12 @@ export function PatientSearchActionsDialog({
               )}
 
               {/* Dados do atendimento ativo */}
-              <div className="rounded-md border bg-muted/30 p-3 space-y-1.5">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Atendimento em aberto</p>
+              <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Atendimento em aberto</p>
                 {activeEncounterInfo.encounterCode && (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">Nº Atendimento</span>
-                    <Badge variant="secondary" className="text-xs font-mono font-bold">
+                    <Badge variant="secondary" className="text-xs font-mono font-semibold">
                       #{activeEncounterInfo.encounterCode}
                     </Badge>
                   </div>
@@ -587,7 +587,7 @@ export function PatientSearchActionsDialog({
                   </div>
                 )}
                 {activeEncounterInfo.isTransitInternal && (
-                  <Badge variant="outline" className="text-[10px] border-border text-foreground">
+                  <Badge variant="outline" className="text-xs border-border text-foreground">
                     Em transferência interna — aguardando alocação no setor destino
                   </Badge>
                 )}
@@ -627,7 +627,7 @@ export function PatientSearchActionsDialog({
                 <div className="space-y-2 pt-1">
                   <button
                     type="button"
-                    className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-destructive transition-colors"
+                    className="flex items-center gap-2 text-xs text-muted-foreground hover:text-destructive transition-colors"
                     onClick={() => setIsForcing(f => !f)}
                   >
                     <AlertTriangle className="h-3 w-3" />
@@ -635,8 +635,8 @@ export function PatientSearchActionsDialog({
                   </button>
                   {isForcing && (
                     <div className="space-y-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
-                      <p className="text-[11px] text-destructive font-medium">
-                        ⚠ Esta ação abre um novo atendimento mesmo com um atendimento ativo.
+                      <p className="text-xs text-destructive font-medium">
+                        Esta ação abre um novo atendimento mesmo com um atendimento ativo.
                         A justificativa será registrada em auditoria.
                       </p>
                       <Textarea
@@ -649,11 +649,11 @@ export function PatientSearchActionsDialog({
                           pedido do gestor): a ação NÃO cria um atendimento
                           paralelo — ela ENCERRA o anterior. O gestor precisa
                           declarar ciência disso antes de chegar na senha. */}
-                      <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2.5 space-y-1.5">
-                        <p className="text-[11px] font-semibold text-destructive">
+                      <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+                        <p className="text-xs font-medium text-destructive">
                           O que esta ação faz
                         </p>
-                        <ul className="text-[10px] text-foreground/80 space-y-1 list-disc pl-3.5">
+                        <ul className="text-xs text-foreground/80 space-y-1 list-disc pl-4">
                           <li>
                             <b>Encerra</b> o atendimento atual
                             {activeEncounterInfo?.encounterCode ? ` #${activeEncounterInfo.encounterCode}` : ""}
@@ -679,9 +679,9 @@ export function PatientSearchActionsDialog({
                             type="checkbox"
                             checked={forceAcknowledged}
                             onChange={(e) => setForceAcknowledged(e.target.checked)}
-                            className="mt-0.5 h-3 w-3 shrink-0 accent-destructive cursor-pointer"
+                            className="mt-1 h-3 w-3 shrink-0 accent-destructive cursor-pointer"
                           />
-                          <span className="text-[10px] text-foreground leading-snug">
+                          <span className="text-xs text-foreground leading-snug">
                             Declaro estar ciente de que o atendimento atual será encerrado e assumo a
                             responsabilidade por esta correção.
                           </span>
@@ -731,7 +731,7 @@ export function PatientSearchActionsDialog({
               </div>
 
               {signalPreAdmission && (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label className="text-xs">Setor de destino</Label>
                   <Select value={selectedSectorValue} onValueChange={setSelectedSectorValue}>
                     <SelectTrigger className="h-9 text-xs">
@@ -740,7 +740,7 @@ export function PatientSearchActionsDialog({
                     <SelectContent>
                       {groupedSectors.map(([group, items]) => (
                         <SelectGroup key={group}>
-                          <SelectLabel className="text-[10px] uppercase">{group}</SelectLabel>
+                          <SelectLabel className="text-xs uppercase tracking-wider">{group}</SelectLabel>
                           {items.map(s => (
                             <SelectItem key={s.value} value={s.value} className="text-xs">
                               {s.label}
@@ -751,8 +751,8 @@ export function PatientSearchActionsDialog({
                     </SelectContent>
                   </Select>
                   {defaultSectorMapTitle && (
-                    <p className="text-[10px] text-muted-foreground">
-                      Padrão: setor visualizado no mapa <Badge variant="secondary" className="text-[10px] py-0 px-1.5">{defaultSectorMapTitle}</Badge>
+                    <p className="text-xs text-muted-foreground">
+                      Padrão: setor visualizado no mapa <Badge variant="secondary" className="text-xs py-0 px-2">{defaultSectorMapTitle}</Badge>
                     </p>
                   )}
                 </div>

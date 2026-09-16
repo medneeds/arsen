@@ -76,7 +76,7 @@ export function ProfileSwitcherDialog({ open, onOpenChange }: Props) {
           </p>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
           {cards.map((p, idx) => {
             const Icon = p.icon;
             const isActive = active === p.value;
@@ -87,28 +87,28 @@ export function ProfileSwitcherDialog({ open, onOpenChange }: Props) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.03 }}
                 onClick={() => handleSelect(p.value)}
-                className={`group text-left relative bg-card border rounded-xl p-3 transition-all hover:border-primary/40 hover:shadow-md ${
+                className={`group text-left relative bg-card border rounded-lg p-3 transition-all hover:border-primary/40 hover:shadow-md ${
                   isActive ? "border-primary/60 ring-2 ring-primary/15" : "border-border/70"
                 }`}
               >
                 {isActive && (
-                  <span className="preserve-case absolute top-2 right-2 inline-flex items-center gap-1 text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                  <span className="preserve-case absolute top-2 right-2 inline-flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-md">
                     <Check className="h-2.5 w-2.5" />
                     ATUAL
                   </span>
                 )}
                 <div className="flex items-start gap-3">
-                  <div className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/15 shrink-0">
+                  <div className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-primary/15 border border-primary/15 shrink-0">
                     <Icon className="h-4 w-4 text-primary" />
                   </div>
-                  <div className="flex-1 min-w-0 pr-10">
-                    <p className="preserve-case font-semibold text-sm text-foreground mb-0.5">
+                  <div className="flex-1 min-w-0 pr-8">
+                    <p className="preserve-case font-medium text-sm text-foreground mb-1">
                       {p.label}
                     </p>
-                    <p className="preserve-case text-[11px] text-muted-foreground leading-snug line-clamp-2">
+                    <p className="preserve-case text-xs text-muted-foreground leading-snug line-clamp-2">
                       {p.description}
                     </p>
-                    <div className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
                       {isActive ? "Recarregar painel" : `Entrar como ${p.shortLabel}`}
                       <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                     </div>

@@ -19,7 +19,7 @@ export default function CuidadosPaliativosPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen bg-background">
       <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-start gap-4">
@@ -34,11 +34,11 @@ export default function CuidadosPaliativosPage() {
           
           <div className="flex-1 space-y-3">
             <div className="flex items-center gap-3">
-              <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
+              <div className="flex-shrink-0 w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Heart className="h-7 w-7 text-muted-foreground" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-semibold tracking-tight bg-primary bg-clip-text text-transparent">
                   Cuidados Paliativos
                 </h1>
                 <p className="text-muted-foreground text-lg mt-1">
@@ -61,7 +61,7 @@ export default function CuidadosPaliativosPage() {
         <Separator className="my-6" />
 
         {/* Content Card */}
-        <Card className="border-border/20 shadow-lg">
+        <Card className="border-border/20 shadow-md">
           <CardHeader className="bg-primary/5">
             <CardTitle className="text-2xl flex items-center gap-2">
               <Heart className="h-6 w-6 text-muted-foreground" />
@@ -73,35 +73,35 @@ export default function CuidadosPaliativosPage() {
           </CardHeader>
           <CardContent className="p-8 space-y-6">
             <div className="prose prose-sm max-w-none">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Objetivo do Termo</h3>
+              <h3 className="text-lg font-medium text-foreground mb-4">Objetivo do Termo</h3>
               <p className="text-muted-foreground leading-relaxed">
                 O presente termo de aceite de tratamento em cuidados paliativos tem o objetivo de cumprir 
                 o dever ético de informar ao paciente e seu responsável legal quanto aos principais aspectos 
                 relacionados à implementação dos cuidados paliativos.
               </p>
               
-              <h3 className="text-lg font-semibold text-foreground mt-6 mb-4">Medidas Contempladas</h3>
+              <h3 className="text-lg font-medium text-foreground mt-6 mb-4">Medidas Contempladas</h3>
               <div className="bg-muted/30 border border-border rounded-lg p-6 space-y-4">
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-foreground flex items-center gap-2">
+                  <h4 className="font-medium text-foreground flex items-center gap-2">
                     <Heart className="h-4 w-4" />
                     Medidas de Conforto Autorizadas:
                   </h4>
                   <ul className="space-y-2 text-muted-foreground ml-6">
                     <li className="flex items-start gap-2">
-                      <span className="text-muted-foreground font-bold">✓</span>
+                      <span className="text-muted-foreground font-semibold"></span>
                       <span>Medidas de conforto</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-muted-foreground font-bold">✓</span>
+                      <span className="text-muted-foreground font-semibold"></span>
                       <span>Proporcionalidade do cuidado</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-muted-foreground font-bold">✓</span>
+                      <span className="text-muted-foreground font-semibold"></span>
                       <span>Tratamento adequado às enfermidades</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-muted-foreground font-bold">✓</span>
+                      <span className="text-muted-foreground font-semibold"></span>
                       <span>Permanência do paciente próximo aos familiares</span>
                     </li>
                   </ul>
@@ -110,61 +110,61 @@ export default function CuidadosPaliativosPage() {
                 <Separator className="my-4" />
 
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-critical-on-soft flex items-center gap-2">
+                  <h4 className="font-medium text-critical-on-soft flex items-center gap-2">
                     Medidas Não Autorizadas:
                   </h4>
                   <ul className="space-y-2 text-muted-foreground ml-6">
                     <li className="flex items-start gap-2">
-                      <span className="text-critical font-bold">✗</span>
+                      <span className="text-critical font-semibold"></span>
                       <span>Intubação orotraqueal</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-critical font-bold">✗</span>
+                      <span className="text-critical font-semibold"></span>
                       <span>Reanimação cardiopulmonar</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-critical font-bold">✗</span>
+                      <span className="text-critical font-semibold"></span>
                       <span>Transferência para leito de UTI</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-critical font-bold">✗</span>
+                      <span className="text-critical font-semibold"></span>
                       <span>Cateter venoso central</span>
                     </li>
                   </ul>
                 </div>
               </div>
               
-              <h3 className="text-lg font-semibold text-foreground mt-6 mb-4">Informações no Documento</h3>
+              <h3 className="text-lg font-medium text-foreground mt-6 mb-4">Informações no Documento</h3>
               <ul className="space-y-2 text-muted-foreground">
                 <li className="flex items-start gap-2">
-                  <span className="text-muted-foreground font-bold">•</span>
+                  <span className="text-muted-foreground font-semibold">•</span>
                   <span>Identificação completa do paciente e responsável legal</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-muted-foreground font-bold">•</span>
+                  <span className="text-muted-foreground font-semibold">•</span>
                   <span>Declaração de ciência sobre o quadro clínico</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-muted-foreground font-bold">•</span>
+                  <span className="text-muted-foreground font-semibold">•</span>
                   <span>Aceite das medidas de conforto e proporcionalidade</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-muted-foreground font-bold">•</span>
+                  <span className="text-muted-foreground font-semibold">•</span>
                   <span>Isenção de responsabilidade ao hospital e profissionais</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-muted-foreground font-bold">•</span>
+                  <span className="text-muted-foreground font-semibold">•</span>
                   <span>Assinatura do paciente/responsável e médico assistente</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-muted-foreground font-bold">•</span>
+                  <span className="text-muted-foreground font-semibold">•</span>
                   <span>Referências ao Código de Ética Médica e CDC</span>
                 </li>
               </ul>
 
               <div className="mt-6 p-4 bg-warning/10 border border-warning/20 rounded-lg">
-                <p className="text-sm text-foreground uppercase font-semibold">
-                  ⚠️ Importante: Este termo garante que o responsável legal foi devidamente informado 
+                <p className="text-sm text-foreground uppercase tracking-wider font-medium">
+                  Importante: Este termo garante que o responsável legal foi devidamente informado 
                   sobre todas as implicações do tratamento paliativo, mantendo o foco na dignidade 
                   e conforto do paciente.
                 </p>

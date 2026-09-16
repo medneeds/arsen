@@ -163,7 +163,7 @@ export function NirNotificationCenter({ metrics }: Props) {
           {total > 0 && (
             <Badge
               variant={criticalCount > 0 ? "destructive" : "secondary"}
-              className="h-5 px-1.5 text-[10px]"
+              className="h-5 px-2 text-xs"
             >
               {total}
             </Badge>
@@ -173,18 +173,18 @@ export function NirNotificationCenter({ metrics }: Props) {
       <PopoverContent align="end" className="w-96 p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
           <div>
-            <p className="text-sm font-semibold">Central de Notificações NIR</p>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-sm font-medium">Central de Notificações NIR</p>
+            <p className="text-xs text-muted-foreground">
               {criticalCount} crítica(s) · {warningCount} alerta(s)
             </p>
           </div>
         </div>
         <ScrollArea className="max-h-96">
           {total === 0 ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">
+            <div className="py-8 text-center text-sm text-muted-foreground">
               <Bell className="h-8 w-8 mx-auto mb-2 opacity-30" />
               Nenhuma notificação ativa.
-              <p className="text-[11px] mt-1">Tudo dentro das metas.</p>
+              <p className="text-xs mt-1">Tudo dentro das metas.</p>
             </div>
           ) : (
             <div className="p-2 space-y-3">
@@ -198,38 +198,38 @@ export function NirNotificationCenter({ metrics }: Props) {
                 if (doNivel.length === 0) return null;
                 return (
                   <div key={level}>
-                    <div className="flex items-center gap-1.5 px-0.5 pb-1">
+                    <div className="flex items-center gap-2 px-1 pb-1">
                       <span className={cn("h-1.5 w-1.5 rounded-full", LEVEL_DOT[level])} />
-                      <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                      <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                         {LEVEL_LABEL[level]}
                       </span>
-                      <span className="text-[9px] text-muted-foreground/70 tabular-nums">
+                      <span className="text-xs text-muted-foreground/70 tabular-nums">
                         {doNivel.length}
                       </span>
                       <div className="flex-1 h-px bg-border/60" />
                     </div>
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-2">
               {doNivel.map((n) => {
                 const Icon = CATEGORY_ICON[n.category];
                 return (
                   <li
                     key={n.id}
                     className={cn(
-                      "rounded-md border p-2.5 flex gap-2.5",
+                      "rounded-md border p-3 flex gap-3",
                       LEVEL_STYLES[n.level],
                     )}
                   >
                     <Icon
                       className={cn(
-                        "h-4 w-4 mt-0.5 shrink-0",
+                        "h-4 w-4 mt-1 shrink-0",
                         n.level === "critical" && "text-critical",
                         n.level === "warning" && "text-warning",
                         n.level === "info" && "text-muted-foreground",
                       )}
                     />
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-foreground">{n.title}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{n.message}</p>
+                      <p className="text-xs font-medium text-foreground">{n.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{n.message}</p>
                     </div>
                   </li>
                 );

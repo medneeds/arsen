@@ -342,7 +342,7 @@ const NotesTabOptimized = () => {
           </div>
 
           <div className="hidden print:block mb-6">
-            <h1 className="text-2xl font-bold uppercase text-center">ANOTAÇÕES MÉDICAS</h1>
+            <h1 className="text-2xl font-semibold uppercase tracking-wider text-center">ANOTAÇÕES MÉDICAS</h1>
             <p className="text-sm text-center mt-2">
               Data: {new Date().toLocaleDateString("pt-BR")} -{" "}
               {new Date().toLocaleTimeString("pt-BR")}
@@ -350,7 +350,7 @@ const NotesTabOptimized = () => {
             <hr className="my-4 border-t-2 border-border" />
           </div>
 
-          <Card className="p-6 shadow-xl border-2 print:border-0 print:shadow-none print:p-0">
+          <Card className="p-6 shadow-md border-2 print:border-0 print:shadow-none print:p-0">
             <div className="space-y-4 print:space-y-0">
               <Textarea
                 value={notes}
@@ -430,7 +430,7 @@ const NotesTabOptimized = () => {
             <Button
               onClick={handleAddChecklistItem}
               disabled={!newChecklistItem.trim()}
-              className="gap-2 uppercase"
+              className="gap-2 uppercase tracking-wider"
             >
               <Plus className="h-4 w-4" />
               ADICIONAR

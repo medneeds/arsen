@@ -223,7 +223,7 @@ export function MedicalRecordEditDialog({
           changed_by_email: userEmail,
         } as any);
 
-      toast({ title: "✅ Prontuário legado criado", description: `Nº ${value} vinculado ao paciente.` });
+      toast({ title: "Prontuário legado criado", description: `Nº ${value} vinculado ao paciente.` });
       setCreateLegacyNumber("");
       await loadData();
       onSaved?.();
@@ -417,7 +417,7 @@ export function MedicalRecordEditDialog({
         })));
       if (hErr) throw hErr;
 
-      toast({ title: "✅ Prontuário atualizado", description: `${mrChanges.length} campo(s) alterado(s).` });
+      toast({ title: "Prontuário atualizado", description: `${mrChanges.length} campo(s) alterado(s).` });
       setConfirmOpen(false);
       await loadData();
       onSaved?.();
@@ -653,7 +653,7 @@ export function MedicalRecordEditDialog({
       }
 
       toast({
-        title: createdNewRegistry ? "✅ Ficha cadastral criada" : "✅ Ficha cadastral atualizada",
+        title: createdNewRegistry ? "Ficha cadastral criada" : "Ficha cadastral atualizada",
         description: `${regChanges.length} campo(s) ${createdNewRegistry ? "preenchido(s)" : "alterado(s)"}.`,
       });
       setConfirmOpen(false);
@@ -679,7 +679,7 @@ export function MedicalRecordEditDialog({
       });
       if (error) throw error;
       toast({
-        title: "🗑️ Paciente excluído permanentemente",
+        title: "Paciente excluído permanentemente",
         description: "Todos os dados foram apagados. Operação registrada nos logs.",
       });
       setConfirmDeleteOpen(false);
@@ -750,7 +750,7 @@ export function MedicalRecordEditDialog({
     setPisExtracted(null);
     setPasteText("");
     toast({
-      title: "✅ Campos aplicados aos formulários",
+      title: "Campos aplicados aos formulários",
       description: "Revise, ajuste se necessário e salve para confirmar a alteração.",
     });
   }
@@ -834,32 +834,32 @@ export function MedicalRecordEditDialog({
               Editar Prontuário & Ficha Cadastral
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Paciente: <strong className="uppercase">{patientName || "—"}</strong>. Toda alteração é auditada com seu nome, e-mail, data/hora e motivo.
+              Paciente: <strong className="uppercase tracking-wider">{patientName || "—"}</strong>. Toda alteração é auditada com seu nome, e-mail, data/hora e motivo.
             </DialogDescription>
           </DialogHeader>
 
           {loading ? (
-            <div className="flex items-center justify-center py-10">
+            <div className="flex items-center justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
               <TabsList className={isDeveloper ? "grid grid-cols-4 w-full" : "grid grid-cols-3 w-full"}>
-                <TabsTrigger value="prontuario" className="text-xs gap-1.5">
+                <TabsTrigger value="prontuario" className="text-xs gap-2">
                   <IdCard className="h-3.5 w-3.5" /> Prontuário
                 </TabsTrigger>
-                <TabsTrigger value="ficha" className="text-xs gap-1.5">
+                <TabsTrigger value="ficha" className="text-xs gap-2">
                   <FileText className="h-3.5 w-3.5" /> Ficha cadastral
-                  {regChanges.length > 0 && <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{regChanges.length}</Badge>}
+                  {regChanges.length > 0 && <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">{regChanges.length}</Badge>}
                 </TabsTrigger>
-                <TabsTrigger value="historico" className="text-xs gap-1.5">
+                <TabsTrigger value="historico" className="text-xs gap-2">
                   <History className="h-3.5 w-3.5" /> Histórico
-                  <Badge variant="outline" className="ml-1 h-4 px-1 text-[9px]">{mrHistory.length + regHistory.length}</Badge>
+                  <Badge variant="outline" className="ml-1 h-4 px-1 text-xs">{mrHistory.length + regHistory.length}</Badge>
                 </TabsTrigger>
                 {isDeveloper && (
                   <TabsTrigger
                     value="danger"
-                    className="text-xs gap-1.5 data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground text-destructive"
+                    className="text-xs gap-2 data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground text-destructive"
                   >
                     <ShieldAlert className="h-3.5 w-3.5" /> Edição Avançada
                   </TabsTrigger>
@@ -872,7 +872,7 @@ export function MedicalRecordEditDialog({
                   {!record ? (
                     <div className="rounded-md border border-dashed border-warning/40 bg-warning/5 p-4 text-sm space-y-3">
                       <div className="flex items-start gap-2">
-                        <span className="text-warning-on-soft font-semibold text-xs uppercase tracking-wide">
+                        <span className="text-warning-on-soft font-medium text-xs uppercase tracking-wide">
                           Sem prontuário vinculado
                         </span>
                       </div>
@@ -884,12 +884,12 @@ export function MedicalRecordEditDialog({
                       </p>
                       <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
                         <div className="flex-1">
-                          <Label className="text-[11px] font-semibold">Nº do prontuário (PIN/PIS ou legado)</Label>
+                          <Label className="text-xs font-medium">Nº do prontuário (PIN/PIS ou legado)</Label>
                           <Input
                             value={createLegacyNumber}
                             onChange={(e) => setCreateLegacyNumber(e.target.value)}
                             placeholder="Ex.: 123456 ou PIS-7788"
-                            className="h-9 text-xs uppercase mt-1"
+                            className="h-9 text-xs uppercase tracking-wider mt-1"
                             disabled={creatingLegacy}
                           />
                         </div>
@@ -897,12 +897,12 @@ export function MedicalRecordEditDialog({
                           size="sm"
                           onClick={createLegacyMedicalRecord}
                           disabled={creatingLegacy || createLegacyNumber.trim().length < 1}
-                          className="gap-1.5"
+                          className="gap-2"
                         >
                           {creatingLegacy ? "Criando..." : "Criar prontuário legado"}
                         </Button>
                       </div>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         Após a criação você poderá editar o nº, alternar para o formato oficial AA-UUU-SSSSSS-DV
                         e completar a ficha cadastral normalmente.
                       </p>
@@ -912,27 +912,27 @@ export function MedicalRecordEditDialog({
                       <section className="space-y-3 p-3 rounded-lg border bg-card">
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <Label className="text-xs font-semibold">Nº do Prontuário</Label>
+                            <Label className="text-xs font-medium">Nº do Prontuário</Label>
                             <Input value={numero} onChange={(e) => setNumero(e.target.value)}
-                              className="h-9 text-xs uppercase" placeholder="AA-UUU-SSSSSS-DV" />
+                              className="h-9 text-xs uppercase tracking-wider" placeholder="AA-UUU-SSSSSS-DV" />
                           </div>
                           <div>
-                            <Label className="text-xs font-semibold">Nº Legado / PIN</Label>
+                            <Label className="text-xs font-medium">Nº Legado / PIN</Label>
                             <Input value={legado} onChange={(e) => setLegado(e.target.value)}
-                              className="h-9 text-xs uppercase" placeholder="Nº PIS / código PIN" />
+                              className="h-9 text-xs uppercase tracking-wider" placeholder="Nº PIS / código PIN" />
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           Modo:{" "}
-                          <Badge variant="outline" className="text-[10px]">
+                          <Badge variant="outline" className="text-xs">
                             {record.generation_mode || (record.is_legacy ? "manual_legacy" : "auto")}
                           </Badge>
-                          {record.is_legacy && <Badge variant="secondary" className="text-[10px]">Legado</Badge>}
+                          {record.is_legacy && <Badge variant="secondary" className="text-xs">Legado</Badge>}
                         </div>
                       </section>
 
                       <section className="space-y-2 p-3 rounded-lg border border-warning/30 bg-warning/10">
-                        <Label className="text-xs font-semibold flex items-center gap-1.5">
+                        <Label className="text-xs font-medium flex items-center gap-2">
                           <AlertTriangle className="h-3.5 w-3.5 text-warning-on-soft" />
                           Motivo da alteração do prontuário (obrigatório)
                         </Label>
@@ -942,7 +942,7 @@ export function MedicalRecordEditDialog({
                       </section>
 
                       <div className="flex justify-end">
-                        <Button onClick={tryConfirmProntuario} disabled={!mrChanges.length || saving} className="gap-1.5">
+                        <Button onClick={tryConfirmProntuario} disabled={!mrChanges.length || saving} className="gap-2">
                           <Save className="h-4 w-4" /> Revisar e salvar prontuário
                         </Button>
                       </div>
@@ -957,27 +957,27 @@ export function MedicalRecordEditDialog({
                   {(
                     <div className="space-y-3">
                       {!registry && (
-                        <div className="rounded-md border border-warning/40 bg-warning/10 p-2.5 text-[11px] flex items-start gap-2">
-                          <FileWarning className="h-4 w-4 text-warning-on-soft shrink-0 mt-0.5" />
+                        <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-xs flex items-start gap-2">
+                          <FileWarning className="h-4 w-4 text-warning-on-soft shrink-0 mt-1" />
                           <div>
-                            <div className="font-semibold text-warning-on-soft">
+                            <div className="font-medium text-warning-on-soft">
                               Sem ficha cadastral vinculada
                             </div>
-                            <p className="text-[10px] text-warning-on-soft mt-0.5">
+                            <p className="text-xs text-warning-on-soft mt-1">
                               Este paciente foi admitido sem cadastro central (comum em leitos legados da UTI). Ative <strong>"Atualizar cadastro"</strong> para preencher os campos manualmente ou importar do PIS — ao salvar, a ficha será criada e vinculada automaticamente ao prontuário.
                             </p>
                           </div>
                         </div>
                       )}
                       {/* Cabeçalho com botão Atualizar cadastro */}
-                      <div className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border ${cadastroEditMode ? "border-released/40 bg-released/5" : "border-muted bg-muted/30"}`}>
-                        <div className="text-[11px] leading-snug flex items-center gap-2">
+                      <div className={`flex items-center justify-between gap-2 p-3 rounded-lg border ${cadastroEditMode ? "border-released/40 bg-released/5" : "border-muted bg-muted/30"}`}>
+                        <div className="text-xs leading-snug flex items-center gap-2">
                           {cadastroEditMode ? <Pencil className="h-3.5 w-3.5 text-released-on-soft" /> : <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
                           <div>
-                            <div className="font-semibold">
+                            <div className="font-medium">
                               {cadastroEditMode ? "Modo edição ativo" : "Cadastro bloqueado"}
                             </div>
-                            <p className="text-[10px] text-muted-foreground">
+                            <p className="text-xs text-muted-foreground">
                               {cadastroEditMode
                                 ? "Edite os campos manualmente OU use a captura PIS abaixo. Toda alteração exige motivo + confirmação."
                                 : "Para alterar dados cadastrais ou importar do PIS, ative o modo edição."}
@@ -985,7 +985,7 @@ export function MedicalRecordEditDialog({
                           </div>
                         </div>
                         {!cadastroEditMode ? (
-                          <Button size="sm" onClick={() => setCadastroEditMode(true)} className="gap-1.5 text-xs">
+                          <Button size="sm" onClick={() => setCadastroEditMode(true)} className="gap-2 text-xs">
                             <Pencil className="h-3.5 w-3.5" /> Atualizar cadastro
                           </Button>
                         ) : (
@@ -995,7 +995,7 @@ export function MedicalRecordEditDialog({
                             setRegReason("");
                             setPasteText("");
                             setPisFromFieldsApplied(new Set());
-                          }} className="gap-1.5 text-xs">
+                          }} className="gap-2 text-xs">
                             <X className="h-3.5 w-3.5" /> Cancelar edição
                           </Button>
                         )}
@@ -1003,18 +1003,18 @@ export function MedicalRecordEditDialog({
 
                       {/* Captura PIS (anexar / arrastar / colar) — só em modo edição */}
                       {cadastroEditMode && (
-                        <section className="p-3 rounded-lg border border-border/30 bg-primary/5 space-y-2.5">
-                          <div className="flex items-center gap-1.5 text-xs font-semibold">
+                        <section className="p-3 rounded-lg border border-border/30 bg-primary/5 space-y-3">
+                          <div className="flex items-center gap-2 text-xs font-medium">
                             <Sparkles className="h-3.5 w-3.5 text-foreground" />
                             Captura automática do PIS
-                            <span className="text-[10px] font-normal text-muted-foreground">(anexar arquivo, arrastar ou colar texto)</span>
+                            <span className="text-xs font-normal text-muted-foreground">(anexar arquivo, arrastar ou colar texto)</span>
                           </div>
 
                           <div
                             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                             onDragLeave={() => setIsDragging(false)}
                             onDrop={handleDrop}
-                            className={`rounded-md border-2 border-dashed p-3 text-center text-[11px] transition-colors ${
+                            className={`rounded-md border-2 border-dashed p-3 text-center text-xs transition-colors ${
                               isDragging ? "border-border bg-primary/10" : "border-muted-foreground/30 bg-background/50"
                             }`}
                           >
@@ -1023,14 +1023,14 @@ export function MedicalRecordEditDialog({
                             <input ref={fileInputRef} type="file" accept="image/*,application/pdf"
                               onChange={handlePisFile} className="hidden" />
                             <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}
-                              disabled={importing} className="gap-1.5 text-xs mt-1.5">
+                              disabled={importing} className="gap-2 text-xs mt-2">
                               {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
                               Anexar arquivo
                             </Button>
                           </div>
 
-                          <div className="space-y-1.5">
-                            <Label className="text-[11px] flex items-center gap-1.5">
+                          <div className="space-y-2">
+                            <Label className="text-xs flex items-center gap-2">
                               <ClipboardPaste className="h-3.5 w-3.5" /> Colar dados do PIS
                             </Label>
                             <Textarea
@@ -1044,20 +1044,20 @@ export function MedicalRecordEditDialog({
                             <div className="flex justify-end">
                               <Button size="sm" onClick={handlePasteSubmit}
                                 disabled={importing || pasteText.trim().length < 10}
-                                className="gap-1.5 text-xs">
+                                className="gap-2 text-xs">
                                 {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                                 Reconhecer e revisar
                               </Button>
                             </div>
                           </div>
-                          <p className="text-[10px] text-muted-foreground italic">
+                          <p className="text-xs text-muted-foreground italic">
                             Os dados reconhecidos passam por uma etapa de revisão antes de serem aplicados aos campos. Nada é salvo automaticamente.
                           </p>
                         </section>
                       )}
 
                       {registry?.is_unidentified && (
-                        <Badge variant="outline" className="text-[10px] border-warning/40">
+                        <Badge variant="outline" className="text-xs border-warning/40">
                           <FileWarning className="h-3 w-3 mr-1" />
                           Paciente Não Identificado — para promover, use a função dedicada (merge).
                         </Badge>
@@ -1098,7 +1098,7 @@ export function MedicalRecordEditDialog({
                       {cadastroEditMode && (
                         <>
                           <section className="space-y-2 p-3 rounded-lg border border-warning/30 bg-warning/10">
-                            <Label className="text-xs font-semibold flex items-center gap-1.5">
+                            <Label className="text-xs font-medium flex items-center gap-2">
                               <AlertTriangle className="h-3.5 w-3.5 text-warning-on-soft" />
                               Motivo da atualização cadastral (obrigatório)
                             </Label>
@@ -1108,7 +1108,7 @@ export function MedicalRecordEditDialog({
                           </section>
 
                           <div className="flex justify-end">
-                            <Button onClick={tryConfirmFicha} disabled={!regChanges.length || saving} className="gap-1.5">
+                            <Button onClick={tryConfirmFicha} disabled={!regChanges.length || saving} className="gap-2">
                               <Save className="h-4 w-4" /> Revisar e salvar ficha ({regChanges.length})
                             </Button>
                           </div>
@@ -1144,12 +1144,12 @@ export function MedicalRecordEditDialog({
                     <div className="space-y-4">
                       <section className="p-4 rounded-lg border-2 border-destructive/50 bg-destructive/5 space-y-3">
                         <div className="flex items-start gap-2">
-                          <ShieldAlert className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                          <ShieldAlert className="h-5 w-5 text-destructive flex-shrink-0 mt-1" />
                           <div className="space-y-1">
-                            <h3 className="text-sm font-bold text-destructive uppercase tracking-wide">
+                            <h3 className="text-sm font-semibold text-destructive uppercase tracking-wide">
                               Exclusão administrativa do paciente
                             </h3>
-                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            <p className="text-xs text-muted-foreground leading-relaxed">
                               Operação <strong>irreversível</strong> reservada para casos excepcionais
                               de erro administrativo (cadastro duplicado, paciente inexistente, teste em produção, etc).
                               Apaga em cascata <strong>todos os dados</strong> deste paciente: prontuário, ficha cadastral,
@@ -1160,7 +1160,7 @@ export function MedicalRecordEditDialog({
                         </div>
 
                         <div className="space-y-2">
-                          <Label className="text-xs font-semibold">
+                          <Label className="text-xs font-medium">
                             Motivo da exclusão (mínimo 10 caracteres, obrigatório)
                           </Label>
                           <Textarea
@@ -1173,10 +1173,10 @@ export function MedicalRecordEditDialog({
                         </div>
 
                         <div className="space-y-2">
-                          <Label className="text-xs font-semibold">
+                          <Label className="text-xs font-medium">
                             Para confirmar, digite exatamente o nome do paciente:
                           </Label>
-                          <code className="block text-[10px] p-1.5 bg-muted rounded border">{patientName || "—"}</code>
+                          <code className="block text-xs p-2 bg-muted rounded-md border">{patientName || "—"}</code>
                           <Input
                             value={deleteConfirmName}
                             onChange={(e) => setDeleteConfirmName(e.target.value)}
@@ -1194,7 +1194,7 @@ export function MedicalRecordEditDialog({
                               deleteConfirmName.trim().toUpperCase() !== (patientName || "").trim().toUpperCase()
                             }
                             onClick={() => setConfirmDeleteOpen(true)}
-                            className="gap-1.5"
+                            className="gap-2"
                           >
                             <Trash2 className="h-4 w-4" />
                             Excluir paciente permanentemente
@@ -1291,7 +1291,7 @@ export function MedicalRecordEditDialog({
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="h-[55vh] pr-3 -mr-1 border rounded-md bg-background/40">
-            <div className="space-y-1.5 p-2">
+            <div className="space-y-2 p-2">
               {Object.entries(PIS_FIELD_MAP).map(([pisKey, regKey]) => {
                 const newVal = pisExtracted?.[pisKey];
                 const newStr = newVal === null || newVal === undefined ? "" : String(newVal).trim();
@@ -1301,7 +1301,7 @@ export function MedicalRecordEditDialog({
                 return (
                   <div
                     key={pisKey}
-                    className={`flex items-start gap-2 p-2 rounded border text-[11px] ${
+                    className={`flex items-start gap-2 p-2 rounded-md border text-xs ${
                       !hasNew ? "bg-muted/30 opacity-60" :
                       same ? "bg-muted/40 border-muted" :
                       "bg-primary/5 border-border/30"
@@ -1311,23 +1311,23 @@ export function MedicalRecordEditDialog({
                       checked={!!pisAccepted[pisKey]}
                       disabled={!hasNew}
                       onCheckedChange={(v) => setPisAccepted((prev) => ({ ...prev, [pisKey]: !!v }))}
-                      className="mt-0.5"
+                      className="mt-1"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold flex items-center gap-1.5 flex-wrap">
+                      <div className="font-medium flex items-center gap-2 flex-wrap">
                         {REG_FIELD_LABEL[regKey as string] || pisKey}
-                        {!hasNew && <Badge variant="outline" className="text-[9px]">Não reconhecido</Badge>}
-                        {hasNew && same && <Badge variant="outline" className="text-[9px]">Já está igual</Badge>}
-                        {hasNew && !same && oldStr === "" && <Badge variant="secondary" className="text-[9px] bg-released/15 text-released-on-soft">Novo</Badge>}
-                        {hasNew && !same && oldStr !== "" && <Badge variant="secondary" className="text-[9px] bg-warning/15 text-warning-on-soft">Será substituído</Badge>}
+                        {!hasNew && <Badge variant="outline" className="text-xs">Não reconhecido</Badge>}
+                        {hasNew && same && <Badge variant="outline" className="text-xs">Já está igual</Badge>}
+                        {hasNew && !same && oldStr === "" && <Badge variant="secondary" className="text-xs bg-released/15 text-released-on-soft">Novo</Badge>}
+                        {hasNew && !same && oldStr !== "" && <Badge variant="secondary" className="text-xs bg-warning/15 text-warning-on-soft">Será substituído</Badge>}
                       </div>
                       <div className="grid grid-cols-2 gap-2 mt-1">
                         <div className="min-w-0">
-                          <div className="text-[9px] uppercase text-muted-foreground">Atual</div>
+                          <div className="text-xs uppercase tracking-wider text-muted-foreground">Atual</div>
                           <div className="break-words">{oldStr || <span className="italic text-muted-foreground">vazio</span>}</div>
                         </div>
                         <div className="min-w-0">
-                          <div className="text-[9px] uppercase text-muted-foreground">Reconhecido</div>
+                          <div className="text-xs uppercase tracking-wider text-muted-foreground">Reconhecido</div>
                           <div className="break-words font-medium">{newStr || <span className="italic text-muted-foreground">—</span>}</div>
                         </div>
                       </div>
@@ -1338,18 +1338,18 @@ export function MedicalRecordEditDialog({
             </div>
           </ScrollArea>
           <div className="border-t pt-3 space-y-2">
-            <div className="text-[10px] text-muted-foreground p-2 rounded bg-muted/40 leading-relaxed">
+            <div className="text-xs text-muted-foreground p-2 rounded-md bg-muted/40 leading-relaxed">
               <strong>O que acontece a seguir?</strong> Os campos marcados serão preenchidos no formulário (em destaque azul).
               Você ainda precisa informar o <strong>motivo</strong> e clicar em <strong>"Revisar e salvar ficha"</strong> para gravar
-              as alterações no banco — cada campo será registrado no histórico com origem <code className="text-[9px]">pis_import</code>.
+              as alterações no banco — cada campo será registrado no histórico com origem <code className="text-xs">pis_import</code>.
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => { setPisReviewOpen(false); setPisExtracted(null); }} className="gap-1.5">
+              <Button variant="outline" size="sm" onClick={() => { setPisReviewOpen(false); setPisExtracted(null); }} className="gap-2">
                 <X className="h-3.5 w-3.5" /> Cancelar reconhecimento
               </Button>
               <Button size="sm" onClick={applyPisAccepted}
                 disabled={!Object.values(pisAccepted).some(Boolean)}
-                className="gap-1.5 bg-primary hover:bg-primary">
+                className="gap-2 bg-primary hover:bg-primary">
                 <Check className="h-3.5 w-3.5" /> Aplicar selecionados ({Object.values(pisAccepted).filter(Boolean).length})
               </Button>
             </div>
@@ -1365,7 +1365,7 @@ export function MedicalRecordEditDialog({
 function FieldGrid({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-2 p-3 rounded-lg border bg-card">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
+      <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{title}</div>
       <div className="grid grid-cols-2 gap-3">{children}</div>
     </section>
   );
@@ -1380,9 +1380,9 @@ function FieldInput({
 }) {
   return (
     <div className={fullWidth ? "col-span-2" : ""}>
-      <Label className="text-[11px] flex items-center gap-1">
+      <Label className="text-xs flex items-center gap-1">
         {label}
-        {highlight && <Badge variant="secondary" className="text-[8px] uppercase h-3.5 px-1 bg-primary/15 text-foreground">PIS</Badge>}
+        {highlight && <Badge variant="secondary" className="text-xs uppercase tracking-wider h-3.5 px-1 bg-primary/15 text-foreground">PIS</Badge>}
       </Label>
       <Input
         type={type}
@@ -1404,41 +1404,41 @@ function HistoryBlock({
 }) {
   return (
     <section className="space-y-2 p-3 rounded-lg border bg-muted/30">
-      <div className="flex items-center gap-1.5 text-xs font-semibold">
+      <div className="flex items-center gap-2 text-xs font-medium">
         {icon}
         {title} ({rows.length})
       </div>
       {rows.length === 0 ? (
-        <p className="text-[11px] text-muted-foreground italic">Sem alterações registradas.</p>
+        <p className="text-xs text-muted-foreground italic">Sem alterações registradas.</p>
       ) : (
         <div className="space-y-2">
           {rows.map((h) => (
-            <div key={h.id} className="text-[11px] p-2 rounded border bg-background">
+            <div key={h.id} className="text-xs p-2 rounded-md border bg-background">
               <div className="flex items-center justify-between gap-2 mb-1">
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="outline" className="text-[10px]">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
                     {h.labelMap[h.field_changed] || h.field_changed}
                   </Badge>
                   {h.source && h.source !== "prontuario" && h.source !== "manual" && (
-                    <Badge variant="secondary" className="text-[9px] uppercase">{h.source}</Badge>
+                    <Badge variant="secondary" className="text-xs uppercase tracking-wider">{h.source}</Badge>
                   )}
                 </div>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {new Date(h.changed_at).toLocaleString("pt-BR")}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-[10px]">
+              <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
                   <span className="text-muted-foreground">De: </span>
-                  <code className="px-1 bg-muted rounded break-all">{h.old_value || "—"}</code>
+                  <code className="px-1 bg-muted rounded-md break-all">{h.old_value || "—"}</code>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Para: </span>
-                  <code className="px-1 bg-muted rounded break-all">{h.new_value || "—"}</code>
+                  <code className="px-1 bg-muted rounded-md break-all">{h.new_value || "—"}</code>
                 </div>
               </div>
-              <p className="text-[10px] mt-1 italic text-foreground/80">"{h.reason}"</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
+              <p className="text-xs mt-1 italic text-foreground/80">"{h.reason}"</p>
+              <p className="text-xs text-muted-foreground mt-1">
                 por {h.changed_by_email || "—"}
               </p>
             </div>

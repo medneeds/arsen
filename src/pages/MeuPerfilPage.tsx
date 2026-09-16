@@ -209,12 +209,12 @@ export default function MeuPerfilPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
-      <div className="mb-5 flex items-center gap-3">
+      <div className="mb-4 flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
           <ArrowLeft className="mr-1 h-4 w-4" /> Voltar
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Meu Perfil</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Meu Perfil</h1>
           <p className="text-sm text-muted-foreground">
             Atualize seus dados cadastrais e gerencie sua senha
           </p>
@@ -241,7 +241,7 @@ export default function MeuPerfilPage() {
                 são gerenciados pela administração.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-5">
+            <CardContent className="space-y-4">
               {/* Somente leitura */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -254,7 +254,7 @@ export default function MeuPerfilPage() {
                 </div>
               </div>
 
-              <div className="border-t pt-5">
+              <div className="border-t pt-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-2">
                     <Label htmlFor="full_name">Nome completo *</Label>

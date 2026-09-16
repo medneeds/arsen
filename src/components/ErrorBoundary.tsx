@@ -69,7 +69,7 @@ export class ErrorBoundary extends Component<Props, State> {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted p-6">
         <div className="w-full max-w-lg rounded-lg border border-border bg-white p-6 shadow-sm">
-          <h1 className="text-lg font-semibold text-foreground">
+          <h1 className="text-lg font-medium text-foreground">
             Esta tela encontrou um erro
           </h1>
 
@@ -85,7 +85,7 @@ export class ErrorBoundary extends Component<Props, State> {
             setor selecionado e anotações de apoio, e mantém a sua sessão.
           </p>
 
-          <div className="mt-5 flex flex-wrap gap-3">
+          <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
               onClick={this.recarregar}
@@ -105,13 +105,13 @@ export class ErrorBoundary extends Component<Props, State> {
           <button
             type="button"
             onClick={() => this.setState({ detalhesAbertos: !detalhesAbertos })}
-            className="mt-5 text-xs text-muted-foreground underline hover:text-foreground"
+            className="mt-4 text-xs text-muted-foreground underline hover:text-foreground"
           >
             {detalhesAbertos ? "Ocultar detalhes técnicos" : "Ver detalhes técnicos"}
           </button>
 
           {detalhesAbertos && (
-            <pre className="mt-2 max-h-48 overflow-auto rounded bg-muted p-3 text-xs text-foreground">
+            <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-muted p-3 text-xs text-foreground">
               {error.name}: {error.message}
               {error.stack ? `\n\n${error.stack}` : ""}
             </pre>

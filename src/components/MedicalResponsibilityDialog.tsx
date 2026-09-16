@@ -161,19 +161,19 @@ export const MedicalResponsibilityDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 py-4">
+        <div className="space-y-4 py-4">
           {/* Médico responsável */}
-          <div className="space-y-2 p-3 rounded-xl border-2 border-dashed bg-muted/30">
-            <Label className="text-sm font-semibold flex items-center gap-2">
+          <div className="space-y-2 p-3 rounded-lg border-2 border-dashed bg-muted/30">
+            <Label className="text-sm font-medium flex items-center gap-2">
               <UserCheck className="h-4 w-4" style={{ color: sectorColor }} />
               Médico Responsável
             </Label>
             {responsibleDoctorName ? (
               <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-background border">
                 <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-semibold uppercase truncate">{responsibleDoctorName}</span>
+                  <span className="text-sm font-medium uppercase tracking-wider truncate">{responsibleDoctorName}</span>
                   {responsibleDoctorCrm && (
-                    <span className="text-[10px] text-muted-foreground">CRM {responsibleDoctorCrm}</span>
+                    <span className="text-xs text-muted-foreground">CRM {responsibleDoctorCrm}</span>
                   )}
                 </div>
                 <Button type="button" variant="ghost" size="sm" onClick={clearDoctor} className="h-7 px-2 text-xs">
@@ -193,7 +193,7 @@ export const MedicalResponsibilityDialog = ({
                   />
                 </div>
                 {showResults && doctorQuery.length >= 2 && (
-                  <div className="absolute z-50 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-lg border bg-popover shadow-lg">
+                  <div className="absolute z-50 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-lg border bg-popover shadow-md">
                     {searching && (
                       <div className="px-3 py-2 text-xs text-muted-foreground">Buscando…</div>
                     )}
@@ -207,23 +207,23 @@ export const MedicalResponsibilityDialog = ({
                         onClick={() => selectDoctor(d)}
                         className="w-full text-left px-3 py-2 hover:bg-accent border-b last:border-b-0"
                       >
-                        <div className="text-xs font-semibold uppercase">{d.full_name}</div>
-                        {d.crm && <div className="text-[10px] text-muted-foreground">CRM {d.crm}</div>}
+                        <div className="text-xs font-medium uppercase tracking-wider">{d.full_name}</div>
+                        {d.crm && <div className="text-xs text-muted-foreground">CRM {d.crm}</div>}
                       </button>
                     ))}
                   </div>
                 )}
               </div>
             )}
-            <p className="text-[10px] text-muted-foreground italic">
+            <p className="text-xs text-muted-foreground italic">
               Por padrão, é o médico que admitiu. Use a busca para redefinir para o rotineiro do setor.
             </p>
           </div>
 
           {/* Tipo de acompanhamento */}
           <div className="space-y-3">
-            <Label className="text-sm font-semibold text-foreground">Tipo de Acompanhamento</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <Label className="text-sm font-medium text-foreground">Tipo de Acompanhamento</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {([
                 { key: null,              label: 'Nenhum',          sub: '',                  Icon: X },
                 { key: 'rotineiro',       label: 'Rotineiro',       sub: 'Diarista do setor', Icon: CalendarClock },
@@ -237,7 +237,7 @@ export const MedicalResponsibilityDialog = ({
                     type="button"
                     onClick={() => setType(key)}
                     className={cn(
-                      "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all hover:shadow-md animate-fade-in",
+                      "flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all hover:shadow-md animate-fade-in",
                       selected && 'shadow-md',
                       !selected && 'border-border bg-white'
                     )}
@@ -252,10 +252,10 @@ export const MedicalResponsibilityDialog = ({
                     >
                       <Icon className="h-5 w-5" style={{ color: key === null ? undefined : sectorColor }} />
                     </div>
-                    <div className="flex flex-col items-center gap-0.5">
-                      <span className="font-semibold text-xs">{label}</span>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="font-medium text-xs">{label}</span>
                       {sub && (
-                        <span className="text-[10px] text-muted-foreground text-center leading-tight">{sub}</span>
+                        <span className="text-xs text-muted-foreground text-center leading-tight">{sub}</span>
                       )}
                     </div>
                   </button>
@@ -265,24 +265,24 @@ export const MedicalResponsibilityDialog = ({
           </div>
 
           {/* Especialidades envolvidas */}
-          <div className="space-y-3 p-3 rounded-xl border-2 border-dashed bg-muted/30">
-            <Label className="text-sm font-semibold flex items-center gap-2">
+          <div className="space-y-3 p-3 rounded-lg border-2 border-dashed bg-muted/30">
+            <Label className="text-sm font-medium flex items-center gap-2">
               <Stethoscope className="h-4 w-4" style={{ color: sectorColor }} />
               Especialidades Envolvidas
               {selectedSpecialties.length > 0 && (
-                <Badge variant="secondary" className="ml-1 text-[10px]">
+                <Badge variant="secondary" className="ml-1 text-xs">
                   {selectedSpecialties.length}
                 </Badge>
               )}
             </Label>
 
             {selectedSpecialties.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-2">
+              <div className="flex flex-wrap gap-2 mb-2">
                 {selectedSpecialties.map(sp => (
                   <Badge
                     key={sp}
                     variant="outline"
-                    className="text-[11px] cursor-pointer hover:bg-destructive/10 hover:border-destructive/40 hover:text-destructive transition-colors"
+                    className="text-xs cursor-pointer hover:bg-destructive/10 hover:border-destructive/40 hover:text-destructive transition-colors"
                     style={{ borderColor: `${sectorColor}60`, color: sectorColor }}
                     onClick={() => toggleSpecialty(sp)}
                   >
@@ -293,19 +293,19 @@ export const MedicalResponsibilityDialog = ({
               </div>
             )}
 
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {HOSPITAL_SPECIALTIES.filter(sp => !selectedSpecialties.includes(sp)).map(sp => (
                 <button
                   key={sp}
                   type="button"
                   onClick={() => toggleSpecialty(sp)}
-                  className="text-[11px] px-2 py-1 rounded-md border border-border bg-background hover:border-current hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                  className="text-xs px-2 py-1 rounded-md border border-border bg-background hover:border-current hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
                 >
                   + {sp}
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-muted-foreground italic">
+            <p className="text-xs text-muted-foreground italic">
               Selecione todas as especialidades acompanhando este paciente.
             </p>
           </div>

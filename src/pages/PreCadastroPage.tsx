@@ -34,12 +34,12 @@ const INST_COLORS = whitelabel.theme.institutionalColors;
 
 function NormaZeroHeader() {
   return (
-    <header className="relative overflow-hidden rounded-2xl border border-border/60 bg-card/80 backdrop-blur-xl shadow-xl">
-      <div className="grid grid-cols-[68px_1fr_68px] items-center gap-3 px-5 py-3">
+    <header className="relative overflow-hidden rounded-lg border border-border/60 bg-card/80 backdrop-blur-xl shadow-md">
+      <div className="grid grid-cols-[68px_1fr_68px] items-center gap-3 px-4 py-3">
         <img
           src={socorraoCross}
           alt="Brasão institucional"
-          className="h-[62px] w-[62px] object-contain drop-shadow"
+          className="h-[62px] w-[62px] object-contain drop-shadow-sm"
         />
         <div className="text-center leading-tight">
           {INSTITUTIONAL_LINES.map((l, i) => (
@@ -47,8 +47,8 @@ function NormaZeroHeader() {
               key={i}
               className={
                 i === 2
-                  ? "text-[12px] md:text-[13px] font-bold tracking-wide text-foreground"
-                  : "text-[10px] md:text-[11px] font-semibold tracking-wider text-muted-foreground uppercase"
+                  ? "text-xs md:text-sm font-semibold tracking-wide text-foreground"
+                  : "text-xs md:text-xs font-medium tracking-wider text-muted-foreground uppercase"
               }
             >
               {l}
@@ -70,7 +70,7 @@ function NormaZeroHeader() {
 
 function NormaZeroFooter() {
   return (
-    <footer className="text-center text-[10px] uppercase tracking-wider text-muted-foreground/80 space-y-0.5">
+    <footer className="text-center text-xs uppercase tracking-wider text-muted-foreground/80 space-y-1">
       <div>HMDM · Arsen 1.0 · MAN.05-001 v05 · Conformidade LGPD/CFM</div>
       <div className="text-muted-foreground/60 normal-case tracking-normal">
         Seus dados são tratados conforme nossa política de privacidade. A aprovação
@@ -230,15 +230,15 @@ export default function PreCadastroPage() {
 
   if (submitted) {
     return (
-      <div className="relative min-h-screen bg-gradient-to-br from-muted via-white to-muted flex items-center justify-center p-6">
+      <div className="relative min-h-screen bg-muted flex items-center justify-center p-6">
         <Backdrop />
-        <div className="relative w-full max-w-lg space-y-5 animate-in fade-in zoom-in-95 duration-500">
+        <div className="relative w-full max-w-lg space-y-4 animate-in fade-in zoom-in-95 duration-500">
           <NormaZeroHeader />
-          <Card className="p-8 text-center space-y-4 backdrop-blur-xl bg-card/70 border-border/60 shadow-2xl shadow-emerald-500/10">
-            <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-released-soft/20 to-released-soft/10 ring-1 ring-released/30 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <Card className="p-8 text-center space-y-4 backdrop-blur-xl bg-card/70 border-border/60 shadow-md shadow-md">
+            <div className="mx-auto h-16 w-16 rounded-full bg-released-soft/20 ring-1 ring-released/30 flex items-center justify-center shadow-md shadow-md">
               <CheckCircle2 className="h-8 w-8 text-released" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">PRÉ-CADASTRO ENVIADO!</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">PRÉ-CADASTRO ENVIADO!</h1>
             <p className="text-muted-foreground">
               Sua solicitação foi recebida e entrará na lista de aprovações da equipe
               administrativa. Você receberá um retorno por email assim que o cadastro
@@ -257,15 +257,15 @@ export default function PreCadastroPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-muted via-white to-muted py-8 px-4">
+    <div className="relative min-h-screen bg-muted py-8 px-4">
       <Backdrop />
-      <div className="relative max-w-2xl mx-auto space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="relative max-w-2xl mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <NormaZeroHeader />
         <div className="text-center space-y-2">
-          <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/30 via-primary/15 to-muted/20 ring-1 ring-primary/30 flex items-center justify-center shadow-xl shadow-primary/20">
-            <ShieldCheck className="h-7 w-7 text-primary drop-shadow" />
+          <div className="mx-auto h-14 w-14 rounded-lg bg-primary/30 ring-1 ring-primary/30 flex items-center justify-center shadow-md shadow-md">
+            <ShieldCheck className="h-7 w-7 text-primary drop-shadow-sm" />
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight bg-foreground bg-clip-text text-transparent">
             PRÉ-CADASTRO DE ACESSO
           </h1>
           <p className="text-muted-foreground text-sm max-w-md mx-auto">
@@ -274,9 +274,9 @@ export default function PreCadastroPage() {
           </p>
         </div>
 
-        <Card className="relative p-6 md:p-8 space-y-5 backdrop-blur-xl bg-card/70 border-border/60 shadow-2xl shadow-primary/5 overflow-hidden">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <Card className="relative p-6 md:p-8 space-y-4 backdrop-blur-xl bg-card/70 border-border/60 shadow-md shadow-md overflow-hidden">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-transparent" />
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="fullName">Nome completo *</Label>
               <Input

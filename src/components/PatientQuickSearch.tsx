@@ -120,15 +120,15 @@ export function PatientQuickSearch({ onIrParaSetor, onIrParaPaciente }: Props) {
   return (
     <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
       <CardHeader className="pb-3 pt-4 px-4">
-        <CardTitle className="text-sm font-semibold flex items-center gap-2">
-          <span className="h-8 w-8 rounded-xl flex items-center justify-center bg-primary/10 flex-shrink-0">
+        <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <span className="h-8 w-8 rounded-lg flex items-center justify-center bg-primary/10 flex-shrink-0">
             <UserSearch className="h-4 w-4 text-primary" aria-hidden />
           </span>
           <label htmlFor="busca-paciente" className="preserve-case cursor-text">
             Procurar um paciente
           </label>
         </CardTitle>
-        <p className="text-[11px] text-muted-foreground pl-10">
+        <p className="text-xs text-muted-foreground pl-8">
           Encontre em qual setor ele está internado e vá direto para o leito.
         </p>
       </CardHeader>
@@ -146,7 +146,7 @@ export function PatientQuickSearch({ onIrParaSetor, onIrParaPaciente }: Props) {
           onChange={(e) => setTermo(e.target.value)}
           placeholder="Nome ou prontuário"
           autoComplete="off"
-          className="h-11 pl-9 pr-10"
+          className="h-11 pl-8 pr-8"
         />
         {buscando && (
           <Loader2
@@ -177,7 +177,7 @@ export function PatientQuickSearch({ onIrParaSetor, onIrParaPaciente }: Props) {
                   <p className="preserve-case truncate text-sm font-medium text-foreground">
                     {p.name}
                   </p>
-                  <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                  <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
                       <BedDouble className="h-3.5 w-3.5" aria-hidden />
                       {formatBedDisplay(p.bedNumber)}
@@ -208,7 +208,7 @@ export function PatientQuickSearch({ onIrParaSetor, onIrParaPaciente }: Props) {
                     onClick={() => onIrParaPaciente(p)}
                   >
                     Painel do paciente
-                    <ArrowRight className="h-3.5 w-3.5 ml-1.5" aria-hidden />
+                    <ArrowRight className="h-3.5 w-3.5 ml-2" aria-hidden />
                   </Button>
                 </div>
               </div>

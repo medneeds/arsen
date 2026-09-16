@@ -143,7 +143,7 @@ export function AllocationPendingBadge({ patient, onStatusChange }: AllocationPe
           <TooltipTrigger asChild>
             <Badge
               variant="outline"
-              className={`allocation-badge-trigger cursor-pointer transition-all ${config.className} ${config.pulseClassName} flex items-center gap-1.5 px-2 py-1 print:hidden`}
+              className={`allocation-badge-trigger cursor-pointer transition-all ${config.className} ${config.pulseClassName} flex items-center gap-2 px-2 py-1 print:hidden`}
               onClick={(e) => {
                 e.stopPropagation();
                 setIsDialogOpen(true);
@@ -183,7 +183,7 @@ export function AllocationPendingBadge({ patient, onStatusChange }: AllocationPe
                     <Icon className={`h-5 w-5 ${config.iconClassName}`} />
                   </div>
                   <div>
-                    <p className="font-semibold text-lg">{patient.name || "Paciente"}</p>
+                    <p className="font-medium text-lg">{patient.name || "Paciente"}</p>
                     {patient.age && <p className="text-sm text-muted-foreground">{patient.age}</p>}
                   </div>
                 </div>
@@ -267,7 +267,7 @@ export function AllocationPendingBadge({ patient, onStatusChange }: AllocationPe
         <TooltipTrigger asChild>
           <Badge
             variant="outline"
-            className={`transition-all ${config.className} ${config.pulseClassName} flex items-center gap-1.5 px-2 py-1`}
+            className={`transition-all ${config.className} ${config.pulseClassName} flex items-center gap-2 px-2 py-1`}
           >
             <Icon className={`h-3.5 w-3.5 ${config.iconClassName}`} />
             <span className="text-xs font-medium">{config.label}</span>

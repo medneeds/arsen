@@ -124,21 +124,21 @@ export function SignalingStatusPanel({
   const full = density === "full";
 
   return (
-    <div className={cn("w-full rounded-lg border p-3 space-y-2.5", tone.box, className)}>
-      <div className={cn("flex items-center gap-1.5 font-semibold uppercase tracking-wide", tone.title, full ? "text-xs" : "text-[11px]")}>
+    <div className={cn("w-full rounded-lg border p-3 space-y-3", tone.box, className)}>
+      <div className={cn("flex items-center gap-2 font-medium uppercase tracking-wide", tone.title, full ? "text-xs" : "text-xs")}>
         <tone.Icon className="h-3.5 w-3.5 shrink-0" />
         {status.label}
       </div>
 
       {/* O que este estado significa, e o que acontece com o leito. */}
-      <div className={cn("space-y-1.5 leading-snug", tone.body, full ? "text-[12px]" : "text-[11px]")}>
+      <div className={cn("space-y-2 leading-snug", tone.body, full ? "text-xs" : "text-xs")}>
         {status.kind === "transfer" && (
           <>
             <p>
               A sinalização está <strong>ativa</strong> e visível para o setor. O atendimento
               continua aberto e o paciente <strong>segue ocupando o leito</strong>.
             </p>
-            <p className="flex items-start gap-1.5">
+            <p className="flex items-start gap-2">
               <Info className="h-3.5 w-3.5 mt-px shrink-0 opacity-70" />
               <span>
                 A <strong>desalocação física</strong> do leito é feita no{" "}
@@ -156,7 +156,7 @@ export function SignalingStatusPanel({
               atendimento está encerrado.
             </p>
             {full && (
-              <p className="flex items-start gap-1.5">
+              <p className="flex items-start gap-2">
                 <Info className="h-3.5 w-3.5 mt-px shrink-0 opacity-70" />
                 <span>
                   A liberação do leito é feita pelo <strong>setor administrativo</strong>.
@@ -174,7 +174,7 @@ export function SignalingStatusPanel({
               atendimento está encerrado.
             </p>
             {full && (
-              <p className="flex items-start gap-1.5">
+              <p className="flex items-start gap-2">
                 <Info className="h-3.5 w-3.5 mt-px shrink-0 opacity-70" />
                 <span>
                   A liberação do leito é feita pelo <strong>setor administrativo</strong>.
@@ -188,11 +188,11 @@ export function SignalingStatusPanel({
 
       {/* Ações. Suspender fica sempre à direita, em âmbar, em todos os estados —
           é a mesma ação conceitual, e posição fixa evita clique por engano. */}
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-2 gap-2">
         {status.kind === "transfer" ? (
           <Button
             size="sm" variant="outline"
-            className="h-8 text-[11px] gap-1.5 border-border/50 text-foreground hover:bg-primary/10"
+            className="h-8 text-xs gap-2 border-border/50 text-foreground hover:bg-primary/10"
             onClick={onChangeDestination}
             disabled={!onChangeDestination}
           >
@@ -202,7 +202,7 @@ export function SignalingStatusPanel({
           <Button
             size="sm" variant="outline"
             className={cn(
-              "h-8 text-[11px] gap-1.5",
+              "h-8 text-xs gap-2",
               status.kind === "death"
                 ? "border-destructive/40 text-destructive hover:bg-destructive/10"
                 : "border-released/40 text-released-on-soft hover:bg-released/10",
@@ -217,7 +217,7 @@ export function SignalingStatusPanel({
 
         <Button
           size="sm" variant="outline"
-          className="h-8 text-[11px] gap-1.5 border-warning/50 text-warning-on-soft hover:bg-warning/10"
+          className="h-8 text-xs gap-2 border-warning/50 text-warning-on-soft hover:bg-warning/10"
           onClick={() => (status.kind === "transfer" ? setCancelTransferOpen(true) : setSuspendOpen(true))}
         >
           <Ban className="h-3 w-3" />

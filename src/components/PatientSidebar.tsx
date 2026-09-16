@@ -81,12 +81,12 @@ function InfoSection({ icon: Icon, title, items, emptyText = "Nenhum registro" }
 }) {
   if (items.length === 0) return null;
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-1.5">
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
         <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-        <h4 className="text-xs font-semibold text-muted-foreground tracking-wide">{title}</h4>
+        <h4 className="text-xs font-medium text-muted-foreground tracking-wide">{title}</h4>
       </div>
-      <ul className="space-y-0.5 pl-5">
+      <ul className="space-y-1 pl-4">
         {items.map((item, i) => (
           <li key={i} className="text-xs text-foreground list-disc leading-relaxed">{item}</li>
         ))}
@@ -128,23 +128,23 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-[380px] sm:w-[420px] p-0 border-l border-border/50">
         {/* Header */}
-        <div className="bg-gradient-to-br from-primary/5 to-accent/5 border-b border-border/50 p-4 space-y-3">
+        <div className="bg-primary/5 border-b border-border/50 p-4 space-y-3">
           <SheetHeader className="space-y-1">
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                <SheetTitle className="patient-id text-base font-bold truncate">
+                <SheetTitle className="patient-id text-base font-semibold truncate">
                   {maskName(patient.name, namesHidden)}
                 </SheetTitle>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <Badge variant="outline" className="patient-id text-[10px] font-mono gap-1">
+                  <Badge variant="outline" className="patient-id text-xs font-mono gap-1">
                     <BedDouble className="h-3 w-3" />
                     {patient.bedNumber}
                   </Badge>
-                  <Badge variant="outline" className={cn("text-[10px]", sector.className)}>
+                  <Badge variant="outline" className={cn("text-xs", sector.className)}>
                     {sector.label}
                   </Badge>
                   {clinicalStatus && (
-                    <Badge className={cn("text-[10px]", clinicalStatus.color)}>
+                    <Badge className={cn("text-xs", clinicalStatus.color)}>
                       {clinicalStatus.label}
                     </Badge>
                   )}
@@ -156,23 +156,23 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
           {/* Quick Stats */}
           <div className="grid grid-cols-3 gap-2">
             <div className="bg-card/80 rounded-lg p-2 text-center border border-border/30">
-              <User className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
-              <p className="text-[10px] text-muted-foreground">Idade</p>
-              <p className="text-xs font-semibold">{formatAgeDisplay(patient.age) || "—"}</p>
+              <User className="h-3 w-3 mx-auto text-muted-foreground mb-1" />
+              <p className="text-xs text-muted-foreground">Idade</p>
+              <p className="text-xs font-medium">{formatAgeDisplay(patient.age) || "—"}</p>
             </div>
             <div className="bg-card/80 rounded-lg p-2 text-center border border-border/30">
-              <Calendar className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
-              <p className="text-[10px] text-muted-foreground">Admissão</p>
-              <p className="text-xs font-semibold">
+              <Calendar className="h-3 w-3 mx-auto text-muted-foreground mb-1" />
+              <p className="text-xs text-muted-foreground">Admissão</p>
+              <p className="text-xs font-medium">
                 {patient.admissionDate
                   ? new Date(patient.admissionDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
                   : "—"}
               </p>
             </div>
             <div className="bg-card/80 rounded-lg p-2 text-center border border-border/30">
-              <Clock className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
-              <p className="text-[10px] text-muted-foreground">Tempo</p>
-              <p className="text-xs font-semibold">
+              <Clock className="h-3 w-3 mx-auto text-muted-foreground mb-1" />
+              <p className="text-xs text-muted-foreground">Tempo</p>
+              <p className="text-xs font-medium">
                 <StayDuration admissionDate={patient.admissionDate} />
               </p>
             </div>
@@ -189,12 +189,12 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             <InfoSection icon={AlertTriangle} title="Programações / Pendências" items={pendencies} />
 
             {patient.admissionHistory && (
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
                   <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                  <h4 className="text-xs font-semibold text-muted-foreground tracking-wide">História admissional</h4>
+                  <h4 className="text-xs font-medium text-muted-foreground tracking-wide">História admissional</h4>
                 </div>
-                <p className="text-xs text-foreground pl-5 leading-relaxed whitespace-pre-line">
+                <p className="text-xs text-foreground pl-4 leading-relaxed whitespace-pre-line">
                   {patient.admissionHistory}
                 </p>
               </div>
@@ -210,7 +210,7 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             className="flex-1 text-xs"
             onClick={() => safeNavigate(`/evolucao?patientId=${patient.id}&patientName=${encodeURIComponent(patient.name)}&patientBed=${encodeURIComponent(patient.bedNumber)}&patientSector=${encodeURIComponent(patient.sector)}`)}
           >
-            <FileText className="h-3.5 w-3.5 mr-1.5" />
+            <FileText className="h-3.5 w-3.5 mr-2" />
             Evolução
           </Button>
           <Button
@@ -219,7 +219,7 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             className="flex-1 text-xs"
             onClick={() => safeNavigate(`/prescricao?patientId=${patient.id}&patientName=${encodeURIComponent(patient.name)}&patientBed=${encodeURIComponent(patient.bedNumber)}&patientSector=${encodeURIComponent(patient.sector)}`)}
           >
-            <Pill className="h-3.5 w-3.5 mr-1.5" />
+            <Pill className="h-3.5 w-3.5 mr-2" />
             Prescrição
           </Button>
           <Button
@@ -228,7 +228,7 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             className="flex-1 text-xs"
             onClick={() => safeNavigate(`/monitoramento?patientId=${patient.id}`)}
           >
-            <Activity className="h-3.5 w-3.5 mr-1.5" />
+            <Activity className="h-3.5 w-3.5 mr-2" />
             Monitoramento
           </Button>
         </div>
@@ -239,7 +239,7 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             className="flex-1 text-xs"
             onClick={() => safeNavigate(`/ficha-atendimento?patientId=${patient.id}&patientName=${encodeURIComponent(patient.name)}`)}
           >
-            <FileText className="h-3.5 w-3.5 mr-1.5" />
+            <FileText className="h-3.5 w-3.5 mr-2" />
             Ficha de Atendimento
           </Button>
           <Button
@@ -248,7 +248,7 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             className="flex-1 text-xs"
             onClick={() => safeNavigate(`/historico-paciente?patientId=${patient.id}&patientName=${encodeURIComponent(patient.name)}&patientBed=${encodeURIComponent(patient.bedNumber)}&patientSector=${encodeURIComponent(patient.sector)}`)}
           >
-            <Clock className="h-3.5 w-3.5 mr-1.5" />
+            <Clock className="h-3.5 w-3.5 mr-2" />
             Histórico
           </Button>
           <Button
@@ -258,7 +258,7 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             onClick={() => setRecordEditOpen(true)}
             title="Editar nº do prontuário (auditado)"
           >
-            <FileText className="h-3.5 w-3.5 mr-1.5" />
+            <FileText className="h-3.5 w-3.5 mr-2" />
             Prontuário
           </Button>
         </div>

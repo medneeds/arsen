@@ -81,13 +81,13 @@ export function QuickTemplatesDialog({ open, onOpenChange, onAddTemplates, patie
         <DialogHeader className="space-y-3 pb-4 border-b border-border/50">
           <div className="flex items-center gap-3">
             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
-              <span className="text-primary font-bold text-lg">⚡</span>
+              <span className="text-primary font-semibold text-lg"></span>
             </div>
             <div className="flex-1">
-              <DialogTitle className="text-xl font-bold tracking-wide uppercase text-primary">
+              <DialogTitle className="text-xl font-semibold tracking-wide uppercase text-primary">
                 TEMPLATES RÁPIDOS
               </DialogTitle>
-              <p className="text-sm font-semibold text-foreground mt-1 tracking-wide">
+              <p className="text-sm font-medium text-foreground mt-1 tracking-wide">
                 {patientName}
               </p>
             </div>
@@ -105,15 +105,15 @@ export function QuickTemplatesDialog({ open, onOpenChange, onAddTemplates, patie
               placeholder="Pesquisar templates..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 uppercase tracking-wide"
+              className="pl-8 uppercase tracking-wide"
             />
           </div>
           <Button 
             onClick={handleAdd}
             disabled={selectedTemplates.length === 0}
-            className="w-full uppercase tracking-wider font-bold hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg hover:shadow-xl"
+            className="w-full uppercase tracking-wider font-semibold hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-md hover:shadow-md"
           >
-            <span className="mr-2">⚡</span>
+            <span className="mr-2"></span>
             ADICIONAR {selectedTemplates.length > 0 && `(${selectedTemplates.length})`}
           </Button>
         </div>
@@ -121,7 +121,7 @@ export function QuickTemplatesDialog({ open, onOpenChange, onAddTemplates, patie
         <ScrollArea className="h-[380px] pr-4 -mr-4">
           <div className="space-y-2 pr-2">
             {filteredTemplates.length === 0 ? (
-              <div className="text-center py-12">
+              <div className="text-center py-8">
                 <p className="text-muted-foreground text-sm uppercase tracking-wide">
                   Nenhum template encontrado
                 </p>
@@ -133,10 +133,10 @@ export function QuickTemplatesDialog({ open, onOpenChange, onAddTemplates, patie
               filteredTemplates.map((template, index) => (
               <div 
                 key={template} 
-                className="group relative flex items-center space-x-3 p-3.5 rounded-xl border border-border/40 bg-gradient-to-r from-card/50 to-card/30 hover:from-accent/15 hover:to-accent/5 hover:border-primary/40 hover:shadow-md hover:scale-[1.02] transition-all duration-300 animate-fade-in"
+                className="group relative flex items-center space-x-3 p-4 rounded-lg border border-border/40 bg-card/50 hover:from-accent/15 hover:to-accent/5 hover:border-primary/40 hover:shadow-md hover:scale-[1.02] transition-all duration-300 animate-fade-in"
                 style={{ animationDelay: `${index * 30}ms` }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/0 to-primary/0 group-hover:from-primary/5 group-hover:to-primary/10 rounded-xl transition-all duration-300" />
+                <div className="absolute inset-0 bg-primary/0 group-hover:from-primary/5 group-hover:to-primary/10 rounded-lg transition-all duration-300" />
                 
                 <Checkbox
                   id={template}
@@ -146,7 +146,7 @@ export function QuickTemplatesDialog({ open, onOpenChange, onAddTemplates, patie
                 />
                 <Label
                   htmlFor={template}
-                  className="text-sm font-medium leading-relaxed cursor-pointer flex-1 group-hover:text-primary group-hover:font-semibold transition-all duration-200 z-10"
+                  className="text-sm font-medium leading-relaxed cursor-pointer flex-1 group-hover:text-primary group-hover:font-medium transition-all duration-200 z-10"
                 >
                   {template}
                 </Label>
@@ -155,7 +155,7 @@ export function QuickTemplatesDialog({ open, onOpenChange, onAddTemplates, patie
                     #{String(QUICK_TEMPLATES.indexOf(template) + 1).padStart(2, "0")}
                   </span>
                   {selectedTemplates.includes(template) && (
-                    <span className="text-primary animate-scale-in">✓</span>
+                    <span className="text-primary animate-scale-in"></span>
                   )}
                 </div>
               </div>
@@ -168,16 +168,16 @@ export function QuickTemplatesDialog({ open, onOpenChange, onAddTemplates, patie
           <Button 
             variant="outline" 
             onClick={handleCancel}
-            className="uppercase tracking-wider font-semibold hover:scale-105 transition-transform duration-200"
+            className="uppercase tracking-wider font-medium hover:scale-105 transition-transform duration-200"
           >
             CANCELAR
           </Button>
           <Button 
             onClick={handleAdd}
             disabled={selectedTemplates.length === 0}
-            className="uppercase tracking-wider font-bold hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg hover:shadow-xl"
+            className="uppercase tracking-wider font-semibold hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-md hover:shadow-md"
           >
-            <span className="mr-2">⚡</span>
+            <span className="mr-2"></span>
             ADICIONAR {selectedTemplates.length > 0 && `(${selectedTemplates.length})`}
           </Button>
         </DialogFooter>

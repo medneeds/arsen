@@ -176,7 +176,7 @@ const AutoResizeTextarea = memo(({ value, onChange, onKeyDown, onBlur, placehold
       onBlur={onBlur}
       placeholder={placeholder}
       className={cn(
-        "resize-none overflow-hidden w-full min-h-[20px] text-[10px] text-foreground border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:outline-none",
+        "resize-none overflow-hidden w-full min-h-[20px] text-xs text-foreground border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:outline-none",
         className
       )}
       rows={1}
@@ -316,7 +316,7 @@ const SortablePendencyItem = memo(function SortablePendencyItem({ id, index, pen
       ref={setNodeRef}
       style={style}
       className={cn(
-        "text-xs text-foreground leading-tight print:text-[7.5px] print:leading-tight flex items-center gap-2 rounded px-2 -mx-1 py-1.5 group",
+        "text-xs text-foreground leading-tight print:text-xs print:leading-tight flex items-center gap-2 rounded-md px-2 -mx-1 py-2 group",
         isDragging ? "bg-accent/50 z-50" : "hover:bg-accent/30",
         isHighlighted && `${highlightColors[sector]} border shadow-sm`
       )}
@@ -328,8 +328,8 @@ const SortablePendencyItem = memo(function SortablePendencyItem({ id, index, pen
       >
         <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0" />
       </div>
-      <span className="font-semibold text-muted-foreground flex-shrink-0">{index + 1}.</span>
-      <span className={cn("flex-1", isHighlighted && "font-bold")}>{pendency}</span>
+      <span className="font-medium text-muted-foreground flex-shrink-0">{index + 1}.</span>
+      <span className={cn("flex-1", isHighlighted && "font-semibold")}>{pendency}</span>
       <Button
         variant="ghost"
         size="sm"
@@ -403,7 +403,7 @@ const SortablePendencyItemCollapsed = memo(function SortablePendencyItemCollapse
       ref={setNodeRef}
       style={style}
       className={cn(
-        "text-[10px] text-foreground leading-snug group/item rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5",
+        "text-xs text-foreground leading-snug group/item rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1",
         isDragging ? "bg-accent/50 z-50" : "hover:bg-accent/50",
         isHighlighted && `${highlightColors[sector]} border shadow-sm`
       )}
@@ -419,10 +419,10 @@ const SortablePendencyItemCollapsed = memo(function SortablePendencyItemCollapse
         className="break-words flex items-start gap-1 flex-1 cursor-pointer"
         onClick={onEdit}
       >
-        <span className="font-semibold text-muted-foreground flex-shrink-0">{index + 1}.</span>
-        <span className={cn("break-words", isHighlighted && "font-bold")}>{pendency}</span>
+        <span className="font-medium text-muted-foreground flex-shrink-0">{index + 1}.</span>
+        <span className={cn("break-words", isHighlighted && "font-semibold")}>{pendency}</span>
       </span>
-      <div className="flex items-center gap-0.5 flex-shrink-0">
+      <div className="flex items-center gap-1 flex-shrink-0">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -519,11 +519,11 @@ const SortableDiagnosisItemCollapsed = memo(function SortableDiagnosisItemCollap
       <li
         ref={setNodeRef}
         style={style}
-        className="text-[10px] text-foreground leading-snug group/item rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary"
+        className="text-xs text-foreground leading-snug group/item rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1 bg-accent/30 border border-primary"
       >
         <div className="flex-shrink-0 w-3" />
         <div className="flex items-start gap-1 flex-1">
-          <span className="font-semibold text-muted-foreground flex-shrink-0 pt-[2px]">{index + 1}.</span>
+          <span className="font-medium text-muted-foreground flex-shrink-0 pt-[2px]">{index + 1}.</span>
           <AutoResizeTextarea
             inputRef={inputRef}
             value={editValue}
@@ -533,7 +533,7 @@ const SortableDiagnosisItemCollapsed = memo(function SortableDiagnosisItemCollap
             className="flex-1"
           />
         </div>
-        <div className="flex items-center gap-0.5 flex-shrink-0">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {onGetCid && (
             <Button
               size="icon"
@@ -572,7 +572,7 @@ const SortableDiagnosisItemCollapsed = memo(function SortableDiagnosisItemCollap
       ref={setNodeRef}
       style={style}
       className={cn(
-        "text-[10px] text-foreground leading-snug group/item rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5",
+        "text-xs text-foreground leading-snug group/item rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1",
         isDragging ? "bg-accent/50 z-50" : "hover:bg-accent/50"
       )}
     >
@@ -587,13 +587,13 @@ const SortableDiagnosisItemCollapsed = memo(function SortableDiagnosisItemCollap
         className="break-words flex items-start gap-1 flex-1 cursor-pointer"
         onClick={onEdit}
       >
-        <span className="font-semibold text-muted-foreground flex-shrink-0">{index + 1}.</span>
+        <span className="font-medium text-muted-foreground flex-shrink-0">{index + 1}.</span>
         <span className="break-words">{diagnosis}</span>
         {daysCalculation && (
-          <span className="text-[9px] text-muted-foreground/70 ml-1 font-normal">{daysCalculation}</span>
+          <span className="text-xs text-muted-foreground/70 ml-1 font-normal">{daysCalculation}</span>
         )}
       </span>
-      <div className="flex items-center gap-0.5 flex-shrink-0">
+      <div className="flex items-center gap-1 flex-shrink-0">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -866,7 +866,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
       toast.error("Campo somente leitura no mapa de leitos");
       return;
     }
-    // 🔒 Hipóteses/Diagnósticos são sincronizados pela admissão e evolução clínica.
+    // Hipóteses/Diagnósticos são sincronizados pela admissão e evolução clínica.
     if (field === "diagnoses") {
       toast.info("Hipóteses são sincronizadas pela admissão / evolução clínica. Edite na evolução do paciente.");
       return;
@@ -891,7 +891,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   const saveInlineEdit = async () => {
     if (!editingField) return;
 
-    // 🔒 GUARDA FIXA: identificação do leito/paciente é IMUTÁVEL pelo mapa de leitos.
+    // GUARDA FIXA: identificação do leito/paciente é IMUTÁVEL pelo mapa de leitos.
     // Idade vem do cadastro; leito muda apenas por realocação/transferência; nome pelo prontuário.
     if (["name", "age", "bedNumber", "admissionDate"].includes(editingField)) {
       setEditingField(null);
@@ -1118,7 +1118,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   };
 
   const removeArrayItem = (field: "diagnoses" | "medicalHistory" | "relevantExams" | "pendencies" | "utiAdmissionDate" | "utiDischargePrediction" | "utiAllergies" | "utiAdmissionReason" | "utiCurrentStatus" | "utiDevices" | "utiSpecialties" | "utiCulturesAntibiotics" | "utiOriginSector", index: number) => {
-    // 🔒 Hipóteses/Diagnósticos são imutáveis no mapa — sincronizadas via evolução clínica.
+    // Hipóteses/Diagnósticos são imutáveis no mapa — sincronizadas via evolução clínica.
     if (field === "diagnoses") {
       toast.info("Hipóteses são sincronizadas pela evolução clínica. Edite na evolução do paciente.");
       return;
@@ -1229,7 +1229,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   };
 
   const handleDragEndDiagnoses = (_event: DragEndEvent) => {
-    // 🔒 Hipóteses/Diagnósticos são imutáveis no mapa — sem reordenação manual.
+    // Hipóteses/Diagnósticos são imutáveis no mapa — sem reordenação manual.
     return;
   };
 
@@ -1369,7 +1369,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             {allocationStatusBarConfig.icon === Clock && <Clock className={cn("h-3.5 w-3.5 relative z-10", allocationStatusBarConfig.iconClass)} />}
             {allocationStatusBarConfig.icon === MessageSquare && <MessageSquare className={cn("h-3.5 w-3.5 relative z-10", allocationStatusBarConfig.iconClass)} />}
             {allocationStatusBarConfig.icon === XCircle && <XCircle className={cn("h-3.5 w-3.5 relative z-10", allocationStatusBarConfig.iconClass)} />}
-            <span className={cn("text-xs font-semibold relative z-10", allocationStatusBarConfig.statusClass)}>
+            <span className={cn("text-xs font-medium relative z-10", allocationStatusBarConfig.statusClass)}>
               {allocationStatusBarConfig.label}
             </span>
             
@@ -1377,7 +1377,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             <span className="separator relative z-10">•</span>
             
             {/* Destination */}
-            <span className="text-xs font-semibold relative z-10 status-destination">
+            <span className="text-xs font-medium relative z-10 status-destination">
               Para: {allocationStatusBarConfig.sectorDisplayName}
             </span>
             
@@ -1385,7 +1385,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             {allocationTimeElapsed && (
               <>
                 <span className="separator relative z-10">•</span>
-                <span className="text-xs font-semibold relative z-10 status-time">
+                <span className="text-xs font-medium relative z-10 status-time">
                   Há {allocationTimeElapsed}
                 </span>
               </>
@@ -1396,7 +1396,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
         <Card 
           data-patient-id={patient.id}
           className={cn(
-            "relative transition-all duration-200 hover:shadow-lg print:shadow-none print:break-inside-avoid print:mb-0 print:w-full", 
+            "relative transition-all duration-200 hover:shadow-md print:shadow-none print:break-inside-avoid print:mb-0 print:w-full", 
             config.color,
             isSelected && "ring-2 ring-primary",
             isDeleting && "animate-[slide-out-left_0.3s_ease-out_forwards]",
@@ -1408,7 +1408,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
           )}
         >
         
-        <div className="p-3 md:p-2 print:p-1.5">
+        <div className="p-3 md:p-2 print:p-2">
           <div className="flex items-start justify-between gap-3 md:gap-2 print:gap-1">
             {selectionMode && onToggleSelection && (
               <div className="flex items-center justify-center print:hidden flex-shrink-0">
@@ -1419,16 +1419,16 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                 />
               </div>
             )}
-            <div className="flex-1 flex flex-col gap-3 md:grid md:grid-cols-18 md:gap-1.5 md:items-start">
+            <div className="flex-1 flex flex-col gap-3 md:grid md:grid-cols-18 md:gap-2 md:items-start">
               {/* Mobile: Leito + Paciente na mesma linha */}
               <div className="flex items-start gap-3 md:contents">
                 {/* Leito - ultra compacto */}
                 <div className="flex flex-col shrink-0 md:col-span-1">
-                  <span className="text-xs md:text-[9px] font-medium text-muted-foreground mb-0.5">Leito</span>
-                  <Badge className={cn("patient-id w-fit text-sm md:text-[10px] py-1 md:py-0 px-2 md:px-1 font-bold leading-tight", config.badgeColor)}>
+                  <span className="text-xs md:text-xs font-medium text-muted-foreground mb-1">Leito</span>
+                  <Badge className={cn("patient-id w-fit text-sm md:text-xs py-1 md:py-0 px-2 md:px-1 font-semibold leading-tight", config.badgeColor)}>
                     {patient.bedNumber}
                   </Badge>
-                  <div className="flex flex-col gap-0.5 mt-1">
+                  <div className="flex flex-col gap-1 mt-1">
                     {localMedicalResponsibility?.type ? (
                       <MedicalResponsibilityIndicator
                         responsibility={localMedicalResponsibility}
@@ -1459,7 +1459,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         }}
                         title="Adicionar responsável médico"
                       >
-                        <span className="text-sm font-bold transition-transform duration-300">+</span>
+                        <span className="text-sm font-semibold transition-transform duration-300">+</span>
                       </Button>
                     )}
                   </div>
@@ -1467,12 +1467,12 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
                 {/* Nome e Idade - mais espaço para nome completo */}
                 <div className="flex flex-col flex-1 min-w-0 md:col-span-3">
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-xs md:text-[10px] font-medium text-muted-foreground">Paciente</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs md:text-xs font-medium text-muted-foreground">Paciente</span>
                   {stayTimer && currentDepartment !== "UTI" && (
                     <div 
                       className={cn(
-                        "inline-flex items-center gap-0.5 px-1.5 py-0 rounded-full text-[8px] font-semibold border print:hidden",
+                        "inline-flex items-center gap-1 px-2 py-0 rounded-full text-xs font-medium border print:hidden",
                         stayTimer.level !== "normal" && stayTimer.colorClasses
                       )}
                       style={stayTimer.level === "normal" ? {
@@ -1480,7 +1480,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         backgroundColor: `${sectorColorMap[patient.sector]}15`,
                         borderColor: `${sectorColorMap[patient.sector]}40`,
                       } : undefined}
-                      title={`Permanência no setor: ${stayTimer.display}${stayTimer.level === "warning" ? " ⚠️ >24h" : stayTimer.level === "orange" ? " ⚠️ >48h" : stayTimer.level === "critical" || stayTimer.level === "pulsing" ? " 🚨 >72h" : ""}`}
+                      title={`Permanência no setor: ${stayTimer.display}${stayTimer.level === "warning" ? " >24h" : stayTimer.level === "orange" ? " >48h" : stayTimer.level === "critical" || stayTimer.level === "pulsing" ? " >72h" : ""}`}
                     >
                       <Clock className="h-2 w-2" />
                       <span>{stayTimer.displayShort}</span>
@@ -1488,7 +1488,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                   )}
                 </div>
                 <div className="group/name relative">
-                  <div className="flex items-start gap-0.5">
+                  <div className="flex items-start gap-1">
                     <div className="flex-1 min-w-0">
                       {editingField === "name" ? (
                         <div className="flex items-start gap-1">
@@ -1506,7 +1506,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="h-6 text-sm font-semibold"
+                            className="h-6 text-sm font-medium"
                           />
                           <Button
                             size="icon"
@@ -1526,7 +1526,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           </Button>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           {/* Internment Status Icon - Based on Pendencies Content */}
                           {(() => {
                             const pendenciesText = patient.pendencies?.join(' ').toUpperCase() || '';
@@ -1574,7 +1574,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                            
                            <p 
                             className={cn(
-                              "patient-id font-semibold text-base md:text-sm text-foreground leading-tight break-words rounded px-1 -mx-1",
+                              "patient-id font-medium text-base md:text-sm text-foreground leading-tight break-words rounded-md px-1 -mx-1",
                               canEdit && "cursor-pointer hover:bg-accent/50"
                             )}
                             onClick={() => canEdit && setIsEditDialogOpen(true)}
@@ -1593,7 +1593,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       )}
                       
                       <p
-                        className="text-sm md:text-[11px] text-muted-foreground mt-0.5 px-1 -mx-1 whitespace-normal break-words cursor-default"
+                        className="text-sm md:text-xs text-muted-foreground mt-1 px-1 -mx-1 whitespace-normal break-words cursor-default"
                         title="Idade é atualizada automaticamente pelo cadastro do paciente"
                       >
                         {patient.age ? formatAgeDisplay(patient.age) : <span className="italic opacity-70">Idade não cadastrada</span>}
@@ -1620,11 +1620,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             {currentDepartment === "UTI" && (
               <>
                 {/* Bloco Administrativo - Linha 1 */}
-                <div className="w-full md:col-span-12 border-l-2 border-primary/20 pl-3 py-2 bg-muted/5 rounded-r">
+                <div className="w-full md:col-span-12 border-l-2 border-primary/20 pl-3 py-2 bg-muted/5 rounded-r-md">
                   <div className="flex flex-col gap-3 md:grid md:grid-cols-12 md:gap-2">
                     {/* Setor de Origem */}
                     <div className="flex flex-col md:col-span-4">
-                  <span className="text-xs md:text-[9px] font-medium text-muted-foreground mb-0">Setor de Origem</span>
+                  <span className="text-xs md:text-xs font-medium text-muted-foreground mb-0">Setor de Origem</span>
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -1642,7 +1642,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       items={(patient.utiOriginSector || []).map((_, i) => `uti-origin-${i}`)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <ol className="text-xs text-foreground space-y-0 print:text-[7.5px] list-none pl-0">
+                      <ol className="text-xs text-foreground space-y-0 print:text-xs list-none pl-0">
                         {(patient.utiOriginSector || []).map((item, idx) => (
                           <SortableDiagnosisItemCollapsed
                             key={`uti-origin-${idx}`}
@@ -1665,10 +1665,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       </ol>
                     </SortableContext>
                     {editingField === "utiOriginSector" && editingArrayIndex === -2 ? (
-                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-xs text-foreground leading-snug rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
-                          <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiOriginSector || []).length + 1}.</span>
+                          <span className="font-medium text-muted-foreground flex-shrink-0">{(patient.utiOriginSector || []).length + 1}.</span>
                           <AutoResizeTextarea
                             inputRef={inputRef}
                             value={editValue}
@@ -1683,11 +1683,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            className="text-xs text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
                             placeholder="Novo setor"
                           />
                         </div>
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <Button
                             size="icon"
                             variant="ghost"
@@ -1723,7 +1723,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
                   {/* Admissão no Setor (read-only — sincronizada com a alocação no leito) */}
                   <div className="flex flex-col md:col-span-2">
-                    <span className="text-xs md:text-[9px] font-medium text-muted-foreground mb-0">
+                    <span className="text-xs md:text-xs font-medium text-muted-foreground mb-0">
                       Admissão no Setor
                     </span>
                     {(() => {
@@ -1735,7 +1735,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       });
                       const dih = calcDIH(adm);
                       return (
-                        <div className="flex items-center gap-1.5 text-[10px] text-foreground leading-snug py-0.5">
+                        <div className="flex items-center gap-2 text-xs text-foreground leading-snug py-1">
                           <DischargeStatusRibbon status={patient.admissionStatus} />
                           <span className="font-medium">{formatAdmissionDateBR(adm)}</span>
                           {dih !== null && (() => {
@@ -1748,7 +1748,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             return (
                               <Badge
                                 variant="secondary"
-                                className={`h-4 px-1.5 text-[9px] font-semibold ${dihColor}`}
+                                className={`h-4 px-2 text-xs font-medium ${dihColor}`}
                                 title="Dia de Internação (D0 = admissão; DIH1 = dia seguinte). Verde ≤7 dias · Amarelo 8–10 · Vermelho >10. Recalcula em transferência de setor."
                               >
                                 {formatDIHLabel(dih)}
@@ -1762,7 +1762,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
                   {/* Previsão de Alta (read-only — atualizada exclusivamente via Evolução Médica) */}
                   <div className="flex flex-col md:col-span-4">
-                    <span className="text-xs md:text-[9px] font-medium text-muted-foreground mb-0">
+                    <span className="text-xs md:text-xs font-medium text-muted-foreground mb-0">
                       Previsão de Alta
                     </span>
                     {(() => {
@@ -1770,7 +1770,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       if (!pred) {
                         return (
                           <span
-                            className="text-[10px] text-muted-foreground italic py-0.5"
+                            className="text-xs text-muted-foreground italic py-1"
                             title="Definida na Admissão e atualizada apenas via Evolução Médica."
                           >
                             — (atualize via Evolução)
@@ -1780,7 +1780,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       const daysCalculation = calculateDaysUntilDischarge(pred);
                       return (
                         <div
-                          className="text-[10px] text-foreground leading-snug py-0.5 break-words"
+                          className="text-xs text-foreground leading-snug py-1 break-words"
                           title="Atualize esta previsão dentro da Evolução Médica."
                         >
                           <span className="font-medium">{pred}</span>
@@ -1794,7 +1794,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
                   {/* Alergias */}
                   <div className="flex flex-col md:col-span-2">
-                  <span className="text-xs md:text-[9px] font-medium text-muted-foreground mb-0">Alergias</span>
+                  <span className="text-xs md:text-xs font-medium text-muted-foreground mb-0">Alergias</span>
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -1812,7 +1812,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       items={(patient.utiAllergies || []).map((_, i) => `uti-allergies-${i}`)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <ol className="text-xs text-foreground space-y-0 print:text-[7.5px] list-none pl-0">
+                      <ol className="text-xs text-foreground space-y-0 print:text-xs list-none pl-0">
                         {(patient.utiAllergies || []).map((item, idx) => (
                           <SortableDiagnosisItemCollapsed
                             key={`uti-allergies-${idx}`}
@@ -1835,10 +1835,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       </ol>
                     </SortableContext>
                     {editingField === "utiAllergies" && editingArrayIndex === -2 && (
-                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-xs text-foreground leading-snug rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
-                          <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiAllergies || []).length + 1}.</span>
+                          <span className="font-medium text-muted-foreground flex-shrink-0">{(patient.utiAllergies || []).length + 1}.</span>
                           <AutoResizeTextarea
                             inputRef={inputRef}
                             value={editValue}
@@ -1853,11 +1853,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            className="text-xs text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
                             placeholder="Nova alergia"
                           />
                         </div>
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <Button size="icon" variant="ghost" onClick={saveInlineEdit} className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0">
                             <Check className="h-2.5 w-2.5" />
                           </Button>
@@ -1878,11 +1878,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                 </div>
 
                 {/* Bloco Investigação - Linha 2 */}
-                <div className="w-full md:col-span-12 border-l-2 border-muted-foreground/20 pl-3 py-2 bg-muted/10 rounded-r">
+                <div className="w-full md:col-span-12 border-l-2 border-muted-foreground/20 pl-3 py-2 bg-muted/10 rounded-r-md">
                   <div className="flex flex-col gap-3 md:grid md:grid-cols-12 md:gap-2">
                     {/* Motivo da Admissão */}
                     <div className="flex flex-col md:col-span-2">
-                  <span className="text-[10px] font-medium text-muted-foreground mb-0.5">Motivo da Admissão</span>
+                  <span className="text-xs font-medium text-muted-foreground mb-1">Motivo da Admissão</span>
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -1900,7 +1900,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       items={(patient.utiAdmissionReason || []).map((_, i) => `uti-admission-${i}`)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <ol className="text-xs text-foreground space-y-0.5 print:text-[7.5px] list-none pl-0">
+                      <ol className="text-xs text-foreground space-y-1 print:text-xs list-none pl-0">
                         {(patient.utiAdmissionReason || []).map((item, idx) => (
                           <SortableDiagnosisItemCollapsed
                             key={`uti-admission-${idx}`}
@@ -1923,10 +1923,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       </ol>
                     </SortableContext>
                     {editingField === "utiAdmissionReason" && editingArrayIndex === -2 && (
-                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-xs text-foreground leading-snug rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
-                          <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiAdmissionReason || []).length + 1}.</span>
+                          <span className="font-medium text-muted-foreground flex-shrink-0">{(patient.utiAdmissionReason || []).length + 1}.</span>
                           <AutoResizeTextarea
                             inputRef={inputRef}
                             value={editValue}
@@ -1941,11 +1941,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            className="text-xs text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
                             placeholder="Novo motivo"
                           />
                         </div>
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <Button size="icon" variant="ghost" onClick={saveInlineEdit} className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0">
                             <Check className="h-2.5 w-2.5" />
                           </Button>
@@ -1965,13 +1965,13 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
                   {/* Hipóteses / Diagnósticos */}
                   <div className="flex flex-col md:col-span-5 relative">
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <span className="text-[10px] font-medium text-muted-foreground">Hipóteses / Diagnósticos</span>
+                  <div className="flex items-center gap-1 mb-1">
+                    <span className="text-xs font-medium text-muted-foreground">Hipóteses / Diagnósticos</span>
                     <span
                       title="Sincronizado da Admissão / Evolução. Edite na evolução clínica."
-                      className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 text-foreground px-1 py-0 text-[8px] font-medium"
+                      className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-foreground px-1 py-0 text-xs font-medium"
                     >
-                      🔒 Sincronizado
+                      Sincronizado
                     </span>
                     <Button
                       size="icon"
@@ -1984,16 +1984,16 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     </Button>
                   </div>
                   {patient.diagnoses.length > 0 ? (
-                    <ol className="text-xs text-foreground space-y-0.5 print:text-[7.5px] list-none pl-0">
+                    <ol className="text-xs text-foreground space-y-1 print:text-xs list-none pl-0">
                       {patient.diagnoses.map((diagnosis, idx) => (
-                        <li key={`diagnosis-${idx}`} className="text-[10px] text-foreground leading-snug flex gap-1">
-                          <span className="font-semibold text-muted-foreground flex-shrink-0">{idx + 1}.</span>
+                        <li key={`diagnosis-${idx}`} className="text-xs text-foreground leading-snug flex gap-1">
+                          <span className="font-medium text-muted-foreground flex-shrink-0">{idx + 1}.</span>
                           <span className="flex-1">{diagnosis}</span>
                         </li>
                       ))}
                     </ol>
                   ) : (
-                    <p className="text-[10px] text-muted-foreground/60 italic leading-snug">
+                    <p className="text-xs text-muted-foreground/60 italic leading-snug">
                       Aguardando admissão / evolução
                     </p>
                   )}
@@ -2001,7 +2001,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
                   {/* Quadro Atual */}
                   <div className="flex flex-col md:col-span-3">
-                  <span className="text-[10px] font-medium text-muted-foreground mb-0.5">Quadro Atual</span>
+                  <span className="text-xs font-medium text-muted-foreground mb-1">Quadro Atual</span>
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -2019,7 +2019,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       items={(patient.utiCurrentStatus || []).map((_, i) => `uti-status-${i}`)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <ol className="text-xs text-foreground space-y-0.5 print:text-[7.5px] list-none pl-0">
+                      <ol className="text-xs text-foreground space-y-1 print:text-xs list-none pl-0">
                         {(patient.utiCurrentStatus || []).map((item, idx) => (
                           <SortableDiagnosisItemCollapsed
                             key={`uti-status-${idx}`}
@@ -2042,10 +2042,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       </ol>
                     </SortableContext>
                     {editingField === "utiCurrentStatus" && editingArrayIndex === -2 ? (
-                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-xs text-foreground leading-snug rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
-                          <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiCurrentStatus || []).length + 1}.</span>
+                          <span className="font-medium text-muted-foreground flex-shrink-0">{(patient.utiCurrentStatus || []).length + 1}.</span>
                           <AutoResizeTextarea
                             inputRef={inputRef}
                             value={editValue}
@@ -2060,11 +2060,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            className="text-xs text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
                             placeholder="Novo status"
                           />
                         </div>
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <Button
                             size="icon"
                             variant="ghost"
@@ -2100,7 +2100,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
                   {/* Especialidades */}
                   <div className="flex flex-col md:col-span-2">
-                  <span className="text-[10px] font-medium text-muted-foreground mb-0.5">Especialidades</span>
+                  <span className="text-xs font-medium text-muted-foreground mb-1">Especialidades</span>
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -2118,7 +2118,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       items={(patient.utiSpecialties || []).map((_, i) => `uti-specialties-${i}`)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <ol className="text-xs text-foreground space-y-0.5 print:text-[7.5px] list-none pl-0">
+                      <ol className="text-xs text-foreground space-y-1 print:text-xs list-none pl-0">
                         {(patient.utiSpecialties || []).map((item, idx) => (
                           <SortableDiagnosisItemCollapsed
                             key={`uti-specialties-${idx}`}
@@ -2141,10 +2141,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       </ol>
                     </SortableContext>
                     {editingField === "utiSpecialties" && editingArrayIndex === -2 ? (
-                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-xs text-foreground leading-snug rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
-                          <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiSpecialties || []).length + 1}.</span>
+                          <span className="font-medium text-muted-foreground flex-shrink-0">{(patient.utiSpecialties || []).length + 1}.</span>
                           <AutoResizeTextarea
                             inputRef={inputRef}
                             value={editValue}
@@ -2159,11 +2159,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            className="text-xs text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
                             placeholder="Nova especialidade"
                           />
                         </div>
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <Button
                             size="icon"
                             variant="ghost"
@@ -2200,11 +2200,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                 </div>
 
                 {/* Bloco Clínico - Linha 3 */}
-                <div className="w-full md:col-span-12 border-l-2 border-accent/30 pl-3 py-2 bg-accent/5 rounded-r">
+                <div className="w-full md:col-span-12 border-l-2 border-accent/30 pl-3 py-2 bg-accent/5 rounded-r-md">
                   <div className="flex flex-col gap-3 md:grid md:grid-cols-12 md:gap-2">
                     {/* Dispositivos */}
                     <div className="flex flex-col md:col-span-2">
-                  <span className="text-[10px] font-medium text-muted-foreground mb-0.5">Dispositivos</span>
+                  <span className="text-xs font-medium text-muted-foreground mb-1">Dispositivos</span>
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -2222,7 +2222,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       items={(patient.utiDevices || []).map((_, i) => `uti-device-${i}`)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <ol className="text-xs text-foreground space-y-0.5 print:text-[7.5px] list-none pl-0">
+                      <ol className="text-xs text-foreground space-y-1 print:text-xs list-none pl-0">
                         {(patient.utiDevices || []).map((item, idx) => (
                           <SortableDiagnosisItemCollapsed
                             key={`uti-device-${idx}`}
@@ -2245,10 +2245,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       </ol>
                     </SortableContext>
                     {editingField === "utiDevices" && editingArrayIndex === -2 ? (
-                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-xs text-foreground leading-snug rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
-                          <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiDevices || []).length + 1}.</span>
+                          <span className="font-medium text-muted-foreground flex-shrink-0">{(patient.utiDevices || []).length + 1}.</span>
                           <AutoResizeTextarea
                             inputRef={inputRef}
                             value={editValue}
@@ -2263,11 +2263,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            className="text-xs text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
                             placeholder="Novo dispositivo"
                           />
                         </div>
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <Button
                             size="icon"
                             variant="ghost"
@@ -2303,8 +2303,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
                   {/* Exames */}
                   <div className="flex flex-col md:col-span-3 relative">
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <span className="text-[10px] font-medium text-muted-foreground">Exames</span>
+                  <div className="flex items-center gap-1 mb-1">
+                    <span className="text-xs font-medium text-muted-foreground">Exames</span>
                     <Button
                       size="icon"
                       variant="ghost"
@@ -2332,7 +2332,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       items={patient.relevantExams.map((_, i) => `exam-${i}`)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <ol className="text-xs text-foreground space-y-0.5 print:text-[7.5px] list-none pl-0">
+                      <ol className="text-xs text-foreground space-y-1 print:text-xs list-none pl-0">
                         {patient.relevantExams.map((exam, idx) => (
                           <SortableDiagnosisItemCollapsed
                             key={`exam-${idx}`}
@@ -2356,10 +2356,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     </SortableContext>
 
                     {editingField === "relevantExams" && editingArrayIndex === -2 ? (
-                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-xs text-foreground leading-snug rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
-                          <span className="font-semibold text-muted-foreground flex-shrink-0">{patient.relevantExams.length + 1}.</span>
+                          <span className="font-medium text-muted-foreground flex-shrink-0">{patient.relevantExams.length + 1}.</span>
                           <AutoResizeTextarea
                             inputRef={inputRef}
                             value={editValue}
@@ -2374,11 +2374,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            className="text-xs text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
                             placeholder="Novo exame"
                           />
                         </div>
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <Button
                             size="icon"
                             variant="ghost"
@@ -2415,7 +2415,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
                   {/* Culturas / ATB */}
                   <div className="flex flex-col md:col-span-3">
-                  <span className="text-[10px] font-medium text-muted-foreground mb-0.5">Culturas / ATB</span>
+                  <span className="text-xs font-medium text-muted-foreground mb-1">Culturas / ATB</span>
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -2433,7 +2433,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       items={(patient.utiCulturesAntibiotics || []).map((_, i) => `uti-cultures-${i}`)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <ol className="text-xs text-foreground space-y-0.5 print:text-[7.5px] list-none pl-0">
+                      <ol className="text-xs text-foreground space-y-1 print:text-xs list-none pl-0">
                         {(patient.utiCulturesAntibiotics || []).map((item, idx) => (
                           <SortableDiagnosisItemCollapsed
                             key={`uti-cultures-${idx}`}
@@ -2456,10 +2456,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       </ol>
                     </SortableContext>
                     {editingField === "utiCulturesAntibiotics" && editingArrayIndex === -2 ? (
-                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-xs text-foreground leading-snug rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
-                          <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiCulturesAntibiotics || []).length + 1}.</span>
+                          <span className="font-medium text-muted-foreground flex-shrink-0">{(patient.utiCulturesAntibiotics || []).length + 1}.</span>
                           <AutoResizeTextarea
                             inputRef={inputRef}
                             value={editValue}
@@ -2474,11 +2474,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            className="text-xs text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
                             placeholder="Nova cultura/ATB"
                           />
                         </div>
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <Button
                             size="icon"
                             variant="ghost"
@@ -2514,15 +2514,15 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
                   {/* Programações / Pendências */}
                   <div className="flex flex-col md:col-span-5 relative">
-                  <div className="flex items-center gap-1 mb-0.5 flex-wrap">
-                    <span className="text-[10px] font-medium text-muted-foreground">Programações / Pendências</span>
+                  <div className="flex items-center gap-1 mb-1 flex-wrap">
+                    <span className="text-xs font-medium text-muted-foreground">Programações / Pendências</span>
                     
                     {/* Internment Status Badge */}
                     {patient.internmentStatus && internmentStatusConfig[patient.internmentStatus as keyof typeof internmentStatusConfig] && (
                       <Badge 
                         variant="outline" 
                         className={cn(
-                          "h-4 px-1.5 text-[8px] font-semibold gap-0.5 print:hidden",
+                          "h-4 px-2 text-xs font-medium gap-1 print:hidden",
                           internmentStatusConfig[patient.internmentStatus as keyof typeof internmentStatusConfig].color,
                           internmentStatusConfig[patient.internmentStatus as keyof typeof internmentStatusConfig].bgColor,
                           internmentStatusConfig[patient.internmentStatus as keyof typeof internmentStatusConfig].borderColor
@@ -2551,17 +2551,17 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     collisionDetection={closestCenter}
                     onDragEnd={handleDragEnd}
                   >
-                    <div className="space-y-0.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+                    <div className="space-y-1 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
                       <SortableContext
                         items={patient.pendencies.map((_, i) => `pendency-${i}`)}
                         strategy={verticalListSortingStrategy}
                       >
                         {patient.pendencies.map((pendency, idx) => (
                           editingField === "pendencies" && editingArrayIndex === idx ? (
-                            <div key={idx} className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                            <div key={idx} className="text-xs text-foreground leading-snug rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1 bg-accent/30 border border-primary">
                               <div className="flex-shrink-0 w-3" />
                               <div className="flex items-start gap-1 flex-1">
-                                <span className="font-semibold text-muted-foreground flex-shrink-0 mt-0.5">{idx + 1}.</span>
+                                <span className="font-medium text-muted-foreground flex-shrink-0 mt-1">{idx + 1}.</span>
                                 <textarea
                                   ref={inputRef as any}
                                   value={editValue}
@@ -2587,11 +2587,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                                     }
                                   }}
                                   onBlur={saveInlineEdit}
-                                  className="min-h-[40px] text-[10px] flex-1 text-foreground resize-y border-0 bg-transparent p-0 focus-visible:ring-0"
+                                  className="min-h-[40px] text-xs flex-1 text-foreground resize-y border-0 bg-transparent p-0 focus-visible:ring-0"
                                   rows={2}
                                 />
                               </div>
-                              <div className="flex items-start gap-0.5 flex-shrink-0 mt-0.5">
+                              <div className="flex items-start gap-1 flex-shrink-0 mt-1">
                                 <Button
                                   size="icon"
                                   variant="ghost"
@@ -2636,10 +2636,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       </SortableContext>
                       
                       {editingField === "pendencies" && editingArrayIndex === -2 ? (
-                        <div className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                        <div className="text-xs text-foreground leading-snug rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1 bg-accent/30 border border-primary">
                           <div className="flex-shrink-0 w-3" />
                           <div className="flex items-start gap-1 flex-1">
-                            <span className="font-semibold text-muted-foreground flex-shrink-0 mt-0.5">{patient.pendencies.length + 1}.</span>
+                            <span className="font-medium text-muted-foreground flex-shrink-0 mt-1">{patient.pendencies.length + 1}.</span>
                             <AutoResizeTextarea
                               inputRef={inputRef}
                               value={editValue}
@@ -2654,11 +2654,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                               }}
                               onKeyDown={handleKeyDown}
                               onBlur={saveInlineEdit}
-                              className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                              className="text-xs text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
                               placeholder="Nova pendência"
                             />
                           </div>
-                          <div className="flex items-start gap-0.5 flex-shrink-0">
+                          <div className="flex items-start gap-1 flex-shrink-0">
                             <Button
                               size="icon"
                               variant="ghost"
@@ -2700,72 +2700,72 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
             {/* Farmácia Clínica - Visão compacta com dados relevantes */}
             {currentDepartment !== "UTI" && role === 'farmacia' && (
-              <div className="md:col-span-14 border-l-2 border-released/30 pl-3 py-1.5 bg-released-soft/30 rounded-r">
+              <div className="md:col-span-14 border-l-2 border-released/30 pl-3 py-2 bg-released-soft/30 rounded-r-md">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                   {/* Diagnósticos (resumo) */}
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-semibold text-released-on-soft tracking-wider mb-0.5">Diagnósticos</span>
+                    <span className="text-xs font-medium text-released-on-soft tracking-wider mb-1">Diagnósticos</span>
                     {patient.diagnoses.length > 0 ? (
-                      <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
+                      <ol className="text-xs text-foreground space-y-0 list-none pl-0">
                         {patient.diagnoses.map((d, i) => (
                           <li key={i} className="leading-tight">
-                            <span className="font-semibold text-muted-foreground">{i + 1}.</span> {d}
+                            <span className="font-medium text-muted-foreground">{i + 1}.</span> {d}
                           </li>
                         ))}
                       </ol>
                     ) : (
-                      <span className="text-[10px] text-muted-foreground italic">—</span>
+                      <span className="text-xs text-muted-foreground italic">—</span>
                     )}
                   </div>
 
                   {/* Alergias / Antecedentes */}
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-semibold text-released-on-soft tracking-wider mb-0.5">Alergias / Antecedentes</span>
+                    <span className="text-xs font-medium text-released-on-soft tracking-wider mb-1">Alergias / Antecedentes</span>
                     {patient.medicalHistory.length > 0 ? (
-                      <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
+                      <ol className="text-xs text-foreground space-y-0 list-none pl-0">
                         {patient.medicalHistory.map((h, i) => (
                           <li key={i} className={cn(
                             "leading-tight",
-                            h.toLowerCase().includes('alerg') && "text-destructive font-semibold"
+                            h.toLowerCase().includes('alerg') && "text-destructive font-medium"
                           )}>
-                            <span className="font-semibold text-muted-foreground">{i + 1}.</span> {h}
+                            <span className="font-medium text-muted-foreground">{i + 1}.</span> {h}
                           </li>
                         ))}
                       </ol>
                     ) : (
-                      <span className="text-[10px] text-muted-foreground italic">—</span>
+                      <span className="text-xs text-muted-foreground italic">—</span>
                     )}
                   </div>
 
                   {/* Exames Relevantes */}
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-semibold text-released-on-soft tracking-wider mb-0.5">Exames</span>
+                    <span className="text-xs font-medium text-released-on-soft tracking-wider mb-1">Exames</span>
                     {patient.relevantExams.length > 0 ? (
-                      <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
+                      <ol className="text-xs text-foreground space-y-0 list-none pl-0">
                         {patient.relevantExams.map((e, i) => (
                           <li key={i} className="leading-tight">
-                            <span className="font-semibold text-muted-foreground">{i + 1}.</span> {e}
+                            <span className="font-medium text-muted-foreground">{i + 1}.</span> {e}
                           </li>
                         ))}
                       </ol>
                     ) : (
-                      <span className="text-[10px] text-muted-foreground italic">—</span>
+                      <span className="text-xs text-muted-foreground italic">—</span>
                     )}
                   </div>
 
                   {/* Pendências / Condutas */}
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-semibold text-released-on-soft tracking-wider mb-0.5">Pendências</span>
+                    <span className="text-xs font-medium text-released-on-soft tracking-wider mb-1">Pendências</span>
                     {patient.pendencies.length > 0 ? (
-                      <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
+                      <ol className="text-xs text-foreground space-y-0 list-none pl-0">
                         {patient.pendencies.map((p, i) => (
                           <li key={i} className="leading-tight">
-                            <span className="font-semibold text-muted-foreground">{i + 1}.</span> {p}
+                            <span className="font-medium text-muted-foreground">{i + 1}.</span> {p}
                           </li>
                         ))}
                       </ol>
                     ) : (
-                      <span className="text-[10px] text-muted-foreground italic">—</span>
+                      <span className="text-xs text-muted-foreground italic">—</span>
                     )}
                   </div>
                 </div>
@@ -2775,8 +2775,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             {/* Hipóteses / Diagnósticos - apenas para outros departamentos */}
             {currentDepartment !== "UTI" && role !== 'farmacia' && (
               <div className="flex flex-col md:col-span-3 relative">
-                <div className="flex items-center gap-1 mb-0.5">
-                  <span className="text-[10px] font-medium text-muted-foreground">Hipóteses / Diagnósticos</span>
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-xs font-medium text-muted-foreground">Hipóteses / Diagnósticos</span>
                 <Button
                   size="icon"
                   variant="ghost"
@@ -2796,7 +2796,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                   items={patient.diagnoses.map((_, i) => `diagnosis-${i}`)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <ol className="text-xs text-foreground space-y-0.5 print:text-[7.5px] list-none pl-0">
+                  <ol className="text-xs text-foreground space-y-1 print:text-xs list-none pl-0">
                     {patient.diagnoses.map((diagnosis, idx) => (
                       <SortableDiagnosisItemCollapsed
                         key={`diagnosis-${idx}`}
@@ -2822,10 +2822,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                 </SortableContext>
 
                 {editingField === "diagnoses" && editingArrayIndex === -2 ? (
-                  <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                  <li className="text-xs text-foreground leading-snug rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1 bg-accent/30 border border-primary">
                     <div className="flex-shrink-0 w-3" />
                     <div className="flex items-center gap-1 flex-1">
-                      <span className="font-semibold text-muted-foreground flex-shrink-0">{patient.diagnoses.length + 1}.</span>
+                      <span className="font-medium text-muted-foreground flex-shrink-0">{patient.diagnoses.length + 1}.</span>
                       <AutoResizeTextarea
                         inputRef={inputRef}
                         value={editValue}
@@ -2839,11 +2839,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           });
                         }}
                         onKeyDown={handleKeyDown}
-                        className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                        className="text-xs text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
                         placeholder="Nova hipótese"
                       />
                     </div>
-                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       <Button
                         size="icon"
                         variant="ghost"
@@ -2882,8 +2882,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             {/* Antecedentes - apenas para outros departamentos */}
             {currentDepartment !== "UTI" && role !== 'farmacia' && (
               <div className="flex flex-col md:col-span-3 relative">
-                <div className="flex items-center gap-1 mb-0.5">
-                  <span className="text-[10px] font-medium text-muted-foreground">Antecedentes</span>
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-xs font-medium text-muted-foreground">Antecedentes</span>
                 <Button
                   size="icon"
                   variant="ghost"
@@ -2911,7 +2911,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                   items={patient.medicalHistory.map((_, i) => `history-${i}`)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <ol className="text-xs text-foreground space-y-0.5 print:text-[7.5px] list-none pl-0">
+                  <ol className="text-xs text-foreground space-y-1 print:text-xs list-none pl-0">
                     {patient.medicalHistory.map((history, idx) => (
                       <SortableDiagnosisItemCollapsed
                         key={`history-${idx}`}
@@ -2935,10 +2935,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                 </SortableContext>
 
                 {editingField === "medicalHistory" && editingArrayIndex === -2 ? (
-                  <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                  <li className="text-xs text-foreground leading-snug rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1 bg-accent/30 border border-primary">
                     <div className="flex-shrink-0 w-3" />
                     <div className="flex items-center gap-1 flex-1">
-                      <span className="font-semibold text-muted-foreground flex-shrink-0">{patient.medicalHistory.length + 1}.</span>
+                      <span className="font-medium text-muted-foreground flex-shrink-0">{patient.medicalHistory.length + 1}.</span>
                       <AutoResizeTextarea
                         inputRef={inputRef}
                         value={editValue}
@@ -2952,11 +2952,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           });
                         }}
                         onKeyDown={handleKeyDown}
-                        className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                        className="text-xs text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
                         placeholder="Novo antecedente"
                       />
                     </div>
-                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       <Button
                         size="icon"
                         variant="ghost"
@@ -2995,26 +2995,26 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             {/* Exames - apenas para outros departamentos */}
             {currentDepartment !== "UTI" && role !== 'farmacia' && (
               <div className="flex flex-col md:col-span-3 relative">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-[10px] font-medium text-muted-foreground">Exames</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-medium text-muted-foreground">Exames</span>
                 <Button
                   size="icon"
                   variant="ghost"
                   onClick={() => setExaminusAIDialogOpen(true)}
-                  className="h-4 w-4 p-0.5 opacity-60 hover:opacity-100 transition-all duration-300 hover:scale-110 hover:shadow-lg print:hidden group"
+                  className="h-4 w-4 p-1 opacity-60 hover:opacity-100 transition-all duration-300 hover:scale-110 hover:shadow-md print:hidden group"
                   title="Examinus AI - Importar exames com IA"
                   style={{ color: sectorColorMap[patient.sector] }}
                 >
                   <Sparkles 
                     className="h-3.5 w-3.5 transition-all duration-300" 
                     style={{
-                      filter: 'drop-shadow(0 0 0px transparent)',
+                      filter: 'drop-shadow-sm(0 0 0px transparent)',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.filter = `drop-shadow(0 0 8px ${sectorColorMap[patient.sector]})`;
+                      e.currentTarget.style.filter = `drop-shadow-sm(0 0 8px ${sectorColorMap[patient.sector]})`;
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.filter = 'drop-shadow(0 0 0px transparent)';
+                      e.currentTarget.style.filter = 'drop-shadow-sm(0 0 0px transparent)';
                     }}
                   />
                 </Button>
@@ -3022,20 +3022,20 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                   size="icon"
                   variant="ghost"
                   onClick={() => setExamCurvesDialogOpen(true)}
-                  className="h-4 w-4 p-0.5 opacity-60 hover:opacity-100 transition-all duration-300 hover:scale-110 hover:shadow-lg print:hidden group"
+                  className="h-4 w-4 p-1 opacity-60 hover:opacity-100 transition-all duration-300 hover:scale-110 hover:shadow-md print:hidden group"
                   title="Adicionar Curva de Exames"
                   style={{ color: sectorColorMap[patient.sector] }}
                 >
                   <TrendingUp 
                     className="h-3.5 w-3.5 transition-all duration-300" 
                     style={{
-                      filter: 'drop-shadow(0 0 0px transparent)',
+                      filter: 'drop-shadow-sm(0 0 0px transparent)',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.filter = `drop-shadow(0 0 8px ${sectorColorMap[patient.sector]})`;
+                      e.currentTarget.style.filter = `drop-shadow-sm(0 0 8px ${sectorColorMap[patient.sector]})`;
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.filter = 'drop-shadow(0 0 0px transparent)';
+                      e.currentTarget.style.filter = 'drop-shadow-sm(0 0 0px transparent)';
                     }}
                   />
                 </Button>
@@ -3057,7 +3057,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                   items={patient.relevantExams.map((_, i) => `exam-${i}`)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <ol className="text-xs text-foreground space-y-0.5 print:text-[7.5px] list-none pl-0">
+                  <ol className="text-xs text-foreground space-y-1 print:text-xs list-none pl-0">
                     {patient.relevantExams.map((exam, idx) => (
                       <SortableDiagnosisItemCollapsed
                         key={`exam-${idx}`}
@@ -3081,10 +3081,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                 </SortableContext>
 
                 {editingField === "relevantExams" && editingArrayIndex === -2 ? (
-                  <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                  <li className="text-xs text-foreground leading-snug rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1 bg-accent/30 border border-primary">
                     <div className="flex-shrink-0 w-3" />
                     <div className="flex items-center gap-1 flex-1">
-                      <span className="font-semibold text-muted-foreground flex-shrink-0">{patient.relevantExams.length + 1}.</span>
+                      <span className="font-medium text-muted-foreground flex-shrink-0">{patient.relevantExams.length + 1}.</span>
                       <AutoResizeTextarea
                         inputRef={inputRef}
                         value={editValue}
@@ -3098,11 +3098,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           });
                         }}
                         onKeyDown={handleKeyDown}
-                        className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                        className="text-xs text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
                         placeholder="Novo exame"
                       />
                     </div>
-                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       <Button
                         size="icon"
                         variant="ghost"
@@ -3141,8 +3141,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             {/* Programações / Pendências - apenas para outros departamentos */}
             {currentDepartment !== "UTI" && role !== 'farmacia' && (
               <div className="flex flex-col md:col-span-5 relative">
-                <div className="flex items-center gap-3 mb-0.5">
-                  <span className="text-[10px] font-medium text-muted-foreground">Programações / Pendências</span>
+                <div className="flex items-center gap-3 mb-1">
+                  <span className="text-xs font-medium text-muted-foreground">Programações / Pendências</span>
                   
                    <Button
                     size="icon"
@@ -3170,17 +3170,17 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
               >
-                <div className="space-y-0.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+                <div className="space-y-1 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
                   <SortableContext
                     items={patient.pendencies.map((_, i) => `pendency-${i}`)}
                     strategy={verticalListSortingStrategy}
                   >
                     {patient.pendencies.map((pendency, idx) => (
                       editingField === "pendencies" && editingArrayIndex === idx ? (
-                        <div key={idx} className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                        <div key={idx} className="text-xs text-foreground leading-snug rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1 bg-accent/30 border border-primary">
                           <div className="flex-shrink-0 w-3" />
                           <div className="flex items-start gap-1 flex-1">
-                            <span className="font-semibold text-muted-foreground flex-shrink-0 mt-0.5">{idx + 1}.</span>
+                            <span className="font-medium text-muted-foreground flex-shrink-0 mt-1">{idx + 1}.</span>
                             <textarea
                               ref={inputRef as any}
                               value={editValue}
@@ -3207,11 +3207,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                                 }
                               }}
                               onBlur={saveInlineEdit}
-                              className="min-h-[40px] text-[10px] flex-1 text-foreground resize-y border-0 bg-transparent p-0 focus-visible:ring-0"
+                              className="min-h-[40px] text-xs flex-1 text-foreground resize-y border-0 bg-transparent p-0 focus-visible:ring-0"
                               rows={2}
                             />
                           </div>
-                          <div className="flex items-start gap-0.5 flex-shrink-0 mt-0.5">
+                          <div className="flex items-start gap-1 flex-shrink-0 mt-1">
                             <Button
                               size="icon"
                               variant="ghost"
@@ -3256,10 +3256,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                   </SortableContext>
                   
                   {editingField === "pendencies" && editingArrayIndex === -2 ? (
-                    <div className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                    <div className="text-xs text-foreground leading-snug rounded-md px-1 -mx-1 flex items-start justify-between gap-1 py-1 bg-accent/30 border border-primary">
                       <div className="flex-shrink-0 w-3" />
                       <div className="flex items-start gap-1 flex-1">
-                        <span className="font-semibold text-muted-foreground flex-shrink-0 mt-0.5">{patient.pendencies.length + 1}.</span>
+                        <span className="font-medium text-muted-foreground flex-shrink-0 mt-1">{patient.pendencies.length + 1}.</span>
                         <AutoResizeTextarea
                           inputRef={inputRef}
                           value={editValue}
@@ -3275,11 +3275,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           }}
                           onKeyDown={handleKeyDown}
                           onBlur={saveInlineEdit}
-                          className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                          className="text-xs text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
                           placeholder="Nova pendência"
                         />
                       </div>
-                      <div className="flex items-start gap-0.5 flex-shrink-0">
+                      <div className="flex items-start gap-1 flex-shrink-0">
                         <Button
                           size="icon"
                           variant="ghost"
@@ -3318,7 +3318,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             </div>
 
           {/* Action Buttons Column - Integrated Design */}
-          <div className="flex-shrink-0 flex flex-col gap-2 md:gap-1.5 print:hidden items-center">
+          <div className="flex-shrink-0 flex flex-col gap-2 md:gap-2 print:hidden items-center">
             {/* Edição Avançada - Primary Action with Sector Identity */}
             {canEdit && (
             <Button
@@ -3398,7 +3398,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                 side="bottom"
                 alignOffset={-5}
                 sideOffset={8}
-                className="w-[280px] max-h-[min(75vh,600px)] p-0 bg-background/95 backdrop-blur-sm border border-border/50 shadow-2xl rounded-lg overflow-hidden"
+                className="w-[280px] max-h-[min(75vh,600px)] p-0 bg-background/95 backdrop-blur-sm border border-border/50 shadow-md rounded-lg overflow-hidden"
               >
                 <div className="p-2 space-y-1 overflow-y-auto max-h-[min(75vh,600px)] overscroll-contain">
                   
@@ -3409,7 +3409,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           e.stopPropagation();
                           setBedAllocationDialogOpen(true);
                         }}
-                        className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-muted to-transparent hover:from-muted transition-colors cursor-pointer"
+                        className="flex items-center gap-2 rounded-md px-3 py-3 text-sm font-medium bg-muted hover:from-muted transition-colors cursor-pointer"
                       >
                         <BedDouble className="h-4 w-4 text-foreground" />
                         <span className="text-foreground">Solicitar Leito</span>
@@ -3424,10 +3424,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         ou desocupar o leito. Ações clínicas (alta/óbito/transferências) são
                         sinalizadas pelo Painel Clínico (Cockpit). */}
                     {patient.name && (
-                      <div className="mb-1 rounded-lg border border-border/60 bg-gradient-to-br from-muted/30 to-transparent p-1.5 space-y-0.5">
-                        <div className="flex items-center gap-1.5 px-2 pt-0.5 pb-1">
+                      <div className="mb-1 rounded-lg border border-border/60 bg-muted/30 p-2 space-y-1">
+                        <div className="flex items-center gap-2 px-2 pt-1 pb-1">
                           <Shuffle className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                             Movimentação
                           </span>
                         </div>
@@ -3438,16 +3438,16 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             e.stopPropagation();
                             setRelocationDialogOpen(true);
                           }}
-                          className="group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-border/60 hover:bg-gradient-to-r hover:from-muted hover:to-transparent transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm focus:bg-muted"
+                          className="group/item flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-border/60 hover:bg-gradient-to-r hover:from-muted hover:to-transparent transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm focus:bg-muted"
                         >
                           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted group-hover/item:bg-secondary transition-colors">
                             <ArrowLeftRight className="h-3.5 w-3.5 text-foreground" />
                           </div>
                           <div className="flex flex-col items-start min-w-0">
                             <span className="text-foreground leading-tight">
-                              Remanejar leito <span className="text-[10px] font-normal text-foreground/70">(mesmo setor)</span>
+                              Remanejar leito <span className="text-xs font-normal text-foreground/70">(mesmo setor)</span>
                             </span>
-                            <span className="text-[10px] font-normal text-muted-foreground leading-tight">
+                            <span className="text-xs font-normal text-muted-foreground leading-tight">
                               Realocar ou permutar entre leitos vagos do setor
                             </span>
                           </div>
@@ -3484,7 +3484,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                               }}
                               title={isDisabled ? 'Sinalize a movimentação no Painel Clínico antes de desalocar o leito.' : undefined}
                               className={cn(
-                                "group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium border border-transparent transition-all duration-200",
+                                "group/item flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium border border-transparent transition-all duration-200",
                                 isDisabled
                                   ? "cursor-not-allowed opacity-50"
                                   : "cursor-pointer hover:translate-x-0.5 hover:shadow-sm",
@@ -3510,7 +3510,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                                 )}>
                                   Desalocar leito
                                 </span>
-                                <span className="text-[10px] font-normal text-muted-foreground leading-tight">
+                                <span className="text-xs font-normal text-muted-foreground leading-tight">
                                   {sub}
                                 </span>
                               </div>
@@ -3519,7 +3519,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         })()}
 
 
-                        <p className="px-2.5 pt-1 text-[10px] leading-snug text-muted-foreground/80 border-t border-border/40 mt-1">
+                        <p className="px-3 pt-1 text-xs leading-snug text-muted-foreground/80 border-t border-border/40 mt-1">
                           Altas, óbitos e transferências são <strong>sinalizadas no Painel Clínico</strong>.
                           Aqui executamos apenas a <strong>movimentação física</strong> do leito.
                         </p>
@@ -3542,7 +3542,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     )}
 
                     {/* Elegant Divider */}
-                    <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent my-2" />
+                    <div className="h-px bg-transparent my-2" />
 
                     {/* HISTÓRIA ADMISSIONAL */}
                     <DropdownMenuItem
@@ -3618,12 +3618,12 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
                     {/* PSM STATUS - Collapsible with three options */}
                     <Collapsible className="group">
-                      <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold hover:bg-accent/60 transition-all duration-200 group-data-[state=open]:bg-accent/40">
+                      <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm font-medium hover:bg-accent/60 transition-all duration-200 group-data-[state=open]:bg-accent/40">
                         <FileText className="h-4 w-4 text-muted-foreground" />
                         <span className="flex-1 text-left text-foreground">Status do PSM</span>
                         {patient.psmStatus && (
                           <span className={cn(
-                            "text-xs font-medium px-1.5 py-0.5 rounded",
+                            "text-xs font-medium px-2 py-1 rounded-md",
                             patient.psmStatus === 'favoravel' && "bg-released-soft text-released-on-soft",
                             patient.psmStatus === 'aguardando' && "bg-warning-soft text-warning-on-soft",
                             patient.psmStatus === 'desfavoravel' && "bg-critical-soft text-critical-on-soft"
@@ -3633,7 +3633,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         )}
                         <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-180" />
                       </CollapsibleTrigger>
-                      <CollapsibleContent className="mt-1 space-y-0.5 overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                      <CollapsibleContent className="mt-1 space-y-1 overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
                         <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
@@ -3758,16 +3758,16 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="px-2.5 pb-2.5 space-y-2 border-t border-border/50 pt-2 bg-card/50">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground print:text-[8px] print:gap-1">
-            <div className="flex items-center gap-1.5">
+        <div className="px-3 pb-3 space-y-2 border-t border-border/50 pt-2 bg-card/50">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground print:text-xs print:gap-1">
+            <div className="flex items-center gap-2">
               <Calendar className="h-3 w-3 print:h-2 print:w-2" />
               {editingField === "admissionDate" ? (
                 <div className="flex items-center gap-1">
                   <Input
                     autoFocus
                     type="date"
-                    className="h-5 text-[10px] w-[110px] px-1 py-0 text-foreground"
+                    className="h-5 text-xs w-[110px] px-1 py-0 text-foreground"
                     value={(() => {
                       // Extract date part from editValue (DD/MM/YYYY HH:mm -> YYYY-MM-DD)
                       const parts = editValue.split(/[\s,]+/);
@@ -3798,7 +3798,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                   />
                   <Input
                     type="time"
-                    className="h-5 text-[10px] w-[80px] px-1 py-0 text-foreground"
+                    className="h-5 text-xs w-[80px] px-1 py-0 text-foreground"
                     value={editValue.split(/[\s,]+/)[1] || '00:00'}
                     onChange={(e) => {
                       const timeVal = e.target.value; // HH:mm
@@ -3831,7 +3831,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             {stayTimer && (
               <div 
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold border",
+                  "inline-flex items-center gap-2 px-2 py-1 rounded-md text-xs font-medium border",
                   stayTimer.level !== "normal" && stayTimer.colorClasses
                 )}
                 style={stayTimer.level === "normal" ? {
@@ -3839,7 +3839,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                   backgroundColor: `${sectorColorMap[patient.sector]}15`,
                   borderColor: `${sectorColorMap[patient.sector]}40`,
                 } : undefined}
-                title={`Permanência total: ${stayTimer.display}${stayTimer.level === "warning" ? " ⚠️ >24h" : stayTimer.level === "orange" ? " ⚠️ >48h" : stayTimer.level === "critical" || stayTimer.level === "pulsing" ? " 🚨 >72h" : ""}`}
+                title={`Permanência total: ${stayTimer.display}${stayTimer.level === "warning" ? " >24h" : stayTimer.level === "orange" ? " >48h" : stayTimer.level === "critical" || stayTimer.level === "pulsing" ? " >72h" : ""}`}
               >
                 <Clock className="h-3 w-3" />
                 <span>Permanência: {stayTimer.display}</span>
@@ -3849,8 +3849,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
           {/* História Admissional */}
           <div className="pt-2 border-t border-border/50 print:pt-1">
-            <h4 className="font-semibold text-xs mb-1 text-foreground print:text-[8.5px] print:mb-0.5">História Admissional / Anamnese</h4>
-            <p className="text-xs leading-snug text-foreground whitespace-pre-wrap print:text-[7.5px] print:leading-tight">
+            <h4 className="font-medium text-xs mb-1 text-foreground print:text-xs print:mb-1">História Admissional / Anamnese</h4>
+            <p className="text-xs leading-snug text-foreground whitespace-pre-wrap print:text-xs print:leading-tight">
               {patient.admissionHistory}
             </p>
           </div>
@@ -3910,9 +3910,9 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent className="">
           <AlertDialogHeader>
-            <AlertDialogTitle className=" text-lg font-semibold">Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogTitle className=" text-lg font-medium">Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription className=" text-base">
-              Tem certeza que deseja excluir o leito <strong className=" font-bold">{patient.bedNumber}</strong> do paciente <strong className=" font-bold">{patient.name}</strong>?
+              Tem certeza que deseja excluir o leito <strong className=" font-semibold">{patient.bedNumber}</strong> do paciente <strong className=" font-semibold">{patient.name}</strong>?
               <br />
               <span className=" text-destructive font-medium mt-2 inline-block">Esta ação não poderá ser desfeita.</span>
             </AlertDialogDescription>
@@ -3930,7 +3930,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                 setTimeout(async () => {
                   try {
                     await onDelete(patient.id);
-                    // 🔒 Antes: este toast de sucesso disparava incondicionalmente,
+                    // Antes: este toast de sucesso disparava incondicionalmente,
                     // mesmo quando onDelete falhava (não era aguardado) — o usuário
                     // via "Paciente excluído" mesmo quando a exclusão não ocorreu.
                     toastHook({
@@ -3958,7 +3958,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                   }
                 }, 300);
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-semibold shadow-lg"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-medium shadow-md"
             >
               Excluir
             </AlertDialogAction>
@@ -3968,18 +3968,18 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
       {/* Dialog expandido para Hipóteses / Diagnósticos */}
       <Dialog open={expandedSection === 'diagnoses'} onOpenChange={() => setExpandedSection(null)}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col bg-gradient-to-br from-background via-background to-accent/5 border-2">
-          <DialogHeader className="border-b border-border/50 pb-5 flex-shrink-0 bg-gradient-to-r from-primary/5 to-transparent -m-6 p-6 mb-0">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col bg-background border-2">
+          <DialogHeader className="border-b border-border/50 pb-4 flex-shrink-0 bg-primary/5 -m-6 p-6 mb-0">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className={cn(
-                  "w-14 h-14 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg",
+                  "w-14 h-14 rounded-lg flex items-center justify-center font-semibold text-xl shadow-md",
                   config.badgeColor
                 )}>
                   {patient.bedNumber}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  <span className="text-2xl font-semibold tracking-tight bg-foreground bg-clip-text text-transparent">
                     {displayName}
                   </span>
                   <span className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
@@ -3994,8 +3994,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-border/30">
-              <h3 className="text-xl font-bold text-primary tracking-wide flex items-center gap-2">
-                <div className="w-1 h-6 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
+              <h3 className="text-xl font-semibold text-primary tracking-wide flex items-center gap-2">
+                <div className="w-1 h-6 bg-primary rounded-full" />
                 Hipóteses / Diagnósticos
               </h3>
             </div>
@@ -4009,10 +4009,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     className="flex gap-4 items-start group animate-fade-in hover-scale"
                     style={{ animationDelay: `${idx * 50}ms` }}
                   >
-                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center font-bold text-lg shadow-lg group-hover:shadow-xl transition-all">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-semibold text-lg shadow-md group-hover:shadow-md transition-all">
                       {idx + 1}
                     </div>
-                    <div className="flex-1 bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-primary/30 transition-all group-hover:bg-card">
+                    <div className="flex-1 bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group-hover:bg-card">
                       {editingField === "diagnoses" && editingArrayIndex === idx ? (
                         <div className="flex items-center gap-2">
                           <AutoResizeTextarea
@@ -4088,7 +4088,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                 <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center mb-4">
-                  <span className="text-4xl">📋</span>
+                  <span className="text-4xl"></span>
                 </div>
                 <p className="text-lg font-medium">Nenhuma hipótese ou diagnóstico registrado</p>
                 <p className="text-sm mt-2">Adicione a primeira hipótese diagnóstica</p>
@@ -4096,7 +4096,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             )}
             <Button
               onClick={() => startEditing("diagnoses", "", patient.diagnoses.length)}
-              className="mt-4 w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg transition-all"
+              className="mt-4 w-full bg-primary hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-md transition-all"
               size="lg"
             >
               <span className="text-lg mr-2">+</span>
@@ -4106,11 +4106,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             {/* História Admissional / Anamnese */}
             {patient.admissionHistory && (
               <div className="mt-6 pt-6 border-t border-border/30">
-                <h4 className="text-lg font-bold text-primary mb-3 flex items-center gap-2">
-                  <div className="w-1 h-5 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
+                <h4 className="text-lg font-semibold text-primary mb-3 flex items-center gap-2">
+                  <div className="w-1 h-5 bg-primary rounded-full" />
                   História Admissional / Anamnese
                 </h4>
-                <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-5 shadow-sm">
+                <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-4 shadow-sm">
                   <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                     {patient.admissionHistory}
                   </p>
@@ -4123,18 +4123,18 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
       {/* Dialog expandido para Exames */}
       <Dialog open={expandedSection === 'exams'} onOpenChange={() => setExpandedSection(null)}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col bg-gradient-to-br from-background via-background to-accent/5 border-2">
-          <DialogHeader className="border-b border-border/50 pb-5 flex-shrink-0 bg-gradient-to-r from-primary/5 to-transparent -m-6 p-6 mb-0">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col bg-background border-2">
+          <DialogHeader className="border-b border-border/50 pb-4 flex-shrink-0 bg-primary/5 -m-6 p-6 mb-0">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className={cn(
-                  "w-14 h-14 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg",
+                  "w-14 h-14 rounded-lg flex items-center justify-center font-semibold text-xl shadow-md",
                   config.badgeColor
                 )}>
                   {patient.bedNumber}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  <span className="text-2xl font-semibold tracking-tight bg-foreground bg-clip-text text-transparent">
                     {displayName}
                   </span>
                   <span className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
@@ -4149,8 +4149,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-border/30">
-              <h3 className="text-xl font-bold text-primary tracking-wide flex items-center gap-2">
-                <div className="w-1 h-6 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
+              <h3 className="text-xl font-semibold text-primary tracking-wide flex items-center gap-2">
+                <div className="w-1 h-6 bg-primary rounded-full" />
                 Exames
               </h3>
             </div>
@@ -4164,10 +4164,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     className="flex gap-4 items-start group animate-fade-in hover-scale"
                     style={{ animationDelay: `${idx * 50}ms` }}
                   >
-                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center font-bold text-lg shadow-lg group-hover:shadow-xl transition-all">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-semibold text-lg shadow-md group-hover:shadow-md transition-all">
                       {idx + 1}
                     </div>
-                    <div className="flex-1 bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-primary/30 transition-all group-hover:bg-card">
+                    <div className="flex-1 bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group-hover:bg-card">
                       {editingField === "relevantExams" && editingArrayIndex === idx ? (
                         <div className="flex items-center gap-2">
                           <AutoResizeTextarea
@@ -4243,7 +4243,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                 <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center mb-4">
-                  <span className="text-4xl">🔬</span>
+                  <span className="text-4xl"></span>
                 </div>
                 <p className="text-lg font-medium">Nenhum exame registrado</p>
                 <p className="text-sm mt-2">Adicione o primeiro exame complementar</p>
@@ -4251,7 +4251,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             )}
             <Button
               onClick={() => startEditing("relevantExams", "", patient.relevantExams.length)}
-              className="mt-4 w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg transition-all"
+              className="mt-4 w-full bg-primary hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-md transition-all"
               size="lg"
             >
               <span className="text-lg mr-2">+</span>
@@ -4261,11 +4261,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             {/* História Admissional / Anamnese */}
             {patient.admissionHistory && (
               <div className="mt-6 pt-6 border-t border-border/30">
-                <h4 className="text-lg font-bold text-primary mb-3 flex items-center gap-2">
-                  <div className="w-1 h-5 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
+                <h4 className="text-lg font-semibold text-primary mb-3 flex items-center gap-2">
+                  <div className="w-1 h-5 bg-primary rounded-full" />
                   História Admissional / Anamnese
                 </h4>
-                <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-5 shadow-sm">
+                <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-4 shadow-sm">
                   <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                     {patient.admissionHistory}
                   </p>
@@ -4278,18 +4278,18 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
       {/* Dialog expandido para Antecedentes */}
       <Dialog open={expandedSection === 'medicalHistory'} onOpenChange={() => setExpandedSection(null)}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col bg-gradient-to-br from-background via-background to-accent/5 border-2">
-          <DialogHeader className="border-b border-border/50 pb-5 flex-shrink-0 bg-gradient-to-r from-primary/5 to-transparent -m-6 p-6 mb-0">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col bg-background border-2">
+          <DialogHeader className="border-b border-border/50 pb-4 flex-shrink-0 bg-primary/5 -m-6 p-6 mb-0">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className={cn(
-                  "w-14 h-14 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg",
+                  "w-14 h-14 rounded-lg flex items-center justify-center font-semibold text-xl shadow-md",
                   config.badgeColor
                 )}>
                   {patient.bedNumber}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  <span className="text-2xl font-semibold tracking-tight bg-foreground bg-clip-text text-transparent">
                     {displayName}
                   </span>
                   <span className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
@@ -4304,8 +4304,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-border/30">
-              <h3 className="text-xl font-bold text-primary tracking-wide flex items-center gap-2">
-                <div className="w-1 h-6 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
+              <h3 className="text-xl font-semibold text-primary tracking-wide flex items-center gap-2">
+                <div className="w-1 h-6 bg-primary rounded-full" />
                 Antecedentes
               </h3>
             </div>
@@ -4319,10 +4319,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     className="flex gap-4 items-start group animate-fade-in hover-scale"
                     style={{ animationDelay: `${idx * 50}ms` }}
                   >
-                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center font-bold text-lg shadow-lg group-hover:shadow-xl transition-all">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-semibold text-lg shadow-md group-hover:shadow-md transition-all">
                       {idx + 1}
                     </div>
-                    <div className="flex-1 bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-primary/30 transition-all group-hover:bg-card">
+                    <div className="flex-1 bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group-hover:bg-card">
                       {editingField === "medicalHistory" && editingArrayIndex === idx ? (
                         <div className="flex items-center gap-2">
                           <AutoResizeTextarea
@@ -4398,7 +4398,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                 <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center mb-4">
-                  <span className="text-4xl">📋</span>
+                  <span className="text-4xl"></span>
                 </div>
                 <p className="text-lg font-medium">Nenhum antecedente registrado</p>
                 <p className="text-sm mt-2">Adicione o primeiro antecedente mórbido</p>
@@ -4406,7 +4406,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             )}
             <Button
               onClick={() => startEditing("medicalHistory", "", patient.medicalHistory.length)}
-              className="mt-4 w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg transition-all"
+              className="mt-4 w-full bg-primary hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-md transition-all"
               size="lg"
             >
               <span className="text-lg mr-2">+</span>
@@ -4416,11 +4416,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             {/* História Admissional / Anamnese */}
             {patient.admissionHistory && (
               <div className="mt-6 pt-6 border-t border-border/30">
-                <h4 className="text-lg font-bold text-primary mb-3 flex items-center gap-2">
-                  <div className="w-1 h-5 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
+                <h4 className="text-lg font-semibold text-primary mb-3 flex items-center gap-2">
+                  <div className="w-1 h-5 bg-primary rounded-full" />
                   História Admissional / Anamnese
                 </h4>
-                <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-5 shadow-sm">
+                <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-4 shadow-sm">
                   <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                     {patient.admissionHistory}
                   </p>
@@ -4433,18 +4433,18 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
       {/* Dialog expandido para Programações / Pendências */}
       <Dialog open={expandedSection === 'pendencies'} onOpenChange={() => setExpandedSection(null)}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col bg-gradient-to-br from-background via-background to-accent/5 border-2">
-          <DialogHeader className="border-b border-border/50 pb-5 flex-shrink-0 bg-gradient-to-r from-primary/5 to-transparent -m-6 p-6 mb-0">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col bg-background border-2">
+          <DialogHeader className="border-b border-border/50 pb-4 flex-shrink-0 bg-primary/5 -m-6 p-6 mb-0">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className={cn(
-                  "w-14 h-14 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg",
+                  "w-14 h-14 rounded-lg flex items-center justify-center font-semibold text-xl shadow-md",
                   config.badgeColor
                 )}>
                   {patient.bedNumber}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  <span className="text-2xl font-semibold tracking-tight bg-foreground bg-clip-text text-transparent">
                     {displayName}
                   </span>
                   <span className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
@@ -4459,8 +4459,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-border/30">
-              <h3 className="text-xl font-bold text-primary tracking-wide flex items-center gap-2">
-                <div className="w-1 h-6 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
+              <h3 className="text-xl font-semibold text-primary tracking-wide flex items-center gap-2">
+                <div className="w-1 h-6 bg-primary rounded-full" />
                 Programações / Pendências
               </h3>
             </div>
@@ -4474,10 +4474,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     className="flex gap-4 items-start group animate-fade-in hover-scale"
                     style={{ animationDelay: `${idx * 50}ms` }}
                   >
-                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center font-bold text-lg shadow-lg group-hover:shadow-xl transition-all">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-semibold text-lg shadow-md group-hover:shadow-md transition-all">
                       {idx + 1}
                     </div>
-                    <div className="flex-1 bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-primary/30 transition-all group-hover:bg-card">
+                    <div className="flex-1 bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group-hover:bg-card">
                       {editingField === "pendencies" && editingArrayIndex === idx ? (
                         <div className="flex items-center gap-2">
                           <AutoResizeTextarea
@@ -4553,7 +4553,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                 <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center mb-4">
-                  <span className="text-4xl">📝</span>
+                  <span className="text-4xl"></span>
                 </div>
                 <p className="text-lg font-medium">Nenhuma programação ou pendência registrada</p>
                 <p className="text-sm mt-2">Adicione a primeira programação ou pendência</p>
@@ -4561,7 +4561,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             )}
             <Button
               onClick={() => startEditing("pendencies", "", patient.pendencies.length)}
-              className="mt-4 w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg transition-all"
+              className="mt-4 w-full bg-primary hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-md transition-all"
               size="lg"
             >
               <span className="text-lg mr-2">+</span>
@@ -4571,11 +4571,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             {/* História Admissional / Anamnese */}
             {patient.admissionHistory && (
               <div className="mt-6 pt-6 border-t border-border/30">
-                <h4 className="text-lg font-bold text-primary mb-3 flex items-center gap-2">
-                  <div className="w-1 h-5 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
+                <h4 className="text-lg font-semibold text-primary mb-3 flex items-center gap-2">
+                  <div className="w-1 h-5 bg-primary rounded-full" />
                   História Admissional / Anamnese
                 </h4>
-                <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-5 shadow-sm">
+                <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-4 shadow-sm">
                   <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                     {patient.admissionHistory}
                   </p>

@@ -91,7 +91,7 @@ export function RequestBedAllocationDialog({
             <div className="space-y-4 py-4">
               <div className="p-3 rounded-lg bg-muted/50">
                 <p className="text-sm font-medium">Paciente:</p>
-                <p className="text-lg font-semibold">{patient.name}</p>
+                <p className="text-lg font-medium">{patient.name}</p>
                 {patient.age && (
                   <p className="text-sm text-muted-foreground">Idade: {patient.age}</p>
                 )}
@@ -116,7 +116,7 @@ export function RequestBedAllocationDialog({
               {!patient.admissionHistory && (
                 <div className="p-3 rounded-lg bg-warning/10 border border-warning/30">
                   <p className="text-sm text-warning">
-                    ⚠️ Recomendado: Preencha a História Admissional na Edição Avançada antes de solicitar a alocação.
+                    Recomendado: Preencha a História Admissional na Edição Avançada antes de solicitar a alocação.
                   </p>
                 </div>
               )}

@@ -86,10 +86,10 @@ export function CustomizationTab() {
 
       <Tabs defaultValue="sectors" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="sectors" className="gap-1.5"><Building2 className="h-3.5 w-3.5" /> Setores Existentes</TabsTrigger>
-          <TabsTrigger value="numbering" className="gap-1.5"><Hash className="h-3.5 w-3.5" /> Numeração de Leitos</TabsTrigger>
-          <TabsTrigger value="new" className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Criar Novo Setor</TabsTrigger>
-          <TabsTrigger value="export" className="gap-1.5"><FileJson className="h-3.5 w-3.5" /> Exportar / Importar</TabsTrigger>
+          <TabsTrigger value="sectors" className="gap-2"><Building2 className="h-3.5 w-3.5" /> Setores Existentes</TabsTrigger>
+          <TabsTrigger value="numbering" className="gap-2"><Hash className="h-3.5 w-3.5" /> Numeração de Leitos</TabsTrigger>
+          <TabsTrigger value="new" className="gap-2"><Plus className="h-3.5 w-3.5" /> Criar Novo Setor</TabsTrigger>
+          <TabsTrigger value="export" className="gap-2"><FileJson className="h-3.5 w-3.5" /> Exportar / Importar</TabsTrigger>
         </TabsList>
 
         <TabsContent value="sectors"><ExistingSectorsPanel /></TabsContent>
@@ -152,11 +152,11 @@ function ExistingSectorsPanel() {
                     <tr key={code} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="p-2 font-mono">{code}</td>
                       <td className="font-medium">{SECTOR_DISPLAY[code] ?? cfg.label}</td>
-                      <td><Badge variant="outline" className="text-[10px] font-mono">{cfg.prefix}</Badge></td>
+                      <td><Badge variant="outline" className="text-xs font-mono">{cfg.prefix}</Badge></td>
                       <td className="text-right tabular-nums">{start}</td>
                       <td className="text-right tabular-nums font-medium">{cfg.maxRegularBeds}</td>
                       <td className="font-mono text-muted-foreground">{range}</td>
-                      <td className="text-[11px] text-muted-foreground">{dept}</td>
+                      <td className="text-xs text-muted-foreground">{dept}</td>
                     </tr>
                   );
                 })}
@@ -164,8 +164,8 @@ function ExistingSectorsPanel() {
               <tfoot className="border-t-2 border-border bg-muted/30">
                 <tr>
                   <td colSpan={4} className="p-2 font-medium">TOTAL</td>
-                  <td className="text-right tabular-nums font-bold">{totalBeds}</td>
-                  <td colSpan={2} className="text-[11px] text-muted-foreground p-2">leitos fixos pré-populados em bed_census</td>
+                  <td className="text-right tabular-nums font-semibold">{totalBeds}</td>
+                  <td colSpan={2} className="text-xs text-muted-foreground p-2">leitos fixos pré-populados em bed_census</td>
                 </tr>
               </tfoot>
             </table>
@@ -237,7 +237,7 @@ function BedNumberingPanel() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Setor</Label>
               <Select value={selectedSector} onValueChange={setSelectedSector}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -248,15 +248,15 @@ function BedNumberingPanel() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Novo prefixo (opcional)</Label>
               <Input value={newPrefix} onChange={e => setNewPrefix(e.target.value.toUpperCase())} placeholder={cfg?.prefix ?? "L"} maxLength={4} />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Início (opcional)</Label>
               <Input type="number" value={newStart} onChange={e => setNewStart(e.target.value)} placeholder={String(cfg?.startNumber ?? 1)} />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Capacidade (opcional)</Label>
               <Input type="number" value={newMax} onChange={e => setNewMax(e.target.value)} placeholder={String(cfg?.maxRegularBeds ?? "")} />
             </div>
@@ -267,14 +267,14 @@ function BedNumberingPanel() {
               <Label className="text-xs text-muted-foreground">Preview ({previewBeds.length} leitos)</Label>
               <div className="flex flex-wrap gap-1 p-3 rounded-md border border-border bg-muted/30 max-h-40 overflow-y-auto">
                 {previewBeds.map(b => (
-                  <Badge key={b} variant="secondary" className="font-mono text-[10px]">{b}</Badge>
+                  <Badge key={b} variant="secondary" className="font-mono text-xs">{b}</Badge>
                 ))}
-                {previewBeds.length >= 50 && <Badge variant="outline" className="text-[10px]">… (truncado a 50)</Badge>}
+                {previewBeds.length >= 50 && <Badge variant="outline" className="text-xs">… (truncado a 50)</Badge>}
               </div>
             </div>
           )}
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-xs">Justificativa (obrigatória)</Label>
             <Textarea
               value={reason} onChange={e => setReason(e.target.value)}
@@ -314,9 +314,9 @@ function BedNumberingPanel() {
                     <tr key={o.sectorCode} className="border-b border-border/50">
                       <td className="p-2 font-mono">{o.sectorCode}</td>
                       <td className="space-x-1">
-                        {o.newPrefix && <Badge variant="outline" className="text-[10px]">prefix→{o.newPrefix}</Badge>}
-                        {o.newStartNumber !== undefined && <Badge variant="outline" className="text-[10px]">start→{o.newStartNumber}</Badge>}
-                        {o.newMaxBeds !== undefined && <Badge variant="outline" className="text-[10px]">max→{o.newMaxBeds}</Badge>}
+                        {o.newPrefix && <Badge variant="outline" className="text-xs">prefix→{o.newPrefix}</Badge>}
+                        {o.newStartNumber !== undefined && <Badge variant="outline" className="text-xs">start→{o.newStartNumber}</Badge>}
+                        {o.newMaxBeds !== undefined && <Badge variant="outline" className="text-xs">max→{o.newMaxBeds}</Badge>}
                       </td>
                       <td className="text-muted-foreground max-w-[260px] truncate">{o.reason}</td>
                       <td className="text-muted-foreground font-mono">{new Date(o.createdAt).toLocaleDateString("pt-BR")}</td>
@@ -434,38 +434,38 @@ ON CONFLICT DO NOTHING;`;
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Código interno (snake_case) *</Label>
               <Input value={code} onChange={e => setCode(e.target.value)} placeholder="ex: enfermaria_pediatrica" />
               {codeConflict && (
-                <p className="text-[11px] text-destructive flex items-center gap-1">
+                <p className="text-xs text-destructive flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" /> Código já existe
                 </p>
               )}
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Label de exibição *</Label>
               <Input value={label} onChange={e => setLabel(e.target.value)} placeholder="ex: Enf. Pediátrica" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Department (categoria)</Label>
               <Input value={department} onChange={e => setDepartment(e.target.value.toUpperCase())} placeholder="ex: PEDIATRIA" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Prefixo dos leitos *</Label>
               <Input value={prefix} onChange={e => setPrefix(e.target.value.toUpperCase())} maxLength={4} placeholder="L, EV, OC..." />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Número inicial *</Label>
               <Input type="number" value={startNumber} onChange={e => setStartNumber(e.target.value)} min={1} />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Capacidade (qtd leitos) *</Label>
               <Input type="number" value={maxBeds} onChange={e => setMaxBeds(e.target.value)} min={1} placeholder="ex: 20" />
             </div>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-xs">Notas (opcional)</Label>
             <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
               placeholder="Ex.: setor a ser ativado em 2026-Q3, requer treinamento prévio..." />
@@ -476,9 +476,9 @@ ON CONFLICT DO NOTHING;`;
               <Label className="text-xs text-muted-foreground">Preview de leitos ({previewBeds.length})</Label>
               <div className="flex flex-wrap gap-1 p-3 rounded-md border border-border bg-muted/30 max-h-32 overflow-y-auto">
                 {previewBeds.map(b => (
-                  <Badge key={b} variant="secondary" className="font-mono text-[10px]">{b}</Badge>
+                  <Badge key={b} variant="secondary" className="font-mono text-xs">{b}</Badge>
                 ))}
-                {parseInt(maxBeds, 10) > 30 && <Badge variant="outline" className="text-[10px]">… +{parseInt(maxBeds, 10) - 30}</Badge>}
+                {parseInt(maxBeds, 10) > 30 && <Badge variant="outline" className="text-xs">… +{parseInt(maxBeds, 10) - 30}</Badge>}
               </div>
             </div>
           )}
@@ -507,15 +507,15 @@ ON CONFLICT DO NOTHING;`;
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-sm">{d.label}</span>
-                          <Badge variant="outline" className="text-[10px] font-mono">{d.code}</Badge>
-                          <Badge variant="secondary" className="text-[10px]">{d.status}</Badge>
+                          <Badge variant="outline" className="text-xs font-mono">{d.code}</Badge>
+                          <Badge variant="secondary" className="text-xs">{d.status}</Badge>
                         </div>
-                        <div className="text-[11px] text-muted-foreground">
+                        <div className="text-xs text-muted-foreground">
                           {d.maxRegularBeds} leitos · {d.prefix}{String(d.startNumber).padStart(2, "0")}–
                           {d.prefix}{String((d.startNumber ?? 1) + d.maxRegularBeds - 1).padStart(2, "0")}
                           {d.department !== "—" && ` · ${d.department}`}
                         </div>
-                        {d.notes && <p className="text-[11px] text-muted-foreground italic">"{d.notes}"</p>}
+                        {d.notes && <p className="text-xs text-muted-foreground italic">"{d.notes}"</p>}
                       </div>
                       <div className="flex gap-1">
                         <Button size="icon" variant="ghost" className="h-7 w-7"
@@ -608,17 +608,17 @@ function ExportImportPanel() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="p-2 rounded bg-muted/40"><span className="text-muted-foreground">Setores ativos:</span> <strong>{Object.keys(SECTOR_BED_CONFIG).length}</strong></div>
-            <div className="p-2 rounded bg-muted/40"><span className="text-muted-foreground">Leitos atuais:</span> <strong>{exportPayload.totalCurrentBeds}</strong></div>
-            <div className="p-2 rounded bg-muted/40"><span className="text-muted-foreground">Rascunhos:</span> <strong>{drafts.length}</strong></div>
-            <div className="p-2 rounded bg-muted/40"><span className="text-muted-foreground">Overrides:</span> <strong>{overrides.length}</strong></div>
+            <div className="p-2 rounded-md bg-muted/40"><span className="text-muted-foreground">Setores ativos:</span> <strong>{Object.keys(SECTOR_BED_CONFIG).length}</strong></div>
+            <div className="p-2 rounded-md bg-muted/40"><span className="text-muted-foreground">Leitos atuais:</span> <strong>{exportPayload.totalCurrentBeds}</strong></div>
+            <div className="p-2 rounded-md bg-muted/40"><span className="text-muted-foreground">Rascunhos:</span> <strong>{drafts.length}</strong></div>
+            <div className="p-2 rounded-md bg-muted/40"><span className="text-muted-foreground">Overrides:</span> <strong>{overrides.length}</strong></div>
           </div>
           <Button onClick={downloadJson} className="w-full">
             <Download className="h-4 w-4 mr-2" /> Baixar JSON
           </Button>
           <details className="text-xs">
             <summary className="cursor-pointer text-muted-foreground">Preview do payload</summary>
-            <pre className="mt-2 p-2 bg-muted rounded text-[10px] overflow-auto max-h-40 font-mono">
+            <pre className="mt-2 p-2 bg-muted rounded-md text-xs overflow-auto max-h-40 font-mono">
               {JSON.stringify(exportPayload, null, 2)}
             </pre>
           </details>
@@ -641,7 +641,7 @@ function ExportImportPanel() {
             onChange={e => setImportJson(e.target.value)}
             rows={10}
             placeholder='{"drafts": [...], "overrides": [...]}'
-            className="font-mono text-[11px]"
+            className="font-mono text-xs"
           />
           <Button onClick={handleImport} disabled={!importJson.trim()} variant="outline" className="w-full">
             Importar
@@ -656,8 +656,8 @@ function KpiMini({ label, value }: { label: string; value: number | string }) {
   return (
     <Card>
       <CardContent className="p-3">
-        <div className="text-[11px] text-muted-foreground">{label}</div>
-        <div className="text-xl font-semibold tabular-nums">{value}</div>
+        <div className="text-xs text-muted-foreground">{label}</div>
+        <div className="text-xl font-medium tabular-nums">{value}</div>
       </CardContent>
     </Card>
   );

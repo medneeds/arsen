@@ -72,7 +72,7 @@ export function BulkMergeReviewDialog({ open, pairs, onClose, onCompleted }: Pro
     <Dialog open={open} onOpenChange={(o) => !o && !running && onClose()}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle className="uppercase">Revisar lote de mesclagem · {pairs.length} pares</DialogTitle>
+          <DialogTitle className="uppercase tracking-wider">Revisar lote de mesclagem · {pairs.length} pares</DialogTitle>
         </DialogHeader>
 
         <Alert variant="destructive" className="border-warning/40 bg-warning-soft text-foreground">
@@ -98,7 +98,7 @@ export function BulkMergeReviewDialog({ open, pairs, onClose, onCompleted }: Pro
                 const res = results.find((r) => r.pair.group_hash === p.group_hash);
                 return (
                   <tr key={p.group_hash} className="border-b border-border/40">
-                    <td className="p-2"><Badge variant="outline" className="text-[10px]">{p.rule}</Badge></td>
+                    <td className="p-2"><Badge variant="outline" className="text-xs">{p.rule}</Badge></td>
                     <td className="p-2 font-mono truncate max-w-[220px]">{p.winnerLabel}</td>
                     <td className="p-2 font-mono truncate max-w-[220px]">{p.loserLabel}</td>
                     <td className="p-2">
@@ -128,7 +128,7 @@ export function BulkMergeReviewDialog({ open, pairs, onClose, onCompleted }: Pro
             placeholder="Ex.: Limpeza de duplicatas geradas por importação em massa do setor X em 14/05/2026, conferidas no painel."
             rows={3}
           />
-          <div className="text-[11px] text-muted-foreground">{reason.trim().length} caracteres</div>
+          <div className="text-xs text-muted-foreground">{reason.trim().length} caracteres</div>
         </div>
 
         <div className="flex items-start gap-2">
@@ -142,7 +142,7 @@ export function BulkMergeReviewDialog({ open, pairs, onClose, onCompleted }: Pro
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={running}>Cancelar</Button>
           <Button onClick={execute} disabled={!canRun}>
-            {running ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Executando…</> : `Executar lote (${pairs.length})`}
+            {running ? <><Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> Executando…</> : `Executar lote (${pairs.length})`}
           </Button>
         </DialogFooter>
       </DialogContent>

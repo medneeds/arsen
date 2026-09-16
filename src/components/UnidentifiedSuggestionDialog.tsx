@@ -37,12 +37,12 @@ export function UnidentifiedSuggestionDialog({
   const confidencePct = Math.round(detection.confidence * 100);
   const sourceLabel =
     detection.source === "ai" ? (
-      <Badge variant="secondary" className="gap-1 text-[10px]">
+      <Badge variant="secondary" className="gap-1 text-xs">
         <Sparkles className="h-3 w-3" />
         IA
       </Badge>
     ) : (
-      <Badge variant="outline" className="gap-1 text-[10px]">
+      <Badge variant="outline" className="gap-1 text-xs">
         <ShieldCheck className="h-3 w-3" />
         Heurística
       </Badge>
@@ -65,12 +65,12 @@ export function UnidentifiedSuggestionDialog({
         <div className="space-y-3 py-2">
           <div className="flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2">
             <div className="flex flex-col">
-              <span className="text-[10px] uppercase text-muted-foreground">Motivo</span>
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">Motivo</span>
               <span className="text-xs font-medium">{detection.reason}</span>
             </div>
             <div className="flex flex-col items-end gap-1">
               {sourceLabel}
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 Confiança {confidencePct}%
               </span>
             </div>
@@ -81,16 +81,16 @@ export function UnidentifiedSuggestionDialog({
             <button
               type="button"
               onClick={onConfirmPure}
-              className="w-full text-left rounded-md border-2 border-warning/30 bg-warning/10 hover:border-warning hover:bg-warning/20 transition px-3 py-2.5 group"
+              className="w-full text-left rounded-md border-2 border-warning/30 bg-warning/10 hover:border-warning hover:bg-warning/20 transition px-3 py-3 group"
             >
               <div className="flex items-start gap-2">
-                <UserX className="h-4 w-4 text-warning-on-soft mt-0.5 shrink-0" />
+                <UserX className="h-4 w-4 text-warning-on-soft mt-1 shrink-0" />
                 <div className="flex-1">
-                  <div className="text-xs font-semibold text-warning-on-soft">
+                  <div className="text-xs font-medium text-warning-on-soft">
                     NI puro — apenas código institucional
                   </div>
-                  <p className="text-[10.5px] text-foreground/80 mt-0.5">
-                    Gera <code className="text-[10px] px-1 bg-background rounded">NI-AAAA-NNNNNN</code> + prontuário oficial automático.
+                  <p className="text-xs text-foreground/80 mt-1">
+                    Gera <code className="text-xs px-1 bg-background rounded-md">NI-AAAA-NNNNNN</code> + prontuário oficial automático.
                     Apenas características aparentes (sexo, idade, sinais).
                   </p>
                 </div>
@@ -101,16 +101,16 @@ export function UnidentifiedSuggestionDialog({
             <button
               type="button"
               onClick={onConfirmWithPin}
-              className="w-full text-left rounded-md border-2 border-primary/40 bg-primary/5 hover:border-primary hover:bg-primary/10 transition px-3 py-2.5 group"
+              className="w-full text-left rounded-md border-2 border-primary/40 bg-primary/5 hover:border-primary hover:bg-primary/10 transition px-3 py-3 group"
             >
               <div className="flex items-start gap-2">
-                <FileUp className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <FileUp className="h-4 w-4 text-primary mt-1 shrink-0" />
                 <div className="flex-1">
-                  <div className="text-xs font-semibold text-primary flex items-center gap-1.5">
+                  <div className="text-xs font-medium text-primary flex items-center gap-2">
                     NI + dados administrativos do PIS
-                    <Badge variant="outline" className="text-[9px] py-0">recomendado</Badge>
+                    <Badge variant="outline" className="text-xs py-0">recomendado</Badge>
                   </div>
-                  <p className="text-[10.5px] text-foreground/80 mt-0.5">
+                  <p className="text-xs text-foreground/80 mt-1">
                     Mantém como Não Identificado, mas permite preencher <strong>nº de prontuário do PIS</strong>,
                     sexo/idade aparente, local de origem (SAMU, via pública) e observações da recepção.
                   </p>
@@ -125,10 +125,10 @@ export function UnidentifiedSuggestionDialog({
               className="w-full text-left rounded-md border bg-background hover:bg-muted transition px-3 py-2"
             >
               <div className="flex items-start gap-2">
-                <ShieldCheck className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                <ShieldCheck className="h-4 w-4 text-muted-foreground mt-1 shrink-0" />
                 <div className="flex-1">
-                  <div className="text-xs font-semibold">Não, é nome real</div>
-                  <p className="text-[10.5px] text-muted-foreground mt-0.5">
+                  <div className="text-xs font-medium">Não, é nome real</div>
+                  <p className="text-xs text-muted-foreground mt-1">
                     Segue cadastro normal. Você ainda pode marcar NI manualmente depois.
                   </p>
                 </div>

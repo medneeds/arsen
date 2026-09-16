@@ -74,7 +74,7 @@ export function ClinicalModuleTabs({ variant = "dark" }: ClinicalModuleTabsProps
               key={tab.path}
               onClick={() => handleTabClick(tab.path)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold tracking-wide transition-all duration-150",
+                "flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium tracking-wide transition-all duration-150",
                 variant === "dark"
                   ? isActive
                     ? "bg-white text-primary shadow-md ring-2 ring-white/50"

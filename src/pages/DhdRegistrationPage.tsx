@@ -85,7 +85,7 @@ export default function DhdRegistrationPage() {
           <ArrowLeft className="h-4 w-4" />
           Voltar para Dashboard
         </Button>
-        <h1 className="text-3xl font-bold text-foreground">
+        <h1 className="text-3xl font-semibold text-foreground">
           Cadastrar Novo Paciente DHD
         </h1>
         <p className="text-muted-foreground mt-1">

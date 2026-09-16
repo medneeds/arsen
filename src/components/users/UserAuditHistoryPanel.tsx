@@ -146,11 +146,11 @@ export function UserAuditHistoryPanel() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow">
+        <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center shadow-sm">
           <History className="h-5 w-5 text-white" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-bold">Histórico de cadastros e permissões</h2>
+          <h2 className="text-lg font-semibold">Histórico de cadastros e permissões</h2>
           <p className="text-xs text-muted-foreground">
             Auditoria imutável de quem criou, aprovou, alterou perfil/role e permissões — conformidade LGPD.
           </p>
@@ -170,7 +170,7 @@ export function UserAuditHistoryPanel() {
             placeholder="Buscar por nome, e-mail, perfil ou role…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            className="pl-8"
           />
         </div>
         <Select value={actionFilter} onValueChange={(v) => { setActionFilter(v); setPage(0); }}>
@@ -184,8 +184,8 @@ export function UserAuditHistoryPanel() {
         </Select>
       </div>
 
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-muted/50 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+      <div className="rounded-lg border bg-card overflow-hidden">
+        <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-muted/50 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           <div className="col-span-2">Data/Hora</div>
           <div className="col-span-3">Ação</div>
           <div className="col-span-3">Alvo</div>
@@ -198,7 +198,7 @@ export function UserAuditHistoryPanel() {
             {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="py-10 text-center text-sm text-muted-foreground">
+          <div className="py-8 text-center text-sm text-muted-foreground">
             <History className="h-6 w-6 mx-auto mb-2 opacity-60" />
             Nenhum evento encontrado.
           </div>
@@ -207,22 +207,22 @@ export function UserAuditHistoryPanel() {
             {filtered.map((r) => {
               const m = actionMeta(r.action);
               return (
-                <li key={r.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 items-center text-sm hover:bg-muted/30">
+                <li key={r.id} className="grid grid-cols-12 gap-2 px-4 py-3 items-center text-sm hover:bg-muted/30">
                   <div className="col-span-2 text-xs text-muted-foreground">
                     {format(new Date(r.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                   </div>
                   <div className="col-span-3">
-                    <Badge variant="outline" className={`${m.color} gap-1.5 font-medium`}>
+                    <Badge variant="outline" className={`${m.color} gap-2 font-medium`}>
                       {m.icon}{m.label}
                     </Badge>
                   </div>
                   <div className="col-span-3 min-w-0">
                     <div className="font-medium truncate">{r.target_name || "—"}</div>
-                    <div className="text-[11px] text-muted-foreground truncate">{r.target_email || "—"}</div>
+                    <div className="text-xs text-muted-foreground truncate">{r.target_email || "—"}</div>
                   </div>
                   <div className="col-span-3 min-w-0">
                     <div className="font-medium truncate">{r.actor_name || "—"}</div>
-                    <div className="text-[11px] text-muted-foreground truncate">{r.actor_email || "—"}</div>
+                    <div className="text-xs text-muted-foreground truncate">{r.actor_email || "—"}</div>
                   </div>
                   <div className="col-span-1 text-right">
                     <Button variant="ghost" size="sm" onClick={() => setDetail(r)} title="Ver detalhes">
@@ -271,16 +271,16 @@ export function UserAuditHistoryPanel() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {detail.old_data && (
                     <div>
-                      <div className="text-[11px] font-bold uppercase text-muted-foreground mb-1">Antes</div>
-                      <pre className="text-[11px] bg-muted/40 rounded p-2 overflow-auto max-h-64 whitespace-pre-wrap break-words">
+                      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Antes</div>
+                      <pre className="text-xs bg-muted/40 rounded-md p-2 overflow-auto max-h-64 whitespace-pre-wrap break-words">
                         {JSON.stringify(detail.old_data, null, 2)}
                       </pre>
                     </div>
                   )}
                   {detail.new_data && (
                     <div>
-                      <div className="text-[11px] font-bold uppercase text-muted-foreground mb-1">Depois</div>
-                      <pre className="text-[11px] bg-muted/40 rounded p-2 overflow-auto max-h-64 whitespace-pre-wrap break-words">
+                      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Depois</div>
+                      <pre className="text-xs bg-muted/40 rounded-md p-2 overflow-auto max-h-64 whitespace-pre-wrap break-words">
                         {JSON.stringify(detail.new_data, null, 2)}
                       </pre>
                     </div>
@@ -301,8 +301,8 @@ export function UserAuditHistoryPanel() {
 function Field({ label, value, small }: { label: string; value: string; small?: boolean }) {
   return (
     <div>
-      <div className="text-[11px] font-bold uppercase text-muted-foreground">{label}</div>
-      <div className={`${small ? "text-[11px]" : "text-sm"} break-words`}>{value}</div>
+      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={`${small ? "text-xs" : "text-sm"} break-words`}>{value}</div>
     </div>
   );
 }

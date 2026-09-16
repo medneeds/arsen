@@ -489,29 +489,29 @@ export default function PacienteHubPage() {
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-      <main className="flex-1 flex items-center justify-center px-6 py-10 overflow-y-auto">
+      <main className="flex-1 flex items-center justify-center px-6 py-8 overflow-y-auto">
         <div className="w-full max-w-6xl flex flex-col gap-8">
           {/* Patient identity */}
           <div className="text-center space-y-3">
-            <span className="text-[10px] uppercase tracking-[0.3em] font-semibold text-muted-foreground">
+            <span className="text-xs uppercase tracking-[0.3em] font-medium text-muted-foreground">
               Paciente Selecionado
             </span>
-            <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight uppercase">
+            <h1 className="text-3xl sm:text-4xl font-semibold text-foreground tracking-tight uppercase">
               {ctx.patientName || "—"}
             </h1>
             <div className="flex flex-wrap items-center justify-center gap-2">
               {ctx.patientBed && (
-                <span className="px-3 py-1 bg-card border border-border text-muted-foreground text-[11px] font-bold tracking-wider uppercase rounded-sm shadow-sm">
+                <span className="px-3 py-1 bg-card border border-border text-muted-foreground text-xs font-semibold tracking-wider uppercase rounded-md shadow-sm">
                   Leito {ctx.patientBed}
                 </span>
               )}
               {sectorLabel && (
-                <span className="px-3 py-1 bg-card border border-border text-muted-foreground text-[11px] font-bold tracking-wider uppercase rounded-sm shadow-sm">
+                <span className="px-3 py-1 bg-card border border-border text-muted-foreground text-xs font-semibold tracking-wider uppercase rounded-md shadow-sm">
                   {sectorLabel}
                 </span>
               )}
               {ageDisplay && (
-                <span className="px-3 py-1 bg-card border border-border text-muted-foreground text-[11px] font-bold tracking-wider uppercase rounded-sm shadow-sm">
+                <span className="px-3 py-1 bg-card border border-border text-muted-foreground text-xs font-semibold tracking-wider uppercase rounded-md shadow-sm">
                   {ageDisplay}
                 </span>
               )}
@@ -526,8 +526,8 @@ export default function PacienteHubPage() {
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-warning"></span>
               </span>
               <p className="text-warning-on-soft text-sm tracking-wide">
-                <span className="font-bold uppercase text-xs">Paciente Pré-Admitido.</span>{" "}
-                Conclua a <span className="font-semibold underline decoration-amber-300 decoration-2 underline-offset-2">admissão hospitalar</span> para liberar prescrição, evolução, requisições, docs e histórico.
+                <span className="font-semibold uppercase tracking-wider text-xs">Paciente Pré-Admitido.</span>{" "}
+                Conclua a <span className="font-medium underline decoration-amber-300 decoration-2 underline-offset-2">admissão hospitalar</span> para liberar prescrição, evolução, requisições, docs e histórico.
               </p>
             </div>
           )}
@@ -548,13 +548,13 @@ export default function PacienteHubPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className={cn(
-                  "text-sm font-bold uppercase tracking-wide",
+                  "text-sm font-semibold uppercase tracking-wide",
                   sapsExpired ? "text-critical-on-soft" : "text-warning-on-soft"
                 )}>
                   Ficha SAPS 3 — {sapsExpired ? "PRAZO EXPIRADO" : "Pendente"}
                 </p>
                 <p className={cn(
-                  "text-xs flex items-center gap-1.5 mt-0.5",
+                  "text-xs flex items-center gap-2 mt-1",
                   sapsExpired ? "text-critical-on-soft" : "text-warning-on-soft"
                 )}>
                   <Timer className="h-3.5 w-3.5" />
@@ -567,7 +567,7 @@ export default function PacienteHubPage() {
               </div>
               <Button size="sm" onClick={handleGoSaps}
                 className={cn(
-                  "gap-1.5 uppercase tracking-wide text-xs",
+                  "gap-2 uppercase tracking-wide text-xs",
                   sapsExpired ? "bg-critical hover:bg-critical" : "bg-warning hover:bg-warning",
                   "text-white"
                 )}>
@@ -606,13 +606,13 @@ export default function PacienteHubPage() {
                 className="relative w-full text-left disabled:cursor-wait"
               >
                 {isPreAdmitted && (
-                  <span className="absolute -inset-0.5 bg-warning rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-700 animate-pulse pointer-events-none" />
+                  <span className="absolute -inset-0.5 bg-warning rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-700 animate-pulse pointer-events-none" />
                 )}
                 <div className={cn(
                   "relative flex flex-col items-center justify-center aspect-square rounded-lg overflow-hidden transition-transform",
                   "bg-card",
                   isPreAdmitted
-                    ? "border-2 border-warning shadow-lg group-hover:scale-[1.02]"
+                    ? "border-2 border-warning shadow-md group-hover:scale-[1.02]"
                     : isAdmitted
                     ? "border border-released-border group-hover:scale-[1.02] group-hover:shadow-md"
                     : "border border-border group-hover:scale-[1.02] group-hover:shadow-md",
@@ -622,7 +622,7 @@ export default function PacienteHubPage() {
                     isPreAdmitted ? "bg-warning" : isAdmitted ? "bg-released" : "bg-muted-foreground/30",
                   )} />
                   <div className={cn(
-                    "p-3 rounded-xl mb-3",
+                    "p-3 rounded-lg mb-3",
                     isPreAdmitted ? "bg-warning-soft" : isAdmitted ? "bg-released-soft" : "bg-muted",
                   )}>
                     <AdmissionIcon
@@ -633,16 +633,16 @@ export default function PacienteHubPage() {
                       strokeWidth={1.75}
                     />
                   </div>
-                  <span className="text-[11px] font-bold text-foreground tracking-[0.15em] uppercase">
+                  <span className="text-xs font-semibold text-foreground tracking-[0.15em] uppercase">
                     Admissão
                   </span>
                   {isPreAdmitted && (
-                    <span className="text-[9px] font-semibold text-warning-on-soft tracking-widest uppercase mt-1">
+                    <span className="text-xs font-medium text-warning-on-soft tracking-widest uppercase mt-1">
                       {hasDraft ? "Rascunho em andamento" : "Pendente"}
                     </span>
                   )}
                   {isAdmitted && (
-                    <span className="text-[9px] font-semibold text-released-on-soft tracking-widest uppercase mt-1">
+                    <span className="text-xs font-medium text-released-on-soft tracking-widest uppercase mt-1">
                       Concluída
                     </span>
                   )}
@@ -688,7 +688,7 @@ export default function PacienteHubPage() {
                     </span>
                   )}
                   <div className={cn(
-                    "p-3 rounded-xl mb-3",
+                    "p-3 rounded-lg mb-3",
                     locked ? "bg-transparent" : "bg-muted group-hover:bg-primary/10 transition-colors",
                   )}>
                     <Icon
@@ -700,7 +700,7 @@ export default function PacienteHubPage() {
                     />
                   </div>
                   <span className={cn(
-                    "text-[11px] font-bold tracking-[0.15em] uppercase text-center",
+                    "text-xs font-semibold tracking-[0.15em] uppercase text-center",
                     locked ? "text-foreground/50" : "text-foreground",
                   )}>
                     {label}
@@ -714,17 +714,17 @@ export default function PacienteHubPage() {
                     ruido, o oposto do que uma passagem de plantao precisa.
                   */}
                   {!locked && key === "prescricao" && prescribedToday === true && (
-                    <span className="text-[9px] font-semibold text-released-on-soft tracking-widest uppercase mt-1">
+                    <span className="text-xs font-medium text-released-on-soft tracking-widest uppercase mt-1">
                       Validada hoje
                     </span>
                   )}
                   {!locked && key === "evolucao" && evolvedToday === true && (
-                    <span className="text-[9px] font-semibold text-released-on-soft tracking-widest uppercase mt-1">
+                    <span className="text-xs font-medium text-released-on-soft tracking-widest uppercase mt-1">
                       Evoluída hoje
                     </span>
                   )}
                   {!locked && key === "requisicoes" && pendingRequests > 0 && (
-                    <span className="text-[9px] font-semibold text-warning-on-soft tracking-widest uppercase mt-1">
+                    <span className="text-xs font-medium text-warning-on-soft tracking-widest uppercase mt-1">
                       {pendingRequests} pendente{pendingRequests > 1 ? "s" : ""}
                     </span>
                   )}
@@ -780,7 +780,7 @@ export default function PacienteHubPage() {
                   </span>
                 )}
                 <div className={cn(
-                  "p-3 rounded-xl mb-3 transition-colors",
+                  "p-3 rounded-lg mb-3 transition-colors",
                   locked ? "bg-transparent"
                     : signalState?.tone === "danger" ? "bg-critical-soft"
                     : signalState?.tone === "info" ? "bg-muted"
@@ -801,14 +801,14 @@ export default function PacienteHubPage() {
                   />
                 </div>
                 <span className={cn(
-                  "text-[11px] font-bold tracking-[0.15em] uppercase text-center px-1",
+                  "text-xs font-semibold tracking-[0.15em] uppercase text-center px-1",
                   locked ? "text-foreground/50" : "text-foreground",
                 )}>
                   Sinalização
                 </span>
                 {signalState && !locked && (
                   <span className={cn(
-                    "text-[9px] font-semibold tracking-widest uppercase mt-1 text-center px-1 leading-tight",
+                    "text-xs font-medium tracking-widest uppercase mt-1 text-center px-1 leading-tight",
                     signalState.tone === "danger" && "text-critical-on-soft",
                     signalState.tone === "info" && "text-foreground",
                     signalState.tone === "warn" && "text-warning-on-soft",
@@ -821,7 +821,7 @@ export default function PacienteHubPage() {
           </div>
 
           {/* Footer */}
-          <p className="text-center text-[10px] uppercase tracking-[0.3em] font-semibold text-muted-foreground">
+          <p className="text-center text-xs uppercase tracking-[0.3em] font-medium text-muted-foreground">
             {isPreAdmitted
               ? "Inicie pela admissão para liberar os demais módulos"
               : sapsExpired
@@ -872,7 +872,7 @@ export default function PacienteHubPage() {
             sector: ctx.patientSector,
             age: ctx.patientAge,
             department: department || undefined,
-            // 🔒 patient_registry_id é essencial para vincular a evolução de admissão
+            // patient_registry_id é essencial para vincular a evolução de admissão
             // ao prontuário permanente do paciente. Sem isso, clinical_evolutions
             // fica sem o campo registry e fica inacessível pelo hook useEvolutions.
             patient_registry_id: identifiers.registry?.id ?? undefined,

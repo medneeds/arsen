@@ -275,7 +275,7 @@ export default function AdminCoordinatorsPage() {
       <div className="container mx-auto py-6 px-4 max-w-5xl">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
+            <h1 className="text-2xl font-semibold flex items-center gap-2">
               <UserCog className="h-6 w-6" />
               Gerenciar Coordenadores
             </h1>
@@ -413,7 +413,7 @@ export default function AdminCoordinatorsPage() {
           <Card className="mb-6 border-warning-border bg-warning-soft">
             <CardContent className="pt-6">
               <p className="text-warning-on-soft">
-                ⚠️ {availableUsers.length === 0
+                {availableUsers.length === 0
                   ? "Não há usuários admin aprovados para atribuir como coordenadores."
                   : "Cadastre unidades hospitalares antes de atribuir coordenadores."}
               </p>

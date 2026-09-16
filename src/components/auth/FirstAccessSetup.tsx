@@ -119,7 +119,7 @@ export function FirstAccessSetup({ userId, fullName, onComplete }: FirstAccessSe
 
   return (
     <div
-      className="relative flex items-start sm:items-center justify-center px-3 sm:px-4 py-6 sm:py-10 bg-gradient-to-br from-muted via-white to-muted min-h-[100dvh] overflow-y-auto"
+      className="relative flex items-start sm:items-center justify-center px-3 sm:px-4 py-6 sm:py-8 bg-muted min-h-[100dvh] overflow-y-auto"
       style={{
         paddingTop: "max(env(safe-area-inset-top), 1rem)",
         paddingBottom: "max(env(safe-area-inset-bottom), 1.5rem)",
@@ -133,12 +133,12 @@ export function FirstAccessSetup({ userId, fullName, onComplete }: FirstAccessSe
         />
       </div>
 
-      <Card className="relative w-full max-w-md p-5 sm:p-7 space-y-5 backdrop-blur-xl bg-card/80 border-border/60 shadow-2xl shadow-primary/10 animate-in fade-in zoom-in-95 duration-500 my-auto">
+      <Card className="relative w-full max-w-md p-4 sm:p-6 space-y-4 backdrop-blur-xl bg-card/80 border-border/60 shadow-md shadow-md animate-in fade-in zoom-in-95 duration-500 my-auto">
         <div className="text-center space-y-2">
-          <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/30 via-primary/15 to-released-soft/20 ring-1 ring-primary/30 flex items-center justify-center shadow-lg shadow-primary/20">
-            <ShieldCheck className="h-7 w-7 text-primary drop-shadow" />
+          <div className="mx-auto h-14 w-14 rounded-lg bg-primary/30 ring-1 ring-primary/30 flex items-center justify-center shadow-md shadow-md">
+            <ShieldCheck className="h-7 w-7 text-primary drop-shadow-sm" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">PRIMEIRO ACESSO</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">PRIMEIRO ACESSO</h1>
           <p className="text-sm text-muted-foreground">
             {fullName ? `Olá, ${fullName.split(" ")[0]}.` : "Bem-vindo(a)."} Para finalizar
             o cadastro, escolha seu <b>nome de usuário</b> e uma <b>nova senha</b>.
@@ -233,7 +233,7 @@ export function FirstAccessSetup({ userId, fullName, onComplete }: FirstAccessSe
           </Button>
         </form>
 
-        <p className="text-[11px] text-center text-muted-foreground">
+        <p className="text-xs text-center text-muted-foreground">
           Após concluir, você usará seu <b>usuário, CPF ou e-mail</b> + a nova senha em todos os próximos acessos.
         </p>
       </Card>

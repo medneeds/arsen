@@ -193,8 +193,8 @@ export function CidSearchInput({
       )}
 
       {isOpen && !value && (
-        <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg overflow-hidden">
-          <div className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground bg-muted/40 border-b flex items-center justify-between">
+        <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md overflow-hidden">
+          <div className="px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground bg-muted/40 border-b flex items-center justify-between">
             <span>{search ? `${filtered.length} resultado(s)` : `${catalog.length} CIDs disponíveis`}</span>
             <span className="font-normal">Role ou digite</span>
           </div>
@@ -213,7 +213,7 @@ export function CidSearchInput({
 
             {!isLoading && grouped.map(([cat, items]) => (
               <div key={cat}>
-                <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground bg-muted sticky top-0">
+                <div className="px-3 py-1 text-xs font-medium uppercase tracking-wide text-muted-foreground bg-muted sticky top-0">
                   {cat}
                 </div>
                 {items.map(item => (
@@ -223,7 +223,7 @@ export function CidSearchInput({
                     onClick={() => handleSelect(item)}
                     className="w-full text-left px-3 py-2 hover:bg-accent text-sm flex items-start gap-2 border-b last:border-b-0"
                   >
-                    <Badge variant="outline" className="shrink-0 font-mono text-[10px] mt-0.5">
+                    <Badge variant="outline" className="shrink-0 font-mono text-xs mt-1">
                       {item.code}
                     </Badge>
                     <span className="text-xs leading-snug">{item.description}</span>

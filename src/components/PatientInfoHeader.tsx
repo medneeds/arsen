@@ -41,31 +41,31 @@ export function PatientInfoHeader({
   };
 
   return (
-    <div className="patient-id rounded-xl border border-border bg-card overflow-hidden print:hidden">
+    <div className="patient-id rounded-lg border border-border bg-card overflow-hidden print:hidden">
       {/* Top bar: name + bed + weight/allergies */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border/50 gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
+      <div className="flex items-center justify-between px-4 py-3 bg-primary/10 border-b border-border/50 gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-            <span className="text-xs font-bold text-primary">{name ? name.charAt(0).toUpperCase() : "?"}</span>
+            <span className="text-xs font-semibold text-primary">{name ? name.charAt(0).toUpperCase() : "?"}</span>
           </div>
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-foreground leading-tight truncate flex items-center gap-1"><span className="truncate">{name || "Paciente não identificado"}</span><CopyNameButton value={name} /></h2>
-            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <h2 className="text-sm font-medium text-foreground leading-tight truncate flex items-center gap-1"><span className="truncate">{name || "Paciente não identificado"}</span><CopyNameButton value={name} /></h2>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
               <BedDouble className="h-3 w-3" />
               Leito {bed || "—"} · {unit || "—"}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <div className="flex items-center gap-1.5">
-            <Label className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Peso</Label>
-            <span className="text-xs font-semibold text-foreground">{weight ? `${weight} kg` : "—"}</span>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-muted-foreground font-medium whitespace-nowrap">Peso</Label>
+            <span className="text-xs font-medium text-foreground">{weight ? `${weight} kg` : "—"}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-muted-foreground font-medium flex items-center gap-1 whitespace-nowrap">
               <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias
             </Label>
-            <Badge variant={allergies === "NDAM" ? "secondary" : "destructive"} className="text-[10px]">
+            <Badge variant={allergies === "NDAM" ? "secondary" : "destructive"} className="text-xs">
               {allergies || "—"}
             </Badge>
           </div>
@@ -73,8 +73,8 @@ export function PatientInfoHeader({
       </div>
 
       {/* Info grid */}
-      <div className="px-4 py-2.5">
-        <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs">
+      <div className="px-4 py-3">
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
           {[
             { label: "Idade", value: age || "—" },
             { label: "Sexo", value: sex || "—" },
@@ -90,7 +90,7 @@ export function PatientInfoHeader({
               { label: "Admissão", value: formatDate(admissionDate) },
             ]),
           ].map(({ label, value }) => (
-            <div key={label} className="flex items-center gap-1.5">
+            <div key={label} className="flex items-center gap-2">
               <span className="text-muted-foreground">{label}:</span>
               <span className="font-medium text-foreground">{value}</span>
             </div>

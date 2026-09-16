@@ -85,8 +85,8 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
           variant="ghost"
           size="sm"
           className={cn(
-            "gap-1 text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/60",
-            compact ? "h-6 px-1.5" : "h-7 px-2",
+            "gap-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60",
+            compact ? "h-6 px-2" : "h-7 px-2",
             className,
           )}
           title="Modelos rápidos para este campo"
@@ -94,7 +94,7 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
           <Bookmark className="h-3 w-3" />
           {!compact && <span>{label}</span>}
           {totalCount > 0 && (
-            <Badge variant="secondary" className="h-3.5 px-1 text-[9px] leading-none">
+            <Badge variant="secondary" className="h-3.5 px-1 text-xs leading-none">
               {totalCount}
             </Badge>
           )}
@@ -103,19 +103,19 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[340px] p-0">
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-          <div className="flex items-center justify-between border-b px-2 py-1.5">
+          <div className="flex items-center justify-between border-b px-2 py-2">
             <TabsList className="h-7 bg-transparent p-0 gap-1">
-              <TabsTrigger value="insert" className="h-6 px-2 text-[11px] data-[state=active]:bg-muted">
+              <TabsTrigger value="insert" className="h-6 px-2 text-xs data-[state=active]:bg-muted">
                 Inserir ({totalCount})
               </TabsTrigger>
-              <TabsTrigger value="create" className="h-6 px-2 text-[11px] data-[state=active]:bg-muted">
-                <Plus className="h-3 w-3 mr-0.5" /> Novo
+              <TabsTrigger value="create" className="h-6 px-2 text-xs data-[state=active]:bg-muted">
+                <Plus className="h-3 w-3 mr-1" /> Novo
               </TabsTrigger>
             </TabsList>
             {currentValue.trim() && tab === "insert" && (
               <Button
                 size="sm" variant="ghost"
-                className="h-6 px-1.5 text-[10px] gap-1"
+                className="h-6 px-2 text-xs gap-1"
                 onClick={saveCurrentAsTemplate}
                 title="Salvar texto atual como modelo"
               >
@@ -127,11 +127,11 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
           <TabsContent value="insert" className="m-0">
             {totalCount === 0 ? (
               <div className="px-3 py-6 text-center">
-                <FilePlus2 className="h-6 w-6 mx-auto text-muted-foreground/40 mb-1.5" />
-                <p className="text-[11px] text-muted-foreground">Nenhum modelo neste campo.</p>
+                <FilePlus2 className="h-6 w-6 mx-auto text-muted-foreground/40 mb-2" />
+                <p className="text-xs text-muted-foreground">Nenhum modelo neste campo.</p>
                 <Button
                   size="sm" variant="link"
-                  className="text-[11px] h-6 px-1 mt-1"
+                  className="text-xs h-6 px-1 mt-1"
                   onClick={() => setTab("create")}
                 >
                   Criar o primeiro modelo
@@ -142,28 +142,28 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
                 <div className="divide-y">
                   {seeds.length > 0 && (
                     <div className="px-2 py-1 bg-muted/30">
-                      <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1">
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1">
                         <Sparkles className="h-2.5 w-2.5" /> Modelos da plataforma
                       </span>
                     </div>
                   )}
                   {seeds.map((s, i) => (
-                    <div key={`seed-${i}`} className="px-2 py-1.5 hover:bg-muted/40 group">
-                      <div className="flex items-start gap-1.5">
+                    <div key={`seed-${i}`} className="px-2 py-2 hover:bg-muted/40 group">
+                      <div className="flex items-start gap-2">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] font-medium text-foreground truncate">{s.name}</span>
-                            <Badge variant="outline" className="h-3.5 px-1 text-[8px] border-primary/40 text-primary">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-foreground truncate">{s.name}</span>
+                            <Badge variant="outline" className="h-3.5 px-1 text-xs border-primary/40 text-primary">
                               padrão
                             </Badge>
                           </div>
-                          <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5 whitespace-pre-wrap">
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1 whitespace-pre-wrap">
                             {s.body}
                           </p>
                           <div className="flex items-center gap-1 mt-1">
                             <Button
                               size="sm" variant="secondary"
-                              className="h-5 px-1.5 text-[10px] gap-1"
+                              className="h-5 px-2 text-xs gap-1"
                               onClick={() => applySeed(s, "replace")}
                               title="Substituir conteúdo do campo"
                             >
@@ -171,7 +171,7 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
                             </Button>
                             <Button
                               size="sm" variant="ghost"
-                              className="h-5 px-1.5 text-[10px] gap-1"
+                              className="h-5 px-2 text-xs gap-1"
                               onClick={() => applySeed(s, "append")}
                               title="Anexar ao texto atual"
                               disabled={!currentValue.trim()}
@@ -185,33 +185,33 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
                   ))}
                   {ordered.length > 0 && seeds.length > 0 && (
                     <div className="px-2 py-1 bg-muted/30">
-                      <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
                         Meus modelos
                       </span>
                     </div>
                   )}
                   {ordered.map(t => (
-                    <div key={t.id} className="px-2 py-1.5 hover:bg-muted/40 group">
-                      <div className="flex items-start gap-1.5">
+                    <div key={t.id} className="px-2 py-2 hover:bg-muted/40 group">
+                      <div className="flex items-start gap-2">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] font-medium text-foreground truncate">{t.name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-foreground truncate">{t.name}</span>
                             {t.is_shared && (
-                              <Badge variant="outline" className="h-3.5 px-1 text-[8px]">compartilhado</Badge>
+                              <Badge variant="outline" className="h-3.5 px-1 text-xs">compartilhado</Badge>
                             )}
                             {t.use_count > 0 && (
-                              <span className="text-[9px] text-muted-foreground ml-auto">
+                              <span className="text-xs text-muted-foreground ml-auto">
                                 usado {t.use_count}×
                               </span>
                             )}
                           </div>
-                          <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5 whitespace-pre-wrap">
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1 whitespace-pre-wrap">
                             {t.body}
                           </p>
                           <div className="flex items-center gap-1 mt-1">
                             <Button
                               size="sm" variant="secondary"
-                              className="h-5 px-1.5 text-[10px] gap-1"
+                              className="h-5 px-2 text-xs gap-1"
                               onClick={() => apply(t, "replace")}
                               title="Substituir conteúdo do campo"
                             >
@@ -219,7 +219,7 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
                             </Button>
                             <Button
                               size="sm" variant="ghost"
-                              className="h-5 px-1.5 text-[10px] gap-1"
+                              className="h-5 px-2 text-xs gap-1"
                               onClick={() => apply(t, "append")}
                               title="Anexar ao texto atual"
                               disabled={!currentValue.trim()}
@@ -244,9 +244,9 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
             )}
           </TabsContent>
 
-          <TabsContent value="create" className="m-0 p-2.5 space-y-2">
+          <TabsContent value="create" className="m-0 p-3 space-y-2">
             <div>
-              <Label className="text-[10px] text-muted-foreground">Nome do modelo</Label>
+              <Label className="text-xs text-muted-foreground">Nome do modelo</Label>
               <Input
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
@@ -255,7 +255,7 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
               />
             </div>
             <div>
-              <Label className="text-[10px] text-muted-foreground">Conteúdo</Label>
+              <Label className="text-xs text-muted-foreground">Conteúdo</Label>
               <Textarea
                 value={newBody}
                 onChange={e => setNewBody(e.target.value)}
@@ -264,15 +264,15 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
               />
             </div>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <Switch checked={isShared} onCheckedChange={setIsShared} id="shared-toggle" />
-                <Label htmlFor="shared-toggle" className="text-[10px] text-muted-foreground cursor-pointer">
+                <Label htmlFor="shared-toggle" className="text-xs text-muted-foreground cursor-pointer">
                   Compartilhar com a equipe
                 </Label>
               </div>
               <Button
                 size="sm"
-                className="h-6 px-2 text-[10px] gap-1"
+                className="h-6 px-2 text-xs gap-1"
                 onClick={submitCreate}
                 disabled={!newName.trim() || !newBody.trim() || create.isPending}
               >

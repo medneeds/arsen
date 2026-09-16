@@ -452,7 +452,7 @@ export function HemocomponentRequestDialog({
 
               {/* PRINCIPAL — Hemocomponentes em evidência */}
               <div className="rounded-lg border-2 border-critical/30 ring-1 ring-critical/10 bg-critical/5 p-4 space-y-3">
-                <div className="flex items-center gap-2 text-sm font-semibold text-critical-on-soft uppercase tracking-wider">
+                <div className="flex items-center gap-2 text-sm font-medium text-critical-on-soft uppercase tracking-wider">
                   <Droplet className="h-4 w-4" /> Hemocomponentes solicitados
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -466,7 +466,7 @@ export function HemocomponentRequestDialog({
                       >
                         <div className="flex items-center gap-2 mb-2">
                           <Checkbox id={`cmp-${k}`} checked={active} onCheckedChange={(v) => toggleComponent(k, !!v)} />
-                          <Label htmlFor={`cmp-${k}`} className="text-sm font-bold cursor-pointer">{COMPONENT_LABELS[k]}</Label>
+                          <Label htmlFor={`cmp-${k}`} className="text-sm font-semibold cursor-pointer">{COMPONENT_LABELS[k]}</Label>
                         </div>
                         {active && (
                           <div className="grid grid-cols-2 gap-2 pl-6 text-sm">
@@ -500,7 +500,7 @@ export function HemocomponentRequestDialog({
                                 </RadioGroup>
                               </div>
                             )}
-                            <div className="col-span-2 text-[10px] font-bold uppercase text-muted-foreground border-t pt-1.5">Justificativa Lab.</div>
+                            <div className="col-span-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t pt-2">Justificativa Lab.</div>
                             {k === "hemacias" && (
                               <>
                                 <Field label="Hb"><Input value={c?.lab_hb || ""} onChange={(e) => updateComponent(k, { lab_hb: e.target.value })} /></Field>
@@ -537,12 +537,12 @@ export function HemocomponentRequestDialog({
 
                 <TabsContent value="transfusion" className="space-y-4">
                   <div>
-                    <Label className="text-xs font-bold uppercase text-muted-foreground">Tipo de Transfusão</Label>
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tipo de Transfusão</Label>
                     <RadioGroup value={data.transfusion_type || ""} onValueChange={(v) => setData({ ...data, transfusion_type: v as TransfusionType })} className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2">
-                      <label className="flex items-center gap-2 p-2 rounded border cursor-pointer hover:bg-accent/40"><RadioGroupItem value="programada" id="tt-p" /><span className="text-xs">Programada</span></label>
-                      <label className="flex items-center gap-2 p-2 rounded border cursor-pointer hover:bg-accent/40"><RadioGroupItem value="rotina" id="tt-r" /><span className="text-xs">Rotina (24h)</span></label>
-                      <label className="flex items-center gap-2 p-2 rounded border cursor-pointer hover:bg-accent/40"><RadioGroupItem value="urgencia" id="tt-u" /><span className="text-xs">Urgência (3h)</span></label>
-                      <label className="flex items-center gap-2 p-2 rounded border border-critical/40 cursor-pointer hover:bg-critical/10"><RadioGroupItem value="emergencia" id="tt-e" /><span className="text-xs font-semibold">Emergência</span></label>
+                      <label className="flex items-center gap-2 p-2 rounded-md border cursor-pointer hover:bg-accent/40"><RadioGroupItem value="programada" id="tt-p" /><span className="text-xs">Programada</span></label>
+                      <label className="flex items-center gap-2 p-2 rounded-md border cursor-pointer hover:bg-accent/40"><RadioGroupItem value="rotina" id="tt-r" /><span className="text-xs">Rotina (24h)</span></label>
+                      <label className="flex items-center gap-2 p-2 rounded-md border cursor-pointer hover:bg-accent/40"><RadioGroupItem value="urgencia" id="tt-u" /><span className="text-xs">Urgência (3h)</span></label>
+                      <label className="flex items-center gap-2 p-2 rounded-md border border-critical/40 cursor-pointer hover:bg-critical/10"><RadioGroupItem value="emergencia" id="tt-e" /><span className="text-xs font-medium">Emergência</span></label>
                     </RadioGroup>
                     {data.transfusion_type === "programada" && (
                       <div className="grid grid-cols-2 gap-3 mt-2 pl-1">
@@ -559,17 +559,17 @@ export function HemocomponentRequestDialog({
                   <Separator />
 
                   <div>
-                    <Label className="text-xs font-bold uppercase text-muted-foreground">Setor onde a transfusão será realizada</Label>
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Setor onde a transfusão será realizada</Label>
                     <div className="mt-2 flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
                       <Droplet className="h-4 w-4 text-critical shrink-0" />
-                      <span className="font-semibold">{data.patient_unit || "—"}</span>
+                      <span className="font-medium">{data.patient_unit || "—"}</span>
                       {data.patient_bed && (
                         <>
                           <span className="text-muted-foreground">·</span>
                           <span>Leito <strong>{data.patient_bed}</strong></span>
                         </>
                       )}
-                      <span className="ml-auto text-[10px] uppercase text-muted-foreground">setor atual do paciente</span>
+                      <span className="ml-auto text-xs uppercase tracking-wider text-muted-foreground">setor atual do paciente</span>
                     </div>
                   </div>
 
@@ -588,14 +588,14 @@ export function HemocomponentRequestDialog({
                 <TabsContent value="history" className="space-y-3">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold">Transfusões prévias?</Label>
+                      <Label className="text-sm font-medium">Transfusões prévias?</Label>
                       <RadioGroup value={String(data.previous_transfusion ?? "")} onValueChange={(v) => setData({ ...data, previous_transfusion: v === "true" })} className="flex gap-4">
                         <div className="flex items-center gap-2"><RadioGroupItem value="true" id="pt-s" /><Label htmlFor="pt-s">Sim</Label></div>
                         <div className="flex items-center gap-2"><RadioGroupItem value="false" id="pt-n" /><Label htmlFor="pt-n">Não</Label></div>
                       </RadioGroup>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold">Reação transfusional?</Label>
+                      <Label className="text-sm font-medium">Reação transfusional?</Label>
                       <RadioGroup value={String(data.transfusion_reaction ?? "")} onValueChange={(v) => setData({ ...data, transfusion_reaction: v === "true" })} className="flex gap-4">
                         <div className="flex items-center gap-2"><RadioGroupItem value="true" id="rt-s" /><Label htmlFor="rt-s">Sim</Label></div>
                         <div className="flex items-center gap-2"><RadioGroupItem value="false" id="rt-n" /><Label htmlFor="rt-n">Não</Label></div>

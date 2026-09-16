@@ -86,21 +86,21 @@ function EmergencyHeader({ activeSector, onSectorChange, onRefresh, isRefreshing
 
   return (
     <header
-      className="border-b border-white/10 bg-gradient-to-r from-[#1a0a0a] via-[#2d1515] to-[#3a1c1c] backdrop-blur-xl fixed top-0 right-0 z-50 shadow-lg transition-[left] duration-200 ease-linear"
+      className="border-b border-white/10 bg-gradient-to-r from-[#1a0a0a] via-[#2d1515] to-[#3a1c1c] backdrop-blur-xl fixed top-0 right-0 z-50 shadow-md transition-[left] duration-200 ease-linear"
       style={{
         left: isMobile ? 0 : (state === "collapsed" ? "var(--sidebar-width-icon)" : "var(--sidebar-width)"),
       }}
     >
-      <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-px bg-transparent" />
       <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <SidebarTrigger className="flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 transition-all duration-200" />
-            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              <span className="text-xs sm:text-sm font-semibold text-white/90 whitespace-nowrap">Emergência</span>
+            <div className="flex items-center gap-2 sm:gap-2 min-w-0">
+              <span className="text-xs sm:text-sm font-medium text-white/90 whitespace-nowrap">Emergência</span>
               <span className="text-white/30 text-xs">/</span>
               <Select value={activeSector} onValueChange={onSectorChange}>
-                <SelectTrigger className="h-7 w-auto gap-1 bg-white/10 border-white/20 text-xs text-white font-medium px-2.5 focus:ring-0 focus:ring-offset-0 hover:bg-white/20 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/60 rounded-md">
+                <SelectTrigger className="h-7 w-auto gap-1 bg-white/10 border-white/20 text-xs text-white font-medium px-3 focus:ring-0 focus:ring-offset-0 hover:bg-white/20 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/60 rounded-md">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -137,21 +137,21 @@ function SimplifiedPatientCard({ patient, onView }: { patient: EmergencyPatient;
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="border border-border rounded-xl bg-card hover:shadow-md transition-all duration-200"
+      className="border border-border rounded-lg bg-card hover:shadow-md transition-all duration-200"
     >
       <div className="p-3 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-[10px] font-bold px-1.5 py-0.5 bg-primary/10 text-primary border-primary/30">
+            <Badge variant="outline" className="text-xs font-semibold px-2 py-1 bg-primary/10 text-primary border-primary/30">
               {patient.bed_number}
             </Badge>
-            <span className="patient-id text-xs font-semibold text-foreground truncate max-w-[180px]">
+            <span className="patient-id text-xs font-medium text-foreground truncate max-w-[180px]">
               {patient.is_vacant ? "— Vago —" : patient.name}
             </span>
           </div>
           {!patient.is_vacant && (
             <div className="flex items-center gap-1">
-              {patient.age && <span className="text-[10px] text-muted-foreground">{patient.age}a</span>}
+              {patient.age && <span className="text-xs text-muted-foreground">{patient.age}a</span>}
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onView}>
                 <Eye className="h-3 w-3" />
               </Button>
@@ -163,10 +163,10 @@ function SimplifiedPatientCard({ patient, onView }: { patient: EmergencyPatient;
           <>
             {diagnoses.length > 0 && (
               <div>
-                <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">Diagnósticos</span>
-                <div className="flex flex-wrap gap-1 mt-0.5">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Diagnósticos</span>
+                <div className="flex flex-wrap gap-1 mt-1">
                   {diagnoses.slice(0, 3).map((d, i) => (
-                    <Badge key={i} variant="secondary" className="text-[9px] py-0 px-1.5 font-normal">{d}</Badge>
+                    <Badge key={i} variant="secondary" className="text-xs py-0 px-2 font-normal">{d}</Badge>
                   ))}
                 </div>
               </div>
@@ -174,7 +174,7 @@ function SimplifiedPatientCard({ patient, onView }: { patient: EmergencyPatient;
 
             {patient.clinical_status && (
               <Badge
-                className={cn("text-[9px] py-0 px-1.5", {
+                className={cn("text-xs py-0 px-2", {
                   "bg-critical/20 text-critical-on-soft border-critical/30": patient.clinical_status === "gravissimo" || patient.clinical_status === "grave",
                   "bg-warning/20 text-warning-on-soft border-warning/30": patient.clinical_status === "grave_estavel" || patient.clinical_status === "potencialmente_grave",
                   "bg-released/20 text-released-on-soft border-released/30": patient.clinical_status === "regular",
@@ -192,11 +192,11 @@ function SimplifiedPatientCard({ patient, onView }: { patient: EmergencyPatient;
 
             {pendencies.length > 0 && (
               <div>
-                <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">Pendências</span>
-                <ul className="mt-0.5 space-y-0.5">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pendências</span>
+                <ul className="mt-1 space-y-1">
                   {pendencies.slice(0, 2).map((p, i) => (
-                    <li key={i} className="text-[10px] text-foreground flex items-start gap-1">
-                      <ArrowRight className="h-2.5 w-2.5 mt-0.5 text-primary flex-shrink-0" />
+                    <li key={i} className="text-xs text-foreground flex items-start gap-1">
+                      <ArrowRight className="h-2.5 w-2.5 mt-1 text-primary flex-shrink-0" />
                       <span className="line-clamp-1">{p}</span>
                     </li>
                   ))}
@@ -205,7 +205,7 @@ function SimplifiedPatientCard({ patient, onView }: { patient: EmergencyPatient;
             )}
 
             {patient.admission_date && (
-              <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="h-2.5 w-2.5" />
                 {formatDistanceToNow(new Date(patient.admission_date), { locale: ptBR, addSuffix: true })}
               </div>
@@ -228,7 +228,7 @@ function FullPatientCard({ patient, onView }: { patient: EmergencyPatient; onVie
 
   if (patient.is_vacant) {
     return (
-      <div className="border border-dashed border-border/50 rounded-xl bg-muted/20 p-3 flex items-center justify-center min-h-[60px]">
+      <div className="border border-dashed border-border/50 rounded-lg bg-muted/20 p-3 flex items-center justify-center min-h-[60px]">
         <div className="flex items-center gap-2">
           <BedDouble className="h-4 w-4 text-muted-foreground/50" />
           <span className="text-xs text-muted-foreground/60 font-medium">{patient.bed_number} — Vago</span>
@@ -242,19 +242,19 @@ function FullPatientCard({ patient, onView }: { patient: EmergencyPatient; onVie
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="border border-border rounded-xl bg-card hover:shadow-md transition-all duration-200"
+        className="border border-border rounded-lg bg-card hover:shadow-md transition-all duration-200"
       >
         <CollapsibleTrigger className="w-full">
           <div className="p-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[10px] font-bold px-1.5 py-0.5 bg-warning/10 text-warning-on-soft border-warning/30">
+              <Badge variant="outline" className="text-xs font-semibold px-2 py-1 bg-warning/10 text-warning-on-soft border-warning/30">
                 {patient.bed_number}
               </Badge>
-              <span className="patient-id text-xs font-semibold text-foreground">{patient.name}</span>
-              {patient.age && <span className="text-[10px] text-muted-foreground">({patient.age}a)</span>}
+              <span className="patient-id text-xs font-medium text-foreground">{patient.name}</span>
+              {patient.age && <span className="text-xs text-muted-foreground">({patient.age}a)</span>}
               {patient.clinical_status && (
                 <Badge
-                  className={cn("text-[9px] py-0 px-1.5", {
+                  className={cn("text-xs py-0 px-2", {
                     "bg-critical/20 text-critical-on-soft": patient.clinical_status === "gravissimo" || patient.clinical_status === "grave",
                     "bg-warning/20 text-warning-on-soft": patient.clinical_status === "grave_estavel",
                     "bg-released/20 text-released-on-soft": patient.clinical_status === "regular",
@@ -283,11 +283,11 @@ function FullPatientCard({ patient, onView }: { patient: EmergencyPatient; onVie
               {/* Diagnoses */}
               {diagnoses.length > 0 && (
                 <div>
-                  <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Hipóteses / Diagnósticos</span>
-                  <ul className="mt-1 space-y-0.5">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Hipóteses / Diagnósticos</span>
+                  <ul className="mt-1 space-y-1">
                     {diagnoses.map((d, i) => (
-                      <li key={i} className="text-[10px] text-foreground flex items-start gap-1">
-                        <Stethoscope className="h-2.5 w-2.5 mt-0.5 text-primary flex-shrink-0" />
+                      <li key={i} className="text-xs text-foreground flex items-start gap-1">
+                        <Stethoscope className="h-2.5 w-2.5 mt-1 text-primary flex-shrink-0" />
                         {d}
                       </li>
                     ))}
@@ -297,10 +297,10 @@ function FullPatientCard({ patient, onView }: { patient: EmergencyPatient; onVie
               {/* History */}
               {history.length > 0 && (
                 <div>
-                  <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Antecedentes</span>
-                  <ul className="mt-1 space-y-0.5">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Antecedentes</span>
+                  <ul className="mt-1 space-y-1">
                     {history.map((h, i) => (
-                      <li key={i} className="text-[10px] text-foreground">{h}</li>
+                      <li key={i} className="text-xs text-foreground">{h}</li>
                     ))}
                   </ul>
                 </div>
@@ -310,10 +310,10 @@ function FullPatientCard({ patient, onView }: { patient: EmergencyPatient; onVie
               {/* Exams */}
               {exams.length > 0 && (
                 <div>
-                  <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Exames Relevantes</span>
-                  <ul className="mt-1 space-y-0.5">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Exames Relevantes</span>
+                  <ul className="mt-1 space-y-1">
                     {exams.map((e, i) => (
-                      <li key={i} className="text-[10px] text-foreground">{e}</li>
+                      <li key={i} className="text-xs text-foreground">{e}</li>
                     ))}
                   </ul>
                 </div>
@@ -321,11 +321,11 @@ function FullPatientCard({ patient, onView }: { patient: EmergencyPatient; onVie
               {/* Pendencies */}
               {pendencies.length > 0 && (
                 <div>
-                  <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Pendências</span>
-                  <ul className="mt-1 space-y-0.5">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pendências</span>
+                  <ul className="mt-1 space-y-1">
                     {pendencies.map((p, i) => (
-                      <li key={i} className="text-[10px] text-foreground flex items-start gap-1">
-                        <AlertTriangle className="h-2.5 w-2.5 mt-0.5 text-warning flex-shrink-0" />
+                      <li key={i} className="text-xs text-foreground flex items-start gap-1">
+                        <AlertTriangle className="h-2.5 w-2.5 mt-1 text-warning flex-shrink-0" />
                         {p}
                       </li>
                     ))}
@@ -336,16 +336,16 @@ function FullPatientCard({ patient, onView }: { patient: EmergencyPatient; onVie
             {/* Schedule */}
             {schedule.length > 0 && (
               <div>
-                <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Programações</span>
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Programações</span>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {schedule.map((s, i) => (
-                    <Badge key={i} variant="outline" className="text-[9px] py-0 px-1.5 font-normal">{s}</Badge>
+                    <Badge key={i} variant="outline" className="text-xs py-0 px-2 font-normal">{s}</Badge>
                   ))}
                 </div>
               </div>
             )}
             {patient.admission_date && (
-              <div className="flex items-center gap-1 text-[9px] text-muted-foreground pt-1">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground pt-1">
                 <Clock className="h-2.5 w-2.5" />
                 Admitido {formatDistanceToNow(new Date(patient.admission_date), { locale: ptBR, addSuffix: true })}
               </div>
@@ -379,13 +379,13 @@ function PatientDetailDialog({ patient, open, onClose }: { patient: EmergencyPat
           <div className="space-y-4 pr-2">
             {patient.admission_history && (
               <div>
-                <Label className="text-xs font-semibold">História da Admissão</Label>
+                <Label className="text-xs font-medium">História da Admissão</Label>
                 <p className="text-xs text-muted-foreground mt-1">{patient.admission_history}</p>
               </div>
             )}
             {diagnoses.length > 0 && (
               <div>
-                <Label className="text-xs font-semibold">Diagnósticos</Label>
+                <Label className="text-xs font-medium">Diagnósticos</Label>
                 <ul className="mt-1 space-y-1">
                   {diagnoses.map((d, i) => <li key={i} className="text-xs">{d}</li>)}
                 </ul>
@@ -393,7 +393,7 @@ function PatientDetailDialog({ patient, open, onClose }: { patient: EmergencyPat
             )}
             {history.length > 0 && (
               <div>
-                <Label className="text-xs font-semibold">Antecedentes</Label>
+                <Label className="text-xs font-medium">Antecedentes</Label>
                 <ul className="mt-1 space-y-1">
                   {history.map((h, i) => <li key={i} className="text-xs">{h}</li>)}
                 </ul>
@@ -401,7 +401,7 @@ function PatientDetailDialog({ patient, open, onClose }: { patient: EmergencyPat
             )}
             {exams.length > 0 && (
               <div>
-                <Label className="text-xs font-semibold">Exames Relevantes</Label>
+                <Label className="text-xs font-medium">Exames Relevantes</Label>
                 <ul className="mt-1 space-y-1">
                   {exams.map((e, i) => <li key={i} className="text-xs">{e}</li>)}
                 </ul>
@@ -409,7 +409,7 @@ function PatientDetailDialog({ patient, open, onClose }: { patient: EmergencyPat
             )}
             {pendencies.length > 0 && (
               <div>
-                <Label className="text-xs font-semibold">Pendências</Label>
+                <Label className="text-xs font-medium">Pendências</Label>
                 <ul className="mt-1 space-y-1">
                   {pendencies.map((p, i) => <li key={i} className="text-xs">{p}</li>)}
                 </ul>
@@ -521,7 +521,7 @@ export default function EmergenciaSectorPage() {
           actions={
             <>
               <Select value={activeSector} onValueChange={handleSectorChange}>
-                <SelectTrigger className="h-8 w-auto gap-1 text-xs font-semibold border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10 [&>svg]:h-3 [&>svg]:w-3">
+                <SelectTrigger className="h-8 w-auto gap-1 text-xs font-medium border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10 [&>svg]:h-3 [&>svg]:w-3">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -556,28 +556,28 @@ export default function EmergenciaSectorPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                 <Card className="bg-card/80">
                   <CardContent className="p-3">
-                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Setor Ativo</p>
-                    <p className="text-lg font-bold text-foreground mt-1">{sectorConfig?.label}</p>
-                    <p className="text-[10px] text-muted-foreground">{sectorConfig?.description}</p>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Setor Ativo</p>
+                    <p className="text-lg font-semibold text-foreground mt-1">{sectorConfig?.label}</p>
+                    <p className="text-xs text-muted-foreground">{sectorConfig?.description}</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-card/80">
                   <CardContent className="p-3">
-                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Ocupação</p>
-                    <p className="text-2xl font-bold text-foreground mt-1">{total > 0 ? Math.round((occupied / total) * 100) : 0}%</p>
-                    <p className="text-[10px] text-muted-foreground">{occupied}/{total} leitos</p>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Ocupação</p>
+                    <p className="text-2xl font-semibold text-foreground mt-1">{total > 0 ? Math.round((occupied / total) * 100) : 0}%</p>
+                    <p className="text-xs text-muted-foreground">{occupied}/{total} leitos</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-card/80">
                   <CardContent className="p-3">
-                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Ocupados</p>
-                    <p className="text-2xl font-bold text-primary mt-1">{occupied}</p>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Ocupados</p>
+                    <p className="text-2xl font-semibold text-primary mt-1">{occupied}</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-card/80">
                   <CardContent className="p-3">
-                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Vagos</p>
-                    <p className="text-2xl font-bold text-released-on-soft mt-1">{vacant}</p>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Vagos</p>
+                    <p className="text-2xl font-semibold text-released-on-soft mt-1">{vacant}</p>
                   </CardContent>
                 </Card>
               </div>
@@ -589,7 +589,7 @@ export default function EmergenciaSectorPage() {
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Buscar paciente, leito, diagnóstico..."
-                  className="pl-9 h-9 text-xs"
+                  className="pl-8 h-9 text-xs"
                 />
               </div>
 
@@ -597,7 +597,7 @@ export default function EmergenciaSectorPage() {
               {filteredPatients.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
                   <BedDouble className="h-12 w-12 text-muted-foreground/30 mb-3" />
-                  <h3 className="text-sm font-semibold text-muted-foreground">Nenhum paciente neste setor</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground">Nenhum paciente neste setor</h3>
                   <p className="text-xs text-muted-foreground/60 mt-1">
                     Pacientes serão exibidos aqui quando forem admitidos na {sectorConfig?.label}
                   </p>

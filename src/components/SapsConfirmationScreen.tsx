@@ -127,7 +127,7 @@ export function SapsConfirmationScreen({
             transition={{ delay: 0.4 }}
             className="text-center"
           >
-            <h2 className="text-2xl font-bold text-foreground">
+            <h2 className="text-2xl font-semibold text-foreground">
               {isValidation ? "Ficha SAPS validada" : "Paciente pré-admitido"}
             </h2>
             <p className="text-muted-foreground mt-1">{patientName}</p>
@@ -143,11 +143,11 @@ export function SapsConfirmationScreen({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="flex items-center gap-4 bg-card border rounded-xl px-6 py-4 w-full"
+            className="flex items-center gap-4 bg-card border rounded-lg px-6 py-4 w-full"
           >
             <div className="flex items-center gap-2">
               <Bed className="h-5 w-5 text-primary" />
-              <span className="font-mono font-bold text-lg text-foreground">{bedNumber}</span>
+              <span className="font-mono font-semibold text-lg text-foreground">{bedNumber}</span>
             </div>
             <div className="h-8 w-px bg-border" />
             <div className="flex items-center gap-2">
@@ -161,19 +161,19 @@ export function SapsConfirmationScreen({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
-            className={`w-full rounded-xl border p-6 ${getMortalityBg(predictedMortality)}`}
+            className={`w-full rounded-lg border p-6 ${getMortalityBg(predictedMortality)}`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Activity className="h-6 w-6 text-primary" />
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">SAPS 3</p>
-                  <p className="text-3xl font-bold text-foreground">{totalScore}</p>
+                  <p className="text-3xl font-semibold text-foreground">{totalScore}</p>
                 </div>
               </div>
               <div className="text-right">
                 <p className="text-sm font-medium text-muted-foreground">Mortalidade predita</p>
-                <p className={`text-3xl font-bold ${getMortalityColor(predictedMortality)}`}>
+                <p className={`text-3xl font-semibold ${getMortalityColor(predictedMortality)}`}>
                   {predictedMortality}%
                 </p>
               </div>

@@ -87,7 +87,7 @@ export function DhdPatientCard({ patient, onMedicationToggle, onRefresh }: DhdPa
 
   return (
     <>
-      <Card className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary">
+      <Card className="hover:shadow-md transition-all duration-300 border-l-4 border-l-primary">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -197,7 +197,7 @@ export function DhdPatientCard({ patient, onMedicationToggle, onRefresh }: DhdPa
                     
                     return (
                       <div key={month.toString()} className="space-y-3">
-                        <h3 className="text-sm font-semibold text-foreground capitalize sticky top-0 bg-background py-2 border-b">
+                        <h3 className="text-sm font-medium text-foreground capitalize sticky top-0 bg-background py-2 border-b">
                           {format(month, "MMMM 'de' yyyy", { locale: ptBR })}
                         </h3>
                         
@@ -210,7 +210,7 @@ export function DhdPatientCard({ patient, onMedicationToggle, onRefresh }: DhdPa
                           ))}
                         </div>
                         
-                        <div className="grid grid-cols-7 gap-1.5">
+                        <div className="grid grid-cols-7 gap-2">
                           {/* Empty cells for alignment */}
                           {emptyCells.map((_, i) => (
                             <div key={`empty-${i}`} className="aspect-square" />
@@ -229,7 +229,7 @@ export function DhdPatientCard({ patient, onMedicationToggle, onRefresh }: DhdPa
                                 className={`
                                   aspect-square rounded-lg text-sm font-medium transition-all
                                   ${isMarked
-                                    ? "bg-primary text-primary-foreground shadow-md hover:shadow-lg"
+                                    ? "bg-primary text-primary-foreground shadow-md hover:shadow-md"
                                     : "bg-muted hover:bg-muted/70"}
                                   ${isToday ? "ring-2 ring-primary ring-offset-2" : ""}
                                   ${isPast && !isMarked ? "opacity-40" : ""}
@@ -264,7 +264,7 @@ export function DhdPatientCard({ patient, onMedicationToggle, onRefresh }: DhdPa
                   ))}
                 </div>
                 
-                <div className="grid grid-cols-7 gap-1.5">
+                <div className="grid grid-cols-7 gap-2">
                   {weekDays.length === 0 && (
                     <div className="col-span-7 text-center py-8 text-muted-foreground text-sm">
                       Defina uma data de finalização para visualizar o calendário completo
@@ -282,7 +282,7 @@ export function DhdPatientCard({ patient, onMedicationToggle, onRefresh }: DhdPa
                         className={`
                           aspect-square rounded-lg text-sm font-medium transition-all
                           ${isMarked
-                            ? "bg-primary text-primary-foreground shadow-md hover:shadow-lg"
+                            ? "bg-primary text-primary-foreground shadow-md hover:shadow-md"
                             : "bg-muted hover:bg-muted/70"}
                           ${isToday ? "ring-2 ring-primary ring-offset-2" : ""}
                           ${isPast && !isMarked ? "opacity-40" : ""}

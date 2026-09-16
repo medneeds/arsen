@@ -48,7 +48,7 @@ export function DhdReportDialog({ open, onOpenChange, patient }: DhdReportDialog
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground font-medium">Data de Início:</p>
-                  <p className="font-semibold">
+                  <p className="font-medium">
                     {format(parseISO(patient.start_date), "dd 'de' MMMM 'de' yyyy", {
                       locale: ptBR,
                     })}
@@ -56,7 +56,7 @@ export function DhdReportDialog({ open, onOpenChange, patient }: DhdReportDialog
                 </div>
                 <div>
                   <p className="text-muted-foreground font-medium">Data de Finalização:</p>
-                  <p className="font-semibold">
+                  <p className="font-medium">
                     {format(parseISO(patient.end_date), "dd 'de' MMMM 'de' yyyy", {
                       locale: ptBR,
                     })}
@@ -66,7 +66,7 @@ export function DhdReportDialog({ open, onOpenChange, patient }: DhdReportDialog
               {patient.medication_schedule && (
                 <div className="pt-2 border-t">
                   <p className="text-muted-foreground font-medium text-sm">Programação:</p>
-                  <p className="text-sm mt-1 font-semibold">{patient.medication_schedule}</p>
+                  <p className="text-sm mt-1 font-medium">{patient.medication_schedule}</p>
                 </div>
               )}
               {patient.diagnosis && (
@@ -79,7 +79,7 @@ export function DhdReportDialog({ open, onOpenChange, patient }: DhdReportDialog
 
             {/* Report Content */}
             <div>
-              <h3 className="font-semibold mb-3 text-lg">Plano de Desospitalização</h3>
+              <h3 className="font-medium mb-3 text-lg">Plano de Desospitalização</h3>
               {patient.dhd_report ? (
                 <div className="prose prose-sm max-w-none bg-background border rounded-lg p-4">
                   <p className="whitespace-pre-wrap text-foreground leading-relaxed">

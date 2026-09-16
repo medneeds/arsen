@@ -905,11 +905,11 @@ export default function GestorPanelPage() {
               data={{ occupancyRate, bedStats, criticalAlerts, pendingRequests, prescriptionStats }}
             />
             <span className="hidden md:block w-px h-6 bg-white/20 mx-1" />
-            <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="gap-1.5 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground">
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="gap-2 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground">
               {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               <span className="hidden md:inline">Exportar</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => { fetchData(); toast.success("Dados atualizados"); }} disabled={loading} className="gap-1.5 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground">
+            <Button variant="outline" size="sm" onClick={() => { fetchData(); toast.success("Dados atualizados"); }} disabled={loading} className="gap-2 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground">
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
               <span className="hidden md:inline">Atualizar</span>
             </Button>
@@ -917,38 +917,38 @@ export default function GestorPanelPage() {
         }
       />
 
-      <div className="p-3 md:p-6 space-y-4 md:space-y-5 max-w-7xl mx-auto">
+      <div className="p-3 md:p-6 space-y-4 md:space-y-4 max-w-7xl mx-auto">
         {/* Banner de Resumo Executivo */}
         <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-primary/[0.03] to-transparent">
-          <CardContent className="p-3.5 md:p-4">
-            <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-5 gap-y-2 text-xs sm:text-sm">
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
+          <CardContent className="p-4 md:p-4">
+            <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-2 text-xs sm:text-sm">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
                 {period === "today" ? "Hoje" : period === "7d" ? "Últimos 7 dias" : "Últimos 30 dias"}
               </span>
               <span className="hidden md:inline opacity-30">·</span>
-              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+              <span className="flex items-center gap-2 font-medium text-foreground">
                 <Bed className="h-3.5 w-3.5 text-primary" />
                 {occupancyRate}% ocup.
               </span>
               <span className="opacity-30 sm:hidden">·</span>
               <span className="hidden md:inline opacity-30">·</span>
-              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+              <span className="flex items-center gap-2 font-medium text-foreground">
                 <AlertTriangle className={cn("h-3.5 w-3.5", criticalAlerts.length > 0 ? "text-destructive" : "text-muted-foreground")} />
                 {criticalAlerts.filter(a => a.severity === "critical").length} críticos
               </span>
               <span className="opacity-30 sm:hidden">·</span>
               <span className="hidden md:inline opacity-30">·</span>
-              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+              <span className="flex items-center gap-2 font-medium text-foreground">
                 <Hourglass className="h-3.5 w-3.5 text-primary" />
                 TMP {tmpDisplay}
               </span>
               <span className="hidden md:inline opacity-30">·</span>
-              <span className="hidden sm:flex items-center gap-1.5 font-semibold text-foreground">
+              <span className="hidden sm:flex items-center gap-2 font-medium text-foreground">
                 <Clock className={cn("h-3.5 w-3.5", pendingRequests > 0 ? "text-warning-on-soft" : "text-muted-foreground")} />
                 {pendingRequests} solicitações pendentes
               </span>
               <span className="hidden md:inline opacity-30">·</span>
-              <span className="hidden sm:flex items-center gap-1.5 font-semibold text-foreground">
+              <span className="hidden sm:flex items-center gap-2 font-medium text-foreground">
                 <Users className={cn("h-3.5 w-3.5", bedStats.doorPatients > 0 ? "text-warning-on-soft" : "text-muted-foreground")} />
                 {bedStats.doorPatients} pacientes porta
               </span>
@@ -966,18 +966,18 @@ export default function GestorPanelPage() {
               onClick={() => setSectorFilterOpen(true)}
             >
               <Filter className="h-4 w-4 text-primary shrink-0" />
-              <span className="font-semibold truncate">{sectorDisplayName}</span>
+              <span className="font-medium truncate">{sectorDisplayName}</span>
             </Button>
           );
 
           const filterBody = (
-            <div className="p-2.5 space-y-3">
+            <div className="p-3 space-y-3">
               {/* All sectors */}
               <button
                 type="button"
                 onClick={() => { applyFilter("ALL"); setSectorFilterOpen(false); }}
                 className={cn(
-                  "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-md text-[12px] font-semibold transition-all border",
+                  "w-full flex items-center justify-between gap-2 px-3 py-3 rounded-md text-xs font-medium transition-all border",
                   isAllSectors
                     ? "bg-primary/10 text-primary border-primary/30"
                     : "text-foreground hover:bg-muted border-transparent"
@@ -991,8 +991,8 @@ export default function GestorPanelPage() {
               </button>
 
               {/* Blocks + sectors */}
-              <div className="space-y-2.5">
-                <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 px-1">
+              <div className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/70 px-1">
                   Blocos e setores
                 </p>
                 {SECTOR_BLOCKS.map(block => {
@@ -1016,7 +1016,7 @@ export default function GestorPanelPage() {
                     <div
                       key={block.id}
                       className={cn(
-                        "rounded-md border-l-2 pl-2.5 pr-1 py-1 transition-colors",
+                        "rounded-md border-l-2 pl-3 pr-1 py-1 transition-colors",
                         isHighlighted
                           ? "border-primary bg-primary/5"
                           : "border-border/40 hover:border-border"
@@ -1026,23 +1026,23 @@ export default function GestorPanelPage() {
                         type="button"
                         onClick={() => { applyFilter(blockId); setSectorFilterOpen(false); }}
                         className={cn(
-                          "w-full flex items-center justify-between gap-2 px-1.5 py-1.5 rounded-md text-[10.5px] font-bold uppercase tracking-[0.14em] transition-all",
+                          "w-full flex items-center justify-between gap-2 px-2 py-2 rounded-md text-xs font-semibold uppercase tracking-[0.14em] transition-all",
                           blockActive
                             ? "text-primary"
                             : "text-muted-foreground/90 hover:text-foreground"
                         )}
                       >
-                        <span className="flex items-center gap-1.5">
+                        <span className="flex items-center gap-2">
                           <span>Bloco {block.label}</span>
                           {blockTotals.total > 0 && (
-                            <span className="text-[9px] font-semibold text-muted-foreground/70 tabular-nums normal-case tracking-normal">
+                            <span className="text-xs font-medium text-muted-foreground/70 tabular-nums normal-case tracking-normal">
                               · {blockTotals.occupied}/{blockTotals.total}
                             </span>
                           )}
                         </span>
                         {blockActive && <Check className="h-3.5 w-3.5" />}
                       </button>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 pt-0.5 pb-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 pt-1 pb-1">
                         {block.departments.map(dept => {
                           const isActive = sectorFilter === dept;
                           const code = DEPARTMENT_TO_SECTOR[dept as keyof typeof DEPARTMENT_TO_SECTOR];
@@ -1053,7 +1053,7 @@ export default function GestorPanelPage() {
                               type="button"
                               onClick={() => { applyFilter(dept); setSectorFilterOpen(false); }}
                               className={cn(
-                                "flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all text-left border",
+                                "flex items-center justify-between gap-2 px-3 py-2 rounded-md text-xs font-medium transition-all text-left border",
                                 isActive
                                   ? "bg-primary/10 text-primary border-primary/30 shadow-sm"
                                   : "text-foreground hover:bg-muted border-transparent"
@@ -1063,7 +1063,7 @@ export default function GestorPanelPage() {
                               <span className="flex items-center gap-1 flex-shrink-0">
                                 {stat && (
                                   <span className={cn(
-                                    "text-[9px] font-semibold tabular-nums",
+                                    "text-xs font-medium tabular-nums",
                                     isActive ? "text-primary/80" : "text-muted-foreground/70"
                                   )}>
                                     {stat.occupied}/{stat.total}
@@ -1085,20 +1085,20 @@ export default function GestorPanelPage() {
           return (
             <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-2">
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground shrink-0">Filtro:</span>
+                <span className="hidden sm:inline text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground shrink-0">Filtro:</span>
                 <div className="flex-1 sm:flex-initial">
                   {isMobile ? (
                     <>
                       {filterTrigger}
                       <Sheet open={sectorFilterOpen} onOpenChange={setSectorFilterOpen}>
-                        <SheetContent side="bottom" className="p-0 max-h-[85vh] flex flex-col rounded-t-2xl">
+                        <SheetContent side="bottom" className="p-0 max-h-[85vh] flex flex-col rounded-t-lg">
                           <div className="flex justify-center pt-2 pb-1 shrink-0">
                             <div className="h-1.5 w-12 rounded-full bg-muted-foreground/30" />
                           </div>
                           <SheetHeader className="px-4 pb-3 border-b border-border/60 shrink-0">
-                            <SheetTitle className="text-sm font-semibold uppercase tracking-[0.14em] text-left flex items-center justify-between">
+                            <SheetTitle className="text-sm font-medium uppercase tracking-[0.14em] text-left flex items-center justify-between">
                               <span>Filtrar painel</span>
-                              <span className="text-[10px] font-medium text-muted-foreground/70 tabular-nums normal-case tracking-normal">
+                              <span className="text-xs font-medium text-muted-foreground/70 tabular-nums normal-case tracking-normal">
                                 {bedStats.total} leitos
                               </span>
                             </SheetTitle>
@@ -1115,13 +1115,13 @@ export default function GestorPanelPage() {
                       <PopoverContent
                         align="end"
                         sideOffset={6}
-                        className="w-[min(560px,95vw)] p-0 border-border/60 shadow-xl"
+                        className="w-[min(560px,95vw)] p-0 border-border/60 shadow-md"
                       >
                         <div className="px-4 py-3 border-b border-border/60 bg-muted/40 flex items-center justify-between">
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                          <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
                             Filtrar dados do painel
                           </p>
-                          <span className="text-[10px] font-medium text-muted-foreground/70 tabular-nums">
+                          <span className="text-xs font-medium text-muted-foreground/70 tabular-nums">
                             {bedStats.total} leitos no hospital
                           </span>
                         </div>
@@ -1145,7 +1145,7 @@ export default function GestorPanelPage() {
                     type="button"
                     onClick={() => setPeriod(opt.id)}
                     className={cn(
-                      "flex-1 sm:flex-initial px-3 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wide transition-all",
+                      "flex-1 sm:flex-initial px-3 py-1 rounded-md text-xs font-medium uppercase tracking-wide transition-all",
                       period === opt.id ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
                     )}
                   >
@@ -1174,14 +1174,14 @@ export default function GestorPanelPage() {
                   className="w-full text-left"
                 >
                   <Card className="border-border/50 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer h-full">
-                    <CardContent className="p-2.5 md:p-3.5">
-                      <div className="flex items-start justify-between mb-1.5 md:mb-2">
+                    <CardContent className="p-3 md:p-4">
+                      <div className="flex items-start justify-between mb-2 md:mb-2">
                         <div className={cn("h-7 w-7 md:h-8 md:w-8 rounded-lg flex items-center justify-center", kpi.bg)}>
                           <kpi.icon className={cn("h-3.5 w-3.5 md:h-4 md:w-4", kpi.color)} />
                         </div>
                         {delta && delta.display !== "—" && (
                           <span
-                            className={cn("flex items-center gap-0.5 text-[10px] font-bold", trendColor)}
+                            className={cn("flex items-center gap-1 text-xs font-semibold", trendColor)}
                             title={delta.hint}
                           >
                             <TrendIcon className="h-3 w-3" />
@@ -1189,11 +1189,11 @@ export default function GestorPanelPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-lg md:text-2xl font-bold text-foreground leading-tight truncate">{kpi.value}</p>
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-0.5 line-clamp-2">{kpi.title}</p>
-                      <p className="text-[9px] text-muted-foreground/70 truncate">{kpi.sub}</p>
+                      <p className="text-lg md:text-2xl font-semibold text-foreground leading-tight truncate">{kpi.value}</p>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mt-1 line-clamp-2">{kpi.title}</p>
+                      <p className="text-xs text-muted-foreground/70 truncate">{kpi.sub}</p>
                       {delta?.hint && delta.display !== "—" && (
-                        <p className="hidden md:block text-[9px] text-muted-foreground/50 mt-0.5">{delta.hint}</p>
+                        <p className="hidden md:block text-xs text-muted-foreground/50 mt-1">{delta.hint}</p>
                       )}
                     </CardContent>
                   </Card>
@@ -1208,7 +1208,7 @@ export default function GestorPanelPage() {
           {/* TMP por Setor */}
           <Card className="border-border/50">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Hourglass className="h-4 w-4 text-primary" /> Tempo Médio de Permanência por Setor
               </CardTitle>
             </CardHeader>
@@ -1218,13 +1218,13 @@ export default function GestorPanelPage() {
                   Sem altas no período selecionado para calcular TMP.
                 </p>
               ) : (
-                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                <div className="space-y-2 max-h-64 overflow-y-auto">
                   {tmpBySector.map(row => (
-                    <div key={row.sector} className="flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-md hover:bg-muted/40 transition-colors">
+                    <div key={row.sector} className="flex items-center justify-between gap-3 px-3 py-2 rounded-md hover:bg-muted/40 transition-colors">
                       <span className="text-xs font-medium text-foreground truncate">{getSectorDisplayLabel(row.sector) || row.sector}</span>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] text-muted-foreground">{row.samples} altas</span>
-                        <span className="text-xs font-bold text-primary tabular-nums">
+                        <span className="text-xs text-muted-foreground">{row.samples} altas</span>
+                        <span className="text-xs font-semibold text-primary tabular-nums">
                           {row.avgDays.toFixed(1).replace(".", ",")} d
                         </span>
                       </div>
@@ -1232,7 +1232,7 @@ export default function GestorPanelPage() {
                   ))}
                 </div>
               )}
-              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+              <p className="text-xs text-muted-foreground/70 pt-2 border-t mt-2">
                 Calculado a partir de admissão até alta (encontros encerrados no período).
               </p>
             </CardContent>
@@ -1241,7 +1241,7 @@ export default function GestorPanelPage() {
           {/* Desfechos do Período */}
           <Card className="border-border/50">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Activity className="h-4 w-4 text-primary" /> Desfechos do Período
               </CardTitle>
             </CardHeader>
@@ -1251,19 +1251,19 @@ export default function GestorPanelPage() {
                   Sem desfechos registrados no período.
                 </p>
               ) : (
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   {outcomes.filter(o => o.count > 0).map(o => {
                     const pct = outcomesTotal > 0 ? (o.count / outcomesTotal) * 100 : 0;
                     const Icon = o.icon;
                     return (
                       <div key={o.key} className="space-y-1">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="flex items-center gap-1.5 font-medium text-foreground">
+                          <span className="flex items-center gap-2 font-medium text-foreground">
                             <Icon className="h-3.5 w-3.5" style={{ color: o.color }} />
                             {o.label}
                           </span>
                           <span className="tabular-nums">
-                            <span className="font-bold text-foreground">{o.count}</span>
+                            <span className="font-semibold text-foreground">{o.count}</span>
                             <span className="text-muted-foreground"> · {pct.toFixed(0)}%</span>
                           </span>
                         </div>
@@ -1276,7 +1276,7 @@ export default function GestorPanelPage() {
                       </div>
                     );
                   })}
-                  <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+                  <p className="text-xs text-muted-foreground/70 pt-2 border-t mt-2">
                     Total de {outcomesTotal} desfechos no período.
                   </p>
                 </div>
@@ -1290,16 +1290,16 @@ export default function GestorPanelPage() {
           {/* Giro de Leito */}
           <Card className="border-border/50">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Repeat className="h-4 w-4 text-primary" /> Giro de Leito
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-baseline gap-2 pb-3 border-b mb-3">
-                <span className="text-2xl font-bold text-primary tabular-nums">
+                <span className="text-2xl font-semibold text-primary tabular-nums">
                   {bedTurnoverAvg > 0 ? `${bedTurnoverAvg.toFixed(1).replace(".", ",")}×` : "—"}
                 </span>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">média geral</span>
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">média geral</span>
               </div>
               {bedTurnover.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-6">
@@ -1322,14 +1322,14 @@ export default function GestorPanelPage() {
                       ? `${row.turnover.toFixed(1).replace(".", ",")}×`
                       : `${row.encounters} enc.`;
                     return (
-                      <div key={row.sector} className="flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-md hover:bg-muted/40 transition-colors">
+                      <div key={row.sector} className="flex items-center justify-between gap-3 px-3 py-2 rounded-md hover:bg-muted/40 transition-colors">
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-medium text-foreground truncate">{getSectorDisplayLabel(row.sector) || row.sector}</p>
-                          <p className="text-[10px] text-muted-foreground">
+                          <p className="text-xs text-muted-foreground">
                             {row.encounters} altas · {row.beds > 0 ? `${row.beds} leitos` : "sem leitos mapeados"}
                           </p>
                         </div>
-                        <Badge variant={variant} className={cn("text-[10px] font-bold tabular-nums shrink-0 border", colorClass)}>
+                        <Badge variant={variant} className={cn("text-xs font-semibold tabular-nums shrink-0 border", colorClass)}>
                           {displayTurnover}
                         </Badge>
                       </div>
@@ -1337,7 +1337,7 @@ export default function GestorPanelPage() {
                   })}
                 </div>
               )}
-              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+              <p className="text-xs text-muted-foreground/70 pt-2 border-t mt-2">
                 Encontros encerrados ÷ leitos do setor no período.
               </p>
             </CardContent>
@@ -1346,14 +1346,14 @@ export default function GestorPanelPage() {
           {/* Mortalidade */}
           <Card className="border-border/50">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Skull className="h-4 w-4 text-destructive" /> Mortalidade
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-baseline gap-2 pb-3 border-b mb-3">
-                <span className="text-2xl font-bold text-destructive tabular-nums">{mortalityTotal}</span>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                <span className="text-2xl font-semibold text-destructive tabular-nums">{mortalityTotal}</span>
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">
                   óbito{mortalityTotal === 1 ? "" : "s"} no período
                 </span>
               </div>
@@ -1374,7 +1374,7 @@ export default function GestorPanelPage() {
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-medium text-foreground truncate">{getSectorDisplayLabel(row.sector) || row.sector}</span>
                           <span className="tabular-nums shrink-0">
-                            <span className="font-bold text-destructive">{row.deaths}</span>
+                            <span className="font-semibold text-destructive">{row.deaths}</span>
                             <span className="text-muted-foreground"> · {row.rate.toFixed(0)}%</span>
                           </span>
                         </div>
@@ -1389,7 +1389,7 @@ export default function GestorPanelPage() {
                   })}
                 </div>
               )}
-              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+              <p className="text-xs text-muted-foreground/70 pt-2 border-t mt-2">
                 Óbitos por setor · % sobre movimentações do setor no período.
               </p>
             </CardContent>
@@ -1398,7 +1398,7 @@ export default function GestorPanelPage() {
           {/* Produção Médica */}
           <Card className="border-border/50 md:col-span-2 lg:col-span-1">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Stethoscope className="h-4 w-4 text-primary" /> Ranking de Evoluções Clínicas
               </CardTitle>
             </CardHeader>
@@ -1408,15 +1408,15 @@ export default function GestorPanelPage() {
                   Sem evoluções registradas no período.
                 </p>
               ) : (
-                <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                <div className="space-y-2 max-h-72 overflow-y-auto">
                   {medicalProduction.map((row, idx) => {
                     const leader = medicalProduction[0]?.count || 1;
                     const pct = (row.count / leader) * 100;
                     const isFirst = idx === 0;
                     return (
-                      <div key={row.name} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/40 transition-colors">
+                      <div key={row.name} className="flex items-center gap-2 px-2 py-2 rounded-md hover:bg-muted/40 transition-colors">
                         <span className={cn(
-                          "text-[10px] font-bold tabular-nums w-6 text-center shrink-0",
+                          "text-xs font-semibold tabular-nums w-6 text-center shrink-0",
                           isFirst ? "text-warning" : "text-muted-foreground",
                         )}>
                           {idx + 1}º
@@ -1436,7 +1436,7 @@ export default function GestorPanelPage() {
                             />
                           </div>
                         </div>
-                        <span className="text-xs font-bold text-foreground tabular-nums shrink-0">
+                        <span className="text-xs font-semibold text-foreground tabular-nums shrink-0">
                           {row.count}
                         </span>
                       </div>
@@ -1444,7 +1444,7 @@ export default function GestorPanelPage() {
                   })}
                 </div>
               )}
-              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+              <p className="text-xs text-muted-foreground/70 pt-2 border-t mt-2">
                 Top 10 médicos por evoluções no período · {sectorDisplayName}.
               </p>
             </CardContent>
@@ -1456,17 +1456,17 @@ export default function GestorPanelPage() {
           {/* Card 1 — Pendências de Exames */}
           <Card className="border-border/50">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center justify-between gap-2">
+              <CardTitle className="text-sm font-medium flex items-center justify-between gap-2">
                 <span className="flex items-center gap-2">
                   <FlaskConical className="h-4 w-4 text-primary" /> Pendências de Exames
                 </span>
-                <Badge variant="secondary" className="text-[10px] tabular-nums">{examPendingTotal}</Badge>
+                <Badge variant="secondary" className="text-xs tabular-nums">{examPendingTotal}</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-baseline gap-2 pb-3 border-b mb-3">
-                <span className="text-2xl font-bold text-primary tabular-nums">{examPendingTotal}</span>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                <span className="text-2xl font-semibold text-primary tabular-nums">{examPendingTotal}</span>
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">
                   pendência{examPendingTotal === 1 ? "" : "s"}
                 </span>
               </div>
@@ -1483,7 +1483,7 @@ export default function GestorPanelPage() {
                       <div key={row.category} className="space-y-1">
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-medium text-foreground truncate">{row.label}</span>
-                          <span className="font-bold tabular-nums shrink-0" style={{ color: row.color }}>{row.count}</span>
+                          <span className="font-semibold tabular-nums shrink-0" style={{ color: row.color }}>{row.count}</span>
                         </div>
                         <div className="h-2 bg-muted rounded-full overflow-hidden">
                           <div
@@ -1496,7 +1496,7 @@ export default function GestorPanelPage() {
                   })}
                 </div>
               )}
-              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+              <p className="text-xs text-muted-foreground/70 pt-2 border-t mt-2">
                 Exames aguardando resultado · atualizado agora.
               </p>
             </CardContent>
@@ -1505,7 +1505,7 @@ export default function GestorPanelPage() {
           {/* Card 2 — Pendências por Setor */}
           <Card className="border-border/50">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-primary" /> Pendências por Setor
               </CardTitle>
             </CardHeader>
@@ -1515,7 +1515,7 @@ export default function GestorPanelPage() {
                   Nenhuma pendência no setor selecionado.
                 </p>
               ) : (
-                <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                <div className="space-y-2 max-h-72 overflow-y-auto">
                   {examPendingBySector.slice(0, 8).map(row => {
                     const CAT_META: Record<string, { label: string; color: string }> = {
                       laboratorio:    { label: "Lab",   color: "hsl(210, 80%, 55%)" },
@@ -1526,10 +1526,10 @@ export default function GestorPanelPage() {
                       sat:            { label: "SAT",   color: "hsl(var(--muted-foreground))" },
                     };
                     return (
-                      <div key={row.sector} className="px-2.5 py-1.5 rounded-md hover:bg-muted/40 transition-colors space-y-1">
+                      <div key={row.sector} className="px-3 py-2 rounded-md hover:bg-muted/40 transition-colors space-y-1">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-xs font-medium text-foreground truncate">{getSectorDisplayLabel(row.sector) || row.sector}</p>
-                          <Badge variant="secondary" className="text-[10px] tabular-nums shrink-0">{row.total}</Badge>
+                          <Badge variant="secondary" className="text-xs tabular-nums shrink-0">{row.total}</Badge>
                         </div>
                         <div className="flex flex-wrap gap-1">
                           {Object.entries(row.breakdown).map(([cat, n]) => {
@@ -1537,10 +1537,10 @@ export default function GestorPanelPage() {
                             return (
                               <span
                                 key={cat}
-                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border"
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border"
                                 style={{ borderColor: meta.color, color: meta.color }}
                               >
-                                {meta.label} <span className="tabular-nums font-bold">{n}</span>
+                                {meta.label} <span className="tabular-nums font-semibold">{n}</span>
                               </span>
                             );
                           })}
@@ -1550,7 +1550,7 @@ export default function GestorPanelPage() {
                   })}
                 </div>
               )}
-              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+              <p className="text-xs text-muted-foreground/70 pt-2 border-t mt-2">
                 Top setores com pendências · breakdown por categoria.
               </p>
             </CardContent>
@@ -1559,11 +1559,11 @@ export default function GestorPanelPage() {
           {/* Card 3 — Pacientes Regulados */}
           <Card className="border-border/50">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center justify-between gap-2">
+              <CardTitle className="text-sm font-medium flex items-center justify-between gap-2">
                 <span className="flex items-center gap-2">
                   <Navigation className="h-4 w-4 text-primary" /> Pacientes Regulados
                 </span>
-                <Badge variant="secondary" className="text-[10px] tabular-nums">{regulatedPatients.length}</Badge>
+                <Badge variant="secondary" className="text-xs tabular-nums">{regulatedPatients.length}</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1571,43 +1571,43 @@ export default function GestorPanelPage() {
                 <div className="flex flex-col items-center justify-center py-8 gap-2">
                   <ShieldCheck className="h-8 w-8 text-muted-foreground/40" />
                   <p className="text-xs text-muted-foreground text-center">Nenhum paciente regulado no momento.</p>
-                  <p className="text-[10px] text-muted-foreground/60 text-center">O módulo de regulação entrará em operação em breve.</p>
+                  <p className="text-xs text-muted-foreground/60 text-center">O módulo de regulação entrará em operação em breve.</p>
                 </div>
               ) : (
-                <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                <div className="space-y-2 max-h-72 overflow-y-auto">
                   {regulatedPatients.map(p => {
                     const isUrgent = /urg/i.test(p.priority);
                     return (
-                      <div key={p.id} className="px-2.5 py-2 rounded-md border border-border/40 hover:bg-muted/40 transition-colors space-y-1">
+                      <div key={p.id} className="px-3 py-2 rounded-md border border-border/40 hover:bg-muted/40 transition-colors space-y-1">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs font-semibold text-foreground truncate">{p.name}</p>
+                          <p className="text-xs font-medium text-foreground truncate">{p.name}</p>
                           <Badge
                             variant={isUrgent ? "destructive" : "secondary"}
-                            className="text-[9px] uppercase shrink-0"
+                            className="text-xs uppercase tracking-wider shrink-0"
                           >
                             {p.priority}
                           </Badge>
                         </div>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           {[p.age, p.sex].filter(Boolean).join(" · ") || "—"}
                         </p>
-                        <div className="flex items-center gap-1.5 text-[10px] text-foreground">
+                        <div className="flex items-center gap-2 text-xs text-foreground">
                           <span className="truncate">{p.origin}</span>
                           <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
                           <span className="truncate font-medium">{p.destination}</span>
                         </div>
-                        <div className="flex items-center justify-between gap-2 pt-0.5">
-                          <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
+                        <div className="flex items-center justify-between gap-2 pt-1">
+                          <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
                             <Hourglass className="h-3 w-3" /> {p.waitHours}h em espera
                           </span>
-                          <Badge variant="outline" className="text-[9px] uppercase">{p.status}</Badge>
+                          <Badge variant="outline" className="text-xs uppercase tracking-wider">{p.status}</Badge>
                         </div>
                       </div>
                     );
                   })}
                 </div>
               )}
-              <p className="text-[10px] text-muted-foreground/70 pt-2 border-t mt-2">
+              <p className="text-xs text-muted-foreground/70 pt-2 border-t mt-2">
                 Solicitações de regulação ativas · ordenadas por antiguidade.
               </p>
             </CardContent>
@@ -1617,11 +1617,11 @@ export default function GestorPanelPage() {
         {/* Previsão de Alta por Setor */}
         <Card className="border-border/50 w-full">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold flex items-center justify-between gap-2">
+            <CardTitle className="text-sm font-medium flex items-center justify-between gap-2">
               <span className="flex items-center gap-2">
                 <LogOut className="h-4 w-4 text-primary" /> Previsão de Alta por Setor
               </span>
-              <Badge variant="secondary" className="text-[10px] tabular-nums">{dischargePreviews.length}</Badge>
+              <Badge variant="secondary" className="text-xs tabular-nums">{dischargePreviews.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -1677,7 +1677,7 @@ export default function GestorPanelPage() {
                           type="button"
                           onClick={() => setDischargeFilter(isActive && btn.key !== 'all' ? 'all' : btn.key)}
                           className={cn(
-                            "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold transition-all whitespace-nowrap",
+                            "shrink-0 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-all whitespace-nowrap",
                             isActive
                               ? cn(btn.activeBg, btn.activeText, "border-transparent shadow-sm")
                               : cn("bg-transparent", btn.idleBorder, btn.idleText, "hover:bg-muted/50")
@@ -1687,7 +1687,7 @@ export default function GestorPanelPage() {
                             <span className={cn("h-2 w-2 rounded-full", isActive ? "bg-white/90" : btn.dot)} />
                           )}
                           <span className="uppercase tracking-wide">{btn.label}</span>
-                          <span className="tabular-nums font-bold">{btn.count}</span>
+                          <span className="tabular-nums font-semibold">{btn.count}</span>
                         </button>
                       );
                     })}
@@ -1699,7 +1699,7 @@ export default function GestorPanelPage() {
                       <p className="text-xs text-muted-foreground">Nenhuma previsão de alta registrada para os próximos dias.</p>
                     </div>
                   ) : filteredDischarges.length === 0 ? (
-                    <div className="flex flex-col items-center py-10 gap-2">
+                    <div className="flex flex-col items-center py-8 gap-2">
                       <Check className="h-8 w-8 text-released opacity-60" />
                       <p className="text-sm font-medium text-muted-foreground">
                         Nenhum paciente {emptyLabel}
@@ -1712,9 +1712,9 @@ export default function GestorPanelPage() {
                           <div className="flex items-center justify-between mb-2 px-1">
                             <div className="flex items-center gap-2">
                               <div className="h-3 w-1 rounded-full bg-primary" />
-                              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-foreground">{sector}</p>
+                              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground">{sector}</p>
                             </div>
-                            <Badge variant="outline" className="text-[10px]">{items.length} paciente{items.length > 1 ? 's' : ''}</Badge>
+                            <Badge variant="outline" className="text-xs">{items.length} paciente{items.length > 1 ? 's' : ''}</Badge>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                             {items.map(p => {
@@ -1723,19 +1723,19 @@ export default function GestorPanelPage() {
                                 <div
                                   key={p.id}
                                   className={cn(
-                                    "rounded-xl border p-3 flex flex-col gap-1 transition-all hover:shadow-md",
+                                    "rounded-lg border p-3 flex flex-col gap-1 transition-all hover:shadow-md",
                                     cfg.bg, cfg.border
                                   )}
                                 >
                                   <div className="flex items-center gap-2">
                                     <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", cfg.dot)} />
-                                    <p className="text-[12px] font-bold text-foreground leading-tight uppercase truncate">{p.name}</p>
+                                    <p className="text-xs font-semibold text-foreground leading-tight uppercase tracking-wider truncate">{p.name}</p>
                                   </div>
-                                  <p className="text-[11px] text-muted-foreground pl-4">Leito {p.bed}</p>
-                                  <div className="flex items-center gap-2 pl-4 pt-0.5">
-                                    <span className={cn("text-[11px] font-bold", cfg.text)}>
+                                  <p className="text-xs text-muted-foreground pl-4">Leito {p.bed}</p>
+                                  <div className="flex items-center gap-2 pl-4 pt-1">
+                                    <span className={cn("text-xs font-semibold", cfg.text)}>
                                       {p.status === 'overdue'
-                                        ? `⚠ ${format(p.dischargeDate!, "dd/MM", { locale: ptBR })} — VENCIDA`
+                                        ? `${format(p.dischargeDate!, "dd/MM", { locale: ptBR })} — VENCIDA`
                                         : p.dischargeDate
                                           ? format(p.dischargeDate, "dd/MM/yyyy", { locale: ptBR })
                                           : '—'}
@@ -1752,7 +1752,7 @@ export default function GestorPanelPage() {
                 </>
               );
             })()}
-            <p className="text-[10px] text-muted-foreground/70 pt-3 border-t mt-3">
+            <p className="text-xs text-muted-foreground/70 pt-3 border-t mt-3">
               Previsões de alta registradas pela equipe médica · Vencidas = paciente ainda internado após a data prevista.
             </p>
           </CardContent>
@@ -1772,7 +1772,7 @@ export default function GestorPanelPage() {
           {/* Occupancy Donut */}
           <Card className="border-border/50">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Bed className="h-4 w-4 text-primary" /> Ocupação Geral
               </CardTitle>
             </CardHeader>
@@ -1781,9 +1781,9 @@ export default function GestorPanelPage() {
                 <>
                   {/* Mobile: numeric fallback */}
                   <div className="sm:hidden flex flex-col items-center py-4">
-                    <span className="text-4xl font-bold text-primary tabular-nums">{occupancyRate}%</span>
-                    <span className="text-[11px] text-muted-foreground uppercase tracking-wide mt-1">ocupação</span>
-                    <span className="text-[10px] text-muted-foreground/70 mt-2">
+                    <span className="text-4xl font-semibold text-primary tabular-nums">{occupancyRate}%</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wide mt-1">ocupação</span>
+                    <span className="text-xs text-muted-foreground/70 mt-2">
                       {bedStats.occupied} ocupados · {bedStats.vacant} vagos
                     </span>
                   </div>
@@ -1800,8 +1800,8 @@ export default function GestorPanelPage() {
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-2xl font-bold text-foreground">{occupancyRate}%</span>
-                      <span className="text-[10px] text-muted-foreground">ocupação</span>
+                      <span className="text-2xl font-semibold text-foreground">{occupancyRate}%</span>
+                      <span className="text-xs text-muted-foreground">ocupação</span>
                     </div>
                   </div>
                 </>
@@ -1814,7 +1814,7 @@ export default function GestorPanelPage() {
           {/* Sector Bar Chart */}
           <Card className="border-border/50 lg:col-span-2">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-primary" /> Ocupação por Setor
               </CardTitle>
             </CardHeader>
@@ -1841,7 +1841,7 @@ export default function GestorPanelPage() {
         {/* Movement Trend Chart */}
         <Card className="border-border/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-primary" /> Tendência de Movimentações ({period === "today" ? "hoje" : period === "7d" ? "7 dias" : "30 dias"})
             </CardTitle>
           </CardHeader>
@@ -1866,7 +1866,7 @@ export default function GestorPanelPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="border-border/50">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-primary" /> Validação Farmacêutica
               </CardTitle>
             </CardHeader>
@@ -1879,21 +1879,21 @@ export default function GestorPanelPage() {
                 <div key={item.label} className="space-y-1">
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">{item.label}</span>
-                    <span className="font-semibold text-foreground">{item.value}</span>
+                    <span className="font-medium text-foreground">{item.value}</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div className={cn("h-full rounded-full transition-all duration-500", item.color)} style={{ width: `${item.total > 0 ? (item.value / item.total) * 100 : 0}%` }} />
                   </div>
                 </div>
               ))}
-              <p className="text-[10px] text-muted-foreground pt-1">{prescriptionStats.total} prescrições no total · {medicationCount} medicamentos no catálogo</p>
+              <p className="text-xs text-muted-foreground pt-1">{prescriptionStats.total} prescrições no total · {medicationCount} medicamentos no catálogo</p>
             </CardContent>
           </Card>
 
           {/* Alerts Summary */}
           <Card className="border-border/50">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-destructive" /> Alertas Ativos
               </CardTitle>
             </CardHeader>
@@ -1906,16 +1906,16 @@ export default function GestorPanelPage() {
               ) : (
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {criticalAlerts.slice(0, 6).map(alert => (
-                    <div key={alert.id} className={cn("flex items-center gap-3 p-2.5 rounded-lg border", alert.severity === "critical" ? "border-destructive/30 bg-destructive/5" : "border-warning-border/30 bg-warning-soft/50")}>
+                    <div key={alert.id} className={cn("flex items-center gap-3 p-3 rounded-lg border", alert.severity === "critical" ? "border-destructive/30 bg-destructive/5" : "border-warning-border/30 bg-warning-soft/50")}>
                       <AlertTriangle className={cn("h-3.5 w-3.5 shrink-0", alert.severity === "critical" ? "text-destructive" : "text-warning-on-soft")} />
                       <div className="flex-1 min-w-0">
-                        <p className="patient-id text-xs font-semibold text-foreground truncate">{alert.patientName}</p>
-                        <p className="text-[10px] text-muted-foreground">{getSectorDisplayLabel(alert.sector) || alert.sector} · L{alert.bed} — {alert.detail}</p>
+                        <p className="patient-id text-xs font-medium text-foreground truncate">{alert.patientName}</p>
+                        <p className="text-xs text-muted-foreground">{getSectorDisplayLabel(alert.sector) || alert.sector} · L{alert.bed} — {alert.detail}</p>
                       </div>
                     </div>
                   ))}
                   {criticalAlerts.length > 6 && (
-                    <p className="text-[10px] text-muted-foreground text-center pt-1">+{criticalAlerts.length - 6} alertas adicionais</p>
+                    <p className="text-xs text-muted-foreground text-center pt-1">+{criticalAlerts.length - 6} alertas adicionais</p>
                   )}
                 </div>
               )}
@@ -1926,7 +1926,7 @@ export default function GestorPanelPage() {
         {/* Recent Movements Timeline */}
         <Card className="border-border/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
               <ArrowUpDown className="h-4 w-4 text-primary" /> Movimentações Recentes
             </CardTitle>
           </CardHeader>
@@ -1940,7 +1940,7 @@ export default function GestorPanelPage() {
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {recentMovements.map((mov, i) => (
                   <motion.div key={mov.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}>
-                    <div className="flex items-center gap-3 p-2.5 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors">
                       <div className={cn("h-7 w-7 rounded-lg flex items-center justify-center shrink-0",
                         mov.movement_type?.toUpperCase().includes("ALTA") ? "bg-released/10" :
                         mov.movement_type?.toUpperCase().includes("ÓBITO") ? "bg-destructive/10" : "bg-primary/10"
@@ -1951,13 +1951,13 @@ export default function GestorPanelPage() {
                         )} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="patient-id text-xs font-semibold truncate text-foreground">{mov.patient_name}</p>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="patient-id text-xs font-medium truncate text-foreground">{mov.patient_name}</p>
+                        <p className="text-xs text-muted-foreground">
                           {mov.movement_type}{mov.destination ? ` → ${mov.destination}` : ""}
                         </p>
                       </div>
-                      <Badge variant="outline" className="hidden sm:flex text-[9px] shrink-0">{getSectorDisplayLabel(mov.patient_sector)} · {mov.patient_bed}</Badge>
-                      <span className="hidden sm:inline text-[9px] text-muted-foreground shrink-0">
+                      <Badge variant="outline" className="hidden sm:flex text-xs shrink-0">{getSectorDisplayLabel(mov.patient_sector)} · {mov.patient_bed}</Badge>
+                      <span className="hidden sm:inline text-xs text-muted-foreground shrink-0">
                         {format(new Date(mov.created_at), "dd/MM HH:mm", { locale: ptBR })}
                       </span>
                     </div>

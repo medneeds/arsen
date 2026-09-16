@@ -144,12 +144,12 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
         ) : row ? (
           <div className="space-y-3">
             {row.is_unidentified && (
-              <Badge variant="outline" className="text-[10px] border-border/40">
+              <Badge variant="outline" className="text-xs border-border/40">
                 Paciente NI — para promover, use "Identificar paciente" (merge).
               </Badge>
             )}
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="cp-name" className="text-xs">Nome completo</Label>
               <Input
                 id="cp-name"
@@ -157,21 +157,21 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
                 onChange={(e) => setFullName(normalizePatientNameInput(e.target.value))}
                 className="font-medium"
               />
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Mínimo de 2 palavras para considerar identificação completa.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="cp-cpf" className="text-xs">CPF</Label>
                 <Input id="cp-cpf" placeholder="000.000.000-00" value={cpf} onChange={(e) => setCpf(e.target.value)} />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="cp-cns" className="text-xs">Cartão SUS (CNS)</Label>
                 <Input id="cp-cns" placeholder="000 0000 0000 0000" value={cns} onChange={(e) => setCns(e.target.value)} />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="cp-dn" className="text-xs">Data de nascimento</Label>
                 <Input
                   id="cp-dn"
@@ -181,18 +181,18 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
                   max={new Date().toISOString().slice(0, 10)}
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="cp-phone" className="text-xs">Telefone</Label>
                 <Input id="cp-phone" placeholder="(99) 99999-9999" value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="cp-mom" className="text-xs">Nome da mãe</Label>
               <Input id="cp-mom" value={motherName} onChange={(e) => setMotherName(normalizePatientNameInput(e.target.value))} />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="cp-obs" className="text-xs">Observações desta complementação</Label>
               <Textarea
                 id="cp-obs"
