@@ -5,62 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import {
-  LogIn, User, Lock, Eye, EyeOff, ArrowRight, ArrowLeft,
-  ShieldCheck,
-} from "lucide-react";
+import { User, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
 // IndividualSignUpForm removed — signup público desativado; cadastros agora ficam em /gestao-usuarios.
 import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { AuthBackgroundFx } from "@/components/auth/AuthBackgroundFx";
 import { resolveLandingRoute } from "@/config/profileDefaults";
 import { ProfileChooser } from "@/components/auth/ProfileChooser";
 import { FirstAccessSetup } from "@/components/auth/FirstAccessSetup";
 import type { AccessProfile } from "@/config/userProfiles";
 import { safeSetItem } from "@/lib/safeStorage";
+import { ArsenMark } from "@/components/brand/ArsenMark";
+import { whitelabel } from "@/config/whitelabel";
 
 /* ─── Shared chrome ─────────────────────────────────────────────── */
-function PageHeader() {
-  const navigate = useNavigate();
-  return (
-    <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/70 border-b border-border/60" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
-      <div className="max-w-6xl mx-auto px-4 md:px-6 h-12 md:h-14 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[9px] md:text-[10px] font-medium text-muted-foreground tracking-[0.18em] md:tracking-[0.2em]">
-          <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-          <span className="hidden sm:inline">ACESSO À PLATAFORMA</span>
-          <span className="sm:hidden">ACESSO</span>
-        </div>
-
-        <button
-          onClick={() => navigate("/")}
-          className="preserve-case inline-flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 text-xs font-medium transition-all"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Início
-        </button>
-      </div>
-    </header>
-  );
-}
-
-function PageFooter() {
-  const currentYear = new Date().getFullYear();
-  return (
-    <footer className="border-t border-border/60 bg-muted/30 py-6 px-6">
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
-        <p className="preserve-case text-xs text-muted-foreground">
-          © {currentYear} Arsen. Todos os direitos reservados.
-        </p>
-        <p className="preserve-case text-xs text-muted-foreground">
-          Desenvolvido por <span className="font-medium text-foreground/80">Medneeds</span>
-        </p>
-      </div>
-    </footer>
-  );
-}
 
 /* ─── Page ──────────────────────────────────────────────────────── */
 export default function AuthPage() {
@@ -276,157 +235,160 @@ export default function AuthPage() {
         />
       )}
 
+      {/* Tela dividida: formulario a esquerda, campo institucional a direita.
+          Em telas pequenas o campo vira uma faixa curta NO TOPO (order-1) e o
+          formulario ocupa o resto — quem entra pelo celular ve primeiro de quem
+          e o sistema, e so entao os campos. */}
       <div
         className={cn(
-          "min-h-screen flex flex-col bg-background text-foreground transition-opacity duration-500 relative",
-          showLoadingScreen && "opacity-0"
+          "min-h-screen flex flex-col lg:flex-row bg-background text-foreground transition-opacity duration-500",
+          showLoadingScreen && "opacity-0",
         )}
       >
-        {/* Animated background — clinical concept (ECG, pulses, particles) */}
-        <AuthBackgroundFx />
+        <section className="order-1 flex flex-col px-7 py-9 sm:px-10 lg:order-2 lg:w-[54%] lg:px-14 lg:py-14 relative overflow-hidden">
+          {/* Campo navy em tres camadas de profundidade: o gradiente do fundo,
+              a marca recortada em escala gigante e um feixe que nasce na fenda
+              do apice. A marca nao aparece inteira — sangra nas bordas e lê como
+              estrutura, nao como selo. */}
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                "linear-gradient(152deg, #1C4E80 0%, #123A62 44%, #091B31 100%)",
+            }}
+            aria-hidden
+          />
 
-        <PageHeader />
+          <svg
+            viewBox="0 0 68 82"
+            className="pointer-events-none absolute left-[30%] -top-[40%] h-[186%] hidden lg:block"
+            fill="none"
+            aria-hidden
+          >
+            <path d="M25.6,18 L29.25,18 L12,76 L6,76 Z" fill="#FFFFFF" opacity="0.07" />
+            <path d="M33,2 L37.5,2 L62,76 L49,76 Z" fill="#FFFFFF" opacity="0.13" />
+            <rect x="18" y="50" width="27" height="3.2" rx="1.6" fill="#FFFFFF" opacity="0.07" />
+          </svg>
 
-        <main className="flex-1 flex items-start sm:items-center justify-center px-3 sm:px-6 pt-4 pb-8 sm:py-16 relative">
-          <AnimatePresence mode="wait">
-            {screen === "login" ? (
-              <motion.div
-                key="login"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.4 }}
-                className="w-full max-w-[440px] relative"
+          <div
+            className="pointer-events-none absolute left-[44%] top-0 h-[74%] w-[92px] hidden lg:block"
+            style={{
+              backgroundImage:
+                "linear-gradient(177deg, rgba(255,255,255,.12) 0%, rgba(255,255,255,.028) 40%, rgba(255,255,255,0) 78%)",
+              transform: "skewX(-12deg)",
+            }}
+            aria-hidden
+          />
+
+          <div className="relative mt-auto">
+            <div className="mb-6 h-px w-7 bg-white/30" aria-hidden />
+            <p
+              className="preserve-case text-[40px] leading-none tracking-[0.012em] text-[#F4F8FC] lg:text-[44px]"
+              style={{ fontFamily: "var(--font-brand)" }}
+            >
+              Arsen
+            </p>
+            <p className="preserve-case mt-2 text-[10.5px] font-light tracking-[0.28em] text-[#E2EEF9]/[0.46]">
+              PLATAFORMA CLÍNICA
+            </p>
+          </div>
+        </section>
+
+        <section className="order-2 flex flex-1 flex-col px-7 py-9 sm:px-10 lg:order-1 lg:px-14 lg:py-14">
+          <ArsenMark size={32} className="text-primary" />
+
+          <div className="mt-auto w-full max-w-sm">
+            <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
+              <div>
+                <Label htmlFor="username" className="text-[10px] font-medium text-muted-foreground mb-1.5 block tracking-[0.15em]">
+                  USUÁRIO, CPF OU E-MAIL
+                </Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+                  <Input
+                    id="username"
+                    type="text"
+                    value={loginData.username}
+                    onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
+                    placeholder="Usuário, CPF ou e-mail"
+                    className="preserve-case pl-10 h-12 text-base sm:h-11 sm:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
+                    disabled={loading}
+                    autoComplete="username"
+                    autoFocus
+                    inputMode="text"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="password" className="text-[10px] font-medium text-muted-foreground mb-1.5 block tracking-[0.15em]">
+                  SENHA
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={loginData.password}
+                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                    placeholder="Digite sua senha"
+                    className="pl-10 pr-12 h-12 text-base sm:h-11 sm:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
+                    disabled={loading}
+                    autoComplete="current-password"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 inline-flex items-center justify-center rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-muted/60 active:bg-muted transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setForgotOpen(true)}
+                    className="preserve-case text-xs sm:text-[11px] py-1 px-1 -mr-1 text-primary hover:text-primary/80 hover:underline transition-colors"
+                    disabled={loading}
+                  >
+                    Esqueceu a senha?
+                  </button>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="preserve-case w-full h-12 sm:h-11 bg-gradient-to-b from-primary to-primary/90 hover:from-primary/95 hover:to-primary/80 text-primary-foreground font-medium text-sm rounded-xl transition-all duration-300 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 group border border-primary/20"
               >
-                {/* Brand block removed — focus on whitelabel */}
+                {loading ? "Entrando..." : (
+                  <span className="inline-flex items-center gap-2">
+                    Entrar
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                )}
+              </Button>
+            </form>
+          </div>
 
-                {/* Login Card */}
-                <motion.div
-                  className="relative bg-card rounded-2xl border border-border/70 p-4 sm:p-7 shadow-[0_20px_60px_-20px_hsl(var(--primary)/0.18),0_8px_24px_-12px_hsl(215_25%_12%/0.08)]"
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                >
-                  {/* Card top accent bar */}
-                  <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-
-                  <div className="mb-4 sm:mb-5 flex items-center gap-2.5">
-                    <div className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/15">
-                      <LogIn className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="preserve-case text-sm font-semibold text-foreground">Acesse sua conta</p>
-                      <p className="preserve-case text-xs text-muted-foreground">Informe suas credenciais</p>
-                    </div>
-                  </div>
-
-                  <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
-                    <div>
-                      <Label htmlFor="username" className="text-[10px] font-medium text-muted-foreground mb-1.5 block tracking-[0.15em]">
-                        USUÁRIO, CPF OU E-MAIL
-                      </Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
-                        <Input
-                          id="username"
-                          type="text"
-                          value={loginData.username}
-                          onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
-                          placeholder="Usuário, CPF ou e-mail"
-                          className="preserve-case pl-10 h-12 text-base sm:h-11 sm:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
-                          disabled={loading}
-                          autoComplete="username"
-                          autoFocus
-                          inputMode="text"
-                          autoCapitalize="none"
-                          autoCorrect="off"
-                          spellCheck={false}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="password" className="text-[10px] font-medium text-muted-foreground mb-1.5 block tracking-[0.15em]">
-                        SENHA
-                      </Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
-                        <Input
-                          id="password"
-                          type={showPassword ? "text" : "password"}
-                          value={loginData.password}
-                          onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                          placeholder="Digite sua senha"
-                          className="pl-10 pr-12 h-12 text-base sm:h-11 sm:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
-                          disabled={loading}
-                          autoComplete="current-password"
-                          autoCapitalize="none"
-                          autoCorrect="off"
-                          spellCheck={false}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 inline-flex items-center justify-center rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-muted/60 active:bg-muted transition-colors"
-                          tabIndex={-1}
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                      <div className="mt-2 flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() => setForgotOpen(true)}
-                          className="preserve-case text-xs sm:text-[11px] py-1 px-1 -mr-1 text-primary hover:text-primary/80 hover:underline transition-colors"
-                          disabled={loading}
-                        >
-                          Esqueceu a senha?
-                        </button>
-                      </div>
-                    </div>
-
-                    <Button
-                      type="submit"
-                      disabled={loading}
-                      className="preserve-case w-full h-12 sm:h-11 bg-gradient-to-b from-primary to-primary/90 hover:from-primary/95 hover:to-primary/80 text-primary-foreground font-medium text-sm rounded-xl transition-all duration-300 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 group border border-primary/20"
-                    >
-                      {loading ? "Entrando..." : (
-                        <span className="inline-flex items-center gap-2">
-                          Entrar
-                          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                        </span>
-                      )}
-                    </Button>
-                  </form>
-
-                  {/* Compliance microline */}
-                  <div className="mt-5 pt-4 border-t border-border/50 flex items-center justify-center gap-1.5">
-                    <ShieldCheck className="h-3 w-3 text-muted-foreground/60" />
-                    <span className="preserve-case text-[10px] text-muted-foreground/70 tracking-wide">
-                      Conexão segura • LGPD • CFM
-                    </span>
-                  </div>
-                </motion.div>
-
-                {/* Acesso restrito — cadastros são gerados internamente */}
-                <motion.div
-                  className="text-center mt-6"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  <p className="preserve-case inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/80 px-4">
-                    <ShieldCheck className="h-3 w-3 shrink-0" />
-                    <span>Acesso restrito • Solicite seu cadastro à coordenação</span>
-                  </p>
-                </motion.div>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
-        </main>
-
-        <PageFooter />
+          <div className="mt-auto w-full max-w-sm pt-11">
+            <p className="preserve-case text-[11px] text-muted-foreground">
+              {whitelabel.institution.hospitalName}
+            </p>
+            <p className="preserve-case mt-0.5 text-[11px] font-light text-muted-foreground/70">
+              {whitelabel.institution.hospitalShortName} &nbsp;·&nbsp;{" "}
+              {whitelabel.institution.city}, {whitelabel.institution.state}
+            </p>
+          </div>
+        </section>
       </div>
 
       <ForgotPasswordDialog
