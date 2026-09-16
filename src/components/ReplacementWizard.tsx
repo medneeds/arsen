@@ -547,7 +547,7 @@ export function ReplacementWizard({
   const Chip = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
     <button type="button" onClick={onClick} className={cn(
       "px-2.5 py-1 rounded-md border text-xs font-medium transition-all",
-      active ? "bg-sky-600 text-white border-sky-600" : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/60"
+      active ? "bg-primary text-white border-border" : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/60"
     )}>{children}</button>
   );
 
@@ -555,7 +555,7 @@ export function ReplacementWizard({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl w-[min(46rem,calc(100vw-2rem))] max-h-[calc(100svh-6rem)] top-4 translate-y-0 z-[80] overflow-y-auto p-4">
         <DialogHeader className="pb-2">
-          <DialogTitle className="flex items-center gap-2 text-sky-700 dark:text-sky-300">
+          <DialogTitle className="flex items-center gap-2 text-foreground">
             <FlaskConical className="h-5 w-5" /> Assistente de Reposição / Correção Eletrolítica
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -570,7 +570,7 @@ export function ReplacementWizard({
               {DISORDERS.map(d => (
                 <button key={d.key} type="button" onClick={() => setDisorder(d.key)}
                   className={cn("text-left p-2 rounded-md border transition-all",
-                    disorder === d.key ? "border-sky-500 bg-sky-50 dark:bg-sky-950/30" : "border-border bg-background hover:border-sky-300")}>
+                    disorder === d.key ? "border-border bg-muted" : "border-border bg-background hover:border-border")}>
                   <p className="text-xs font-semibold">{d.label}</p>
                   <p className="text-[10px] text-muted-foreground">{d.detail}</p>
                 </button>
@@ -600,7 +600,7 @@ export function ReplacementWizard({
 
           {/* Lista de prescrições sugeridas */}
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-700 dark:text-sky-300 flex items-center gap-1 mb-1.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground flex items-center gap-1 mb-1.5">
               <Sparkles className="h-3 w-3" /> Prescrição sugerida — escolha uma opção
             </p>
             <div className="space-y-1.5">
@@ -614,14 +614,14 @@ export function ReplacementWizard({
                     className={cn(
                       "w-full text-left rounded-md border p-2 transition-all",
                       isActive
-                        ? "border-sky-500 bg-sky-50 dark:bg-sky-950/30 ring-1 ring-sky-500/30"
-                        : "border-border bg-background hover:border-sky-300 hover:bg-muted/30"
+                        ? "border-border bg-muted ring-1 ring-ring/30"
+                        : "border-border bg-background hover:border-border hover:bg-muted/30"
                     )}
                   >
                     <div className="flex items-start gap-2">
                       <div className={cn(
                         "mt-0.5 h-4 w-4 rounded-full border flex items-center justify-center shrink-0",
-                        isActive ? "bg-sky-600 border-sky-600" : "border-muted-foreground/40"
+                        isActive ? "bg-primary border-border" : "border-muted-foreground/40"
                       )}>
                         {isActive && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
                       </div>
@@ -653,7 +653,7 @@ export function ReplacementWizard({
             onAddCurrent={handleAddToQueue}
             onSaveCurrent={handleSaveEditing}
             addLabel="Acrescentar esta reposição"
-            accentClassName="border-sky-300 bg-sky-50/40 text-sky-700 dark:border-sky-900 dark:bg-sky-950/20 dark:text-sky-300"
+            accentClassName="border-border bg-muted/40 text-foreground"
             hint="Conjugue múltiplas reposições (ex: hipoK + hipoMg) em uma única prescrição."
             disableAdd={!selected}
           />
@@ -665,7 +665,7 @@ export function ReplacementWizard({
             size="sm"
             disabled={queue.items.length === 0 && entries.length === 0}
             onClick={handleConfirmAll}
-            className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white"
+            className="gap-1.5 bg-primary hover:bg-primary text-white"
           >
             <Sparkles className="h-3.5 w-3.5" />
             {queue.items.length > 0

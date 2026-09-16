@@ -95,11 +95,11 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
       onClick={onClick}
       className={cn(
         "text-left px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all",
-        active ? "bg-sky-600 text-white border-sky-600" : "bg-background text-foreground border-border hover:border-sky-400 hover:bg-sky-50/40 dark:hover:bg-sky-950/20"
+        active ? "bg-primary text-white border-border" : "bg-background text-foreground border-border hover:border-border hover:bg-muted/40"
       )}
     >
       <div>{children}</div>
-      {hint && <div className={cn("text-[10px] mt-0.5 font-normal", active ? "text-sky-50" : "text-muted-foreground")}>{hint}</div>}
+      {hint && <div className={cn("text-[10px] mt-0.5 font-normal", active ? "text-muted-foreground" : "text-muted-foreground")}>{hint}</div>}
     </button>
   );
 
@@ -194,7 +194,7 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
           />
         </div>
         {isReplacement && cur.diluent && cur.volumeTotal && (
-          <div className="rounded-md border border-sky-200 dark:border-sky-900 bg-sky-50/40 dark:bg-sky-950/20 p-2 text-[11px] text-sky-700 dark:text-sky-300">
+          <div className="rounded-md border border-border bg-muted/40 p-2 text-[11px] text-foreground">
             <Sparkles className="h-3 w-3 inline mr-1" />
             Receita: <strong>{cur.name}</strong> diluído em <strong>{cur.volumeTotal} mL de {cur.diluent}</strong>
             {cur.route && <> · via <strong>{cur.route}</strong>{cur.accessType && ` (${cur.accessType})`}</>}
@@ -291,7 +291,7 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl w-[min(36rem,calc(100vw-2rem))] max-h-[calc(100svh-6rem)] top-4 translate-y-0 z-[80] overflow-y-auto p-4">
         <DialogHeader className="pb-1">
-          <DialogTitle className="flex items-center gap-2 text-sky-700 dark:text-sky-300 text-base">
+          <DialogTitle className="flex items-center gap-2 text-foreground text-base">
             <Wand2 className="h-4 w-4" /> Configurar com assistente
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -308,7 +308,7 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
               onClick={() => setStep(i)}
               className={cn(
                 "flex-1 text-[10px] py-1 rounded border transition-all",
-                step === i ? "bg-sky-600 text-white border-sky-600 font-semibold" : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/60"
+                step === i ? "bg-primary text-white border-border font-semibold" : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/60"
               )}
             >
               {i + 1}. {lbl}
@@ -327,11 +327,11 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
             <ChevronLeft className="h-3.5 w-3.5" /> Voltar
           </Button>
           {step < totalSteps - 1 ? (
-            <Button size="sm" onClick={() => setStep(s => Math.min(totalSteps - 1, s + 1))} className="bg-sky-600 hover:bg-sky-700 text-white">
+            <Button size="sm" onClick={() => setStep(s => Math.min(totalSteps - 1, s + 1))} className="bg-primary hover:bg-primary text-white">
               Avançar <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           ) : (
-            <Button size="sm" onClick={apply} className="bg-sky-600 hover:bg-sky-700 text-white gap-1.5">
+            <Button size="sm" onClick={apply} className="bg-primary hover:bg-primary text-white gap-1.5">
               <Sparkles className="h-3.5 w-3.5" /> Aplicar
             </Button>
           )}

@@ -27,8 +27,8 @@ export interface ExtraCategoryOption {
 // (convenção ISMP-Brasil para Medicamentos de Alta Vigilância).
 const BLUE_BASE = {
   color: 'text-[hsl(217,70%,40%)]',
-  bg: 'bg-[hsl(217,55%,96%)] dark:bg-[hsl(217,55%,12%)]/30',
-  border: 'border-[hsl(217,55%,82%)] dark:border-[hsl(217,55%,30%)] hover:border-[hsl(217,60%,60%)]',
+  bg: 'bg-[hsl(217,55%,96%)](217,55%,12%)]/30',
+  border: 'border-[hsl(217,55%,82%)](217,55%,30%)] hover:border-[hsl(217,60%,60%)]',
 };
 
 const OPTIONS: ExtraCategoryOption[] = [
@@ -44,9 +44,9 @@ const OPTIONS: ExtraCategoryOption[] = [
     label: 'Alta Vigilância',
     description: 'MAV — psicotrópicos e medicamentos de risco. Dupla checagem obrigatória.',
     icon: AlertTriangle,
-    color: 'text-red-600',
-    bg: 'bg-red-50 dark:bg-red-950/30',
-    border: 'border-red-200 dark:border-red-800 hover:border-red-400',
+    color: 'text-critical-on-soft',
+    bg: 'bg-critical-soft',
+    border: 'border-critical-border hover:border-critical',
   },
   {
     value: 'replacement',

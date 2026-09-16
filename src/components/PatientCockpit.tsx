@@ -286,10 +286,10 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           "w-8 h-auto min-h-[120px]",
           "flex flex-col items-center justify-center gap-2 py-3",
           "rounded-l-xl",
-          "border border-r-0 border-[hsl(217,30%,78%)] dark:border-[hsl(217,30%,25%)]",
-          "bg-card dark:bg-card",
+          "border border-r-0 border-[hsl(217,30%,78%)](217,30%,25%)]",
+          "bg-card",
           "shadow-[-3px_2px_12px_rgba(10,22,56,0.14)]",
-          "hover:bg-[hsl(217,55%,97%)] dark:hover:bg-[hsl(217,30%,14%)]",
+          "hover:bg-[hsl(217,55%,97%)](217,30%,14%)]",
           "transition-colors duration-150 cursor-pointer"
         )}
       >
@@ -308,7 +308,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         {/* Leito — info principal */}
         {patient.bedNumber && (
           <span
-            className="text-[10px] font-black text-[hsl(217,72%,32%)] dark:text-[hsl(217,60%,65%)] shrink-0 leading-none"
+            className="text-[10px] font-black text-[hsl(217,72%,32%)](217,60%,65%)] shrink-0 leading-none"
             style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
           >
             {patient.bedNumber}
@@ -327,7 +327,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
 
         {/* Label VER */}
         <span
-          className="text-[7px] font-bold tracking-[0.15em] uppercase text-[hsl(217,40%,55%)] dark:text-[hsl(217,40%,50%)] shrink-0"
+          className="text-[7px] font-bold tracking-[0.15em] uppercase text-[hsl(217,40%,55%)](217,40%,50%)] shrink-0"
           style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
         >
           ver
@@ -371,7 +371,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             "transition-[width] duration-300 ease-out",
             isExpanded ? "w-[min(24rem,85vw)]" : "w-11",
           ],
-          variant === "inline" && "w-full h-full bg-card border border-[hsl(217,30%,82%)]/70 dark:border-[hsl(217,30%,24%)]/70 rounded-lg overflow-hidden",
+          variant === "inline" && "w-full h-full bg-card border border-[hsl(217,30%,82%)]/70(217,30%,24%)]/70 rounded-lg overflow-hidden",
           "flex-col print:hidden",
           className
         )}
@@ -392,9 +392,9 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               "rounded-none",
               // Fundo: degradê sutil cabeçalho institucional
               "bg-gradient-to-b from-[#0a1628]/5 via-[#0f2847]/8 to-[#1a3a5c]/5",
-              "dark:from-[#0a1628]/30 dark:via-[#0f2847]/40 dark:to-[#1a3a5c]/30",
+              "#0a1628]/30#0f2847]/40#1a3a5c]/30",
               // Borda sutil em todos os lados
-              "border border-[hsl(217,30%,75%)]/40 dark:border-[hsl(217,30%,24%)]/50",
+              "border border-[hsl(217,30%,75%)]/40(217,30%,24%)]/50",
               // Hover: ligeiramente mais opaco
               "hover:bg-gradient-to-b hover:from-[#0a1628]/10 hover:via-[#0f2847]/15 hover:to-[#1a3a5c]/10",
               "relative overflow-hidden",
@@ -469,7 +469,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           variant === "fixed" && !isExpanded && "hidden"
         )}>
         {variant === "fixed" && isExpanded && (
-          <div className="flex justify-end px-2 pt-2 bg-gradient-to-b from-[hsl(217,55%,40%)]/[0.06] via-[hsl(217,55%,40%)]/[0.03] to-transparent border-b border-[hsl(217,30%,86%)]/40 dark:border-[hsl(217,30%,26%)]/40">
+          <div className="flex justify-end px-2 pt-2 bg-gradient-to-b from-[hsl(217,55%,40%)]/[0.06] via-[hsl(217,55%,40%)]/[0.03] to-transparent border-b border-[hsl(217,30%,86%)]/40(217,30%,26%)]/40">
             <button
               type="button"
               title={pinned ? "Desafixar (recolher ao tirar o mouse)" : "Fixar painel aberto"}
@@ -682,9 +682,9 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                                 variant="outline"
                                 className={cn(
                                   "h-4 px-1 text-[9px] font-semibold border shrink-0",
-                                  tone === "ok" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
-                                  tone === "amber" && "bg-amber-500/10 text-amber-700 border-amber-500/40 dark:text-amber-400",
-                                  tone === "red" && "bg-red-500/10 text-red-700 border-red-500/40 dark:text-red-400",
+                                  tone === "ok" && "bg-released/10 text-released-on-soft border-released/30",
+                                  tone === "amber" && "bg-warning/10 text-warning-on-soft border-warning/40",
+                                  tone === "red" && "bg-critical/10 text-critical-on-soft border-critical/40",
                                 )}
                               >
                                 D{days}
@@ -902,9 +902,9 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           const isPending = nirRequest.status === "pending";
           const trackingTone =
             elapsedMin > 180 ? "bg-destructive/10 text-destructive border-destructive/30" :
-            elapsedMin > 120 ? "bg-amber-500/10 text-amber-700 border-amber-500/30" :
-            elapsedMin > 60  ? "bg-yellow-400/10 text-yellow-700 border-yellow-400/30" :
-                               "bg-emerald-500/10 text-emerald-700 border-emerald-500/30";
+            elapsedMin > 120 ? "bg-warning/10 text-warning-on-soft border-warning/30" :
+            elapsedMin > 60  ? "bg-warning/10 text-warning-on-soft border-warning/30" :
+                               "bg-released/10 text-released-on-soft border-released/30";
           const fmtElapsed = elapsedMin < 60
             ? `${elapsedMin}min`
             : `${Math.floor(elapsedMin / 60)}h${String(elapsedMin % 60).padStart(2, "0")}`;
@@ -1011,13 +1011,13 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                   <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground mt-0.5">
                     {specialSummary.hemocomponente > 0 && (
                       <span className="inline-flex items-center gap-1">
-                        <Droplet className="h-2.5 w-2.5 text-rose-500" />
+                        <Droplet className="h-2.5 w-2.5 text-critical" />
                         Hemo <strong className="text-foreground">{specialSummary.hemocomponente}</strong>
                       </span>
                     )}
                     {specialSummary.sat > 0 && (
                       <span className="inline-flex items-center gap-1">
-                        <Syringe className="h-2.5 w-2.5 text-amber-500" />
+                        <Syringe className="h-2.5 w-2.5 text-warning" />
                         SAT <strong className="text-foreground">{specialSummary.sat}</strong>
                       </span>
                     )}
@@ -1045,7 +1045,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                     </span>
                     <span className={cn(
                       "text-[9px] uppercase font-semibold px-1 rounded shrink-0",
-                      it.status === "completed" && "text-emerald-700 dark:text-emerald-400",
+                      it.status === "completed" && "text-released-on-soft",
                       it.status === "pending" && "text-warning",
                     )}>
                       {it.status}
@@ -1111,7 +1111,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                         </div>
                         <span className={cn(
                           "text-[9px] uppercase font-semibold px-1 rounded shrink-0",
-                          it.status === "completed" && "text-emerald-700 dark:text-emerald-400",
+                          it.status === "completed" && "text-released-on-soft",
                           it.status === "pending" && "text-warning",
                           it.critical && "text-destructive",
                         )}>
@@ -1186,7 +1186,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                             </span>
                             <span className={cn(
                               "text-[9px] uppercase font-semibold px-1 rounded",
-                              released ? "text-emerald-700 dark:text-emerald-400" : "text-warning",
+                              released ? "text-released-on-soft" : "text-warning",
                             )}>
                               {released ? "liberado" : "pendente"}
                             </span>
@@ -1385,10 +1385,10 @@ function FileCheckIcon() {
 
 function SpecialKindDot({ kind }: { kind: "hemocomponente" | "sat" | "apac" | "cultura" }) {
   const map: Record<string, string> = {
-    hemocomponente: "bg-rose-500",
-    sat: "bg-amber-500",
-    apac: "bg-indigo-500",
-    cultura: "bg-emerald-500",
+    hemocomponente: "bg-critical",
+    sat: "bg-warning",
+    apac: "bg-primary",
+    cultura: "bg-released",
   };
   return <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", map[kind])} />;
 }
@@ -1405,7 +1405,7 @@ function AlertChip({ icon: Icon, tone, label, value, count }: AlertChipProps) {
   const toneStyles = {
     danger: { wrap: "border-l-destructive/70", icon: "text-destructive", count: "text-destructive" },
     warning: { wrap: "border-l-warning/70", icon: "text-warning", count: "text-warning" },
-    success: { wrap: "border-l-emerald-500/70", icon: "text-emerald-600 dark:text-emerald-400", count: "text-emerald-600 dark:text-emerald-400" },
+    success: { wrap: "border-l-emerald-500/70", icon: "text-released-on-soft", count: "text-released-on-soft" },
     muted: { wrap: "border-l-border", icon: "text-muted-foreground", count: "text-muted-foreground" },
   }[tone];
 
@@ -1478,7 +1478,7 @@ function PrescriptionStatusBadge({ status, signed }: { status: string; signed: b
     pending_validation: { label: "Aguard. validação", className: "bg-warning/15 text-warning" },
     validated: { label: "Validada", className: "bg-primary/10 text-primary" },
     suspended: { label: "Suspensa", className: "bg-destructive/10 text-destructive" },
-    finalized: { label: "Finalizada", className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
+    finalized: { label: "Finalizada", className: "bg-released/10 text-released-on-soft" },
   };
   const cfg = map[status] || map.draft;
   return (
@@ -1495,7 +1495,7 @@ function EvolutionStatusBadge({ status, validatedAt }: { status: string; validat
   const cfg = isSuspended
     ? { label: "Suspensa", className: "bg-destructive/10 text-destructive" }
     : isValidated
-      ? { label: "Validada", className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" }
+      ? { label: "Validada", className: "bg-released/10 text-released-on-soft" }
       : { label: "Em andamento", className: "bg-warning/15 text-warning" };
   return (
     <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide", cfg.className)}>
@@ -1510,7 +1510,7 @@ function News2Badge({ risk, score }: { risk: string; score: number | null }) {
       ? { label: `NEWS2 ${score ?? "?"}`, className: "bg-destructive/15 text-destructive" }
       : risk === "medium"
         ? { label: `NEWS2 ${score ?? "?"}`, className: "bg-warning/15 text-warning" }
-        : { label: `NEWS2 ${score ?? "?"}`, className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" };
+        : { label: `NEWS2 ${score ?? "?"}`, className: "bg-released/10 text-released-on-soft" };
   return (
     <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide", cfg.className)}>
       {cfg.label}
@@ -1522,7 +1522,7 @@ function NirStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string }> = {
     pending: { label: "Pendente", className: "bg-warning/15 text-warning" },
     discussing: { label: "Em discussão", className: "bg-primary/10 text-primary" },
-    approved: { label: "Aprovada", className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
+    approved: { label: "Aprovada", className: "bg-released/10 text-released-on-soft" },
     rejected: { label: "Rejeitada", className: "bg-destructive/10 text-destructive" },
   };
   const cfg = map[status] || map.pending;
@@ -1536,7 +1536,7 @@ function NirStatusBadge({ status }: { status: string }) {
 function PendingStat({ label, value, tone }: { label: string; value: number; tone: "warning" | "success" | "danger" }) {
   const toneClasses = {
     warning: "bg-warning/10 text-warning border-warning/20",
-    success: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+    success: "bg-released/10 text-released-on-soft border-released/20",
     danger: "bg-destructive/10 text-destructive border-destructive/20",
   }[tone];
   return (

@@ -162,7 +162,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
       <section>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5">
-            <Activity className="h-3.5 w-3.5 text-rose-500" />
+            <Activity className="h-3.5 w-3.5 text-critical" />
             <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">
               DISPOSITIVOS INVASIVOS
             </Label>
@@ -263,7 +263,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => patchInstance(d.id, { insertedAt: admissionDateBR })}
-                                  className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[9px] font-semibold hover:bg-emerald-500/20 transition-colors whitespace-nowrap"
+                                  className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded border border-released/40 bg-released/10 text-released-on-soft text-[9px] font-semibold hover:bg-released/20 transition-colors whitespace-nowrap"
                                   title={`Usar data de admissão: ${admissionDateBR}`}
                                 >
                                   <CalendarCheck className="h-3 w-3" />
@@ -277,9 +277,9 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                                 variant="outline"
                                 className={cn(
                                   "h-5 px-1.5 text-[10px] font-semibold border",
-                                  tone === "ok" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
-                                  tone === "amber" && "bg-amber-500/10 text-amber-700 border-amber-500/40 dark:text-amber-400",
-                                  tone === "red" && "bg-red-500/10 text-red-700 border-red-500/40 dark:text-red-400",
+                                  tone === "ok" && "bg-released/10 text-released-on-soft border-released/30",
+                                  tone === "amber" && "bg-warning/10 text-warning-on-soft border-warning/40",
+                                  tone === "red" && "bg-critical/10 text-critical-on-soft border-critical/40",
                                 )}
                                 title={tone === "red"
                                   ? "≥ 14 dias — reavaliar necessidade (alto risco IRAS)"
@@ -363,7 +363,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                         <button
                           type="button"
                           onClick={() => setInsertedAt(item.id, false, admissionDateBR)}
-                          className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[9px] font-semibold hover:bg-emerald-500/20 transition-colors whitespace-nowrap"
+                          className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded border border-released/40 bg-released/10 text-released-on-soft text-[9px] font-semibold hover:bg-released/20 transition-colors whitespace-nowrap"
                           title={`Usar data de admissão: ${admissionDateBR}`}
                         >
                           <CalendarCheck className="h-3 w-3" />
@@ -376,9 +376,9 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                         variant="outline"
                         className={cn(
                           "h-5 px-1.5 text-[10px] font-semibold border",
-                          tone === "ok" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
-                          tone === "amber" && "bg-amber-500/10 text-amber-700 border-amber-500/40 dark:text-amber-400",
-                          tone === "red" && "bg-red-500/10 text-red-700 border-red-500/40 dark:text-red-400",
+                          tone === "ok" && "bg-released/10 text-released-on-soft border-released/30",
+                          tone === "amber" && "bg-warning/10 text-warning-on-soft border-warning/40",
+                          tone === "red" && "bg-critical/10 text-critical-on-soft border-critical/40",
                         )}
                         title={tone === "red"
                           ? "≥ 14 dias — reavaliar necessidade (alto risco IRAS)"
@@ -394,7 +394,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                       <button
                         type="button"
                         onClick={() => setCvcChecklistOpen(true)}
-                        className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded border border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-400 text-[9px] font-semibold hover:bg-blue-500/20 transition-colors whitespace-nowrap"
+                        className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded border border-border/40 bg-primary/10 text-foreground text-[9px] font-semibold hover:bg-primary/20 transition-colors whitespace-nowrap"
                         title="Preencher checklist de inserção CVC (bundle CCIH)"
                       >
                         <ShieldCheck className="h-3 w-3" />
@@ -441,7 +441,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                     <button
                       type="button"
                       onClick={() => setInsertedAt(d.id, true, admissionDateBR)}
-                      className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[9px] font-semibold hover:bg-emerald-500/20 transition-colors whitespace-nowrap"
+                      className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded border border-released/40 bg-released/10 text-released-on-soft text-[9px] font-semibold hover:bg-released/20 transition-colors whitespace-nowrap"
                       title={`Usar data de admissão: ${admissionDateBR}`}
                     >
                       <CalendarCheck className="h-3 w-3" />
@@ -454,9 +454,9 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                     variant="outline"
                     className={cn(
                       "h-5 px-1.5 text-[10px] font-semibold border",
-                      tone === "ok" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
-                      tone === "amber" && "bg-amber-500/10 text-amber-700 border-amber-500/40 dark:text-amber-400",
-                      tone === "red" && "bg-red-500/10 text-red-700 border-red-500/40 dark:text-red-400",
+                      tone === "ok" && "bg-released/10 text-released-on-soft border-released/30",
+                      tone === "amber" && "bg-warning/10 text-warning-on-soft border-warning/40",
+                      tone === "red" && "bg-critical/10 text-critical-on-soft border-critical/40",
                     )}
                   >
                     D{days}
@@ -492,7 +492,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
       {/* === Culturas === */}
       <section>
         <div className="flex items-center gap-1.5 mb-2">
-          <FlaskConical className="h-3.5 w-3.5 text-cyan-500" />
+          <FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />
           <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">
             RESULTADO DE CULTURAS
           </Label>

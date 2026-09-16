@@ -166,17 +166,17 @@ export function DiagnosticsPanel({
     <section className={cn("space-y-3", className)}>
       {/* Replicated banner */}
       {replicated && onClearAll && (
-        <div className="flex items-center justify-between gap-2 rounded-md border border-blue-500/30 bg-blue-500/5 px-2.5 py-1.5">
-          <div className="flex items-center gap-1.5 text-[10px] text-blue-700 dark:text-blue-300">
+        <div className="flex items-center justify-between gap-2 rounded-md border border-border/30 bg-primary/5 px-2.5 py-1.5">
+          <div className="flex items-center gap-1.5 text-[10px] text-foreground">
             <RotateCcw className="h-3 w-3" />
             <span className="font-medium">Diagnósticos replicados da evolução anterior</span>
-            <span className="text-blue-600/70 dark:text-blue-400/70">— revise e ajuste</span>
+            <span className="text-foreground/70">— revise e ajuste</span>
           </div>
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="h-6 text-[10px] gap-1 text-blue-700 hover:text-blue-800 hover:bg-blue-500/10 dark:text-blue-300"
+            className="h-6 text-[10px] gap-1 text-foreground hover:text-foreground hover:bg-primary/10"
             onClick={onClearAll}
           >
             <X className="h-3 w-3" /> Limpar
@@ -188,13 +188,13 @@ export function DiagnosticsPanel({
       {(isPalliative || hasIsolation) && (
         <div className="flex items-center gap-1.5 flex-wrap">
           {isPalliative && (
-            <Badge className="h-5 text-[9px] gap-1 bg-purple-500/15 text-purple-600 border border-purple-500/30 dark:text-purple-300">
+            <Badge className="h-5 text-[9px] gap-1 bg-primary/15 text-foreground border border-border/30">
               <HeartHandshake className="h-3 w-3" />
               Paliativo
             </Badge>
           )}
           {hasIsolation && (
-            <Badge className="h-5 text-[9px] gap-1 bg-amber-500/15 text-amber-700 border border-amber-500/30 dark:text-amber-300">
+            <Badge className="h-5 text-[9px] gap-1 bg-warning/15 text-warning-on-soft border border-warning/30">
               <ShieldAlert className="h-3 w-3" />
               {isolationPrecautions}
             </Badge>
@@ -256,7 +256,7 @@ export function DiagnosticsPanel({
                 Hipóteses / Diagnósticos
                 <span className="text-[9px] normal-case tracking-normal text-muted-foreground/60">(prioridade = ordem)</span>
               </Label>
-              <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 text-[9px] font-medium">
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-foreground px-1.5 py-0.5 text-[9px] font-medium">
                 <Lock className="h-2.5 w-2.5" />
                 Sincroniza com o mapa
               </span>
@@ -282,10 +282,10 @@ export function DiagnosticsPanel({
         <div className="rounded-md border border-border/60 bg-background/40 p-2.5 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <Label className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-1.5">
-              <Stethoscope className="h-3 w-3 text-blue-500" />
+              <Stethoscope className="h-3 w-3 text-muted-foreground" />
               Antecedentes Clínicos
             </Label>
-            <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 text-[9px] font-medium">
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-foreground px-1.5 py-0.5 text-[9px] font-medium">
               <Lock className="h-2.5 w-2.5" />
               Sincroniza com o mapa
             </span>
@@ -296,7 +296,7 @@ export function DiagnosticsPanel({
             placeholder="Ex: HAS, DM2, Tabagismo..."
             addLabel="+ Antecedente"
             showReorder={false}
-            numberColor="text-blue-600"
+            numberColor="text-foreground"
           />
         </div>
       )}
@@ -349,13 +349,13 @@ export function DiagnosticsPanel({
               if (!alertDate) return null;
               const sectorLabel = showUtiPrediction ? "UTI/UCI" : "hospitalar";
               return (
-                <div className="flex items-start gap-2.5 rounded-md border border-amber-400/50 border-l-[3px] border-l-amber-500 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-500/40 px-3 py-2">
-                  <CalendarClock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2.5 rounded-md border border-warning/50 border-l-[3px] border-l-amber-500 bg-warning-soft px-3 py-2">
+                  <CalendarClock className="h-4 w-4 text-warning-on-soft shrink-0 mt-0.5" />
                   <div className="leading-tight">
-                    <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+                    <p className="text-[11px] font-semibold text-warning-on-soft">
                       Alta {sectorLabel} programada nas próximas 24h
                     </p>
-                    <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">
+                    <p className="text-[10px] text-warning-on-soft mt-0.5">
                       Prevista para <strong>{formatDisplay(alertDate)}</strong> — verifique pendências antes de finalizar a evolução.
                     </p>
                   </div>
@@ -371,7 +371,7 @@ export function DiagnosticsPanel({
         {/* Paliativo */}
         <div className="flex items-center justify-between rounded-md border border-border/60 bg-background/40 px-2.5 py-1.5">
           <div className="flex items-center gap-2 min-w-0">
-            <HeartHandshake className={cn("h-3.5 w-3.5 shrink-0", isPalliative ? "text-purple-500" : "text-muted-foreground")} />
+            <HeartHandshake className={cn("h-3.5 w-3.5 shrink-0", isPalliative ? "text-muted-foreground" : "text-muted-foreground")} />
             <div className="leading-tight">
               <p className="text-[11px] font-medium text-foreground">Cuidados Paliativos</p>
               <p className="text-[9px] text-muted-foreground">Manejo focado em conforto</p>
@@ -380,7 +380,7 @@ export function DiagnosticsPanel({
           <Switch
             checked={isPalliative}
             onCheckedChange={onPalliativeChange}
-            className="data-[state=checked]:bg-purple-500"
+            className="data-[state=checked]:bg-primary"
           />
         </div>
 
@@ -398,7 +398,7 @@ export function DiagnosticsPanel({
             placeholder="Ex: Contato, Gotículas, Reverso… ou nenhuma"
             className={cn(
               "h-7 text-xs",
-              hasIsolation && "border-amber-500/40 bg-amber-500/5",
+              hasIsolation && "border-warning/40 bg-warning/5",
             )}
           />
         </div>
@@ -420,7 +420,7 @@ function DatePredictionField({ icon, label, value, onChange, accent = "primary" 
   const [open, setOpen] = useState(false);
   const date = toDateOrNull(value);
   const displayValue = date ? format(date, "dd/MM/yyyy", { locale: ptBR }) : "";
-  const accentClass = accent === "emerald" ? "text-emerald-600 dark:text-emerald-400" : "text-primary";
+  const accentClass = accent === "emerald" ? "text-released-on-soft" : "text-primary";
 
   return (
     <div className="space-y-1">
@@ -620,7 +620,7 @@ function PrecautionPicker({
               onClick={() => { onSelect(p); setOpen(false); }}
               className={cn(
                 "w-full text-left text-[11px] px-2 py-1.5 rounded hover:bg-muted/70 flex items-center justify-between",
-                value === p && "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                value === p && "bg-warning/10 text-warning-on-soft",
               )}
             >
               <span>{p}</span>
@@ -634,7 +634,7 @@ function PrecautionPicker({
             className={cn(
               "w-full text-left text-[11px] px-2 py-1.5 rounded flex items-center justify-between gap-1",
               value === "Sem precaução"
-                ? "bg-red-500/10 text-red-700 dark:text-red-300"
+                ? "bg-critical/10 text-critical-on-soft"
                 : "hover:bg-destructive/10 text-destructive"
             )}
           >

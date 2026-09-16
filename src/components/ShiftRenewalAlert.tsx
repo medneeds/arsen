@@ -87,16 +87,16 @@ export function ShiftRenewalAlert({
     <div
       role="status"
       className={cn(
-        "rounded-lg border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-950/30 px-4 py-3",
+        "rounded-lg border-l-4 border-warning bg-warning-soft px-4 py-3",
         "flex items-start gap-3 mb-3"
       )}
     >
-      <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 animate-pulse" />
+      <Clock className="h-5 w-5 text-warning-on-soft shrink-0 mt-0.5 animate-pulse" />
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+        <div className="text-sm font-semibold text-warning-on-soft">
           Troca de plantão em {minutesToRenewal} min
         </div>
-        <div className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-0.5">
+        <div className="text-xs text-warning-on-soft/80 mt-0.5">
           Às <strong>05:00</strong> a prescrição precisará ser revalidada. Considere revisar e revalidar antecipadamente os {activeCount} {activeCount === 1 ? "item ativo" : "itens ativos"}.
         </div>
       </div>

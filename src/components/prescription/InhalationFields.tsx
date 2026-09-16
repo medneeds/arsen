@@ -94,17 +94,17 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
     <div className={
       "relative rounded-md p-2 border space-y-2 [&_input.bg-white]:border-[hsl(217,55%,82%)]/70 [&_input.bg-white]:focus-visible:ring-[hsl(217,60%,60%)]/60 [&_button.bg-white]:border-[hsl(217,55%,82%)]/70 [&_button.bg-white]:focus-visible:ring-[hsl(217,60%,60%)]/60 " +
       (isConjugated
-        ? "ml-4 bg-[hsl(217,55%,96%)]/30 dark:bg-[hsl(217,75%,12%)]/10 border-[hsl(217,55%,72%)]/70 border-l-[3px] border-l-[hsl(217,70%,40%)]/80 dark:border-l-[hsl(217,60%,60%)]/80"
-        : "bg-[hsl(217,55%,96%)]/50 dark:bg-[hsl(217,75%,12%)]/20 border-[hsl(217,55%,82%)]/60 dark:border-[hsl(217,72%,22%)]/50 border-l-[3px] border-l-[hsl(217,65%,45%)]/70 dark:border-l-[hsl(217,60%,60%)]/70")
+        ? "ml-4 bg-[hsl(217,55%,96%)]/30(217,75%,12%)]/10 border-[hsl(217,55%,72%)]/70 border-l-[3px] border-l-[hsl(217,70%,40%)]/80(217,60%,60%)]/80"
+        : "bg-[hsl(217,55%,96%)]/50(217,75%,12%)]/20 border-[hsl(217,55%,82%)]/60(217,72%,22%)]/50 border-l-[3px] border-l-[hsl(217,65%,45%)]/70(217,60%,60%)]/70")
     }>
       {/* Conjugação com nebulização anterior */}
       {(canConjugate || isConjugated) && (
         <div className={
           "flex items-center justify-between gap-2 px-2 py-1 rounded text-[10px] " +
-          (isConjugated ? "bg-[hsl(217,55%,90%)]/70 dark:bg-[hsl(217,72%,22%)]/30 border border-[hsl(217,55%,72%)]/60 dark:border-[hsl(217,72%,36%)]/40" : "")
+          (isConjugated ? "bg-[hsl(217,55%,90%)]/70(217,72%,22%)]/30 border border-[hsl(217,55%,72%)]/60(217,72%,36%)]/40" : "")
         }>
           {isConjugated ? (
-            <span className="flex items-center gap-1 text-[hsl(217,70%,28%)] dark:text-[hsl(217,55%,82%)] font-semibold min-w-0">
+            <span className="flex items-center gap-1 text-[hsl(217,70%,28%)](217,55%,82%)] font-semibold min-w-0">
               <Link2 className="h-3 w-3 shrink-0" />
               <span className="truncate">↳ Mesma nebulização de <b>{previousInhalationItemName ?? 'item anterior'}</b></span>
             </span>
@@ -143,7 +143,7 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
                 size="sm"
                 variant="outline"
                 onClick={() => applyPreset(preset)}
-                className="h-6 px-2 text-[10px] ml-auto border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                className="h-6 px-2 text-[10px] ml-auto border-released-border text-released-on-soft hover:bg-released-soft"
               >
                 <Sparkles className="h-3 w-3 mr-1" />
                 Aplicar padrão

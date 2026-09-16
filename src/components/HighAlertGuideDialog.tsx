@@ -68,11 +68,11 @@ const MAV_ITEMS: MavItem[] = [
 ];
 
 const SUBGROUPS = [
-  { id: 'opioid' as const,    label: 'Opioides Fortes',         icon: Syringe,   color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-950/20', border: 'border-purple-200 dark:border-purple-900', desc: 'Morfina, fentanil SOS, metadona, tramadol' },
-  { id: 'vasoactive' as const, label: 'Drogas Vasoativas',       icon: Activity,  color: 'text-rose-600',   bg: 'bg-rose-50 dark:bg-rose-950/20',     border: 'border-rose-200 dark:border-rose-900',     desc: 'Noradrenalina, adrenalina, dobutamina, vasopressina, NPS' },
-  { id: 'rsi_bolus' as const,  label: 'Bolus de Intubação (SRI)', icon: Zap,       color: 'text-amber-600',  bg: 'bg-amber-50 dark:bg-amber-950/20',   border: 'border-amber-200 dark:border-amber-900',   desc: 'Fentanil, etomidato, cetamina, midazolam, propofol, succinilcolina, rocurônio' },
-  { id: 'continuous' as const, label: 'Sedoanalgesia Contínua',   icon: Waves,     color: 'text-sky-600',    bg: 'bg-sky-50 dark:bg-sky-950/20',       border: 'border-sky-200 dark:border-sky-900',       desc: 'Midazolam, propofol, fentanil, cetamina, dexmedetomidina (BIC)' },
-  { id: 'insulin' as const,    label: 'Insulinas',                icon: Droplet,   color: 'text-emerald-700', bg: 'bg-emerald-50 dark:bg-emerald-950/20', border: 'border-emerald-200 dark:border-emerald-900', desc: 'Regular, NPH, Glargina, Detemir, Degludeca, Lispro, Aspart, Glulisina — assistente de insulinoterapia' },
+  { id: 'opioid' as const,    label: 'Opioides Fortes',         icon: Syringe,   color: 'text-foreground', bg: 'bg-muted', border: 'border-border', desc: 'Morfina, fentanil SOS, metadona, tramadol' },
+  { id: 'vasoactive' as const, label: 'Drogas Vasoativas',       icon: Activity,  color: 'text-critical-on-soft',   bg: 'bg-critical-soft',     border: 'border-critical-border',     desc: 'Noradrenalina, adrenalina, dobutamina, vasopressina, NPS' },
+  { id: 'rsi_bolus' as const,  label: 'Bolus de Intubação (SRI)', icon: Zap,       color: 'text-warning-on-soft',  bg: 'bg-warning-soft',   border: 'border-warning-border',   desc: 'Fentanil, etomidato, cetamina, midazolam, propofol, succinilcolina, rocurônio' },
+  { id: 'continuous' as const, label: 'Sedoanalgesia Contínua',   icon: Waves,     color: 'text-foreground',    bg: 'bg-muted',       border: 'border-border',       desc: 'Midazolam, propofol, fentanil, cetamina, dexmedetomidina (BIC)' },
+  { id: 'insulin' as const,    label: 'Insulinas',                icon: Droplet,   color: 'text-released-on-soft', bg: 'bg-released-soft', border: 'border-released-border', desc: 'Regular, NPH, Glargina, Detemir, Degludeca, Lispro, Aspart, Glulisina — assistente de insulinoterapia' },
 ];
 
 interface Props {
@@ -112,9 +112,9 @@ export function HighAlertGuideDialog({ open, onOpenChange, onAddItem }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="px-5 py-3 border-b border-border bg-gradient-to-r from-red-50 to-amber-50 dark:from-red-950/30 dark:to-amber-950/30">
+        <DialogHeader className="px-5 py-3 border-b border-border bg-gradient-to-r from-critical-soft to-warning-soft">
           <DialogTitle className="flex items-center gap-2 text-base">
-            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <AlertTriangle className="h-5 w-5 text-critical-on-soft" />
             Guia MAV — Medicamentos de Alta Vigilância
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -206,7 +206,7 @@ export function HighAlertGuideDialog({ open, onOpenChange, onAddItem }: Props) {
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5">
-                                <AlertTriangle className="h-3 w-3 text-red-500 shrink-0" />
+                                <AlertTriangle className="h-3 w-3 text-critical shrink-0" />
                                 <span className="text-sm font-semibold text-foreground truncate">{item.name}</span>
                               </div>
                               <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{item.presentation}</div>
@@ -233,7 +233,7 @@ export function HighAlertGuideDialog({ open, onOpenChange, onAddItem }: Props) {
 
         <div className="px-5 py-2.5 border-t border-border bg-muted/30 flex items-center justify-between">
           <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
-            <AlertTriangle className="h-3 w-3 text-red-500" />
+            <AlertTriangle className="h-3 w-3 text-critical" />
             Doses são sugestões baseadas em boas práticas — sempre titular conforme paciente.
           </p>
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="h-7 text-xs">

@@ -24,7 +24,7 @@ export function PageLoader({ message, subMessage }: PageLoaderProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gradient-to-b from-slate-50/95 via-white/90 to-blue-50/80 backdrop-blur-sm transition-opacity duration-500 ease-out"
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gradient-to-b from-muted/95 via-white/90 to-muted/80 backdrop-blur-sm transition-opacity duration-500 ease-out"
       style={{ opacity: visible ? 1 : 0 }}
       role="status"
       aria-live="polite"

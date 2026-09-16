@@ -253,7 +253,7 @@ export function HydrationWizard({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl w-[min(40rem,calc(100vw-2rem))] max-h-[calc(100svh-6rem)] top-4 translate-y-0 z-[80] overflow-y-auto p-4">
         <DialogHeader className="pb-2">
-          <DialogTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+          <DialogTitle className="flex items-center gap-2 text-foreground">
             <Droplets className="h-5 w-5" /> Assistente de Hidratação
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -268,7 +268,7 @@ export function HydrationWizard({
             onClick={() => setMode("iv")}
             className={cn(
               "flex-1 text-xs font-semibold py-1.5 rounded transition-all",
-              mode === "iv" ? "bg-background shadow-sm text-blue-700 dark:text-blue-300" : "text-muted-foreground hover:text-foreground"
+              mode === "iv" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
             Hidratação IV (cristaloides / preparada)
@@ -278,7 +278,7 @@ export function HydrationWizard({
             onClick={() => setMode("enteral")}
             className={cn(
               "flex-1 text-xs font-semibold py-1.5 rounded transition-all",
-              mode === "enteral" ? "bg-background shadow-sm text-cyan-700 dark:text-cyan-300" : "text-muted-foreground hover:text-foreground"
+              mode === "enteral" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
             Oferta hídrica VO / sonda
@@ -300,8 +300,8 @@ export function HydrationWizard({
                       className={cn(
                         "text-left p-2 rounded-md border transition-all",
                         solution === s.key
-                          ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
-                          : "border-border bg-background hover:border-blue-300"
+                          ? "border-border bg-muted"
+                          : "border-border bg-background hover:border-border"
                       )}
                     >
                       <p className="text-xs font-semibold">{s.label}</p>
@@ -402,8 +402,8 @@ export function HydrationWizard({
               </div>
 
               {/* Pré-visualização IV */}
-              <div className="rounded-md border border-blue-200 dark:border-blue-900 bg-blue-50/40 dark:bg-blue-950/20 p-2 space-y-1">
-                <p className="text-[10px] uppercase tracking-wider text-blue-700 dark:text-blue-300 font-semibold flex items-center gap-1">
+              <div className="rounded-md border border-border bg-muted/40 p-2 space-y-1">
+                <p className="text-[10px] uppercase tracking-wider text-foreground font-semibold flex items-center gap-1">
                   <Sparkles className="h-3 w-3" /> Pré-visualização
                 </p>
                 <div className="grid grid-cols-2 gap-2 text-xs">
@@ -419,11 +419,11 @@ export function HydrationWizard({
               <WaterOfferingFields
                 value={water}
                 onChange={setWater}
-                accentClassName="border-cyan-500 bg-cyan-50 dark:bg-cyan-950/30"
-                accentTextClassName="text-cyan-700 dark:text-cyan-300"
+                accentClassName="border-border bg-muted"
+                accentTextClassName="text-foreground"
               />
-              <div className="rounded-md border border-cyan-200 dark:border-cyan-900 bg-cyan-50/40 dark:bg-cyan-950/20 p-2 space-y-1">
-                <p className="text-[10px] uppercase tracking-wider text-cyan-700 dark:text-cyan-300 font-semibold flex items-center gap-1">
+              <div className="rounded-md border border-border bg-muted/40 p-2 space-y-1">
+                <p className="text-[10px] uppercase tracking-wider text-foreground font-semibold flex items-center gap-1">
                   <Sparkles className="h-3 w-3" /> Pré-visualização
                 </p>
                 <p className="text-xs font-medium">{previewEntry.name}</p>
@@ -441,7 +441,7 @@ export function HydrationWizard({
             onAddCurrent={handleAddToQueue}
             onSaveCurrent={handleSaveEditing}
             addLabel="Acrescentar este item"
-            accentClassName="border-blue-300 bg-blue-50/40 text-blue-700 dark:border-blue-900 dark:bg-blue-950/20 dark:text-blue-300"
+            accentClassName="border-border bg-muted/40 text-foreground"
             hint="Conjugue várias hidratações (ex: SF + RL + oferta de água VO) em uma única prescrição."
           />
         </div>

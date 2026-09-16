@@ -279,15 +279,15 @@ export function DoseCalculatorDialog({
                     {calculation.formattedRate && (
                       <div>
                         <span className="text-xs text-muted-foreground">Vazão (BIC)</span>
-                        <div className="font-mono font-bold text-base text-amber-600">{calculation.formattedRate}</div>
+                        <div className="font-mono font-bold text-base text-warning-on-soft">{calculation.formattedRate}</div>
                       </div>
                     )}
                   </div>
 
                   {calculation.warnings.length > 0 && (
-                    <div className="flex items-start gap-2 p-2 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-300">
-                      <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                      <div className="text-xs text-amber-900 dark:text-amber-200 space-y-1">
+                    <div className="flex items-start gap-2 p-2 rounded bg-warning-soft border border-warning-border">
+                      <AlertTriangle className="h-4 w-4 text-warning-on-soft shrink-0 mt-0.5" />
+                      <div className="text-xs text-warning-on-soft space-y-1">
                         {calculation.warnings.map((w, i) => (
                           <div key={i}>{w}</div>
                         ))}
@@ -299,14 +299,14 @@ export function DoseCalculatorDialog({
 
               {/* Nota clínica */}
               {ref.clinicalNote && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
-                  <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                  <p className="text-xs text-blue-900 dark:text-blue-200">{ref.clinicalNote}</p>
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-muted border border-border">
+                  <Info className="h-4 w-4 text-foreground shrink-0 mt-0.5" />
+                  <p className="text-xs text-foreground">{ref.clinicalNote}</p>
                 </div>
               )}
 
               {ref.renalAdjust && (
-                <Badge variant="outline" className="text-xs border-orange-400 text-orange-700">
+                <Badge variant="outline" className="text-xs border-warning text-warning-on-soft">
                   ⚠ Requer ajuste por função renal (ClCr)
                 </Badge>
               )}

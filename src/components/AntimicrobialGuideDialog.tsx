@@ -166,10 +166,10 @@ const INFECTION_SITES = [
 ];
 
 const RESTRICTION_CLASSES = [
-  { value: "livre", label: "Livre", color: "text-emerald-600" },
-  { value: "restrito_24h", label: "Restrito (liberar em 24h)", color: "text-amber-600" },
-  { value: "restrito_ccih", label: "Restrito CCIH (aguardar)", color: "text-red-600" },
-  { value: "profilaxia", label: "Profilaxia (máx 24h)", color: "text-blue-600" },
+  { value: "livre", label: "Livre", color: "text-released-on-soft" },
+  { value: "restrito_24h", label: "Restrito (liberar em 24h)", color: "text-warning-on-soft" },
+  { value: "restrito_ccih", label: "Restrito CCIH (aguardar)", color: "text-critical-on-soft" },
+  { value: "profilaxia", label: "Profilaxia (máx 24h)", color: "text-foreground" },
 ];
 
 // === Validação obrigatória para anexar à prescrição ===
@@ -197,7 +197,7 @@ function getMissingFields(e: AntimicrobialEntry): string[] {
   return missing;
 }
 
-const Req = () => <span className="text-red-500 ml-0.5" aria-label="obrigatório">*</span>;
+const Req = () => <span className="text-critical ml-0.5" aria-label="obrigatório">*</span>;
 
 function createEmptyEntry(
   item?: PrescriptionItem | MedicationEntry,
@@ -755,7 +755,7 @@ export function AntimicrobialGuideDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-5xl w-[96vw] h-[88vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="px-6 py-3 border-b shrink-0 bg-[hsl(217,55%,96%)]/50 dark:bg-[hsl(217,75%,12%)]/15">
+          <DialogHeader className="px-6 py-3 border-b shrink-0 bg-[hsl(217,55%,96%)]/50(217,75%,12%)]/15">
             <DialogTitle className="flex items-center gap-2 text-base">
               <Shield className="h-5 w-5 text-[hsl(217,65%,45%)]" />
               GUIA DE USO DE ANTIMICROBIANOS — CCIH
@@ -769,7 +769,7 @@ export function AntimicrobialGuideDialog({
           <ScrollArea className="flex-1 min-h-0">
             <div className="px-6 py-4 space-y-4">
               {/* Patient Summary */}
-              <div className="rounded-lg border border-[hsl(217,55%,82%)]/70 bg-[hsl(217,55%,96%)]/50 dark:bg-[hsl(217,75%,12%)]/15 dark:border-[hsl(217,70%,28%)]/30 p-3">
+              <div className="rounded-lg border border-[hsl(217,55%,82%)]/70 bg-[hsl(217,55%,96%)]/50(217,75%,12%)]/15(217,70%,28%)]/30 p-3">
                 <div className="grid grid-cols-4 gap-2 text-xs">
                   <div><span className="text-muted-foreground">Paciente:</span> <strong>{patient.name}</strong></div>
                   <div><span className="text-muted-foreground">Leito:</span> <strong>{patient.bed}</strong></div>
@@ -777,7 +777,7 @@ export function AntimicrobialGuideDialog({
                   <div><span className="text-muted-foreground">Peso:</span> <strong>{patient.weight ? `${patient.weight}kg` : "—"}</strong></div>
                 </div>
                 {patient.allergies && (
-                  <div className="mt-1.5 flex items-center gap-1 text-xs text-red-600">
+                  <div className="mt-1.5 flex items-center gap-1 text-xs text-critical-on-soft">
                     <AlertTriangle className="h-3 w-3" /> Alergias: <strong>{patient.allergies}</strong>
                   </div>
                 )}
@@ -785,21 +785,21 @@ export function AntimicrobialGuideDialog({
 
               {/* Checklist obrigatória — só no modo prescribe (anexar à prescrição) */}
               {mode === 'prescribe' && (
-                <div className="rounded-lg border border-amber-200 dark:border-amber-800/40 bg-amber-50/60 dark:bg-amber-950/15 p-3 text-xs">
+                <div className="rounded-lg border border-warning-border bg-warning-soft/60 p-3 text-xs">
                   <div className="flex items-start gap-2">
-                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                    <AlertCircle className="h-4 w-4 text-warning-on-soft shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <div className="font-semibold text-amber-800 dark:text-amber-300 mb-1">
+                      <div className="font-semibold text-warning-on-soft mb-1">
                         Para anexar à prescrição é obrigatório preencher:
                       </div>
                       <div className="flex flex-wrap gap-1.5 text-[10.5px]">
                         {Object.values(REQUIRED_LABELS).map(l => (
-                          <span key={l} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-amber-300 bg-white dark:bg-amber-950/30">
+                          <span key={l} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-warning-border bg-white">
                             <Req />{l}
                           </span>
                         ))}
                       </div>
-                      <div className="text-[10.5px] text-amber-700 dark:text-amber-400 mt-1.5">
+                      <div className="text-[10.5px] text-warning-on-soft mt-1.5">
                         Itens marcados com <Req /> são exigidos pela CCIH/ANVISA. O botão "Anexar" só libera quando todos estiverem preenchidos em <strong>cada</strong> antimicrobiano.
                       </div>
                     </div>
@@ -811,22 +811,22 @@ export function AntimicrobialGuideDialog({
 
               {/* Banner didático: sugestão de reconstituição (1x por sessão) */}
               {reconBannerOpen && (
-                <div className="rounded-lg border border-amber-300 dark:border-amber-700/60 bg-amber-50/80 dark:bg-amber-950/20 p-3 text-xs relative">
+                <div className="rounded-lg border border-warning-border bg-warning-soft/80 p-3 text-xs relative">
                   <button
                     type="button"
                     onClick={dismissReconBanner}
-                    className="absolute top-2 right-2 text-amber-700 hover:text-amber-900 dark:text-amber-400"
+                    className="absolute top-2 right-2 text-warning-on-soft hover:text-warning-on-soft"
                     aria-label="Dispensar aviso"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
                   <div className="flex items-start gap-2 pr-6">
-                    <Beaker className="h-4 w-4 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <Beaker className="h-4 w-4 text-warning-on-soft shrink-0 mt-0.5" />
                     <div className="flex-1 space-y-1">
-                      <div className="font-semibold text-amber-800 dark:text-amber-300">
+                      <div className="font-semibold text-warning-on-soft">
                         Reconstituição: sugestão revisável
                       </div>
-                      <div className="text-[11px] text-amber-800/90 dark:text-amber-300/90 leading-snug">
+                      <div className="text-[11px] text-warning-on-soft/90 leading-snug">
                         Antibióticos com evidência convergente (bula ANVISA / Sanford / ASHP) trazem
                         diluente, volume, diluição final e tempo de infusão <strong>pré-preenchidos</strong>.
                         Todos os campos são <strong>editáveis</strong> — confira sempre antes de validar.
@@ -845,9 +845,9 @@ export function AntimicrobialGuideDialog({
                 const hasRecon = !!entry.reconSuggestedSnapshot;
                 const cardCls = cn(
                   "rounded-lg border p-4 space-y-3 transition-all",
-                  highlightId === entry.id ? "border-red-400 ring-2 ring-red-200 dark:ring-red-900/40" :
-                    showThisError && !isComplete ? "border-amber-300 dark:border-amber-700/60" :
-                    isComplete && mode === 'prescribe' ? "border-emerald-200 dark:border-emerald-800/40" :
+                  highlightId === entry.id ? "border-critical ring-2 ring-critical" :
+                    showThisError && !isComplete ? "border-warning-border" :
+                    isComplete && mode === 'prescribe' ? "border-released-border" :
                     "border-border"
                 );
                 return (
@@ -862,11 +862,11 @@ export function AntimicrobialGuideDialog({
                       <span className="truncate">{entry.medication || "Novo antimicrobiano"}</span>
                       {mode === 'prescribe' && (
                         isComplete ? (
-                          <Badge variant="outline" className="text-emerald-700 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 gap-1 text-[10px] font-normal">
+                          <Badge variant="outline" className="text-released-on-soft border-released-border bg-released-soft gap-1 text-[10px] font-normal">
                             <CheckCircle2 className="h-3 w-3" /> Pronto p/ anexar
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50 dark:bg-amber-950/20 gap-1 text-[10px] font-normal">
+                          <Badge variant="outline" className="text-warning-on-soft border-warning-border bg-warning-soft gap-1 text-[10px] font-normal">
                             <AlertCircle className="h-3 w-3" /> Faltam {missing.length} campo(s)
                           </Badge>
                         )
@@ -880,7 +880,7 @@ export function AntimicrobialGuideDialog({
                   </div>
 
                   {showThisError && !isComplete && (
-                    <div className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50/70 dark:bg-amber-950/15 border border-amber-200 dark:border-amber-800/40 rounded px-2 py-1.5">
+                    <div className="flex items-start gap-1.5 text-[11px] text-warning-on-soft bg-warning-soft/70 border border-warning-border rounded px-2 py-1.5">
                       <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                       <div>
                         <strong>Para anexar este antimicrobiano, preencha:</strong> {missing.join(', ')}.
@@ -972,7 +972,7 @@ export function AntimicrobialGuideDialog({
                       {(() => {
                         const end = computeEndDate(entry.startDate, entry.plannedDuration);
                         return end ? (
-                          <div className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+                          <div className="text-[10px] text-released-on-soft mt-0.5">
                             Previsão de fim: <strong>{end}</strong>
                           </div>
                         ) : null;
@@ -1001,7 +1001,7 @@ export function AntimicrobialGuideDialog({
                       <Label className="text-[10px]">
                         Setor / Unidade do paciente
                         {patient?.unit && entry.unit && entry.unit !== patient.unit && (
-                          <span className="text-amber-700 dark:text-amber-400 ml-1.5 text-[9px]">
+                          <span className="text-warning-on-soft ml-1.5 text-[9px]">
                             (sobrescrito — atual: {patient.unit})
                           </span>
                         )}
@@ -1020,19 +1020,19 @@ export function AntimicrobialGuideDialog({
 
                   {/* ===== Bloco "Sugestão revisável" — Reconstituição & Diluição ===== */}
                   {hasRecon && (
-                    <div className="rounded-lg border border-amber-300/70 dark:border-amber-700/50 bg-amber-50/40 dark:bg-amber-950/10 p-2.5 space-y-2">
+                    <div className="rounded-lg border border-warning-border/70 bg-warning-soft/40 p-2.5 space-y-2">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <Beaker className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400 shrink-0" />
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+                          <Beaker className="h-3.5 w-3.5 text-warning-on-soft shrink-0" />
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-warning-on-soft">
                             Reconstituição / Diluição
                           </span>
-                          <Badge variant="outline" className="border-amber-400 bg-amber-100/70 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 text-[9px] gap-0.5 px-1.5">
+                          <Badge variant="outline" className="border-warning bg-warning-soft/70 text-warning-on-soft text-[9px] gap-0.5 px-1.5">
                             <Info className="h-2.5 w-2.5" /> SUGESTÃO — REVISE
                           </Badge>
                         </div>
                         {entry.reconSource && (
-                          <span className="text-[10px] text-amber-700/80 dark:text-amber-400/70">
+                          <span className="text-[10px] text-warning-on-soft/80">
                             Fonte: <strong>{entry.reconSource}</strong>
                           </span>
                         )}
@@ -1071,7 +1071,7 @@ export function AntimicrobialGuideDialog({
                             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
                             <SelectContent>
                               {solventExtra && (
-                                <SelectItem value={solventExtra} className="text-xs italic text-amber-700">
+                                <SelectItem value={solventExtra} className="text-xs italic text-warning-on-soft">
                                   {solventExtra} <span className="text-[9px]">(sugestão do catálogo)</span>
                                 </SelectItem>
                               )}
@@ -1099,7 +1099,7 @@ export function AntimicrobialGuideDialog({
                             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
                             <SelectContent>
                               {diluentExtra && (
-                                <SelectItem value={diluentExtra} className="text-xs italic text-amber-700">
+                                <SelectItem value={diluentExtra} className="text-xs italic text-warning-on-soft">
                                   {diluentExtra} <span className="text-[9px]">(sugestão do catálogo)</span>
                                 </SelectItem>
                               )}
@@ -1132,7 +1132,7 @@ export function AntimicrobialGuideDialog({
                       })()}
 
                       {entry.reconNotes && (
-                        <div className="flex items-start gap-1.5 text-[10.5px] text-amber-800/90 dark:text-amber-300/90 bg-amber-100/40 dark:bg-amber-900/20 border border-amber-200/70 dark:border-amber-800/40 rounded px-2 py-1.5">
+                        <div className="flex items-start gap-1.5 text-[10.5px] text-warning-on-soft/90 bg-warning-soft/40 border border-warning-border/70 rounded px-2 py-1.5">
                           <AlertCircle className="h-3 w-3 shrink-0 mt-0.5" />
                           <span>{entry.reconNotes}</span>
                         </div>
@@ -1180,7 +1180,7 @@ export function AntimicrobialGuideDialog({
                             type="button" variant="outline" size="sm"
                             onClick={() => importCultureResults(entry.id)}
                             disabled={!!loadingImport[entry.id] || availableCultures.length === 0}
-                            className="h-6 text-[10px] gap-1 px-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                            className="h-6 text-[10px] gap-1 px-2 border-released-border text-released-on-soft hover:bg-released-soft"
                           >
                             {loadingImport[entry.id] === 'cultures' ? <Loader2 className="h-3 w-3 animate-spin" /> : <FlaskConical className="h-3 w-3" />}
                             Importar Culturas ({availableCultures.length})
@@ -1229,12 +1229,12 @@ export function AntimicrobialGuideDialog({
             <div className="text-[11px] self-center flex items-center gap-2 flex-wrap">
               {mode === 'prescribe' ? (
                 allValid ? (
-                  <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium">
+                  <span className="inline-flex items-center gap-1 text-released-on-soft font-medium">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     {validCount} de {entries.length} pronto(s) para anexar
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                  <span className="inline-flex items-center gap-1 text-warning-on-soft">
                     <AlertCircle className="h-3.5 w-3.5" />
                     {validCount} de {entries.length} pronto(s) — complete os campos com <Req /> para liberar
                   </span>
@@ -1261,7 +1261,7 @@ export function AntimicrobialGuideDialog({
                     variant="outline" size="sm"
                     onClick={handleAttachOnly}
                     title={allValid ? "Anexar à prescrição" : "Clique para ver o que falta preencher"}
-                    className="gap-1.5 border-[hsl(217,55%,72%)] text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,96%)] dark:border-[hsl(217,72%,36%)] dark:text-[hsl(217,60%,60%)]"
+                    className="gap-1.5 border-[hsl(217,55%,72%)] text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,96%)](217,72%,36%)](217,60%,60%)]"
                   >
                     <Shield className="h-3.5 w-3.5" /> Anexar antibióticos à prescrição
                   </Button>

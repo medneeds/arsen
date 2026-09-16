@@ -140,7 +140,7 @@ export function InsulinTherapyDialog({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Syringe className="h-5 w-5 text-red-500" />
+            <Syringe className="h-5 w-5 text-critical" />
             ASSISTENTE DE INSULINOTERAPIA
             <Badge variant="outline" className="ml-2 text-[10px]">{medicationName}</Badge>
           </DialogTitle>
@@ -266,9 +266,9 @@ export function InsulinTherapyDialog({
               ))}
             </ul>
             {plan.scheme === 'iv_continuous' && (
-              <div className="mt-3 flex items-start gap-2 rounded-md bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 p-2">
-                <AlertTriangle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-red-700 dark:text-red-300">
+              <div className="mt-3 flex items-start gap-2 rounded-md bg-critical-soft border border-critical-border p-2">
+                <AlertTriangle className="h-4 w-4 text-critical-on-soft shrink-0 mt-0.5" />
+                <p className="text-[11px] text-critical-on-soft">
                   <strong>ALTA VIGILÂNCIA:</strong> bomba de infusão, dupla checagem, HGT seriado e K+ sérico monitorado.
                 </p>
               </div>
@@ -318,15 +318,15 @@ function validateStep2(plan: InsulinPlan): boolean {
  */
 function HypoglycemiaProtocolField({ plan, onChange }: { plan: InsulinPlan; onChange: (p: Partial<InsulinPlan>) => void }) {
   return (
-    <div className="rounded-md border border-rose-300/70 bg-rose-50/60 dark:bg-rose-950/20 p-2 space-y-1">
+    <div className="rounded-md border border-critical-border/70 bg-critical-soft/60 p-2 space-y-1">
       <div className="flex items-center gap-2">
-        <Badge variant="outline" className="text-[9px] px-1 bg-rose-100 text-rose-700 border-rose-300">HGT &lt; 70 mg/dL · HIPOGLICEMIA</Badge>
+        <Badge variant="outline" className="text-[9px] px-1 bg-critical-soft text-critical-on-soft border-critical-border">HGT &lt; 70 mg/dL · HIPOGLICEMIA</Badge>
       </div>
       <Textarea
         value={plan.hypoglycemiaProtocol ?? DEFAULT_HYPO_PROTOCOL}
         onChange={e => onChange({ hypoglycemiaProtocol: e.target.value })}
         placeholder={DEFAULT_HYPO_PROTOCOL}
-        className="text-[11px] min-h-[44px] bg-white dark:bg-slate-900 border-rose-200 dark:border-rose-900 focus-visible:ring-rose-400/50"
+        className="text-[11px] min-h-[44px] bg-white border-critical-border focus-visible:ring-critical/50"
       />
     </div>
   );
@@ -517,9 +517,9 @@ function IvContinuousEditor({
   plan, onChange, onApplyProtocol,
 }: { plan: InsulinPlan; onChange: (p: Partial<InsulinPlan>) => void; onApplyProtocol: (k: InsulinPlan['ivProtocol']) => void }) {
   return (
-    <div className="space-y-3 rounded-lg border border-red-200 dark:border-red-900 p-3 bg-red-50/40 dark:bg-red-950/10">
+    <div className="space-y-3 rounded-lg border border-critical-border p-3 bg-critical-soft/40">
       <div className="flex items-center gap-2">
-        <AlertTriangle className="h-4 w-4 text-red-600" />
+        <AlertTriangle className="h-4 w-4 text-critical-on-soft" />
         <Label className="text-xs font-semibold">PROTOCOLO EV CONTÍNUO — alta vigilância</Label>
       </div>
       <div className="grid grid-cols-2 gap-2">

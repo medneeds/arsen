@@ -43,12 +43,12 @@ const parseTextArray = (input: string | string[] | undefined | null): string[] =
 };
 
 const clinicalStatusLabels: Record<string, { label: string; color: string }> = {
-  gravissimo: { label: "Gravíssimo", color: "bg-red-600 text-white" },
-  grave: { label: "Grave", color: "bg-red-500 text-white" },
-  grave_estavel: { label: "Grave estável", color: "bg-orange-500 text-white" },
-  potencialmente_grave: { label: "Potencialmente grave", color: "bg-amber-500 text-white" },
-  regular: { label: "Regular", color: "bg-blue-500 text-white" },
-  paliativado: { label: "Paliativado", color: "bg-purple-500 text-white" },
+  gravissimo: { label: "Gravíssimo", color: "bg-critical text-white" },
+  grave: { label: "Grave", color: "bg-critical text-white" },
+  grave_estavel: { label: "Grave estável", color: "bg-warning text-white" },
+  potencialmente_grave: { label: "Potencialmente grave", color: "bg-warning text-white" },
+  regular: { label: "Regular", color: "bg-primary text-white" },
+  paliativado: { label: "Paliativado", color: "bg-primary text-white" },
 };
 
 const formatStayDuration = (admissionDate: string): string => {
@@ -81,11 +81,11 @@ const getSectorLabel = (sector: string) => {
 
 const getSectorColor = (sector: string) => {
   const map: Record<string, string> = {
-    red: "bg-red-500/10 text-red-700 dark:text-red-400 border-red-200",
-    yellow: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200",
-    blue: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200",
+    red: "bg-critical/10 text-critical-on-soft border-critical-border",
+    yellow: "bg-warning/10 text-warning-on-soft border-warning-border",
+    blue: "bg-primary/10 text-foreground border-border",
     outside: "bg-muted text-muted-foreground border-border",
-    ucc: "bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-200",
+    ucc: "bg-primary/10 text-foreground border-border",
   };
   return map[sector] || "";
 };
@@ -106,9 +106,9 @@ const getEspecialidadesInfo = (patient: Patient): { specialties: string[]; typeL
 const getPrescriptionStatus = (status: TodaysPrescriptionStatus): { label: string; variant: "default" | "secondary" | "outline" | "destructive"; dotColor: string; pulsing: boolean } => {
   // 🔒 Bolinha verde vinculada à VALIDAÇÃO — não à assinatura digital
   if (status === "signed" || status === "validated") {
-    return { label: "Validada", variant: "default", dotColor: "bg-emerald-500", pulsing: false };
+    return { label: "Validada", variant: "default", dotColor: "bg-released", pulsing: false };
   }
-  return { label: "Pendente", variant: "secondary", dotColor: "bg-amber-500", pulsing: true };
+  return { label: "Pendente", variant: "secondary", dotColor: "bg-warning", pulsing: true };
 };
 
 const getDischargeText = (patient: Patient): string => {
@@ -334,7 +334,7 @@ export default function PainelClinicoPage() {
                           <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{parseTextArray(patient.diagnoses)[0]}</p>
                         )}
                         {pendencies.length > 0 && (
-                          <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1 line-clamp-1">⚠ {pendencies[0]}{pendencies.length > 1 && ` +${pendencies.length - 1}`}</p>
+                          <p className="text-[11px] text-warning-on-soft mt-1 line-clamp-1">⚠ {pendencies[0]}{pendencies.length > 1 && ` +${pendencies.length - 1}`}</p>
                         )}
                       </div>
                       <Button
@@ -405,7 +405,7 @@ export default function PainelClinicoPage() {
                         {sapsScores[patient.name] ? (
                           sapsScores[patient.name].status === 'pending' ? (
                             <div className="flex flex-col items-center gap-1">
-                              <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                              <div className="flex items-center gap-1 text-warning-on-soft">
                                 <Clock className="h-3.5 w-3.5 animate-pulse" />
                                 <span className="text-[10px] font-semibold">Pendente</span>
                               </div>
@@ -413,7 +413,7 @@ export default function PainelClinicoPage() {
                               <Button
                                 size="sm"
                                 variant="default"
-                                className="h-6 px-2 text-[10px] gap-1 bg-amber-600 hover:bg-amber-700 text-white"
+                                className="h-6 px-2 text-[10px] gap-1 bg-warning hover:bg-warning text-white"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const params = new URLSearchParams();
@@ -435,10 +435,10 @@ export default function PainelClinicoPage() {
                             <div className="flex flex-col items-center gap-0.5">
                               <span className="font-mono font-bold text-sm text-foreground">{sapsScores[patient.name].score}</span>
                               <Badge variant="outline" className={cn("text-[10px] px-1.5",
-                                sapsScores[patient.name].mortality < 10 ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400" :
-                                sapsScores[patient.name].mortality < 25 ? "text-yellow-600 border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400" :
-                                sapsScores[patient.name].mortality < 50 ? "text-orange-600 border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400" :
-                                "text-red-600 border-red-200 bg-red-50 dark:bg-red-900/20 dark:text-red-400"
+                                sapsScores[patient.name].mortality < 10 ? "text-released-on-soft border-released-border bg-released-soft" :
+                                sapsScores[patient.name].mortality < 25 ? "text-warning-on-soft border-warning-border bg-warning-soft" :
+                                sapsScores[patient.name].mortality < 50 ? "text-warning-on-soft border-warning-border bg-warning-soft" :
+                                "text-critical-on-soft border-critical-border bg-critical-soft"
                               )}>
                                 {sapsScores[patient.name].mortality}%
                               </Badge>
@@ -737,7 +737,7 @@ function SapsPendingMiniTimer({ pendingSince }: { pendingSince: string | null })
   if (!pendingSince) return null;
 
   return (
-    <span className="font-mono text-[10px] font-bold text-amber-600 dark:text-amber-400 animate-pulse">
+    <span className="font-mono text-[10px] font-bold text-warning-on-soft animate-pulse">
       ⏱ {elapsed}
     </span>
   );
@@ -777,11 +777,11 @@ function SapsPendingGlobalBanner({
 
   return (
     <div className="px-4 pt-2">
-      <div className="rounded-xl border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-950/30 p-3 shadow-sm">
+      <div className="rounded-xl border-l-4 border-warning bg-warning-soft p-3 shadow-sm">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5 animate-pulse" />
+          <AlertTriangle className="h-5 w-5 text-warning-on-soft shrink-0 mt-0.5 animate-pulse" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+            <p className="text-sm font-semibold text-warning-on-soft">
               {pendingPatients.length} ficha{pendingPatients.length > 1 ? "s" : ""} SAPS 3 pendente{pendingPatients.length > 1 ? "s" : ""} — prazo limite de 24h
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -793,7 +793,7 @@ function SapsPendingGlobalBanner({
                   key={p.id}
                   size="sm"
                   variant="outline"
-                  className="h-7 px-2 text-xs gap-1.5 border-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                  className="h-7 px-2 text-xs gap-1.5 border-warning-border hover:bg-warning-soft"
                   onClick={() => onComplete(p)}
                 >
                   <ClipboardList className="h-3 w-3" />

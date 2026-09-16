@@ -42,7 +42,7 @@ interface PrescriptionDiffDialogProps {
 const STATUS_CONFIG: Record<DiffStatus, { label: string; className: string; icon: any }> = {
   added: {
     label: "Adicionado",
-    className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+    className: "border-released/40 bg-released/10 text-released-on-soft",
     icon: Plus,
   },
   removed: {
@@ -52,17 +52,17 @@ const STATUS_CONFIG: Record<DiffStatus, { label: string; className: string; icon
   },
   changed: {
     label: "Alterado",
-    className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+    className: "border-warning/40 bg-warning/10 text-warning-on-soft",
     icon: RefreshCw,
   },
   suspended: {
     label: "Suspenso",
-    className: "border-orange-500/40 bg-orange-500/10 text-orange-700 dark:text-orange-400",
+    className: "border-warning/40 bg-warning/10 text-warning-on-soft",
     icon: Pause,
   },
   reactivated: {
     label: "Reativado",
-    className: "border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-400",
+    className: "border-border/40 bg-primary/10 text-foreground",
     icon: Play,
   },
   unchanged: {

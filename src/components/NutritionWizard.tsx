@@ -911,7 +911,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
       <DialogContent className="max-w-3xl w-[min(48rem,calc(100vw-2rem))] h-[calc(100svh-8rem)] max-h-[calc(100svh-8rem)] top-4 translate-y-0 sm:top-4 z-[80] overflow-hidden flex flex-col p-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-emerald-500" />
+            <Sparkles className="h-4 w-4 text-released" />
             Assistente de Terapia Nutricional
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -925,13 +925,13 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
             <div key={s} className="flex-1 flex items-center gap-1">
               <div className={cn(
                 "flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-md font-medium transition-all whitespace-nowrap",
-                i === step ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" :
+                i === step ? "bg-released/15 text-released-on-soft" :
                 i < step ? "text-muted-foreground" : "text-muted-foreground/50"
               )}>
                 <span className={cn(
                   "inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold",
-                  i === step ? "bg-emerald-500 text-white" :
-                  i < step ? "bg-emerald-500/30 text-emerald-700" : "bg-muted text-muted-foreground"
+                  i === step ? "bg-released text-white" :
+                  i < step ? "bg-released/30 text-released-on-soft" : "bg-muted text-muted-foreground"
                 )}>
                   {i < step ? <Check className="h-2.5 w-2.5" /> : i + 1}
                 </span>
@@ -946,8 +946,8 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
           {/* STEP 0 — Modalidades (multi) */}
           {step === 0 && (
             <div className="space-y-3 p-1">
-              <div className="text-[11px] text-muted-foreground bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/60 rounded-lg px-3 py-2">
-                <span className="font-semibold text-emerald-700 dark:text-emerald-300">Dieta mista permitida.</span>{" "}
+              <div className="text-[11px] text-muted-foreground bg-released-soft/40 border border-released-border/60 rounded-lg px-3 py-2">
+                <span className="font-semibold text-released-on-soft">Dieta mista permitida.</span>{" "}
                 Selecione mais de uma modalidade quando aplicável (ex.: oral em progressão + enteral, ou enteral + parenteral). "Dieta zero" é exclusiva.
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -961,25 +961,25 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                       onClick={() => toggleModality(opt.k)}
                       className={cn(
                         "relative p-4 rounded-xl border-2 text-left transition-all hover:shadow-md",
-                        sel ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 shadow-md ring-2 ring-emerald-500/20"
-                            : "border-border hover:border-emerald-300"
+                        sel ? "border-released bg-released-soft shadow-md ring-2 ring-released/20"
+                            : "border-border hover:border-released-border"
                       )}
                     >
                       <div className={cn(
                         "absolute top-2 right-2 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all",
-                        sel ? "bg-emerald-500 border-emerald-500" : "border-border bg-background"
+                        sel ? "bg-released border-released" : "border-border bg-background"
                       )}>
                         {sel && <Check className="h-3 w-3 text-white" />}
                       </div>
-                      <Icon className={cn("h-6 w-6 mb-2", sel ? "text-emerald-600" : "text-muted-foreground")} />
-                      <div className={cn("font-semibold text-sm", sel && "text-emerald-700 dark:text-emerald-300")}>{opt.label}</div>
+                      <Icon className={cn("h-6 w-6 mb-2", sel ? "text-released-on-soft" : "text-muted-foreground")} />
+                      <div className={cn("font-semibold text-sm", sel && "text-released-on-soft")}>{opt.label}</div>
                       <div className="text-[11px] text-muted-foreground mt-0.5">{opt.desc}</div>
                     </button>
                   );
                 })}
               </div>
               {modalities.size > 1 && !modalities.has("zero") && (
-                <div className="text-[11px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2">
+                <div className="text-[11px] text-warning-on-soft bg-warning-soft border border-warning-border rounded-lg px-3 py-2 flex items-center gap-2">
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                   <span>Dieta mista selecionada ({Array.from(modalities).join(" + ")}). Cada modalidade gerará uma linha independente na prescrição.</span>
                 </div>
@@ -992,14 +992,14 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
             <div className="space-y-5 p-1">
               {modalities.has("zero") && (
                 <section className="rounded-lg border border-border/60 p-3 space-y-3">
-                  <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5"><Ban className="h-3.5 w-3.5" /> Dieta zero (NPO)</h3>
+                  <h3 className="text-xs font-bold text-released-on-soft flex items-center gap-1.5"><Ban className="h-3.5 w-3.5" /> Dieta zero (NPO)</h3>
                   <div>
                     <Label className="text-xs font-semibold">Motivo do jejum</Label>
                     <div className="grid grid-cols-2 gap-1.5 mt-2">
                       {ZERO_REASONS.map(r => (
                         <button key={r.key} type="button" onClick={() => setZeroReason(r.key)}
                           className={cn("text-xs px-3 py-2 rounded-lg border text-left transition-all",
-                            zeroReason === r.key ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300" : "border-border hover:border-emerald-300"
+                            zeroReason === r.key ? "border-released bg-released-soft text-released-on-soft" : "border-border hover:border-released-border"
                           )}>
                           {r.label}
                         </button>
@@ -1023,14 +1023,14 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
 
               {modalities.has("oral") && (
                 <section className="rounded-lg border border-border/60 p-3 space-y-3">
-                  <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5"><UtensilsCrossed className="h-3.5 w-3.5" /> Via oral</h3>
+                  <h3 className="text-xs font-bold text-released-on-soft flex items-center gap-1.5"><UtensilsCrossed className="h-3.5 w-3.5" /> Via oral</h3>
                   <div>
                     <Label className="text-xs font-semibold">Consistência</Label>
                     <div className="grid grid-cols-2 gap-1.5 mt-2">
                       {ORAL_CONSISTENCIES.map(c => (
                         <button key={c.key} type="button" onClick={() => setOralConsist(c.key)}
                           className={cn("text-xs px-3 py-2 rounded-lg border text-left transition-all",
-                            oralConsist === c.key ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300" : "border-border hover:border-emerald-300"
+                            oralConsist === c.key ? "border-released bg-released-soft text-released-on-soft" : "border-border hover:border-released-border"
                           )}>
                           <div className="font-semibold">{c.label}</div>
                           <div className="text-[10px] text-muted-foreground">{c.desc}</div>
@@ -1046,7 +1046,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                         return (
                           <button key={p.key} type="button" onClick={() => toggleOralProfile(p.key)}
                             className={cn("text-[11px] px-2.5 py-1 rounded-full border transition-all",
-                              sel ? "border-emerald-500 bg-emerald-500 text-white" : "border-border hover:border-emerald-300"
+                              sel ? "border-released bg-released text-white" : "border-border hover:border-released-border"
                             )}>
                             {p.label}
                           </button>
@@ -1084,7 +1084,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
 
               {modalities.has("enteral") && (
                 <section className="rounded-lg border border-border/60 p-3 space-y-3">
-                  <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5"><Soup className="h-3.5 w-3.5" /> Enteral</h3>
+                  <h3 className="text-xs font-bold text-released-on-soft flex items-center gap-1.5"><Soup className="h-3.5 w-3.5" /> Enteral</h3>
 
                   {/* Sistema aberto/fechado */}
                   <div>
@@ -1096,7 +1096,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                       ].map(o => (
                         <button key={o.k} type="button" onClick={() => setEntSystem(o.k)}
                           className={cn("text-xs px-3 py-2 rounded-lg border text-left transition-all",
-                            entSystem === o.k ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300" : "border-border hover:border-emerald-300"
+                            entSystem === o.k ? "border-released bg-released-soft text-released-on-soft" : "border-border hover:border-released-border"
                           )}>
                           <div className="font-semibold">{o.label}</div>
                           <div className="text-[10px] text-muted-foreground">{o.desc}</div>
@@ -1114,7 +1114,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                       {ENTERAL_VIAS.map(v => (
                         <button key={v.key} type="button" onClick={() => setEntVia(v.key)}
                           className={cn("text-xs px-2 py-2 rounded-lg border text-center transition-all",
-                            entVia === v.key ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300" : "border-border hover:border-emerald-300"
+                            entVia === v.key ? "border-released bg-released-soft text-released-on-soft" : "border-border hover:border-released-border"
                           )}>
                           <div className="font-bold">{v.label}</div>
                           <div className="text-[9px] text-muted-foreground">{v.desc}</div>
@@ -1128,7 +1128,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                       {ENTERAL_FORMULAS.map(f => (
                         <button key={f.key} type="button" onClick={() => setEntFormula(f.key)}
                           className={cn("text-xs px-3 py-2 rounded-lg border text-left transition-all",
-                            entFormula === f.key ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300" : "border-border hover:border-emerald-300"
+                            entFormula === f.key ? "border-released bg-released-soft text-released-on-soft" : "border-border hover:border-released-border"
                           )}>
                           <div className="font-semibold">{f.label}</div>
                           <div className="text-[10px] text-muted-foreground">{f.desc}</div>
@@ -1142,7 +1142,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                       {ENTERAL_MODES.map(m => (
                         <button key={m.key} type="button" onClick={() => setEntMode(m.key)}
                           className={cn("text-xs px-3 py-2 rounded-lg border text-left transition-all",
-                            entMode === m.key ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300" : "border-border hover:border-emerald-300"
+                            entMode === m.key ? "border-released bg-released-soft text-released-on-soft" : "border-border hover:border-released-border"
                           )}>
                           <div className="font-semibold">{m.label}</div>
                           <div className="text-[10px] text-muted-foreground">{m.desc}</div>
@@ -1180,11 +1180,11 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                   {/* Água via sonda */}
                   <Separator />
                   <div>
-                    <Label className="text-xs font-semibold flex items-center gap-1.5"><Droplets className="h-3.5 w-3.5 text-blue-500" /> Água via sonda</Label>
+                    <Label className="text-xs font-semibold flex items-center gap-1.5"><Droplets className="h-3.5 w-3.5 text-muted-foreground" /> Água via sonda</Label>
                     <p className="text-[10px] text-muted-foreground mt-0.5">As três opções podem ser combinadas; cada uma gera uma linha própria na prescrição.</p>
 
                     <div className="mt-2 space-y-2">
-                      <label className="flex items-start gap-2 text-xs cursor-pointer p-2 rounded-md border border-border/60 hover:border-emerald-300">
+                      <label className="flex items-start gap-2 text-xs cursor-pointer p-2 rounded-md border border-border/60 hover:border-released-border">
                         <input type="checkbox" checked={waterFlush} onChange={e => setWaterFlush(e.target.checked)} className="rounded mt-0.5" />
                         <div>
                           <div className="font-semibold">Flush de manutenção</div>
@@ -1192,7 +1192,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                         </div>
                       </label>
 
-                      <div className={cn("p-2 rounded-md border transition-all", waterScheduled ? "border-emerald-400 bg-emerald-50/30 dark:bg-emerald-950/20" : "border-border/60")}>
+                      <div className={cn("p-2 rounded-md border transition-all", waterScheduled ? "border-released bg-released-soft/30" : "border-border/60")}>
                         <label className="flex items-start gap-2 text-xs cursor-pointer">
                           <input type="checkbox" checked={waterScheduled} onChange={e => setWaterScheduled(e.target.checked)} className="rounded mt-0.5" />
                           <div className="flex-1">
@@ -1223,11 +1223,11 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                         )}
                       </div>
 
-                      <div className={cn("p-2 rounded-md border transition-all", waterCorrection ? "border-amber-400 bg-amber-50/30 dark:bg-amber-950/20" : "border-border/60")}>
+                      <div className={cn("p-2 rounded-md border transition-all", waterCorrection ? "border-warning bg-warning-soft/30" : "border-border/60")}>
                         <label className="flex items-start gap-2 text-xs cursor-pointer">
                           <input type="checkbox" checked={waterCorrection} onChange={e => setWaterCorrection(e.target.checked)} className="rounded mt-0.5" />
                           <div className="flex-1">
-                            <div className="font-semibold flex items-center gap-1.5"><AlertTriangle className="h-3 w-3 text-amber-500" /> Correção de distúrbio hidroeletrolítico</div>
+                            <div className="font-semibold flex items-center gap-1.5"><AlertTriangle className="h-3 w-3 text-warning" /> Correção de distúrbio hidroeletrolítico</div>
                             <div className="text-[10px] text-muted-foreground">Esquema terapêutico (ex.: hipernatremia).</div>
                           </div>
                         </label>
@@ -1256,7 +1256,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
 
               {modalities.has("parenteral") && (
                 <section className="rounded-lg border border-border/60 p-3 space-y-3">
-                  <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5"><Droplets className="h-3.5 w-3.5" /> Parenteral (NPT)</h3>
+                  <h3 className="text-xs font-bold text-released-on-soft flex items-center gap-1.5"><Droplets className="h-3.5 w-3.5" /> Parenteral (NPT)</h3>
                   <div>
                     <Label className="text-xs font-semibold">Tipo de NPT</Label>
                     <div className="grid grid-cols-2 gap-1.5 mt-2">
@@ -1266,7 +1266,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                       ].map(o => (
                         <button key={o.k} type="button" onClick={() => setParType(o.k as any)}
                           className={cn("text-xs px-3 py-2 rounded-lg border text-left transition-all",
-                            parType === o.k ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300" : "border-border hover:border-emerald-300"
+                            parType === o.k ? "border-released bg-released-soft text-released-on-soft" : "border-border hover:border-released-border"
                           )}>
                           <div className="font-semibold">{o.label}</div>
                           <div className="text-[10px] text-muted-foreground">{o.desc}</div>
@@ -1296,7 +1296,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
               <section className={cn(
                 "rounded-lg border p-3 space-y-3 transition-all",
                 waterOfferEnabled
-                  ? "border-cyan-400 bg-cyan-50/40 dark:bg-cyan-950/20"
+                  ? "border-border bg-muted/40"
                   : "border-dashed border-border/60 bg-muted/10"
               )}>
                 <label className="flex items-start gap-2 text-xs cursor-pointer">
@@ -1307,7 +1307,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                     className="rounded mt-0.5"
                   />
                   <div className="flex-1">
-                    <div className="font-bold text-cyan-700 dark:text-cyan-300 flex items-center gap-1.5">
+                    <div className="font-bold text-foreground flex items-center gap-1.5">
                       <Droplets className="h-3.5 w-3.5" />
                       Oferta hídrica ampliada (catálogo de águas)
                     </div>
@@ -1322,8 +1322,8 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                   <WaterOfferingFields
                     value={waterOffer}
                     onChange={setWaterOffer}
-                    accentClassName="border-cyan-500 bg-cyan-100/60 dark:bg-cyan-900/30"
-                    accentTextClassName="text-cyan-700 dark:text-cyan-300"
+                    accentClassName="border-border bg-muted/60"
+                    accentTextClassName="text-foreground"
                   />
                 )}
               </section>
@@ -1342,7 +1342,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                   return (
                     <button key={c.key} type="button" onClick={() => toggleComorb(c.key)}
                       className={cn("text-[11px] px-2.5 py-1.5 rounded-lg border transition-all flex items-center gap-1.5",
-                        sel ? "border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300" : "border-border hover:border-amber-300"
+                        sel ? "border-warning bg-warning-soft text-warning-on-soft" : "border-border hover:border-warning-border"
                       )}>
                       {sel && <Check className="h-3 w-3" />}
                       <span className="font-semibold">{c.label}</span>
@@ -1364,8 +1364,8 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
           {/* STEP 3 — Aporte proteico (catálogo genérico) */}
           {step === 3 && (
             <div className="space-y-3 p-1">
-              <div className="text-[11px] text-muted-foreground bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/60 rounded-lg px-3 py-2">
-                <span className="font-semibold text-emerald-700 dark:text-emerald-300">Suplementação proteica/calórico-proteica</span> — selecione os produtos a anexar à prescrição.
+              <div className="text-[11px] text-muted-foreground bg-released-soft/40 border border-released-border/60 rounded-lg px-3 py-2">
+                <span className="font-semibold text-released-on-soft">Suplementação proteica/calórico-proteica</span> — selecione os produtos a anexar à prescrição.
                 Cada item gera linha própria. Vias disponíveis variam por produto: <strong>oral (VO)</strong>, <strong>enteral</strong> (SNG/SOG/SNE/GTT/JTT) e, quando aplicável, <strong>parenteral</strong> (NPT / dipeptídeo IV).
               </div>
 
@@ -1376,7 +1376,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                   : "Módulos (pó/sachê / aminoácidos) — VO, sonda ou parenteral";
                 return (
                   <section key={group} className="rounded-lg border border-border/60 p-3 space-y-2">
-                    <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-300">{groupLabel}</h3>
+                    <h3 className="text-xs font-bold text-released-on-soft">{groupLabel}</h3>
                     <div className="space-y-1.5">
                       {groupItems.map(p => {
                         const sel = proteinSelected.has(p.key);
@@ -1384,7 +1384,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                         return (
                           <div key={p.key} className={cn(
                             "rounded-md border transition-all",
-                            sel ? "border-emerald-400 bg-emerald-50/30 dark:bg-emerald-950/20" : "border-border/60"
+                            sel ? "border-released bg-released-soft/30" : "border-border/60"
                           )}>
                             <button
                               type="button"
@@ -1393,7 +1393,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                             >
                               <div className={cn(
                                 "mt-0.5 h-4 w-4 rounded border flex items-center justify-center shrink-0",
-                                sel ? "bg-emerald-500 border-emerald-500" : "border-border bg-background"
+                                sel ? "bg-released border-released" : "border-border bg-background"
                               )}>
                                 {sel && <Check className="h-2.5 w-2.5 text-white" />}
                               </div>
@@ -1452,7 +1452,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
             <div className="space-y-2 p-1">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Activity className="h-3.5 w-3.5 text-emerald-500" />
+                  <Activity className="h-3.5 w-3.5 text-released" />
                   Itens que serão adicionados à prescrição:
                 </div>
                 <Button variant="outline" size="sm" className="h-7 text-[11px]" onClick={() => setStep(0)}>
@@ -1460,18 +1460,18 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                 </Button>
               </div>
               {entries.map((e, i) => (
-                <div key={e.id} className="rounded-lg border border-emerald-200 bg-emerald-50/40 dark:bg-emerald-950/20 p-3">
+                <div key={e.id} className="rounded-lg border border-released-border bg-released-soft/40 p-3">
                   <div className="flex items-start gap-2">
-                    <Badge variant="outline" className="text-[10px] bg-emerald-100 text-emerald-700 border-emerald-300">{i + 1}</Badge>
+                    <Badge variant="outline" className="text-[10px] bg-released-soft text-released-on-soft border-released-border">{i + 1}</Badge>
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm text-emerald-800 dark:text-emerald-200">{e.name}</div>
+                      <div className="font-semibold text-sm text-released-on-soft">{e.name}</div>
                       <div className="text-[11px] text-muted-foreground mt-0.5">
                         {[e.defaultDose !== "-" ? e.defaultDose : null,
                           e.defaultRoute !== "-" ? e.defaultRoute : null,
                           e.defaultPosology !== "-" ? e.defaultPosology : null].filter(Boolean).join(" · ")}
                       </div>
                       {e.instructions && (
-                        <div className="text-[11px] text-muted-foreground mt-1 italic border-l-2 border-emerald-300 pl-2">
+                        <div className="text-[11px] text-muted-foreground mt-1 italic border-l-2 border-released-border pl-2">
                           {e.instructions}
                         </div>
                       )}
@@ -1493,11 +1493,11 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => { reset(); onOpenChange(false); }}>Cancelar</Button>
             {step < 4 ? (
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" disabled={!canAdvance} onClick={() => setStep(s => Math.min(4, s + 1))}>
+              <Button size="sm" className="bg-released hover:bg-released" disabled={!canAdvance} onClick={() => setStep(s => Math.min(4, s + 1))}>
                 Avançar <ChevronRight className="h-3.5 w-3.5 ml-1" />
               </Button>
             ) : (
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={handleConfirm} disabled={entries.length === 0}>
+              <Button size="sm" className="bg-released hover:bg-released" onClick={handleConfirm} disabled={entries.length === 0}>
                 <Check className="h-3.5 w-3.5 mr-1" /> Adicionar à prescrição ({entries.length})
               </Button>
             )}

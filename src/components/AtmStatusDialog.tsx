@@ -143,7 +143,7 @@ export function AtmStatusDialog({
   <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[88vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-5 py-3 border-b bg-[hsl(217,55%,96%)]/50 dark:bg-[hsl(217,75%,12%)]/15">
+        <DialogHeader className="px-5 py-3 border-b bg-[hsl(217,55%,96%)]/50(217,75%,12%)]/15">
           <DialogTitle className="flex items-center gap-2 text-base">
             <Shield className="h-5 w-5 text-[hsl(217,70%,40%)]" />
             Guia ATM — Antimicrobianos
@@ -174,15 +174,15 @@ export function AtmStatusDialog({
             ) : (
               <ScrollArea className="h-[420px] pr-2">
                 {onReprintAll && activeItems.length >= 2 && (
-                  <div className="mb-2.5 flex items-center justify-between gap-2 rounded-md border border-[hsl(217,55%,82%)]/70 bg-[hsl(217,55%,96%)]/50 dark:border-[hsl(217,70%,28%)]/40 dark:bg-[hsl(217,75%,12%)]/15 px-2.5 py-2">
-                    <div className="text-[11px] text-[hsl(217,72%,36%)] dark:text-[hsl(217,60%,60%)]">
+                  <div className="mb-2.5 flex items-center justify-between gap-2 rounded-md border border-[hsl(217,55%,82%)]/70 bg-[hsl(217,55%,96%)]/50(217,70%,28%)]/40(217,75%,12%)]/15 px-2.5 py-2">
+                    <div className="text-[11px] text-[hsl(217,72%,36%)](217,60%,60%)]">
                       <strong>Guia consolidada:</strong> imprime uma única Guia ATM com todos os {activeItems.length} antibióticos em curso (1 bloco por item).
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => onReprintAll(activeItems)}
-                      className="h-7 text-[11px] gap-1 border-[hsl(217,55%,72%)] text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,90%)] dark:text-[hsl(217,60%,60%)] dark:hover:bg-[hsl(217,75%,12%)]/30 shrink-0"
+                      className="h-7 text-[11px] gap-1 border-[hsl(217,55%,72%)] text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,90%)](217,60%,60%)](217,75%,12%)]/30 shrink-0"
                       title="Gera uma única Guia ATM contendo todos os antibióticos validados em curso"
                     >
                       <Printer className="h-3 w-3" /> Reimprimir todas ({activeItems.length})
@@ -215,24 +215,24 @@ export function AtmStatusDialog({
                         className={cn(
                           "rounded-lg border p-3 bg-card transition-colors",
                           overdue
-                            ? "border-red-300 bg-red-50/40 dark:bg-red-950/10"
-                            : "border-[hsl(217,55%,82%)]/70 dark:border-[hsl(217,70%,28%)]/40 hover:border-[hsl(217,55%,72%)]",
+                            ? "border-critical-border bg-critical-soft/40"
+                            : "border-[hsl(217,55%,82%)]/70(217,70%,28%)]/40 hover:border-[hsl(217,55%,72%)]",
                         )}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-sm font-semibold truncate">{it.name}</span>
-                              <Badge variant="outline" className="text-[9px] gap-1 border-emerald-400 text-emerald-700 dark:text-emerald-400">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" /> Em curso
+                              <Badge variant="outline" className="text-[9px] gap-1 border-released text-released-on-soft">
+                                <span className="h-1.5 w-1.5 rounded-full bg-released inline-block" /> Em curso
                               </Badge>
                               {overdue && (
-                                <Badge variant="outline" className="text-[9px] gap-1 border-red-400 text-red-700 dark:text-red-400">
+                                <Badge variant="outline" className="text-[9px] gap-1 border-critical text-critical-on-soft">
                                   <AlertTriangle className="h-2.5 w-2.5" /> Excedeu duração planejada
                                 </Badge>
                               )}
                               {sinceLabel && !overdue && (
-                                <Badge variant="outline" className="text-[9px] gap-1 border-[hsl(217,55%,72%)] text-[hsl(217,72%,36%)] dark:text-[hsl(217,60%,60%)]">
+                                <Badge variant="outline" className="text-[9px] gap-1 border-[hsl(217,55%,72%)] text-[hsl(217,72%,36%)](217,60%,60%)]">
                                   <Timer className="h-2.5 w-2.5" /> {sinceLabel}
                                 </Badge>
                               )}
@@ -250,24 +250,24 @@ export function AtmStatusDialog({
                             {dot !== null && (
                               <div className="mt-2">
                                 <div className="flex items-center justify-between gap-2 text-[11px] mb-1">
-                                  <span className="inline-flex items-center gap-1 font-semibold text-[hsl(217,72%,36%)] dark:text-[hsl(217,60%,60%)]">
+                                  <span className="inline-flex items-center gap-1 font-semibold text-[hsl(217,72%,36%)](217,60%,60%)]">
                                     <Clock className="h-3 w-3" /> Dia {dot}{totalValid ? ` de ${total}` : ''}
                                   </span>
                                   {totalValid && remaining !== null && (
                                     <span className={cn(
                                       "font-semibold",
-                                      remaining < 0 ? "text-red-600" : remaining <= 1 ? "text-amber-600" : "text-muted-foreground"
+                                      remaining < 0 ? "text-critical-on-soft" : remaining <= 1 ? "text-warning-on-soft" : "text-muted-foreground"
                                     )}>
                                       {remaining > 0 ? `Faltam ${remaining} dia${remaining === 1 ? '' : 's'}` : remaining === 0 ? 'Último dia' : `Excedeu há ${Math.abs(remaining)} dia${Math.abs(remaining) === 1 ? '' : 's'}`}
                                     </span>
                                   )}
                                 </div>
                                 {pct !== null && (
-                                  <div className="h-1.5 w-full rounded-full bg-[hsl(217,55%,90%)] dark:bg-[hsl(217,75%,12%)]/30 overflow-hidden">
+                                  <div className="h-1.5 w-full rounded-full bg-[hsl(217,55%,90%)](217,75%,12%)]/30 overflow-hidden">
                                     <div
                                       className={cn(
                                         "h-full rounded-full transition-all",
-                                        overdue ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-[hsl(217,65%,45%)]"
+                                        overdue ? "bg-critical" : pct >= 80 ? "bg-warning" : "bg-[hsl(217,65%,45%)]"
                                       )}
                                       style={{ width: `${overdue ? 100 : pct}%` }}
                                     />
@@ -302,7 +302,7 @@ export function AtmStatusDialog({
                                   setExtendDays(it.atbPlannedDays || '');
                                   setExtendJustification('');
                                 }}
-                                className="h-7 text-[11px] gap-1 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                                className="h-7 text-[11px] gap-1 text-released-on-soft hover:bg-released-soft"
                                 title="Estender duração do tratamento sem criar novo episódio"
                               >
                                 <CalendarPlus className="h-3 w-3" /> Estender
@@ -313,7 +313,7 @@ export function AtmStatusDialog({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => onReprintItem(it)}
-                                className="h-7 text-[11px] gap-1 text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,96%)] dark:text-[hsl(217,60%,60%)] dark:hover:bg-[hsl(217,75%,12%)]/30"
+                                className="h-7 text-[11px] gap-1 text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,96%)](217,60%,60%)](217,75%,12%)]/30"
                                 title="Reimprimir 2ª via da Guia ATM já validada"
                               >
                                 <Printer className="h-3 w-3" /> Reimprimir
@@ -324,7 +324,7 @@ export function AtmStatusDialog({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => onSuspendItem(it.id)}
-                                className="h-7 text-[11px] gap-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                className="h-7 text-[11px] gap-1 text-critical-on-soft hover:bg-critical-soft"
                               >
                                 <Ban className="h-3 w-3" /> Suspender
                               </Button>
@@ -362,7 +362,7 @@ export function AtmStatusDialog({
                   <RadioGroup value={novaMode} onValueChange={(v) => setNovaMode(v as any)} className="space-y-2">
                     <label className={cn(
                       "flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer hover:bg-muted/30",
-                      novaMode === 'acrescimo' && "border-[hsl(217,60%,60%)] bg-[hsl(217,55%,96%)]/50 dark:bg-[hsl(217,75%,12%)]/20"
+                      novaMode === 'acrescimo' && "border-[hsl(217,60%,60%)] bg-[hsl(217,55%,96%)]/50(217,75%,12%)]/20"
                     )}>
                       <RadioGroupItem value="acrescimo" className="mt-0.5" />
                       <div className="text-xs">
@@ -374,7 +374,7 @@ export function AtmStatusDialog({
                     </label>
                     <label className={cn(
                       "flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer hover:bg-muted/30",
-                      novaMode === 'troca' && "border-red-400 bg-red-50/50 dark:bg-red-950/20"
+                      novaMode === 'troca' && "border-critical bg-critical-soft/50"
                     )}>
                       <RadioGroupItem value="troca" className="mt-0.5" />
                       <div className="text-xs flex-1">
@@ -410,7 +410,7 @@ export function AtmStatusDialog({
                 </>
               )}
 
-              <div className="rounded-md bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 p-2.5 text-[11px] text-blue-900 dark:text-blue-300">
+              <div className="rounded-md bg-muted/60 border border-border p-2.5 text-[11px] text-foreground">
                 Ao continuar, abriremos a <strong>Guia ATM</strong> com formulário em branco para o
                 novo antibiótico. Os itens em curso permanecem inalterados (a menos que você
                 selecione a opção de Troca).
@@ -452,7 +452,7 @@ export function AtmStatusDialog({
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-sm">
-            <CalendarPlus className="h-4 w-4 text-emerald-600" />
+            <CalendarPlus className="h-4 w-4 text-released-on-soft" />
             Estender tratamento
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
@@ -490,7 +490,7 @@ export function AtmStatusDialog({
             {extendValid && extendItem?.atbStartDate && (() => {
               const newEnd = endDate(extendItem.atbStartDate, String(newDays));
               return newEnd ? (
-                <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                <p className="text-xs text-released-on-soft">
                   Nova previsão de término: <strong>{newEnd}</strong>
                 </p>
               ) : null;
@@ -517,7 +517,7 @@ export function AtmStatusDialog({
             size="sm"
             disabled={!extendValid || !extendJustification.trim()}
             onClick={handleConfirmExtend}
-            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="gap-1.5 bg-released hover:bg-released text-white"
           >
             <CalendarPlus className="h-3.5 w-3.5" /> Confirmar extensão
           </Button>

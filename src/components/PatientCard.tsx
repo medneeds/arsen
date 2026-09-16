@@ -540,7 +540,7 @@ const SortableDiagnosisItemCollapsed = memo(function SortableDiagnosisItemCollap
               variant="ghost"
               onClick={() => onGetCid(editValue, index)}
               disabled={loadingCid}
-              className="h-4 w-4 text-amber-500 hover:bg-amber-100 hover:text-amber-600 p-0 transition-colors"
+              className="h-4 w-4 text-warning hover:bg-warning-soft hover:text-warning-on-soft p-0 transition-colors"
               title="Buscar código CID"
             >
               <Sparkles className={`h-2.5 w-2.5 ${loadingCid ? 'animate-pulse' : ''}`} />
@@ -550,7 +550,7 @@ const SortableDiagnosisItemCollapsed = memo(function SortableDiagnosisItemCollap
             size="icon"
             variant="ghost"
             onClick={onSave}
-            className="h-4 w-4 text-green-600 hover:bg-green-100 p-0"
+            className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0"
           >
             <Check className="h-2.5 w-2.5" />
           </Button>
@@ -558,7 +558,7 @@ const SortableDiagnosisItemCollapsed = memo(function SortableDiagnosisItemCollap
             size="icon"
             variant="ghost"
             onClick={onCancel}
-            className="h-4 w-4 text-red-600 hover:bg-red-100 p-0"
+            className="h-4 w-4 text-critical-on-soft hover:bg-critical-soft p-0"
           >
             <X className="h-2.5 w-2.5" />
           </Button>
@@ -700,48 +700,67 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
     setLocalMedicalResponsibility(patient.medicalResponsibility);
   }, [patient.medicalResponsibility]);
   
+  // Cor do setor no mapa: identificacao, nao estado clinico. Usa o cinza
+  // estrutural com variacao de intensidade em vez de vermelho/amarelo/azul —
+  // aquelas cores pertencem ao sinal clinico e, usadas aqui, competiam com
+  // alertas de verdade dentro do mesmo cartao.
   const sectorColorMap = useMemo(() => ({
-    red: "#ef4444",
-    yellow: "#eab308",
-    blue: "#3b82f6",
-    outside: "#6b7280"
+    red: "hsl(210 65% 28%)",
+    yellow: "hsl(210 40% 46%)",
+    blue: "hsl(210 25% 60%)",
+    outside: "hsl(215 12% 55%)"
   }), []);
 
+  /**
+   * Etapas da solicitacao de internacao.
+   *
+   * Antes cada etapa tinha uma familia de cor propria — ambar, verde, azul,
+   * vermelho e roxo — para representar momentos de UM MESMO fluxo. Cinco cores
+   * nao comunicam cinco significados aqui: comunicam desorganizacao, e um
+   * cartao com varias delas ao mesmo tempo vira mosaico.
+   *
+   * Agora seguem o sistema: o que ESPERA acao e atencao (ambar), o que foi
+   * CONCLUIDO e liberado (verde), o que exige decisao IMEDIATA e critico
+   * (vermelho). Destino (UTI x enfermaria) e informacao do rotulo, nao da cor.
+   *
+   * Emoji removido dos rotulos: o icone ao lado ja cumpre a funcao, e emoji
+   * em prontuario nao acompanha o tom de um documento clinico.
+   */
   const internmentStatusConfig = useMemo(() => ({
     SOLICITACAO_PENDENTE: {
-      label: "🕐 Solicitação Pendente",
+      label: "Solicitação pendente",
       icon: Clock,
-      color: "text-amber-600",
-      bgColor: "bg-amber-50",
-      borderColor: "border-amber-300",
+      color: "text-warning-on-soft",
+      bgColor: "bg-warning-soft",
+      borderColor: "border-warning-border",
     },
     PSM_FAVORAVEL: {
-      label: "✅ Solicitada Internação PSM Favorável",
+      label: "Internação PSM favorável",
       icon: CheckCircle2,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-      borderColor: "border-green-300",
+      color: "text-released-on-soft",
+      bgColor: "bg-released-soft",
+      borderColor: "border-released-border",
     },
     AGUARDANDO_VAGA: {
-      label: "🏥 Aguardando Alocação no SIGA Vaga",
+      label: "Aguardando alocação no SIGA",
       icon: BedDouble,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      borderColor: "border-blue-300",
+      color: "text-warning-on-soft",
+      bgColor: "bg-warning-soft",
+      borderColor: "border-warning-border",
     },
     IR_PARA_UTI: {
-      label: "🚨 IR PARA LEITO DE UTI",
+      label: "Ir para leito de UTI",
       icon: BedDouble,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-      borderColor: "border-red-300",
+      color: "text-critical-on-soft",
+      bgColor: "bg-critical-soft",
+      borderColor: "border-critical-border",
     },
     IR_PARA_ENFERMARIA: {
-      label: "🏥 IR PARA LEITO DE ENFERMARIA",
+      label: "Ir para leito de enfermaria",
       icon: BedDouble,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-      borderColor: "border-purple-300",
+      color: "text-released-on-soft",
+      bgColor: "bg-released-soft",
+      borderColor: "border-released-border",
     },
   }), []);
 
@@ -1382,10 +1401,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             isSelected && "ring-2 ring-primary",
             isDeleting && "animate-[slide-out-left_0.3s_ease-out_forwards]",
             allocationStatusBarConfig && "rounded-t-none",
-            patient.admissionStatus === 'alta_dada' && "ring-1 ring-emerald-400/40 bg-emerald-50/30 dark:bg-emerald-950/10 grayscale-[15%] opacity-95",
-            patient.admissionStatus === 'obito' && "ring-1 ring-slate-500/50 bg-slate-100/50 dark:bg-slate-900/30 grayscale-[35%] opacity-90",
-            patient.admissionStatus === 'transferencia_interna_pendente' && "ring-1 ring-sky-400/50 bg-sky-50/30 dark:bg-sky-950/10",
-            patient.admissionStatus === 'transferencia_externa_pendente' && "ring-1 ring-indigo-400/50 bg-indigo-50/30 dark:bg-indigo-950/10"
+            patient.admissionStatus === 'alta_dada' && "ring-1 ring-released/40 bg-released-soft/30 grayscale-[15%] opacity-95",
+            patient.admissionStatus === 'obito' && "ring-1 ring-ring/50 bg-muted/50 grayscale-[35%] opacity-90",
+            patient.admissionStatus === 'transferencia_interna_pendente' && "ring-1 ring-ring/50 bg-muted/30",
+            patient.admissionStatus === 'transferencia_externa_pendente' && "ring-1 ring-ring/50 bg-muted/30"
           )}
         >
         
@@ -1422,7 +1441,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         variant="ghost"
                         size="sm"
                         onClick={() => setMedicalResponsibilityDialogOpen(true)}
-                        className="h-5 w-5 p-0 print:hidden rounded-full border border-dashed transition-all duration-300 flex items-center justify-center hover:scale-125 hover:rotate-90 dark:border-opacity-60"
+                        className="h-5 w-5 p-0 print:hidden rounded-full border border-dashed transition-all duration-300 flex items-center justify-center hover:scale-125 hover:rotate-90"
                         style={{
                           color: sectorColorMap[patient.sector],
                           borderColor: sectorColorMap[patient.sector],
@@ -1493,7 +1512,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={saveInlineEdit}
-                            className="h-6 w-6 text-green-600 hover:bg-green-100"
+                            className="h-6 w-6 text-released-on-soft hover:bg-released-soft"
                           >
                             <Check className="h-3 w-3" />
                           </Button>
@@ -1501,7 +1520,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={cancelEditing}
-                            className="h-6 w-6 text-red-600 hover:bg-red-100"
+                            className="h-6 w-6 text-critical-on-soft hover:bg-critical-soft"
                           >
                             <X className="h-3 w-3" />
                           </Button>
@@ -1516,7 +1535,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             if (pendenciesText.includes('AGUARDANDO PSM')) {
                               return (
                                 <div title="Aguardando PSM">
-                                  <Clock className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                                  <Clock className="h-4 w-4 text-warning flex-shrink-0" />
                                 </div>
                               );
                             }
@@ -1530,7 +1549,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                                 pendenciesText.includes('IR PARA O CENTRO CIRURGICO')) {
                               return (
                                 <div title="Solicitação de Internação Aprovada">
-                                  <CircleCheck className="h-4 w-4 text-green-500 flex-shrink-0" />
+                                  <CircleCheck className="h-4 w-4 text-released flex-shrink-0" />
                                 </div>
                               );
                             }
@@ -1549,7 +1568,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                               title="PSM Desfavorável: Auditoria não indica internação no momento"
                               className="flex items-center"
                             >
-                              <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0 animate-pulse" />
+                              <AlertTriangle className="h-4 w-4 text-critical flex-shrink-0 animate-pulse" />
                             </div>
                           )}
                            
@@ -1673,7 +1692,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={saveInlineEdit}
-                            className="h-4 w-4 text-green-600 hover:bg-green-100 p-0"
+                            className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0"
                           >
                             <Check className="h-2.5 w-2.5" />
                           </Button>
@@ -1681,7 +1700,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={cancelEditing}
-                            className="h-4 w-4 text-red-600 hover:bg-red-100 p-0"
+                            className="h-4 w-4 text-critical-on-soft hover:bg-critical-soft p-0"
                           >
                             <X className="h-2.5 w-2.5" />
                           </Button>
@@ -1722,10 +1741,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           {dih !== null && (() => {
                             const dihColor =
                               dih <= 7
-                                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                                ? "bg-released/15 text-released-on-soft border-released/30"
                                 : dih <= 10
-                                ? "bg-yellow-400/20 text-yellow-800 dark:text-yellow-300 border-yellow-500/40"
-                                : "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30";
+                                ? "bg-warning/20 text-warning-on-soft border-warning/40"
+                                : "bg-critical/15 text-critical-on-soft border-critical/30";
                             return (
                               <Badge
                                 variant="secondary"
@@ -1839,10 +1858,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           />
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0">
-                          <Button size="icon" variant="ghost" onClick={saveInlineEdit} className="h-4 w-4 text-green-600 hover:bg-green-100 p-0">
+                          <Button size="icon" variant="ghost" onClick={saveInlineEdit} className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0">
                             <Check className="h-2.5 w-2.5" />
                           </Button>
-                          <Button size="icon" variant="ghost" onClick={cancelEditing} className="h-4 w-4 text-red-600 hover:bg-red-100 p-0">
+                          <Button size="icon" variant="ghost" onClick={cancelEditing} className="h-4 w-4 text-critical-on-soft hover:bg-critical-soft p-0">
                             <X className="h-2.5 w-2.5" />
                           </Button>
                         </div>
@@ -1927,10 +1946,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           />
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0">
-                          <Button size="icon" variant="ghost" onClick={saveInlineEdit} className="h-4 w-4 text-green-600 hover:bg-green-100 p-0">
+                          <Button size="icon" variant="ghost" onClick={saveInlineEdit} className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0">
                             <Check className="h-2.5 w-2.5" />
                           </Button>
-                          <Button size="icon" variant="ghost" onClick={cancelEditing} className="h-4 w-4 text-red-600 hover:bg-red-100 p-0">
+                          <Button size="icon" variant="ghost" onClick={cancelEditing} className="h-4 w-4 text-critical-on-soft hover:bg-critical-soft p-0">
                             <X className="h-2.5 w-2.5" />
                           </Button>
                         </div>
@@ -1950,7 +1969,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     <span className="text-[10px] font-medium text-muted-foreground">Hipóteses / Diagnósticos</span>
                     <span
                       title="Sincronizado da Admissão / Evolução. Edite na evolução clínica."
-                      className="inline-flex items-center gap-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 px-1 py-0 text-[8px] font-medium"
+                      className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 text-foreground px-1 py-0 text-[8px] font-medium"
                     >
                       🔒 Sincronizado
                     </span>
@@ -2050,7 +2069,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={saveInlineEdit}
-                            className="h-4 w-4 text-green-600 hover:bg-green-100 p-0"
+                            className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0"
                           >
                             <Check className="h-2.5 w-2.5" />
                           </Button>
@@ -2058,7 +2077,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={cancelEditing}
-                            className="h-4 w-4 text-red-600 hover:bg-red-100 p-0"
+                            className="h-4 w-4 text-critical-on-soft hover:bg-critical-soft p-0"
                           >
                             <X className="h-2.5 w-2.5" />
                           </Button>
@@ -2149,7 +2168,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={saveInlineEdit}
-                            className="h-4 w-4 text-green-600 hover:bg-green-100 p-0"
+                            className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0"
                           >
                             <Check className="h-2.5 w-2.5" />
                           </Button>
@@ -2157,7 +2176,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={cancelEditing}
-                            className="h-4 w-4 text-red-600 hover:bg-red-100 p-0"
+                            className="h-4 w-4 text-critical-on-soft hover:bg-critical-soft p-0"
                           >
                             <X className="h-2.5 w-2.5" />
                           </Button>
@@ -2253,7 +2272,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={saveInlineEdit}
-                            className="h-4 w-4 text-green-600 hover:bg-green-100 p-0"
+                            className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0"
                           >
                             <Check className="h-2.5 w-2.5" />
                           </Button>
@@ -2261,7 +2280,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={cancelEditing}
-                            className="h-4 w-4 text-red-600 hover:bg-red-100 p-0"
+                            className="h-4 w-4 text-critical-on-soft hover:bg-critical-soft p-0"
                           >
                             <X className="h-2.5 w-2.5" />
                           </Button>
@@ -2364,7 +2383,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={saveInlineEdit}
-                            className="h-4 w-4 text-green-600 hover:bg-green-100 p-0"
+                            className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0"
                           >
                             <Check className="h-2.5 w-2.5" />
                           </Button>
@@ -2372,7 +2391,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={cancelEditing}
-                            className="h-4 w-4 text-red-600 hover:bg-red-100 p-0"
+                            className="h-4 w-4 text-critical-on-soft hover:bg-critical-soft p-0"
                           >
                             <X className="h-2.5 w-2.5" />
                           </Button>
@@ -2464,7 +2483,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={saveInlineEdit}
-                            className="h-4 w-4 text-green-600 hover:bg-green-100 p-0"
+                            className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0"
                           >
                             <Check className="h-2.5 w-2.5" />
                           </Button>
@@ -2472,7 +2491,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={cancelEditing}
-                            className="h-4 w-4 text-red-600 hover:bg-red-100 p-0"
+                            className="h-4 w-4 text-critical-on-soft hover:bg-critical-soft p-0"
                           >
                             <X className="h-2.5 w-2.5" />
                           </Button>
@@ -2577,7 +2596,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                                   size="icon"
                                   variant="ghost"
                                   onClick={saveInlineEdit}
-                                  className="h-4 w-4 text-green-600 hover:bg-green-100 p-0"
+                                  className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0"
                                 >
                                   <Check className="h-2.5 w-2.5" />
                                 </Button>
@@ -2585,7 +2604,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                                   size="icon"
                                   variant="ghost"
                                   onClick={cancelEditing}
-                                  className="h-4 w-4 text-red-600 hover:bg-red-100 p-0"
+                                  className="h-4 w-4 text-critical-on-soft hover:bg-critical-soft p-0"
                                 >
                                   <X className="h-2.5 w-2.5" />
                                 </Button>
@@ -2644,7 +2663,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                               size="icon"
                               variant="ghost"
                               onClick={saveInlineEdit}
-                              className="h-4 w-4 text-green-600 hover:bg-green-100 p-0"
+                              className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0"
                             >
                               <Check className="h-2.5 w-2.5" />
                             </Button>
@@ -2652,7 +2671,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                               size="icon"
                               variant="ghost"
                               onClick={cancelEditing}
-                              className="h-4 w-4 text-red-600 hover:bg-red-100 p-0"
+                              className="h-4 w-4 text-critical-on-soft hover:bg-critical-soft p-0"
                             >
                               <X className="h-2.5 w-2.5" />
                             </Button>
@@ -2681,11 +2700,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
             {/* Farmácia Clínica - Visão compacta com dados relevantes */}
             {currentDepartment !== "UTI" && role === 'farmacia' && (
-              <div className="md:col-span-14 border-l-2 border-emerald-400/30 pl-3 py-1.5 bg-emerald-50/30 dark:bg-emerald-950/10 rounded-r">
+              <div className="md:col-span-14 border-l-2 border-released/30 pl-3 py-1.5 bg-released-soft/30 rounded-r">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                   {/* Diagnósticos (resumo) */}
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 tracking-wider mb-0.5">Diagnósticos</span>
+                    <span className="text-[9px] font-semibold text-released-on-soft tracking-wider mb-0.5">Diagnósticos</span>
                     {patient.diagnoses.length > 0 ? (
                       <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
                         {patient.diagnoses.map((d, i) => (
@@ -2701,7 +2720,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
                   {/* Alergias / Antecedentes */}
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 tracking-wider mb-0.5">Alergias / Antecedentes</span>
+                    <span className="text-[9px] font-semibold text-released-on-soft tracking-wider mb-0.5">Alergias / Antecedentes</span>
                     {patient.medicalHistory.length > 0 ? (
                       <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
                         {patient.medicalHistory.map((h, i) => (
@@ -2720,7 +2739,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
                   {/* Exames Relevantes */}
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 tracking-wider mb-0.5">Exames</span>
+                    <span className="text-[9px] font-semibold text-released-on-soft tracking-wider mb-0.5">Exames</span>
                     {patient.relevantExams.length > 0 ? (
                       <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
                         {patient.relevantExams.map((e, i) => (
@@ -2736,7 +2755,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
                   {/* Pendências / Condutas */}
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 tracking-wider mb-0.5">Pendências</span>
+                    <span className="text-[9px] font-semibold text-released-on-soft tracking-wider mb-0.5">Pendências</span>
                     {patient.pendencies.length > 0 ? (
                       <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
                         {patient.pendencies.map((p, i) => (
@@ -2829,7 +2848,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         size="icon"
                         variant="ghost"
                         onClick={saveInlineEdit}
-                        className="h-4 w-4 text-green-600 hover:bg-green-100 p-0"
+                        className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0"
                       >
                         <Check className="h-2.5 w-2.5" />
                       </Button>
@@ -2837,7 +2856,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         size="icon"
                         variant="ghost"
                         onClick={cancelEditing}
-                        className="h-4 w-4 text-red-600 hover:bg-red-100 p-0"
+                        className="h-4 w-4 text-critical-on-soft hover:bg-critical-soft p-0"
                       >
                         <X className="h-2.5 w-2.5" />
                       </Button>
@@ -2942,7 +2961,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         size="icon"
                         variant="ghost"
                         onClick={saveInlineEdit}
-                        className="h-4 w-4 text-green-600 hover:bg-green-100 p-0"
+                        className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0"
                       >
                         <Check className="h-2.5 w-2.5" />
                       </Button>
@@ -2950,7 +2969,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         size="icon"
                         variant="ghost"
                         onClick={cancelEditing}
-                        className="h-4 w-4 text-red-600 hover:bg-red-100 p-0"
+                        className="h-4 w-4 text-critical-on-soft hover:bg-critical-soft p-0"
                       >
                         <X className="h-2.5 w-2.5" />
                       </Button>
@@ -3088,7 +3107,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         size="icon"
                         variant="ghost"
                         onClick={saveInlineEdit}
-                        className="h-4 w-4 text-green-600 hover:bg-green-100 p-0"
+                        className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0"
                       >
                         <Check className="h-2.5 w-2.5" />
                       </Button>
@@ -3096,7 +3115,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         size="icon"
                         variant="ghost"
                         onClick={cancelEditing}
-                        className="h-4 w-4 text-red-600 hover:bg-red-100 p-0"
+                        className="h-4 w-4 text-critical-on-soft hover:bg-critical-soft p-0"
                       >
                         <X className="h-2.5 w-2.5" />
                       </Button>
@@ -3197,7 +3216,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                               size="icon"
                               variant="ghost"
                               onClick={saveInlineEdit}
-                              className="h-4 w-4 text-green-600 hover:bg-green-100 p-0"
+                              className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0"
                             >
                               <Check className="h-2.5 w-2.5" />
                             </Button>
@@ -3205,7 +3224,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                               size="icon"
                               variant="ghost"
                               onClick={cancelEditing}
-                              className="h-4 w-4 text-red-600 hover:bg-red-100 p-0"
+                              className="h-4 w-4 text-critical-on-soft hover:bg-critical-soft p-0"
                             >
                               <X className="h-2.5 w-2.5" />
                             </Button>
@@ -3265,7 +3284,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           size="icon"
                           variant="ghost"
                           onClick={saveInlineEdit}
-                          className="h-4 w-4 text-green-600 hover:bg-green-100 p-0"
+                          className="h-4 w-4 text-released-on-soft hover:bg-released-soft p-0"
                         >
                           <Check className="h-2.5 w-2.5" />
                         </Button>
@@ -3273,7 +3292,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           size="icon"
                           variant="ghost"
                           onClick={cancelEditing}
-                          className="h-4 w-4 text-red-600 hover:bg-red-100 p-0"
+                          className="h-4 w-4 text-critical-on-soft hover:bg-critical-soft p-0"
                         >
                           <X className="h-2.5 w-2.5" />
                         </Button>
@@ -3379,7 +3398,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                 side="bottom"
                 alignOffset={-5}
                 sideOffset={8}
-                className="w-[280px] max-h-[min(75vh,600px)] p-0 bg-background/95 backdrop-blur-sm dark:bg-gray-900/95 border border-border/50 shadow-2xl rounded-lg overflow-hidden"
+                className="w-[280px] max-h-[min(75vh,600px)] p-0 bg-background/95 backdrop-blur-sm border border-border/50 shadow-2xl rounded-lg overflow-hidden"
               >
                 <div className="p-2 space-y-1 overflow-y-auto max-h-[min(75vh,600px)] overscroll-contain">
                   
@@ -3390,10 +3409,10 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           e.stopPropagation();
                           setBedAllocationDialogOpen(true);
                         }}
-                        className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-purple-50 to-transparent dark:from-purple-950/30 hover:from-purple-100 dark:hover:from-purple-950/50 transition-colors cursor-pointer"
+                        className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-muted to-transparent hover:from-muted transition-colors cursor-pointer"
                       >
-                        <BedDouble className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                        <span className="text-purple-700 dark:text-purple-300">Solicitar Leito</span>
+                        <BedDouble className="h-4 w-4 text-foreground" />
+                        <span className="text-foreground">Solicitar Leito</span>
                       </DropdownMenuItem>
                     )}
 
@@ -3419,14 +3438,14 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             e.stopPropagation();
                             setRelocationDialogOpen(true);
                           }}
-                          className="group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-indigo-300/60 dark:hover:border-indigo-700/60 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-transparent dark:hover:from-indigo-950/40 transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm focus:bg-indigo-50 dark:focus:bg-indigo-950/40"
+                          className="group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-border/60 hover:bg-gradient-to-r hover:from-muted hover:to-transparent transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm focus:bg-muted"
                         >
-                          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 dark:bg-indigo-950/60 group-hover/item:bg-indigo-200 dark:group-hover/item:bg-indigo-900/80 transition-colors">
-                            <ArrowLeftRight className="h-3.5 w-3.5 text-indigo-700 dark:text-indigo-300" />
+                          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted group-hover/item:bg-secondary transition-colors">
+                            <ArrowLeftRight className="h-3.5 w-3.5 text-foreground" />
                           </div>
                           <div className="flex flex-col items-start min-w-0">
-                            <span className="text-indigo-800 dark:text-indigo-200 leading-tight">
-                              Remanejar leito <span className="text-[10px] font-normal text-indigo-600/70 dark:text-indigo-400/70">(mesmo setor)</span>
+                            <span className="text-foreground leading-tight">
+                              Remanejar leito <span className="text-[10px] font-normal text-foreground/70">(mesmo setor)</span>
                             </span>
                             <span className="text-[10px] font-normal text-muted-foreground leading-tight">
                               Realocar ou permutar entre leitos vagos do setor
@@ -3470,24 +3489,24 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                                   ? "cursor-not-allowed opacity-50"
                                   : "cursor-pointer hover:translate-x-0.5 hover:shadow-sm",
                                 !isDisabled && (tone === 'emerald'
-                                  ? "hover:border-emerald-300/60 dark:hover:border-emerald-700/60 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-transparent dark:hover:from-emerald-950/40 focus:bg-emerald-50 dark:focus:bg-emerald-950/40"
-                                  : "hover:border-amber-300/60 dark:hover:border-amber-700/60 hover:bg-gradient-to-r hover:from-amber-50 hover:to-transparent dark:hover:from-amber-950/40 focus:bg-amber-50 dark:focus:bg-amber-950/40")
+                                  ? "hover:border-released-border/60 hover:bg-gradient-to-r hover:from-released-soft hover:to-transparent focus:bg-released-soft"
+                                  : "hover:border-warning-border/60 hover:bg-gradient-to-r hover:from-warning-soft hover:to-transparent focus:bg-warning-soft")
                               )}
                             >
                               <div className={cn(
                                 "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
                                 tone === 'emerald'
-                                  ? "bg-emerald-100 dark:bg-emerald-950/60 group-hover/item:bg-emerald-200 dark:group-hover/item:bg-emerald-900/80"
-                                  : "bg-amber-100 dark:bg-amber-950/60 group-hover/item:bg-amber-200 dark:group-hover/item:bg-amber-900/80"
+                                  ? "bg-released-soft group-hover/item:bg-released"
+                                  : "bg-warning-soft group-hover/item:bg-warning"
                               )}>
                                 {tone === 'emerald'
-                                  ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300" />
-                                  : <UserMinus className="h-3.5 w-3.5 text-amber-700 dark:text-amber-300" />}
+                                  ? <CheckCircle2 className="h-3.5 w-3.5 text-released-on-soft" />
+                                  : <UserMinus className="h-3.5 w-3.5 text-warning-on-soft" />}
                               </div>
                               <div className="flex flex-col items-start min-w-0">
                                 <span className={cn(
                                   "leading-tight",
-                                  tone === 'emerald' ? "text-emerald-800 dark:text-emerald-200" : "text-amber-800 dark:text-amber-200"
+                                  tone === 'emerald' ? "text-released-on-soft" : "text-warning-on-soft"
                                 )}>
                                   Desalocar leito
                                 </span>
@@ -3533,7 +3552,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       }}
                       className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
                     >
-                      <ClipboardList className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      <ClipboardList className="h-4 w-4 text-released-on-soft" />
                       <span>História Admissional</span>
                     </DropdownMenuItem>
 
@@ -3545,7 +3564,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       }}
                       className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
                     >
-                      <Clock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                      <Clock className="h-4 w-4 text-foreground" />
                       <span>Histórico de Condutas</span>
                     </DropdownMenuItem>
 
@@ -3564,7 +3583,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       }}
                       className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
                     >
-                      <TestTubes className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <TestTubes className="h-4 w-4 text-foreground" />
                       <span>Solicitar Exame</span>
                     </DropdownMenuItem>
 
@@ -3583,7 +3602,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       }}
                       className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
                     >
-                      <ClipboardCheck className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                      <ClipboardCheck className="h-4 w-4 text-foreground" />
                       <span>Round Diário</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -3593,21 +3612,21 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       }}
                       className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
                     >
-                      <Utensils className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      <Utensils className="h-4 w-4 text-released-on-soft" />
                       <span>Liberar Dieta</span>
                     </DropdownMenuItem>
 
                     {/* PSM STATUS - Collapsible with three options */}
                     <Collapsible className="group">
                       <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold hover:bg-accent/60 transition-all duration-200 group-data-[state=open]:bg-accent/40">
-                        <FileText className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
+                        <FileText className="h-4 w-4 text-muted-foreground" />
                         <span className="flex-1 text-left text-foreground">Status do PSM</span>
                         {patient.psmStatus && (
                           <span className={cn(
                             "text-xs font-medium px-1.5 py-0.5 rounded",
-                            patient.psmStatus === 'favoravel' && "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
-                            patient.psmStatus === 'aguardando' && "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-                            patient.psmStatus === 'desfavoravel' && "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                            patient.psmStatus === 'favoravel' && "bg-released-soft text-released-on-soft",
+                            patient.psmStatus === 'aguardando' && "bg-warning-soft text-warning-on-soft",
+                            patient.psmStatus === 'desfavoravel' && "bg-critical-soft text-critical-on-soft"
                           )}>
                             {patient.psmStatus === 'favoravel' ? 'Favorável' : patient.psmStatus === 'aguardando' ? 'Aguardando' : 'Desfavorável'}
                           </span>
@@ -3625,22 +3644,22 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                               : 'Status PSM removido');
                           }}
                           className={cn(
-                            "ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors cursor-pointer",
-                            patient.psmStatus === 'favoravel' && "bg-green-50 dark:bg-green-950/30"
+                            "ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-released-soft transition-colors cursor-pointer",
+                            patient.psmStatus === 'favoravel' && "bg-released-soft"
                           )}
                         >
                           <CheckCircle2 className={cn(
                             "h-3.5 w-3.5",
                             patient.psmStatus === 'favoravel' 
-                              ? "text-green-500" 
-                              : "text-green-600 dark:text-green-400"
+                              ? "text-released" 
+                              : "text-released-on-soft"
                           )} />
                           <span className={cn(
-                            patient.psmStatus === 'favoravel' && "text-green-600 dark:text-green-400 font-medium"
+                            patient.psmStatus === 'favoravel' && "text-released-on-soft font-medium"
                           )}>
                             Favorável
                           </span>
-                          {patient.psmStatus === 'favoravel' && <Check className="h-4 w-4 ml-auto text-green-500" />}
+                          {patient.psmStatus === 'favoravel' && <Check className="h-4 w-4 ml-auto text-released" />}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={(e) => {
@@ -3652,22 +3671,22 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                               : 'Status PSM removido');
                           }}
                           className={cn(
-                            "ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer",
-                            patient.psmStatus === 'aguardando' && "bg-amber-50 dark:bg-amber-950/30"
+                            "ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-warning-soft transition-colors cursor-pointer",
+                            patient.psmStatus === 'aguardando' && "bg-warning-soft"
                           )}
                         >
                           <Clock className={cn(
                             "h-3.5 w-3.5",
                             patient.psmStatus === 'aguardando' 
-                              ? "text-amber-500" 
-                              : "text-amber-600 dark:text-amber-400"
+                              ? "text-warning" 
+                              : "text-warning-on-soft"
                           )} />
                           <span className={cn(
-                            patient.psmStatus === 'aguardando' && "text-amber-600 dark:text-amber-400 font-medium"
+                            patient.psmStatus === 'aguardando' && "text-warning-on-soft font-medium"
                           )}>
                             Aguardando
                           </span>
-                          {patient.psmStatus === 'aguardando' && <Check className="h-4 w-4 ml-auto text-amber-500" />}
+                          {patient.psmStatus === 'aguardando' && <Check className="h-4 w-4 ml-auto text-warning" />}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={(e) => {
@@ -3679,22 +3698,22 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                               : 'Status PSM removido');
                           }}
                           className={cn(
-                            "ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer",
-                            patient.psmStatus === 'desfavoravel' && "bg-red-50 dark:bg-red-950/30"
+                            "ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-critical-soft transition-colors cursor-pointer",
+                            patient.psmStatus === 'desfavoravel' && "bg-critical-soft"
                           )}
                         >
                           <XCircle className={cn(
                             "h-3.5 w-3.5",
                             patient.psmStatus === 'desfavoravel' 
-                              ? "text-red-500" 
-                              : "text-red-600 dark:text-red-400"
+                              ? "text-critical" 
+                              : "text-critical-on-soft"
                           )} />
                           <span className={cn(
-                            patient.psmStatus === 'desfavoravel' && "text-red-600 dark:text-red-400 font-medium"
+                            patient.psmStatus === 'desfavoravel' && "text-critical-on-soft font-medium"
                           )}>
                             Desfavorável
                           </span>
-                          {patient.psmStatus === 'desfavoravel' && <Check className="h-4 w-4 ml-auto text-red-500" />}
+                          {patient.psmStatus === 'desfavoravel' && <Check className="h-4 w-4 ml-auto text-critical" />}
                         </DropdownMenuItem>
                       </CollapsibleContent>
                     </Collapsible>
@@ -3748,7 +3767,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                   <Input
                     autoFocus
                     type="date"
-                    className="h-5 text-[10px] w-[110px] px-1 py-0 text-gray-900"
+                    className="h-5 text-[10px] w-[110px] px-1 py-0 text-foreground"
                     value={(() => {
                       // Extract date part from editValue (DD/MM/YYYY HH:mm -> YYYY-MM-DD)
                       const parts = editValue.split(/[\s,]+/);
@@ -3779,7 +3798,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                   />
                   <Input
                     type="time"
-                    className="h-5 text-[10px] w-[80px] px-1 py-0 text-gray-900"
+                    className="h-5 text-[10px] w-[80px] px-1 py-0 text-foreground"
                     value={editValue.split(/[\s,]+/)[1] || '00:00'}
                     onChange={(e) => {
                       const timeVal = e.target.value; // HH:mm
@@ -3889,17 +3908,17 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
       />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="dark:bg-gray-900 dark:border-gray-700">
+        <AlertDialogContent className="">
           <AlertDialogHeader>
-            <AlertDialogTitle className="dark:text-white text-lg font-semibold">Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription className="dark:text-gray-300 text-base">
-              Tem certeza que deseja excluir o leito <strong className="dark:text-white font-bold">{patient.bedNumber}</strong> do paciente <strong className="dark:text-white font-bold">{patient.name}</strong>?
+            <AlertDialogTitle className=" text-lg font-semibold">Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription className=" text-base">
+              Tem certeza que deseja excluir o leito <strong className=" font-bold">{patient.bedNumber}</strong> do paciente <strong className=" font-bold">{patient.name}</strong>?
               <br />
-              <span className="dark:text-red-400 text-destructive font-medium mt-2 inline-block">Esta ação não poderá ser desfeita.</span>
+              <span className=" text-destructive font-medium mt-2 inline-block">Esta ação não poderá ser desfeita.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               disabled={isDeleting}
               onClick={async () => {
@@ -3939,7 +3958,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                   }
                 }, 300);
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 dark:bg-red-600 dark:text-white dark:hover:bg-red-700 font-semibold shadow-lg"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-semibold shadow-lg"
             >
               Excluir
             </AlertDialogAction>
@@ -4022,7 +4041,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={saveInlineEdit}
-                            className="h-9 w-9 text-green-600 hover:bg-green-100 hover:text-green-700 flex-shrink-0"
+                            className="h-9 w-9 text-released-on-soft hover:bg-released-soft hover:text-released-on-soft flex-shrink-0"
                           >
                             <Check className="h-5 w-5" />
                           </Button>
@@ -4030,7 +4049,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={cancelEditing}
-                            className="h-9 w-9 text-red-600 hover:bg-red-100 hover:text-red-700 flex-shrink-0"
+                            className="h-9 w-9 text-critical-on-soft hover:bg-critical-soft hover:text-critical-on-soft flex-shrink-0"
                           >
                             <X className="h-5 w-5" />
                           </Button>
@@ -4177,7 +4196,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={saveInlineEdit}
-                            className="h-9 w-9 text-green-600 hover:bg-green-100 hover:text-green-700 flex-shrink-0"
+                            className="h-9 w-9 text-released-on-soft hover:bg-released-soft hover:text-released-on-soft flex-shrink-0"
                           >
                             <Check className="h-5 w-5" />
                           </Button>
@@ -4185,7 +4204,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={cancelEditing}
-                            className="h-9 w-9 text-red-600 hover:bg-red-100 hover:text-red-700 flex-shrink-0"
+                            className="h-9 w-9 text-critical-on-soft hover:bg-critical-soft hover:text-critical-on-soft flex-shrink-0"
                           >
                             <X className="h-5 w-5" />
                           </Button>
@@ -4332,7 +4351,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={saveInlineEdit}
-                            className="h-9 w-9 text-green-600 hover:bg-green-100 hover:text-green-700 flex-shrink-0"
+                            className="h-9 w-9 text-released-on-soft hover:bg-released-soft hover:text-released-on-soft flex-shrink-0"
                           >
                             <Check className="h-5 w-5" />
                           </Button>
@@ -4340,7 +4359,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={cancelEditing}
-                            className="h-9 w-9 text-red-600 hover:bg-red-100 hover:text-red-700 flex-shrink-0"
+                            className="h-9 w-9 text-critical-on-soft hover:bg-critical-soft hover:text-critical-on-soft flex-shrink-0"
                           >
                             <X className="h-5 w-5" />
                           </Button>
@@ -4487,7 +4506,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={saveInlineEdit}
-                            className="h-9 w-9 text-green-600 hover:bg-green-100 hover:text-green-700 flex-shrink-0"
+                            className="h-9 w-9 text-released-on-soft hover:bg-released-soft hover:text-released-on-soft flex-shrink-0"
                           >
                             <Check className="h-5 w-5" />
                           </Button>
@@ -4495,7 +4514,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             size="icon"
                             variant="ghost"
                             onClick={cancelEditing}
-                            className="h-9 w-9 text-red-600 hover:bg-red-100 hover:text-red-700 flex-shrink-0"
+                            className="h-9 w-9 text-critical-on-soft hover:bg-critical-soft hover:text-critical-on-soft flex-shrink-0"
                           >
                             <X className="h-5 w-5" />
                           </Button>

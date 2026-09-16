@@ -833,11 +833,11 @@ const TAB_ORDER: PrescriptionCategory[] = [
 export function getCategoryContainerClass(category?: string): string {
   const base = "relative rounded-md p-2 border";
   // Azul institucional unificado (mesmo tom da plataforma — slate-50 + border-l blue-700)
-  const blue = `${base} bg-slate-50/70 dark:bg-slate-900/30 border-slate-200/70 dark:border-slate-800/60 border-l-[3px] border-l-[hsl(217,60%,38%)] dark:border-l-[hsl(217,55%,55%)]`;
+  const blue = `${base} bg-muted/70 border-border/70 border-l-[3px] border-l-[hsl(217,60%,38%)](217,55%,55%)]`;
   switch (category) {
     case 'high_alert':
       // CONVENÇÃO ISMP — mantém vermelho para sinal cromático de segurança no container
-      return `${base} bg-red-50/50 dark:bg-red-950/20 border-red-200/60 dark:border-red-900/50 border-l-[3px] border-l-red-500/70 dark:border-l-red-400/70`;
+      return `${base} bg-critical-soft/50 border-critical-border/60 border-l-[3px] border-l-red-500/70`;
     case 'nutrition':
     case 'hydration':
     case 'replacement':
@@ -856,7 +856,7 @@ export function getCategoryContainerClass(category?: string): string {
 // `high_alert` mantém o vermelho coerente com o container.
 export function getCategoryFieldAccent(category?: string): { border: string; ring: string; descendantOverrides: string } {
   if (category === 'high_alert') {
-    return { border: 'border-red-300/70 focus-visible:border-red-400', ring: 'focus-visible:ring-red-400/60', descendantOverrides: '[&_input.bg-white]:border-red-200/70 [&_input.bg-white]:focus-visible:ring-red-400/60 [&_button.bg-white]:border-red-200/70 [&_button.bg-white]:focus-visible:ring-red-400/60' };
+    return { border: 'border-critical-border/70 focus-visible:border-critical', ring: 'focus-visible:ring-critical/60', descendantOverrides: '[&_input.bg-white]:border-critical-border/70 [&_input.bg-white]:focus-visible:ring-critical/60 [&_button.bg-white]:border-critical-border/70 [&_button.bg-white]:focus-visible:ring-critical/60' };
   }
   return {
     border: 'border-[hsl(217,40%,80%)] focus-visible:border-[hsl(217,60%,50%)]',
@@ -952,13 +952,13 @@ function MedicationAutocomplete({
               >
                 <div className="min-w-0">
                   <span className="text-sm font-medium text-foreground block truncate">
-                    {fav > 0 && <Star className="inline h-3 w-3 mr-1 fill-amber-400 text-amber-400" />}
+                    {fav > 0 && <Star className="inline h-3 w-3 mr-1 fill-amber-400 text-warning" />}
                     {med.name}
-                    {med.highAlert && <AlertTriangle className="inline h-3 w-3 ml-1 text-red-500" />}
+                    {med.highAlert && <AlertTriangle className="inline h-3 w-3 ml-1 text-critical" />}
                   </span>
                   <span className="text-xs text-muted-foreground block truncate">
                     {med.isStandard && (
-                      <Badge variant="outline" className="mr-1 text-[9px] px-1 py-0 h-4 border-emerald-500/60 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10">
+                      <Badge variant="outline" className="mr-1 text-[9px] px-1 py-0 h-4 border-released/60 text-released-on-soft bg-released/10">
                         PADRÃO HMDM
                       </Badge>
                     )}
@@ -1113,13 +1113,13 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
                 >
                   <div className="min-w-0 flex-1">
                     <span className="text-sm font-medium text-foreground block truncate">
-                      {fav > 0 && <Star className="inline h-3 w-3 mr-1 fill-amber-400 text-amber-400" />}
+                      {fav > 0 && <Star className="inline h-3 w-3 mr-1 fill-amber-400 text-warning" />}
                       {med.name}
                       {med.highAlert && <AlertTriangle className="inline h-3 w-3 ml-1 text-destructive" />}
                     </span>
                     <span className="text-xs text-muted-foreground block truncate">
                       {med.isStandard && (
-                        <Badge variant="outline" className="mr-1 text-[9px] px-1 py-0 h-4 border-emerald-500/60 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10">
+                        <Badge variant="outline" className="mr-1 text-[9px] px-1 py-0 h-4 border-released/60 text-released-on-soft bg-released/10">
                           PADRÃO HMDM
                         </Badge>
                       )}
@@ -1128,7 +1128,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     {fav > 0 && (
-                      <Badge variant="outline" className="text-[9px] px-1.5 border-amber-400/50 text-amber-700 dark:text-amber-300">
+                      <Badge variant="outline" className="text-[9px] px-1.5 border-warning/50 text-warning-on-soft">
                         {fav}×
                       </Badge>
                     )}
@@ -1177,7 +1177,7 @@ const NutFieldLabel = ({ children }: { children: React.ReactNode }) => (
   <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">{children}</span>
 );
 const NutTinyInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
-  <Input {...props} className={cn("h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600", props.className)} />
+  <Input {...props} className={cn("h-6 text-[11px] bg-white border-border", props.className)} />
 );
 // Input com sufixo de unidade fixo à direita (ex.: "1500 mL")
 const NutSuffixInput = ({
@@ -1198,9 +1198,9 @@ const NutSuffixInput = ({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="h-7 text-[12px] font-semibold pr-9 bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 focus-visible:ring-emerald-400/60"
+      className="h-7 text-[12px] font-semibold pr-9 bg-white border-released-border focus-visible:ring-released/60"
     />
-    <span className="absolute right-2 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 pointer-events-none select-none">
+    <span className="absolute right-2 text-[10px] font-medium text-released-on-soft pointer-events-none select-none">
       {suffix}
     </span>
   </div>
@@ -1268,7 +1268,7 @@ function NutritionFields({
     <div className="flex items-center gap-1">
       <NutFieldLabel>{label}:</NutFieldLabel>
       <Select value={value || ''} onValueChange={onChange}>
-        <SelectTrigger className={cn("h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 focus-visible:ring-emerald-400/60", width)}>
+        <SelectTrigger className={cn("h-7 text-[12px] font-semibold bg-white border-released-border focus-visible:ring-released/60", width)}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -1280,7 +1280,7 @@ function NutritionFields({
 
   // Mini-toggle (2 opções) reutilizável
   const MiniToggle = ({ value, options, onChange }: { value: string; options: { v: string; label: string }[]; onChange: (v: string) => void }) => (
-    <div className="inline-flex rounded-md border border-emerald-300 dark:border-emerald-700 overflow-hidden h-7 bg-white dark:bg-slate-800">
+    <div className="inline-flex rounded-md border border-released-border overflow-hidden h-7 bg-white">
       {options.map(o => (
         <button
           key={o.v}
@@ -1289,8 +1289,8 @@ function NutritionFields({
           className={cn(
             "px-2 text-[10px] font-semibold transition",
             value === o.v
-              ? "bg-emerald-600 text-white"
-              : "text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+              ? "bg-released text-white"
+              : "text-released-on-soft hover:bg-released-soft"
           )}
         >
           {o.label}
@@ -1310,7 +1310,7 @@ function NutritionFields({
       />
       {scheduleMode === 'interval' ? (
         <Select value={item.dietInterval || ''} onValueChange={(v) => onUpdate(item.id, 'dietInterval', v)}>
-          <SelectTrigger className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-28">
+          <SelectTrigger className="h-7 text-[12px] font-semibold bg-white border-released-border w-28">
             <SelectValue placeholder="—" />
           </SelectTrigger>
           <SelectContent>
@@ -1319,7 +1319,7 @@ function NutritionFields({
         </Select>
       ) : (
         <Select value={item.nutSteps || ''} onValueChange={(v) => onUpdate(item.id, 'nutSteps', v)}>
-          <SelectTrigger className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-28">
+          <SelectTrigger className="h-7 text-[12px] font-semibold bg-white border-released-border w-28">
             <SelectValue placeholder="—" />
           </SelectTrigger>
           <SelectContent>
@@ -1349,7 +1349,7 @@ function NutritionFields({
   const PerIntake = (
     <div className="flex items-center gap-1.5">
       <NutFieldLabel>Por tomada:</NutFieldLabel>
-      <span className="text-[12px] font-semibold text-emerald-700 dark:text-emerald-300 whitespace-nowrap">
+      <span className="text-[12px] font-semibold text-released-on-soft whitespace-nowrap">
         {volPorTomada !== null ? `≈ ${volPorTomada} mL` : '—'}
       </span>
     </div>
@@ -1377,7 +1377,7 @@ function NutritionFields({
   const GuidanceBlock = item.guidance ? (
     <div className="space-y-1">
       <NutFieldLabel>Orientação do assistente:</NutFieldLabel>
-      <p className="rounded-md border border-emerald-200/70 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/20 px-2.5 py-2 text-[11px] leading-relaxed text-emerald-900 dark:text-emerald-200">
+      <p className="rounded-md border border-released-border/70 bg-released-soft/50 px-2.5 py-2 text-[11px] leading-relaxed text-released-on-soft">
         {item.guidance}
       </p>
     </div>
@@ -1412,7 +1412,7 @@ function NutritionFields({
             const label = MODALITY_LABELS[v] || v;
             onUpdate(item.id, 'name', label);
           }}>
-            <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-44">
+            <SelectTrigger className="h-6 text-[11px] bg-white border-released-border w-44">
               <SelectValue>{MODALITY_LABELS[subtype] || subtype}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -1423,7 +1423,7 @@ function NutritionFields({
               <SelectItem value="zero" className="text-xs">Zero (jejum)</SelectItem>
             </SelectContent>
           </Select>
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold uppercase tracking-wide">manual</span>
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-released-soft text-released-on-soft font-semibold uppercase tracking-wide">manual</span>
         </div>
         {RecommendationsField}
       </div>
@@ -1439,7 +1439,7 @@ function NutritionFields({
       <div className="flex items-center gap-1.5 flex-wrap">
         <NutFieldLabel>Modalidade:</NutFieldLabel>
         <Select value={subtype} onValueChange={setSubtype}>
-          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-44">
+          <SelectTrigger className="h-6 text-[11px] bg-white border-border w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -1457,8 +1457,8 @@ function NutritionFields({
       {/* ============== ORAL ============== */}
       {subtype === 'diet_oral' && (
         <>
-          <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
-            <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
+          <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
+            <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
             <SelectField label="Tipo" value={item.dietType} options={ORAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-40" />
             <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-44" />
             <NutFieldLabel>Quantidade:</NutFieldLabel>
@@ -1472,9 +1472,9 @@ function NutritionFields({
       {/* ============== ENTERAL ============== */}
       {subtype === 'diet_enteral' && (
         <>
-          <div className="space-y-1.5 px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
+          <div className="space-y-1.5 px-2.5 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
             <div className="flex items-center gap-2 flex-wrap">
-              <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
+              <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
               <SelectField label="Tipo" value={item.dietType} options={ENTERAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
               <SelectField label="Via" value={normalizeEnteralRoute(item.route)} options={ENTERAL_ROUTES} onChange={(v) => onUpdate(item.id, 'route', v)} width="w-44" />
               <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
@@ -1486,7 +1486,7 @@ function NutritionFields({
                 const vd = parseFloat((item.nutVolDay || '').replace(',', '.'));
                 const st = parseInt(item.nutSteps || '', 10);
                 if (!isNaN(vd) && vd > 0 && st > 0) {
-                  return <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 whitespace-nowrap">≈ {Math.round(vd / st)} mL/etapa</span>;
+                  return <span className="text-[10px] font-semibold text-released-on-soft whitespace-nowrap">≈ {Math.round(vd / st)} mL/etapa</span>;
                 }
                 return null;
               })()}
@@ -1501,13 +1501,13 @@ function NutritionFields({
       {/* ============== PARENTERAL ============== */}
       {subtype === 'diet_parenteral' && (
         <>
-          <div className="space-y-1.5 px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
+          <div className="space-y-1.5 px-2.5 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
             <div className="flex items-center gap-2 flex-wrap">
-              <Droplets className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
+              <Droplets className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
               <SelectField label="Tipo" value={item.dietType} options={ENTERAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
               <div className="flex items-center gap-1">
                 <NutFieldLabel>Via:</NutFieldLabel>
-                <Input value="Endovenosa" disabled className="h-7 text-[12px] font-semibold bg-emerald-100/60 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 w-36" />
+                <Input value="Endovenosa" disabled className="h-7 text-[12px] font-semibold bg-released-soft/60 border-released-border w-36" />
               </div>
               <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
             </div>
@@ -1518,7 +1518,7 @@ function NutritionFields({
                 const vd = parseFloat((item.nutVolDay || '').replace(',', '.'));
                 const st = parseInt(item.nutSteps || '', 10);
                 if (!isNaN(vd) && vd > 0 && st > 0) {
-                  return <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 whitespace-nowrap">≈ {Math.round(vd / st)} mL/etapa</span>;
+                  return <span className="text-[10px] font-semibold text-released-on-soft whitespace-nowrap">≈ {Math.round(vd / st)} mL/etapa</span>;
                 }
                 return null;
               })()}
@@ -1533,13 +1533,13 @@ function NutritionFields({
       {/* ============== ZERO ============== */}
       {subtype === 'zero' && (
         <>
-          <div className="px-2.5 py-2 rounded-md bg-amber-50/70 dark:bg-amber-950/20 border border-amber-300/60 dark:border-amber-800/50 border-l-[3px] border-l-amber-500/70 space-y-1">
+          <div className="px-2.5 py-2 rounded-md bg-warning-soft/70 border border-warning-border/60 border-l-[3px] border-l-amber-500/70 space-y-1">
             <NutFieldLabel>Motivo do jejum:</NutFieldLabel>
             <Input
               value={item.nutZeroReason || ''}
               onChange={(e) => onUpdate(item.id, 'nutZeroReason', e.target.value)}
               placeholder="pré-operatório, broncoaspiração, íleo, avaliação..."
-              className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-amber-300 dark:border-amber-700"
+              className="h-7 text-[12px] font-semibold bg-white border-warning-border"
             />
           </div>
           {RecommendationsField}
@@ -1549,9 +1549,9 @@ function NutritionFields({
       {/* ============== SUPLEMENTAÇÃO ============== */}
       {subtype === 'supplement' && (
         <>
-          <div className="space-y-1.5 px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
+          <div className="space-y-1.5 px-2.5 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
             <div className="flex items-center gap-2 flex-wrap">
-              <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
+              <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
               <SelectField label="Tipo" value={item.dietType} options={SUPPLEMENT_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
               <SelectField label="Via" value={item.route === 'Oral' ? 'Oral' : normalizeEnteralRoute(item.route)} options={SUPPLEMENT_ROUTES} onChange={(v) => onUpdate(item.id, 'route', v)} width="w-44" />
               <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
@@ -1571,12 +1571,12 @@ function NutritionFields({
       {/* ============== LEGADO: água ============== */}
       {subtype === 'water' && (
         <>
-          <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
-            <Droplets className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
+          <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
+            <Droplets className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
             <NutFieldLabel>Vol/adm:</NutFieldLabel>
             <NutSuffixInput value={item.nutWaterVolPerAdmin || ''} onChange={(v) => onUpdate(item.id, 'nutWaterVolPerAdmin', v)} suffix="mL" placeholder="50" />
             <NutFieldLabel>Frequência:</NutFieldLabel>
-            <Input value={item.nutWaterFreq || ''} onChange={(e) => onUpdate(item.id, 'nutWaterFreq', e.target.value)} placeholder="antes/após dieta e meds" className="h-7 text-[12px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-48" />
+            <Input value={item.nutWaterFreq || ''} onChange={(e) => onUpdate(item.id, 'nutWaterFreq', e.target.value)} placeholder="antes/após dieta e meds" className="h-7 text-[12px] bg-white border-released-border w-48" />
             <NutFieldLabel>Meta/24h:</NutFieldLabel>
             <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="800" />
           </div>
@@ -1587,8 +1587,8 @@ function NutritionFields({
       {/* ============== LEGADO: NPT ============== */}
       {subtype === 'npt' && (
         <>
-          <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
-            <Droplets className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
+          <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
+            <Droplets className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
             <NutFieldLabel>Vol total:</NutFieldLabel>
             <NutSuffixInput value={item.volumeTotal || ''} onChange={(v) => onUpdate(item.id, 'volumeTotal', v)} suffix="mL" placeholder="2000" />
             <NutFieldLabel>Vazão:</NutFieldLabel>
@@ -1701,20 +1701,20 @@ function HydrationFields({
 
   return (
     <div className="space-y-1.5">
-      <div className="relative flex items-center gap-x-3 gap-y-2 flex-wrap rounded-md p-2 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/50 border-l-[3px] border-l-blue-500/70 dark:border-l-blue-400/70">
+      <div className="relative flex items-center gap-x-3 gap-y-2 flex-wrap rounded-md p-2 bg-muted/50 border border-border/60 border-l-[3px] border-l-blue-500/70">
         <NutFieldLabel>Volume / fase:</NutFieldLabel>
         <Input
           type="number"
           value={item.volumeTotal || ''}
           onChange={(e) => onUpdate(item.id, 'volumeTotal', e.target.value)}
-          className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center font-medium focus-visible:ring-1 focus-visible:ring-blue-400"
+          className="h-6 text-[11px] bg-white border-border w-16 text-center font-medium focus-visible:ring-1 focus-visible:ring-ring"
           placeholder="mL"
         />
         <span className="text-[10px] text-muted-foreground">mL</span>
 
         <NutFieldLabel>Fases / intervalo:</NutFieldLabel>
         <Select value={interval} onValueChange={handlePhasesChange}>
-          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-36 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-6 text-[11px] bg-white border-border w-36 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
           <SelectContent>
             {HYDRATION_PHASE_OPTIONS.map(o => (
               <SelectItem key={o.interval} value={o.interval} className="text-xs">
@@ -1731,11 +1731,11 @@ function HydrationFields({
               type="number"
               value={item.infusionTime || ''}
               onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)}
-              className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-14 text-center focus-visible:ring-1 focus-visible:ring-blue-400"
+              className="h-6 text-[11px] bg-white border-border w-14 text-center focus-visible:ring-1 focus-visible:ring-ring"
               placeholder="—"
             />
             <Select value={tUnit} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-6 text-[11px] bg-white border-border w-16 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="h" className="text-xs">h</SelectItem>
                 <SelectItem value="min" className="text-xs">min</SelectItem>
@@ -1743,11 +1743,11 @@ function HydrationFields({
             </Select>
 
             <NutFieldLabel>Gotejamento:</NutFieldLabel>
-            <div className="h-6 px-2 flex items-center rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-[11px] font-semibold w-16 justify-center">
+            <div className="h-6 px-2 flex items-center rounded-md border border-border bg-white text-[11px] font-semibold w-16 justify-center">
               {isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '—'}
             </div>
             <Select value={dripMode} onValueChange={(v) => onUpdate(item.id, 'infusionMode', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-6 text-[11px] bg-white border-border w-20 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="BIC" className="text-xs">mL/h</SelectItem>
                 <SelectItem value="gts" className="text-xs">gts/min</SelectItem>
@@ -1758,7 +1758,7 @@ function HydrationFields({
 
         <NutFieldLabel>Via:</NutFieldLabel>
         <Select value={item.route || 'EV'} onValueChange={(v) => onUpdate(item.id, 'route', v)}>
-          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20 font-semibold focus:ring-1 focus:ring-blue-400">
+          <SelectTrigger className="h-6 text-[11px] bg-white border-border w-20 font-semibold focus:ring-1 focus:ring-ring">
             <SelectValue>{routeShort(item.route || 'EV')}</SelectValue>
           </SelectTrigger>
           <SelectContent className="max-h-72">
@@ -1771,7 +1771,7 @@ function HydrationFields({
           </SelectContent>
         </Select>
 
-        <span className="basis-full text-right text-[10px] font-medium text-blue-700 dark:text-blue-300 mt-1">
+        <span className="basis-full text-right text-[10px] font-medium text-foreground mt-1">
           Total: {volTotal24}mL / 24h
         </span>
       </div>
@@ -1781,7 +1781,7 @@ function HydrationFields({
         <Textarea
           value={item.instructions || ''}
           onChange={(e) => onUpdate(item.id, 'instructions', e.target.value)}
-          className="min-h-[56px] text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 mt-0.5 focus-visible:ring-1 focus-visible:ring-blue-400"
+          className="min-h-[56px] text-[11px] bg-white border-border mt-0.5 focus-visible:ring-1 focus-visible:ring-ring"
           placeholder="Ex.: manter acesso pérvio; observar sinais de sobrecarga; reavaliar em 24h; trocar equipo a cada 72h..."
         />
       </div>
@@ -2038,7 +2038,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
       <DropdownMenuContent align="end" className="w-52">
         {onAssistant && ['replacement', 'hydration', 'nutrition'].includes(item.category) && (
           <>
-            <DropdownMenuItem onClick={() => onAssistant(item.id)} className="text-xs gap-2 text-sky-600 focus:text-sky-700">
+            <DropdownMenuItem onClick={() => onAssistant(item.id)} className="text-xs gap-2 text-foreground focus:text-foreground">
               <Wand2 className="h-3.5 w-3.5" /> Configurar com assistente
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -2050,13 +2050,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         {item.status === 'active' && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onRequestSuspend(item.id)} className="text-xs gap-2 text-yellow-600">
+            <DropdownMenuItem onClick={() => onRequestSuspend(item.id)} className="text-xs gap-2 text-warning-on-soft">
               <Pause className="h-3.5 w-3.5" /> Suspender item
             </DropdownMenuItem>
           </>
         )}
         {onTogglePrintOnly && (
-          <DropdownMenuItem onClick={() => onTogglePrintOnly(item.id)} className="text-xs gap-2 text-indigo-600 focus:text-indigo-700">
+          <DropdownMenuItem onClick={() => onTogglePrintOnly(item.id)} className="text-xs gap-2 text-foreground focus:text-foreground">
             <Printer className="h-3.5 w-3.5" />
             {item.printOnly ? "Desmarcar 'Só impressão'" : "Marcar como 'Só impressão'"}
           </DropdownMenuItem>
@@ -2111,7 +2111,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           >
             <Circle className={cn(
               "h-3 w-3 fill-current",
-              isSuspended ? "text-muted-foreground/60" : isValidated ? "text-emerald-500" : isBlocked ? "text-red-500 animate-pulse" : "text-amber-500"
+              isSuspended ? "text-muted-foreground/60" : isValidated ? "text-released" : isBlocked ? "text-critical animate-pulse" : "text-warning"
             )} />
           </button>
         </TooltipTrigger>
@@ -2156,7 +2156,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           item.status === 'suspended'
             ? "border-destructive/30 bg-destructive/5 opacity-60"
             : isSlidingSchemeItem
-              ? "border-emerald-300/50 bg-emerald-50/30 dark:bg-emerald-950/10"
+              ? "border-released-border/50 bg-released-soft/30"
               : "border-border/40 bg-muted/20",
           selected && "ring-2 ring-primary/40 border-primary/30",
           isDragging && "shadow-lg"
@@ -2189,8 +2189,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 className={cn(
                   "shrink-0 inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
                   individualExpanded
-                    ? "border-emerald-400/60 bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                    : "border-border/50 bg-secondary text-secondary-foreground hover:border-emerald-400/50 hover:bg-emerald-50"
+                    ? "border-released/60 bg-released-soft text-released-on-soft"
+                    : "border-border/50 bg-secondary text-secondary-foreground hover:border-released/50 hover:bg-released-soft"
                 )}
                 title={individualExpanded ? "Fechar visualização das faixas" : "Ver e editar faixas de correção"}
               >
@@ -2261,7 +2261,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                               className={cn(
                                 "text-[10px] px-2 py-1 rounded-md border transition-colors",
                                 selected && isPrn
-                                  ? "border-amber-400 bg-amber-500/15 text-amber-700 font-semibold"
+                                  ? "border-warning bg-warning/15 text-warning-on-soft font-semibold"
                                   : selected
                                     ? "border-primary bg-primary/10 text-primary font-semibold"
                                     : "border-border/50 hover:border-primary/40 hover:bg-muted",
@@ -2289,8 +2289,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         className={cn(
                           "text-[10px] px-2 py-1 rounded-md border transition-colors shrink-0",
                           prnOn
-                            ? "border-amber-400 bg-amber-500/15 text-amber-700 font-semibold"
-                            : "border-border/50 hover:border-amber-400/60 hover:bg-muted",
+                            ? "border-warning bg-warning/15 text-warning-on-soft font-semibold"
+                            : "border-border/50 hover:border-warning/60 hover:bg-muted",
                           acmLocked && "opacity-40 cursor-not-allowed"
                         )}
                       >
@@ -2317,10 +2317,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           item.posology !== '-' && <Badge variant="secondary" className="text-[10px]">{item.posology}</Badge>
         )}
         {item.isExtra && (
-          <Badge variant="outline" className="text-[9px] px-1.5 bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800">EXTRA</Badge>
+          <Badge variant="outline" className="text-[9px] px-1.5 bg-warning-soft text-warning-on-soft border-warning-border">EXTRA</Badge>
         )}
         {item.printOnly && (
-          <Badge variant="outline" className="text-[9px] px-1.5 bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-300 dark:border-indigo-800 gap-1">
+          <Badge variant="outline" className="text-[9px] px-1.5 bg-muted text-foreground border-border gap-1">
             <Printer className="h-2.5 w-2.5" /> SÓ IMPRESSÃO
           </Badge>
         )}
@@ -2343,8 +2343,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
 
       {/* Painel sanfonado de faixas — só para item de esquema de correção */}
       {isSlidingSchemeItem && individualExpanded && !isLocked && item.status !== 'suspended' && (
-        <div className="border-t border-emerald-200/60 dark:border-emerald-800/40 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-2.5 space-y-1.5">
-          <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide mb-2">
+        <div className="border-t border-released-border/60 bg-released-soft/50 px-3 py-2.5 space-y-1.5">
+          <p className="text-[10px] font-semibold text-released-on-soft uppercase tracking-wide mb-2">
             Faixas de correção — editáveis
           </p>
           {slidingRows.map((row, i) => (
@@ -2361,7 +2361,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   );
                   onUpdate(item.id, 'instructions', serializeSlidingInstructions(updated));
                 }}
-                className="h-6 text-[11px] flex-1 min-w-0 bg-white dark:bg-slate-800 border-emerald-200 dark:border-emerald-800 focus-visible:ring-emerald-400"
+                className="h-6 text-[11px] flex-1 min-w-0 bg-white border-released-border focus-visible:ring-released"
                 placeholder="Ex: 2 UI SC"
               />
             </div>
@@ -2393,7 +2393,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           "rounded-lg border-2 transition-all overflow-hidden",
           item.status === 'suspended'
             ? "border-destructive/30 bg-destructive/5 opacity-60"
-            : "border-red-300/60 bg-red-50/40 dark:bg-red-950/10 hover:border-red-400/60",
+            : "border-critical-border/60 bg-critical-soft/40 hover:border-critical/60",
           selected && "ring-2 ring-primary/40",
         )}
       >
@@ -2407,17 +2407,17 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           <div className="flex-1 min-w-0">
             {/* Cabeçalho do item de insulinoterapia */}
             <div className="flex items-center gap-1.5 flex-wrap mb-2">
-              <AlertTriangle className="h-3 w-3 text-red-600 shrink-0" />
+              <AlertTriangle className="h-3 w-3 text-critical-on-soft shrink-0" />
               <span className={cn("text-xs font-bold text-foreground", item.status === 'suspended' && "line-through")}>
                 INSULINOTERAPIA
               </span>
               <span className="text-xs text-muted-foreground font-normal">—</span>
-              <span className={cn("text-xs font-semibold text-red-700 dark:text-red-400", item.status === 'suspended' && "line-through")}>
+              <span className={cn("text-xs font-semibold text-critical-on-soft", item.status === 'suspended' && "line-through")}>
                 {desc.headline}
               </span>
-              <Badge variant="outline" className="text-[8px] px-1 bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-300">MAV</Badge>
+              <Badge variant="outline" className="text-[8px] px-1 bg-critical-soft text-critical-on-soft border-critical-border">MAV</Badge>
               {plan.scheme === 'iv_continuous' && (
-                <Badge variant="outline" className="text-[8px] px-1 bg-amber-100 text-amber-700 border-amber-300">BIC</Badge>
+                <Badge variant="outline" className="text-[8px] px-1 bg-warning-soft text-warning-on-soft border-warning-border">BIC</Badge>
               )}
               <div className="ml-auto flex items-center gap-1.5">
                 {canInlineEdit && (
@@ -2450,14 +2450,14 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   l.startsWith('  •') ? "pl-3 text-muted-foreground text-[10px]" : ""
                 )}>
                   {!l.startsWith('  •') && (
-                    <span className="shrink-0 h-1.5 w-1.5 rounded-full bg-red-400/70 mt-1.5" />
+                    <span className="shrink-0 h-1.5 w-1.5 rounded-full bg-critical/70 mt-1.5" />
                   )}
                   <span>{l.replace(/^ {2}• /, '').replace(/^• /, '')}</span>
                 </div>
               ))}
             </div>
             {showInline && (
-              <div className="mt-2 rounded-lg border border-red-200 dark:border-red-900/40 bg-white/70 dark:bg-slate-900/40 p-2">
+              <div className="mt-2 rounded-lg border border-critical-border bg-white/70 p-2">
                 <SlidingEditor
                   plan={plan}
                   onChange={(patch) => {
@@ -2471,7 +2471,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               </div>
             )}
             {isLocked && supportsInline && (
-              <p className="mt-1 text-[10px] text-emerald-700 dark:text-emerald-400">
+              <p className="mt-1 text-[10px] text-released-on-soft">
                 Item validado — para alterar, suspenda e reescreva ou aguarde a renovação 05h.
               </p>
             )}
@@ -2594,7 +2594,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           item.status === 'suspended'
             ? "border-destructive/30 bg-destructive/5 opacity-60"
             : "border-border/40 bg-card/50 hover:border-primary/20",
-          item.highAlert && item.status !== 'suspended' && "border-red-300/40",
+          item.highAlert && item.status !== 'suspended' && "border-critical-border/40",
           selected && "ring-2 ring-primary/40 border-primary/30",
         )}
         onClick={(e) => {
@@ -2618,7 +2618,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         <span className="text-[10px] font-mono text-muted-foreground w-5 text-right shrink-0">{index + 1}.</span>
         <div className="flex-1 min-w-0 flex items-center gap-1.5">
           <span className={cn("text-xs font-semibold text-foreground shrink-0", item.status === 'suspended' && "line-through")}>
-            {item.highAlert && <AlertTriangle className="inline h-2.5 w-2.5 mr-0.5 text-red-500" />}
+            {item.highAlert && <AlertTriangle className="inline h-2.5 w-2.5 mr-0.5 text-critical" />}
             {item.name}
             {item.presentation && item.presentation !== '-' && (
               <span className="font-normal text-muted-foreground normal-case"> ({formatPresentation(item.presentation)})</span>
@@ -2644,7 +2644,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             <Badge variant="outline" className="text-[8px] px-1 shrink-0 bg-muted/50 text-muted-foreground border-border/50">EXTRA</Badge>
           )}
           {item.printOnly && (
-            <Badge variant="outline" className="text-[8px] px-1 shrink-0 bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-300 dark:border-indigo-800">SÓ IMPRESSÃO</Badge>
+            <Badge variant="outline" className="text-[8px] px-1 shrink-0 bg-muted text-foreground border-border">SÓ IMPRESSÃO</Badge>
           )}
           {item.flags.length > 0 && item.flags.map(fk => {
             const f = PRESCRIPTION_FLAGS.find(pf => pf.key === fk);
@@ -2667,7 +2667,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         item.status === 'suspended'
           ? "border-destructive/30 bg-destructive/5 opacity-60"
           : "border-border/50 bg-card/50 hover:border-primary/20",
-        item.highAlert && item.status !== 'suspended' && "border-red-300/50 bg-red-50/30 dark:bg-red-950/10",
+        item.highAlert && item.status !== 'suspended' && "border-critical-border/50 bg-critical-soft/30",
         selected && "ring-2 ring-primary/40 border-primary/30",
         isDragging && "shadow-lg",
       )}
@@ -2707,7 +2707,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               </button>
             )}
             <p className={cn("text-sm font-semibold text-foreground", item.status === 'suspended' && "line-through")}>
-              {item.highAlert && <AlertTriangle className="inline h-3 w-3 mr-1 text-red-500" />}
+              {item.highAlert && <AlertTriangle className="inline h-3 w-3 mr-1 text-critical" />}
               {item.name}
               {item.presentation && item.presentation !== '-' && (
                 <span className="font-normal text-muted-foreground ml-1 normal-case">({formatPresentation(item.presentation)})</span>
@@ -2745,13 +2745,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               );
             })()}
             {item.isExtra && (
-              <Badge variant="outline" className="text-[9px] px-1.5 bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800">EXTRA</Badge>
+              <Badge variant="outline" className="text-[9px] px-1.5 bg-warning-soft text-warning-on-soft border-warning-border">EXTRA</Badge>
             )}
             {item.status === 'suspended' && (
               <Badge variant="destructive" className="text-[9px] px-1.5">Suspenso</Badge>
             )}
             {isLocked && item.status !== 'suspended' && (
-              <Badge variant="outline" className="text-[9px] px-1.5 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800">
+              <Badge variant="outline" className="text-[9px] px-1.5 bg-released-soft text-released-on-soft border-released-border">
                 VALIDADO · BLOQUEADO
               </Badge>
             )}
@@ -2780,18 +2780,18 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             {...(isLocked ? ({ inert: '' } as any) : {})}
             className={cn(
               isLocked && "opacity-80",
-              !isLocked && missingFields.length > 0 && "rounded-md ring-1 ring-red-300/70 ring-offset-1 ring-offset-background p-1.5 -m-1.5"
+              !isLocked && missingFields.length > 0 && "rounded-md ring-1 ring-critical/70 ring-offset-1 ring-offset-background p-1.5 -m-1.5"
             )}
             aria-disabled={isLocked || undefined}
           >
           {!isLocked && missingFields.length > 0 && item.status === 'active' && (
-            <div className="mb-1.5 flex items-start gap-1.5 px-2 py-1 rounded bg-red-50 border border-red-200 dark:bg-red-950/30 dark:border-red-900">
-              <AlertTriangle className="h-3 w-3 mt-0.5 text-red-600 dark:text-red-400 shrink-0" />
+            <div className="mb-1.5 flex items-start gap-1.5 px-2 py-1 rounded bg-critical-soft border border-critical-border">
+              <AlertTriangle className="h-3 w-3 mt-0.5 text-critical-on-soft shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide">
+                <p className="text-[10px] font-semibold text-critical-on-soft uppercase tracking-wide">
                   Pendente para validação — preencha:
                 </p>
-                <p className="text-[10px] text-red-700/90 dark:text-red-300/90">
+                <p className="text-[10px] text-critical-on-soft/90">
                   {missingFields.join(' · ')}
                 </p>
               </div>
@@ -2842,40 +2842,40 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               {item.category === 'antimicrobial' && (() => {
                 const dayLine = buildAtbDayLine(item);
                 return (
-                  <div className="flex items-center gap-2 flex-wrap pb-2 mb-1.5 px-2 py-1.5 rounded-md bg-gradient-to-r from-[hsl(217,55%,94%)]/80 via-[hsl(217,55%,97%)]/60 to-transparent dark:from-[hsl(217,55%,18%)]/30 dark:via-[hsl(217,55%,16%)]/15 dark:to-transparent border border-[hsl(217,55%,82%)]/60 dark:border-[hsl(217,55%,30%)]/40 border-l-[3px] border-l-[hsl(217,70%,40%)]/80">
-                    <div className="flex items-center gap-1.5 text-[hsl(217,72%,28%)] dark:text-[hsl(217,55%,80%)] shrink-0">
+                  <div className="flex items-center gap-2 flex-wrap pb-2 mb-1.5 px-2 py-1.5 rounded-md bg-gradient-to-r from-[hsl(217,55%,94%)]/80 via-[hsl(217,55%,97%)]/60 to-transparent(217,55%,18%)]/30(217,55%,16%)]/15 border border-[hsl(217,55%,82%)]/60(217,55%,30%)]/40 border-l-[3px] border-l-[hsl(217,70%,40%)]/80">
+                    <div className="flex items-center gap-1.5 text-[hsl(217,72%,28%)](217,55%,80%)] shrink-0">
                       <div className="flex items-center justify-center h-5 w-5 rounded-md bg-[hsl(217,70%,40%)] text-white shadow-sm shadow-[hsl(217,70%,40%)]/30">
                         <Pill className="h-3 w-3" />
                       </div>
                       <span className="text-[10px] font-bold uppercase tracking-[0.08em]">Antibiótico</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-[hsl(217,72%,36%)]/80 dark:text-[hsl(217,55%,75%)]/80 font-medium">Início:</span>
+                      <span className="text-[10px] text-[hsl(217,72%,36%)]/80(217,55%,75%)]/80 font-medium">Início:</span>
                       <Input
                         type="date"
                         value={item.atbStartDate || ''}
                         onChange={(e) => onUpdate(item.id, 'atbStartDate' as any, e.target.value)}
-                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-[hsl(217,55%,82%)]/70 dark:border-[hsl(217,55%,30%)]/60 w-[124px] px-1.5"
+                        className="h-6 text-[11px] bg-white border-[hsl(217,55%,82%)]/70(217,55%,30%)]/60 w-[124px] px-1.5"
                       />
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-[hsl(217,72%,36%)]/80 dark:text-[hsl(217,55%,75%)]/80 font-medium">Duração:</span>
+                      <span className="text-[10px] text-[hsl(217,72%,36%)]/80(217,55%,75%)]/80 font-medium">Duração:</span>
                       <Input
                         type="number"
                         min="1"
                         value={item.atbPlannedDays || ''}
                         onChange={(e) => onUpdate(item.id, 'atbPlannedDays' as any, e.target.value)}
-                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-[hsl(217,55%,82%)]/70 dark:border-[hsl(217,55%,30%)]/60 w-12 text-center px-1"
+                        className="h-6 text-[11px] bg-white border-[hsl(217,55%,82%)]/70(217,55%,30%)]/60 w-12 text-center px-1"
                         placeholder="—"
                       />
-                      <span className="text-[10px] text-[hsl(217,72%,36%)]/70 dark:text-[hsl(217,55%,75%)]/70">dias</span>
+                      <span className="text-[10px] text-[hsl(217,72%,36%)]/70(217,55%,75%)]/70">dias</span>
                     </div>
                     <div className="flex items-center gap-1 flex-1 min-w-[160px]">
-                      <span className="text-[10px] text-[hsl(217,72%,36%)]/80 dark:text-[hsl(217,55%,75%)]/80 font-medium shrink-0">Sítio:</span>
+                      <span className="text-[10px] text-[hsl(217,72%,36%)]/80(217,55%,75%)]/80 font-medium shrink-0">Sítio:</span>
                       <Input
                         value={item.atbInfectionSite || ''}
                         onChange={(e) => onUpdate(item.id, 'atbInfectionSite' as any, e.target.value)}
-                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-[hsl(217,55%,82%)]/70 dark:border-[hsl(217,55%,30%)]/60 flex-1 px-1.5"
+                        className="h-6 text-[11px] bg-white border-[hsl(217,55%,82%)]/70(217,55%,30%)]/60 flex-1 px-1.5"
                         placeholder="ex.: pneumonia comunitária"
                       />
                     </div>
@@ -2907,21 +2907,21 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 const recon = getReconstitutionDefault(item.name);
                 if (!recon.required) return null;
                 return (
-                  <div className="flex items-center gap-1.5 flex-wrap px-2 py-1 rounded-md bg-muted/40 dark:bg-slate-900/30 border border-border/60">
-                    <span className="text-[10px] text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-wide">Reconstituir</span>
+                  <div className="flex items-center gap-1.5 flex-wrap px-2 py-1 rounded-md bg-muted/40 border border-border/60">
+                    <span className="text-[10px] text-foreground font-semibold uppercase tracking-wide">Reconstituir</span>
                     <span className="text-[10px] text-muted-foreground">com</span>
                     <Input
                       value={item.reconstitutionVolume ?? recon.volumeMl ?? ''}
                       onChange={(e) => onUpdate(item.id, "reconstitutionVolume", e.target.value)}
                       placeholder="mL"
-                      className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-14 text-center"
+                      className="h-6 text-[11px] bg-white border-border w-14 text-center"
                     />
                     <span className="text-[10px] text-muted-foreground">mL de</span>
                     <Select
                       value={item.reconstitutionSolvent ?? recon.solvent ?? ''}
                       onValueChange={(v) => onUpdate(item.id, "reconstitutionSolvent", v)}
                     >
-                      <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-36"><SelectValue placeholder="solvente" /></SelectTrigger>
+                      <SelectTrigger className="h-6 text-[11px] bg-white border-border w-36"><SelectValue placeholder="solvente" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="AD" className="text-xs">AD</SelectItem>
                         <SelectItem value="SF 0,9%" className="text-xs">SF 0,9%</SelectItem>
@@ -2943,7 +2943,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   validação; item.dose alimenta o impresso via buildSolutoToken. */}
               <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Qtd:</span>
+                  <span className="text-[10px] text-foreground font-medium shrink-0">Qtd:</span>
                   <Input
                     type="number"
                     inputMode="decimal"
@@ -2966,14 +2966,14 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         }
                       }
                     }}
-                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 px-1.5 text-center focus-visible:ring-1 focus-visible:ring-primary"
+                    className="h-6 text-[11px] bg-white border-border px-1.5 text-center focus-visible:ring-1 focus-visible:ring-primary"
                     style={{ width: `${Math.max(2.75, (String(item.quantity || '').length || 1) * 0.7 + 1.5)}ch`, minWidth: '3rem' }}
                     placeholder="1"
                     title={item.quantityUnit ? `Quantidade em ${item.quantityUnit}` : 'Quantidade'}
                   />
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0 ml-1">Forma:</span>
+                  <span className="text-[10px] text-foreground font-medium shrink-0 ml-1">Forma:</span>
                   <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-[78px] font-semibold focus:ring-1 focus:ring-primary" title={item.quantityUnit || 'Forma/unidade'}>
+                    <SelectTrigger className="h-6 text-[11px] bg-white border-border w-[78px] font-semibold focus:ring-1 focus:ring-primary" title={item.quantityUnit || 'Forma/unidade'}>
                       <SelectValue placeholder="—">{quantityUnitShort(item.quantityUnit)}</SelectValue>
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
@@ -3002,13 +3002,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   if (prescritoEmMassaOuVolume) return null;
                   return (
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal shrink-0">Dose:</span>
+                      <span className="text-[10px] text-muted-foreground font-normal shrink-0">Dose:</span>
                       <Input
                         value={item.dose || ''}
                         onChange={(e) => onUpdate(item.id, "dose", e.target.value)}
                         placeholder="opcional — ex: 500mg"
                         title="Opcional. Detalhe a dose por unidade (ex.: '500mg' para '1 AMP') se quiser que apareça no impresso. Não é obrigatório — a Qtd já libera a validação."
-                        className="h-6 text-[11px] bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-700/50 px-1.5 text-slate-500 dark:text-slate-400 placeholder:text-slate-300 dark:placeholder:text-slate-600 focus-visible:ring-1 focus-visible:ring-primary focus-visible:text-foreground"
+                        className="h-6 text-[11px] bg-muted/60 border-border/70 px-1.5 text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary focus-visible:text-foreground"
                         style={{ width: `${Math.max(5, (String(item.dose || '').length || 12) * 0.6 + 1.5)}ch`, minWidth: '6.5rem', maxWidth: '14rem' }}
                       />
                     </div>
@@ -3016,7 +3016,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 })()}
                 {renderDiluent && <>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Diluente:</span>
+                  <span className="text-[10px] text-foreground font-medium">Diluente:</span>
                   <Select value={item.diluent || ''} onValueChange={(v) => {
                     onUpdate(item.id, "diluent", v);
                     const tempItem = { ...item, diluent: v };
@@ -3037,7 +3037,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       onUpdate(item.id, "diluentVolume", '');
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-white border-border w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       <SelectItem value="sem_diluente" className="text-xs font-medium">Sem diluente</SelectItem>
                       <SelectItem value="diluente_proprio" className="text-xs font-medium">Diluente próprio</SelectItem>
@@ -3053,7 +3053,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </div>
                 {item.diluent && !isNoDiluent(item.diluent) && (
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Vol. dil:</span>
+                  <span className="text-[10px] text-foreground font-medium">Vol. dil:</span>
                   <Input value={item.diluentVolume || ''} onChange={(e) => {
                     onUpdate(item.id, "diluentVolume", e.target.value);
                     const tempItem = { ...item, diluentVolume: e.target.value };
@@ -3062,19 +3062,19 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     const tempItem2 = { ...tempItem, volumeTotal: autoVol || item.volumeTotal || '' };
                     const autoConc = calcConcentration(tempItem2);
                     if (autoConc) onUpdate(item.id, "concentration", autoConc);
-                  }} className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center focus-visible:ring-1 focus-visible:ring-primary" placeholder="mL" />
+                  }} className="h-6 text-[11px] bg-white border-border w-16 text-center focus-visible:ring-1 focus-visible:ring-primary" placeholder="mL" />
                 </div>
                 )}
                 </>}
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Via:</span>
+                  <span className="text-[10px] text-foreground font-medium">Via:</span>
                   <Select value={item.route} onValueChange={(v) => {
                     onUpdate(item.id, "route", v);
                     if (isIVRoute(v) && !item.infusionMode) {
                       onUpdate(item.id, "infusionMode", 'BIC');
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20 font-semibold focus:ring-1 focus:ring-primary">
+                    <SelectTrigger className="h-6 text-[11px] bg-white border-border w-20 font-semibold focus:ring-1 focus:ring-primary">
                       <SelectValue>{routeShort(item.route)}</SelectValue>
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
@@ -3088,9 +3088,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   </Select>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Int.:</span>
+                  <span className="text-[10px] text-foreground font-medium">Int.:</span>
                   <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 font-semibold w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-white border-border font-semibold w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent className="max-h-72">{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
@@ -3101,14 +3101,14 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     escreva nas Observações. (22/07/2026.) */}
                 {isOralSolidViaEnteral(item) && (
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap">Diluição:</span>
+                    <span className="text-[10px] text-foreground font-medium whitespace-nowrap">Diluição:</span>
                     <Input
                       type="text"
                       inputMode="decimal"
                       value={item.enteralDilutionVolume ?? ''}
                       onChange={(e) => onUpdate(item.id, 'enteralDilutionVolume', e.target.value)}
                       placeholder={ENTERAL_DILUTION_DEFAULT_ML}
-                      className="h-6 w-14 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 font-semibold text-center focus:ring-1 focus:ring-primary"
+                      className="h-6 w-14 text-[11px] bg-white border-border font-semibold text-center focus:ring-1 focus:ring-primary"
                     />
                     <span className="text-[10px] text-muted-foreground">mL de água</span>
                   </div>
@@ -3118,7 +3118,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               {renderIVOnly && (
               <div className="flex items-center gap-2 flex-wrap pt-1.5 border-t border-border/40">
                 <Droplets className="h-3 w-3 text-muted-foreground shrink-0" />
-                <span className="text-[10px] text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-wide">Infusão EV</span>
+                <span className="text-[10px] text-foreground font-semibold uppercase tracking-wide">Infusão EV</span>
                 {(() => {
                   // Bolus toggle: habilitado só p/ IV intermitente NÃO antimicrobiano e posologia ≠ Contínuo
                   const canBolusToggle =
@@ -3130,8 +3130,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   const nameLower = (item.name || '').toLowerCase();
                   const isBolusSafeDrug = /\b(atropina|adrenalina|epinefrina)\b/.test(nameLower);
                   return (
-                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md border border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20">
-                      <span className={`text-[10px] font-medium ${!isBolus ? 'text-slate-700 dark:text-slate-200' : 'text-muted-foreground'}`}>Tempo</span>
+                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md border border-warning-border bg-warning-soft/60">
+                      <span className={`text-[10px] font-medium ${!isBolus ? 'text-foreground' : 'text-muted-foreground'}`}>Tempo</span>
                       <Switch
                         checked={isBolus}
                         onCheckedChange={(v) => {
@@ -3142,11 +3142,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                             onUpdate(item.id, "infusionRate", "");
                           }
                         }}
-                        className="h-4 w-8 data-[state=checked]:bg-amber-500"
+                        className="h-4 w-8 data-[state=checked]:bg-warning"
                       />
-                      <span className={`text-[10px] font-semibold ${isBolus ? 'text-amber-700 dark:text-amber-300' : 'text-muted-foreground'}`}>Bolus</span>
+                      <span className={`text-[10px] font-semibold ${isBolus ? 'text-warning-on-soft' : 'text-muted-foreground'}`}>Bolus</span>
                       {isBolus && !isBolusSafeDrug && (
-                        <span className="flex items-center gap-1 ml-1 text-[10px] text-amber-700 dark:text-amber-300" title="Bolus EV é tipicamente reservado para drogas como atropina e adrenalina. Confirme a indicação antes de prescrever.">
+                        <span className="flex items-center gap-1 ml-1 text-[10px] text-warning-on-soft" title="Bolus EV é tipicamente reservado para drogas como atropina e adrenalina. Confirme a indicação antes de prescrever.">
                           <AlertTriangle className="h-3 w-3" />
                           confirmar indicação
                         </span>
@@ -3167,12 +3167,12 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                           const autoConc = calcConcentration(tempItem);
                           if (autoConc) onUpdate(item.id, "concentration", autoConc);
                         }}
-                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center font-medium"
+                        className="h-6 text-[11px] bg-white border-border w-16 text-center font-medium"
                         placeholder="opcional"
                       />
                       <span className="text-[10px] text-muted-foreground">mL</span>
                     </div>
-                    <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">EV em bolus</span>
+                    <span className="text-[10px] font-semibold text-warning-on-soft uppercase tracking-wide">EV em bolus</span>
                   </>
                 ) : (
                   <>
@@ -3193,7 +3193,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                       }
                     }}
-                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center font-medium"
+                    className="h-6 text-[11px] bg-white border-border w-16 text-center font-medium"
                     placeholder="opcional"
                     title="Volume final da solução (medicamento + diluente). Auto-calculado quando possível."
                   />
@@ -3213,7 +3213,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                       }
                     }}
-                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-14 text-center"
+                    className="h-6 text-[11px] bg-white border-border w-14 text-center"
                     placeholder="—"
                   />
                   <Select value={item.infusionTimeUnit || 'min'} onValueChange={(v) => {
@@ -3223,7 +3223,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16">
+                    <SelectTrigger className="h-6 text-[11px] bg-white border-border w-16">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -3246,7 +3246,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         if (autoTime) onUpdate(item.id, "infusionTime", autoTime);
                       }
                     }}
-                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center font-medium"
+                    className="h-6 text-[11px] bg-white border-border w-16 text-center font-medium"
                     placeholder="—"
                   />
                   <Select value={item.infusionMode || 'BIC'} onValueChange={(v) => {
@@ -3257,7 +3257,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-24">
+                    <SelectTrigger className="h-6 text-[11px] bg-white border-border w-24">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -3272,7 +3272,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   <Input
                     value={item.concentration || ''}
                     onChange={(e) => onUpdate(item.id, "concentration", e.target.value)}
-                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-24 text-center"
+                    className="h-6 text-[11px] bg-white border-border w-24 text-center"
                     placeholder="auto"
                   />
                 </div>
@@ -3318,7 +3318,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                           <span className="text-[10px] text-muted-foreground/40 select-none">|</span>
                         )}
                         {tok.isBadge ? (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30 tracking-wide">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary/15 text-foreground border border-border/30 tracking-wide">
                             {tok.text}
                           </span>
                         ) : (
@@ -3406,7 +3406,7 @@ function SuspensionDialog({
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-yellow-600">
+          <DialogTitle className="flex items-center gap-2 text-warning-on-soft">
             <Pause className="h-5 w-5" />
             Suspender {isBatch ? `${batchCount} itens` : 'Item'}
           </DialogTitle>
@@ -3441,7 +3441,7 @@ function SuspensionDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={handleClose}>Cancelar</Button>
-          <Button size="sm" onClick={handleConfirm} disabled={!reason.trim()} className="gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white">
+          <Button size="sm" onClick={handleConfirm} disabled={!reason.trim()} className="gap-1.5 bg-warning hover:bg-warning text-white">
             <Pause className="h-3.5 w-3.5" /> Confirmar Suspensão
           </Button>
         </DialogFooter>
@@ -3770,10 +3770,10 @@ function ExtraPrescriptionDialog({
       <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-orange-500" />
+            <Zap className="h-5 w-5 text-warning" />
             Prescrição Extra
             {categoryConfigLabel && (
-              <Badge variant="outline" className="text-[10px] bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-800 ml-1">
+              <Badge variant="outline" className="text-[10px] bg-warning-soft text-warning-on-soft border-warning-border ml-1">
                 {categoryConfigLabel}
               </Badge>
             )}
@@ -3926,8 +3926,8 @@ function ExtraPrescriptionDialog({
               <span className="font-semibold">{extraItems.length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Itens "Agora" <span className="text-orange-500">(não renovam)</span></span>
-              <span className="font-semibold text-orange-600">{agoraCount}</span>
+              <span className="text-muted-foreground">Itens "Agora" <span className="text-warning">(não renovam)</span></span>
+              <span className="font-semibold text-warning-on-soft">{agoraCount}</span>
             </div>
             {scheduledCount > 0 && (
               <div className="flex justify-between">
@@ -3968,12 +3968,12 @@ function ExtraPrescriptionDialog({
             size="sm"
             onClick={handlePrintIsolated}
             disabled={extraItems.length === 0 || !patient}
-            className="gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-950/30"
+            className="gap-1.5 border-warning-border text-warning-on-soft hover:bg-warning-soft"
             title="Imprime esta prescrição extra como anexo isolado (Norma Zero)"
           >
             <Printer className="h-3.5 w-3.5" /> Imprimir Anexo
           </Button>
-          <Button size="sm" onClick={handleConfirm} disabled={extraItems.length === 0} className="gap-1.5 bg-orange-600 hover:bg-orange-700 text-white">
+          <Button size="sm" onClick={handleConfirm} disabled={extraItems.length === 0} className="gap-1.5 bg-warning hover:bg-warning text-white">
             <Zap className="h-3.5 w-3.5" /> Adicionar {extraItems.length} item{extraItems.length !== 1 ? 's' : ''} à prescrição
           </Button>
         </DialogFooter>
@@ -4117,7 +4117,7 @@ function BatchActionBar({
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-sky-600 hover:text-sky-700" onClick={onPrintSelected}>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-foreground hover:text-foreground" onClick={onPrintSelected}>
             <Printer className="h-3.5 w-3.5" />
           </Button>
         </TooltipTrigger>
@@ -4250,7 +4250,7 @@ function SignPrescriptionDialog({
                   {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              {password && confirmPassword && password === confirmPassword && <p className="text-[10px] text-green-600 flex items-center gap-1"><Check className="h-3 w-3" /> Senhas coincidem</p>}
+              {password && confirmPassword && password === confirmPassword && <p className="text-[10px] text-released-on-soft flex items-center gap-1"><Check className="h-3 w-3" /> Senhas coincidem</p>}
             </div>
             {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" /> {error}</p>}
           </div>
@@ -4398,7 +4398,7 @@ function DrugInteractionDialog({
           )}
 
           {result && (
-            <div className="prose prose-sm dark:prose-invert max-w-none px-1">
+            <div className="prose prose-sm max-w-none px-1">
               <ReactMarkdown>{result}</ReactMarkdown>
             </div>
           )}
@@ -6206,7 +6206,7 @@ const PrescricaoPage = () => {
     // focusNewItem — ANTES esta função tinha uma cópia local do destaque, e
     // expandia a CATEGORIA inteira, tirando todos os itens daquela seção do
     // modo compacto sem necessidade. (Correção 22/07/2026.)
-    focusNewItem(newItem.id, isMAV ? 'ring-red-400' : isControlled ? 'ring-amber-400' : 'ring-primary');
+    focusNewItem(newItem.id, isMAV ? 'ring-critical' : isControlled ? 'ring-warning' : 'ring-primary');
 
     // Sugestão de esquema de correção de insulina ao adicionar controle
     // glicêmico (HGT/glicemia capilar). Centralizado aqui — não só no
@@ -8354,7 +8354,7 @@ const PrescricaoPage = () => {
 
       {/* Banner didático — peso e alergias obrigatórios para liberar a prescrição */}
       {(!patient.weight.trim() || !patient.allergies.trim()) && (
-        <div className="print:hidden mb-2 flex items-start gap-2 rounded-lg border border-amber-300/70 bg-amber-50/80 dark:border-amber-500/40 dark:bg-amber-950/20 px-3 py-2 text-amber-900 dark:text-amber-200">
+        <div className="print:hidden mb-2 flex items-start gap-2 rounded-lg border border-warning-border/70 bg-warning-soft/80 px-3 py-2 text-warning-on-soft">
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
           <div className="text-[12px] leading-snug">
             <strong className="font-semibold">PESO e ALERGIAS</strong> são obrigatórios para liberar o ato de prescrição (validar, assinar ou imprimir).{' '}
@@ -8373,14 +8373,14 @@ const PrescricaoPage = () => {
         );
         if (todays.length === 0) return null;
         return (
-          <div className="print:hidden mb-2 rounded-lg border border-emerald-200/70 bg-emerald-50/40 dark:border-emerald-500/30 dark:bg-emerald-950/10 px-3 py-2">
+          <div className="print:hidden mb-2 rounded-lg border border-released-border/70 bg-released-soft/40 px-3 py-2">
             <div className="flex items-center justify-between gap-2 mb-1.5">
-              <div className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider uppercase text-emerald-800 dark:text-emerald-300">
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider uppercase text-released-on-soft">
                 <ShieldCheck className="h-3 w-3" />
                 Validadas hoje
-                <span className="font-mono text-emerald-700/70 dark:text-emerald-300/70">({todays.length})</span>
+                <span className="font-mono text-released-on-soft/70">({todays.length})</span>
               </div>
-              <span className="text-[10px] text-emerald-700/70 dark:text-emerald-300/70 italic">
+              <span className="text-[10px] text-released-on-soft/70 italic">
                 Clique em "Abrir" para visualizar a versão no editor.
               </span>
             </div>
@@ -8392,10 +8392,10 @@ const PrescricaoPage = () => {
                     key={p.id}
                     className={cn(
                       "flex items-center gap-1.5 rounded-md border bg-card/80 px-2 py-1 text-[11px] transition-colors",
-                      isCurrent ? "border-primary ring-1 ring-primary/30" : "border-emerald-200/70 dark:border-emerald-500/30 hover:border-emerald-400",
+                      isCurrent ? "border-primary ring-1 ring-primary/30" : "border-released-border/70 hover:border-released",
                     )}
                   >
-                    <Badge className="text-[9px] h-4 px-1.5 bg-emerald-600 hover:bg-emerald-600 shrink-0">v{p.version}</Badge>
+                    <Badge className="text-[9px] h-4 px-1.5 bg-released hover:bg-released shrink-0">v{p.version}</Badge>
                     <span className="text-[10px] text-muted-foreground font-mono shrink-0">
                       {format(new Date(p.created_at), "HH:mm", { locale: ptBR })}
                     </span>
@@ -8415,7 +8415,7 @@ const PrescricaoPage = () => {
                       <button
                         type="button"
                         onClick={() => loadPrescription(p.id)}
-                        className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border border-emerald-300/70 text-emerald-800 hover:bg-emerald-100/60 dark:text-emerald-200 dark:border-emerald-500/40 dark:hover:bg-emerald-900/30 transition-colors"
+                        className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border border-released-border/70 text-released-on-soft hover:bg-released-soft/60 transition-colors"
                         title="Abrir esta versão no editor"
                       >
                         Abrir
@@ -8443,7 +8443,7 @@ const PrescricaoPage = () => {
           Para incluir item novo: basta adicionar pelo caminho normal — o item entra pendente (bolinha amarela)
           e bloqueia a impressão até ser validado. */}
       {allItemsValidated && (
-        <div className="print:hidden mb-2 flex items-center gap-2 rounded-lg border border-emerald-300/70 bg-emerald-50/80 dark:border-emerald-500/40 dark:bg-emerald-950/20 px-3 py-2 text-emerald-900 dark:text-emerald-200">
+        <div className="print:hidden mb-2 flex items-center gap-2 rounded-lg border border-released-border/70 bg-released-soft/80 px-3 py-2 text-released-on-soft">
           <ShieldCheck className="h-4 w-4 shrink-0" />
           <div className="text-[12px] leading-snug min-w-0">
             <strong className="font-semibold">PRESCRIÇÃO VALIDADA HOJE</strong>
@@ -8531,7 +8531,7 @@ const PrescricaoPage = () => {
               placeholder="72"
               className={cn(
                 "h-7 w-14 text-xs font-medium",
-                !patient.weight.trim() && "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
+                !patient.weight.trim() && "border-warning/60 bg-warning-soft/30"
               )}
             />
           </div>
@@ -8541,7 +8541,7 @@ const PrescricaoPage = () => {
               <div className="flex items-center gap-1.5">
                 <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
                   {isNDAM ? (
-                    <ShieldCheck className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                    <ShieldCheck className="h-3 w-3 text-released-on-soft" />
                   ) : (
                     <AlertTriangle className="h-3 w-3 text-destructive" />
                   )}{" "}
@@ -8556,7 +8556,7 @@ const PrescricaoPage = () => {
             );
           })()}
           {(!patient.weight.trim() || !patient.allergies.trim()) && (
-            <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+            <span className="inline-flex items-center gap-1 text-[10px] text-warning-on-soft font-medium">
               <AlertTriangle className="h-3 w-3" />
               Preencha {!patient.weight.trim() && !patient.allergies.trim() ? 'peso e alergias' : !patient.weight.trim() ? 'o peso' : 'as alergias'}
             </span>
@@ -8638,11 +8638,11 @@ const PrescricaoPage = () => {
                         >
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {p.isValidated ? (
-                              <Badge variant="default" className="text-[9px] h-4 px-1.5 bg-emerald-600 hover:bg-emerald-600">
+                              <Badge variant="default" className="text-[9px] h-4 px-1.5 bg-released hover:bg-released">
                                 ✓ Oficial validada
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-amber-400 text-amber-700 dark:text-amber-300">
+                              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-warning text-warning-on-soft">
                                 Rascunho
                               </Badge>
                             )}
@@ -8675,7 +8675,7 @@ const PrescricaoPage = () => {
                   </div>
                 ) : historyDate && prescriptionDateKeys.size > 0 ? (
                   <div className="px-1 py-2 space-y-1.5">
-                    <p className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">
+                    <p className="text-[11px] text-warning-on-soft font-medium">
                       Nenhuma prescrição nesta data.
                     </p>
                     <p className="text-[10px] text-muted-foreground">
@@ -8695,7 +8695,7 @@ const PrescricaoPage = () => {
             <button
               type="button"
               onClick={() => setHistoryDate(undefined)}
-              className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 text-[10px] font-medium text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
+              className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-warning-border bg-warning-soft text-[10px] font-medium text-warning-on-soft hover:bg-warning-soft transition-colors"
               title="Existem prescrições em outras datas — clique para limpar o filtro"
             >
               <AlertTriangle className="h-3 w-3" />
@@ -8706,19 +8706,19 @@ const PrescricaoPage = () => {
             variant="outline"
             size="sm"
             onClick={() => { setDoseCalcInitialMed(undefined); setDoseCalcOpen(true); }}
-            className="h-7 text-[10px] gap-1 px-2 border-blue-400/40 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+            className="h-7 text-[10px] gap-1 px-2 border-border/40 hover:bg-muted"
             title="Calculadora de dose por peso/superfície corporal"
           >
-            <Calculator className="h-3 w-3 text-blue-500" /> Dose/kg
+            <Calculator className="h-3 w-3 text-muted-foreground" /> Dose/kg
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setQuickTemplatesDialogOpen(true)}
-            className="h-7 text-[10px] gap-1 px-2 border-amber-400/40 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+            className="h-7 text-[10px] gap-1 px-2 border-warning/40 hover:bg-warning-soft"
             title="Templates clínicos prontos (Sepse, Pós-op, DPOC...)"
           >
-            <Zap className="h-3 w-3 text-amber-500" /> Templates
+            <Zap className="h-3 w-3 text-warning" /> Templates
             {quickTemplates.length > 0 && (
               <span className="ml-0.5 text-[9px] font-mono text-muted-foreground">
                 ({quickTemplates.length})
@@ -8742,7 +8742,7 @@ const PrescricaoPage = () => {
         </div>
 
         {/* Row 2 — Prescription actions (Nova, Extra, Interações, ATM, TEV, Validar | Compacto | Imprimir) */}
-        <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-[hsl(217,30%,88%)]/70 dark:border-[hsl(217,30%,22%)]/70 bg-gradient-to-r from-[hsl(217,45%,97%)] via-[hsl(217,40%,98.5%)] to-[hsl(217,45%,97%)] dark:from-[hsl(217,35%,12%)] dark:via-[hsl(217,30%,14%)] dark:to-[hsl(217,35%,12%)] rounded-b-xl [&_button.h-7]:hover:bg-[hsl(217,55%,40%)]/8 [&_button.h-7]:hover:text-[hsl(217,60%,32%)] dark:[&_button.h-7]:hover:text-[hsl(217,55%,75%)] [&_button.h-7]:transition-colors">
+        <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-[hsl(217,30%,88%)]/70(217,30%,22%)]/70 bg-gradient-to-r from-[hsl(217,45%,97%)] via-[hsl(217,40%,98.5%)] to-[hsl(217,45%,97%)](217,35%,12%)](217,30%,14%)](217,35%,12%)] rounded-b-xl [&_button.h-7]:hover:bg-[hsl(217,55%,40%)]/8 [&_button.h-7]:hover:text-[hsl(217,60%,32%)]&_button.h-7]:hover:text-[hsl(217,55%,75%)] [&_button.h-7]:transition-colors">
 
           <Tooltip>
             <TooltipTrigger asChild>
@@ -8806,7 +8806,7 @@ const PrescricaoPage = () => {
           {isValidationSessionActive && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                <span className="inline-flex items-center gap-1 rounded-md border border-released/30 bg-released/10 px-2 py-0.5 text-[10px] font-medium text-released-on-soft">
                   <ShieldCheck className="h-3 w-3" />
                   Sessão validada · {sessionMinutesLeft}min
                 </span>
@@ -8843,7 +8843,7 @@ const PrescricaoPage = () => {
                 "gap-1 text-xs h-7 px-2",
                 prescriptionLocked
                   ? "text-muted-foreground hover:text-foreground"
-                  : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : "bg-released hover:bg-released text-white"
               )}
             >
               <ShieldCheck className="h-3 w-3" />
@@ -8865,7 +8865,7 @@ const PrescricaoPage = () => {
                     }
                     handlePrint();
                   }}
-                  className="gap-1.5 text-xs h-7 px-3 text-white font-semibold border-0 bg-gradient-to-br from-sky-400 via-blue-500 to-blue-600 hover:from-sky-300 hover:via-blue-400 hover:to-blue-500 shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
+                  className="gap-1.5 text-xs h-7 px-3 text-white font-semibold border-0 bg-gradient-to-br from-muted via-muted to-muted hover:from-muted hover:via-muted hover:to-muted shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
                 >
                   <Printer className="h-3.5 w-3.5" /> Imprimir
                 </Button>
@@ -9059,14 +9059,14 @@ const PrescricaoPage = () => {
                                   className={cn(
                                     "relative w-full h-7 rounded-md bg-background/60 text-xs pl-9 pr-9 text-left text-muted-foreground transition-colors flex items-center",
                                     "border", nutAccent.border, nutAccent.ring,
-                                    "hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20"
+                                    "hover:bg-released-soft/40"
                                   )}
                                   aria-label="Abrir opções de nutrição"
                                 >
                                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                                   <span className="truncate">Adicionar nutrição — manual · guiada · assistente</span>
                                   <span
-                                    className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 rounded-md flex items-center justify-center bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
+                                    className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 rounded-md flex items-center justify-center bg-gradient-to-br from-released/20 to-released/5 border border-released/40 text-released-on-soft"
                                     aria-hidden
                                   >
                                     <Sparkles className="h-3 w-3" />
@@ -9322,7 +9322,7 @@ const PrescricaoPage = () => {
                   <>Você vai excluir o rascunho <strong>v{draftToDelete.version}</strong> de <strong>{draftToDelete.patient_name}</strong> criado em {format(new Date(draftToDelete.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}.</>
                 )}
               </span>
-              <span className="block text-amber-700 dark:text-amber-400 text-xs">
+              <span className="block text-warning-on-soft text-xs">
                 Esta ação é irreversível na interface, mas o conteúdo completo do rascunho e seu motivo ficam registrados em auditoria (resgate forense por administradores).
               </span>
             </AlertDialogDescription>
@@ -9361,9 +9361,9 @@ const PrescricaoPage = () => {
               Visualização compacta da prescrição
               {previewPrescription && (
                 previewPrescription.isValidated ? (
-                  <Badge className="text-[9px] h-4 px-1.5 bg-emerald-600 hover:bg-emerald-600">✓ Oficial validada</Badge>
+                  <Badge className="text-[9px] h-4 px-1.5 bg-released hover:bg-released">✓ Oficial validada</Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-amber-400 text-amber-700 dark:text-amber-300">Rascunho</Badge>
+                  <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-warning text-warning-on-soft">Rascunho</Badge>
                 )
               )}
             </DialogTitle>
@@ -9405,7 +9405,7 @@ const PrescricaoPage = () => {
                       <td className="py-1.5 pr-2 text-[10px]">{it.posology || '—'}</td>
                       <td className="py-1.5 pr-2 text-center">
                         {it.validated ? (
-                          <Badge className="text-[9px] h-4 px-1 bg-emerald-600 hover:bg-emerald-600">VAL</Badge>
+                          <Badge className="text-[9px] h-4 px-1 bg-released hover:bg-released">VAL</Badge>
                         ) : it.status === 'suspended' ? (
                           <Badge variant="outline" className="text-[9px] h-4 px-1">SUSP</Badge>
                         ) : (
@@ -9433,8 +9433,8 @@ const PrescricaoPage = () => {
               <div className={cn(
                 "mx-6 mb-2 rounded-md border px-3 py-2 text-[11px] leading-snug",
                 willMerge
-                  ? "border-amber-300/70 bg-amber-50/70 text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/20 dark:text-amber-200"
-                  : "border-sky-300/70 bg-sky-50/70 text-sky-900 dark:border-sky-500/40 dark:bg-sky-950/20 dark:text-sky-200",
+                  ? "border-warning-border/70 bg-warning-soft/70 text-warning-on-soft"
+                  : "border-border/70 bg-muted/70 text-foreground",
               )}>
                 <strong className="font-semibold">
                   {willMerge ? "Há prescrição validada hoje" : "Restauração integral"}
@@ -9455,7 +9455,7 @@ const PrescricaoPage = () => {
                 return (
                   <Button
                     size="sm"
-                    className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
+                    className="gap-1.5 bg-warning hover:bg-warning text-white"
                     onClick={() => { restoreFromPrescription(previewPrescription); setPreviewPrescription(null); }}
                     title="Soma os itens desta versão no rascunho atual, ignorando duplicados"
                   >
@@ -9487,7 +9487,7 @@ const PrescricaoPage = () => {
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <UtensilsCrossed className="h-4 w-4 text-emerald-600" />
+              <UtensilsCrossed className="h-4 w-4 text-released-on-soft" />
               Como deseja prescrever a dieta?
             </DialogTitle>
             <DialogDescription>
@@ -9503,15 +9503,15 @@ const PrescricaoPage = () => {
                 setNutritionManualText("");
                 setNutritionManualOpen(true);
               }}
-              className="group text-left rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition p-3 flex flex-col gap-2"
+              className="group text-left rounded-lg border border-released-border bg-white hover:border-released hover:bg-released-soft/50 transition p-3 flex flex-col gap-2"
             >
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-md bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center">
-                  <Pencil className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
+                <div className="h-8 w-8 rounded-md bg-released-soft flex items-center justify-center">
+                  <Pencil className="h-4 w-4 text-released-on-soft" />
                 </div>
-                <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Adição manual</span>
+                <span className="text-sm font-semibold text-foreground">Adição manual</span>
               </div>
-              <p className="text-[11.5px] text-slate-600 dark:text-slate-400 leading-snug">
+              <p className="text-[11.5px] text-foreground leading-snug">
                 Escreva livremente a conduta nutricional. Salvo como item de nutrição genérico com seu texto nas recomendações.
               </p>
             </button>
@@ -9524,15 +9524,15 @@ const PrescricaoPage = () => {
                 setNutritionGuidedOpen(true);
               }}
 
-              className="group text-left rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition p-3 flex flex-col gap-2"
+              className="group text-left rounded-lg border border-released-border bg-white hover:border-released hover:bg-released-soft/50 transition p-3 flex flex-col gap-2"
             >
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-md bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center">
-                  <ClipboardList className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
+                <div className="h-8 w-8 rounded-md bg-released-soft flex items-center justify-center">
+                  <ClipboardList className="h-4 w-4 text-released-on-soft" />
                 </div>
-                <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Solicitação guiada</span>
+                <span className="text-sm font-semibold text-foreground">Solicitação guiada</span>
               </div>
-              <p className="text-[11.5px] text-slate-600 dark:text-slate-400 leading-snug">
+              <p className="text-[11.5px] text-foreground leading-snug">
                 Escolha a modalidade (Oral, Enteral, Parenteral, Suplementação ou Zero) e preencha os campos estruturados.
               </p>
             </button>
@@ -9544,15 +9544,15 @@ const PrescricaoPage = () => {
                 setNutritionConfirmOpen(false);
                 setNutritionWizardOpen(true);
               }}
-              className="group text-left rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50/60 dark:bg-emerald-950/30 hover:border-emerald-500 hover:bg-emerald-100/60 dark:hover:bg-emerald-950/50 transition p-3 flex flex-col gap-2"
+              className="group text-left rounded-lg border border-released-border bg-released-soft/60 hover:border-released hover:bg-released-soft/60 transition p-3 flex flex-col gap-2"
             >
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-md bg-emerald-600 flex items-center justify-center">
+                <div className="h-8 w-8 rounded-md bg-released flex items-center justify-center">
                   <Sparkles className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Assistente clínico</span>
+                <span className="text-sm font-semibold text-released-on-soft">Assistente clínico</span>
               </div>
-              <p className="text-[11.5px] text-emerald-700/90 dark:text-emerald-300/90 leading-snug">
+              <p className="text-[11.5px] text-released-on-soft/90 leading-snug">
                 Sugere estratégia, volume e cuidados com base no paciente (peso, condição clínica e via disponível).
               </p>
             </button>
@@ -9568,7 +9568,7 @@ const PrescricaoPage = () => {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Pencil className="h-4 w-4 text-emerald-600" />
+              <Pencil className="h-4 w-4 text-released-on-soft" />
               Adição manual de nutrição
             </DialogTitle>
             <DialogDescription>
@@ -9579,7 +9579,7 @@ const PrescricaoPage = () => {
           <div className="space-y-3">
             {/* 1) Modalidade — chips compactos */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">Modalidade</label>
+              <label className="text-[11px] font-semibold text-released-on-soft uppercase tracking-wide">Modalidade</label>
               <div className="flex flex-wrap gap-1.5">
                 {([
                   { v: 'diet_oral',       label: 'Oral' },
@@ -9595,8 +9595,8 @@ const PrescricaoPage = () => {
                     className={cn(
                       "h-8 px-3 rounded-md border text-[12px] font-semibold transition",
                       nutritionManualType === opt.v
-                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                        : "bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                        ? "bg-released text-white border-released shadow-sm"
+                        : "bg-white text-released-on-soft border-released-border hover:bg-released-soft"
                     )}
                   >
                     {opt.label}
@@ -9607,7 +9607,7 @@ const PrescricaoPage = () => {
 
             {/* 2) Recomendações (opcional) */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">
+              <label className="text-[11px] font-semibold text-released-on-soft uppercase tracking-wide">
                 Recomendações <span className="text-muted-foreground font-normal normal-case">(opcional)</span>
               </label>
               <Textarea
@@ -9627,7 +9627,7 @@ const PrescricaoPage = () => {
               Cancelar
             </Button>
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-released hover:bg-released text-white"
               onClick={() => {
                 const recs = nutritionManualRecs.trim();
                 const MODALITY_LABELS: Record<string, string> = {
@@ -9677,7 +9677,7 @@ const PrescricaoPage = () => {
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4 text-emerald-600" />
+              <ClipboardList className="h-4 w-4 text-released-on-soft" />
               Escolha a modalidade
             </DialogTitle>
             <DialogDescription>
@@ -9709,15 +9709,15 @@ const PrescricaoPage = () => {
                   // Abre só o item novo e direciona até ele. (22/07/2026.)
                   focusNewItem(it.id);
                 }}
-                className="text-left rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition p-3 flex flex-col gap-1"
+                className="text-left rounded-lg border border-released-border bg-white hover:border-released hover:bg-released-soft/50 transition p-3 flex flex-col gap-1"
               >
                 <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-md bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center">
-                    <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300" />
+                  <div className="h-7 w-7 rounded-md bg-released-soft flex items-center justify-center">
+                    <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft" />
                   </div>
-                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{m.label}</span>
+                  <span className="text-sm font-semibold text-foreground">{m.label}</span>
                 </div>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug pl-9">{m.desc}</p>
+                <p className="text-[11px] text-foreground leading-snug pl-9">{m.desc}</p>
               </button>
             ))}
           </div>
@@ -9871,36 +9871,36 @@ const PrescricaoPage = () => {
                 <button
                   type="button"
                   onClick={() => setNutritionConfirmOpen(true)}
-                  className="text-left rounded-lg border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 hover:border-emerald-400 dark:bg-emerald-950/20 dark:border-emerald-900 transition-all p-3 group"
+                  className="text-left rounded-lg border border-released-border bg-released-soft/50 hover:bg-released-soft hover:border-released transition-all p-3 group"
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <UtensilsCrossed className="h-4 w-4 text-emerald-600" />
-                    <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">Nutrição</span>
-                    <Sparkles className="h-3 w-3 text-emerald-500 ml-auto opacity-60 group-hover:opacity-100" />
+                    <UtensilsCrossed className="h-4 w-4 text-released-on-soft" />
+                    <span className="text-xs font-bold text-released-on-soft">Nutrição</span>
+                    <Sparkles className="h-3 w-3 text-released ml-auto opacity-60 group-hover:opacity-100" />
                   </div>
                   <p className="text-[10px] text-muted-foreground leading-tight">Zero · Oral · Enteral · NPT</p>
                 </button>
                 <button
                   type="button"
                   onClick={() => setHydrationWizardOpen(true)}
-                  className="text-left rounded-lg border border-blue-200 bg-blue-50/50 hover:bg-blue-50 hover:border-blue-400 dark:bg-blue-950/20 dark:border-blue-900 transition-all p-3 group"
+                  className="text-left rounded-lg border border-border bg-muted/50 hover:bg-muted hover:border-border transition-all p-3 group"
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <Droplets className="h-4 w-4 text-blue-600" />
-                    <span className="text-xs font-bold text-blue-800 dark:text-blue-300">Hidratação</span>
-                    <Sparkles className="h-3 w-3 text-blue-500 ml-auto opacity-60 group-hover:opacity-100" />
+                    <Droplets className="h-4 w-4 text-foreground" />
+                    <span className="text-xs font-bold text-foreground">Hidratação</span>
+                    <Sparkles className="h-3 w-3 text-muted-foreground ml-auto opacity-60 group-hover:opacity-100" />
                   </div>
                   <p className="text-[10px] text-muted-foreground leading-tight">SF · RL · SG · Soluções preparadas</p>
                 </button>
                 <button
                   type="button"
                   onClick={() => setReplacementWizardOpen(true)}
-                  className="text-left rounded-lg border border-sky-200 bg-sky-50/50 hover:bg-sky-50 hover:border-sky-400 dark:bg-sky-950/20 dark:border-sky-900 transition-all p-3 group"
+                  className="text-left rounded-lg border border-border bg-muted/50 hover:bg-muted hover:border-border transition-all p-3 group"
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <FlaskConical className="h-4 w-4 text-sky-600" />
-                    <span className="text-xs font-bold text-sky-800 dark:text-sky-300">Reposição / Correção</span>
-                    <Sparkles className="h-3 w-3 text-sky-500 ml-auto opacity-60 group-hover:opacity-100" />
+                    <FlaskConical className="h-4 w-4 text-foreground" />
+                    <span className="text-xs font-bold text-foreground">Reposição / Correção</span>
+                    <Sparkles className="h-3 w-3 text-muted-foreground ml-auto opacity-60 group-hover:opacity-100" />
                   </div>
                   <p className="text-[10px] text-muted-foreground leading-tight">HipoK · HipoMg · HipoNa · HiperK</p>
                 </button>
@@ -9908,7 +9908,7 @@ const PrescricaoPage = () => {
               {admissionTpls.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-2 px-1">
-                    <Zap className="h-3.5 w-3.5 text-amber-500" />
+                    <Zap className="h-3.5 w-3.5 text-warning" />
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Modelos de admissão
                     </span>
@@ -10008,7 +10008,7 @@ const PrescricaoPage = () => {
       })()}
 
       {/* ===== FOOTER SUMMARY ===== */}
-      <div className="rounded-xl border border-[hsl(217,30%,84%)]/70 dark:border-[hsl(217,30%,24%)]/70 bg-gradient-to-b from-[hsl(217,45%,98%)] to-[hsl(217,40%,96%)] dark:from-[hsl(217,35%,13%)] dark:to-[hsl(217,32%,11%)] p-4 flex items-center justify-between print:hidden shadow-[0_4px_16px_-6px_hsl(217,50%,30%,0.18)] dark:shadow-[0_4px_16px_-6px_hsl(217,80%,5%,0.45)] ring-1 ring-[hsl(217,55%,90%)]/40 dark:ring-[hsl(217,40%,22%)]/40">
+      <div className="rounded-xl border border-[hsl(217,30%,84%)]/70(217,30%,24%)]/70 bg-gradient-to-b from-[hsl(217,45%,98%)] to-[hsl(217,40%,96%)](217,35%,13%)](217,32%,11%)] p-4 flex items-center justify-between print:hidden shadow-[0_4px_16px_-6px_hsl(217,50%,30%,0.18)](217,80%,5%,0.45)] ring-1 ring-[hsl(217,55%,90%)]/40(217,40%,22%)]/40">
         <div className="flex items-center gap-4 flex-wrap">
           <Badge variant="outline" className="gap-1 text-xs">
             <Pill className="h-3 w-3" /> {totalItems} itens
@@ -10050,7 +10050,7 @@ const PrescricaoPage = () => {
             disabled={allItemsValidated}
             className={cn(
               "gap-1.5 text-xs",
-              !prescriptionLocked && "bg-emerald-600 hover:bg-emerald-700 text-white"
+              !prescriptionLocked && "bg-released hover:bg-released text-white"
             )}
             title={allItemsValidated ? "Todos os itens já validados" : prescriptionLocked ? "Validar itens pendentes" : "Validar prescrição"}
           >
@@ -10070,7 +10070,7 @@ const PrescricaoPage = () => {
               }
               handlePrint();
             }}
-            className="gap-1.5 text-xs text-white font-semibold border-0 bg-gradient-to-br from-sky-400 via-blue-500 to-blue-600 hover:from-sky-300 hover:via-blue-400 hover:to-blue-500 shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
+            className="gap-1.5 text-xs text-white font-semibold border-0 bg-gradient-to-br from-muted via-muted to-muted hover:from-muted hover:via-muted hover:to-muted shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
             title="Imprimir a prescrição validada e, quando aplicável, as guias regulatórias"
           >
             <Printer className="h-3.5 w-3.5" /> Imprimir
@@ -10586,7 +10586,7 @@ const PrescricaoPage = () => {
                   className={cn(
                     "flex items-start gap-2.5 p-2.5 rounded-md border cursor-pointer",
                     regulatoria
-                      ? "border-[hsl(217,55%,82%)] dark:border-[hsl(217,55%,30%)]/40 bg-[hsl(217,55%,96%)]/60 dark:bg-[hsl(217,55%,16%)]/15 hover:bg-[hsl(217,55%,94%)]/80"
+                      ? "border-[hsl(217,55%,82%)](217,55%,30%)]/40 bg-[hsl(217,55%,96%)]/60(217,55%,16%)]/15 hover:bg-[hsl(217,55%,94%)]/80"
                       : "border-border hover:bg-muted/30",
                   )}
                 >
@@ -10594,7 +10594,7 @@ const PrescricaoPage = () => {
                   <div className="text-xs">
                     <div className={cn(
                       "font-semibold",
-                      regulatoria && "text-[hsl(217,72%,32%)] dark:text-[hsl(217,55%,78%)]",
+                      regulatoria && "text-[hsl(217,72%,32%)](217,55%,78%)]",
                     )}>
                       {opt.label}
                     </div>
@@ -10681,7 +10681,7 @@ const PrescricaoPage = () => {
             });
             // Abre só o esquema recém-criado, com anel de alta vigilância —
             // antes expandia toda a seção de alta vigilância. (22/07/2026.)
-            focusNewItem(grouped.id, 'ring-red-400');
+            focusNewItem(grouped.id, 'ring-critical');
           }
         }}
       />
@@ -10738,7 +10738,7 @@ const PrescricaoPage = () => {
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-sm">
-              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+              <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
               Prescrição com alterações não salvas
             </AlertDialogTitle>
             <AlertDialogDescription className="text-xs text-muted-foreground">
@@ -10882,7 +10882,7 @@ const PrescricaoPage = () => {
                   </div>
                 )}
                 {atbAttachNotice.isFirstDay ? (
-                  <div className="rounded-md border-l-[3px] border-l-amber-500 bg-amber-50/70 dark:bg-amber-950/30 p-2 text-xs leading-relaxed">
+                  <div className="rounded-md border-l-[3px] border-l-amber-500 bg-warning-soft/70 p-2 text-xs leading-relaxed">
                     <strong>Atenção — D1 (primeiro dia de antibiótico):</strong> ao imprimir a prescrição
                     do dia, é obrigatório anexar a <strong>Guia ATM em 2 vias</strong> (1 via para a
                     farmácia/CCIH e 1 via para o prontuário). Marque "Imprimir Guia ATM" no botão de
@@ -10919,7 +10919,7 @@ const PrescricaoPage = () => {
             <AlertDialogTitle>Esquema antimicrobiano termina hoje</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
-                <div className="rounded-md border-l-[3px] border-l-amber-500 bg-amber-50/70 dark:bg-amber-950/30 p-2 text-xs leading-relaxed">
+                <div className="rounded-md border-l-[3px] border-l-amber-500 bg-warning-soft/70 p-2 text-xs leading-relaxed">
                   Os seguintes esquemas chegam ao <strong>último dia previsto</strong> nesta data.
                   Avalie a conduta: <strong>suspensão</strong>, <strong>descalonamento</strong>,
                   <strong> troca para via oral</strong> ou <strong>prorrogação justificada</strong>
@@ -10959,7 +10959,7 @@ const PrescricaoPage = () => {
         <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
-              <Zap className="h-4 w-4 text-amber-500" />
+              <Zap className="h-4 w-4 text-warning" />
               Templates de Prescrição Rápida
             </DialogTitle>
             <DialogDescription className="text-xs">

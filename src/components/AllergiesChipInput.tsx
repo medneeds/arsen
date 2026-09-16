@@ -97,9 +97,9 @@ export function AllergiesChipInput({
       className={cn(
         "flex items-center gap-1 min-h-7 px-1.5 py-0.5 rounded-md border bg-background transition-colors",
         empty
-          ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
+          ? "border-warning/60 bg-warning-soft/30"
           : isNDAM
-          ? "border-emerald-400/50 bg-emerald-50/40 dark:bg-emerald-950/10"
+          ? "border-released/50 bg-released-soft/40"
           : "border-destructive/30 bg-destructive/[0.03]",
         className,
       )}
@@ -109,7 +109,7 @@ export function AllergiesChipInput({
         <span
           className={cn(
             baseChip,
-            "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+            "border-released/40 bg-released/10 text-released-on-soft",
           )}
         >
           <ShieldCheck className="h-2.5 w-2.5" />
@@ -117,7 +117,7 @@ export function AllergiesChipInput({
           <button
             type="button"
             aria-label="Remover NDAM"
-            className="ml-0.5 hover:text-emerald-900 dark:hover:text-emerald-100"
+            className="ml-0.5 hover:text-released-on-soft"
             onClick={(e) => {
               e.stopPropagation();
               clearAll();
@@ -251,7 +251,7 @@ export function AllergiesChipInput({
           {empty && (
             <button
               type="button"
-              className="text-[10px] font-semibold uppercase text-emerald-700 dark:text-emerald-300 hover:underline px-1"
+              className="text-[10px] font-semibold uppercase text-released-on-soft hover:underline px-1"
               onClick={(e) => {
                 e.stopPropagation();
                 setNDAM();

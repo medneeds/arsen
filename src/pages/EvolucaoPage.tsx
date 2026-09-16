@@ -127,20 +127,22 @@ const EvolucaoPage = () => {
     intercurrence: {
       label: 'Intercorrência', shortLabel: 'Intercorrência', Icon: AlertTriangle,
       placeholder: 'Descreva a intercorrência (ex.: queda da própria altura às 14h, sem perda de consciência; novo episódio de hipotensão, PA 80x40 às 03h; dessaturação após mobilização...)',
-      badgeClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/40',
-      borderClass: 'border-amber-500/40', bgClass: 'bg-amber-500/5', iconColor: 'text-amber-600',
+      // Unica complementar que mantem cor: sinaliza algo fora do previsto.
+      badgeClass: 'bg-warning-soft text-warning-on-soft border-warning-border',
+      borderClass: 'border-warning-border', bgClass: 'bg-warning-soft/40', iconColor: 'text-warning',
     },
     vespertina: {
       label: 'Evolução Vespertina', shortLabel: 'Vespertina', Icon: Sun,
       placeholder: 'Evolução vespertina — registre o que mudou desde a manhã (sinais vitais, condutas, exames recebidos, intercorrências leves, plano para a noite...)',
-      badgeClass: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/40',
-      borderClass: 'border-orange-500/40', bgClass: 'bg-orange-500/5', iconColor: 'text-orange-600',
+      // Turno, nao estado clinico: o icone e o rotulo ja dizem tudo.
+      badgeClass: 'bg-muted text-muted-foreground border-border',
+      borderClass: 'border-border', bgClass: '', iconColor: 'text-muted-foreground',
     },
     noturna: {
       label: 'Evolução Noturna', shortLabel: 'Noturna', Icon: Moon,
       placeholder: 'Evolução noturna — descreva o estado clínico do plantão noturno (sono, dor, sinais vitais, intercorrências, condutas executadas, transmissão para a manhã...)',
-      badgeClass: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/40',
-      borderClass: 'border-indigo-500/40', bgClass: 'bg-indigo-500/5', iconColor: 'text-indigo-600',
+      badgeClass: 'bg-muted text-muted-foreground border-border',
+      borderClass: 'border-border', bgClass: '', iconColor: 'text-muted-foreground',
     },
   };
   const currentComplementary = complementaryKind ? COMPLEMENTARY_META[complementaryKind] : null;
@@ -550,13 +552,13 @@ const EvolucaoPage = () => {
 
   // Banner de alerta quando alta prevista está nas próximas 24h
   const dischargeAlert = isWithin24h(utiDischargePrediction) && (
-    <div className="mx-4 mt-3 mb-0 flex items-start gap-3 rounded-lg border-2 border-amber-400/50 bg-amber-50 dark:bg-amber-950/20 p-3 print:hidden">
+    <div className="mx-4 mt-3 mb-0 flex items-start gap-3 rounded-lg border-2 border-warning/50 bg-warning-soft p-3 print:hidden">
       <span className="text-lg">⚠</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+        <p className="text-sm font-bold text-warning-on-soft">
           Alta prevista para as próximas 24h
         </p>
-        <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+        <p className="text-xs text-warning-on-soft mt-0.5">
           Previsão atual: <strong>{utiDischargePrediction}</strong>.
           Confirme no campo de Diagnósticos se a alta continua programada ou atualize a data.
         </p>
@@ -573,9 +575,9 @@ const EvolucaoPage = () => {
   // alergias ainda não chegaram do banco.
   const headerDataLoading = hasPatient && (ids.loading || livePatientLoading || !weightLoaded);
   const headerLoadingWarning = headerDataLoading && (
-    <div className="mx-4 mt-2 mb-0 flex items-center gap-2 rounded-md border border-blue-300/60 bg-blue-50 dark:bg-blue-950/20 px-3 py-1.5 print:hidden">
-      <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600 shrink-0" />
-      <p className="text-xs text-blue-700 dark:text-blue-400">
+    <div className="mx-4 mt-2 mb-0 flex items-center gap-2 rounded-md border border-border/60 bg-muted px-3 py-1.5 print:hidden">
+      <Loader2 className="h-3.5 w-3.5 animate-spin text-foreground shrink-0" />
+      <p className="text-xs text-foreground">
         Carregando dados do paciente (sexo, nascimento, peso, alergias) — aguarde antes de imprimir.
       </p>
     </div>
@@ -637,7 +639,7 @@ const EvolucaoPage = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5 text-xs border-amber-500/40 text-amber-700 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400 flex-1 sm:flex-none min-h-9"
+                  className="gap-1.5 text-xs border-warning/40 text-warning-on-soft hover:bg-warning/10 hover:text-warning-on-soft flex-1 sm:flex-none min-h-9"
                   disabled={showIntercurrenceForm || showNewForm}
                 >
                   <Zap className="h-3.5 w-3.5" /> Evolução complementar

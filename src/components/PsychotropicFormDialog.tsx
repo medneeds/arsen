@@ -82,9 +82,9 @@ interface Props {
 }
 
 const NOTIFICATION_META: Record<NotificationType, { label: string; description: string; color: string; bg: string }> = {
-  'Receita Amarela': { label: 'Receita Amarela (A1/A2)', description: 'Entorpecentes — Lista A', color: '#d97706', bg: 'text-amber-700 bg-amber-50 border-amber-200' },
-  'Receita Azul': { label: 'Receita Azul (B1/B2)', description: 'Psicotrópicos — Lista B', color: '#2563eb', bg: 'text-blue-700 bg-blue-50 border-blue-200' },
-  'Controle Especial 2 vias': { label: 'Controle Especial (C1)', description: 'Outras substâncias controladas', color: '#6b7280', bg: 'text-slate-700 bg-slate-50 border-slate-200' },
+  'Receita Amarela': { label: 'Receita Amarela (A1/A2)', description: 'Entorpecentes — Lista A', color: '#d97706', bg: 'text-warning-on-soft bg-warning-soft border-warning-border' },
+  'Receita Azul': { label: 'Receita Azul (B1/B2)', description: 'Psicotrópicos — Lista B', color: '#2563eb', bg: 'text-foreground bg-muted border-border' },
+  'Controle Especial 2 vias': { label: 'Controle Especial (C1)', description: 'Outras substâncias controladas', color: '#6b7280', bg: 'text-foreground bg-muted border-border' },
 };
 
 // Heurística legacy mantida para compat (usada quando catálogo não responde)
@@ -295,7 +295,7 @@ export function PsychotropicFormDialog({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-violet-500" />
+            <Brain className="h-5 w-5 text-muted-foreground" />
             {isPrintDirect ? 'Receituário Portaria 344 — Impressão' : 'Ficha de Medicações Psicotrópicas / Controladas'}
           </DialogTitle>
           <DialogDescription>
@@ -309,9 +309,9 @@ export function PsychotropicFormDialog({
         {isPrintDirect ? (
           <div className="space-y-3 print:hidden">
             {/* Aviso de modo somente-leitura */}
-            <div className="rounded-md border border-violet-200 bg-violet-50/60 dark:bg-violet-950/20 dark:border-violet-800/40 p-3 flex items-start gap-2">
-              <ShieldAlert className="h-4 w-4 text-violet-600 mt-0.5 shrink-0" />
-              <div className="text-xs text-violet-900 dark:text-violet-200">
+            <div className="rounded-md border border-border bg-muted/60 p-3 flex items-start gap-2">
+              <ShieldAlert className="h-4 w-4 text-foreground mt-0.5 shrink-0" />
+              <div className="text-xs text-foreground">
                 <strong>Modo somente-impressão.</strong> CID puxado da admissão · Quantidade calculada para 24h ·
                 Indicação clínica e duração não se aplicam (validade fixa de 24h). Para ajustes, edite o item no corpo da prescrição.
               </div>
@@ -339,7 +339,7 @@ export function PsychotropicFormDialog({
                 size="sm"
                 onClick={handlePrint}
                 disabled={!canPrint}
-                className="gap-1.5 bg-violet-600 hover:bg-violet-700"
+                className="gap-1.5 bg-primary hover:bg-primary"
               >
                 <Printer className="h-3.5 w-3.5" /> Imprimir Receituário
               </Button>
@@ -348,7 +348,7 @@ export function PsychotropicFormDialog({
         ) : (
           /* === MODO EDIÇÃO COMPLETO (legado, aberto manualmente) === */
           <div className="space-y-4 print:hidden">
-            <div className="rounded-lg border border-violet-200 bg-violet-50/50 dark:bg-violet-950/10 dark:border-violet-800/30 p-3">
+            <div className="rounded-lg border border-border bg-muted/50 p-3">
               <div className="grid grid-cols-4 gap-2 text-xs">
                 <div><span className="text-muted-foreground">Paciente:</span> <strong>{patient.name}</strong></div>
                 <div><span className="text-muted-foreground">Leito:</span> <strong>{patient.bed}</strong></div>
@@ -382,7 +382,7 @@ export function PsychotropicFormDialog({
                         <Badge variant="outline" className={cn("text-xs", meta.bg)}>{meta.label}</Badge>
                       )}
                       {entry.locked && (
-                        <Badge variant="outline" className="text-[10px] bg-violet-100 text-violet-700 border-violet-300 gap-1">
+                        <Badge variant="outline" className="text-[10px] bg-muted text-foreground border-border gap-1">
                           <Lock className="h-2.5 w-2.5" /> Da prescrição
                         </Badge>
                       )}
@@ -399,7 +399,7 @@ export function PsychotropicFormDialog({
                     <div className="col-span-2">
                       <Label className="text-[10px] flex items-center gap-1">
                         Medicamento (DCB / Comercial)
-                        {entry.autoFilled.has('medication') && <Sparkles className="h-2.5 w-2.5 text-violet-500" />}
+                        {entry.autoFilled.has('medication') && <Sparkles className="h-2.5 w-2.5 text-muted-foreground" />}
                       </Label>
                       <MedicationCombobox
                         value={entry.medication}

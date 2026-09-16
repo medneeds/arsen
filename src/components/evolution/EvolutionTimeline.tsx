@@ -60,9 +60,9 @@ interface EvolutionTimelineProps {
 
 
 const STATUS_CONFIG = {
-  draft: { label: "Rascunho", color: "bg-amber-500/10 text-amber-600 border-amber-500/30", icon: Clock },
-  validated: { label: "Validada", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30", icon: ShieldCheck },
-  suspended: { label: "Suspensa", color: "bg-red-500/10 text-red-600 border-red-500/30", icon: ShieldOff },
+  draft: { label: "Rascunho", color: "bg-warning/10 text-warning-on-soft border-warning/30", icon: Clock },
+  validated: { label: "Validada", color: "bg-released/10 text-released-on-soft border-released/30", icon: ShieldCheck },
+  suspended: { label: "Suspensa", color: "bg-critical/10 text-critical-on-soft border-critical/30", icon: ShieldOff },
 };
 
 export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
@@ -277,10 +277,23 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
   };
 
   type ComplementaryKind = 'intercurrence' | 'vespertina' | 'noturna';
+  /**
+   * Tipo de evolucao complementar.
+   *
+   * Vespertina, noturna e intercorrencia dizem QUANDO a evolucao foi escrita —
+   * sao turno, nao estado clinico. Cada uma tinha uma familia de cor propria
+   * (ambar, laranja, indigo), o que gastava o vocabulario de alerta em
+   * informacao que o icone e o rotulo ja entregam. Numa linha do tempo com
+   * varias evolucoes, isso virava listra colorida sem leitura possivel.
+   *
+   * Agora sao neutras. A UNICA que mantem cor e a intercorrencia, porque ela
+   * sinaliza algo que fugiu do previsto e merece ser achada rapido — e e
+   * atencao, nao critico: a intercorrencia ja aconteceu e esta registrada.
+   */
   const COMPLEMENTARY_BADGE: Record<ComplementaryKind, { label: string; badgeClass: string; borderClass: string; bgClass: string; iconColor: string }> = {
-    intercurrence: { label: 'Intercorrência', badgeClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/40', borderClass: 'border-amber-500/30', bgClass: 'bg-amber-500/5', iconColor: 'text-amber-600' },
-    vespertina:    { label: 'Vespertina',     badgeClass: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/40', borderClass: 'border-orange-500/30', bgClass: 'bg-orange-500/5', iconColor: 'text-orange-600' },
-    noturna:       { label: 'Noturna',        badgeClass: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/40', borderClass: 'border-indigo-500/30', bgClass: 'bg-indigo-500/5', iconColor: 'text-indigo-600' },
+    intercurrence: { label: 'Intercorrência', badgeClass: 'bg-warning-soft text-warning-on-soft border-warning-border', borderClass: 'border-warning-border', bgClass: 'bg-warning-soft/40', iconColor: 'text-warning' },
+    vespertina:    { label: 'Vespertina',     badgeClass: 'bg-muted text-muted-foreground border-border', borderClass: 'border-border', bgClass: '', iconColor: 'text-muted-foreground' },
+    noturna:       { label: 'Noturna',        badgeClass: 'bg-muted text-muted-foreground border-border', borderClass: 'border-border', bgClass: '', iconColor: 'text-muted-foreground' },
   };
   const getComplementaryKind = (evo: EvolutionRecord): ComplementaryKind | null => {
     const t = (evo.soap_data as any)?.type;
@@ -510,7 +523,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         por <strong className="text-foreground">{evo.created_by_name || "Médico"}</strong>
                       </span>
                       {isAdmission && (
-                        <Badge className="text-[9px] px-1.5 py-0 h-4 bg-emerald-600 text-white gap-0.5 uppercase tracking-wider">
+                        <Badge className="text-[9px] px-1.5 py-0 h-4 bg-released text-white gap-0.5 uppercase tracking-wider">
                           {group.dayLabel} — Admissão Hospitalar
                         </Badge>
                       )}
@@ -530,7 +543,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         );
                       })()}
                       {hasUnsaved && (
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-600 border-amber-500/30">
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-warning/10 text-warning-on-soft border-warning/30">
                           Não salvo
                         </Badge>
                       )}
@@ -644,9 +657,9 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
               {isExpanded && (
                 <div className="px-3 pb-3 border-t border-border/50">
                   {evo.status === "suspended" && evo.suspension_reason && (
-                    <div className="flex items-center gap-2 bg-red-500/5 rounded-lg p-2 mt-2 mb-2">
-                      <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-                      <span className="text-xs text-red-600">Motivo da suspensão: {evo.suspension_reason}</span>
+                    <div className="flex items-center gap-2 bg-critical/5 rounded-lg p-2 mt-2 mb-2">
+                      <AlertTriangle className="h-3.5 w-3.5 text-critical" />
+                      <span className="text-xs text-critical-on-soft">Motivo da suspensão: {evo.suspension_reason}</span>
                     </div>
                   )}
                   <div className="mt-2">
@@ -683,7 +696,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             )}
                             <Button
                               size="sm"
-                              className="h-7 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                              className="h-7 text-xs gap-1.5 bg-released hover:bg-released"
                               onClick={() => setValidateDialogId(evo.id)}
                               disabled={savingId === evo.id}
                             >
@@ -799,7 +812,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
             <AlertDialogAction
               onClick={handleSuspend}
               disabled={!suspendReason.trim()}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-critical hover:bg-critical"
             >
               Suspender
             </AlertDialogAction>
@@ -818,7 +831,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={handleDelete} className="bg-critical hover:bg-critical">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>

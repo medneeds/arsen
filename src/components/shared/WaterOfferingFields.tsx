@@ -119,15 +119,15 @@ interface Props {
   value: WaterOfferingState;
   onChange: (next: WaterOfferingState) => void;
   /** Cor de destaque (border/text) — segue identidade do wizard pai. */
-  accentClassName?: string; // ex: "border-blue-500 bg-blue-50"
-  accentTextClassName?: string; // ex: "text-blue-700"
+  accentClassName?: string; // ex: "border-border bg-muted"
+  accentTextClassName?: string; // ex: "text-foreground"
 }
 
 export function WaterOfferingFields({
   value,
   onChange,
-  accentClassName = "border-cyan-500 bg-cyan-50 dark:bg-cyan-950/30",
-  accentTextClassName = "text-cyan-700 dark:text-cyan-300",
+  accentClassName = "border-border bg-muted",
+  accentTextClassName = "text-foreground",
 }: Props) {
   const total = computeWaterTotal24h(value);
   const set = <K extends keyof WaterOfferingState>(k: K, v: WaterOfferingState[K]) =>
@@ -236,7 +236,7 @@ export function WaterOfferingFields({
       <div className={cn(
         "rounded-md border p-2 text-xs flex items-center justify-between gap-2",
         overLimit
-          ? "border-red-300 bg-red-50/60 dark:bg-red-950/20"
+          ? "border-critical-border bg-critical-soft/60"
           : "border-border bg-muted/30"
       )}>
         <div className="flex flex-col">
@@ -248,7 +248,7 @@ export function WaterOfferingFields({
           </span>
         </div>
         {overLimit && (
-          <div className="flex items-center gap-1 text-red-700 dark:text-red-300 text-[11px]">
+          <div className="flex items-center gap-1 text-critical-on-soft text-[11px]">
             <AlertTriangle className="h-3.5 w-3.5" />
             Excede o limite de restrição
           </div>

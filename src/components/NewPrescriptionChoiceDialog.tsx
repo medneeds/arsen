@@ -36,7 +36,7 @@ export function NewPrescriptionChoiceDialog({
         </DialogHeader>
 
         {hasCurrentItems && (
-          <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 border border-amber-200 text-amber-900 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-200">
+          <div className="flex items-start gap-2 p-3 rounded-md bg-warning-soft border border-warning-border text-warning-on-soft">
             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
             <p className="text-xs">
               Há itens não salvos no formulário atual. Eles serão descartados ao iniciar uma nova prescrição.
