@@ -636,7 +636,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
       
       toast({
         title: "Pacientes excluídos",
-        description: `${selectedCount} leito(s) removido(s) com sucesso.`,
+        description: `${selectedCount} ${(selectedCount) === 1 ? 'leito' : 'leitos'} ${(selectedCount) === 1 ? 'removido' : 'removidos'} com sucesso.`,
       });
       
       setSelectedPatients(new Set());
@@ -1037,7 +1037,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                                 <Printer className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent><p>Imprimir {selectedPatients.size} selecionado(s)</p></TooltipContent>
+                            <TooltipContent><p>Imprimir {selectedPatients.size} {selectedPatients.size === 1 ? "selecionado" : "selecionados"}</p></TooltipContent>
                           </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -1046,7 +1046,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent><p>Deletar {selectedPatients.size} selecionado(s)</p></TooltipContent>
+                            <TooltipContent><p>Excluir {selectedPatients.size} {selectedPatients.size === 1 ? "selecionado" : "selecionados"}</p></TooltipContent>
                           </Tooltip>
                         </>
                       )}
@@ -1266,7 +1266,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão Múltipla</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir <strong>{selectedPatients.size} leito(s)</strong> selecionado(s)?
+              Tem certeza que deseja excluir <strong>{selectedPatients.size} {selectedPatients.size === 1 ? "leito" : "leitos"}</strong> {selectedPatients.size === 1 ? "selecionado" : "selecionados"}?
               Esta ação não poderá ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>

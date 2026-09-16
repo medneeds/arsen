@@ -111,7 +111,7 @@ export default function TherapeuticTemplatesPage() {
                 <Badge className={PROTOCOL_COLORS[protocolType] || "bg-muted text-foreground"}>
                   {protocolType}
                 </Badge>
-                <span className="text-xs text-muted-foreground">{items.length} template(s)</span>
+                <span className="text-xs text-muted-foreground">{items.length} {items.length === 1 ? "template" : "templates"}</span>
               </div>
 
               {items.map((template) => (

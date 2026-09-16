@@ -98,7 +98,7 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
         .neq("id", patient.id);
       if (cancel) return;
       if (error) {
-        toast.error("Falha ao carregar leitos do setor");
+        toast.error("Não foi possível carregar leitos do setor");
       } else {
         setSiblings((data ?? []).filter((p) => !!p.bed_number && !isGhostBed(p.bed_number)) as SiblingRow[]);
       }
@@ -152,7 +152,7 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
       onSuccess?.();
       onOpenChange(false);
     } catch (e: any) {
-      toast.error("Erro ao mover paciente: " + (e?.message ?? e));
+      toast.error("Não foi possível mover paciente: " + (e?.message ?? e));
     } finally {
       setSubmitting(false);
     }

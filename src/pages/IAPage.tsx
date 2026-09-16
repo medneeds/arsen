@@ -65,7 +65,7 @@ export default function IAPage() {
       setTimeout(() => setCopiedIndex(null), 1800);
       toast.success(upper ? "Copiado em CAIXA ALTA" : "Copiado");
     } catch {
-      toast.error("Erro ao copiar");
+      toast.error("Não foi possível copiar");
     }
   };
 
@@ -126,7 +126,7 @@ export default function IAPage() {
           });
         }
       } catch {
-        toast.error("Erro ao processar arquivo");
+        toast.error("Não foi possível processar arquivo");
         setIsLoading(false); return;
       }
     }
@@ -189,7 +189,7 @@ export default function IAPage() {
         }
       }
     } catch {
-      toast.error("Erro ao processar mensagem.");
+      toast.error("Não foi possível processar mensagem.");
       setMessages(messages);
     } finally {
       setIsLoading(false);

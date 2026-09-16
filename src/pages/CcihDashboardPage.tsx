@@ -186,7 +186,7 @@ const CcihDashboardPage = () => {
       setCultureResults((culturesRes.data as CultureResult[]) || []);
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao carregar dados");
+      toast.error("Não foi possível carregar dados");
     } finally {
       setLoading(false);
     }
@@ -371,7 +371,7 @@ const CcihDashboardPage = () => {
       fetchData();
     } catch (err: any) {
       console.error(err);
-      toast.error("Erro ao salvar resultado de cultura");
+      toast.error("Não foi possível salvar resultado de cultura");
     } finally {
       setSaving(false);
     }

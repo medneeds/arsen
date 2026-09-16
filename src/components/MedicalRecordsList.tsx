@@ -153,7 +153,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
       setTotal(count || 0);
     } catch (err: any) {
       console.error("Erro ao carregar prontuários:", err);
-      toast.error("Erro ao carregar prontuários", { description: err?.message });
+      toast.error("Não foi possível carregar prontuários", { description: err?.message });
     } finally {
       setIsLoading(false);
     }
@@ -206,7 +206,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
       fetchData();
     } catch (err: any) {
       console.error("Erro ao promover NI:", err);
-      toast.error("Erro ao identificar paciente", { description: err?.message });
+      toast.error("Não foi possível identificar paciente", { description: err?.message });
     } finally {
       setIsPromoting(false);
     }

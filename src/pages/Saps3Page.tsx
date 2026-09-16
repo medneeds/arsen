@@ -1045,7 +1045,7 @@ export default function Saps3Page() {
     }
     if (!asPending && missingFields.length > 0) {
       const first = missingFields[0];
-      toast.error(`Faltam ${missingFields.length} item(s) para validar: ${missingFields.map(f => f.label).join(" · ")}`, { duration: 6000 });
+      toast.error(`Faltam ${missingFields.length} ${(missingFields.length) === 1 ? 'item' : 'items'} para validar: ${missingFields.map(f => f.label).join(" · ")}`, { duration: 6000 });
       focusAnchor(first.anchor);
       return;
     }
@@ -1327,7 +1327,7 @@ export default function Saps3Page() {
   const handleDelete = async () => {
     if (!deleteId) return;
     const { error } = await supabase.from("saps3_assessments" as any).delete().eq("id", deleteId);
-    if (error) toast.error("Erro ao excluir");
+    if (error) toast.error("Não foi possível excluir");
     else { toast.success("Registro excluído"); loadRecords(); }
     setDeleteId(null);
   };

@@ -81,7 +81,7 @@ export default function ResetPasswordPage() {
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (error) {
-      toast.error("Não foi possível redefinir a senha: " + error.message);
+      toast.error("Não foi possível redefinir a senha");
       return;
     }
     setDone(true);

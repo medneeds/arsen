@@ -277,7 +277,7 @@ export function MedicalDocumentDialog({
 
     const logo = await prepareLogo();
     const subtitle =
-      kind === "atestado" && days ? `Afastamento de ${days} dia(s)` :
+      kind === "atestado" && days ? `Afastamento de ${days} ${Number(days) === 1 ? 'dia' : 'dias'}` :
       kind === "receituario_especial" ? "Portaria SVS/MS nº 344/1998 — 2 vias" : undefined;
 
     const baseBody = buildBodyHtml();

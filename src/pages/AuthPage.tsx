@@ -90,7 +90,7 @@ export default function AuthPage() {
         } else if (msg.includes("CPF não encontrado")) {
           toast.error("CPF não encontrado");
         } else {
-          toast.error("Erro ao fazer login: " + msg);
+          toast.error("Não foi possível fazer login: " + msg);
         }
         setLoading(false);
         postLoginInFlight.current = false;
@@ -135,7 +135,7 @@ export default function AuthPage() {
         // Primeiro acesso: senha padrão 123456 → exige troca + escolha de username
         const mustChange = (profileRow as { must_change_password?: boolean } | null)?.must_change_password === true;
         if (mustChange && userId) {
-          toast.success("Bem-vindo(a)! Configure seu acesso.");
+          toast.success("Bem-vindo(a) Configure seu acesso.");
           setFirstAccess({
             userId,
             fullName: (profileRow as { full_name?: string } | null)?.full_name ?? null,
@@ -166,7 +166,7 @@ export default function AuthPage() {
         setShowLoadingScreen(true);
       }
     } catch (err) {
-      toast.error("Erro ao validar dados");
+      toast.error("Não foi possível validar dados");
       setLoading(false);
       postLoginInFlight.current = false;
     }

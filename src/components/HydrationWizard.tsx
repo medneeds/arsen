@@ -85,7 +85,7 @@ function ivSnapshotToEntry(s: IvSnapshot): MedicationEntry {
   const isCustom = s.solution === "custom";
   const baseName = isCustom ? `${s.base} ${vol}mL + ${s.additives}` : `${sel.label} ${vol}mL`;
   const flags = [s.prn && "Se necessário", s.criterio && "A critério médico"].filter(Boolean).join(" · ");
-  const instr = `${s.phases} fase(s) de ${vol}mL · ${interval} · ${s.phaseTimeValue}${s.phaseTimeUnit}/fase · ${dripStr} · Acesso: ${s.access} · Total ${volumeTotal}mL/24h`;
+  const instr = `${s.phases} ${(s.phases) === 1 ? 'fase' : 'fases'} de ${vol}mL · ${interval} · ${s.phaseTimeValue}${s.phaseTimeUnit}/fase · ${dripStr} · Acesso: ${s.access} · Total ${volumeTotal}mL/24h`;
   return {
     id: `hyd-iv-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     name: baseName,

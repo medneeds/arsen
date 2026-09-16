@@ -748,7 +748,7 @@ export function AntimicrobialGuideDialog({
       const now = format(new Date(), "HH:mm:ss");
       toast.success(`Rascunho da Guia ATM salvo às ${now}`);
       onOpenChange(false);
-    } catch { toast.error("Falha ao salvar rascunho"); }
+    } catch { toast.error("Não foi possível salvar rascunho"); }
   };
 
   return (
@@ -867,7 +867,7 @@ export function AntimicrobialGuideDialog({
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-warning-on-soft border-warning-border bg-warning-soft gap-1 text-xs font-normal">
-                            <AlertCircle className="h-3 w-3" /> Faltam {missing.length} campo(s)
+                            <AlertCircle className="h-3 w-3" /> {missing.length === 1 ? "Falta" : "Faltam"} {missing.length} {missing.length === 1 ? "campo" : "campos"}
                           </Badge>
                         )
                       )}
@@ -1240,7 +1240,7 @@ export function AntimicrobialGuideDialog({
                   </span>
                 )
               ) : (
-                <span className="text-muted-foreground">{entries.filter(e => e.medication.trim()).length} antimicrobiano(s) preenchido(s)</span>
+                <span className="text-muted-foreground">{entries.filter(e => e.medication.trim()).length} {entries.filter(e => e.medication.trim()).length === 1 ? "antimicrobiano preenchido" : "antimicrobianos preenchidos"}</span>
               )}
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-end">

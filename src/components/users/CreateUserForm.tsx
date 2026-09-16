@@ -227,7 +227,7 @@ export function CreateUserForm({ onCreated }: Props) {
         .from("hospital_units")
         .select("id, name, unit_code")
         .order("name");
-      if (error) toast.error("Falha ao carregar unidades");
+      if (error) toast.error("Não foi possível carregar unidades");
       else setUnits(data ?? []);
       setLoadingUnits(false);
     })();
@@ -440,7 +440,7 @@ export function CreateUserForm({ onCreated }: Props) {
       setStep("cpf", { status: "done", detail: "Disponível" });
     } catch (e) {
       setStep("cpf", { status: "error", detail: (e as Error).message });
-      toast.error("Falha ao validar CPF");
+      toast.error("Não foi possível validar CPF");
       setSubmitting(false);
       return;
     }
@@ -468,7 +468,7 @@ export function CreateUserForm({ onCreated }: Props) {
     startStep("role", 1200, `Atribuindo role: ${role}`);
     startStep("hospital", 1500, "Vinculando hospital_unit");
     if (!isGlobal) {
-      startStep("departments", 1800, `${departments.size} setor(es)`);
+      startStep("departments", 1800, `${departments.size} ${(departments.size) === 1 ? 'setor' : 'setores'}`);
       startStep("audit", 2200, "Persistindo trilha");
     } else {
       startStep("audit", 1900, "Persistindo trilha");
@@ -504,7 +504,7 @@ export function CreateUserForm({ onCreated }: Props) {
       setSubmitSteps(finalized);
 
       if (mode === "password") {
-        toast.success("Usuário criado!", {
+        toast.success("Usuário criado", {
           description: `Senha provisória: ${password}`,
           action: {
             label: "Copiar",
@@ -886,7 +886,7 @@ export function CreateUserForm({ onCreated }: Props) {
           <Badge variant="outline">{mode === "password" ? "Acesso imediato" : "Convite"}</Badge>
           <Badge variant="outline">Perfil: {accessProfile}</Badge>
           <Badge variant="outline">Role: {role}</Badge>
-          {!isGlobal && <Badge variant="outline">{departments.size} setor(es)</Badge>}
+          {!isGlobal && <Badge variant="outline">{departments.size} {departments.size === 1 ? "setor" : "setores"}</Badge>}
         </div>
         <div className="flex gap-2">
           <Button type="button" variant="outline" onClick={reset} disabled={submitting}>Limpar</Button>

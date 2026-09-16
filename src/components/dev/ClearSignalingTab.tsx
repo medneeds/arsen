@@ -103,7 +103,7 @@ export function ClearSignalingTab() {
       const ids = preview.results.map((r) => r.patientId);
       const r = await callOps("clear_patient_signaling", { patientIds: ids, dryRun: false }, true);
       toast.success(
-        `Limpeza concluída: ${r.totals.patientsAffected} paciente(s), ${r.totals.movementsDeleted} movimentação(ões), ${r.totals.documentsDeleted} documento(s) removido(s).`,
+        `Limpeza concluída: ${r.totals.patientsAffected} ${(r.totals.patientsAffected) === 1 ? 'paciente' : 'pacientes'}, ${r.totals.movementsDeleted} ${(r.totals.movementsDeleted) === 1 ? 'movimentação' : 'movimentações'}, ${r.totals.documentsDeleted} ${(r.totals.documentsDeleted) === 1 ? 'documento' : 'documentos'} ${(r.totals.documentsDeleted) === 1 ? 'removido' : 'removidos'}.`,
       );
       setPreview(null);
       refresh();

@@ -275,7 +275,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
       fetchAll();
       onChanged?.();
     } catch (e: any) {
-      toast.error("Erro ao salvar adendo: " + (e.message || e));
+      toast.error("Não foi possível salvar adendo: " + (e.message || e));
     } finally {
       setSavingAdendo(false);
     }
@@ -305,7 +305,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
       onOpenChange(false);
       onChanged?.();
     } catch (e: any) {
-      toast.error("Erro ao suspender: " + (e.message || e));
+      toast.error("Não foi possível suspender: " + (e.message || e));
     } finally {
       setSavingSuspend(false);
     }

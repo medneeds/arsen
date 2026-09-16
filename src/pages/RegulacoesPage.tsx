@@ -108,7 +108,7 @@ export default function RegulacoesPage() {
         {filteredDocuments.length > 0 && (
           <p className="text-center text-sm text-muted-foreground">
             {filteredDocuments.length} de {documents.length} {filteredDocuments.length === 1 ? "documento" : "documentos"} 
-            {searchQuery && " encontrado(s)"}
+            {searchQuery && (filteredDocuments.length === 1 ? " encontrado" : " encontrados")}
           </p>
         )}
       </div>

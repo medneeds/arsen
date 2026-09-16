@@ -95,7 +95,7 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
       }
     } catch (err) {
       console.error("Error fetching admission history:", err);
-      toast.error("Erro ao carregar história admissional");
+      toast.error("Não foi possível carregar história admissional");
     } finally {
       setLoading(false);
     }
@@ -151,7 +151,7 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
       await fetchAdmissionHistory();
     } catch (err) {
       console.error("Error saving admission history:", err);
-      toast.error("Erro ao salvar história admissional");
+      toast.error("Não foi possível salvar história admissional");
     } finally {
       setSaving(false);
     }

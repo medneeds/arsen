@@ -142,7 +142,7 @@ export function usePatientCid(patientId: string | null) {
       return true;
     } catch (err: any) {
       console.error("[usePatientCid] save error", err);
-      toast.error("Erro ao salvar CID: " + (err.message || "desconhecido"));
+      toast.error("Não foi possível salvar CID");
       return false;
     } finally {
       setSaving(false);

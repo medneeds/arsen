@@ -150,7 +150,7 @@ export default function RoundPage() {
       }
       toast.success("Dados do paciente sincronizados");
     } catch (err: any) {
-      toast.error("Erro ao sincronizar: " + (err.message || ""));
+      toast.error("Não foi possível sincronizar");
     } finally {
       setSyncingPatientId(null);
     }
@@ -330,10 +330,10 @@ export default function RoundPage() {
         if (goalError) throw goalError;
       }
 
-      toast.success("Round salvo com sucesso!");
+      toast.success("Round salvo com sucesso");
     } catch (err: any) {
       console.error(err);
-      toast.error("Erro ao salvar round: " + (err.message || ""));
+      toast.error("Não foi possível salvar round");
     } finally {
       setSaving(false);
     }

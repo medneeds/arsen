@@ -108,7 +108,7 @@ export function PasswordResetRequestsPanel() {
       setRequests(data || []);
     } catch (error) {
       console.error("Erro ao buscar solicitações:", error);
-      toast.error("Erro ao carregar solicitações");
+      toast.error("Não foi possível carregar solicitações");
     } finally {
       setLoading(false);
     }
@@ -177,7 +177,7 @@ export function PasswordResetRequestsPanel() {
       }
 
       toast.success(
-        `Senha redefinida com sucesso! Informe ao usuário ${selectedRequest.username} que a nova senha é: ${newPassword}`
+        `Senha redefinida com sucesso Informe ao usuário ${selectedRequest.username} que a nova senha é: ${newPassword}`
       );
       setShowResetDialog(false);
       setSelectedRequest(null);
@@ -216,7 +216,7 @@ export function PasswordResetRequestsPanel() {
       fetchRequests();
     } catch (error) {
       console.error("Erro ao rejeitar solicitação:", error);
-      toast.error("Erro ao rejeitar solicitação");
+      toast.error("Não foi possível rejeitar solicitação");
     } finally {
       setProcessing(false);
     }

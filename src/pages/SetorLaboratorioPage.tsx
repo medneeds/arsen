@@ -112,7 +112,7 @@ const SetorLaboratorioPage = () => {
       setRequests((data as ExamRequest[]) || []);
     } catch (err) {
       console.error("Erro ao carregar requisições:", err);
-      toast.error("Erro ao carregar requisições laboratoriais");
+      toast.error("Não foi possível carregar requisições laboratoriais");
     } finally {
       setLoading(false);
     }
@@ -225,7 +225,7 @@ const SetorLaboratorioPage = () => {
       setResultFiles([]);
       fetchRequests();
     } catch (err) {
-      toast.error("Erro ao atualizar status");
+      toast.error("Não foi possível atualizar status");
     } finally {
       setUpdatingStatus(false);
     }

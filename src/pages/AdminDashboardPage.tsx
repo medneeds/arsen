@@ -314,7 +314,7 @@ const AdminDashboardPage = () => {
       setSearchResults((data as any[]) || []);
     } catch (err) {
       console.error("Error searching:", err);
-      toast.error("Erro ao buscar pacientes");
+      toast.error("Não foi possível buscar pacientes");
     } finally {
       setIsSearching(false);
     }
@@ -462,7 +462,7 @@ const AdminDashboardPage = () => {
       setShowPatientDetail(true);
     } catch (err: any) {
       console.error("Error registering:", err);
-      toast.error("Erro ao cadastrar paciente");
+      toast.error("Não foi possível cadastrar paciente");
     } finally {
       setIsRegistering(false);
     }
@@ -584,7 +584,7 @@ const AdminDashboardPage = () => {
         }
       }
 
-      toast.success("Atendimento iniciado!", {
+      toast.success("Atendimento iniciado", {
         description: `Código: ${(enc as any).encounter_code} → ${sectorDef.label}`,
       });
       setShowNewEncounter(false);
@@ -592,7 +592,7 @@ const AdminDashboardPage = () => {
       loadRecentEncounters();
     } catch (err: any) {
       console.error("Error creating encounter:", err);
-      toast.error("Erro ao criar atendimento", { description: err?.message });
+      toast.error("Não foi possível criar atendimento", { description: err?.message });
     } finally {
       setIsCreatingEncounter(false);
     }
@@ -754,14 +754,14 @@ const AdminDashboardPage = () => {
         if (paErr) console.warn("Pre-admissão falhou:", paErr);
       }
 
-      toast.success("Cadastro Express criado!", {
+      toast.success("Cadastro Express criado", {
         description: `${niCode || "Identificado"} • Atd ${(enc as any).encounter_code} → ${sectorDef.label}`,
       });
       setShowTriageExpress(false);
       loadRecentEncounters();
     } catch (err: any) {
       console.error("Erro Cadastro Express:", err);
-      toast.error("Falha no Cadastro Express", { description: err?.message });
+      toast.error("O paciente não foi cadastrado. Tente novamente.", { description: err?.message });
     } finally {
       setIsCreatingEncounter(false);
     }
@@ -781,7 +781,7 @@ const AdminDashboardPage = () => {
         setShowNewEncounter(true);
       }
     } catch (err: any) {
-      toast.error("Erro ao carregar paciente", { description: err?.message });
+      toast.error("Não foi possível carregar paciente", { description: err?.message });
     }
   };
 

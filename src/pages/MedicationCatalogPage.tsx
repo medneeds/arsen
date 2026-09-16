@@ -120,7 +120,7 @@ export default function MedicationCatalogPage() {
       setEditingId(null);
       toast.success("Evidência atualizada");
     } catch (err: any) {
-      toast.error("Erro ao salvar: " + (err.message || "permissão negada"));
+      toast.error("Não foi possível salvar");
     } finally {
       setSavingId(null);
     }
@@ -148,7 +148,7 @@ export default function MedicationCatalogPage() {
 
       setMedications(meds);
     } catch (err) {
-      toast.error("Erro ao carregar catálogo de medicamentos");
+      toast.error("Não foi possível carregar catálogo de medicamentos");
     } finally {
       setLoading(false);
     }
@@ -211,7 +211,7 @@ export default function MedicationCatalogPage() {
               toast.success(data.message || `${data.inserted} medicamentos importados`);
               if (data.inserted > 0) fetchCatalog();
             } catch (err: any) {
-              toast.error("Erro na importação: " + (err.message || "Erro desconhecido"));
+              toast.error("Nenhum item foi importado. Verifique o arquivo e tente novamente.");
             } finally {
               setImporting(false);
             }

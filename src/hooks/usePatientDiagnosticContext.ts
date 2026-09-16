@@ -97,7 +97,7 @@ export function usePatientDiagnosticContext(patientId: string | null) {
       return true;
     } catch (err: any) {
       console.error("[usePatientDiagnosticContext] persist error", err);
-      if (!opts?.silent) toast.error("Erro ao salvar: " + (err.message || "desconhecido"));
+      if (!opts?.silent) toast.error("Não foi possível salvar");
       return false;
     } finally {
       setSaving(false);

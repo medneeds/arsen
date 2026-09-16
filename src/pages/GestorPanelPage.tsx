@@ -798,7 +798,7 @@ export default function GestorPanelPage() {
       URL.revokeObjectURL(url);
       toast.success("Relatório exportado com sucesso");
     } catch {
-      toast.error("Erro ao exportar relatório");
+      toast.error("Não foi possível exportar relatório");
     } finally {
       setExporting(false);
     }

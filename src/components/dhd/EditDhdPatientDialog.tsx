@@ -77,12 +77,12 @@ export function EditDhdPatientDialog({
 
       if (error) throw error;
 
-      toast.success("Paciente DHD atualizado com sucesso!");
+      toast.success("Paciente DHD atualizado com sucesso");
       onUpdate();
       onOpenChange(false);
     } catch (error) {
       console.error("Erro ao atualizar paciente DHD:", error);
-      toast.error("Erro ao atualizar paciente DHD");
+      toast.error("Não foi possível atualizar paciente DHD");
     } finally {
       setSaving(false);
     }

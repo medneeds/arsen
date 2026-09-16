@@ -68,7 +68,7 @@ export default function AdminStatesPage() {
       setStates(data || []);
     } catch (error) {
       console.error("Erro ao buscar estados:", error);
-      toast.error("Erro ao carregar estados");
+      toast.error("Não foi possível carregar estados");
     } finally {
       setLoading(false);
     }
@@ -110,14 +110,14 @@ export default function AdminStatesPage() {
           .eq("id", editingState.id);
 
         if (error) throw error;
-        toast.success("Estado atualizado com sucesso!");
+        toast.success("Estado atualizado com sucesso");
       } else {
         const { error } = await supabase
           .from("states")
           .insert(dataToSave);
 
         if (error) throw error;
-        toast.success("Estado cadastrado com sucesso!");
+        toast.success("Estado cadastrado com sucesso");
       }
 
       setIsDialogOpen(false);
@@ -127,7 +127,7 @@ export default function AdminStatesPage() {
       if (error.message?.includes("duplicate")) {
         toast.error("Este estado ou sigla já existe");
       } else {
-        toast.error("Erro ao salvar estado");
+        toast.error("Não foi possível salvar estado");
       }
     } finally {
       setIsSaving(false);
@@ -142,14 +142,14 @@ export default function AdminStatesPage() {
         .eq("id", stateId);
 
       if (error) throw error;
-      toast.success("Estado excluído com sucesso!");
+      toast.success("Estado excluído com sucesso");
       fetchStates();
     } catch (error: any) {
       console.error("Erro ao excluir estado:", error);
       if (error.message?.includes("foreign key")) {
         toast.error("Não é possível excluir: existem unidades vinculadas a este estado");
       } else {
-        toast.error("Erro ao excluir estado");
+        toast.error("Não foi possível excluir estado");
       }
     }
   };

@@ -146,7 +146,7 @@ export function IndividualSignUpForm({
         if (authError.message.includes("User already registered")) {
           toast.error("Usuário já cadastrado");
         } else {
-          toast.error("Erro ao cadastrar: " + authError.message);
+          toast.error("Não foi possível cadastrar: " + authError.message);
         }
         setLoading(false);
         return;
@@ -186,7 +186,7 @@ export function IndividualSignUpForm({
       if (err instanceof z.ZodError) {
         toast.error(err.errors[0].message);
       } else {
-        toast.error("Erro ao validar dados");
+        toast.error("Não foi possível validar dados");
       }
     } finally {
       setLoading(false);

@@ -212,7 +212,7 @@ export function PisRegistrySyncDialog({
 
       toast({
         title: "Prontuário sincronizado",
-        description: `${toApply.length} campo(s) atualizado(s) a partir do PIS.`,
+        description: `${toApply.length} ${(toApply.length) === 1 ? 'campo' : 'campos'} ${(toApply.length) === 1 ? 'atualizado' : 'atualizados'} a partir do PIS.`,
       });
       onResolved?.(true);
       onOpenChange(false);
@@ -238,7 +238,7 @@ export function PisRegistrySyncDialog({
             Sincronizar prontuário com PIS
           </DialogTitle>
           <DialogDescription className="text-xs leading-relaxed">
-            Detectamos <strong>{diff.length}</strong> campo(s) divergentes entre o cadastro central
+            Detectamos <strong>{diff.length}</strong> {diff.length === 1 ? "campo divergente" : "campos divergentes"} entre o cadastro central
             (prontuário) e os dados do PIS ({contextLabel.toLowerCase()}). Revise cada item e marque
             o que deve ser <strong>sobrescrito no prontuário</strong>. Nada é alterado sem sua
             confirmação. Campos vazios no PIS nunca apagam o prontuário.

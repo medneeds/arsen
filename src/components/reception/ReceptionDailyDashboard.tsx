@@ -267,7 +267,7 @@ export function ReceptionDailyDashboard({
       setDeskSessions((sessRes.data as any[]) || []);
     } catch (err: any) {
       console.error("Erro ao carregar painel diário:", err);
-      toast.error("Erro ao carregar painel da recepção", { description: err?.message });
+      toast.error("Não foi possível carregar painel da recepção", { description: err?.message });
     } finally {
       setLoading(false);
     }
@@ -351,7 +351,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
         encounterCode,
       });
     } catch (err: any) {
-      toast.error("Erro ao imprimir", { description: err?.message });
+      toast.error("Não foi possível imprimir", { description: err?.message });
     }
   };
 

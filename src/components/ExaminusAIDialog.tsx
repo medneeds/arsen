@@ -133,13 +133,13 @@ export function ExaminusAIDialog({
       setIsProcessing(false);
       
       if (lines.length > 0) {
-        toast.success(`${lines.length} exame(s) extraído(s) com sucesso!`);
+        toast.success(`${lines.length} ${(lines.length) === 1 ? 'exame' : 'exames'} ${(lines.length) === 1 ? 'extraído' : 'extraídos'} com sucesso`);
       } else {
         toast.warning("Nenhum exame identificado no texto");
       }
     } catch (error) {
       console.error("Erro ao processar:", error);
-      toast.error("Erro ao processar exames com IA");
+      toast.error("Não foi possível processar exames com IA");
       setIsProcessing(false);
       setIsStreaming(false);
     }
@@ -225,7 +225,7 @@ ${extractedExams.join('\n')}`
       if (criticalLine && criticalLine !== "SEM ALTERAÇÕES CRÍTICAS") {
         setFilteredCriticalExams([criticalLine]);
         setShowOnlyCritical(true);
-        toast.success("Valores críticos identificados!");
+        toast.success("Valores críticos identificados");
       } else {
         toast.info("Nenhuma alteração crítica identificada nos exames");
       }
@@ -233,7 +233,7 @@ ${extractedExams.join('\n')}`
       setIsFilteringCritical(false);
     } catch (error) {
       console.error("Erro ao filtrar críticos:", error);
-      toast.error("Erro ao identificar valores críticos");
+      toast.error("Não foi possível identificar valores críticos");
       setIsFilteringCritical(false);
     }
   }, [extractedExams]);
@@ -262,7 +262,7 @@ ${extractedExams.join('\n')}`
     }
     
     onImportExams([...currentExams, ...examsToImport]);
-    toast.success(`${examsToImport.length} exame(s) adicionado(s)!`);
+    toast.success(`${examsToImport.length} ${(examsToImport.length) === 1 ? 'exame' : 'exames'} ${(examsToImport.length) === 1 ? 'adicionado' : 'adicionados'}`);
     handleReset();
     onOpenChange(false);
   };

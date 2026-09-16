@@ -119,7 +119,7 @@ export function PreRegistrationApprovalsPanel() {
       })));
     } catch (e) {
       console.error(e);
-      toast.error("Erro ao carregar pré-cadastros");
+      toast.error("Não foi possível carregar pré-cadastros");
     } finally {
       setLoading(false);
     }
@@ -347,7 +347,7 @@ export function PreRegistrationApprovalsPanel() {
               size="sm"
               onClick={() => {
                 navigator.clipboard.writeText(publicUrl);
-                toast.success("Link copiado!");
+                toast.success("Link copiado");
               }}
             >
               <Copy className="h-4 w-4 mr-1" /> Copiar

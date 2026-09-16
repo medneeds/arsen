@@ -320,7 +320,7 @@ export function PsychotropicFormDialog({
             {blockingEntries.length > 0 && (
               <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
                 <AlertTriangle className="h-4 w-4 mt-1" />
-                <span>{blockingEntries.length} medicamento(s) sem tipo de notificação resolvido — não podem ser impressos.</span>
+                <span>{blockingEntries.length} {blockingEntries.length === 1 ? "medicamento" : "medicamentos"} sem tipo de notificação resolvido — {blockingEntries.length === 1 ? "não pode ser impresso" : "não podem ser impressos"}.</span>
               </div>
             )}
 
@@ -368,7 +368,7 @@ export function PsychotropicFormDialog({
             {blockingEntries.length > 0 && (
               <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
                 <AlertTriangle className="h-4 w-4 mt-1" />
-                <span>{blockingEntries.length} medicamento(s) sem tipo de notificação definido. Selecione antes de imprimir.</span>
+                <span>{blockingEntries.length} {blockingEntries.length === 1 ? "medicamento" : "medicamentos"} sem tipo de notificação definido. Selecione antes de imprimir.</span>
               </div>
             )}
 
@@ -525,7 +525,7 @@ function ReadOnlyPreview({
               <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: meta.color }}>
                 {meta.label}
               </span>
-              <span className="text-xs text-muted-foreground">{list.length} item(s)</span>
+              <span className="text-xs text-muted-foreground">{list.length} {list.length === 1 ? "item" : "itens"}</span>
             </div>
             <div className="divide-y divide-current/10">
               {list.map(e => (

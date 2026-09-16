@@ -166,7 +166,7 @@ export function OPMEDialog({
       toast.success("Registro de OPME salvo");
       handlePrint();
     } catch (err: any) {
-      toast.error(`Erro ao salvar: ${err.message}`);
+      toast.error(`Não foi possível salvar`);
     } finally {
       setSaving(false);
     }

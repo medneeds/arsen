@@ -174,7 +174,7 @@ export default function UserManagementPage() {
       setUsers(usersWithRoles);
     } catch (error) {
       console.error("Error fetching users:", error);
-      toast.error("Erro ao carregar usuários");
+      toast.error("Não foi possível carregar usuários");
     } finally {
       setLoading(false);
     }
@@ -209,7 +209,7 @@ export default function UserManagementPage() {
       setDetailsOpen(false);
     } catch (error) {
       console.error("Error approving user:", error);
-      toast.error("Erro ao aprovar usuário");
+      toast.error("Não foi possível aprovar usuário");
     } finally {
       setActionLoading(false);
     }
@@ -244,7 +244,7 @@ export default function UserManagementPage() {
       setDetailsOpen(false);
     } catch (error) {
       console.error("Error rejecting user:", error);
-      toast.error("Erro ao rejeitar usuário");
+      toast.error("Não foi possível rejeitar usuário");
     } finally {
       setActionLoading(false);
     }
@@ -275,7 +275,7 @@ export default function UserManagementPage() {
       setDetailsOpen(false);
     } catch (error) {
       console.error("Error suspending user:", error);
-      toast.error("Erro ao suspender usuário");
+      toast.error("Não foi possível suspender usuário");
     } finally {
       setActionLoading(false);
     }
@@ -306,7 +306,7 @@ export default function UserManagementPage() {
       setDetailsOpen(false);
     } catch (error) {
       console.error("Error reactivating user:", error);
-      toast.error("Erro ao reativar usuário");
+      toast.error("Não foi possível reativar usuário");
     } finally {
       setActionLoading(false);
     }
@@ -353,7 +353,7 @@ export default function UserManagementPage() {
       fetchUsers();
     } catch (error) {
       console.error("Error updating role:", error);
-      toast.error("Erro ao atualizar papel");
+      toast.error("Não foi possível atualizar papel");
     } finally {
       setActionLoading(false);
     }

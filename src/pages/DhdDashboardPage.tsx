@@ -57,7 +57,7 @@ export default function DhdDashboardPage() {
       setPatients(data as any || []);
     } catch (error) {
       console.error("Erro ao buscar pacientes DHD:", error);
-      toast.error("Erro ao carregar pacientes DHD");
+      toast.error("Não foi possível carregar pacientes DHD");
     } finally {
       setLoading(false);
     }
@@ -97,7 +97,7 @@ export default function DhdDashboardPage() {
       fetchPatients();
     } catch (error) {
       console.error("Erro ao atualizar dia de medicação:", error);
-      toast.error("Erro ao marcar dia de medicação");
+      toast.error("Não foi possível marcar dia de medicação");
     }
   };
 
@@ -112,13 +112,13 @@ export default function DhdDashboardPage() {
 
       if (error) throw error;
 
-      toast.success("Programa DHD finalizado com sucesso!");
+      toast.success("Programa DHD finalizado com sucesso");
       setCompletionDialogOpen(false);
       setSelectedPatient(null);
       fetchPatients();
     } catch (error) {
       console.error("Erro ao finalizar programa:", error);
-      toast.error("Erro ao finalizar programa DHD");
+      toast.error("Não foi possível finalizar programa DHD");
     }
   };
 

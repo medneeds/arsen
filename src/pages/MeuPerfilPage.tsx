@@ -116,7 +116,7 @@ export default function MeuPerfilPage() {
         .eq("id", user.id)
         .maybeSingle();
       if (error) {
-        toast.error("Falha ao carregar perfil");
+        toast.error("Não foi possível carregar perfil");
         setLoading(false);
         return;
       }
@@ -159,7 +159,7 @@ export default function MeuPerfilPage() {
     if (error) {
       if (error.message.includes("cpf")) toast.error("Este CPF já está em uso por outro usuário");
       else if (error.message.includes("username")) toast.error("Este nome de usuário já está em uso");
-      else toast.error("Falha ao salvar: " + error.message);
+      else toast.error("Não foi possível salvar");
       return;
     }
     toast.success("Dados atualizados");
@@ -175,7 +175,7 @@ export default function MeuPerfilPage() {
     const { error } = await supabase.auth.updateUser({ password: pwd.newPassword });
     setPwdSaving(false);
     if (error) {
-      toast.error("Falha ao atualizar senha: " + error.message);
+      toast.error("Não foi possível atualizar senha");
       return;
     }
     setPwd({ newPassword: "", confirm: "" });
@@ -193,7 +193,7 @@ export default function MeuPerfilPage() {
     });
     setResetSending(false);
     if (error) {
-      toast.error("Falha ao enviar email: " + error.message);
+      toast.error("Não foi possível enviar email");
       return;
     }
     toast.success(`Link de redefinição enviado para ${user.email}`);

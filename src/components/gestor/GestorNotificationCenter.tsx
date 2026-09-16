@@ -58,7 +58,7 @@ function buildNotifications(d: GestorMetricsForNotifications): GNotification[] {
     list.push({
       id: "door-patients",
       level: d.bedStats.doorPatients >= 5 ? "critical" : "warning",
-      title: `${d.bedStats.doorPatients} paciente(s) em "porta"`,
+      title: `${d.bedStats.doorPatients} ${(d.bedStats.doorPatients) === 1 ? 'paciente' : 'pacientes'} em "porta"`,
       message: "Pacientes aguardando vaga. Acionar regulação interna (NIR).",
       icon: Users,
     });
@@ -69,7 +69,7 @@ function buildNotifications(d: GestorMetricsForNotifications): GNotification[] {
     list.push({
       id: "clin-critical",
       level: "critical",
-      title: `${critical.length} alerta(s) clínico(s) crítico(s)`,
+      title: `${critical.length} ${(critical.length) === 1 ? 'alerta' : 'alertas'} ${(critical.length) === 1 ? 'clínico crítico' : 'clínicos críticos'}`,
       message: "Pacientes graves identificados nos setores. Verificar painel de alertas.",
       icon: AlertTriangle,
     });
@@ -92,7 +92,7 @@ function buildNotifications(d: GestorMetricsForNotifications): GNotification[] {
       list.push({
         id: "presc-validation",
         level: "info",
-        title: `${unvalidated} prescrição(ões) sem validação farmacêutica`,
+        title: `${unvalidated} ${(unvalidated) === 1 ? 'prescrição' : 'prescrições'} sem validação farmacêutica`,
         message: "Acompanhar produtividade da farmácia clínica.",
         icon: Pill,
       });

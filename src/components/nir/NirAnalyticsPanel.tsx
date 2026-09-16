@@ -119,7 +119,7 @@ export function NirAnalyticsPanel({ metrics, historical, heatmap, flow }: Props)
                           <div
                             key={`${wd}-${h}`}
                             className={cn("aspect-square rounded-md flex items-center justify-center text-xs font-semibold text-white", heatmapColor(v, heatmapMax))}
-                            title={`${wd} ${h}h — ${v} solicitação(ões)`}
+                            title={`${wd} ${h}h — ${v} ${(v) === 1 ? 'solicitação' : 'solicitações'}`}
                           >
                             {v > 0 ? v : ""}
                           </div>

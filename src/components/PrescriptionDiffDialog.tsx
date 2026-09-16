@@ -123,7 +123,7 @@ export function PrescriptionDiffDialog({
         setLeftItems(Array.isArray(left?.items) ? (left!.items as any[]) : []);
         setRightItems(Array.isArray(right?.items) ? (right!.items as any[]) : []);
       } catch (err: any) {
-        toast.error("Erro ao carregar versões", { description: err?.message });
+        toast.error("Não foi possível carregar versões", { description: err?.message });
       } finally {
         if (!cancelled) setLoading(false);
       }

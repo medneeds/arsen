@@ -112,7 +112,7 @@ function DischargeSummaryTab({ patient }: { patient: PatientCtx }) {
   };
 
   const handleSave = () => {
-    toast.success("Sumário de alta salvo com sucesso!");
+    toast.success("Sumário de alta salvo com sucesso");
   };
 
   return (
@@ -355,7 +355,7 @@ function ReferralTab({ patient }: { patient: PatientCtx }) {
   });
 
   const handleSend = () => {
-    toast.success("Encaminhamento registrado com sucesso!");
+    toast.success("Encaminhamento registrado com sucesso");
   };
 
   return (

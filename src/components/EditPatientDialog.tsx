@@ -252,7 +252,7 @@ export function EditPatientDialog({
                       ? [
                           formData.medicalResponsibility?.type?.toUpperCase(),
                           (formData.medicalResponsibility?.specialties?.length ?? 0) > 0
-                            ? `${formData.medicalResponsibility!.specialties!.length} especialidade(s)`
+                            ? `${formData.medicalResponsibility!.specialties!.length} ${(formData.medicalResponsibility!.specialties!.length) === 1 ? 'especialidade' : 'especialidades'}`
                             : null,
                         ].filter(Boolean).join(" · ")
                       : "Definir especialidades envolvidas"}

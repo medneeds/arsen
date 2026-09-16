@@ -113,7 +113,7 @@ const SetorImagemPage = () => {
       setRequests((data as ExamRequest[]) || []);
     } catch (err) {
       console.error("Erro ao carregar requisições:", err);
-      toast.error("Erro ao carregar requisições de imagem");
+      toast.error("Não foi possível carregar requisições de imagem");
     } finally {
       setLoading(false);
     }
@@ -234,7 +234,7 @@ const SetorImagemPage = () => {
       setResultFiles([]);
       fetchRequests();
     } catch (err) {
-      toast.error("Erro ao atualizar status");
+      toast.error("Não foi possível atualizar status");
     } finally {
       setUpdatingStatus(false);
     }

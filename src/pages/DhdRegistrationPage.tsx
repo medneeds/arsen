@@ -34,7 +34,7 @@ export default function DhdRegistrationPage() {
     e.preventDefault();
     
     if (!user || !currentState || !currentHospital) {
-      toast.error("Erro: Dados de autenticação não encontrados");
+      toast.error("Sua sessão expirou. Entre novamente para continuar.");
       return;
     }
 
@@ -64,11 +64,11 @@ export default function DhdRegistrationPage() {
 
       if (error) throw error;
 
-      toast.success("Paciente DHD cadastrado com sucesso!");
+      toast.success("Paciente DHD cadastrado com sucesso");
       navigate("/dhd");
     } catch (error) {
       console.error("Erro ao cadastrar paciente DHD:", error);
-      toast.error("Erro ao cadastrar paciente DHD");
+      toast.error("Não foi possível cadastrar paciente DHD");
     } finally {
       setSaving(false);
     }

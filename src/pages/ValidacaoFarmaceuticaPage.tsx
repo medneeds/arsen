@@ -133,7 +133,7 @@ const ValidacaoFarmaceuticaPage = () => {
       setPrescriptions(merged);
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao carregar prescrições");
+      toast.error("Não foi possível carregar prescrições");
     } finally {
       setLoading(false);
     }
@@ -244,7 +244,7 @@ const ValidacaoFarmaceuticaPage = () => {
       fetchPrescriptions();
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao salvar validação");
+      toast.error("Não foi possível salvar validação");
     } finally {
       setValidating(false);
     }

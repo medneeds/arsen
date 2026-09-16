@@ -61,7 +61,7 @@ function copyValue(value: string | null | undefined, label: string) {
   if (!value) return;
   navigator.clipboard.writeText(value).then(
     () => toast.success(`${label} copiado`),
-    () => toast.error("Falha ao copiar"),
+    () => toast.error("Não foi possível copiar"),
   );
 }
 

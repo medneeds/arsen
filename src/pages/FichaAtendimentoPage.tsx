@@ -395,7 +395,7 @@ const FichaAtendimentoPage = () => {
         setEncounters(allEncounters);
       } catch (err) {
         console.error("Error fetching ficha data:", err);
-        toast.error("Erro ao carregar dados do atendimento");
+        toast.error("Não foi possível carregar dados do atendimento");
       } finally {
         setLoading(false);
       }

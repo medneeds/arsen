@@ -167,7 +167,7 @@ export default function AdminCoordinatorsPage() {
       }
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
-      toast.error("Erro ao carregar dados");
+      toast.error("Não foi possível carregar dados");
     } finally {
       setLoading(false);
     }
@@ -230,12 +230,12 @@ export default function AdminCoordinatorsPage() {
         await supabase.from("user_departments").insert(deptInserts);
       }
 
-      toast.success("Coordenador atribuído com sucesso!");
+      toast.success("Coordenador atribuído com sucesso");
       setIsDialogOpen(false);
       fetchData();
     } catch (error: any) {
       console.error("Erro ao salvar:", error);
-      toast.error("Erro ao atribuir coordenador");
+      toast.error("Não foi possível atribuir coordenador");
     } finally {
       setIsSaving(false);
     }
@@ -249,11 +249,11 @@ export default function AdminCoordinatorsPage() {
         .eq("id", assignmentId);
 
       if (error) throw error;
-      toast.success("Atribuição removida com sucesso!");
+      toast.success("Atribuição removida com sucesso");
       fetchData();
     } catch (error) {
       console.error("Erro ao remover:", error);
-      toast.error("Erro ao remover atribuição");
+      toast.error("Não foi possível remover atribuição");
     }
   };
 

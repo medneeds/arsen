@@ -108,7 +108,7 @@ export function UserApprovalsPanel() {
       setProfiles((data as any) || []);
     } catch (e) {
       console.error(e);
-      toast.error("Erro ao carregar cadastros");
+      toast.error("Não foi possível carregar cadastros");
     } finally {
       setLoading(false);
     }
@@ -171,7 +171,7 @@ export function UserApprovalsPanel() {
 
       if (updErr) {
         console.error("[Aprovação] erro no UPDATE profiles:", updErr);
-        toast.error(`Erro ao processar decisão: ${updErr.message}`);
+        toast.error(`Não foi possível processar decisão: ${updErr.message}`);
         return;
       }
 
@@ -194,7 +194,8 @@ export function UserApprovalsPanel() {
       fetchProfiles();
     } catch (e: any) {
       console.error("[Aprovação] erro inesperado:", e);
-      toast.error(`Erro: ${e?.message || "falha inesperada"}`);
+      toast.error("A solicitação não foi processada. Tente novamente.");
+      console.error("[Arsen] aprovação de usuário:", e);
     } finally {
       setActing(false);
     }
@@ -213,7 +214,7 @@ export function UserApprovalsPanel() {
       setHistory((data as any) || []);
     } catch (e) {
       console.error(e);
-      toast.error("Erro ao carregar histórico");
+      toast.error("Não foi possível carregar histórico");
       setHistory([]);
     } finally {
       setHistoryLoading(false);

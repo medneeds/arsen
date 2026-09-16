@@ -98,7 +98,7 @@ export function UserAuditHistoryPanel() {
     if (actionFilter !== "all") q = q.eq("action", actionFilter);
     const { data, count, error } = await q;
     if (error) {
-      toast.error("Falha ao carregar histórico");
+      toast.error("Não foi possível carregar histórico");
     } else {
       setRows((data ?? []) as AuditRow[]);
       setTotal(count ?? 0);

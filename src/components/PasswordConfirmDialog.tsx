@@ -101,7 +101,7 @@ export function PasswordConfirmDialog({
       setPassword("");
       onOpenChange(false);
     } catch (err) {
-      toast.error("Erro ao validar senha");
+      toast.error("Não foi possível validar senha");
     } finally {
       setLoading(false);
     }

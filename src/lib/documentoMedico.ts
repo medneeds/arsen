@@ -73,7 +73,7 @@ export async function printDocumentoMedico(
   const logoDataUrl = await prepareLogo();
   const bodyHtml = buildDocumentoMedicoBody(data);
   const { title, prefix } = TYPE_META[data.type];
-  const subtitle = data.type === "atestado" && data.days ? `Afastamento de ${data.days} dia(s)` : undefined;
+  const subtitle = data.type === "atestado" && data.days ? `Afastamento de ${data.days} ${(data.days) === 1 ? 'dia' : 'dias'}` : undefined;
 
   const html = buildNormaZeroDocument({
     title,

@@ -59,11 +59,11 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
           terms_version: CURRENT_TERMS_VERSION,
         })
         .eq("id", userId);
-      toast.success("Termos aceitos com sucesso!");
+      toast.success("Termos aceitos com sucesso");
       onAccept();
     } catch (error) {
       console.error("Erro ao registrar consentimento:", error);
-      toast.error("Erro ao registrar consentimento. Tente novamente.");
+      toast.error("Não foi possível registrar consentimento. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }

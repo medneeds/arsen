@@ -349,7 +349,7 @@ const ClinicalDashboardPage = () => {
                         <div>
                           <p className="text-xs font-medium text-muted-foreground tracking-wider">Alertas</p>
                           <p className="text-2xl font-semibold text-foreground mt-1">{criticalAlerts.length + warningAlerts.length}</p>
-                          <p className="text-xs text-muted-foreground">{criticalAlerts.length} crítico(s)</p>
+                          <p className="text-xs text-muted-foreground">{criticalAlerts.length} {criticalAlerts.length === 1 ? "crítico" : "críticos"}</p>
                         </div>
                         <div className={cn(
                           "h-10 w-10 rounded-lg flex items-center justify-center",
@@ -372,7 +372,7 @@ const ClinicalDashboardPage = () => {
                         <div>
                           <p className="text-xs font-medium text-muted-foreground tracking-wider">Solicitações</p>
                           <p className="text-2xl font-semibold text-foreground mt-1">{pendingBedRequests}</p>
-                          <p className="text-xs text-muted-foreground">pedido(s) de leito</p>
+                          <p className="text-xs text-muted-foreground">pedidos de leito</p>
                         </div>
                         <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
                           <ClipboardList className="h-5 w-5 text-primary" />

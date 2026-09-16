@@ -69,7 +69,7 @@ export default function DhdHistoryPage() {
       setPatients(data as any || []);
     } catch (error) {
       console.error("Erro ao buscar histórico DHD:", error);
-      toast.error("Erro ao carregar histórico DHD");
+      toast.error("Não foi possível carregar histórico DHD");
     } finally {
       setLoading(false);
     }

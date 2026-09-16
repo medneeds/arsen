@@ -47,11 +47,11 @@ export async function repointPatientHistory(
       verificationWarning = msg;
     } else if (count && count > 0) {
       console.error(
-        `[repointPatientHistory] integridade: ${count} evolução(ões) ainda no leito origem após RPC`,
+        `[repointPatientHistory] integridade: ${count} ${(count) === 1 ? 'evolução' : 'evoluções'} ainda no leito origem após RPC`,
       );
       return {
         ok: false,
-        error: `Histórico clínico não migrado completamente: ${count} evolução(ões) ainda no leito de origem. Tente a transferência novamente.`,
+        error: `Histórico clínico não migrado completamente: ${count} ${(count) === 1 ? 'evolução' : 'evoluções'} ainda no leito de origem. Tente a transferência novamente.`,
       };
     }
 
@@ -83,11 +83,11 @@ export async function repointPatientHistory(
           : msg2;
       } else if (nullCount && nullCount > 0) {
         console.error(
-          `[repointPatientHistory] integridade: ${nullCount} evolução(ões) com patient_id nulo após RPC`,
+          `[repointPatientHistory] integridade: ${nullCount} ${(nullCount) === 1 ? 'evolução' : 'evoluções'} com patient_id nulo após RPC`,
         );
         return {
           ok: false,
-          error: `Histórico clínico não migrado completamente: ${nullCount} registro(s) sem vínculo de leito. Tente a transferência novamente.`,
+          error: `Histórico clínico não migrado completamente: ${nullCount} ${(nullCount) === 1 ? 'registro' : 'registros'} sem vínculo de leito. Tente a transferência novamente.`,
         };
       }
     }

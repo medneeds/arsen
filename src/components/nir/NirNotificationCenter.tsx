@@ -80,7 +80,7 @@ function buildNotifications(metrics: any): NirNotification[] {
       id: "stuck-24h",
       level: "warning",
       category: "tempo",
-      title: `${metrics.stuck24h.length} paciente(s) aguardando vaga há +24h`,
+      title: `${metrics.stuck24h.length} ${(metrics.stuck24h.length) === 1 ? 'paciente' : 'pacientes'} aguardando vaga há +24h`,
       message: "Revisar fluxo de regulação e prioridades.",
       ts: now,
     });
@@ -92,7 +92,7 @@ function buildNotifications(metrics: any): NirNotification[] {
       id: "sisreg",
       level: "warning",
       category: "sisreg",
-      title: `${metrics.sisregStuck.length} solicitação(ões) SISREG sem resposta +12h`,
+      title: `${metrics.sisregStuck.length} ${(metrics.sisregStuck.length) === 1 ? 'solicitação' : 'solicitações'} SISREG sem resposta +12h`,
       message: "Acionar central de regulação externa.",
       ts: now,
     });
@@ -104,7 +104,7 @@ function buildNotifications(metrics: any): NirNotification[] {
       id: "cleaning",
       level: "info",
       category: "tempo",
-      title: `${metrics.longCleaning.length} leito(s) em higienização há +4h`,
+      title: `${metrics.longCleaning.length} ${(metrics.longCleaning.length) === 1 ? 'leito' : 'leitos'} em higienização há +4h`,
       message: "Verificar processo de hotelaria/limpeza.",
       ts: now,
     });

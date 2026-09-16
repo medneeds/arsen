@@ -848,7 +848,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
       }
     } catch (error) {
       console.error('Error getting CID code:', error);
-      toast.error("Erro ao buscar código CID");
+      toast.error("Não foi possível buscar código CID");
     } finally {
       setLoadingCid(null);
     }
@@ -4638,7 +4638,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
               .eq('id', patient.id)
               .maybeSingle();
             if (fetchError) throw fetchError;
-            toast.success(`${templateItems.length} item(ns) do protocolo adicionado(s)`);
+            toast.success(`${templateItems.length} ${(templateItems.length) === 1 ? 'item' : 'itens'} do protocolo ${(templateItems.length) === 1 ? 'adicionado' : 'adicionados'}`);
             if (updatedPatient) {
               const mappedPatient: Patient = {
                 id: updatedPatient.id,
@@ -4710,7 +4710,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
             if (fetchError) throw fetchError;
 
-            toast.success(`${templates.length} template(s) adicionado(s)`);
+            toast.success(`${templates.length} ${(templates.length) === 1 ? 'template' : 'templates'} ${(templates.length) === 1 ? 'adicionado' : 'adicionados'}`);
             
             // Update UI with fresh data - map database fields to Patient type
             if (updatedPatient) {
@@ -4784,7 +4784,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
             if (fetchError) throw fetchError;
 
-            toast.success(`${curves.length} curva(s) adicionada(s)`);
+            toast.success(`${curves.length} ${(curves.length) === 1 ? 'curva' : 'curvas'} ${(curves.length) === 1 ? 'adicionada' : 'adicionadas'}`);
             
             // Update UI with fresh data
             if (updatedPatient) {

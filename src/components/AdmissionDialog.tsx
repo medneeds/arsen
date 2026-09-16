@@ -678,7 +678,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
       onOpenChange(false);
       onSuccess?.();
     } catch (e: any) {
-      toast.error("Erro ao registrar admissão: " + (e.message || e));
+      toast.error("Não foi possível registrar admissão: " + (e.message || e));
     } finally {
       setSubmitting(false);
     }

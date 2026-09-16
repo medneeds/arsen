@@ -86,7 +86,7 @@ export function NirDischargeForecast({ hospitalUnitId }: Props) {
                   <div key={bucket}>
                     <div className="flex items-center gap-2 mb-2">
                       <Badge variant="outline" className={cn("text-xs", BUCKET_META[bucket].tone)}>{BUCKET_META[bucket].label}</Badge>
-                      <span className="text-xs text-muted-foreground">{items.length} paciente(s)</span>
+                      <span className="text-xs text-muted-foreground">{items.length} {items.length === 1 ? "paciente" : "pacientes"}</span>
                     </div>
                     <ul className="divide-y border rounded-md">
                       {items.map((p) => (

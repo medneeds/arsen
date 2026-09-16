@@ -3761,7 +3761,7 @@ function ExtraPrescriptionDialog({
         categoryLabel: categoryConfigLabel,
       });
     } catch (err: any) {
-      toast.error("Erro ao gerar PDF da prescrição extra", { description: err?.message });
+      toast.error("Não foi possível gerar PDF da prescrição extra", { description: err?.message });
     }
   };
 
@@ -5327,7 +5327,7 @@ const PrescricaoPage = () => {
     } catch (err: any) {
       console.error('[persistItems] persist failed', err);
       if (!opts.silent) {
-        toast.error("Erro ao persistir alteração", {
+        toast.error("Não foi possível persistir alteração", {
           description: "A alteração ficou apenas em memória. Salve manualmente para garantir.",
         });
       }
@@ -5622,7 +5622,7 @@ const PrescricaoPage = () => {
         const miss = itemMissingMap.get(i.id) || [];
         return `• ${i.name}: ${miss.join(', ')}`;
       });
-      const extra = blockedValidationItems.length > 4 ? `\n+ ${blockedValidationItems.length - 4} outro(s)` : '';
+      const extra = blockedValidationItems.length > 4 ? `\n+ ${blockedValidationItems.length - 4} ${(blockedValidationItems.length - 4) === 1 ? 'outro' : 'outros'}` : '';
       toast.error("Validação bloqueada — campos obrigatórios faltando", {
         description: lines.join('\n') + extra,
         duration: 6000,
@@ -6009,7 +6009,7 @@ const PrescricaoPage = () => {
       });
       fetchDispensations();
     } catch (err: any) {
-      toast.error("Erro ao registrar dispensação", { description: err.message });
+      toast.error("Não foi possível registrar dispensação", { description: err.message });
     }
   }, [currentPrescriptionId, currentHospital, currentState, items, patient, user, fetchDispensations]);
 
@@ -6450,7 +6450,7 @@ const PrescricaoPage = () => {
       isFirstDay: d1Items.length > 0,
       names: newItems.map(it => it.name),
     });
-    toast.success(`${newItems.length} antimicrobiano(s) adicionado(s) à prescrição via Guia ATM`);
+    toast.success(`${newItems.length} ${(newItems.length) === 1 ? 'antimicrobiano' : 'antimicrobianos'} ${(newItems.length) === 1 ? 'adicionado' : 'adicionados'} à prescrição via Guia ATM`);
   }, []);
 
   // Estado do pop-up de pré-visualização do perfil de cuidado
@@ -6659,7 +6659,7 @@ const PrescricaoPage = () => {
         );
         return nextItems;
       });
-      toast.success(`${selectedIds.size} item(ns) suspenso(s)`);
+      toast.success(`${selectedIds.size} ${(selectedIds.size) === 1 ? 'item' : 'itens'} ${(selectedIds.size) === 1 ? 'suspenso' : 'suspensos'}`);
       setSelectedIds(new Set());
     } else if (suspendTarget.id) {
       setItems(prev => {
@@ -6718,7 +6718,7 @@ const PrescricaoPage = () => {
 
   const deleteSelected = useCallback(() => {
     setItems(prev => prev.filter(item => !selectedIds.has(item.id)));
-    toast.success(`${selectedIds.size} item(ns) excluído(s)`);
+    toast.success(`${selectedIds.size} ${(selectedIds.size) === 1 ? 'item' : 'itens'} ${(selectedIds.size) === 1 ? 'excluído' : 'excluídos'}`);
     setSelectedIds(new Set());
   }, [selectedIds]);
 
@@ -6729,7 +6729,7 @@ const PrescricaoPage = () => {
         .map(item => ({ ...item, id: crypto.randomUUID(), status: 'active' as const, suspensionReason: undefined, suspendedAt: undefined }));
       return [...prev, ...duplicates];
     });
-    toast.success(`${selectedIds.size} item(ns) duplicado(s)`);
+    toast.success(`${selectedIds.size} ${(selectedIds.size) === 1 ? 'item' : 'itens'} ${(selectedIds.size) === 1 ? 'duplicado' : 'duplicados'}`);
     setSelectedIds(new Set());
   }, [selectedIds]);
 
@@ -6936,7 +6936,7 @@ const PrescricaoPage = () => {
       if (childErr) throw childErr;
       if (children && children.length > 0) {
         const desc = children.map((c: any) => `v${c.version} (${c.status})`).join(', ');
-        throw new Error(`Esta prescrição tem ${children.length} versão(ões) derivada(s): ${desc}. Exclusão bloqueada para preservar o histórico clínico.`);
+        throw new Error(`Esta prescrição tem ${children.length} ${(children.length) === 1 ? 'versão' : 'versões'} ${(children.length) === 1 ? 'derivada' : 'derivadas'}: ${desc}. Exclusão bloqueada para preservar o histórico clínico.`);
       }
       // Blindagem 3: nunca apagar se houver, para o mesmo paciente/unidade, uma prescrição assinada mais recente
       const { data: signedAfter, error: signedErr } = await supabase
@@ -7376,7 +7376,7 @@ const PrescricaoPage = () => {
         fetchVersionHistory(id);
       }
     } catch (err: any) {
-      toast.error("Erro ao carregar prescrição", { description: err.message });
+      toast.error("Não foi possível carregar prescrição", { description: err.message });
     }
   }, [fetchVersionHistory]);
 
@@ -7480,7 +7480,7 @@ const PrescricaoPage = () => {
       // Pré-seleciona todos
       setRepeatSelectedIds(new Set(sourceItems.map(i => i.id)));
     } catch (err: any) {
-      toast.error("Erro ao buscar prescrição anterior", { description: err.message });
+      toast.error("Não foi possível buscar prescrição anterior", { description: err.message });
       setRepeatDialogOpen(false);
     } finally {
       setRepeatLoading(false);
@@ -7505,7 +7505,7 @@ const PrescricaoPage = () => {
         isExtra: false,
       }));
     setItems(prev => [...prev, ...cloned]);
-    toast.success(`${cloned.length} item(ns) repetido(s) da prescrição anterior`);
+    toast.success(`${cloned.length} ${(cloned.length) === 1 ? 'item' : 'itens'} ${(cloned.length) === 1 ? 'repetido' : 'repetidos'} da prescrição anterior`);
     setRepeatDialogOpen(false);
     setRepeatSourceItems([]);
     setRepeatSelectedIds(new Set());
@@ -7546,13 +7546,13 @@ const PrescricaoPage = () => {
     }
     if (added === 0) {
       toast.info("Nenhum item novo para somar", {
-        description: skipped > 0 ? `${skipped} item(ns) já existem no rascunho atual.` : undefined,
+        description: skipped > 0 ? `${skipped} ${(skipped) === 1 ? 'item' : 'itens'} já existem no rascunho atual.` : undefined,
       });
       return;
     }
     setItems(prev => [...prev, ...cloned]);
-    toast.success(`v${source.version} restaurada — ${added} item(ns) somado(s)`, {
-      description: skipped > 0 ? `${skipped} duplicado(s) ignorado(s).` : "Revise e assine quando estiver pronto.",
+    toast.success(`v${source.version} restaurada — ${added} ${(added) === 1 ? 'item' : 'itens'} ${(added) === 1 ? 'somado' : 'somados'}`, {
+      description: skipped > 0 ? `${skipped} ${(skipped) === 1 ? 'duplicado' : 'duplicados'} ${(skipped) === 1 ? 'ignorado' : 'ignorados'}.` : "Revise e assine quando estiver pronto.",
     });
   }, [items]);
 
@@ -7625,7 +7625,7 @@ const PrescricaoPage = () => {
     setItems((prev) => [...prev, ...cloned]);
     bumpQuickTemplateUse(tpl.id);
     toast.success(`Template aplicado: ${tpl.name}`, {
-      description: `${cloned.length} item(ns) adicionado(s) à prescrição`,
+      description: `${cloned.length} ${(cloned.length) === 1 ? 'item' : 'itens'} ${(cloned.length) === 1 ? 'adicionado' : 'adicionados'} à prescrição`,
     });
     setQuickTemplatesDialogOpen(false);
   }, [bumpQuickTemplateUse, mapTemplateCategory]);
@@ -7678,7 +7678,7 @@ const PrescricaoPage = () => {
       fetchPrescriptions();
     } catch (err: any) {
       const detail = err?.message || err?.toString() || "Verifique sua conexão e tente novamente.";
-      toast.error("Erro ao salvar prescrição", {
+      toast.error("Não foi possível salvar prescrição", {
         description: detail.length < 200 ? detail : "Falha no servidor. Verifique se há itens com campos obrigatórios em branco e tente novamente.",
         duration: 7000,
       });
@@ -7958,7 +7958,7 @@ const PrescricaoPage = () => {
       await persistItems(items, { sigOverride: null, autoNewVersionIfSigned: true });
       const savedAt = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
       toast.success(`Rascunho salvo às ${savedAt}`, {
-        description: `${renewalPendingCount} item(ns) pendente(s) preservado(s). Marcado com ponto cinza no calendário (some às 05h).`,
+        description: `${renewalPendingCount} ${(renewalPendingCount) === 1 ? 'item' : 'itens'} ${(renewalPendingCount) === 1 ? 'pendente preservado' : 'pendentes preservados'}. Marcado com ponto cinza no calendário (some às 05h).`,
       });
     } catch {
       // persistItems já reportou erro
@@ -8071,7 +8071,7 @@ const PrescricaoPage = () => {
           description: `${renewedItems.length} itens renovados${includeSuspended ? ' (incluindo suspensos reativados)' : ''}.`,
         });
       } catch (err: any) {
-        toast.error("Erro ao renovar prescrição", { description: err.message });
+        toast.error("Não foi possível renovar prescrição", { description: err.message });
       } finally {
         setSaving(false);
       }
@@ -10036,7 +10036,7 @@ const PrescricaoPage = () => {
             title={
               renewalPendingCount === 0
                 ? "Nenhum item pendente — só salva rascunho com itens ainda não validados"
-                : `Salvar ${renewalPendingCount} item(ns) pendente(s) como rascunho (visível só p/ você)`
+                : `Salvar ${renewalPendingCount} ${(renewalPendingCount) === 1 ? 'item' : 'itens'} ${(renewalPendingCount) === 1 ? 'pendente' : 'pendentes'} como rascunho (visível só p/ você)`
             }
           >
             <Save className="h-3.5 w-3.5" />
@@ -10344,7 +10344,7 @@ const PrescricaoPage = () => {
           setItems(prev => [...prev, ...newItems]);
           const agoraCount = newItems.filter(i => isNowInterval(i.posology) || (i.flags as readonly string[]).includes('ag')).length;
           const scheduledCount = newItems.length - agoraCount;
-          toast.success(`${newItems.length} item(ns) extra adicionado(s)`, {
+          toast.success(`${newItems.length} ${(newItems.length) === 1 ? 'item' : 'itens'} extra ${(newItems.length) === 1 ? 'adicionado' : 'adicionados'}`, {
             description: agoraCount > 0
               ? `${agoraCount} "Agora" (não renovam)${scheduledCount > 0 ? ` + ${scheduledCount} de horário (renovam)` : ''}`
               : `${scheduledCount} de horário (serão incorporados na renovação)`,
@@ -10468,7 +10468,7 @@ const PrescricaoPage = () => {
             toast.success("2ª via da Guia ATM enviada para impressão");
           } catch (err) {
             console.error(err);
-            toast.error("Falha ao reimprimir Guia ATM");
+            toast.error("Não foi possível reimprimir Guia ATM");
           }
         }}
         onReprintAll={async (its) => {
@@ -10500,13 +10500,13 @@ const PrescricaoPage = () => {
             toast.success(`Guia ATM consolidada (${its.length} antibióticos) enviada para impressão`);
           } catch (err) {
             console.error(err);
-            toast.error("Falha ao reimprimir Guia ATM consolidada");
+            toast.error("Não foi possível reimprimir Guia ATM consolidada");
           }
         }}
         onStartNew={(mode, suspendIds) => {
           if (mode === 'troca' && suspendIds.length > 0) {
             setItems(prev => prev.map(it => suspendIds.includes(it.id) ? { ...it, status: 'suspended' } : it));
-            toast.info(`${suspendIds.length} antibiótico(s) suspenso(s) — preencha o substituto na Guia ATM.`);
+            toast.info(`${suspendIds.length} ${(suspendIds.length) === 1 ? 'antibiótico' : 'antibióticos'} ${(suspendIds.length) === 1 ? 'suspenso' : 'suspensos'} — preencha o substituto na Guia ATM.`);
           }
           setPendingAtbMode(mode);
           transitioningToAtmGuideRef.current = true;
@@ -10719,7 +10719,7 @@ const PrescricaoPage = () => {
           }
           if (newItems.length > 0) {
             setItems(prev => [...prev, ...newItems]);
-            toast.success(`${newItems.length} cuidado(s) adicionado(s)${profile ? ` — ${profile.label}` : ''}`);
+            toast.success(`${newItems.length} ${(newItems.length) === 1 ? 'cuidado' : 'cuidados'} ${(newItems.length) === 1 ? 'adicionado' : 'adicionados'}${profile ? ` — ${profile.label}` : ''}`);
             const addedGlycemic = newItems.some(i => isGlycemicControlName(i.name));
             if (addedGlycemic) {
               setInsulinSchemePromptOpen(true);
@@ -10870,7 +10870,7 @@ const PrescricaoPage = () => {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Antimicrobiano(s) anexado(s) à prescrição</AlertDialogTitle>
+            <AlertDialogTitle>Antimicrobianos anexados à prescrição</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
                 {atbAttachNotice.names.length > 0 && (
@@ -11299,7 +11299,7 @@ const PrescricaoPage = () => {
               className="gap-2"
             >
               <CopyPlus className="h-4 w-4" />
-              Adicionar {repeatSelectedIds.size > 0 ? `${repeatSelectedIds.size} item(ns)` : ''} à prescrição
+              Adicionar {repeatSelectedIds.size > 0 ? `${repeatSelectedIds.size} ${(repeatSelectedIds.size) === 1 ? 'item' : 'itens'}` : ''} à prescrição
             </Button>
           </DialogFooter>
         </DialogContent>

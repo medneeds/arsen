@@ -417,7 +417,7 @@ export function MedicalRecordEditDialog({
         })));
       if (hErr) throw hErr;
 
-      toast({ title: "Prontuário atualizado", description: `${mrChanges.length} campo(s) alterado(s).` });
+      toast({ title: "Prontuário atualizado", description: `${mrChanges.length} ${(mrChanges.length) === 1 ? 'campo' : 'campos'} ${(mrChanges.length) === 1 ? 'alterado' : 'alterados'}.` });
       setConfirmOpen(false);
       await loadData();
       onSaved?.();
@@ -654,7 +654,7 @@ export function MedicalRecordEditDialog({
 
       toast({
         title: createdNewRegistry ? "Ficha cadastral criada" : "Ficha cadastral atualizada",
-        description: `${regChanges.length} campo(s) ${createdNewRegistry ? "preenchido(s)" : "alterado(s)"}.`,
+        description: `${regChanges.length} ${(regChanges.length) === 1 ? 'campo' : 'campos'} ${createdNewRegistry ? ((regChanges.length) === 1 ? "preenchido" : "preenchidos") : ((regChanges.length) === 1 ? "alterado" : "alterados")}.`,
       });
       setConfirmOpen(false);
       await loadData();

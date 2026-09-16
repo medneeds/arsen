@@ -506,7 +506,7 @@ const RequisicaoUnificadaPage = () => {
       if (error) throw error;
       setRequests(data || []);
     } catch {
-      toast.error("Erro ao carregar requisições");
+      toast.error("Não foi possível carregar requisições");
     } finally {
       setLoading(false);
     }
@@ -762,7 +762,7 @@ const RequisicaoUnificadaPage = () => {
         hospitalUnitId: unitId,
         stateId: stateId,
       });
-      toast.success(`${CATEGORIES[activeCategory].shortLabel}: ${formSelectedItems.length} item(ns) solicitado(s)`);
+      toast.success(`${CATEGORIES[activeCategory].shortLabel}: ${formSelectedItems.length} ${(formSelectedItems.length) === 1 ? 'item' : 'itens'} ${(formSelectedItems.length) === 1 ? 'solicitado' : 'solicitados'}`);
       // Abre popup de impressão da guia recém-criada
       if (createdId) {
         setLastSubmittedReqId(createdId);
@@ -774,7 +774,7 @@ const RequisicaoUnificadaPage = () => {
     } catch (err: any) {
       console.error("[Requisicoes] handleSubmitRequest falhou:", err);
       const msg = err?.message || err?.error_description || err?.details || "Erro desconhecido";
-      toast.error(`Erro ao criar requisição: ${msg}`);
+      toast.error(`Não foi possível criar requisição: ${msg}`);
     } finally {
       setSubmitting(false);
     }
@@ -804,7 +804,7 @@ const RequisicaoUnificadaPage = () => {
       setResultFiles([]);
       fetchRequests();
     } catch {
-      toast.error("Erro ao salvar resultado");
+      toast.error("Não foi possível salvar resultado");
     } finally {
       setSavingResult(false);
     }
@@ -821,7 +821,7 @@ const RequisicaoUnificadaPage = () => {
       fetchRequests();
       if (activeCategory === "procedimento") fetchAllProcedures();
     } catch {
-      toast.error("Erro ao cancelar");
+      toast.error("Não foi possível cancelar");
     }
   };
 
@@ -1483,7 +1483,7 @@ const RequisicaoUnificadaPage = () => {
                 <CatIcon className={cn("h-4 w-4", catConfig.color)} />
                 Selecionar {catConfig.label}
                 {formSelectedItems.length > 0 && (
-                  <Badge variant="default" className="text-xs">{formSelectedItems.length} selecionado(s)</Badge>
+                  <Badge variant="default" className="text-xs">{formSelectedItems.length} {formSelectedItems.length === 1 ? "selecionado" : "selecionados"}</Badge>
                 )}
               </CardTitle>
             </CardHeader>
@@ -2793,7 +2793,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       onProcedureRegistered?.();
       return true;
     } catch (err) {
-      toast.error("Falha ao registrar a solicitação", {
+      toast.error("Não foi possível registrar a solicitação", {
         description: err instanceof Error ? err.message : "Erro desconhecido. O laudo não foi impresso.",
       });
       return false;
@@ -2895,7 +2895,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       if (parts.length === 0) { toast.info("Admissão sem dados preenchidos"); return; }
       setObservations(prev => prev ? prev + "\n\n" + parts.join("\n") : parts.join("\n"));
       toast.success("Dados da admissão importados");
-    } catch { toast.error("Erro ao importar admissão"); }
+    } catch { toast.error("Não foi possível importar admissão"); }
     finally { setImportingAdmission(false); }
   };
 
@@ -3012,7 +3012,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       }
     } catch (err) {
       console.error("[APAC] importEvolution error:", err);
-      toast.error("Erro ao importar evolução");
+      toast.error("Não foi possível importar evolução");
     } finally { setImportingEvolution(false); }
   };
 

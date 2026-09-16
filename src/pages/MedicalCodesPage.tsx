@@ -83,7 +83,7 @@ export default function MedicalCodesPage() {
       .order("code", { ascending: true });
 
     if (error) {
-      toast.error("Erro ao carregar códigos");
+      toast.error("Não foi possível carregar códigos");
       if (import.meta.env.DEV) {
         console.error(error);
       }
@@ -115,7 +115,7 @@ export default function MedicalCodesPage() {
         .eq("id", editingCode.id);
 
       if (error) {
-        toast.error("Erro ao atualizar código");
+        toast.error("Não foi possível atualizar código");
         if (import.meta.env.DEV) {
           console.error(error);
         }
@@ -127,7 +127,7 @@ export default function MedicalCodesPage() {
       const { error } = await supabase.from("medical_codes").insert(dataToSave);
 
       if (error) {
-        toast.error("Erro ao criar código");
+        toast.error("Não foi possível criar código");
         if (import.meta.env.DEV) {
           console.error(error);
         }
@@ -149,7 +149,7 @@ export default function MedicalCodesPage() {
     const { error } = await supabase.from("medical_codes").delete().eq("id", id);
 
     if (error) {
-      toast.error("Erro ao deletar código");
+      toast.error("Não foi possível deletar código");
       if (import.meta.env.DEV) {
         console.error(error);
       }
@@ -165,7 +165,7 @@ export default function MedicalCodesPage() {
       await navigator.clipboard.writeText(text);
       toast.success(`${label} copiado`);
     } catch (error) {
-      toast.error("Erro ao copiar");
+      toast.error("Não foi possível copiar");
     }
   };
 

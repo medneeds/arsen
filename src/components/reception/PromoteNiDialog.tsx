@@ -149,14 +149,14 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
         performed_by_email: user?.email,
       } as any);
 
-      toast.success("Paciente identificado com sucesso!", {
+      toast.success("Paciente identificado com sucesso", {
         description: `${fullName.trim().toUpperCase()} — vínculos com atendimentos preservados.`,
       });
       onPromoted?.();
       onOpenChange(false);
     } catch (err: any) {
       console.error(err);
-      toast.error("Erro ao identificar paciente", { description: err?.message });
+      toast.error("Não foi possível identificar paciente", { description: err?.message });
     } finally {
       setSaving(false);
     }

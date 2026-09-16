@@ -62,7 +62,7 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
       .maybeSingle()
       .then(({ data, error }) => {
         if (error || !data) {
-          toast.error("Erro ao carregar dados do paciente");
+          toast.error("Não foi possível carregar dados do paciente");
           setLoading(false);
           return;
         }
@@ -118,7 +118,7 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
       onSaved?.();
       onOpenChange(false);
     } catch (err: any) {
-      toast.error("Erro ao salvar", { description: err?.message });
+      toast.error("Não foi possível salvar", { description: err?.message });
     } finally {
       setSaving(false);
     }

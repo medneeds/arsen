@@ -330,7 +330,7 @@ export default function MonitoramentoClinicoPage() {
     });
 
     if (error) {
-      toast.error("Erro ao salvar registro");
+      toast.error("Não foi possível salvar registro");
       console.error(error);
       return;
     }

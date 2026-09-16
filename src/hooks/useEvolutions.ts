@@ -436,7 +436,7 @@ export function useEvolutions(
         physical_exam: { ...EMPTY_EXAM, ...(data.physical_exam as any) },
       } as EvolutionRecord;
     } catch (err: any) {
-      toast.error("Erro ao criar evolução: " + err.message);
+      toast.error("Não foi possível criar evolução");
       return null;
     }
   };
@@ -466,7 +466,7 @@ export function useEvolutions(
       await refreshSilently();
       return true;
     } catch (err: any) {
-      toast.error("Erro ao salvar: " + err.message);
+      toast.error("Não foi possível salvar");
       return false;
     }
   };
@@ -495,7 +495,7 @@ export function useEvolutions(
       await refreshSilently();
       return true;
     } catch (err: any) {
-      toast.error("Erro ao validar: " + err.message);
+      toast.error("Não foi possível validar");
       return false;
     }
   };
@@ -517,7 +517,7 @@ export function useEvolutions(
       await refreshSilently();
       return true;
     } catch (err: any) {
-      toast.error("Erro ao suspender: " + err.message);
+      toast.error("Não foi possível suspender");
       return false;
     }
   };
@@ -533,7 +533,7 @@ export function useEvolutions(
       await refreshSilently();
       return true;
     } catch (err: any) {
-      toast.error("Erro ao excluir: " + err.message);
+      toast.error("Não foi possível excluir");
       return false;
     }
   };

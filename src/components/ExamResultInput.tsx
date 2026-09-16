@@ -86,7 +86,7 @@ const ExamResultInput: React.FC<ExamResultInputProps> = ({
       toast.success(`${fileType === "image" ? "Imagem" : "PDF"} anexado com sucesso`);
     } catch (err) {
       console.error("Upload error:", err);
-      toast.error("Erro ao enviar arquivo");
+      toast.error("Não foi possível enviar arquivo");
     } finally {
       setUploading(false);
     }

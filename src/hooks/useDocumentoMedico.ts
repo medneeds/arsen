@@ -67,7 +67,7 @@ export function useDocumentoMedico(
       if (error) throw error;
       setDocumentos((data ?? []) as unknown as DocumentoMedicoData[]);
     } catch (err: any) {
-      toast.error("Erro ao carregar documentos médicos", { description: err.message });
+      toast.error("Não foi possível carregar documentos médicos", { description: err.message });
     } finally {
       setLoading(false);
     }
@@ -113,7 +113,7 @@ export function useDocumentoMedico(
       await fetch();
       return row?.id ?? null;
     } catch (err: any) {
-      toast.error("Erro ao salvar documento", { description: err.message });
+      toast.error("Não foi possível salvar documento", { description: err.message });
       return null;
     }
   }, [user, currentHospital, resolvedRegistryId, fetch]);

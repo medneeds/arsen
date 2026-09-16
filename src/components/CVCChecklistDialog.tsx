@@ -176,7 +176,7 @@ export function CVCChecklistDialog({
   const handleSave = async () => {
     if (!resolvedName.trim()) { toast.error("Nome do paciente não identificado"); return; }
     if (answered.length < BUNDLE_STEPS.length) {
-      toast.warning(`${BUNDLE_STEPS.length - answered.length} etapa(s) do bundle sem resposta`);
+      toast.warning(`${BUNDLE_STEPS.length - answered.length} ${(BUNDLE_STEPS.length - answered.length) === 1 ? 'etapa' : 'etapas'} do bundle sem resposta`);
     }
     if (!currentHospital?.id || !currentState?.id) { toast.error("Contexto hospitalar não disponível"); return; }
     setSaving(true);
@@ -216,7 +216,7 @@ export function CVCChecklistDialog({
       toast.success("Checklist CVC salvo");
       await handlePrint();
     } catch (err: any) {
-      toast.error(`Erro ao salvar: ${err.message}`);
+      toast.error(`Não foi possível salvar`);
     } finally {
       setSaving(false);
     }

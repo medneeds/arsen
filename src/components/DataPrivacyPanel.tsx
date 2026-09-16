@@ -141,11 +141,11 @@ export function DataPrivacyPanel() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success("Dados exportados com sucesso! Arquivo baixado.");
+      toast.success("Dados exportados com sucesso Arquivo baixado.");
       fetchPrivacyData();
     } catch (error) {
       console.error("Erro ao exportar dados:", error);
-      toast.error("Erro ao exportar dados. Tente novamente.");
+      toast.error("Não foi possível exportar dados. Tente novamente.");
     } finally {
       setRequestingExport(false);
       setDownloadingExport(false);
@@ -170,7 +170,7 @@ export function DataPrivacyPanel() {
       fetchPrivacyData();
     } catch (error) {
       console.error("Erro ao solicitar exclusão:", error);
-      toast.error("Erro ao registrar solicitação. Tente novamente.");
+      toast.error("Não foi possível registrar solicitação. Tente novamente.");
     } finally {
       setRequestingDeletion(false);
     }

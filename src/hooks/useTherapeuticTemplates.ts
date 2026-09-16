@@ -54,7 +54,7 @@ export function useTherapeuticTemplates() {
       queryClient.invalidateQueries({ queryKey: ["therapeutic-templates"] });
       toast.success("Template criado com sucesso");
     },
-    onError: () => toast.error("Erro ao criar template"),
+    onError: () => toast.error("Não foi possível criar template"),
   });
 
   const updateTemplate = useMutation({
@@ -76,7 +76,7 @@ export function useTherapeuticTemplates() {
       queryClient.invalidateQueries({ queryKey: ["therapeutic-templates"] });
       toast.success("Template atualizado");
     },
-    onError: () => toast.error("Erro ao atualizar template"),
+    onError: () => toast.error("Não foi possível atualizar template"),
   });
 
   const deleteTemplate = useMutation({
@@ -91,7 +91,7 @@ export function useTherapeuticTemplates() {
       queryClient.invalidateQueries({ queryKey: ["therapeutic-templates"] });
       toast.success("Template removido");
     },
-    onError: () => toast.error("Erro ao remover template"),
+    onError: () => toast.error("Não foi possível remover template"),
   });
 
   return { templates, isLoading, createTemplate, updateTemplate, deleteTemplate };

@@ -58,7 +58,7 @@ export function useQuickPrescriptionTemplates() {
       })) as QuickPrescriptionTemplate[]);
     } catch (err: any) {
       console.error("[quickTemplates] load error", err);
-      toast.error("Erro ao carregar templates", { description: err.message });
+      toast.error("Não foi possível carregar templates", { description: err.message });
     } finally {
       setLoading(false);
     }
@@ -100,7 +100,7 @@ export function useQuickPrescriptionTemplates() {
         await load();
         return data as any;
       } catch (err: any) {
-        toast.error("Erro ao salvar template", { description: err.message });
+        toast.error("Não foi possível salvar template", { description: err.message });
         return null;
       }
     },
@@ -118,7 +118,7 @@ export function useQuickPrescriptionTemplates() {
         toast.success("Template excluído");
         await load();
       } catch (err: any) {
-        toast.error("Erro ao excluir template", { description: err.message });
+        toast.error("Não foi possível excluir template", { description: err.message });
       }
     },
     [load],

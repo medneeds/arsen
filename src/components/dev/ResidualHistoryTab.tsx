@@ -90,7 +90,7 @@ export function ResidualHistoryTab() {
         reason: "dev_console_residual_cleanup",
       }, true);
       toast.success(
-        `Arquivadas ${r.totals.evolutionsArchived} evolução(ões) residual(is) do leito ${preview.bed.bed}.`,
+        `Arquivadas ${r.totals.evolutionsArchived} ${(r.totals.evolutionsArchived) === 1 ? 'evolução' : 'evoluções'} ${(r.totals.evolutionsArchived) === 1 ? 'residual' : 'residuais'} do leito ${preview.bed.bed}.`,
       );
       setPreview(null);
       refresh();

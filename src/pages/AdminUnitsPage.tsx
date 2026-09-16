@@ -107,7 +107,7 @@ export default function AdminUnitsPage() {
       setUnits(unitsWithState);
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
-      toast.error("Erro ao carregar dados");
+      toast.error("Não foi possível carregar dados");
     } finally {
       setLoading(false);
     }
@@ -149,14 +149,14 @@ export default function AdminUnitsPage() {
           .eq("id", editingUnit.id);
 
         if (error) throw error;
-        toast.success("Unidade atualizada com sucesso!");
+        toast.success("Unidade atualizada com sucesso");
       } else {
         const { error } = await supabase
           .from("hospital_units")
           .insert(dataToSave);
 
         if (error) throw error;
-        toast.success("Unidade cadastrada com sucesso!");
+        toast.success("Unidade cadastrada com sucesso");
       }
 
       setIsDialogOpen(false);
@@ -166,7 +166,7 @@ export default function AdminUnitsPage() {
       if (error.message?.includes("duplicate")) {
         toast.error("Esta unidade já existe");
       } else {
-        toast.error("Erro ao salvar unidade");
+        toast.error("Não foi possível salvar unidade");
       }
     } finally {
       setIsSaving(false);
@@ -181,14 +181,14 @@ export default function AdminUnitsPage() {
         .eq("id", unitId);
 
       if (error) throw error;
-      toast.success("Unidade excluída com sucesso!");
+      toast.success("Unidade excluída com sucesso");
       fetchData();
     } catch (error: any) {
       console.error("Erro ao excluir unidade:", error);
       if (error.message?.includes("foreign key")) {
         toast.error("Não é possível excluir: existem dados vinculados a esta unidade");
       } else {
-        toast.error("Erro ao excluir unidade");
+        toast.error("Não foi possível excluir unidade");
       }
     }
   };

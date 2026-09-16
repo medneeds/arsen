@@ -209,7 +209,7 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
       if (data.diagnostic_hypothesis) setDiagnosisInitial(data.diagnostic_hypothesis);
       if (data.initial_conduct) setConditions(prev => prev ? prev + "\n" + data.initial_conduct : data.initial_conduct);
       toast.success("Dados da admissão importados");
-    } catch { toast.error("Erro ao importar admissão"); }
+    } catch { toast.error("Não foi possível importar admissão"); }
     finally { setImportingAdmission(false); }
   };
 
@@ -226,7 +226,7 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
       if (patient.relevant_exams) setExamResults(prev => prev ? prev + "\n" + patient.relevant_exams : patient.relevant_exams);
       if (patient.medical_history) setConditions(prev => prev ? prev + "\n" + patient.medical_history : patient.medical_history);
       toast.success("Dados da evolução importados");
-    } catch { toast.error("Erro ao importar evolução"); }
+    } catch { toast.error("Não foi possível importar evolução"); }
     finally { setImportingEvolution(false); }
   };
 
@@ -314,7 +314,7 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
       });
       return true;
     } catch (err) {
-      toast.error("Falha ao registrar a solicitação", {
+      toast.error("Não foi possível registrar a solicitação", {
         description: err instanceof Error ? err.message : "Erro desconhecido. A AIH não foi impressa.",
       });
       return false;

@@ -195,7 +195,7 @@ export function CidSearchInput({
       {isOpen && !value && (
         <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md overflow-hidden">
           <div className="px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground bg-muted/40 border-b flex items-center justify-between">
-            <span>{search ? `${filtered.length} resultado(s)` : `${catalog.length} CIDs disponíveis`}</span>
+            <span>{search ? `${filtered.length} ${(filtered.length) === 1 ? 'resultado' : 'resultados'}` : `${catalog.length} CIDs disponíveis`}</span>
             <span className="font-normal">Role ou digite</span>
           </div>
           <div ref={listRef} className="max-h-72 overflow-y-auto">

@@ -207,7 +207,7 @@ export function BackupRestoreTab() {
       setForceUnlockReason("");
       await Promise.all([loadMaintenance(), loadRestoreJobs(), loadAudit()]);
     } catch (e) {
-      toast.error("Falha ao destravar: " + (e instanceof Error ? e.message : String(e)));
+      toast.error("Não foi possível destravar: " + (e instanceof Error ? e.message : String(e)));
     } finally {
       setForceUnlocking(false);
     }
@@ -222,7 +222,7 @@ export function BackupRestoreTab() {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(50);
-    if (error) { toast.error("Falha ao carregar backups: " + error.message); return; }
+    if (error) { toast.error("Não foi possível carregar backups"); return; }
     setJobs((data as unknown as BackupJob[]) ?? []);
   }
   async function loadAudit() {
@@ -254,7 +254,7 @@ export function BackupRestoreTab() {
       setSelectedTables(new Set(names)); // default: todas marcadas
     } catch (e) {
       console.warn("[loadAllTables]", e);
-      toast.error("Falha ao listar tabelas: " + (e instanceof Error ? e.message : String(e)));
+      toast.error("Não foi possível listar tabelas: " + (e instanceof Error ? e.message : String(e)));
     } finally {
       setTablesLoading(false);
     }
@@ -359,7 +359,8 @@ export function BackupRestoreTab() {
       toast.success("Backup concluído.");
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error("Falha no backup: " + msg);
+      toast.error("O backup não foi concluído. Nenhum dado foi alterado.");
+      console.error("[Arsen] backup:", msg);
       await loadJobs(); await loadAudit();
     } finally {
       setCreating(false);
@@ -426,7 +427,7 @@ export function BackupRestoreTab() {
       URL.revokeObjectURL(a.href);
       toast.success(`Backup baixado (${formatBytes(blob.size)})`, { id: toastId });
     } catch (e) {
-      toast.error("Falha ao baixar: " + (e instanceof Error ? e.message : String(e)));
+      toast.error("Não foi possível baixar: " + (e instanceof Error ? e.message : String(e)));
     }
   }
 
@@ -511,7 +512,7 @@ export function BackupRestoreTab() {
       await loadJobs(); await loadAudit();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error("Falha ao importar: " + msg);
+      toast.error("Não foi possível importar: " + msg);
     } finally {
       setImporting(false);
       setTimeout(() => setImportProgress(null), 2000);
@@ -594,7 +595,8 @@ export function BackupRestoreTab() {
       setRestoreOpen(false);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error("Falha no restore: " + msg);
+      toast.error("A restauração não foi concluída. Verifique o arquivo e tente novamente.");
+      console.error("[Arsen] restore:", msg);
       if (restoreId) {
         try {
           await supabase.functions.invoke("backup-restore", {
@@ -771,7 +773,7 @@ export function BackupRestoreTab() {
                       {tablesLoading ? "Carregando tabelas…" : (
                         allTables.length === 0 ? "Nenhuma tabela detectada." :
                         selectedTables.size === allTables.length ? `Todas as ${allTables.length} tabelas serão incluídas.` :
-                        `${selectedTables.size} de ${allTables.length} tabela(s) selecionada(s) — backup PARCIAL.`
+                        `${selectedTables.size} de ${allTables.length} ${(allTables.length) === 1 ? 'tabela' : 'tabelas'} ${(allTables.length) === 1 ? 'selecionada' : 'selecionadas'} — backup PARCIAL.`
                       )}
                     </p>
                   </div>
@@ -915,7 +917,7 @@ export function BackupRestoreTab() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Backups gerados</CardTitle>
-              <CardDescription>{jobs.length} registro(s)</CardDescription>
+              <CardDescription>{jobs.length} {jobs.length === 1 ? "registro" : "registros"}</CardDescription>
             </CardHeader>
             <CardContent>
               {loading ? <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Carregando…</div> :
@@ -1065,7 +1067,7 @@ export function BackupRestoreTab() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Restaurações executadas</CardTitle>
-              <CardDescription>{restoreJobs.length} registro(s)</CardDescription>
+              <CardDescription>{restoreJobs.length} {restoreJobs.length === 1 ? "registro" : "registros"}</CardDescription>
             </CardHeader>
             <CardContent>
               {restoreJobs.length === 0 ? (
@@ -1237,7 +1239,7 @@ export function BackupRestoreTab() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Trilha de auditoria</CardTitle>
-              <CardDescription>{audit.length} evento(s) — últimos 100</CardDescription>
+              <CardDescription>{audit.length} {audit.length === 1 ? "evento" : "eventos"} — últimos 100</CardDescription>
             </CardHeader>
             <CardContent>
               {audit.length === 0 ? <p className="text-sm text-muted-foreground">Sem eventos registrados.</p> :
@@ -1390,7 +1392,7 @@ export function BackupRestoreTab() {
                       })}
                     </div>
                   </ScrollArea>
-                  <p className="text-xs text-muted-foreground mt-1">{restoreTables.size} tabela(s) selecionada(s)</p>
+                  <p className="text-xs text-muted-foreground mt-1">{restoreTables.size} {restoreTables.size === 1 ? "tabela selecionada" : "tabelas selecionadas"}</p>
                 </div>
               )}
             </div>

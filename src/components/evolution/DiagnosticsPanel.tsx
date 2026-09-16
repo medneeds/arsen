@@ -477,7 +477,7 @@ function DatePredictionField({ icon, label, value, onChange, accent = "primary" 
               onChange(toIso(d));
             }}
             className="text-xs px-2 h-5 rounded-md border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            title={`Em ${q.offset} dia(s)`}
+            title={`Em ${q.offset} ${(q.offset) === 1 ? 'dia' : 'dias'}`}
           >
             {q.label}
           </button>

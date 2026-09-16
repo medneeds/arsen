@@ -107,7 +107,7 @@ export function FirstAccessSetup({ userId, fullName, onComplete }: FirstAccessSe
         throw profErr;
       }
 
-      toast.success("Primeiro acesso concluído!");
+      toast.success("Primeiro acesso concluído");
       onComplete();
     } catch (err) {
       console.error(err);

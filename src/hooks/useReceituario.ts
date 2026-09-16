@@ -57,7 +57,7 @@ export function useReceituario(
       if (error) throw error;
       setReceituarios((data ?? []) as unknown as ReceituarioData[]);
     } catch (err: any) {
-      toast.error("Erro ao carregar receituários", { description: err.message });
+      toast.error("Não foi possível carregar receituários", { description: err.message });
     } finally {
       setLoading(false);
     }
@@ -110,7 +110,7 @@ export function useReceituario(
       await fetch();
       return row?.id ?? null;
     } catch (err: any) {
-      toast.error("Erro ao salvar receituário", { description: err.message });
+      toast.error("Não foi possível salvar receituário", { description: err.message });
       return null;
     }
   }, [user, currentHospital, fetch]);
@@ -133,7 +133,7 @@ export function useReceituario(
       await fetch();
       return true;
     } catch (err: any) {
-      toast.error("Erro ao atualizar receituário", { description: err.message });
+      toast.error("Não foi possível atualizar receituário", { description: err.message });
       return false;
     }
   }, [fetch]);

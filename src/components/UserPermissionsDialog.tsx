@@ -106,7 +106,7 @@ export function UserPermissionsDialog({
         };
       } catch (err) {
         console.error("[UserPermissionsDialog] load error", err);
-        toast.error("Erro ao carregar permissões");
+        toast.error("Não foi possível carregar permissões");
       } finally {
         if (!cancelled) setLoading(false);
       }

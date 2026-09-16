@@ -159,12 +159,12 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
           .eq("id", patientId);
         if (updateErr) {
           console.error("[AdmissionDateEditor] patient update failed", updateErr);
-          toast.error("Erro ao salvar data de admissão");
+          toast.error("Não foi possível salvar data de admissão");
           return;
         }
       } catch (err) {
         console.error("[AdmissionDateEditor] history insert failed", err);
-        toast.error("Erro ao registrar histórico");
+        toast.error("Não foi possível registrar histórico");
         return;
       }
     }
@@ -183,7 +183,7 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
       .eq("patient_id", patientId)
       .order("changed_at", { ascending: false });
     if (error) {
-      toast.error("Erro ao carregar histórico");
+      toast.error("Não foi possível carregar histórico");
     } else {
       setHistory((data as HistoryRow[]) || []);
     }
