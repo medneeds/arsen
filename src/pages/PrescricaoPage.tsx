@@ -6787,33 +6787,33 @@ const PrescricaoPage = () => {
       const { data, error } = await query;
       if (error) throw error;
 
-      // Filtro defensivo: oculta rascunhos órfãos (sem validação, sem assinatura,
-      // updated_at > 24h e fora do dia clínico corrente). Cron move-os para
-      // prescriptions_archive a cada 30min, mas a UI já os esconde imediatamente.
-      const clinicalDayStartMs = getClinicalDayWindowSP().start.getTime();
-      const cutoff24hMs = Date.now() - 24 * 60 * 60 * 1000;
+      // Filtro: validadas sempre aparecem. Rascunhos: só o mais recente do plantão atual.
+      // Após as 05h, rascunhos de plantões anteriores somem — só ficam as validadas.
+      const clinicalDayStart = getClinicalDayWindowSP().start;
+      const clinicalDayStartMs = clinicalDayStart.getTime();
 
-      setSavedPrescriptions((data || []).filter((d: any) => {
-        const items = (Array.isArray(d.items) ? d.items : []) as unknown as PrescriptionItem[];
-        const hasValidatedItem = items.some((it: any) => it && it.validated === true);
-        const isOrphanDraft =
-          d.status === 'draft'
-          && !d.digital_signature
-          && !hasValidatedItem
-          && new Date(d.updated_at).getTime() < cutoff24hMs
-          && new Date(d.updated_at).getTime() < clinicalDayStartMs;
-        return !isOrphanDraft;
-      }).map(d => {
+      const allRows = (data || []).map((d: any) => {
         const items = (Array.isArray(d.items) ? d.items : []) as unknown as PrescriptionItem[];
         const hasValidatedItem = items.some((it: any) => it && it.validated === true);
         const isValidated = d.status !== 'draft' || !!d.digital_signature || hasValidatedItem;
-        return {
-          ...d,
-          items,
-          digital_signature: d.digital_signature as unknown as DigitalSignature | null,
-          isValidated,
-        };
-      }));
+        return { ...d, items, digital_signature: d.digital_signature as unknown as DigitalSignature | null, isValidated };
+      });
+
+      // Separa validadas e rascunhos do plantão atual
+      const validated = allRows.filter((d: any) => d.isValidated);
+      const draftsThisShift = allRows.filter((d: any) =>
+        !d.isValidated &&
+        new Date(d.created_at).getTime() >= clinicalDayStartMs
+      );
+
+      // Só o rascunho mais recente do plantão atual (maior created_at)
+      const latestDraft = draftsThisShift.length > 0
+        ? [draftsThisShift.reduce((a: any, b: any) =>
+            new Date(a.created_at) > new Date(b.created_at) ? a : b
+          )]
+        : [];
+
+      setSavedPrescriptions([...validated, ...latestDraft]);
     } catch (err) {
       console.error('Error fetching prescriptions:', err);
     } finally {
@@ -8814,71 +8814,6 @@ const PrescricaoPage = () => {
 
       {/* "Prescrições anteriores" foi integrado ao workbench unificado abaixo. */}
       {/* ===== VERSION HISTORY ===== */}
-      {versionHistory.length > 1 && currentPrescriptionId && (
-        <div className="rounded-xl border border-border bg-card p-3 print:hidden">
-          <div className="w-full flex items-center justify-between text-xs gap-2">
-            <button
-              onClick={() => setShowHistory(!showHistory)}
-              className="flex items-center gap-2 font-semibold text-muted-foreground tracking-wider hover:text-foreground transition-colors"
-            >
-              <History className="h-3.5 w-3.5" /> Histórico de versões ({versionHistory.length})
-              <span className="text-muted-foreground/70 text-[10px] font-normal">
-                {showHistory ? '— ocultar' : '— expandir'}
-              </span>
-            </button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setDiffDialogOpen(true)}
-              disabled={versionHistory.length < 2}
-              className="h-6 text-[10px] gap-1 px-2"
-            >
-              <RefreshCw className="h-3 w-3" />
-              Comparar versões
-            </Button>
-          </div>
-          {showHistory && (
-            <div className="mt-3 space-y-1">
-              {versionHistory.map((v, i) => (
-                <button
-                  key={v.id}
-                  onClick={() => loadPrescription(v.id)}
-                  className={cn(
-                    "w-full flex items-center gap-3 p-2 rounded-lg border text-xs transition-colors hover:bg-accent/50 text-left",
-                    currentPrescriptionId === v.id ? "border-primary bg-primary/5" : "border-border/50"
-                  )}
-                >
-                  <div className="flex flex-col items-center gap-0.5">
-                    <div className={cn(
-                      "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border",
-                      currentPrescriptionId === v.id ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30 text-muted-foreground"
-                    )}>
-                      {v.version}
-                    </div>
-                    {i < versionHistory.length - 1 && <div className="w-px h-2 bg-border" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Versão {v.version}</span>
-                      <Badge variant={v.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
-                        {v.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
-                      </Badge>
-                      {currentPrescriptionId === v.id && (
-                        <Badge variant="secondary" className="text-[9px] h-4 px-1.5">Atual</Badge>
-                      )}
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {format(new Date(v.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                      {v.digital_signature && ``}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Toolbar de ações migrada para o cabeçalho superior (acima do workbench). */}
 
       {/* ===== UNIFIED PRESCRIPTION WORKBENCH (itens + histórico + busca) ===== */}
