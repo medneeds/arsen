@@ -11,8 +11,6 @@ import {
   Shield,
   PanelLeftClose,
   Stethoscope,
-  Moon,
-  Sun,
   HeartPulse,
   Activity,
   BedDouble,
@@ -63,7 +61,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePendingPasswordResets } from "@/hooks/usePendingPasswordResets";
-import { useTheme } from "next-themes";
 import { useIsDev } from "@/hooks/useIsDev";
 import { supabase } from "@/integrations/supabase/client";
 import type { AccessProfile } from "@/config/userProfiles";
@@ -91,21 +88,6 @@ function DevConsoleLink({ isCollapsed, onNavigate }: { isCollapsed: boolean; onN
   );
 }
 
-function ThemeToggleInline() {
-  const { theme, setTheme } = useTheme();
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="h-7 w-7 text-muted-foreground hover:text-foreground"
-      title={theme === "dark" ? "Modo claro" : "Modo escuro"}
-    >
-      <Sun className="h-3.5 w-3.5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-3.5 w-3.5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-    </Button>
-  );
-}
 
 
 export function AppSidebar() {
@@ -498,8 +480,8 @@ export function AppSidebar() {
           )}>
             <div className={cn(
               "relative flex items-center justify-center rounded-lg overflow-hidden flex-shrink-0",
-              "bg-white dark:bg-white/95 dark:ring-1 dark:ring-white/20",
-              "shadow-sm dark:shadow-[0_2px_8px_-2px_hsl(var(--primary)/0.4)]",
+              "bg-white",
+              "shadow-sm(var(--primary)/0.4)]",
               isCollapsed ? "h-9 w-9 p-1" : "h-10 w-10 p-1"
             )}>
               <img
@@ -826,7 +808,6 @@ export function AppSidebar() {
           {!isCollapsed && (
             <span className="text-[10px] text-muted-foreground font-medium">Tema</span>
           )}
-          <ThemeToggleInline />
         </div>
 
         {/* Perfil + Sair */}

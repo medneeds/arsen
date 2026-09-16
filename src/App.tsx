@@ -8,7 +8,6 @@ import { MainLayout } from "@/components/MainLayout";
 import { IpRestricted } from "@/components/IpRestricted";
 import { PrivacyProvider } from "@/contexts/PrivacyContext";
 import { lazy, Suspense, useEffect } from "react";
-import { FloatingThemeToggle } from "@/components/FloatingThemeToggle";
 import { PageLoader } from "@/components/PageLoader";
 import { startIdlePrefetch } from "@/lib/prefetchRoutes";
 import { HelpTourProvider } from "@/contexts/HelpTourContext";

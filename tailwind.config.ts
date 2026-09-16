@@ -47,14 +47,34 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Sinal clinico. Cada um tem tres usos:
+        //   DEFAULT  ponto, barra e preenchimento solido
+        //   soft     fundo de etiqueta
+        //   on-soft  texto sobre esse fundo (contraste garantido)
+        // Ver o bloco de tokens em src/index.css para o significado de cada cor.
         critical: {
           DEFAULT: "hsl(var(--critical))",
           foreground: "hsl(var(--critical-foreground))",
+          soft: "hsl(var(--critical-soft))",
+          "on-soft": "hsl(var(--critical-on-soft))",
+          border: "hsl(var(--critical-border))",
         },
         warning: {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
+          soft: "hsl(var(--warning-soft))",
+          "on-soft": "hsl(var(--warning-on-soft))",
+          border: "hsl(var(--warning-border))",
         },
+        released: {
+          DEFAULT: "hsl(var(--released))",
+          foreground: "hsl(var(--released-foreground))",
+          soft: "hsl(var(--released-soft))",
+          "on-soft": "hsl(var(--released-on-soft))",
+          border: "hsl(var(--released-border))",
+        },
+        // Aposentado como cor: "estavel" passa a ser AUSENCIA de sinal.
+        // Mantido apontando para o cinza ameno enquanto a migracao nao termina.
         stable: {
           DEFAULT: "hsl(var(--stable))",
           foreground: "hsl(var(--stable-foreground))",

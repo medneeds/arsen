@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { PrintableDashboard } from "@/components/PrintableDashboard";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { SECTOR_DISPLAY_LABELS, SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 
 interface PriorityAlert {
@@ -598,8 +597,8 @@ const DashboardPage = () => {
           <div className={cn(
             "text-xs flex items-center gap-1.5 font-medium px-2 py-1 rounded-full w-fit",
             isPositive 
-              ? "bg-green-500/10 text-green-700 dark:text-green-400" 
-              : "bg-red-500/10 text-red-700 dark:text-red-400"
+              ? "bg-released/10 text-green-700 dark:text-green-400" 
+              : "bg-critical/10 text-red-700 dark:text-red-400"
           )}>
             <TrendingUp className={cn("h-3.5 w-3.5", !isPositive && "rotate-180")} />
             <span>{Math.abs(change)}%</span>
@@ -654,7 +653,6 @@ const DashboardPage = () => {
                 <Download className="h-4 w-4 mr-2" />
                 Exportar PDF
               </Button>
-              <ThemeToggle />
             </div>
           </div>
         </div>
@@ -816,14 +814,14 @@ const DashboardPage = () => {
                         className={cn(
                           "flex items-start gap-3 p-3 rounded-lg border transition-colors",
                           alert.level === 'critical' && "bg-destructive/5 border-destructive/20",
-                          alert.level === 'warning' && "bg-amber-500/5 border-amber-500/20",
+                          alert.level === 'warning' && "bg-warning/5 border-warning/20",
                           alert.level === 'info' && "bg-primary/5 border-primary/20",
                         )}
                       >
                         <div className={cn(
                           "mt-0.5 rounded-full p-1",
                           alert.level === 'critical' && "bg-destructive/10",
-                          alert.level === 'warning' && "bg-amber-500/10",
+                          alert.level === 'warning' && "bg-warning/10",
                           alert.level === 'info' && "bg-primary/10",
                         )}>
                           {alert.level === 'critical' && <AlertTriangle className="h-3.5 w-3.5 text-destructive" />}
@@ -840,7 +838,7 @@ const DashboardPage = () => {
                         <Badge variant="outline" className={cn(
                           "text-[10px] shrink-0",
                           alert.level === 'critical' && "border-destructive/30 text-destructive",
-                          alert.level === 'warning' && "border-amber-500/30 text-amber-600",
+                          alert.level === 'warning' && "border-warning/30 text-amber-600",
                           alert.level === 'info' && "border-primary/30 text-primary",
                         )}>
                           {alert.level === 'critical' ? 'CRÍTICO' : alert.level === 'warning' ? 'ATENÇÃO' : 'PENDÊNCIA'}
@@ -883,9 +881,9 @@ const DashboardPage = () => {
                         )}
                         <div className={cn(
                           "shrink-0 rounded-full p-1.5 z-10",
-                          activity.type === 'discharge' ? "bg-green-500/10" :
+                          activity.type === 'discharge' ? "bg-released/10" :
                           activity.type === 'prescription' ? "bg-primary/10" :
-                          activity.type === 'admission' ? "bg-amber-500/10" :
+                          activity.type === 'admission' ? "bg-warning/10" :
                           "bg-muted"
                         )}>
                           {activity.type === 'discharge' && <LogOut className="h-3 w-3 text-green-600" />}
