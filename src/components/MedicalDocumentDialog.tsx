@@ -152,17 +152,33 @@ export function MedicalDocumentDialog({
       ? (() => { try { return new Date(patientRegistry.birth_date + "T12:00:00").toLocaleDateString("pt-BR"); } catch { return patientRegistry.birth_date; } })()
       : null;
 
+    const leitoStr = [patientBed, displaySector].filter(Boolean).join(" · ");
+    const cidStr = cidPrimary ? cidPrimary.split(" - ").slice(0, 2).join(" — ") : null;
+
+    // Cabeçalho padrão Arsen — mesmo layout de tabela da Guia ATM e Evolução
     const patientLine = `
-      <div style="border:1px solid #cbd5e1;border-radius:4pt;padding:6pt 10pt;margin-bottom:10pt;font-size:9pt;background:#f8fafc">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2pt 16pt">
-          <div><b>PACIENTE:</b> ${esc((patientName || "").toUpperCase())}</div>
-          ${patientBed ? `<div><b>LEITO:</b> ${esc(patientBed)} ${displaySector ? `• ${esc(displaySector)}` : ""}</div>` : "<div></div>"}
-          ${patient?.age ? `<div><b>IDADE:</b> ${esc(String(patient.age))}</div>` : "<div></div>"}
-          ${patientRegistry?.medical_record ? `<div><b>PRONTUÁRIO:</b> ${esc(patientRegistry.medical_record)}</div>` : "<div></div>"}
-          ${birthFmt ? `<div><b>DATA DE NASCIMENTO:</b> ${esc(birthFmt)}</div>` : ""}
-          ${cidPrimary ? `<div><b>CID-10:</b> ${esc(cidPrimary)}</div>` : ""}
-        </div>
-      </div>`;
+      <table class="nz" style="margin-bottom:10pt">
+        <tbody>
+          <tr>
+            <th style="width:14%">Paciente</th>
+            <td style="width:36%"><strong>${esc((patientName || "").toUpperCase())}</strong></td>
+            <th style="width:10%">Leito</th>
+            <td colspan="3"><strong>${esc(leitoStr || "—")}</strong></td>
+          </tr>
+          <tr>
+            <th>Idade</th>
+            <td>${esc(patient?.age ? String(patient.age) : "—")}</td>
+            <th>Prontuário</th>
+            <td colspan="3">${esc(patientRegistry?.medical_record || "—")}</td>
+          </tr>
+          <tr>
+            <th>Data de nascimento</th>
+            <td>${esc(birthFmt || "—")}</td>
+            <th>CID-10</th>
+            <td colspan="3">${esc(cidStr || "—")}</td>
+          </tr>
+        </tbody>
+      </table>`;
 
     if (isRx) {
       const rows = rx.filter((r) => r.name.trim()).map((r, i) => `
