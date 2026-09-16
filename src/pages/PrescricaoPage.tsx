@@ -1569,16 +1569,19 @@ function FlagToggle({ flag, active, onToggle }: {
 
 // --- Hydration optimized fields (expanded view) ---
 const HYDRATION_PHASE_OPTIONS: Array<{ phases: number; interval: string; label?: string }> = [
-  { phases: 1, interval: '24/24h' },
-  { phases: 2, interval: '12/12h' },
-  { phases: 3, interval: '8/8h' },
-  { phases: 4, interval: '6/6h' },
-  { phases: 6, interval: '4/4h' },
-  { phases: 8, interval: '3/3h' },
+  { phases: 1,  interval: '24/24h' },
+  { phases: 2,  interval: '12/12h' },
+  { phases: 3,  interval: '8/8h' },
+  { phases: 4,  interval: '6/6h' },
+  { phases: 6,  interval: '4/4h' },
+  { phases: 8,  interval: '3/3h' },
   { phases: 12, interval: '2/2h' },
   { phases: 24, interval: '1/1h' },
-  { phases: 1, interval: 'Dose única', label: 'Dose única' },
-  { phases: 1, interval: 'Contínuo', label: 'Contínuo' },
+  { phases: 1,  interval: 'ACM',       label: 'ACM' },
+  { phases: 1,  interval: 'SOS',       label: 'SOS' },
+  { phases: 1,  interval: 'Agora',     label: 'Agora' },
+  { phases: 1,  interval: 'Dose única',label: 'Dose única' },
+  { phases: 1,  interval: 'Contínuo',  label: 'Contínuo' },
 ];
 const HYDRATION_DRIP_FACTOR = DRIP_FACTOR_MACRO; // macrogotas/mL — fonte única (solutoToken)
 
