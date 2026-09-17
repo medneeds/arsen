@@ -1567,8 +1567,11 @@ function NutritionFields({
             <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
             <SelectField label="Tipo" value={normalizeConsistency(item.dietType)} options={ORAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-44" />
             <ProfileField item={item} onUpdate={onUpdate} width="w-64" />
-            <NutFieldLabel>Quantidade:</NutFieldLabel>
-            <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="300" />
+            {/* Sem "Quantidade": dieta oral se prescreve por consistencia e
+                intervalo, nao por volume. Quem serve a bandeja nao mede mL, e
+                o campo em branco so ocupava espaco na linha. Volume/dia segue
+                existindo para enteral e parenteral, onde e a propria
+                prescricao. */}
             <SelectField label="Intervalo" value={item.dietInterval} options={DIET_INTERVALS} onChange={(v) => onUpdate(item.id, 'dietInterval', v)} width="w-28" />
           </div>
           {RecommendationsField}

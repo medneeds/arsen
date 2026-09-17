@@ -236,6 +236,8 @@ export interface NutritionStructured {
   nutConsistency?: string;
   dietInterval?: string;
   nutScheduleMode?: string;
+  /** Tomadas por dia. Mesmo conceito que "etapas/dia" no corpo da prescrição. */
+  nutSteps?: string;
   nutVolDay?: string;
   nutMode?: string;
   nutFraction?: string;
@@ -272,6 +274,7 @@ export const NUTRITION_STRUCTURED_KEYS = [
   "nutConsistency",
   "dietInterval",
   "nutScheduleMode",
+  "nutSteps",
   "nutVolDay",
   "nutMode",
   "nutFraction",
@@ -660,8 +663,21 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
         nutVolDay: entVolDay,
         nutMode: ENT_MODE_LABEL[entMode],
         infusionRate: entMode === "continua" ? entRate : undefined,
-        nutScheduleMode: "interval",
+        // SINCRONIA COM O CORPO DA PRESCRICAO.
+        //
+        // O editor tem um alternador Intervalo x Etapas: em "Intervalo" ele le
+        // dietInterval, em "Etapas" le nutSteps. O assistente gravava sempre
+        // nutScheduleMode: "interval" e punha as tomadas em nutFraction — que
+        // NENHUM dos dois modos le. As tomadas configuradas no fluxo nunca
+        // apareciam no item.
+        //
+        // "Tomadas por dia" e o mesmo conceito que "etapas/dia" do editor
+        // (DIET_STEPS e a lista 1..8). Entao: modo continuo grava intervalo;
+        // modo em tomadas grava ETAPAS, que e onde o editor vai buscar.
+        nutScheduleMode: entMode === "continua" ? "interval" : "steps",
         dietInterval: entMode === "continua" ? "Contínua" : undefined,
+        nutSteps: entMode !== "continua" ? String(entFractions) : undefined,
+        // Mantido para o impresso e para a frase de detalhe, que leem este campo.
         nutFraction: entMode !== "continua" ? `${entFractions}x` : undefined,
         nutProgression: entProgression ? "Iniciar 20 mL/h; progredir +20 mL/h a cada 6-8h conforme tolerância" : undefined,
         nutBedHead: "30-45",
@@ -1416,33 +1432,6 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
               <p className="text-xs text-muted-foreground">
                 A hidratação é prescrita em linha própria, separada da dieta. Nenhuma das opções é obrigatória — marque só o que o paciente precisa.
               </p>
-                {/* ── Complementos da hidratação ──
-                    Reordenado: a hidratação programada (o catálogo, logo
-                    abaixo) é a decisão principal e vem primeiro; o flush é
-                    complemento e fica aqui, como interruptor.
-
-                    "Correção de distúrbio hidroeletrolítico" foi REMOVIDA: e
-                    esquema terapêutico de eletrólitos, não hidratação de
-                    rotina, e pertence à prescrição de eletrólitos. Manter aqui
-                    dava a entender que água corrige hiponatremia. */}
-                <Separator />
-                <div className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
-                  <div>
-                    <div className="text-xs font-medium flex items-center gap-2">
-                      <Droplets className="h-3.5 w-3.5 text-released" />
-                      Flush de manutenção
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      30 mL antes e após dieta e medicações, para manter a sonda pérvia.
-                    </p>
-                  </div>
-                  <Switch checked={waterFlush} onCheckedChange={setWaterFlush} />
-                </div>
-
-                <div>
-                  <Label className="text-xs font-medium">Ajustes manuais / observações desta dieta</Label>
-                  <Textarea value={entCustom} onChange={e => setEntCustom(e.target.value)} placeholder="Ex.: pausa para fisioterapia respiratória 14h; ajuste conforme glicemia; fórmula caseira do hospital..." className="mt-2 text-xs min-h-[50px]" />
-                </div>
                 {/* ── Como a agua e ofertada ──
                     Duas formas EXCLUDENTES, lado a lado: ou a oferta e
                     controlada em volume e horario (programada), ou e livre.
@@ -1504,6 +1493,33 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                     />
                   )}
                 </section>
+
+                {/* ── Complementos da hidratação ──
+                    Reordenado: a hidratação programada (o catálogo, logo
+                    abaixo) é a decisão principal e vem primeiro; o flush é
+                    complemento e fica aqui, como interruptor.
+
+                    "Correção de distúrbio hidroeletrolítico" foi REMOVIDA: e
+                    esquema terapêutico de eletrólitos, não hidratação de
+                    rotina, e pertence à prescrição de eletrólitos. Manter aqui
+                    dava a entender que água corrige hiponatremia. */}
+                <Separator />
+                <div className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
+                  <div>
+                    <div className="text-xs font-medium flex items-center gap-2">
+                      <Droplets className="h-3.5 w-3.5 text-released" />
+                      Flush de manutenção
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      30 mL antes e após dieta e medicações, para manter a sonda pérvia.
+                    </p>
+                  </div>
+                  <Switch checked={waterFlush} onCheckedChange={setWaterFlush} />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium">Ajustes manuais / observações desta dieta</Label>
+                  <Textarea value={entCustom} onChange={e => setEntCustom(e.target.value)} placeholder="Ex.: pausa para fisioterapia respiratória 14h; ajuste conforme glicemia; fórmula caseira do hospital..." className="mt-2 text-xs min-h-[50px]" />
+                </div>
             </div>
           )}
 
