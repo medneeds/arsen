@@ -743,3 +743,39 @@ body.gestor-readonly main::before {
   color: rgba(255, 255, 255, 0.92) !important;
   opacity: 1 !important;
 }
+
+/* Transição de página — substitui o fade que vinha do framer-motion.
+   Ver o comentário em src/components/PageTransition.tsx. */
+@keyframes arsen-page-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-page-in {
+  animation: arsen-page-in 120ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-in { animation: none; }
+}
+
+/* Entradas simples em CSS — substituem o framer-motion na tela de
+   carregamento e no seletor de perfil, que estao no caminho do login.
+   Ver o comentario em src/components/LoadingScreen.tsx. */
+@keyframes arsen-surge {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes arsen-surge-escala {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: none; }
+}
+.arsen-surge {
+  opacity: 0;
+  animation: arsen-surge 400ms cubic-bezier(0, 0, 0.2, 1) forwards;
+}
+.arsen-surge-escala {
+  opacity: 0;
+  animation: arsen-surge-escala 450ms cubic-bezier(0, 0, 0.2, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arsen-surge, .arsen-surge-escala { animation: none; opacity: 1; transform: none; }
+}

@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { SessionTimeoutProvider } from "./SessionTimeoutProvider";
-import { PendingApprovalScreen } from "./PendingApprovalScreen";
+// Sob demanda: so aparece para usuario com cadastro pendente, mas arrastava
+// framer-motion (22 usos) para o pacote de entrada de TODA a aplicacao.
+const PendingApprovalScreen = lazy(() =>
+  import("./PendingApprovalScreen").then(m => ({ default: m.PendingApprovalScreen })));
 import { ConsentTermsDialog, CURRENT_TERMS_VERSION } from "./ConsentTermsDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { ProfileIpGate } from "./ProfileIpGate";
@@ -129,7 +132,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   // Usuários genéricos legados têm acesso direto (período de transição)
   // Usuários individuais pendentes veem a tela de espera
   if (status === "pending" && !isLegacyGenericUser) {
-    return <PendingApprovalScreen />;
+    return <Suspense fallback={null}><PendingApprovalScreen /></Suspense>;
   }
 
   // Envolver com SessionTimeoutProvider para ativar timeout LGPD/CFM

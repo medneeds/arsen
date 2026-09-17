@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,9 @@ import { cn } from "@/lib/utils";
 import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveLandingRoute } from "@/config/profileDefaults";
-import { ProfileChooser } from "@/components/auth/ProfileChooser";
+// Sob demanda: so aparece para quem tem mais de um perfil de acesso.
+const ProfileChooser = lazy(() =>
+  import("@/components/auth/ProfileChooser").then(m => ({ default: m.ProfileChooser })));
 import { FirstAccessSetup } from "@/components/auth/FirstAccessSetup";
 import type { AccessProfile } from "@/config/userProfiles";
 import { safeSetItem } from "@/lib/safeStorage";
@@ -213,16 +215,18 @@ export default function AuthPage() {
   // Tela de escolha de perfil (multi-perfil) — toma a tela inteira após login bem-sucedido
   if (chooserProfiles && chooserProfiles.length > 1 && !showLoadingScreen) {
     return (
-      <ProfileChooser
-        userName={chooserUserName}
-        profiles={chooserProfiles}
-        appRole={chooserAppRole}
-        onChosen={(_p, route) => {
-          setRedirectRoute(route);
-          setChooserProfiles(null);
-          setShowLoadingScreen(true);
-        }}
-      />
+      <Suspense fallback={null}>
+        <ProfileChooser
+          userName={chooserUserName}
+          profiles={chooserProfiles}
+          appRole={chooserAppRole}
+          onChosen={(_p, route) => {
+            setRedirectRoute(route);
+            setChooserProfiles(null);
+            setShowLoadingScreen(true);
+          }}
+        />
+      </Suspense>
     );
   }
 

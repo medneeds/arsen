@@ -18,10 +18,13 @@ import { UnsavedPrescriptionProvider } from "@/contexts/UnsavedPrescriptionConte
 // Telas críticas (eager): impactam first paint do app
 // Index (mapa de leitos) é pesado e requer auth — lazy para não competir com o login
 const Index = lazy(() => import("./pages/Index"));
-import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import LandingPage from "./pages/LandingPage";
+// Sob demanda: estas tres nao sao o caminho comum e arrastavam framer-motion
+// (a LandingPage sozinha usa motion em 22 pontos) para o pacote de entrada,
+// que e baixado antes de qualquer pixel aparecer.
+const NotFound = lazy(() => import("./pages/NotFound"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 const SetupPage = lazy(() => import("./pages/SetupPage"));
 

@@ -22,7 +22,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Home as HomeIcon } from "lucide-react";
 import { whitelabel } from "@/config/whitelabel";
 import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -52,7 +52,11 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronDown, Repeat2 } from "lucide-react";
-import { ProfileSwitcherDialog } from "@/components/auth/ProfileSwitcherDialog";
+// Sob demanda: so abre quando o usuario troca de perfil, mas era o ULTIMO
+// ponto arrastando framer-motion (127 KB) para o pacote de entrada de toda a
+// aplicacao — baixado antes de a tela de login aparecer.
+const ProfileSwitcherDialog = lazy(() =>
+  import("@/components/auth/ProfileSwitcherDialog").then(m => ({ default: m.ProfileSwitcherDialog })));
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { SECTOR_NAVIGATION } from "@/config/sectorNavigation";
@@ -850,7 +854,7 @@ export function AppSidebar() {
           </Button>
         </div>
       </SidebarFooter>
-      <ProfileSwitcherDialog open={showProfileSwitcher} onOpenChange={setShowProfileSwitcher} />
+      <Suspense fallback={null}><ProfileSwitcherDialog open={showProfileSwitcher} onOpenChange={setShowProfileSwitcher} /></Suspense>
     </>
   );
 

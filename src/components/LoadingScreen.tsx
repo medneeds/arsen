@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { whitelabel } from "@/config/whitelabel";
 import { useHospital } from "@/contexts/HospitalContext";
 import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
@@ -55,12 +54,11 @@ export function LoadingScreen({ onComplete, duration = 1400 }: LoadingScreenProp
       <div className="relative z-10 flex flex-col items-center w-full max-w-xs px-8">
 
         {/* Logo única — Socorrão I */}
-        <motion.div
-          className="mb-6"
-          initial={{ opacity: 0, scale: 0.92 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.45, ease: "easeOut" }}
-        >
+        {/* Animacoes em CSS, nao framer-motion: esta tela esta no caminho do
+            LOGIN e era um dos pontos que arrastavam 127 KB da biblioteca para
+            o pacote de entrada — baixado antes de qualquer pixel aparecer.
+            Quatro fades simples nao justificam esse peso. */}
+        <div className="mb-6 arsen-surge-escala">
           <div className="h-20 w-20 rounded-lg bg-card/70 border border-border/40 flex items-center justify-center backdrop-blur-sm p-3 shadow-sm">
             <img
               src={socorraoCrossLogo}
@@ -68,43 +66,33 @@ export function LoadingScreen({ onComplete, duration = 1400 }: LoadingScreenProp
               className="h-full w-full object-contain"
             />
           </div>
-        </motion.div>
+        </div>
 
         {/* Nome da plataforma */}
-        <motion.h1
-          className="preserve-case text-3xl font-normal tracking-[0.35em] text-foreground mb-2"
-          style={{ fontFamily: SERIF }}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.12 }}
+        <h1
+          className="preserve-case text-3xl font-normal tracking-[0.35em] text-foreground mb-2 arsen-surge"
+          style={{ fontFamily: SERIF, animationDelay: "120ms" }}
         >
           {whitelabel.platform.name.toUpperCase()}
-        </motion.h1>
+        </h1>
 
         {/* Hospital — discreto */}
-        <motion.p
-          className="preserve-case text-xs font-medium tracking-[0.2em] uppercase text-foreground/45 text-center mb-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
+        <p
+          className="arsen-surge preserve-case text-xs font-medium tracking-[0.2em] uppercase text-foreground/45 text-center mb-8"
+          style={{ animationDelay: "200ms" }}
         >
           {hospitalName}
-        </motion.p>
+        </p>
 
         {/* Barra de progresso */}
-        <motion.div
-          className="w-full max-w-[180px]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.28 }}
-        >
+        <div className="w-full max-w-[180px] arsen-surge" style={{ animationDelay: "280ms" }}>
           <div className="w-full h-[1.5px] bg-muted/50 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-100 ease-out bg-primary/70"
               style={{ width: `${Math.min(progress, 100)}%` }}
             />
           </div>
-        </motion.div>
+        </div>
 
       </div>
     </div>
