@@ -170,7 +170,7 @@ export default function LandingPage() {
             transition={{ duration: 0.7, delay: 0.5 }}
             className="preserve-case text-sm md:text-base text-muted-foreground font-normal tracking-[0.2em] uppercase mb-8"
           >
-            Plataforma Clínica Inteligente
+            Plataforma Hospitalar Inteligente
           </motion.p>
 
           {/* CTA */}

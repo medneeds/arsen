@@ -223,7 +223,7 @@ export default function Relatorio1Page() {
           </header>
           <div className="cover-content">
             <span className="cover-wordmark cover-wordmark-hero">Arsen</span>
-            <div className="kicker light">Plataforma Clínica Inteligente · Em parceria com o HMDM Socorrão I</div>
+            <div className="kicker light">Plataforma Hospitalar Inteligente · Em parceria com o HMDM Socorrão I</div>
             <h1 className="cover-title">Relatório de Implantação<br /><span>Semana 1 · Trabalhando em conjunto</span></h1>
             <p className="cover-sub">{PERIODO}</p>
             <div className="cover-meta">
