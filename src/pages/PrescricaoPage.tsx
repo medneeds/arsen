@@ -4408,24 +4408,35 @@ function DrugInteractionDialog({
       const { runClinicalAlertChecks } = await import("@/lib/clinicalAlertChecks");
       const alerts = runClinicalAlertChecks(
         items.filter(i => i.status === 'active'),
-        { allergies: patientContext?.allergies || "" }
+        patientContext?.allergies || ""
       );
 
       const interactions = alerts.filter(a => a.type === 'interaction');
       const duplicates = alerts.filter(a => a.type === 'duplicate');
       const allergyAlerts = alerts.filter(a => a.type === 'allergy');
+      const routeAlerts = alerts.filter(a => a.type === 'route');
 
       if (alerts.length === 0) {
-        setResult("## Nenhuma interação grave identificada\n\nA verificação automática não detectou interações graves, duplicatas ou alertas de alergia entre os medicamentos ativos desta prescrição.\n\n> Esta verificação usa uma lista de pares de alto risco validados clinicamente. Consulte sempre fontes especializadas para casos complexos.");
+        setResult("## Nenhum alerta identificado\n\nA verificação automática não detectou interações graves, duplicatas, vias incompatíveis ou alertas de alergia entre os medicamentos ativos desta prescrição.\n\n> Esta verificação usa uma lista de pares de alto risco validados clinicamente. Consulte sempre fontes especializadas para casos complexos.");
         return;
       }
 
       let output = "";
 
+      // Via proibida vem primeiro: é o achado de maior prioridade em
+      // runClinicalAlertChecks (typePriority route = 0) e não pode ficar
+      // abaixo de seções que o médico talvez não role até o fim.
+      if (routeAlerts.length > 0) {
+        output += "## Vias de Administração Incompatíveis\n\n";
+        routeAlerts.forEach(a => {
+          output += `**${a.title}**\n- Gravidade: ALTA\n- ${a.detail || "Via incompatível com o fármaco prescrito."}\n\n`;
+        });
+      }
+
       if (interactions.length > 0) {
         output += "## Interações Graves Identificadas\n\n";
         interactions.forEach(a => {
-          output += `**${a.message}**\n- Gravidade: ALTA\n- ${a.detail || "Monitorar rigorosamente."}\n\n`;
+          output += `**${a.title}**\n- Gravidade: ALTA\n- ${a.detail || "Monitorar rigorosamente."}\n\n`;
         });
       } else {
         output += "## Sem interações graves identificadas\n\nNenhuma interação de alto risco detectada.\n\n";
@@ -4434,18 +4445,18 @@ function DrugInteractionDialog({
       if (duplicates.length > 0) {
         output += "## Duplicatas / Sobreposição Terapêutica\n\n";
         duplicates.forEach(a => {
-          output += `**${a.message}**\n- ${a.detail || "Verificar se a duplicação é intencional."}\n\n`;
+          output += `**${a.title}**\n- ${a.detail || "Verificar se a duplicação é intencional."}\n\n`;
         });
       }
 
       if (allergyAlerts.length > 0) {
         output += "## Alertas de Alergia\n\n";
         allergyAlerts.forEach(a => {
-          output += `**${a.message}**\n- ${a.detail || "Paciente tem alergia registrada."}\n\n`;
+          output += `**${a.title}**\n- ${a.detail || "Paciente tem alergia registrada."}\n\n`;
         });
       }
 
-      output += `## Resumo\n- Interações graves: ${interactions.length}\n- Duplicatas: ${duplicates.length}\n- Alertas de alergia: ${allergyAlerts.length}\n\n> Verificação automática baseada em lista de pares de alto risco. Consulte fontes especializadas para análise completa.`;
+      output += `## Resumo\n- Vias incompatíveis: ${routeAlerts.length}\n- Interações graves: ${interactions.length}\n- Duplicatas: ${duplicates.length}\n- Alertas de alergia: ${allergyAlerts.length}\n\n> Verificação automática baseada em lista de pares de alto risco. Consulte fontes especializadas para análise completa.`;
 
       setResult(output);
     } catch (err: any) {
