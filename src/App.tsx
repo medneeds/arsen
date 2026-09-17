@@ -9,7 +9,6 @@ import { IpRestricted } from "@/components/IpRestricted";
 import { PrivacyProvider } from "@/contexts/PrivacyContext";
 import { lazy, Suspense, useEffect } from "react";
 import { PageLoader } from "@/components/PageLoader";
-import { startIdlePrefetch } from "@/lib/prefetchRoutes";
 import { HelpTourProvider } from "@/contexts/HelpTourContext";
 import { HelpTourButton } from "@/components/help/HelpTourButton";
 import { HelpTourOverlay } from "@/components/help/HelpTourOverlay";
@@ -191,10 +190,6 @@ function DocumentosPageWrapper() {
 }
 
 const App = () => {
-
-  useEffect(() => {
-    startIdlePrefetch();
-  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

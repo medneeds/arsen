@@ -54,6 +54,13 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: {
           "vendor-react": ["react", "react-dom", "react-router-dom"],
+          // clsx e tailwind-merge sao a base do cn(), usado por quase todo
+          // componente — inclusive na tela de login. Sem isto eles caiam dentro
+          // de vendor-charts (o recharts tambem usa clsx), e a entrada passava
+          // a importar 416 KB de graficos para chamar uma funcao de poucas
+          // linhas. O navegador baixava a biblioteca de graficos inteira antes
+          // de desenhar o campo de senha.
+          "vendor-utils": ["clsx", "tailwind-merge", "class-variance-authority"],
           "vendor-charts": ["recharts"],
           "vendor-pdf": ["pdfjs-dist"],
           "vendor-motion": ["framer-motion"],

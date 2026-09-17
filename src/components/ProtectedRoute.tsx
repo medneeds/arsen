@@ -6,6 +6,7 @@ import { PendingApprovalScreen } from "./PendingApprovalScreen";
 import { ConsentTermsDialog, CURRENT_TERMS_VERSION } from "./ConsentTermsDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { ProfileIpGate } from "./ProfileIpGate";
+import { startIdlePrefetch } from "@/lib/prefetchRoutes";
 
 // Logins genéricos que não precisam de aprovação (período de transição)
 const LEGACY_GENERIC_USERS = [
@@ -67,6 +68,13 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       checkTermsAcceptance();
     }
   }, [user, loading, isLegacyGenericUser]);
+
+  // Aquecimento das rotas clinicas: so com sessao. Antes rodava no App, ou
+  // seja, ja na tela de login — a rede ficava ocupada baixando 1,18 MB de
+  // telas que o usuario ainda nem tinha direito de ver.
+  useEffect(() => {
+    if (!loading && user) startIdlePrefetch();
+  }, [loading, user]);
 
   useEffect(() => {
     if (!loading && !user) {

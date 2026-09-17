@@ -78,12 +78,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (fetchingUserIdRef.current === userId) return;
     fetchingUserIdRef.current = userId;
     try {
-      // Fetch role - get highest privilege role (admin > medico > others)
-      const { data: rolesData, error: roleError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
+      // As tres consultas pedem a MESMA coisa (o userId) e nao dependem uma da
+      // outra, mas rodavam em cascata: cada uma so comecava depois que a
+      // anterior voltava. Com a latencia do Supabase self-hosted, isso somava
+      // tres viagens de ida e volta ANTES de a primeira tela aparecer.
+      // Em paralelo, o custo passa a ser o da consulta mais lenta.
+      const [rolesRes, profileRes, deptRes] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+        supabase.from("profiles").select("status").eq("id", userId).maybeSingle(),
+        supabase.from("user_departments").select("department").eq("user_id", userId),
+      ]);
 
+      const { data: rolesData, error: roleError } = rolesRes;
       const roleData = rolesData && rolesData.length > 0
         ? (rolesData.find(r => r.role === 'admin') || rolesData[0])
         : null;
@@ -98,17 +104,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStatus("pending");
         setAllowedDepartments([]);
         return;
-      } else {
-        setRole(roleData?.role as UserRole);
       }
+      setRole(roleData?.role as UserRole);
 
-      // Fetch user status from profiles
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("status")
-        .eq("id", userId)
-        .maybeSingle();
-
+      const { data: profileData, error: profileError } = profileRes;
       if (profileError) {
         console.error("[AuthContext] falha ao buscar status do usuário:", profileError);
         // Status "pending" é restritivo — bloqueia acesso sem conceder permissão indevida.
@@ -117,12 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStatus(profileData?.status as UserStatus);
       }
 
-      // Fetch allowed departments
-      const { data: deptData, error: deptError } = await supabase
-        .from("user_departments")
-        .select("department")
-        .eq("user_id", userId);
-
+      const { data: deptData, error: deptError } = deptRes;
       if (deptError) {
         // Sempre loga em qualquer ambiente — falha de departamento pode bloquear
         // acesso legítimo e deve ser visível em produção.
