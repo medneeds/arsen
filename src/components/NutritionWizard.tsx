@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import {
   UtensilsCrossed, Soup, Droplets, AlertTriangle, Check,
   Ban, ChevronRight, ChevronLeft, Sparkles, Activity, Plus,
@@ -188,6 +189,25 @@ const ENTERAL_MODES = [
   { key: "ciclica",       label: "Cíclica noturna",         desc: "12-16h, complementar à VO" },
 ] as const;
 
+/** Vias possiveis para sonda de drenagem/descompressao. */
+const DRENAGEM_VIAS = [
+  { key: "sng", label: "SNG", desc: "Sonda nasogástrica" },
+  { key: "sog", label: "SOG", desc: "Sonda orogástrica" },
+] as const;
+
+/** Para que a sonda foi passada. Muda o que a equipe registra. */
+const DRENAGEM_FINALIDADES = [
+  { key: "descompressao", label: "Descompressão gástrica", desc: "Aliviar distensão, íleo, obstrução" },
+  { key: "quantificacao", label: "Quantificação de resíduo", desc: "Medir e registrar débito por turno" },
+  { key: "ambas",         label: "Descompressão + quantificação", desc: "As duas finalidades" },
+] as const;
+
+/** Como a sonda fica entre as verificações. */
+const DRENAGEM_POSICOES = [
+  { key: "sifonagem",     label: "Aberta em sifonagem", desc: "Drenagem passiva contínua em frasco" },
+  { key: "intermitente",  label: "Fechada c/ aspirações", desc: "Fechada, aspirar nos horários" },
+] as const;
+
 const ZERO_REASONS = [
   { key: "preop",      label: "Pré-operatório" },
   { key: "posop",      label: "Pós-operatório imediato" },
@@ -302,7 +322,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
   // mais nenhuma entry — o perfil vem de `comorbs`.
   const [oralProfiles, setOralProfiles] = useState<Set<string>>(new Set());
   const [oralFraction, setOralFraction] = useState<string>("6x/dia");
-  const [oralWaterFree, setOralWaterFree] = useState(true);
+  const [oralWaterFree, setOralWaterFree] = useState(false);
   const [oralCustom, setOralCustom] = useState("");
 
   // Enteral
@@ -327,9 +347,6 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
   const [waterScheduled, setWaterScheduled] = useState(false);
   const [waterVol, setWaterVol] = useState("100");
   const [waterFreq, setWaterFreq] = useState("4/4h");
-  const [waterCorrection, setWaterCorrection] = useState(false);
-  const [waterCorrectionVol, setWaterCorrectionVol] = useState("");
-  const [waterCorrectionObs, setWaterCorrectionObs] = useState("");
 
   // Parenteral
   const [parType, setParType] = useState<"central" | "periferica">("central");
@@ -340,6 +357,23 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
   const [parCustom, setParCustom] = useState("");
 
   // Zero
+  /**
+   * Sonda de drenagem — cuidado com DISPOSITIVO, independente da modalidade.
+   *
+   * Uma sonda naso ou orogastrica aberta em sifonagem, para descompressao e
+   * quantificacao de residuo, e prescricao ATIVA: tem material, cuidado de
+   * enfermagem e dado a registrar por turno. Nao e ausencia de dieta.
+   *
+   * Vale junto de dieta zero (o caso mais comum) e tambem junto de dieta
+   * enteral — sonda de descompressao em paralelo a alimentacao por jejunostomia,
+   * por exemplo em gastroparesia. Por isso fica fora do bloco de modalidade.
+   */
+  const [drenagemAtiva, setDrenagemAtiva] = useState(false);
+  const [drenagemVia, setDrenagemVia] = useState<string>("");
+  const [drenagemFinalidade, setDrenagemFinalidade] = useState<string>("");
+  const [drenagemPosicao, setDrenagemPosicao] = useState<string>("");
+  const [drenagemFreq, setDrenagemFreq] = useState<string>("6/6h");
+
   const [zeroReason, setZeroReason] = useState<string>("preop");
   const [zeroSince, setZeroSince] = useState<string>("");
   const [zeroHydrate, setZeroHydrate] = useState(true);
@@ -375,8 +409,8 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
     setEntSystem("fechado"); setEntVia(""); setEntFormula(""); setEntMode("");
     setEntRate("25"); setEntVolDay("1500"); setEntFractions("6"); setEntProgression(true); setEntCustom("");
     setWaterFlush(true); setWaterScheduled(false); setWaterVol("100"); setWaterFreq("4/4h");
-    setWaterCorrection(false); setWaterCorrectionVol(""); setWaterCorrectionObs("");
     setParType("central"); setParVolume("1500"); setParKcal(""); setParRate(""); setParObs(""); setParCustom("");
+    setDrenagemAtiva(false); setDrenagemVia(""); setDrenagemFinalidade(""); setDrenagemPosicao(""); setDrenagemFreq("6/6h");
     setZeroReason("preop"); setZeroSince(""); setZeroHydrate(true); setZeroCustom("");
     setProteinSelected(new Set()); setProteinOverrides({});
     setNotes("");
@@ -413,10 +447,23 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
         if (n.size === 1) return n; // não permite ficar vazio
         n.delete(k);
       } else {
-        // Dieta zero é exclusiva — desmarca outras se zero for adicionado, ou desmarca zero se outra for adicionada
-        if (k === "zero") return new Set(["zero"]);
-        n.delete("zero");
-        n.add(k);
+        // Dieta zero exclui as vias que alimentam pelo TRATO DIGESTIVO (oral e
+        // enteral), mas CONVIVE com a parenteral. "Jejum por via digestiva com
+        // NPT plena" e situacao corrente em pancreatite grave, ileo prolongado
+        // e pos-operatorio de trato digestivo.
+        //
+        // Antes marcar zero apagava todas as outras, e essa combinacao era
+        // impossivel de prescrever pelo fluxo — o medico tinha de montar na mao.
+        if (k === "zero") {
+          n.delete("oral");
+          n.delete("enteral");
+          n.add("zero");
+        } else if (k === "parenteral") {
+          n.add(k);                 // convive com zero
+        } else {
+          n.delete("zero");         // oral ou enteral desfazem o jejum
+          n.add(k);
+        }
       }
       return n;
     });
@@ -481,13 +528,49 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
     const doctorNote = (custom: string) =>
       [custom || null, notes || null].filter(Boolean).join(" · ");
 
+    // ── Sonda de drenagem ──
+    // Linha PROPRIA, fora da modalidade: e cuidado com dispositivo, nao dieta.
+    // Sai do fluxo mesmo quando ha dieta enteral em curso (descompressao em
+    // paralelo a alimentacao), caso em que a equipe precisa ver as duas linhas.
+    if (drenagemAtiva && drenagemVia) {
+      const via = DRENAGEM_VIAS.find(v => v.key === drenagemVia);
+      const fin = DRENAGEM_FINALIDADES.find(f => f.key === drenagemFinalidade);
+      const pos = DRENAGEM_POSICOES.find(p => p.key === drenagemPosicao);
+      const quantifica = drenagemFinalidade === "quantificacao" || drenagemFinalidade === "ambas";
+      entries.push({
+        id: `nut-dren-${uid()}`,
+        nutritionType: "care",
+        name: `${via?.label} para drenagem — ${fin?.label ?? "descompressão"}`,
+        presentation: via?.desc ?? "-",
+        defaultDose: "-",
+        defaultRoute: via?.label ?? "-",
+        defaultPosology: pos?.label ?? "-",
+        defaultSchedule: quantifica ? drenagemFreq : "Contínuo",
+        category: "nutrition" as const,
+        guidance: buildGuidance([
+          pos?.desc ?? null,
+          quantifica ? `Medir e registrar o débito a cada ${drenagemFreq}` : null,
+          quantifica ? "Anotar volume, aspecto e presença de borra de café ou sangue" : null,
+          "Confirmar posicionamento antes de cada uso e manter cabeceira elevada",
+          "Comunicar o médico se o débito aumentar de forma abrupta",
+        ]),
+        instructions: "",
+      });
+    }
+
     if (modalities.has("zero")) {
       const reason = ZERO_REASONS.find(r => r.key === zeroReason)?.label || "";
       entries.push({
         id: `nut-zero-${uid()}`,
         nutritionType: "zero",
         nutZeroReason: [reason, zeroSince ? `desde ${zeroSince}` : null].filter(Boolean).join(" — "),
-        name: "Dieta zero (NPO)",
+        // Com NPT associada, o rotulo precisa dizer que o jejum e da VIA
+        // DIGESTIVA, nao do paciente: ele esta sendo nutrido, por outra via.
+        // "Dieta zero" sozinho, ao lado de uma NPT, e leitura ambigua num
+        // documento que a equipe inteira consulta.
+        name: modalities.has("parenteral")
+          ? "Dieta zero por via digestiva (nutrição exclusiva por NPT)"
+          : "Dieta zero (NPO)",
         presentation: "-",
         defaultDose: "-",
         defaultRoute: "-",
@@ -497,6 +580,9 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
           `Motivo: ${reason}`,
           zeroSince ? `Em jejum desde: ${zeroSince}` : null,
           "Reavaliar reintrodução de dieta a cada 12-24h",
+          modalities.has("parenteral")
+            ? "Aporte nutricional por NPT — ver linha própria"
+            : null,
           comorbSuffix.trim(),
         ]),
         instructions: doctorNote(zeroCustom),
@@ -633,26 +719,10 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
       // e temperatura. Marcar as duas gerava DUAS linhas de hidratacao para o
       // mesmo paciente. Ver o bloco do catalogo mais abaixo.
       // Correção de DHE
-      if (waterCorrection) {
-        entries.push({
-          id: `nut-ent-water-corr-${uid()}`,
-        nutritionType: "water",
-          name: "Água via sonda — correção de distúrbio hidroeletrolítico",
-          presentation: "-",
-          defaultDose: `${waterCorrectionVol || "—"} mL/dia`,
-          // Sigla canonica: e o que o seletor do editor espera. Antes saia
-        // "Enteral (SNE/SNG)", que nao existia na lista do editor — a via
-        // escolhida aqui chegava ao item e o campo abria vazio.
-        defaultRoute: normalizeEnteralRoute(via) || via,
-          defaultPosology: "Fracionado conforme prescrição",
-          defaultSchedule: "Conforme aprazamento",
-          guidance: [
-            "Esquema de correção de DHE — ofertar conforme balanço hídrico, Na sérico e diurese",
-            waterCorrectionObs,
-          ].filter(Boolean).join(" · "),
-          category: "nutrition",
-        });
-      }
+      // "Correcao de disturbio hidroeletrolitico" foi removida do assistente:
+      // e esquema terapeutico de eletrolitos, nao hidratacao de rotina, e
+      // pertence a prescricao de eletrolitos. Manter aqui dava a entender que
+      // agua corrige hiponatremia.
     }
 
     if (modalities.has("parenteral")) {
@@ -756,7 +826,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
     modalities, comorbs,
     oralConsist, oralProfiles, oralFraction, oralWaterFree, oralCustom,
     entSystem, entVia, entFormula, entMode, entRate, entVolDay, entFractions, entProgression, entCustom,
-    waterFlush, waterScheduled, waterVol, waterFreq, waterCorrection, waterCorrectionVol, waterCorrectionObs,
+    waterFlush, waterScheduled, waterVol, waterFreq,
     parType, parVolume, parKcal, parRate, parObs, parCustom,
     zeroReason, zeroSince, zeroHydrate, zeroCustom,
     proteinSelected, proteinOverrides,
@@ -780,8 +850,9 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
     },
     water: {
       flush: waterFlush, scheduled: waterScheduled, vol: waterVol, freq: waterFreq,
-      correction: waterCorrection, correctionVol: waterCorrectionVol,
-      correctionObs: waterCorrectionObs,
+      // Campos mantidos no plano so para ler configuracoes salvas antes da
+      // remocao da "correcao de disturbio" do assistente.
+      correction: false, correctionVol: "", correctionObs: "",
     },
     waterOffer: { enabled: waterOfferEnabled, state: waterOffer },
     parenteral: {
@@ -826,9 +897,6 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
     }
     setWaterVol(p.water.vol);
     setWaterFreq(p.water.freq);
-    setWaterCorrection(p.water.correction);
-    setWaterCorrectionVol(p.water.correctionVol);
-    setWaterCorrectionObs(p.water.correctionObs);
     setWaterOfferEnabled(p.waterOffer.enabled);
     setWaterOffer(p.waterOffer.state);
     setParType(p.parenteral.type);
@@ -883,7 +951,6 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
         if (!entVia) faltam.push("via de acesso");
         if (!entFormula) faltam.push("tipo de fórmula");
         if (!entMode) faltam.push("modo de infusão");
-        if (entProgression === null) faltam.push("esquema de progressão");
         if (!entVolDay.trim()) faltam.push("volume total/dia");
         if (entMode === "continua" ? !entRate.trim() : !entFractions.trim()) {
           faltam.push(entMode === "continua" ? "vazão" : "tomadas/dia");
@@ -1064,12 +1131,11 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="flex items-end">
-                      <label className="flex items-center gap-2 text-xs cursor-pointer">
-                        <input type="checkbox" checked={oralWaterFree} onChange={e => setOralWaterFree(e.target.checked)} className="rounded-md" />
-                        Adicionar "Água oral livre"
-                      </label>
-                    </div>
+                    {/* "Agua oral livre" saiu daqui: virou "Agua livre" no passo
+                        Agua, ao lado da hidratacao programada. Aqui, no meio da
+                        dieta oral, ficava desconectada do resto da hidratacao —
+                        o medico configurava agua em dois lugares que nao se
+                        conheciam. */}
                   </div>
                   <div>
                     <Label className="text-xs font-medium">Ajustes manuais / observações desta dieta</Label>
@@ -1243,6 +1309,94 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
                 </section>
               )}
 
+
+              {/* ── Sonda de drenagem ──
+                  Fora do bloco de modalidade de proposito: e cuidado com
+                  DISPOSITIVO, nao dieta. Vale junto de dieta zero (o caso mais
+                  comum) e tambem junto de dieta enteral — descompressao em
+                  paralelo a alimentacao por jejunostomia, por exemplo. */}
+              <section className={cn(
+                "rounded-lg border p-3 space-y-3 transition-all",
+                drenagemAtiva ? "border-border bg-muted/40" : "border-dashed border-border/60",
+              )}>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-semibold flex items-center gap-2">
+                      <Activity className="h-3.5 w-3.5 text-released" />
+                      Sonda para drenagem ou quantificação de resíduo
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Gera linha própria. Independe da dieta — pode coexistir com nutrição enteral.
+                    </p>
+                  </div>
+                  <Switch checked={drenagemAtiva} onCheckedChange={setDrenagemAtiva} />
+                </div>
+
+                {drenagemAtiva && (
+                  <div className="space-y-3 pt-1">
+                    <div>
+                      <Label className="text-xs font-medium">
+                        Via
+                        {!drenagemVia && <span className="ml-1.5 text-xs font-normal text-warning-on-soft">selecione</span>}
+                      </Label>
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {DRENAGEM_VIAS.map(v => (
+                          <button key={v.key} type="button" title={v.desc}
+                            onClick={() => setDrenagemVia(v.key)}
+                            className={cn("text-xs px-3 py-1.5 rounded-full border font-medium transition-all",
+                              drenagemVia === v.key ? "border-released bg-released text-white" : "border-border hover:border-released-border")}>
+                            {v.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs font-medium">Finalidade</Label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 mt-1.5">
+                        {DRENAGEM_FINALIDADES.map(f => (
+                          <button key={f.key} type="button" title={f.desc}
+                            onClick={() => setDrenagemFinalidade(f.key)}
+                            className={cn("text-xs px-2 py-1.5 rounded-lg border text-left font-medium transition-all",
+                              drenagemFinalidade === f.key ? "border-released bg-released text-white" : "border-border hover:border-released-border")}>
+                            {f.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs font-medium">Posição entre as verificações</Label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-1.5">
+                        {DRENAGEM_POSICOES.map(o => (
+                          <button key={o.key} type="button" title={o.desc}
+                            onClick={() => setDrenagemPosicao(o.key)}
+                            className={cn("text-xs px-2 py-1.5 rounded-lg border text-left font-medium transition-all",
+                              drenagemPosicao === o.key ? "border-released bg-released text-white" : "border-border hover:border-released-border")}>
+                            {o.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {(drenagemFinalidade === "quantificacao" || drenagemFinalidade === "ambas") && (
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs font-medium">Quantificar a cada</Label>
+                        <Select value={drenagemFreq} onValueChange={setDrenagemFreq}>
+                          <SelectTrigger className="h-7 w-28 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="2/2h">2/2h</SelectItem>
+                            <SelectItem value="4/4h">4/4h</SelectItem>
+                            <SelectItem value="6/6h">6/6h</SelectItem>
+                            <SelectItem value="12/12h">12/12h</SelectItem>
+                            <SelectItem value="Por turno">Por turno</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
             </div>
           )}
 
@@ -1258,76 +1412,85 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
               <p className="text-xs text-muted-foreground">
                 A hidratação é prescrita em linha própria, separada da dieta. Nenhuma das opções é obrigatória — marque só o que o paciente precisa.
               </p>
-                {/* Água via sonda */}
+                {/* ── Complementos da hidratação ──
+                    Reordenado: a hidratação programada (o catálogo, logo
+                    abaixo) é a decisão principal e vem primeiro; o flush é
+                    complemento e fica aqui, como interruptor.
+
+                    "Correção de distúrbio hidroeletrolítico" foi REMOVIDA: e
+                    esquema terapêutico de eletrólitos, não hidratação de
+                    rotina, e pertence à prescrição de eletrólitos. Manter aqui
+                    dava a entender que água corrige hiponatremia. */}
                 <Separator />
-                <div>
-                  <Label className="text-xs font-medium flex items-center gap-2"><Droplets className="h-3.5 w-3.5 text-muted-foreground" /> Água via sonda</Label>
-                  <p className="text-xs text-muted-foreground mt-1">As três opções podem ser combinadas; cada uma gera uma linha própria na prescrição.</p>
-
-                  <div className="mt-2 space-y-2">
-                    <label className="flex items-start gap-2 text-xs cursor-pointer p-2 rounded-md border border-border/60 hover:border-released-border">
-                      <input type="checkbox" checked={waterFlush} onChange={e => setWaterFlush(e.target.checked)} className="rounded-md mt-1" />
-                      <div>
-                        <div className="font-medium">Flush de manutenção</div>
-                        <div className="text-xs text-muted-foreground">30 mL antes/após dieta e medicações para manter pérvia a sonda.</div>
-                      </div>
-                    </label>
-
-
-                    <div className={cn("p-2 rounded-md border transition-all", waterCorrection ? "border-warning bg-warning-soft/30" : "border-border/60")}>
-                      <label className="flex items-start gap-2 text-xs cursor-pointer">
-                        <input type="checkbox" checked={waterCorrection} onChange={e => setWaterCorrection(e.target.checked)} className="rounded-md mt-1" />
-                        <div className="flex-1">
-                          <div className="font-medium flex items-center gap-2"><AlertTriangle className="h-3 w-3 text-warning" /> Correção de distúrbio hidroeletrolítico</div>
-                          <div className="text-xs text-muted-foreground">Esquema terapêutico (ex.: hipernatremia).</div>
-                        </div>
-                      </label>
-                      {waterCorrection && (
-                        <div className="space-y-2 mt-2 pl-6">
-                          <div>
-                            <Label className="text-xs font-medium">Volume total/dia (mL)</Label>
-                            <Input value={waterCorrectionVol} onChange={e => setWaterCorrectionVol(e.target.value)} placeholder="ex: 1500" className="mt-1 h-8 text-xs" />
-                          </div>
-                          <div>
-                            <Label className="text-xs font-medium">Observações (fracionamento, alvo de Na, reavaliação)</Label>
-                            <Textarea value={waterCorrectionObs} onChange={e => setWaterCorrectionObs(e.target.value)} placeholder="Ex.: 250 mL 4/4h; alvo Na 145; reavaliar em 12h" className="mt-1 text-xs min-h-[40px]" />
-                          </div>
-                        </div>
-                      )}
+                <div className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
+                  <div>
+                    <div className="text-xs font-medium flex items-center gap-2">
+                      <Droplets className="h-3.5 w-3.5 text-released" />
+                      Flush de manutenção
                     </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      30 mL antes e após dieta e medicações, para manter a sonda pérvia.
+                    </p>
                   </div>
+                  <Switch checked={waterFlush} onCheckedChange={setWaterFlush} />
                 </div>
 
                 <div>
                   <Label className="text-xs font-medium">Ajustes manuais / observações desta dieta</Label>
                   <Textarea value={entCustom} onChange={e => setEntCustom(e.target.value)} placeholder="Ex.: pausa para fisioterapia respiratória 14h; ajuste conforme glicemia; fórmula caseira do hospital..." className="mt-2 text-xs min-h-[50px]" />
                 </div>
-                {/* ── Hidratação programada — opt-in, aditiva ── */}
+                {/* ── Como a agua e ofertada ──
+                    Duas formas EXCLUDENTES, lado a lado: ou a oferta e
+                    controlada em volume e horario (programada), ou e livre.
+                    Ter as duas marcadas nao faz sentido clinico.
+
+                    A "agua livre" estava antes dentro da dieta oral, longe
+                    daqui: o medico configurava agua em dois lugares que nao se
+                    conheciam. */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setWaterOfferEnabled(true); setOralWaterFree(false); }}
+                    className={cn(
+                      "rounded-lg border p-3 text-left transition-all",
+                      waterOfferEnabled
+                        ? "border-released bg-released-soft"
+                        : "border-border hover:border-released-border",
+                    )}
+                  >
+                    <div className="text-xs font-semibold flex items-center gap-2">
+                      <Droplets className="h-3.5 w-3.5" />
+                      Hidratação programada
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Volume por oferta e horário definidos. Gera linha própria na prescrição.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setOralWaterFree(true); setWaterOfferEnabled(false); }}
+                    className={cn(
+                      "rounded-lg border p-3 text-left transition-all",
+                      oralWaterFree
+                        ? "border-released bg-released-soft"
+                        : "border-border hover:border-released-border",
+                    )}
+                  >
+                    <div className="text-xs font-semibold flex items-center gap-2">
+                      <Droplets className="h-3.5 w-3.5" />
+                      Água livre
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Sem restrição de volume ou horário, conforme aceitação do paciente.
+                    </p>
+                  </button>
+                </div>
+
                 <section className={cn(
                   "rounded-lg border p-3 space-y-3 transition-all",
-                  waterOfferEnabled
-                    ? "border-border bg-muted/40"
-                    : "border-dashed border-border/60 bg-muted/10"
+                  waterOfferEnabled ? "border-border bg-muted/40" : "hidden"
                 )}>
-                  <label className="flex items-start gap-2 text-xs cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={waterOfferEnabled}
-                      onChange={e => setWaterOfferEnabled(e.target.checked)}
-                      className="rounded-md mt-1"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-foreground flex items-center gap-2">
-                        <Droplets className="h-3.5 w-3.5" />
-                        Hidratação programada
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Permite escolher tipo de água (filtrada, mineral, coco, soro caseiro, destilada para sonda…),
-                        via, fracionamento, temperatura e restrição hídrica. Gera uma linha extra na prescrição,
-                        Escolha o tipo de água, a via, o volume por oferta e o fracionamento. Gera uma linha própria na prescrição.
-                      </div>
-                    </div>
-                  </label>
                   {waterOfferEnabled && (
                     <WaterOfferingFields
                       value={waterOffer}
