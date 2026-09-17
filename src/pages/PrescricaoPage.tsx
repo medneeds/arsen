@@ -329,6 +329,7 @@ import { ENTERAL_ROUTE_VALUES, SUPPLEMENT_ROUTE_OPTIONS, normalizeEnteralRoute }
 import { readNutritionPlan, type NutritionPlan } from "@/lib/nutritionPlan";
 import { DEFAULT_WATER_STATE } from "@/components/shared/WaterOfferingFields";
 import { DIET_PROFILE_OPTIONS, readDietProfiles, writeDietProfiles } from "@/lib/dietProfiles";
+import { ORAL_DIET_CONSISTENCIES, normalizeConsistency } from "@/lib/oralConsistency";
 
 // Compose dose token combining `dose` (texto livre, geralmente do preset do wizard)
 // e `quantity`+`quantityUnit` (campos editados inline pelo médico).
@@ -1251,7 +1252,10 @@ function NutritionFields({
   })();
 
   // === Listas de opções da nova solicitação de dieta ===
-  const ORAL_DIET_TYPES = ['Líquida', 'Líquida restrita', 'Pastosa', 'Branda', 'Leve', 'Geral'];
+  // Vocabulario unico com o assistente — ver src/lib/oralConsistency.ts.
+  // Antes eram duas listas (6 aqui, 7 la) e um mapa achatando uma na outra,
+  // que fazia "Semilíquida" virar "Pastosa" no caminho.
+  const ORAL_DIET_TYPES = ORAL_DIET_CONSISTENCIES;
   const ENTERAL_DIET_TYPES = ['Polimérica padrão', 'Polimérica hipercalórica', 'Oligomérica', 'Específica diabético', 'Específica renal', 'Específica hepatopata', 'Imunomoduladora', 'Pediátrica'];
   const SUPPLEMENT_TYPES = ['Hiperproteico', 'Hipercalórico', 'Específico diabético', 'Específico renal', 'Espessante', 'Módulo de proteína', 'Módulo de fibra'];
   const DIET_PROFILES = ['Geral', 'Diabético', 'Cardiopata/Hipertenso', 'Renal', 'Hepatopata', 'Anêmico', 'Gastrointestinal', 'Pós-operatório', 'Oncológico', 'Pediátrico', 'Idoso'];
@@ -1561,7 +1565,7 @@ function NutritionFields({
         <>
           <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
             <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
-            <SelectField label="Tipo" value={item.dietType} options={ORAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-40" />
+            <SelectField label="Tipo" value={normalizeConsistency(item.dietType)} options={ORAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-44" />
             <ProfileField item={item} onUpdate={onUpdate} width="w-64" />
             <NutFieldLabel>Quantidade:</NutFieldLabel>
             <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="300" />

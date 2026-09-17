@@ -20,6 +20,7 @@ import type { MedicationEntry } from "@/data/medicationsDatabase";
 import { normalizeEnteralRoute } from "@/lib/enteralRoutes";
 import type { NutritionPlan, ProteinOverride, ProteinRouteKind } from "@/lib/nutritionPlan";
 import { DIET_PROFILE_OPTIONS, keysToLabels } from "@/lib/dietProfiles";
+import { ORAL_DIET_CONSISTENCIES } from "@/lib/oralConsistency";
 import {
   WaterOfferingFields,
   DEFAULT_WATER_STATE,
@@ -50,15 +51,13 @@ const COMORBIDITIES = DIET_PROFILE_OPTIONS.map(o => ({
 }));
 type ComorbKey = string;
 
-const ORAL_CONSISTENCIES = [
-  { key: "geral",       label: "Geral / Livre",        desc: "Sem restrições de consistência" },
-  { key: "branda",      label: "Branda",               desc: "Cocção mais prolongada, fácil mastigação" },
-  { key: "pastosa",     label: "Pastosa",              desc: "Liquidificada/amassada, sem mastigar" },
-  { key: "liquida_c",   label: "Líquida completa",     desc: "Líquidos e semilíquidos, com leite/suplementos" },
-  { key: "liquida_r",   label: "Líquida restrita",     desc: "Apenas líquidos claros (água, chá, gelatina)" },
-  { key: "semiliq",     label: "Semilíquida",          desc: "Mingaus e cremes" },
-  { key: "espess",      label: "Líquida espessada",    desc: "Para disfagia (néctar/mel/pudim)" },
-] as const;
+/**
+ * Consistencias vindas da fonte unica — a MESMA lista do corpo da prescricao.
+ * Antes havia duas listas e um mapa achatando 7 opcoes em 5, o que fazia
+ * "Semilíquida" virar "Pastosa" e "Líquida espessada" virar "Líquida" ao
+ * chegar no item. Ver src/lib/oralConsistency.ts.
+ */
+const ORAL_CONSISTENCIES = ORAL_DIET_CONSISTENCIES.map(label => ({ key: label, label }));
 
 
 const ENTERAL_VIAS = [
@@ -316,7 +315,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
   const [comorbs, setComorbs] = useState<Set<ComorbKey>>(new Set());
 
   // Oral
-  const [oralConsist, setOralConsist] = useState<string>("geral");
+  const [oralConsist, setOralConsist] = useState<string>("");
   // Mantido apenas para ler planos salvos antes da unificacao do Perfil: o
   // campo oral.profiles do NutritionPlan ainda existe no banco. Nao alimenta
   // mais nenhuma entry — o perfil vem de `comorbs`.
@@ -405,7 +404,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
 
   const reset = () => {
     setStep(0); setModalities(new Set(["oral"])); setComorbs(new Set());
-    setOralConsist("geral"); setOralProfiles(new Set(["livre"])); setOralFraction("6x/dia"); setOralWaterFree(true); setOralCustom("");
+    setOralConsist(""); setOralProfiles(new Set(["livre"])); setOralFraction("6x/dia"); setOralWaterFree(true); setOralCustom("");
     setEntSystem("fechado"); setEntVia(""); setEntFormula(""); setEntMode("");
     setEntRate("25"); setEntVolDay("1500"); setEntFractions("6"); setEntProgression(true); setEntCustom("");
     setWaterFlush(true); setWaterScheduled(false); setWaterVol("100"); setWaterFreq("4/4h");
@@ -501,10 +500,9 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
       diabete: "Específica diabético", renal: "Específica renal",
       hepato: "Específica hepatopata", imuno: "Imunomoduladora",
     };
-    const ORAL_DIETTYPE: Record<string, string> = {
-      geral: "Geral", branda: "Branda", pastosa: "Pastosa", semiliq: "Pastosa",
-      liquida_c: "Líquida", liquida_r: "Líquida restrita", espess: "Líquida",
-    };
+    // ORAL_DIETTYPE foi removido: traduzia 7 consistencias em 5 e perdia
+    // justamente as duas mais especificas, que sao as que importam em disfagia.
+    // dietType passa a receber o proprio rotulo escolhido.
     const comorbStr = Array.from(comorbs)
       .map(k => COMORBIDITIES.find(c => c.key === k)?.label)
       .filter(Boolean)
@@ -609,7 +607,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
       entries.push({
         id: `nut-oral-${uid()}`,
         nutritionType: "diet_oral",
-        dietType: ORAL_DIETTYPE[oralConsist],
+        dietType: oralConsist,
         nutConsistency: consist,
         dietInterval: oralFraction,
         // Perfil = condicoes do paciente, a MESMA lista do corpo da prescricao.
@@ -1099,16 +1097,22 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight, init
               {modalities.has("oral") && (
                 <section className="rounded-lg border border-border/60 p-3 space-y-3">
                   <h3 className="text-xs font-semibold text-released-on-soft flex items-center gap-2"><UtensilsCrossed className="h-3.5 w-3.5" /> Via oral</h3>
+                  {/* Sem subdescricao: o nome da consistencia e o que a cozinha
+                      executa, e a explicacao embaixo de cada opcao ocupava duas
+                      linhas por cartao sem acrescentar decisao — era boa parte
+                      da rolagem deste passo. */}
                   <div>
-                    <Label className="text-xs font-medium">Consistência</Label>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
+                    <Label className="text-xs font-medium">
+                      Consistência
+                      {!oralConsist && <span className="ml-1.5 text-xs font-normal text-warning-on-soft">selecione</span>}
+                    </Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-1.5">
                       {ORAL_CONSISTENCIES.map(c => (
                         <button key={c.key} type="button" onClick={() => setOralConsist(c.key)}
-                          className={cn("text-xs px-3 py-2 rounded-lg border text-left transition-all",
-                            oralConsist === c.key ? "border-released bg-released-soft text-released-on-soft" : "border-border hover:border-released-border"
+                          className={cn("text-xs px-2 py-1.5 rounded-lg border text-left font-medium transition-all",
+                            oralConsist === c.key ? "border-released bg-released text-white" : "border-border hover:border-released-border"
                           )}>
-                          <div className="font-medium">{c.label}</div>
-                          <div className="text-xs text-muted-foreground">{c.desc}</div>
+                          {c.label}
                         </button>
                       ))}
                     </div>

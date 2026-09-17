@@ -91,9 +91,18 @@ export function buildNutritionParts(f: NutritionPrintFields): string[] {
 
   const parts: Array<string | null> = [
     f.dietType || null,
-    // Consistência logo após o tipo — dado de segurança (disfagia). Sem o
-    // sufixo "(IDDSI ...)" para economizar espaço; o nome já identifica.
-    f.nutConsistency ? f.nutConsistency.replace(/\s*\(IDDSI[^)]*\)/i, '') : null,
+    // Consistência logo após o tipo — dado de SEGURANÇA (disfagia,
+    // broncoaspiração). Só aparece quando difere de dietType: desde a
+    // unificação do vocabulário (17/09/2026) os dois campos guardam a mesma
+    // consistência, e imprimir "Pastosa · Pastosa" no papel que a copeira lê
+    // não ajuda ninguém. A verificação preserva itens antigos, em que os dois
+    // campos podem de fato divergir.
+    (() => {
+      if (!f.nutConsistency) return null;
+      const limpo = f.nutConsistency.replace(/\s*\(IDDSI[^)]*\)/i, '');
+      const tipo = (f.dietType || '').trim().toLowerCase();
+      return limpo.trim().toLowerCase() === tipo ? null : limpo;
+    })(),
     f.dietProfile ? `Perfil: ${f.dietProfile}` : null,
     f.nutComposition || null,
     f.nutVolDay ? `Vol/dia: ${f.nutVolDay} mL` : null,
