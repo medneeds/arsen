@@ -151,15 +151,22 @@ export function WaterOfferingFields({
               key={t.key}
               type="button"
               onClick={() => set("type", t.key)}
+              // Selecao com preenchimento solido, nao so mudanca de borda: o
+              // accentClassName generico deixava o tipo escolhido quase
+              // indistinguivel dos demais, e escolher a agua errada em paciente
+              // com restricao hidrica ou sonda nao e detalhe.
               className={cn(
-                "text-left p-2 rounded-md border transition-all",
+                "text-left p-2 rounded-md border-2 transition-all",
                 value.type === t.key
-                  ? accentClassName
-                  : "border-border bg-background hover:border-muted-foreground/40"
+                  ? "border-released bg-released text-white shadow-sm"
+                  : "border-border bg-background hover:border-released-border"
               )}
             >
-              <p className="text-xs font-medium">{t.label}</p>
-              <p className="text-xs text-muted-foreground leading-tight">{t.detail}</p>
+              <p className="text-xs font-semibold">{t.label}</p>
+              <p className={cn(
+                "text-xs leading-tight",
+                value.type === t.key ? "text-white/80" : "text-muted-foreground",
+              )}>{t.detail}</p>
             </button>
           ))}
         </div>

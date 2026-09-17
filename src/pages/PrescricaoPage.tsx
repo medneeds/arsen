@@ -1288,7 +1288,7 @@ function NutritionFields({
    * entao o campo abria vazio e metade da prescricao se perdia no caminho.
    * Ver src/lib/dietProfiles.ts.
    */
-  const ProfileField = ({ item, onUpdate, width = 'w-44' }: {
+  const ProfileField = ({ item, onUpdate, width = 'w-64' }: {
     item: PrescriptionItem; onUpdate: (id: string, field: string, value: string) => void; width?: string;
   }) => {
     const selecionados = readDietProfiles(item.dietProfile);
@@ -1307,12 +1307,15 @@ function NutritionFields({
               variant="outline"
               className={cn("h-7 justify-between px-2 text-xs font-medium bg-white border-released-border", width)}
             >
+              {/* Ate tres perfis aparecem por extenso; so a partir do quarto
+                  vira contagem. Resumir em "2 perfis" logo no segundo escondia
+                  justamente a informacao que o medico acabou de configurar. */}
               <span className="truncate">
                 {selecionados.length === 0
                   ? '—'
-                  : selecionados.length === 1
-                    ? selecionados[0]
-                    : `${selecionados.length} perfis`}
+                  : selecionados.length <= 3
+                    ? selecionados.join(', ')
+                    : `${selecionados.slice(0, 3).join(', ')} +${selecionados.length - 3}`}
               </span>
               <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
             </Button>
@@ -1559,7 +1562,7 @@ function NutritionFields({
           <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
             <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
             <SelectField label="Tipo" value={item.dietType} options={ORAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-40" />
-            <ProfileField item={item} onUpdate={onUpdate} width="w-44" />
+            <ProfileField item={item} onUpdate={onUpdate} width="w-64" />
             <NutFieldLabel>Quantidade:</NutFieldLabel>
             <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="300" />
             <SelectField label="Intervalo" value={item.dietInterval} options={DIET_INTERVALS} onChange={(v) => onUpdate(item.id, 'dietInterval', v)} width="w-28" />
@@ -1576,7 +1579,7 @@ function NutritionFields({
               <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
               <SelectField label="Tipo" value={item.dietType} options={ENTERAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
               <SelectField label="Via" value={normalizeEnteralRoute(item.route)} options={ENTERAL_ROUTES} onChange={(v) => onUpdate(item.id, 'route', v)} width="w-44" />
-              <ProfileField item={item} onUpdate={onUpdate} width="w-40" />
+              <ProfileField item={item} onUpdate={onUpdate} width="w-64" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <NutFieldLabel>Vol/dia:</NutFieldLabel>
@@ -1608,7 +1611,7 @@ function NutritionFields({
                 <NutFieldLabel>Via:</NutFieldLabel>
                 <Input value="Endovenosa" disabled className="h-7 text-xs font-medium bg-released-soft/60 border-released-border w-36" />
               </div>
-              <ProfileField item={item} onUpdate={onUpdate} width="w-40" />
+              <ProfileField item={item} onUpdate={onUpdate} width="w-64" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <NutFieldLabel>Vol/dia:</NutFieldLabel>
@@ -1653,7 +1656,7 @@ function NutritionFields({
               <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
               <SelectField label="Tipo" value={item.dietType} options={SUPPLEMENT_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
               <SelectField label="Via" value={item.route === 'Oral' ? 'Oral' : normalizeEnteralRoute(item.route)} options={SUPPLEMENT_ROUTES} onChange={(v) => onUpdate(item.id, 'route', v)} width="w-44" />
-              <ProfileField item={item} onUpdate={onUpdate} width="w-40" />
+              <ProfileField item={item} onUpdate={onUpdate} width="w-64" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <NutFieldLabel>Quantidade:</NutFieldLabel>
