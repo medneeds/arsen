@@ -9,7 +9,7 @@
  * O sidebar lê isDirty (OR de todas as páginas) e usa o onSaveDraft
  * da página ativa para salvar antes de navegar.
  */
-import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useRef, useState, useMemo } from 'react';
 
 type PageKey = 'prescricao' | 'evolucao';
 
@@ -72,11 +72,15 @@ export function UnsavedPrescriptionProvider({ children }: { children: React.Reac
     registerPageSaveDraft('prescricao', fn);
   }, [registerPageSaveDraft]);
 
+  // Memoizado — as funcoes ja eram estaveis (useCallback), mas o objeto em
+  // volta era recriado a cada render, o que anulava o ganho.
+  const valor = useMemo(
+    () => ({ isDirty, dirtyLabel, setPageDirty, registerPageSaveDraft, onSaveDraft, setDirty, registerSaveDraft }),
+    [isDirty, dirtyLabel, setPageDirty, registerPageSaveDraft, onSaveDraft, setDirty, registerSaveDraft],
+  );
+
   return (
-    <UnsavedClinicalContext.Provider value={{
-      isDirty, dirtyLabel, setPageDirty, registerPageSaveDraft, onSaveDraft,
-      setDirty, registerSaveDraft,
-    }}>
+    <UnsavedClinicalContext.Provider value={valor}>
       {children}
     </UnsavedClinicalContext.Provider>
   );

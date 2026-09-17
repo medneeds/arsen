@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { safeSetItem } from "@/lib/safeStorage";
 
@@ -37,7 +37,7 @@ export function HospitalProvider({ children }: { children: ReactNode }) {
   const [hospitals, setHospitals] = useState<HospitalUnit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchStatesAndHospitals = async () => {
+  const fetchStatesAndHospitals = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -90,9 +90,9 @@ export function HospitalProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const setCurrentHospital = (hospital: HospitalUnit) => {
+  const setCurrentHospital = useCallback((hospital: HospitalUnit) => {
     setCurrentHospitalState(hospital);
     safeSetItem(STORAGE_KEY_HOSPITAL, hospital.id);
     
@@ -102,24 +102,22 @@ export function HospitalProvider({ children }: { children: ReactNode }) {
       setCurrentState(state);
       safeSetItem(STORAGE_KEY_STATE, state.id);
     }
-  };
+  }, [states]);
 
   useEffect(() => {
     fetchStatesAndHospitals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Memoizado: criado inline, o objeto era novo a cada render e os 70
+  // consumidores de useHospital re-renderizavam junto sem motivo.
+  const valor = useMemo(
+    () => ({ currentState, currentHospital, states, hospitals, isLoading, setCurrentHospital, fetchStatesAndHospitals }),
+    [currentState, currentHospital, states, hospitals, isLoading, setCurrentHospital, fetchStatesAndHospitals],
+  );
+
   return (
-    <HospitalContext.Provider
-      value={{
-        currentState,
-        currentHospital,
-        states,
-        hospitals,
-        isLoading,
-        setCurrentHospital,
-        fetchStatesAndHospitals,
-      }}
-    >
+    <HospitalContext.Provider value={valor}>
       {children}
     </HospitalContext.Provider>
   );

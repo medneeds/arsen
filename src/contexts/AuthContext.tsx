@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode, useCallback, useMemo } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -139,16 +139,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const refreshUserStatus = async () => {
+  const refreshUserStatus = useCallback(async () => {
     if (user) {
       // Rebusca role + status + departamentos completos para garantir que mudanças
       // feitas por um admin (ex: promoção de visitante → médico) reflitam
       // imediatamente sem que o usuário precise fazer logout.
       await fetchUserRoleAndDepartments(user.id);
     }
-  };
+  }, [user]);
 
-  const signIn = async (identifier: string, password: string) => {
+  const signIn = useCallback(async (identifier: string, password: string) => {
     // Aceita email, CPF (somente dígitos) ou usuário interno.
     const raw = identifier.trim();
     const digits = raw.replace(/\D+/g, "");
@@ -177,9 +177,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return { error };
-  };
+  }, []);
 
-  const signUp = async (username: string, password: string, fullName: string, role: "admin" | "medico" | "porta" | "visitante" | "farmacia" = "medico") => {
+  const signUp = useCallback(async (username: string, password: string, fullName: string, role: "admin" | "medico" | "porta" | "visitante" | "farmacia" = "medico") => {
     const redirectUrl = `${window.location.origin}/`;
     const internalEmail = `${username.toLowerCase()}@sistema.local`;
     
@@ -201,9 +201,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     return { error };
-  };
+  }, [navigate]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
@@ -234,10 +234,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // ignore storage errors
     }
     navigate("/auth");
-  };
+  }, [navigate]);
+
+  /**
+   * O objeto de valor precisa ser memoizado: criado inline, ele era NOVO a cada
+   * render do provider, e os 71 componentes que consomem useAuth
+   * re-renderizavam junto — mesmo sem nada ter mudado de fato. Com telas de
+   * milhares de linhas, isso e a causa de transicao lenta em todo o app.
+   */
+  const valor = useMemo(
+    () => ({ user, session, role, status, allowedDepartments, loading, signIn, signUp, signOut, refreshUserStatus }),
+    [user, session, role, status, allowedDepartments, loading, signIn, signUp, signOut, refreshUserStatus],
+  );
 
   return (
-    <AuthContext.Provider value={{ user, session, role, status, allowedDepartments, loading, signIn, signUp, signOut, refreshUserStatus }}>
+    <AuthContext.Provider value={valor}>
       {children}
     </AuthContext.Provider>
   );

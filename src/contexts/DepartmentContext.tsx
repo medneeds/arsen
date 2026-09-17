@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from "react";
 import { safeSetItem } from "@/lib/safeStorage";
 
 export type Department = 
@@ -157,7 +157,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
   const currentSectorCode = DEPARTMENT_TO_SECTOR[currentDepartment] || "";
   const currentSectorLabel = SECTOR_DISPLAY[currentSectorCode] || currentDepartment;
 
-  const setCurrentDepartment = (department: Department) => {
+  const setCurrentDepartment = useCallback((department: Department) => {
     setCurrentDepartmentState(department);
     safeSetItem(STORAGE_KEY, department);
     // Sync sector code for legacy consumers
@@ -165,7 +165,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     if (sectorCode) {
       safeSetItem("selected_sector", sectorCode);
     }
-  };
+  }, []);
 
   useEffect(() => {
     safeSetItem(STORAGE_KEY, currentDepartment);
@@ -175,8 +175,15 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     }
   }, [currentDepartment]);
 
+  // Memoizado: criado inline, o objeto era novo a cada render e os 38
+  // consumidores de useDepartment re-renderizavam junto sem motivo.
+  const valor = useMemo(
+    () => ({ currentDepartment, setCurrentDepartment, currentSectorCode, currentSectorLabel }),
+    [currentDepartment, setCurrentDepartment, currentSectorCode, currentSectorLabel],
+  );
+
   return (
-    <DepartmentContext.Provider value={{ currentDepartment, setCurrentDepartment, currentSectorCode, currentSectorLabel }}>
+    <DepartmentContext.Provider value={valor}>
       {children}
     </DepartmentContext.Provider>
   );
