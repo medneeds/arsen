@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fromSolicitacaoStatusDb } from "@/lib/solicitacaoStatus";
 
 export interface PatientPendingItem {
   id: string;
@@ -69,7 +70,8 @@ export function usePatientPendingItems(
           id: row.id,
           kind: "exam",
           category: row.categoria || "laboratorio",
-          status: row.status || "pending",
+          // DB (pendente/em_andamento/concluido/cancelado) → VM (pending/…)
+          status: fromSolicitacaoStatusDb(row.status),
           label: itemsArr.length > 1 ? `${firstName} +${itemsArr.length - 1}` : firstName,
           createdAt: row.criado_em,
         });
@@ -81,7 +83,8 @@ export function usePatientPendingItems(
           id: row.id,
           kind: "culture",
           category: row.tipo_cultura || "cultura",
-          status: row.status || "pending",
+          // resultados_cultura.status ∈ pendente|liberado|contaminado → VM pending/completed
+          status: row.status === "pendente" || !row.status ? "pending" : "completed",
           label: row.microorganismo || row.tipo_cultura || "Cultura",
           createdAt: row.criado_em,
           critical: Boolean(row.microorganismo),

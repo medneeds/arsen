@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { DischargeDocType, DischargeDocPayload } from "@/lib/dischargeDocuments";
+import { type DischargeDocType, type DischargeDocPayload, fromAltaTipoDb } from "@/lib/dischargeDocuments";
 
 export interface DischargeDocRow {
   id: string;
@@ -19,7 +19,9 @@ export interface DischargeDocRow {
 // DEGRADADO (sem coluna no schema novo): patient_name (recuperado do conteudo
 // quando existir), signed_by_name (assinado_por é FK profissionais.id, não nome
 // → null), suspended_at/archived_at/encounter_id (filtros removidos).
-const DISCHARGE_TIPOS = ["alta_hospitalar", "alta_pedido", "obito"];
+// Valores REAIS no banco (CHECK altas_tipo_check). O VM usa "alta_pedido";
+// no banco é "alta_a_pedido" — filtramos e mapeamos pelo valor do banco.
+const DISCHARGE_TIPOS = ["alta_hospitalar", "alta_a_pedido", "obito"];
 
 export function usePatientDischargeDocs(patientId?: string | null, patientName?: string | null) {
   return useQuery({
@@ -39,7 +41,7 @@ export function usePatientDischargeDocs(patientId?: string | null, patientName?:
         const conteudo = (r.conteudo ?? {}) as DischargeDocPayload;
         return {
           id: r.id,
-          document_type: r.tipo as DischargeDocType,
+          document_type: fromAltaTipoDb(r.tipo),
           patient_name: conteudo?.patient_name ?? patientName ?? "",
           signed_by_name: null, // MIGRAÇÃO: sem coluna de nome do assinante em altas
           signed_by_crm: r.crm_assinatura ?? null,

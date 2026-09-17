@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ADMISSION_STATUS } from "@/lib/admissionStatus";
+import { ADMISSION_STATUS, toInternacaoStatusDb } from "@/lib/admissionStatus";
 import { useSignalingStatus, SignalingStatusPanel } from "@/components/SignalingStatusPanel";
 import type { TransferClassification } from "@/lib/sectorComplexity";
 import { useNavigate } from "react-router-dom";
@@ -49,6 +49,7 @@ import {
   type DischargeDocType,
   type DischargeDocPayload,
   printDischargeDocument,
+  toAltaTipoDb,
 } from "@/lib/dischargeDocuments";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 import { closeActiveEncounter } from "@/lib/resolveActiveEncounter";
@@ -375,7 +376,7 @@ export function PatientMovementDialog({
         const assinadoPorProfId = await resolveProfissionalId(user?.id);
         const { error: docErr } = await supabase.from("altas").insert({
           internacao_id: (patient as any).id,
-          tipo: requiredDocType,
+          tipo: toAltaTipoDb(requiredDocType),
           conteudo: finalDoc as any,
           numero_documento: null,
           assinado_por: assinadoPorProfId,
@@ -391,7 +392,7 @@ export function PatientMovementDialog({
           // também data_alta (substitui o fechamento do patient_encounter). Sem updated_at.
           const { error: statusErr } = await supabase
             .from("internacoes")
-            .update({ status: newAdmissionStatus, data_alta: new Date().toISOString() })
+            .update({ status: toInternacaoStatusDb(newAdmissionStatus), data_alta: new Date().toISOString() })
             .eq("id", (patient as any).id);
           if (statusErr) throw statusErr;
 
@@ -431,8 +432,8 @@ export function PatientMovementDialog({
         // patient_encounter). Interna mantém a internação aberta. Sem updated_at.
         const trUpdate: Record<string, unknown> =
           subtypeDef.id === "TRANSFERENCIA_EXTERNA"
-            ? { status: newAdmissionStatus, data_alta: new Date().toISOString() }
-            : { status: newAdmissionStatus };
+            ? { status: toInternacaoStatusDb(newAdmissionStatus), data_alta: new Date().toISOString() }
+            : { status: toInternacaoStatusDb(newAdmissionStatus) };
         const { error: trErr } = await supabase
           .from("internacoes")
           .update(trUpdate as any)
@@ -504,7 +505,7 @@ export function PatientMovementDialog({
         // MIGRAÇÃO: patients.admission_status → internacoes.status (+ data_alta: desfecho de saída).
         const { error: evErr } = await supabase
           .from("internacoes")
-          .update({ status: ADMISSION_STATUS.DISCHARGE_GIVEN, data_alta: new Date().toISOString() })
+          .update({ status: toInternacaoStatusDb(ADMISSION_STATUS.DISCHARGE_GIVEN), data_alta: new Date().toISOString() })
           .eq("id", (patient as any).id);
         if (evErr) throw evErr;
       }

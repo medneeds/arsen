@@ -426,7 +426,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
             setor_id: setorId,
             numero: finalBed,
             status: "livre",
-            tipo: finalBed.startsWith("EXTRA") ? "extra" : "regular",
+            tipo: finalBed.startsWith("EXTRA") ? "maca" : "leito",
           })
           .select("id")
           .single();

@@ -300,7 +300,7 @@ export function usePatients(department?: Department, sector?: string) {
           numero: patient.bedNumber,
           setor_id: setorMatch.id,
           status: 'livre',
-          tipo: 'comum', // MIGRAÇÃO: sem mapeamento de tipo de leito → default "comum"
+          tipo: 'leito', // CHECK leitos_tipo_check: leito | maca ('comum' violava)
           criado_por: criadoPor,
         })
         .select()

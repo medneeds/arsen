@@ -22,6 +22,7 @@ import {
   shouldEscalateToAi,
   type NiDetection,
 } from "@/lib/unidentifiedDetector";
+import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 
 interface PatientRegistrationDialogProps {
   open: boolean;
@@ -80,16 +81,8 @@ const EMPTY_FORM: PatientFormData = {
   ni_arrival_circumstance: "",
 };
 
-const SECTORS = [
-  "UTI 1", "UTI 2",
-  "UCI 1", "UCI 2",
-  "UCC",
-  "Neuro 01", "Neuro 02",
-  "Clínica Cirúrgica",
-  "Enf. Transição",
-  "Enf. Vascular",
-  "RIV",
-];
+// MIGRAÇÃO (Achado 2): a lista fixa de setores (HMDM) foi removida — os setores
+// agora vêm do banco (alas → setores) via useSectorNavigation.
 
 // Format CPF: 000.000.000-00
 const formatCPF = (v: string) => {
@@ -114,6 +107,12 @@ const isValidCPF = (cpf: string) => {
 };
 
 export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defaultDestinationSector }: PatientRegistrationDialogProps) {
+  // MIGRAÇÃO (Achado 2): a lista de setores para "Pedido de Leito" vinha da
+  // constante hardcoded SECTORS (nomenclatura do HMDM: UTI/UCI/enfermarias…),
+  // que não corresponde aos setores reais do hospital (ex.: Ala A / Ala B).
+  // Agora vem do BANCO (alas → setores) via useSectorNavigation.
+  const { sectors: dbSectors } = useSectorNavigation();
+  const sectorOptions = dbSectors.map((s) => s.nome);
   const [activeTab, setActiveTab] = useState("dados");
   const [form, setForm] = useState<PatientFormData>(() => ({ ...EMPTY_FORM, destination_sector: defaultDestinationSector || "" }));
   const [isExtracting, setIsExtracting] = useState(false);
@@ -373,6 +372,17 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
     if (!form.is_unidentified) {
       if (!form.patient_name.trim()) {
         toast({ title: "Nome obrigatório", variant: "destructive" });
+        return;
+      }
+      // Achado 1: bloqueia caracteres especiais no nome. Permite letras (incl.
+      // acentuadas), espaço, apóstrofo, hífen e ponto — o que cobre nomes reais
+      // (ex.: "D'Motta", "Ana-Maria"); rejeita dígitos e símbolos.
+      if (!/^[\p{L}][\p{L}\s.'-]*$/u.test(form.patient_name.trim())) {
+        toast({
+          title: "Nome inválido",
+          description: "Use apenas letras, espaços, apóstrofo (') e hífen (-). Números e símbolos não são permitidos.",
+          variant: "destructive",
+        });
         return;
       }
       if (!form.birth_date) {
@@ -818,7 +828,12 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
             <div>
               <Label className="text-xs font-semibold">Pedido de Leito (selecione um ou mais setores)</Label>
               <div className="grid grid-cols-2 gap-2 mt-2">
-                {SECTORS.map(s => {
+                {sectorOptions.length === 0 && (
+                  <p className="text-xs text-muted-foreground col-span-2">
+                    Nenhum setor cadastrado para este hospital.
+                  </p>
+                )}
+                {sectorOptions.map(s => {
                   const selected = form.destination_sector.split(", ").filter(Boolean);
                   const isChecked = selected.includes(s);
                   return (

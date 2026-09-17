@@ -41,6 +41,7 @@ import {
 import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { fromSolicitacaoStatusDb } from "@/lib/solicitacaoStatus";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { PrintableRequisitionGuide, printRequisitionGuide, buildRequisitionGuideHtml } from "@/components/PrintableRequisitionGuide";
@@ -85,7 +86,7 @@ function normalizeSolicitacao(
     category: row.categoria,
     items: Array.isArray(row.itens) ? row.itens : [],
     priority: row.prioridade,
-    status: row.status,
+    status: fromSolicitacaoStatusDb(row.status),
     clinical_indication: row.indicacao_clinica || "",
     notes: row.observacoes || "",
     results: row.resultado_texto || null,
@@ -770,7 +771,7 @@ const RequisicaoUnificadaPage = () => {
           categoria: activeCategory,
           itens: formSelectedItems.map(name => ({ name })),
           prioridade: formPriority,
-          status: "pending",
+          status: "pendente",
           indicacao_clinica: activeCategory === "parecer" ? sanitizeRichHtml(formIndication) : formIndication,
           observacoes: notesContent || null,
           solicitado_por: solicitadoPor,
@@ -799,7 +800,7 @@ const RequisicaoUnificadaPage = () => {
       //   completed_at→concluido_em, completed_by→concluido_por (FK profissional).
       const concluidoPor = await resolveProfissionalId(user?.id);
       const updateData: any = {
-        status: "completed",
+        status: "concluido",
         resultado_texto: resultText.trim() || null,
         concluido_em: new Date().toISOString(),
         concluido_por: concluidoPor,
@@ -828,7 +829,7 @@ const RequisicaoUnificadaPage = () => {
     try {
       const { error } = await supabase
         .from("solicitacoes_exame")
-        .update({ status: "cancelled" })
+        .update({ status: "cancelado" })
         .eq("id", id);
       if (error) throw error;
       toast.success("Requisição cancelada");
@@ -2726,7 +2727,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         categoria: "procedimento", // taxonomia preservada
         itens: selectedProcedures.map(p => ({ name: p.code ? `${p.name} (${p.code})` : p.name })),
         prioridade: "rotina",
-        status: "pending",
+        status: "pendente",
         indicacao_clinica: null, // o laudo APAC já contempla o procedimento no corpo
         observacoes: "[PROCEDIMENTO — Laudo APAC gerado]",
         solicitado_por: solicitadoPor,

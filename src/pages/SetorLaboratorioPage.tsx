@@ -22,6 +22,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { toSolicitacaoStatusDb, fromSolicitacaoStatusDb } from "@/lib/solicitacaoStatus";
 import { useAuth } from "@/contexts/AuthContext";
 import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { useHospital } from "@/contexts/HospitalContext";
@@ -72,7 +73,7 @@ function normalizeSolicitacao(row: any): ExamRequest {
     category: row.categoria,
     items: Array.isArray(row.itens) ? row.itens : [],
     priority: row.prioridade,
-    status: row.status,
+    status: fromSolicitacaoStatusDb(row.status),
     clinical_indication: row.indicacao_clinica || null,
     notes: row.observacoes || null,
     results: row.resultado_texto || null,
@@ -257,7 +258,7 @@ const SetorLaboratorioPage = () => {
       // MIGRAÇÃO: colunas novas — results→resultado_texto, result_data→
       // resultado_dados, completed_at→concluido_em, completed_by→concluido_por
       // (FK profissional via user_id; e-mail avulso não tem mais coluna).
-      const updateData: any = { status: newStatus };
+      const updateData: any = { status: toSolicitacaoStatusDb(newStatus) };
       if (newStatus === "completed") {
         updateData.concluido_em = new Date().toISOString();
         updateData.concluido_por = await resolveProfissionalId(user?.id);

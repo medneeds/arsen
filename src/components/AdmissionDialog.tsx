@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
 import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
+import { toEvolucaoStatusDb } from "@/lib/evolucaoStatus";
 import { PatientIdentityHeader } from "./PatientIdentityHeader";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
@@ -592,7 +593,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
             data_hora: now,
             soap: soapPayload,
             exame_fisico: physicalExam,
-            status: "validated",
+            status: toEvolucaoStatusDb("validated"),
           } as any);
         if (evError) throw evError;
       } else {

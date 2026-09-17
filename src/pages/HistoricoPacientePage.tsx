@@ -28,7 +28,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { SectionLoader } from "@/components/SectionLoader";
 import { supabase } from "@/integrations/supabase/client";
-import { printDischargeDocument, type DischargeDocType, type DischargeDocPayload } from "@/lib/dischargeDocuments";
+import { printDischargeDocument, fromAltaTipoDb, type DischargeDocType, type DischargeDocPayload } from "@/lib/dischargeDocuments";
 import { printEvolution } from "@/lib/printEvolution";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
 import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
@@ -419,7 +419,7 @@ export default function HistoricoPacientePage() {
         // em vez de remontar o HTML na mão como os demais tipos acima, garante
         // que a reimpressão saia idêntica ao documento que foi de fato emitido.
         await printDischargeDocument(
-          (data as any).tipo as DischargeDocType,
+          fromAltaTipoDb((data as any).tipo),
           (data as any).conteudo as DischargeDocPayload,
         );
         setPrintingId(null);

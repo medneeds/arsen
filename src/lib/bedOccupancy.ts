@@ -116,7 +116,7 @@ export async function occupyBedInSector(params: OccupyBedParams): Promise<Occupy
       numero: bedNumber,
       setor_id: setorMatch.id,
       status: "ocupado",
-      tipo: "comum", // MIGRAÇÃO: sem mapeamento de tipo → default "comum"
+      tipo: "maca", // leito EXTRA → CHECK leitos_tipo_check aceita leito | maca
     } as never)
     .select("id")
     .single();

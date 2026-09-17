@@ -263,7 +263,7 @@ export function CultureRequestDialog({
           isMinor && data.mother_name ? `Mãe: ${data.mother_name}` : null,
         ].filter(Boolean).join("\n") || null,
         solicitado_por: solicitadoPor,
-        status: "pending",
+        status: "pendente",
       };
 
       if (savedId) {

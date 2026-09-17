@@ -403,7 +403,7 @@ const RequisicaoImagensPage = () => {
           itens: apacItems.length > 0 ? apacItems : [{ name: "APAC" }],
           indicacao_clinica: observations || null,
           prioridade: "eletivo",
-          status: "solicitado",
+          status: "pendente",
           observacoes: notesMeta.join(" | ") || null,
           solicitado_por: solicitadoPor,
         });

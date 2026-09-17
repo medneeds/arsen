@@ -18,3 +18,35 @@ export const ADMISSION_STATUS = {
 } as const;
 
 export type AdmissionStatus = typeof ADMISSION_STATUS[keyof typeof ADMISSION_STATUS];
+
+// ════════════════════════════════════════════════════════════════════════
+// MIGRAÇÃO: o antigo `patients.admission_status` (vocabulário acima) foi
+// escrito direto em `internacoes.status`, cujo CHECK só aceita
+// ativa | alta | obito | transferida | cancelada. Isso quebrava TODOS os
+// desfechos ("new row for relation internacoes violates check constraint
+// internacoes_status_check": alta médica, alta a pedido, evasão, óbito,
+// transferências). Este mapa converte o status de negócio (VM) para o valor
+// aceito pelo banco, no ÚNICO ponto de escrita em internacoes.status.
+// ════════════════════════════════════════════════════════════════════════
+export type InternacaoStatusDb = "ativa" | "alta" | "obito" | "transferida" | "cancelada";
+
+const ADMISSION_TO_INTERNACAO: Record<string, InternacaoStatusDb> = {
+  pre_admitido: "ativa",
+  admitido: "ativa",
+  alta_dada: "alta",
+  obito: "obito",
+  // Transferência interna mantém a internação ABERTA (só muda de leito) → ativa.
+  // Externa é desfecho de saída do hospital → transferida.
+  transferencia_interna_pendente: "ativa",
+  transferencia_externa_pendente: "transferida",
+  // aceita já-em-banco (idempotente)
+  ativa: "ativa",
+  alta: "alta",
+  transferida: "transferida",
+  cancelada: "cancelada",
+};
+
+/** Status de negócio (admission_status) → `internacoes.status` (CHECK). Default: ativa. */
+export function toInternacaoStatusDb(status: string | null | undefined): InternacaoStatusDb {
+  return ADMISSION_TO_INTERNACAO[(status ?? "").toString()] ?? "ativa";
+}

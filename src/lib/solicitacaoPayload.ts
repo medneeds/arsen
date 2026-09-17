@@ -87,7 +87,9 @@ export function buildSolicitacaoRow(
     indicacao_clinica: input.clinicalIndication?.trim() || null,
     prioridade: input.priority || "rotina",
     observacoes: input.notes?.trim() || null,
-    status: "pending",
+    // CHECK solicitacoes_exame_status_check: pendente | em_andamento | concluido | cancelado.
+    // O código antigo gravava "pending" (inglês) → violava a constraint.
+    status: "pendente",
   };
   // MIGRAÇÃO: document_payload não tem coluna em solicitacoes_exame → NÃO emitido.
   // isMissingDocumentPayloadColumn permanece como guarda defensiva nos callers.

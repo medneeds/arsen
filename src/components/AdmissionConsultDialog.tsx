@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
+import { toEvolucaoStatusDb, fromEvolucaoStatusDb } from "@/lib/evolucaoStatus";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -163,7 +164,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
           const soap: any = e.soap || {};
           return {
             id: e.id,
-            status: e.status,
+            status: fromEvolucaoStatusDb(e.status),
             validated_at: soap.__validated_at ?? null,
             validated_by_name: soap.__validated_by_name ?? null,
             created_at: e.criado_em || e.data_hora,
@@ -285,7 +286,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
         internacao_id: patient.id,
         profissional_id: profissionalId,
         data_hora: now,
-        status: "validated",
+        status: toEvolucaoStatusDb("validated"),
         exame_fisico: {},
         soap: {
           addendum: adendoText,
@@ -333,7 +334,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
       const { error } = await supabase
         .from("evolucoes")
         .update({
-          status: "suspended",
+          status: toEvolucaoStatusDb("suspended"),
           motivo_suspensao: suspendReason,
           soap: mergedSoap,
         } as any)

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
+import { toEvolucaoStatusDb, fromEvolucaoStatusDb } from "@/lib/evolucaoStatus";
 
 // MIGRAÇÃO: clinical_evolutions → evolucoes.
 // Colunas novas: id, internacao_id, profissional_id, data_hora, soap (Json),
@@ -105,7 +106,7 @@ function mapEvolution(d: any): EvolutionRecord {
     soap_data: { ...EMPTY_SOAP, ...soap },
     vital_signs: { ...EMPTY_VITALS, ...(soap.__vital_signs ?? {}) },
     physical_exam: { ...EMPTY_EXAM, ...((d.exame_fisico as any) ?? {}) },
-    status: (d.status as EvolutionRecord["status"]) ?? "draft",
+    status: fromEvolucaoStatusDb(d.status),
     evolution_type: soap.__evolution_type ?? undefined,
     diagnostic_hypotheses: soap.__diagnostic_hypotheses ?? null,
     cid_primary: soap.__cid_primary ?? null,
@@ -289,7 +290,7 @@ export function useEvolutions(
           data_hora: new Date().toISOString(),
           soap: soapPayload,
           exame_fisico: physicalExam || EMPTY_EXAM,
-          status: "draft",
+          status: toEvolucaoStatusDb("draft"),
         } as any)
         .select()
         .single();
@@ -403,7 +404,7 @@ export function useEvolutions(
 
       const { error } = await supabase
         .from("evolucoes")
-        .update({ status: "validated", soap: mergedSoap } as any)
+        .update({ status: toEvolucaoStatusDb("validated"), soap: mergedSoap } as any)
         .eq("id", id);
       if (error) throw error;
       toast.success("Evolução validada e assinada");
@@ -431,7 +432,7 @@ export function useEvolutions(
       const { error } = await supabase
         .from("evolucoes")
         .update({
-          status: "suspended",
+          status: toEvolucaoStatusDb("suspended"),
           motivo_suspensao: reason,
           soap: mergedSoap,
         } as any)

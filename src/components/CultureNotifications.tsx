@@ -75,7 +75,7 @@ export function CultureNotifications() {
           setor:setores(tipo, nome)
         )
       `)
-      .eq("status", "completed")
+      .in("status", ["liberado", "contaminado"])
       .eq("lido_pelo_medico", false)
       .order("criado_em", { ascending: false })
       .limit(10);

@@ -298,7 +298,7 @@ export function HemocomponentRequestDialog({
             : null,
         ].filter(Boolean).join("\n") || null,
         solicitado_por: solicitadoPor,
-        status: "pending",
+        status: "pendente",
       };
 
       if (savedId) {

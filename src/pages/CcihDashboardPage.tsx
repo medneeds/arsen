@@ -405,7 +405,9 @@ const CcihDashboardPage = () => {
           microorganismo: microorganism || null,
           antibiograma: antibiogram || null,
           perfil_sensibilidade: sensitivityProfile || null,
-          status: "completed",
+          // CHECK resultados_cultura_status_check: pendente | liberado | contaminado.
+          // "completed" (inglês) violava a constraint. Resultado enviado = liberado.
+          status: "liberado",
           enviado_por: profissionalId,
           notificado_em: new Date().toISOString(),
         } as any);

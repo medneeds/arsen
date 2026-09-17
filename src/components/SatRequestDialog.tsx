@@ -326,7 +326,7 @@ export function SatRequestDialog({
           .filter(Boolean)
           .join("\n"),
         solicitado_por: solicitadoPor,
-        status: "pending",
+        status: "pendente",
       });
       if (error) throw error;
 
