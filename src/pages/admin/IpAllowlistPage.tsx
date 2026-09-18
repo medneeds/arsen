@@ -141,7 +141,14 @@ export default function IpAllowlistPage() {
   }
 
   async function toggleEntry(id: string, value: boolean) {
-    await supabase.from("module_ip_allowlist").update({ enabled: value }).eq("id", id);
+    // A funcao de remover, logo acima, ja conferia o erro e avisava; esta nao.
+    // Numa allowlist de IP, um toggle que falha em silencio faz o admin pensar
+    // que liberou (ou bloqueou) um acesso que na verdade nao mudou.
+    const { error } = await supabase.from("module_ip_allowlist").update({ enabled: value }).eq("id", id);
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      return;
+    }
     load();
   }
 

@@ -26,7 +26,11 @@ export async function logUserAdminAction(params: {
         .maybeSingle();
       actorName = (prof as { full_name?: string } | null)?.full_name ?? null;
     }
-    await supabase.from("user_admin_audit").insert([{
+    // Auditoria nao quebra o fluxo do usuario — mas uma trilha que some em
+    // silencio e defeito proprio num sistema sujeito a LGPD e CFM. O resultado
+    // era descartado: negativa de RLS aqui abria buraco na trilha sem nenhum
+    // registro. Continua sem lancar; apenas deixa de ser invisivel.
+    const { error: erroAuditoria } = await supabase.from("user_admin_audit").insert([{
       actor_id: actor?.id ?? null,
       actor_email: actor?.email ?? null,
       actor_name: actorName,
@@ -43,6 +47,9 @@ export async function logUserAdminAction(params: {
       metadata: { ...(params.metadata ?? {}), source: "client" } as any,
       user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
     }]);
+    if (erroAuditoria) {
+      console.warn("userAdminAudit: registro NAO gravado (trilha incompleta):", erroAuditoria);
+    }
   } catch (e) {
     // Auditoria não deve quebrar fluxo do usuário
     console.warn("userAdminAudit: falha ao registrar", e);

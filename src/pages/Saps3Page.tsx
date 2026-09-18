@@ -1321,7 +1321,13 @@ export default function Saps3Page() {
       loadOccupiedBeds();
     } catch (err: any) {
       if (createdSapsId) {
-        await supabase.from("saps3_assessments" as any).delete().eq("id", createdSapsId);
+        // Compensacao: apaga a avaliacao ja criada. O resultado era descartado,
+        // entao um rollback que falha deixava avaliacao SAPS orfa no banco sem
+        // nenhum registro de que isso aconteceu.
+        const { error: erroRollback } = await supabase.from("saps3_assessments" as any).delete().eq("id", createdSapsId);
+        if (erroRollback) {
+          console.error("[Saps3Page] ROLLBACK FALHOU — avaliacao SAPS orfa:", createdSapsId, erroRollback);
+        }
       }
       toast.error(humanizeSaveError(err), { duration: 7000 });
     } finally {

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
@@ -98,10 +99,23 @@ export function CultureNotifications() {
   }, [hospitalId, isMedico, fetchUnread]);
 
   const markAsRead = async (id: string) => {
-    await supabase
+    // AUDITORIA 18/09/2026 — o resultado deste update era descartado e a
+    // notificacao sumia da tela de qualquer jeito. Se a gravacao falhasse, o
+    // resultado de cultura continuava NAO LIDO no banco e o medico perdia o
+    // alerta: some da tela, volta no proximo carregamento, e ninguem entende.
+    // Agora so some da tela se realmente ficou marcado como lido.
+    const { error } = await supabase
       .from("culture_results")
       .update({ read_by_doctor: true, read_at: new Date().toISOString() } as any)
       .eq("id", id);
+
+    if (error) {
+      console.error("[CultureNotifications] falha ao marcar cultura como lida:", error);
+      toast.error("Nao foi possivel marcar o resultado como lido", {
+        description: "O alerta segue pendente. Tente novamente.",
+      });
+      return;
+    }
 
     setDismissed(prev => new Set(prev).add(id));
     setNotifications(prev => prev.filter(n => n.id !== id));

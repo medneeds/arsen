@@ -155,7 +155,7 @@ export function PatientSearchActionsDialog({
 
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      await supabase.from("patient_movements").insert({
+      const { error: erroNaoBloqueante1 } = await supabase.from("patient_movements").insert({
         patient_name: patient!.full_name,
         movement_type: "ABERTURA FORCADA DE ATENDIMENTO — GESTOR/ADMIN",
         destination: "Novo atendimento forcado sobre atendimento ativo",
@@ -165,6 +165,8 @@ export function PatientSearchActionsDialog({
         state_id: stateId,
         department,
       } as any);
+      // Nao bloqueia o fluxo, mas nao pode sumir: antes o resultado era descartado.
+      if (erroNaoBloqueante1) console.warn("[PatientSearchActionsDialog] falha nao-bloqueante ao registrar auditoria de abertura forcada:", erroNaoBloqueante1);
     } catch (e) {
       console.warn("Falha ao registrar auditoria de abertura forcada:", e);
     }

@@ -146,10 +146,12 @@ export async function executeInternalTransfer(params: {
             resolvedId,
             "para:", source.name,
           );
-          await supabase
+          const { error: erroNaoBloqueante1 } = await supabase
             .from("patients")
             .update({ patient_registry_id: resolvedId } as any)
             .eq("id", source.id);
+          // Nao bloqueia o fluxo, mas nao pode sumir: antes o resultado era descartado.
+          if (erroNaoBloqueante1) console.warn("[internalTransfer] falha nao-bloqueante ao atualizar paciente na transferencia:", erroNaoBloqueante1);
         } else if (regRows && regRows.length > 1) {
           console.warn(
             "[executeInternalTransfer] múltiplos registros com mesmo nome — não resolvido:",
@@ -726,11 +728,13 @@ export async function completeInternalTransfer(
 
     // Sincroniza admission_histories após repoint (Etapa 2)
     try {
-      await supabase
+      const { error: erroNaoBloqueante2 } = await supabase
         .from("admission_histories")
         .update({ patient_id: targetBedRow.id, updated_at: new Date().toISOString() })
         .eq("patient_id", sourcePatientId)
         .is("archived_at", null);
+      // Nao bloqueia o fluxo, mas nao pode sumir: antes o resultado era descartado.
+      if (erroNaoBloqueante2) console.warn("[internalTransfer] falha nao-bloqueante ao sync de admission_histories:", erroNaoBloqueante2);
     } catch (e) {
       console.warn("[internalTransfer] sync admission_histories (complete):", e);
     }
@@ -746,7 +750,7 @@ export async function completeInternalTransfer(
       .eq("id", requestId);
     if (statusError) throw statusError;
 
-    await supabase.from("patient_movements").insert({
+    const { error: erroNaoBloqueante3 } = await supabase.from("patient_movements").insert({
       patient_id: targetBedRow.id,
       patient_name: snapshot.name,
       patient_bed: req.source_bed,
@@ -762,6 +766,8 @@ export async function completeInternalTransfer(
       state_id: stateId,
       hospital_unit_id: hospitalUnitId,
     });
+    // Nao bloqueia o fluxo, mas nao pode sumir: antes o resultado era descartado.
+    if (erroNaoBloqueante3) console.warn("[internalTransfer] falha nao-bloqueante ao registrar patient_movements:", erroNaoBloqueante3);
 
     // 🔒 Invalida o cache TANTO do leito destino (que recebeu o paciente)
     // QUANTO do leito origem (que foi zerado na Etapa 1) — garante que

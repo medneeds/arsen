@@ -380,10 +380,12 @@ export function useEvolutions(
 
           if (Object.keys(patientUpdates).length > 0) {
             try {
-              await supabase
+              const { error: erroNaoBloqueante1 } = await supabase
                 .from("patients")
                 .update(patientUpdates as any)
                 .eq("id", safePatientId);
+              // Nao bloqueia o fluxo, mas nao pode sumir: antes o resultado era descartado.
+              if (erroNaoBloqueante1) console.warn("[useEvolutions] falha nao-bloqueante ao sync principal de dados do paciente:", erroNaoBloqueante1);
             } catch (syncErr) {
               console.warn("[useEvolutions] sync principal error", syncErr);
             }

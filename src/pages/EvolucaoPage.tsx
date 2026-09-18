@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { useUnsavedClinical } from "@/contexts/UnsavedPrescriptionContext";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { SectionLoader } from "@/components/SectionLoader";
@@ -383,10 +384,21 @@ const EvolucaoPage = () => {
           .filter((d: EvolutionDevice) => typeof d.label === 'string' && d.label.trim())
           .map((d: EvolutionDevice) => formatDeviceLabel({ label: d.label, detail: d.detail }));
         if (deviceLines.length > 0) {
-          await supabase
+          // Sincroniza os dispositivos da evolucao para a ficha do paciente.
+          // O resultado era descartado: a evolucao era salva, mas os
+          // dispositivos podiam nao chegar na ficha e o medico veria a lista
+          // desatualizada no leito sem nenhum aviso. A evolucao em si ja foi
+          // gravada, entao nao aborta — avisa.
+          const { error: erroDispositivos } = await supabase
             .from('patients')
             .update({ uti_devices: deviceLines.join('\n'), updated_at: new Date().toISOString() })
             .eq('id', initialPatientId);
+          if (erroDispositivos) {
+            console.error('[EvolucaoPage] dispositivos nao sincronizados para a ficha:', erroDispositivos);
+            toast.error('Evolucao salva, mas os dispositivos nao atualizaram na ficha', {
+              description: 'Revise os dispositivos do paciente.',
+            });
+          }
         }
       }
     }

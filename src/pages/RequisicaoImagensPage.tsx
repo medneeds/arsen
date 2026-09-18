@@ -171,7 +171,9 @@ const RequisicaoImagensPage = () => {
   const handleSaveDoctorCPF = async () => {
     if (!user?.id || !doctorCPF.trim()) return;
     try {
-      await supabase.from("profiles").update({ cpf: doctorCPF.trim() } as any).eq("id", user.id);
+      const { error: erroNaoBloqueante1 } = await supabase.from("profiles").update({ cpf: doctorCPF.trim() } as any).eq("id", user.id);
+      // Nao bloqueia o fluxo, mas nao pode sumir: antes o resultado era descartado.
+      if (erroNaoBloqueante1) console.warn("[RequisicaoImagensPage] falha nao-bloqueante ao salvar CPF no profile:", erroNaoBloqueante1);
     } catch (e) {
       console.warn("[APAC] não foi possível salvar CPF no profile:", e);
     }
@@ -522,7 +524,7 @@ const RequisicaoImagensPage = () => {
         if (diagnosis) notesMeta.push(`Diagnóstico: ${diagnosis}`);
         if (doctorName) notesMeta.push(`Médico: ${doctorName}${doctorCRM ? ` (CRM ${doctorCRM})` : ""}`);
 
-        await supabase.from("exam_requests").insert({
+        const { error: erroNaoBloqueante2 } = await supabase.from("exam_requests").insert({
           patient_id: validPid,
           patient_registry_id: registryId,
           encounter_id: encounterId,
@@ -540,6 +542,8 @@ const RequisicaoImagensPage = () => {
           hospital_unit_id: hospitalUnitId,
           state_id: stateId,
         } as any);
+        // Nao bloqueia o fluxo, mas nao pode sumir: antes o resultado era descartado.
+        if (erroNaoBloqueante2) console.warn("[RequisicaoImagensPage] falha nao-bloqueante ao registrar em exam_requests:", erroNaoBloqueante2);
       } catch (err) {
         console.warn("[APAC] falha ao registrar em exam_requests:", err);
       }

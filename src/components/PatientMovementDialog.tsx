@@ -527,10 +527,12 @@ export function PatientMovementDialog({
                 // Reverte o admission_status para 'admitido' — sem request na fila,
                 // o estado 'transferencia_interna_pendente' seria inconsistente.
                 try {
-                  await supabase
+                  const { error: erroNaoBloqueante1 } = await supabase
                     .from("patients")
                     .update({ admission_status: ADMISSION_STATUS.ADMITTED, updated_at: new Date().toISOString() })
                     .eq("id", sourcePatientId);
+                  // Nao bloqueia o fluxo, mas nao pode sumir: antes o resultado era descartado.
+                  if (erroNaoBloqueante1) console.warn("[PatientMovementDialog] falha nao-bloqueante ao reverter status do paciente:", erroNaoBloqueante1);
                 } catch (revertErr) {
                   console.error("[PatientMovementDialog] falha ao reverter status do paciente:", revertErr);
                 }

@@ -88,10 +88,15 @@ export function useReceptionPost(): ReceptionPostState {
       return;
     }
     const beat = async () => {
-      await supabase
+      // Batimento de sessao: nao bloqueia nada, mas o resultado era descartado.
+      // Se ele para de gravar, a sessao do posto aparece como inativa sem que
+      // ninguem perceba. Registra em nivel debug para nao poluir o console a
+      // cada intervalo — em producao o build remove console.debug.
+      const { error } = await supabase
         .from("reception_desk_sessions" as any)
         .update({ last_heartbeat_at: new Date().toISOString() })
         .eq("id", sessionId);
+      if (error) console.debug("[useReceptionPost] batimento nao gravou:", error.message);
     };
     beat();
     heartbeatRef.current = window.setInterval(beat, HEARTBEAT_MS);
@@ -108,10 +113,13 @@ export function useReceptionPost(): ReceptionPostState {
 
       // 1) Encerra sessão anterior se existir e for diferente
       if (sessionId && point !== next) {
-        await supabase
+        // Resultado era descartado: sessao antiga podia ficar aberta para
+        // sempre no banco, com o mesmo usuario aparecendo em dois postos.
+        const { error: erroEncerrar } = await supabase
           .from("reception_desk_sessions" as any)
           .update({ ended_at: new Date().toISOString() })
           .eq("id", sessionId);
+        if (erroEncerrar) console.warn("[useReceptionPost] sessao anterior nao foi encerrada:", erroEncerrar);
       }
 
       // 2) Se for o mesmo ponto e sessão já ativa, só persiste localmente
@@ -154,10 +162,13 @@ export function useReceptionPost(): ReceptionPostState {
   const clearPoint = useCallback(async () => {
     if (!user?.id) return;
     if (sessionId) {
-      await supabase
+      // Idem: sem verificacao, o posto continuava "ocupado" no banco depois de
+      // o usuario sair, sem sinal nenhum.
+      const { error: erroLimpar } = await supabase
         .from("reception_desk_sessions" as any)
         .update({ ended_at: new Date().toISOString() })
         .eq("id", sessionId);
+      if (erroLimpar) console.warn("[useReceptionPost] sessao nao foi encerrada ao sair do posto:", erroLimpar);
     }
     setPointState(null);
     setSessionId(null);

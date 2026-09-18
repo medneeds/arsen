@@ -690,7 +690,9 @@ const AdminDashboardPage = () => {
         });
         if (gen) {
           officialMr = gen as string;
-          await supabase.from("patient_registry").update({ medical_record: officialMr }).eq("id", (registry as any).id);
+          // Nao bloqueia o fluxo, mas nao pode sumir: antes o resultado era descartado.
+          const { error: erroNaoBloqueante1 } = await supabase.from("patient_registry").update({ medical_record: officialMr }).eq("id", (registry as any).id);
+          if (erroNaoBloqueante1) console.warn("[AdminDashboardPage] falha nao-bloqueante ao gravar prontuario gerado:", erroNaoBloqueante1);
         }
       } catch (e) { console.warn("MR gen falhou:", e); }
 

@@ -131,8 +131,13 @@ export function useBedCensusActions() {
       .update({ status: "ocupado", patient_id: a.patient_id, patient_name: a.patient_name, updated_by: user?.id ?? null })
       .eq("id", bedBId);
     if (e2) {
-      // rollback A
-      await supabase.from("bed_census").update({ status: "ocupado", patient_id: a.patient_id, patient_name: a.patient_name }).eq("id", bedAId);
+      // rollback A — o resultado era descartado. Se o proprio rollback falha, o
+      // censo fica inconsistente (leito A vazio com paciente ainda alocado) e
+      // ninguem fica sabendo. Nao muda o fluxo, mas passa a ser visivel.
+      const { error: erroRollback } = await supabase.from("bed_census").update({ status: "ocupado", patient_id: a.patient_id, patient_name: a.patient_name }).eq("id", bedAId);
+      if (erroRollback) {
+        console.error("[useBedCensusActions] ROLLBACK DA PERMUTA FALHOU — censo inconsistente:", erroRollback);
+      }
       toast({ title: "Erro na permuta", description: e2.message, variant: "destructive" });
       return false;
     }
