@@ -33,7 +33,9 @@ npx eslint <arquivos alterados>
 
 `vite build` **não** é rede de proteção para tipos — o esbuild remove tipos sem checá-los.
 
-**A meta não é zerar os erros de tipo — é não aumentar.** Baseline em 16/09/2026: **41 erros**. Compare antes/depois com `git stash` e verifique se algum erro novo aponta para arquivo que você tocou. Mesmo critério para o ESLint.
+**A meta não é zerar os erros de tipo — é não aumentar.** Baseline em 18/09/2026: **14 diagnósticos / 32 linhas de saída**. Compare antes/depois com `git stash` e verifique se algum erro novo aponta para arquivo que você tocou. Mesmo critério para o ESLint.
+
+> **Atenção à métrica.** O número antigo aqui ("41 erros", 16/09) era contagem de **linhas de saída**, não de diagnósticos — vários erros do Supabase ocupam 3 a 5 linhas cada. Conte com `| grep -c "error TS"` e diga qual das duas métricas está usando. A queda para 14 veio da correção do import duplicado em `PatientCockpit` e da blindagem do `DrugInteractionDialog`.
 
 ## Gerenciador de pacotes
 
@@ -42,7 +44,17 @@ npx eslint <arquivos alterados>
 
 ## Suíte de testes
 
-40 arquivos `.test.ts` em `src/tests/`. **Não há runner, não há script `test`, não há CI** — ninguém os executa automaticamente. São scripts autocontidos, rodados um a um via `npx tsx <arquivo>`.
+43 arquivos `.test.ts` em `src/tests/`. São scripts autocontidos, que podem ser rodados um a um via `npx tsx <arquivo>`.
+
+**Agora existe runner** (18/09/2026), porque a ausência dele deixou um teste quebrado passar despercebido por dias:
+
+```bash
+npm run test              # roda os 43 e sai com código 1 se algum falhar
+npm run test prescricao   # roda só os que casam com o filtro
+npm run typecheck         # atalho para o tsc com o -p correto
+```
+
+**Continua não havendo CI** — se você não rodar, ninguém roda.
 
 Convenção: import **relativo com extensão `.ts`** (`"../lib/x.ts"`), nunca o alias `@/` — o tsx roda sem a resolução de alias do Vite.
 
