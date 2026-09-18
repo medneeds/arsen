@@ -3,6 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { comTempoLimite } from "@/lib/tempoLimite";
+import { ehChaveSensivel } from "@/lib/chavesSensiveis";
 
 type UserRole = "admin" | "medico" | "porta" | "visitante" | "farmacia" | null;
 type UserStatus = "pending" | "approved" | "rejected" | null;
@@ -234,11 +235,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ];
       SENSITIVE_KEYS.forEach((k) => localStorage.removeItem(k));
       ["active_access_profile", "available_access_profiles"].forEach((k) => sessionStorage.removeItem(k));
-      // Defensive sweep: any cached patient/clinical keys
+      // Defensive sweep: any cached patient/clinical/draft keys.
+      // A regra vive em @/lib/chavesSensiveis, testada em
+      // src/tests/logout-limpa-rascunhos.test.ts — a varredura antiga nao
+      // alcancava nenhuma das chaves de rascunho realmente gravadas.
       Object.keys(localStorage).forEach((k) => {
-        if (/^(patient|clinical|prescription|evolution|exam|culture|note|checklist)/i.test(k)) {
-          localStorage.removeItem(k);
-        }
+        if (ehChaveSensivel(k)) localStorage.removeItem(k);
       });
     } catch {
       // ignore storage errors
