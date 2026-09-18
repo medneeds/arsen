@@ -20,6 +20,7 @@ import type { AccessProfile } from "@/config/userProfiles";
 import { safeSetItem } from "@/lib/safeStorage";
 import { ArsenMark } from "@/components/brand/ArsenMark";
 import { whitelabel } from "@/config/whitelabel";
+import { comTempoLimite, mensagemDeFalhaDeRede } from "@/lib/tempoLimite";
 
 /* ─── Shared chrome ─────────────────────────────────────────────── */
 
@@ -32,6 +33,9 @@ export default function AuthPage() {
   // acrescentava um passo a quem chega para o plantao.
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  // Espelha showLoadingScreen de forma sincrona: o finally roda antes do
+  // proximo render e nao enxergaria o valor novo do estado.
+  const showLoadingScreenRef = useRef(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
   const [redirectRoute, setRedirectRoute] = useState("/");
@@ -99,10 +103,12 @@ export default function AuthPage() {
       } else {
         // Login generalista: descobre o perfil/role definidos pelo gestor/admin
         // a partir do usuário autenticado (suporta login por email, CPF ou usuário).
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await comTempoLimite(
+          supabase.auth.getSession(), "recuperar sessão", 10_000,
+        );
         const userId = sessionData?.session?.user?.id ?? null;
         const [{ data: profileRow }, { data: roleRow }] = userId
-          ? await Promise.all([
+          ? await comTempoLimite(Promise.all([
               supabase
                 .from("profiles")
                 .select("id, full_name, access_profile, access_profiles, must_change_password")
@@ -113,7 +119,7 @@ export default function AuthPage() {
                 .select("role")
                 .eq("user_id", userId)
                 .maybeSingle(),
-            ])
+            ]), "carregar perfil", 12_000)
           : [
               { data: null as { id?: string; full_name?: string; access_profile?: string; access_profiles?: string[]; must_change_password?: boolean } | null },
               { data: null as { role?: string } | null },
@@ -165,12 +171,24 @@ export default function AuthPage() {
           sessionStorage.setItem("active_access_profile", chosen);
         }
         toast.success("Login realizado com sucesso");
+        showLoadingScreenRef.current = true;
         setShowLoadingScreen(true);
       }
     } catch (err) {
-      toast.error("Não foi possível validar dados");
-      setLoading(false);
+      // Mensagem que distingue "servidor nao respondeu" de erro generico: com a
+      // primeira o medico sabe que vale tentar de novo.
+      console.error("[Arsen] falha no login:", err);
+      toast.error(mensagemDeFalhaDeRede(err));
       postLoginInFlight.current = false;
+    } finally {
+      // REDE DE SEGURANCA. Antes nao havia finally: se qualquer await do
+      // caminho de login nao resolvesse, o botao ficava preso em "Entrando..."
+      // para sempre, sem erro e sem pista. Uma espera infinita e pior que um
+      // erro — com erro a pessoa tenta de novo; sem nada, ela fica olhando.
+      //
+      // So nao destrava quando a tela de carregamento assumiu, que e o caminho
+      // de sucesso: ali o formulario sai de cena de proposito.
+      setLoading(prev => (showLoadingScreenRef.current ? prev : false));
     }
   };
 

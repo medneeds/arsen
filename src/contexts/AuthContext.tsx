@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode, useC
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { comTempoLimite } from "@/lib/tempoLimite";
 
 type UserRole = "admin" | "medico" | "porta" | "visitante" | "farmacia" | null;
 type UserStatus = "pending" | "approved" | "rejected" | null;
@@ -83,11 +84,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // anterior voltava. Com a latencia do Supabase self-hosted, isso somava
       // tres viagens de ida e volta ANTES de a primeira tela aparecer.
       // Em paralelo, o custo passa a ser o da consulta mais lenta.
-      const [rolesRes, profileRes, deptRes] = await Promise.all([
+      const [rolesRes, profileRes, deptRes] = await comTempoLimite(Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", userId),
         supabase.from("profiles").select("status").eq("id", userId).maybeSingle(),
         supabase.from("user_departments").select("department").eq("user_id", userId),
-      ]);
+      ]), "carregar permissões", 12_000);
 
       const { data: rolesData, error: roleError } = rolesRes;
       const roleData = rolesData && rolesData.length > 0
@@ -159,9 +160,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Resolve identificador (CPF, e-mail ou usuário) → email real via RPC (sem cold start)
     try {
-      const { data: resolveData, error: resolveError } = await (supabase.rpc as any)(
-        "resolve_login",
-        { p_identifier: isCpf ? digits : raw },
+      // Com tempo limite: sem ele, um RPC que nao responde deixa o botao
+      // "Entrando..." preso para sempre, sem erro e sem mensagem.
+      const { data: resolveData, error: resolveError } = await comTempoLimite<{
+        data: { email?: string } | null; error: unknown;
+      }>(
+        (supabase.rpc as any)("resolve_login", { p_identifier: isCpf ? digits : raw }),
+        "identificar usuário",
+        10_000,
       );
       if (resolveError || !(resolveData as any)?.email) {
         return { error: resolveError ?? new Error("Usuário não encontrado") };
@@ -171,12 +177,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: e };
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: emailToUse,
-      password,
-    });
-
-    return { error };
+    try {
+      const { error } = await comTempoLimite(
+        supabase.auth.signInWithPassword({ email: emailToUse, password }),
+        "autenticar",
+        15_000,
+      );
+      return { error };
+    } catch (e) {
+      return { error: e };
+    }
   }, []);
 
   const signUp = useCallback(async (username: string, password: string, fullName: string, role: "admin" | "medico" | "porta" | "visitante" | "farmacia" = "medico") => {
