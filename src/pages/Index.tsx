@@ -92,7 +92,6 @@ interface SortableOutsidePatientCardProps {
   onTransfer?: (patientId: string, newSector: Patient['sector']) => void;
   onPrintPatient?: (patientId: string) => void;
   onRefetch?: () => void;
-  onQuickView?: (patient: Patient) => void;
 }
 
 function SortableOutsidePatientCard(props: SortableOutsidePatientCardProps) {
@@ -277,8 +276,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
   const [utiAllocationDialogOpen, setUtiAllocationDialogOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [quickViewPatient, setQuickViewPatient] = useState<Patient | null>(null);
-  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  // QuickView removido — PatientSidebar retirado do mapa de leitos
   const { toast } = useToast();
   const { signOut, user, role, allowedDepartments, loading: authLoading } = useAuth();
   const { saveVersion, fetchVersions } = usePatientVersions();
@@ -874,10 +872,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
     }
   };
 
-  const handleQuickView = (patient: Patient) => {
-    setQuickViewPatient(patient);
-    setQuickViewOpen(true);
-  };
+  // handleQuickView removido
 
   const pageReady = usePageReady({ loading: authLoading || patientsLoading });
   if (!pageReady) {
@@ -1283,12 +1278,6 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
       </AlertDialog>
 
       <GlobalSearchDialog externalOpen={searchOpen} onExternalOpenChange={setSearchOpen} />
-
-      <PatientSidebar
-        patient={quickViewPatient}
-        open={quickViewOpen}
-        onOpenChange={setQuickViewOpen}
-      />
     </Moldura>
   );
 };
