@@ -5524,10 +5524,14 @@ const PrescricaoPage = () => {
   useEffect(() => {
     if (isLoadingRef.current) return;
 
-    // Regra absoluta: prescrição validada (digitalSignature preenchida) nunca
-    // gera dirty state. O popup de salvar rascunho jamais aparece para uma
-    // prescrição que já foi validada — independente de qualquer mudança posterior.
-    if (digitalSignature) {
+    // Regra absoluta: prescrição validada NUNCA gera dirty state.
+    // Duas condições que indicam validação:
+    // 1. digitalSignature preenchida (validada com senha)
+    // 2. Todos os itens ativos têm validated=true (validada sem senha / sessão ativa)
+    // Em qualquer um dos casos, o popup NUNCA aparece.
+    const activeItems = items.filter(i => i.status === 'active');
+    const allValidated = activeItems.length > 0 && activeItems.every(i => i.validated);
+    if (digitalSignature || allValidated) {
       isDirtyRef.current = false;
       setDirty(false);
       return;
@@ -5555,18 +5559,25 @@ const PrescricaoPage = () => {
   useEffect(() => () => { setDirty(false); }, [setDirty]);
 
   // ── useBlocker substituído por popstate ────────────────────────────────────
-  // useBlocker requer createBrowserRouter (Data Router API) — o ARSen usa
-  // BrowserRouter legado, então useBlocker causava tela branca.
-  // popstate cobre o botão Voltar do browser. Outros cenários de navegação
-  // (troca de módulo pelo AppSidebar, troca de paciente pelo PatientSidebar)
-  // são cobertos pelo interceptador no próprio componente de navegação.
   const [backBlockerOpen, setBackBlockerOpen] = useState(false);
   const pendingBackRef = useRef(false);
 
+  // Referência para verificar validação diretamente nos handlers de evento
+  // sem depender do timing do useEffect do dirty state
+  const digitalSignatureRef = useRef(digitalSignature);
+  const itemsRef = useRef(items);
+  useEffect(() => { digitalSignatureRef.current = digitalSignature; }, [digitalSignature]);
+  useEffect(() => { itemsRef.current = items; }, [items]);
+
+  const isPrescricaoValidada = () => {
+    if (digitalSignatureRef.current) return true;
+    const activeItems = itemsRef.current.filter(i => i.status === 'active');
+    return activeItems.length > 0 && activeItems.every(i => i.validated);
+  };
+
   useEffect(() => {
     const handler = () => {
-      if (!isDirtyRef.current) return;
-      // Empurra um estado para "cancelar" o voltar e mostrar o pop-up
+      if (!isDirtyRef.current || isPrescricaoValidada()) return;
       window.history.pushState(null, '', window.location.href);
       setBackBlockerOpen(true);
       pendingBackRef.current = true;
@@ -5579,7 +5590,7 @@ const PrescricaoPage = () => {
   // ── beforeunload: fechar aba ou recarregar página ──
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
-      if (isDirtyRef.current) {
+      if (isDirtyRef.current && !isPrescricaoValidada()) {
         e.preventDefault();
         e.returnValue = '';
       }
