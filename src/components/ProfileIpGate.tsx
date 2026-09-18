@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { lerPerfil } from "@/lib/perfilSupabase";
 import { IpRestricted } from "./IpRestricted";
 import { safeSetItem } from "@/lib/safeStorage";
 
@@ -24,11 +24,10 @@ export function ProfileIpGate({ children }: { children: ReactNode }) {
     }
 
     let cancelled = false;
-    supabase
-      .from("profiles")
-      .select("access_profile, access_profiles")
-      .eq("id", user.id)
-      .maybeSingle()
+    // Auditoria 18/09/2026: era a quarta consulta identica a `profiles` no
+    // caminho de entrada. Agora todas passam por lerPerfil, que colapsa a
+    // rajada do login numa unica ida ao servidor.
+    lerPerfil(user.id)
       .then(({ data }) => {
         if (cancelled) return;
         const row = data as { access_profile?: string | null; access_profiles?: string[] | null } | null;

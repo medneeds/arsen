@@ -7,7 +7,8 @@ import { SessionTimeoutProvider } from "./SessionTimeoutProvider";
 const PendingApprovalScreen = lazy(() =>
   import("./PendingApprovalScreen").then(m => ({ default: m.PendingApprovalScreen })));
 import { ConsentTermsDialog, CURRENT_TERMS_VERSION } from "./ConsentTermsDialog";
-import { supabase } from "@/integrations/supabase/client";
+import { lerPerfil } from "@/lib/perfilSupabase";
+import { toast } from "sonner";
 import { ProfileIpGate } from "./ProfileIpGate";
 import { startIdlePrefetch } from "@/lib/prefetchRoutes";
 import { comTempoLimite } from "@/lib/tempoLimite";
@@ -49,25 +50,38 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // Auditoria 18/09/2026 — duas correcoes aqui:
+      //
+      // 1) era a terceira consulta identica a `profiles` no caminho de entrada;
+      //    agora passa por lerPerfil, que colapsa a rajada do login.
+      //
+      // 2) o `catch` antigo abria o dialogo de TERMOS quando a consulta falhava.
+      //    Com o servidor fora do ar, o medico de plantao recebia um pedido de
+      //    aceite de termos em vez de "nao foi possivel conectar" — a tela
+      //    mentia sobre a causa, e aceitar ali tentaria gravar num servidor que
+      //    nao responde. Falha de leitura agora deixa passar sem travar o
+      //    acesso ao prontuario, e registra o erro.
       try {
         // QUINTA chamada de rede do caminho de login, e a mais perigosa: até
-        // ela responder, `checkingTerms` fica true e o ProtectedRoute devolve
-        // null — TELA EM BRANCO, sem spinner e sem mensagem.
+        // ela responder, `checkingTerms` fica true e o ProtectedRoute bloqueia
+        // a tela.
         //
         // Ate 16/09/2026 duas telas amorteciam isso: a de carregamento (800ms)
         // e a de selecao de setor, que esperava um clique. Ambas foram
         // removidas ao unificar o fluxo de setor em /setores. A remocao nao
         // criou a lentidao — tirou o colchao que a escondia, e foi por isso que
         // o problema apareceu naquele momento.
-        const { data: profile } = await comTempoLimite(
-          supabase
-            .from("profiles")
-            .select("terms_version, terms_accepted_at")
-            .eq("id", user.id)
-            .single(),
+        //
+        // Agora ela nem sequer vai ao servidor na maioria das vezes: lerPerfil
+        // compartilha a leitura de `profiles` com AuthPage, AuthContext e
+        // ProfileIpGate, que faziam a MESMA consulta. O tempo limite de 10s
+        // continua valendo para o caso em que esta e a primeira a disparar.
+        const { data: profile, error } = await comTempoLimite(
+          lerPerfil(user.id),
           "verificar termos de uso",
           10_000,
         );
+        if (error) throw error;
 
         if (profile?.terms_version === CURRENT_TERMS_VERSION && profile?.terms_accepted_at) {
           setTermsAccepted(true);
@@ -75,12 +89,22 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
           setShowTermsDialog(true);
         }
       } catch (error) {
-        // Falha ou tempo esgotado NAO bloqueia o acesso: exibir o dialogo de
-        // termos e o comportamento seguro — o medico aceita de novo e segue.
-        // Travar a tela em branco por causa de uma consulta de termos deixaria
-        // o plantao sem sistema.
         console.error("[Arsen] falha ao verificar termos:", error);
-        setShowTermsDialog(true);
+        // DIVERGENCIA RESOLVIDA NO REBASE (18/09/2026) — o commit 7924d17d
+        // abria o dialogo de termos aqui, com a intencao de NAO bloquear o
+        // acesso. Só que abrir o dialogo bloqueia: mais abaixo,
+        // `if (showTermsDialog && !termsAccepted)` devolve o dialogo NO LUGAR
+        // dos filhos. E o unico jeito de sair dele e aceitar, o que dispara um
+        // insert no mesmo servidor que acabou de falhar — o medico fica preso
+        // num dialogo que nao tem como concluir.
+        //
+        // Por isso: falha de leitura nao abre o dialogo e nao trava o plantao.
+        // NAO marcamos termsAccepted — nada e registrado como aceito —, apenas
+        // deixamos passar e a checagem roda de novo na proxima entrada.
+        setShowTermsDialog(false);
+        toast.error("Nao foi possivel verificar os termos de uso", {
+          description: "Servidor indisponivel. O acesso segue liberado e a verificacao sera refeita.",
+        });
       } finally {
         setCheckingTerms(false);
       }

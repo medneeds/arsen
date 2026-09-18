@@ -21,6 +21,7 @@ import { safeSetItem } from "@/lib/safeStorage";
 import { ArsenMark } from "@/components/brand/ArsenMark";
 import { whitelabel } from "@/config/whitelabel";
 import { comTempoLimite, mensagemDeFalhaDeRede } from "@/lib/tempoLimite";
+import { lerPerfil } from "@/lib/perfilSupabase";
 
 /* ─── Shared chrome ─────────────────────────────────────────────── */
 
@@ -107,13 +108,13 @@ export default function AuthPage() {
           supabase.auth.getSession(), "recuperar sessão", 10_000,
         );
         const userId = sessionData?.session?.user?.id ?? null;
+        // Auditoria 18/09/2026: esta e a PRIMEIRA das quatro leituras de
+        // `profiles` do caminho de entrada. Passando por lerPerfil, ela alimenta
+        // as outras tres (AuthContext, ProtectedRoute, ProfileIpGate), que
+        // deixam de ir ao servidor.
         const [{ data: profileRow }, { data: roleRow }] = userId
           ? await comTempoLimite(Promise.all([
-              supabase
-                .from("profiles")
-                .select("id, full_name, access_profile, access_profiles, must_change_password")
-                .eq("id", userId)
-                .maybeSingle(),
+              lerPerfil(userId),
               supabase
                 .from("user_roles")
                 .select("role")

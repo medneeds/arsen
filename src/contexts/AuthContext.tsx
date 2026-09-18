@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { comTempoLimite } from "@/lib/tempoLimite";
 import { ehChaveSensivel } from "@/lib/chavesSensiveis";
+import { lerPerfil, limparPerfilEmCache } from "@/lib/perfilSupabase";
 
 type UserRole = "admin" | "medico" | "porta" | "visitante" | "farmacia" | null;
 type UserStatus = "pending" | "approved" | "rejected" | null;
@@ -85,9 +86,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // anterior voltava. Com a latencia do Supabase self-hosted, isso somava
       // tres viagens de ida e volta ANTES de a primeira tela aparecer.
       // Em paralelo, o custo passa a ser o da consulta mais lenta.
+      // Auditoria 18/09/2026: a leitura de `profiles` passa por lerPerfil, que
+      // compartilha a mesma ida ao servidor com AuthPage, ProtectedRoute e
+      // ProfileIpGate — antes eram quatro consultas identicas no login.
       const [rolesRes, profileRes, deptRes] = await comTempoLimite(Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", userId),
-        supabase.from("profiles").select("status").eq("id", userId).maybeSingle(),
+        lerPerfil(userId),
         supabase.from("user_departments").select("department").eq("user_id", userId),
       ]), "carregar permissões", 12_000);
 
@@ -143,6 +147,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUserStatus = useCallback(async () => {
     if (user) {
+      // O perfil em cache precisa cair aqui: o proposito desta funcao e
+      // justamente refletir mudanca feita por um admin agora (ex.: promocao de
+      // visitante para medico). Sem isto, a janela de reuso de 15s do lerPerfil
+      // devolveria o perfil antigo e a promocao pareceria nao ter acontecido.
+      limparPerfilEmCache();
       // Rebusca role + status + departamentos completos para garantir que mudanças
       // feitas por um admin (ex: promoção de visitante → médico) reflitam
       // imediatamente sem que o usuário precise fazer logout.
@@ -221,6 +230,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRole(null);
     setStatus(null);
     setAllowedDepartments([]);
+    // O perfil em memoria tambem sai: sem isto, o proximo usuario a entrar no
+    // mesmo terminal dentro da janela de reuso poderia enxergar o perfil do
+    // anterior.
+    limparPerfilEmCache();
     // Clear all PHI/access-control data from local storage to prevent leakage after logout (LGPD)
     try {
       const SENSITIVE_KEYS = [
