@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { limparPerfilEmCache } from "@/lib/perfilSupabase";
 import { toast } from "sonner";
 import { Shield, FileText, Database, Lock, CheckCircle2, AlertTriangle } from "lucide-react";
 
@@ -43,22 +44,33 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
         { consent_type: "privacy_policy", consent_version: CURRENT_TERMS_VERSION },
         { consent_type: "data_processing", consent_version: CURRENT_TERMS_VERSION },
       ];
-      for (const consent of consents) {
-        const { error } = await supabase.from("user_consents").insert({
+      // Auditoria 18/09/2026: eram tres INSERT em serie, um por consentimento.
+      // A 246ms de RTT medidos ate o servidor, ~750ms para gravar o que cabe
+      // numa unica ida. Um insert em lote grava os tres de uma vez, e ainda
+      // torna o registro atomico: antes, falhar no segundo deixava o primeiro
+      // gravado e o consentimento pela metade.
+      const { error } = await supabase.from("user_consents").insert(
+        consents.map((consent) => ({
           user_id: userId,
           consent_type: consent.consent_type,
           consent_version: consent.consent_version,
           user_agent: navigator.userAgent,
-        });
-        if (error && !error.message.includes("duplicate")) throw error;
-      }
-      await supabase
+        })),
+      );
+      if (error && !error.message.includes("duplicate")) throw error;
+
+      const { error: erroPerfil } = await supabase
         .from("profiles")
         .update({
           terms_accepted_at: new Date().toISOString(),
           terms_version: CURRENT_TERMS_VERSION,
         })
         .eq("id", userId);
+      // Sem isto, uma falha ao gravar o aceite no perfil passava em silencio e
+      // o usuario reveria o dialogo na proxima entrada sem entender por que.
+      if (erroPerfil) throw erroPerfil;
+      // O perfil mudou: o proximo lerPerfil precisa ir ao servidor.
+      limparPerfilEmCache();
       toast.success("Termos aceitos com sucesso");
       onAccept();
     } catch (error) {
