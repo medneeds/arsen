@@ -112,14 +112,14 @@ export function PatientQuickSearch({ onIrParaSetor, onIrParaPaciente }: Props) {
   }, [termoLimpo, ativo, currentHospital, currentState]);
 
   const dica = useMemo(() => {
-    if (!termoLimpo) return "Busque por nome ou número do prontuário";
+    if (!termoLimpo) return null;
     if (!ativo) return "Digite ao menos 3 caracteres";
     return null;
   }, [termoLimpo, ativo]);
 
   return (
     <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
-      <CardHeader className="pb-3 pt-4 px-4">
+      <CardHeader className="pb-2 pt-3 px-4">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <span className="h-8 w-8 rounded-lg flex items-center justify-center bg-primary/10 flex-shrink-0">
             <UserSearch className="h-4 w-4 text-primary" aria-hidden />
@@ -128,9 +128,6 @@ export function PatientQuickSearch({ onIrParaSetor, onIrParaPaciente }: Props) {
             Procurar um paciente
           </label>
         </CardTitle>
-        <p className="text-xs text-muted-foreground pl-8">
-          Encontre em qual setor ele está internado e vá direto para o leito.
-        </p>
       </CardHeader>
 
       <CardContent className="px-4 pb-4">

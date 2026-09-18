@@ -161,7 +161,7 @@ export default function SectorLauncherPage() {
               key={grupo.macro}
               className="border-border/60 bg-card/80 backdrop-blur-sm"
             >
-              <CardHeader className="pb-3 pt-4 px-4">
+              <CardHeader className="pb-2 pt-3 px-4">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   {IconeGrupo && (
                     <span className="h-8 w-8 rounded-lg flex items-center justify-center bg-primary/10 flex-shrink-0">
@@ -173,9 +173,6 @@ export default function SectorLauncherPage() {
                     {grupo.sectors.length} setores
                   </span>
                 </CardTitle>
-                <p className="text-xs text-muted-foreground pl-8">
-                  {grupo.hint}
-                </p>
               </CardHeader>
 
               <CardContent className="px-4 pb-4">
