@@ -1,12 +1,11 @@
 import { Patient, SectorType } from "@/types/patient";
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { UtiPatientCard } from "./UtiPatientCard";
 import { EmptySectorState } from "@/components/EmptySectorState";
 import { Printer, Plus, ChevronDown, ChevronsDownUp, ChevronsUpDown, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useState, useEffect } from "react";
 import { regularBedCount, sectorCapacity } from "@/utils/bedNaming";
 
 type ColorVariant = 'blue' | 'yellow' | 'red' | 'green';
