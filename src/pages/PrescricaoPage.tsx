@@ -5524,6 +5524,19 @@ const PrescricaoPage = () => {
   useEffect(() => {
     if (isLoadingRef.current) return; // aguarda carregamento completar
     const serialized = JSON.stringify(items);
+
+    // Nova regra: se todos os itens ativos já foram validados,
+    // a prescrição está em estado validado e nunca gera dirty.
+    // O médico pode fazer ajustes mas precisa salvar manualmente —
+    // o sistema não pede para salvar rascunho de uma prescrição validada.
+    const activeItems = items.filter(i => i.status === 'active');
+    const allValidated = activeItems.length > 0 && activeItems.every(i => i.validated);
+    if (allValidated) {
+      isDirtyRef.current = false;
+      setDirty(false);
+      return;
+    }
+
     const dirty = items.length > 0
       && !!patient.name?.trim()
       && serialized !== lastPersistedSerializedRef.current;
@@ -5685,6 +5698,13 @@ const PrescricaoPage = () => {
       });
     });
     // Após flushSync: items já está atualizado no DOM e no state do React.
+
+    // Marca imediatamente como "já salvo" para evitar dirty state falso
+    // no intervalo entre o flushSync e o banco responder.
+    // Sem isso: dirty = true aparecia por milissegundos após validar.
+    lastPersistedSerializedRef.current = JSON.stringify(nextItems);
+    isDirtyRef.current = false;
+    setDirty(false);
 
     // Persistência imediata — best-effort, mas crítico para imutabilidade
     persistItems(nextItems, { mode: isRevalidationPostCutoff ? 'newVersion' : 'update' });
