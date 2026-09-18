@@ -1,4 +1,4 @@
-import socorraoIcon from "@/assets/socorrao-cross-logo.png";
+const socorraoIcon = "/arsen-mark.svg";
 
 interface SectionLoaderProps {
   message?: string;

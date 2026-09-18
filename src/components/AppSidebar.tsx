@@ -21,7 +21,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home as HomeIcon } from "lucide-react";
 import { whitelabel } from "@/config/whitelabel";
-import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
+const socorraoCrossLogo = "/arsen-mark.svg";
 import { useEffect, useState, lazy, Suspense } from "react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";

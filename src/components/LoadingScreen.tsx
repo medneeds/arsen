@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { whitelabel } from "@/config/whitelabel";
 import { useHospital } from "@/contexts/HospitalContext";
-import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
+const socorraoCrossLogo = "/arsen-mark.svg";
 
 const SERIF = "var(--font-brand)";
 
