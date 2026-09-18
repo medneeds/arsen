@@ -58,10 +58,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // O tempo limite aqui NAO e decoracao: comprovado em navegador que
+    // getSession() NAO REJEITA quando a renovacao do token falha — ele fica
+    // PENDENTE indefinidamente, porque o supabase-js segura a promessa
+    // enquanto tenta renovar em laco. Sem o relogio, nenhum catch ajuda.
+    comTempoLimite(supabase.auth.getSession(), "recuperar sessão", 10_000).then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         setTimeout(() => {
           fetchUserRoleAndDepartments(session.user.id);
@@ -69,6 +73,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setLoading(false);
       }
+    }).catch((erro) => {
+      // INCIDENTE 18/09/2026 — a plataforma travava em "Entrando na
+      // plataforma…" e nao chegava nem no formulario de login.
+      //
+      // getSession() nao le so o armazenamento: com o token expirado, ele vai a
+      // rede renovar. Quando essa renovacao falha, o supabase-js NAO rejeita —
+      // ele segura a promessa e tenta renovar em laco. Sem relogio, ela nunca
+      // se resolve, setLoading(false) nunca roda, `loading` fica true para
+      // sempre e o ProtectedRoute exibe o splash indefinidamente.
+      //
+      // Reproduzido em navegador (Playwright): sessao expirada no
+      // localStorage + falha de rede em /auth/v1/token = tela presa em "/",
+      // com este catch no bundle e NUNCA acionado — a prova de que a promessa
+      // ficava pendente, nao rejeitada.
+      //
+      // Foi o que aconteceu depois da queda do servidor: as sessoes do plantao
+      // expiraram durante as horas fora do ar e, na volta, ninguem entrava.
+      //
+      // Falhar aqui precisa levar ao LOGIN, nunca a uma espera infinita.
+      console.error("[AuthContext] falha ao recuperar sessao — indo para o login:", erro);
+      setSession(null);
+      setUser(null);
+      setRole(null);
+      setStatus(null);
+      setAllowedDepartments([]);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
