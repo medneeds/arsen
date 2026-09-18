@@ -24,6 +24,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Marcador da auto-recuperacao de sessao presa. Vive no sessionStorage, entao
+ * morre com a aba, e e limpo assim que uma sessao carrega normalmente — garante
+ * no maximo UMA recarga por aba, sem risco de laco.
+ */
+const MARCADOR_RECARGA = "arsen:recarga_sessao_presa";
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -58,11 +65,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     // THEN check for existing session
+    // Marcador de recarga unica: some quando a aba fecha, e e zerado assim que
+    // uma sessao carrega normalmente — para que a auto-recuperacao volte a
+    // valer numa proxima vez, sem nunca virar laco de recarga.
     // O tempo limite aqui NAO e decoracao: comprovado em navegador que
     // getSession() NAO REJEITA quando a renovacao do token falha — ele fica
     // PENDENTE indefinidamente, porque o supabase-js segura a promessa
     // enquanto tenta renovar em laco. Sem o relogio, nenhum catch ajuda.
     comTempoLimite(supabase.auth.getSession(), "recuperar sessão", 10_000).then(({ data: { session } }) => {
+      // Recuperou normalmente: libera o marcador, para que a auto-recuperacao
+      // volte a valer se a sessao travar mais adiante nesta mesma aba.
+      try { sessionStorage.removeItem(MARCADOR_RECARGA); } catch { /* ignore */ }
+
       setSession(session);
       setUser(session?.user ?? null);
 
@@ -99,6 +113,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus(null);
       setAllowedDepartments([]);
       setLoading(false);
+
+      // NAO BASTA cair no login: o cliente inteiro fica envenenado.
+      //
+      // Em @supabase/supabase-js, SupabaseClient.fetch e embrulhado por
+      // fetchWithAuth(_getAccessToken), e _getAccessToken faz
+      // `await this.auth.getSession()`. Ou seja, TODA requisicao — REST, RPC,
+      // storage — espera getSession() antes de sair. Com a renovacao travada,
+      // tudo fica na fila atras dela.
+      //
+      // Foi o que apareceu no console do plantao: a tela chegava no login
+      // (este catch funcionou), mas ao tentar entrar o RPC resolve_login
+      // estourava 10s — enquanto o mesmo RPC respondia em 0,7s por curl, fora
+      // do cliente. Nao era o servidor: era a trava interna.
+      //
+      // A renovacao travada vive na INSTANCIA em memoria, entao limpar o
+      // armazenamento nao a solta. Unica saida confiavel: apagar a sessao
+      // envenenada e comecar com um cliente novo. A recarga e UNICA por aba,
+      // protegida por marcador, para nao virar laco.
+      try {
+        Object.keys(localStorage)
+          .filter((k) => /^sb-.*-auth-token$/.test(k))
+          .forEach((k) => localStorage.removeItem(k));
+      } catch { /* armazenamento indisponivel */ }
+
+      try {
+        if (!sessionStorage.getItem(MARCADOR_RECARGA)) {
+          sessionStorage.setItem(MARCADOR_RECARGA, "1");
+          console.warn("[AuthContext] sessao presa descartada — recarregando com cliente limpo");
+          window.location.reload();
+        }
+      } catch { /* armazenamento indisponivel */ }
     });
 
     return () => subscription.unsubscribe();
