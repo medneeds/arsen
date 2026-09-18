@@ -293,7 +293,7 @@ export default function AuthPage() {
               Arsen
             </p>
             <p className="preserve-case mt-2 text-xs font-normal tracking-[0.28em] text-[#E2EEF9]/[0.46]">
-              PLATAFORMA CLÍNICA
+              PLATAFORMA HOSPITALAR INTELIGENTE
             </p>
           </div>
         </section>
