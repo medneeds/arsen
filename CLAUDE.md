@@ -44,12 +44,12 @@ npx eslint <arquivos alterados>
 
 ## Suíte de testes
 
-43 arquivos `.test.ts` em `src/tests/`. São scripts autocontidos, que podem ser rodados um a um via `npx tsx <arquivo>`.
+45 arquivos `.test.ts` em `src/tests/`. São scripts autocontidos, que podem ser rodados um a um via `npx tsx <arquivo>`.
 
 **Agora existe runner** (18/09/2026), porque a ausência dele deixou um teste quebrado passar despercebido por dias:
 
 ```bash
-npm run test              # roda os 43 e sai com código 1 se algum falhar
+npm run test              # roda todos e sai com código 1 se algum falhar
 npm run test prescricao   # roda só os que casam com o filtro
 npm run typecheck         # atalho para o tsc com o -p correto
 ```
