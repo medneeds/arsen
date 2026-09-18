@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -107,6 +107,7 @@ export function MedicalDocumentDialog({
   const [body, setBody] = useState("");
   // atestado
   const [days, setDays] = useState("");
+  const [passwordOpen, setPasswordOpen] = useState(false);
   
   // receituario
   const [rx, setRx] = useState<RxItem[]>([{ name: "", dose: "", route: "VO", freq: "", duration: "" }]);
@@ -528,9 +529,21 @@ export function MedicalDocumentDialog({
         {kind && (
           <DialogFooter>
             <Button variant="ghost" onClick={close}>Cancelar</Button>
-            <Button onClick={handlePrint}>
+            <Button onClick={() => setPasswordOpen(true)}>
               <Printer className="h-4 w-4 mr-2" /> Gerar e imprimir
             </Button>
+
+            <PasswordConfirmDialog
+              open={passwordOpen}
+              onOpenChange={setPasswordOpen}
+              title="Confirmar emissão do documento"
+              description="Confirme sua identidade para gerar e assinar o documento."
+              actionLabel="Confirmar e gerar"
+              onConfirmed={async () => {
+                setPasswordOpen(false);
+                await handlePrint();
+              }}
+            />
           </DialogFooter>
         )}
       </DialogContent>
