@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useHospital } from "@/contexts/HospitalContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -75,6 +76,9 @@ const ALLOWED_PROFILES = new Set([
 ]);
 
 export default function HistoricoPacientePage() {
+  // Necessario para os reimpressos: o nome do hospital entra no cabecalho do
+  // receituario e do documento medico.
+  const { currentHospital } = useHospital();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -372,7 +376,11 @@ export default function HistoricoPacientePage() {
         if (!data) { alert("Sumário de alta não encontrado."); setPrintingId(null); return; }
         await printDischargeDocument(
           data.document_type as DischargeDocType,
-          data.content as DischargeDocPayload,
+          // `content` vem como Json do banco; a conversao direta para o payload
+          // nao e aceita porque os tipos nao se sobrepoem. O `unknown` no meio e
+          // o que o proprio compilador sugere, e deixa explicito que a forma do
+          // JSON e uma suposicao — nao ha garantia de tipo vinda do banco.
+          data.content as unknown as DischargeDocPayload,
         );
         setPrintingId(null);
         return;
@@ -386,9 +394,11 @@ export default function HistoricoPacientePage() {
           .maybeSingle();
         if (!data) { alert("Documento não encontrado."); setPrintingId(null); return; }
         const { printDocumentoMedico } = await import("@/lib/documentoMedico");
+        // O `hospitalName` era `x ? undefined : undefined` — os dois ramos
+        // davam undefined, entao o nome do hospital NUNCA era passado. E o
+        // `onPrint` nao existe na assinatura. Passa o hospital de verdade.
         await printDocumentoMedico(data as any, {
-          hospitalName: e.payload?.hospital_unit_id ? undefined : undefined,
-          onPrint: () => {},
+          hospitalName: currentHospital?.name,
         });
         setPrintingId(null);
         return;
@@ -402,7 +412,14 @@ export default function HistoricoPacientePage() {
           .maybeSingle();
         if (!data) { alert("Receituário não encontrado."); setPrintingId(null); return; }
         const { printReceituario } = await import("@/lib/receituario");
-        await printReceituario(data as any, { onPrint: () => {} });
+        // AUDITORIA 18/09/2026 — aqui ia `{ onPrint: () => {} }`, um OBJETO, no
+        // parametro que e o NOME DO HOSPITAL (string). Objeto e truthy, entao
+        // passava direto pelo `hospitalName || "<padrao>"` de receituario.ts e
+        // era interpolado no documento: o receituario reimpresso pelo historico
+        // saia com "[object Object]" onde deveria estar o nome do hospital.
+        // Os outros cinco chamadores ja passavam a string certa; so este nao.
+        // O `onPrint` sequer existe na assinatura da funcao.
+        await printReceituario(data as any, currentHospital?.name);
         setPrintingId(null);
         return;
       }

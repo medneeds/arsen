@@ -3975,7 +3975,11 @@ function ExtraPrescriptionDialog({
                   return '';
                 })(),
                 validated: false,
-                highAlertConfirmed: false,
+                // `highAlertConfirmed: false` removido na auditoria de
+                // 18/09/2026: era escrito aqui e NUNCA lido em lugar nenhum do
+                // codigo, nao existe em PrescriptionItem, e ainda ia parar no
+                // JSONB da prescricao. A marcacao que vale e o `highAlert`
+                // acima, herdado do guia e de fato consumido pela interface.
               };
               setExtraItems(prev => [...prev, item]);
             });
