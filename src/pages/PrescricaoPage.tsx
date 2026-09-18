@@ -567,7 +567,11 @@ function calcConcentration(item: PrescriptionItem): string {
 
 function posologyToIntervals(posology: string): number {
   // Fase 2: delega à lista canônica compartilhada (inclui 48/48h, 72/72h).
-  // Mantém compatibilidade com legacy 'Dose única' → 1 (canonical usa 'Única').
+  // O canônico é 'Dose única' (commit 96016c99, que removeu a duplicata do
+  // dropdown). O valor legado é 'Única', gravado em prescrições anteriores —
+  // ele não está na lista canônica e cai no fallback de intervalToPhases, que
+  // devolve 1, o valor correto para dose única.
+  // (O comentário anterior aqui dizia o inverso e induzia ao erro.)
   if (posology === 'Dose única') return 1;
   return canonicalIntervalToPhases(posology);
 }
