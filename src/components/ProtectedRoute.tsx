@@ -10,6 +10,8 @@ import { ConsentTermsDialog, CURRENT_TERMS_VERSION } from "./ConsentTermsDialog"
 import { supabase } from "@/integrations/supabase/client";
 import { ProfileIpGate } from "./ProfileIpGate";
 import { startIdlePrefetch } from "@/lib/prefetchRoutes";
+import { comTempoLimite } from "@/lib/tempoLimite";
+import { PageLoader } from "@/components/PageLoader";
 
 // Logins genéricos que não precisam de aprovação (período de transição)
 const LEGACY_GENERIC_USERS = [
@@ -48,11 +50,24 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("terms_version, terms_accepted_at")
-          .eq("id", user.id)
-          .single();
+        // QUINTA chamada de rede do caminho de login, e a mais perigosa: até
+        // ela responder, `checkingTerms` fica true e o ProtectedRoute devolve
+        // null — TELA EM BRANCO, sem spinner e sem mensagem.
+        //
+        // Ate 16/09/2026 duas telas amorteciam isso: a de carregamento (800ms)
+        // e a de selecao de setor, que esperava um clique. Ambas foram
+        // removidas ao unificar o fluxo de setor em /setores. A remocao nao
+        // criou a lentidao — tirou o colchao que a escondia, e foi por isso que
+        // o problema apareceu naquele momento.
+        const { data: profile } = await comTempoLimite(
+          supabase
+            .from("profiles")
+            .select("terms_version, terms_accepted_at")
+            .eq("id", user.id)
+            .single(),
+          "verificar termos de uso",
+          10_000,
+        );
 
         if (profile?.terms_version === CURRENT_TERMS_VERSION && profile?.terms_accepted_at) {
           setTermsAccepted(true);
@@ -60,7 +75,11 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
           setShowTermsDialog(true);
         }
       } catch (error) {
-        console.error("Erro ao verificar termos:", error);
+        // Falha ou tempo esgotado NAO bloqueia o acesso: exibir o dialogo de
+        // termos e o comportamento seguro — o medico aceita de novo e segue.
+        // Travar a tela em branco por causa de uma consulta de termos deixaria
+        // o plantao sem sistema.
+        console.error("[Arsen] falha ao verificar termos:", error);
         setShowTermsDialog(true);
       } finally {
         setCheckingTerms(false);
@@ -107,12 +126,18 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   // o profissional via duas telas de selecao em sequencia -- e a antiga vinha
   // primeiro, precedida de um carregamento. Desligado para todos os perfis.
 
+  // Enquanto a sessao e os termos sao verificados, mostra o splash — nao uma
+  // tela BRANCA. Devolver null aqui era o que fazia a plataforma "nao
+  // carregar": sem spinner, sem mensagem, sem pista de que algo estava em
+  // andamento. Uma tela em branco nao distingue "carregando" de "quebrou".
   if (loading || checkingTerms) {
-    return null;
+    return <PageLoader message="Entrando na plataforma…" />;
   }
 
+  // Sem sessao: o efeito acima ja redireciona para /auth. O splash evita o
+  // piscar de tela branca durante o redirecionamento.
   if (!user) {
-    return null;
+    return <PageLoader message="Entrando na plataforma…" />;
   }
 
   // Mostrar diálogo de termos se ainda não aceitou
