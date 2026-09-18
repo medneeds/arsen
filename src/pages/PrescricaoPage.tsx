@@ -5313,16 +5313,27 @@ const PrescricaoPage = () => {
         !sig &&
         opts.autoNewVersionIfSigned
       ) {
-        try {
-          const { data: existing } = await supabase
-            .from('prescriptions')
-            .select('status')
-            .eq('id', currentPrescriptionId)
-            .single();
-          if ((existing as any)?.status === 'signed' || (existing as any)?.status === 'validated') {
-            mode = 'newVersion';
-          }
-        } catch {}
+        // AUDITORIA 18/09/2026 — esta checagem FALHAVA ABERTA.
+        // O erro caia num `catch {}` vazio e o fluxo seguia como 'update',
+        // sobrescrevendo um registro possivelmente assinado. Pior: `.single()`
+        // NAO lanca quando a linha nao e visivel (RLS ou 0 linhas) — devolve
+        // { data: null, error }, o `if` dava falso e o update acontecia igual.
+        // Agora: sem resposta confiavel, aborta. O autosave e `silent` e tem
+        // queda para localStorage, entao a edicao do medico nao se perde.
+        const { data: existing, error: erroStatus } = await supabase
+          .from('prescriptions')
+          .select('status')
+          .eq('id', currentPrescriptionId)
+          .maybeSingle();
+        if (erroStatus || !existing) {
+          throw new Error(
+            'Nao foi possivel confirmar o status da prescricao antes de salvar. ' +
+            'Nada foi gravado, para nao sobrescrever um documento assinado.',
+          );
+        }
+        if (existing.status === 'signed' || existing.status === 'validated') {
+          mode = 'newVersion';
+        }
       }
 
       // Calcular status baseado em validação dos itens (não na assinatura digital)
@@ -5344,16 +5355,23 @@ const PrescricaoPage = () => {
       };
 
       if (mode === 'newVersion' && currentPrescriptionId) {
-        // Busca version atual para incrementar
-        let nextVersion = 2;
-        try {
-          const { data: parentData } = await supabase
-            .from('prescriptions')
-            .select('version')
-            .eq('id', currentPrescriptionId)
-            .single();
-          nextVersion = ((parentData as any)?.version || 1) + 1;
-        } catch {}
+        // Busca version atual para incrementar.
+        // AUDITORIA 18/09/2026 — antes, qualquer falha aqui era engolida por um
+        // `catch {}` e a versao ia como 2 fixo, podendo colidir com uma versao 2
+        // ja existente e criar duas linhas com o mesmo numero no prontuario.
+        // Sem leitura confiavel da versao atual, nao ha numero correto a gravar.
+        const { data: parentData, error: erroVersao } = await supabase
+          .from('prescriptions')
+          .select('version')
+          .eq('id', currentPrescriptionId)
+          .maybeSingle();
+        if (erroVersao || !parentData) {
+          throw new Error(
+            'Nao foi possivel ler a versao atual da prescricao. Nada foi gravado, ' +
+            'para nao criar duas versoes com o mesmo numero.',
+          );
+        }
+        const nextVersion = ((parentData as any)?.version || 1) + 1;
         const { data, error } = await supabase
           .from('prescriptions')
           .insert({
@@ -5375,21 +5393,36 @@ const PrescricaoPage = () => {
         // Só permite update se for newVersion (tratado acima) OU se o caller traz uma
         // assinatura válida (sig). Autosave (sig=null) em registro signed → skip silencioso.
         // Fase C: se autoNewVersionIfSigned estava ligado, já foi promovido acima.
-        try {
-          const { data: existing } = await supabase
-            .from('prescriptions')
-            .select('status')
-            .eq('id', currentPrescriptionId)
-            .single();
-          if ((existing as any)?.status === 'signed' && !sig) {
-            // Registro já assinado e não há nova assinatura → não rebaixar.
-            return;
-          }
-        } catch {}
-        const { error } = await supabase
+        // AUDITORIA 18/09/2026 — esta era a guarda que mais falhava aberta:
+        // o `catch {}` engolia o erro e o update seguia assim mesmo. E, mesmo
+        // sem erro, `.single()` devolvendo linha invisivel (RLS/0 linhas) fazia
+        // o `if` dar falso e o update acontecer sobre um registro assinado.
+        const { data: existing, error: erroStatus } = await supabase
+          .from('prescriptions')
+          .select('status')
+          .eq('id', currentPrescriptionId)
+          .maybeSingle();
+        if (erroStatus || !existing) {
+          throw new Error(
+            'Nao foi possivel confirmar o status da prescricao antes de salvar. ' +
+            'Nada foi gravado, para nao sobrescrever um documento assinado.',
+          );
+        }
+        if (existing.status === 'signed' && !sig) {
+          // Registro ja assinado e nao ha nova assinatura -> nao rebaixar.
+          return;
+        }
+        // Defesa em profundidade: entre o SELECT acima e o UPDATE abaixo existe
+        // uma ida e volta de rede (~250ms medidos ate o servidor) em que outro
+        // medico pode assinar. Sem nova assinatura, o filtro impede no proprio
+        // banco que um registro assinado seja rebaixado — a checagem de cima
+        // sozinha nao e atomica.
+        let consulta = supabase
           .from('prescriptions')
           .update(basePayload)
           .eq('id', currentPrescriptionId);
+        if (!sig) consulta = consulta.neq('status', 'signed');
+        const { error } = await consulta;
         if (error) throw error;
       } else {
         // BUGFIX (07/08/2026) — Pontos 1 e 4 da otimização de rascunhos:
