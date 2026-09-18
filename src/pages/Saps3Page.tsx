@@ -1243,15 +1243,16 @@ export default function Saps3Page() {
       // "Finalizar SAPS 3" no Painel/Hub consiga encontrar a ficha pendente
       // pelo patient_id (e não cair em fluxo de pré-admissão de novo).
       if (createdSapsId && admittedPatientId) {
-        await supabase
+        const { error: erroEscrita1 } = await supabase
           .from("saps3_assessments" as any)
           .update({ patient_id: admittedPatientId } as any)
           .eq("id", createdSapsId);
+        if (erroEscrita1) throw erroEscrita1;
       }
 
       // Origem 1: solicitação de leito (door patient) → marca aprovada e remove a linha "porta"
       if (selectedRequest?.allocation_request_id) {
-        await supabase
+        const { error: erroEscrita2 } = await supabase
           .from("bed_allocation_requests")
           .update({
             status: "approved",
@@ -1259,9 +1260,11 @@ export default function Saps3Page() {
             reviewed_at: new Date().toISOString(),
           })
           .eq("id", selectedRequest.allocation_request_id);
+        if (erroEscrita2) throw erroEscrita2;
 
         if (selectedRequest.patient_id && selectedRequest.patient_id !== existingBedRow?.id) {
-          await supabase.from("patients").delete().eq("id", selectedRequest.patient_id);
+          const { error: erroEscrita3 } = await supabase.from("patients").delete().eq("id", selectedRequest.patient_id);
+          if (erroEscrita3) throw erroEscrita3;
         }
       }
 
@@ -1285,13 +1288,14 @@ export default function Saps3Page() {
           (selectedRequest as any)?.patient_id ||
           searchParams.get("patientId");
         if (targetPatientId) {
-          await supabase
+          const { error: erroEscrita4 } = await supabase
             .from("patients")
             .update({
               saps_pending: false,
               saps_completed_at: new Date().toISOString(),
             } as any)
             .eq("id", targetPatientId);
+          if (erroEscrita4) throw erroEscrita4;
         }
       }
 

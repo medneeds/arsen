@@ -437,10 +437,17 @@ const AdminDashboardPage = () => {
         );
         if (!genErr && gen) {
           officialMr = gen as string;
-          await supabase
+          // Best-effort de proposito (o bloco inteiro mantem fallback), entao
+          // NAO lanca. Mas o resultado era descartado e uma negativa de RLS
+          // aqui ficava invisivel ate no console — o prontuario oficial nao
+          // era gravado e ninguem ficava sabendo.
+          const { error: erroProntuario } = await supabase
             .from("patient_registry")
             .update({ medical_record: officialMr })
             .eq("id", (data as any).id);
+          if (erroProntuario) {
+            console.warn("Prontuário oficial gerado mas não gravado no registry:", erroProntuario);
+          }
         }
       } catch (e) {
         console.warn("Falha ao gerar prontuário oficial (mantém fallback):", e);

@@ -506,17 +506,19 @@ export function MedicalRecordEditDialog({
           }
 
           // Vincula ao paciente
-          await supabase
+          const { error: erroEscrita1 } = await supabase
             .from("patients")
             .update({ patient_registry_id: registryId } as any)
             .eq("id", patientId);
+          if (erroEscrita1) throw erroEscrita1;
 
           // Vincula ao prontuário ativo (se existir)
           if (record?.id) {
-            await supabase
+            const { error: erroEscrita2 } = await supabase
               .from("medical_records")
               .update({ patient_registry_id: registryId } as any)
               .eq("id", record.id);
+            if (erroEscrita2) throw erroEscrita2;
           }
         }
       }
@@ -566,13 +568,14 @@ export function MedicalRecordEditDialog({
           .maybeSingle();
         const prevName = ((curPat as any)?.name || "").toString().trim().toUpperCase();
         if (prevName !== newName) {
-          await supabase
+          const { error: erroEscrita3 } = await supabase
             .from("patients")
             .update({ name: newName } as any)
             .eq("id", patientId);
+          if (erroEscrita3) throw erroEscrita3;
           // Auditoria do nome no histórico do prontuário (se houver)
           if (record?.id) {
-            await supabase
+            const { error: erroEscrita4 } = await supabase
               .from("medical_record_edit_history" as any)
               .insert({
                 medical_record_id: record.id,
@@ -584,6 +587,7 @@ export function MedicalRecordEditDialog({
                 changed_by: userId,
                 changed_by_email: userEmail,
               } as any);
+            if (erroEscrita4) throw erroEscrita4;
           }
         }
       }
@@ -602,13 +606,14 @@ export function MedicalRecordEditDialog({
           .maybeSingle();
         const prevMedicalRecord = ((curPatMr as any)?.medical_record || "").toString().trim();
         if (prevMedicalRecord !== newMedicalRecord) {
-          await supabase
+          const { error: erroEscrita5 } = await supabase
             .from("patients")
             .update({ medical_record: newMedicalRecord } as any)
             .eq("id", patientId);
+          if (erroEscrita5) throw erroEscrita5;
           // Auditoria do prontuário no histórico (se houver)
           if (record?.id) {
-            await supabase
+            const { error: erroEscrita6 } = await supabase
               .from("medical_record_edit_history" as any)
               .insert({
                 medical_record_id: record.id,
@@ -620,6 +625,7 @@ export function MedicalRecordEditDialog({
                 changed_by: userId,
                 changed_by_email: userEmail,
               } as any);
+            if (erroEscrita6) throw erroEscrita6;
           }
         }
       }
@@ -646,10 +652,11 @@ export function MedicalRecordEditDialog({
             .maybeSingle();
           const prevAge = ((curPatAge as any)?.age || "").toString().trim();
           if (prevAge !== newAge) {
-            await supabase
+            const { error: erroEscrita7 } = await supabase
               .from("patients")
               .update({ age: newAge } as any)
               .eq("id", patientId);
+            if (erroEscrita7) throw erroEscrita7;
           }
         }
       }
