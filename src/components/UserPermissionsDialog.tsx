@@ -165,7 +165,8 @@ export function UserPermissionsDialog({
       if (profileError) throw profileError;
 
       // 3) Sync user_departments — wipe + reinsert
-      await supabase.from("user_departments").delete().eq("user_id", userId);
+      const { error: erroGrav1 } = await supabase.from("user_departments").delete().eq("user_id", userId);
+      if (erroGrav1) throw erroGrav1;
       if (selectedDepartments.size > 0) {
         const rows = Array.from(selectedDepartments).map((department) => ({
           user_id: userId,
@@ -176,7 +177,8 @@ export function UserPermissionsDialog({
       }
 
       // 4) Sync hospital assignments — wipe + reinsert
-      await supabase.from("user_hospital_assignments").delete().eq("user_id", userId);
+      const { error: erroGrav2 } = await supabase.from("user_hospital_assignments").delete().eq("user_id", userId);
+      if (erroGrav2) throw erroGrav2;
       if (selectedUnits.size > 0) {
         const rows = Array.from(selectedUnits).map((hospital_unit_id) => ({
           user_id: userId,

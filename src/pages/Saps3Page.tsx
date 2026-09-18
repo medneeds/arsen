@@ -1091,13 +1091,14 @@ export default function Saps3Page() {
             }
           }
           if (targetPatientId) {
-            await supabase
+            const { error: erroGrav1 } = await supabase
               .from("patients")
               .update({
                 saps_pending: false,
                 saps_completed_at: new Date().toISOString(),
               } as any)
               .eq("id", targetPatientId);
+            if (erroGrav1) throw erroGrav1;
           } else {
             console.warn("[SAPS] handleSave: não foi possível resolver patient_id para liberar gate clínico", { completingSapsId });
           }

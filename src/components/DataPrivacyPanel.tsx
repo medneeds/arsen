@@ -126,7 +126,8 @@ export function DataPrivacyPanel() {
 
       if (exportError) {
         // Update request to failed
-        await supabase.from("data_requests").update({ status: "pending", notes: "Falha ao gerar - tentando novamente" }).eq("id", requestData.id);
+        const { error: erroGrav1 } = await supabase.from("data_requests").update({ status: "pending", notes: "Falha ao gerar - tentando novamente" }).eq("id", requestData.id);
+        if (erroGrav1) throw erroGrav1;
         throw exportError;
       }
 

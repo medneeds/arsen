@@ -141,10 +141,11 @@ export function useBedAllocationRequests() {
       if (error) throw error;
 
       // Update patient allocation status
-      await supabase
+      const { error: erroGrav1 } = await supabase
         .from("patients")
         .update({ allocation_status: "pending" })
         .eq("id", patientId);
+      if (erroGrav1) throw erroGrav1;
 
       toast({
         title: "Solicitação enviada",
@@ -293,10 +294,11 @@ export function useBedAllocationRequests() {
       if (error) throw error;
 
       // Update patient allocation status
-      await supabase
+      const { error: erroGrav2 } = await supabase
         .from("patients")
         .update({ allocation_status: "discussing" })
         .eq("id", request.patient_id);
+      if (erroGrav2) throw erroGrav2;
 
       toast({
         title: "Em discussão",
@@ -351,10 +353,11 @@ export function useBedAllocationRequests() {
       if (error) throw error;
 
       // Update patient allocation status
-      await supabase
+      const { error: erroGrav3 } = await supabase
         .from("patients")
         .update({ allocation_status: "rejected" })
         .eq("id", request.patient_id);
+      if (erroGrav3) throw erroGrav3;
 
       toast({
         title: "Solicitação negada",

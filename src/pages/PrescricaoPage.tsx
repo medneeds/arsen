@@ -8196,7 +8196,7 @@ const PrescricaoPage = () => {
       try {
         // Save current prescription first if it exists
         if (currentPrescriptionId) {
-          await supabase
+          const { error: erroGrav1 } = await supabase
             .from('prescriptions')
             .update({
               patient_data: patient as any,
@@ -8210,6 +8210,7 @@ const PrescricaoPage = () => {
               })(),
             })
             .eq('id', currentPrescriptionId);
+          if (erroGrav1) throw erroGrav1;
         }
 
         // Get current version number

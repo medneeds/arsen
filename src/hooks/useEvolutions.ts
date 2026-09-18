@@ -416,10 +416,17 @@ export function useEvolutions(
             }
 
             if (merged.length > existing.length) {
-              await supabase
+              // Sincronizacao complementar de pendencias: e best-effort de
+              // proposito, entao NAO lanca — mas tambem nao pode sumir. Antes o
+              // resultado era descartado e uma negativa de RLS aqui era
+              // absolutamente invisivel, inclusive no console.
+              const { error: erroSync } = await supabase
                 .from("patients")
                 .update({ pendencies: merged.join("\n") })
                 .eq("id", safePatientId);
+              if (erroSync) {
+                console.warn("[useEvolutions] sync complementar nao gravou pendencias:", erroSync);
+              }
             }
           } catch (syncErr) {
             console.warn("[useEvolutions] sync complementar error", syncErr);

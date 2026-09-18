@@ -394,10 +394,11 @@ export function PatientSearchActionsDialog({
 
         // 5A) Atualiza a pré-admissão com o encounter_code gerado
         if (encounterCode && preAdmissionId) {
-          await supabase
+          const { error: erroGrav1 } = await supabase
             .from("pre_admissions")
             .update({ notes: `Pré-admissão administrativa via busca no Mapa de Leitos • Atendimento ${encounterCode}` })
             .eq("id", preAdmissionId);
+          if (erroGrav1) throw erroGrav1;
         }
 
       } else {

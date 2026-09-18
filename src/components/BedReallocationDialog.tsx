@@ -130,7 +130,8 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
           .update({ bed_number: patient.bedNumber, updated_at: new Date().toISOString() })
           .eq("id", otherRow.id);
         if (r.error) {
-          await supabase.from("patients").update({ bed_number: patient.bedNumber }).eq("id", patient.id);
+          const { error: erroGrav1 } = await supabase.from("patients").update({ bed_number: patient.bedNumber }).eq("id", patient.id);
+          if (erroGrav1) throw erroGrav1;
           throw r.error;
         }
         // 3) coloca o paciente atual no leito alvo
@@ -139,8 +140,10 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
           .update({ bed_number: targetBed, updated_at: new Date().toISOString() })
           .eq("id", patient.id);
         if (r.error) {
-          await supabase.from("patients").update({ bed_number: otherRow.bed_number }).eq("id", otherRow.id);
-          await supabase.from("patients").update({ bed_number: patient.bedNumber }).eq("id", patient.id);
+          const { error: erroGrav2 } = await supabase.from("patients").update({ bed_number: otherRow.bed_number }).eq("id", otherRow.id);
+          if (erroGrav2) throw erroGrav2;
+          const { error: erroGrav3 } = await supabase.from("patients").update({ bed_number: patient.bedNumber }).eq("id", patient.id);
+          if (erroGrav3) throw erroGrav3;
           throw r.error;
         }
       }

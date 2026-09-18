@@ -210,7 +210,7 @@ export function MedicalRecordEditDialog({
         .single();
       if (insErr) throw insErr;
 
-      await supabase
+      const { error: erroGrav1 } = await supabase
         .from("medical_record_edit_history")
         .insert({
           medical_record_id: (created as any).id,
@@ -222,6 +222,7 @@ export function MedicalRecordEditDialog({
           changed_by: userId,
           changed_by_email: userEmail,
         } as any);
+      if (erroGrav1) throw erroGrav1;
 
       toast({ title: "Prontuário legado criado", description: `Nº ${value} vinculado ao paciente.` });
       setCreateLegacyNumber("");
@@ -283,10 +284,11 @@ export function MedicalRecordEditDialog({
         // Auto-reparo: realinha medical_records.patient_registry_id ao vínculo vivo
         // (best-effort; falha silenciosa se RLS bloquear)
         if (rec?.id) {
-          await supabase
+          const { error: erroGrav2 } = await supabase
             .from("medical_records")
             .update({ patient_registry_id: patRegistryId } as any)
             .eq("id", rec.id);
+          if (erroGrav2) throw erroGrav2;
         }
       }
 

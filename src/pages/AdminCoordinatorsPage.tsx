@@ -227,7 +227,8 @@ export default function AdminCoordinatorsPage() {
           department: dept,
         }));
 
-        await supabase.from("user_departments").insert(deptInserts);
+        const { error: erroGrav1 } = await supabase.from("user_departments").insert(deptInserts);
+        if (erroGrav1) throw erroGrav1;
       }
 
       toast.success("Coordenador atribuído com sucesso");

@@ -127,13 +127,14 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
       if (updErr) throw updErr;
 
       // 3) Atualiza patient_name nos encounters/movements vinculados
-      await supabase
+      const { error: erroGrav1 } = await supabase
         .from("patient_encounters")
         .update({ patient_name: normalizePatientName(fullName) })
         .eq("registry_id", niRegistryId);
+      if (erroGrav1) throw erroGrav1;
 
       // 4) Audit no patient_merge_audit (action='promote_ni')
-      await supabase.from("patient_merge_audit" as any).insert({
+      const { error: erroGrav2 } = await supabase.from("patient_merge_audit" as any).insert({
         action: "promote_ni",
         source_registry_id: niRegistryId,
         target_registry_id: niRegistryId,
@@ -148,6 +149,7 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
         performed_by: user?.id,
         performed_by_email: user?.email,
       } as any);
+      if (erroGrav2) throw erroGrav2;
 
       toast.success("Paciente identificado com sucesso", {
         description: `${fullName.trim().toUpperCase()} — vínculos com atendimentos preservados.`,

@@ -287,14 +287,16 @@ export default function RoundPage() {
         currentSessionId = newSession.id;
         setSessionId(currentSessionId);
       } else {
-        await supabase
+        const { error: erroGrav1 } = await supabase
           .from("round_sessions")
           .update({ observations, updated_at: new Date().toISOString() } as any)
           .eq("id", currentSessionId);
+        if (erroGrav1) throw erroGrav1;
       }
 
       // Delete existing responses and re-insert
-      await supabase.from("round_responses").delete().eq("session_id", currentSessionId);
+      const { error: erroGrav2 } = await supabase.from("round_responses").delete().eq("session_id", currentSessionId);
+      if (erroGrav2) throw erroGrav2;
 
       const responseRows = Object.entries(responses)
         .filter(([, v]) => v.status || v.observation)
@@ -316,7 +318,8 @@ export default function RoundPage() {
       }
 
       // Upsert goals
-      await supabase.from("round_section_goals").delete().eq("session_id", currentSessionId);
+      const { error: erroGrav3 } = await supabase.from("round_section_goals").delete().eq("session_id", currentSessionId);
+      if (erroGrav3) throw erroGrav3;
       const goalRows = Object.entries(goals)
         .filter(([, v]) => v.trim())
         .map(([sectionCode, goal]) => ({

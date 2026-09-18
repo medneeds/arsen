@@ -134,7 +134,7 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
         const oldParts = splitBR(value);
         const oldISO = value ? brToISO(oldParts.date, oldParts.time) || null : null;
 
-        await supabase.from("patient_admission_date_history").insert({
+        const { error: erroGrav1 } = await supabase.from("patient_admission_date_history").insert({
           patient_id: patientId,
           old_value: oldISO,
           new_value: newValueISO,
@@ -142,6 +142,7 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
           changed_by_name: displayName,
           reason: reason || null,
         });
+        if (erroGrav1) throw erroGrav1;
 
         // Caminho ÚNICO de mutação de admission_date (auditado).
         // Sincroniza os 3 campos para manter a data efetiva consistente
