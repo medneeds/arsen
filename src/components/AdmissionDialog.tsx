@@ -654,7 +654,18 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
       } else {
         baseUpdate.hospital_discharge_prediction = null;
       }
-      await supabase.from("patients").update(baseUpdate as any).eq("id", patient.id);
+      // AUDITORIA 18/09/2026 — o resultado deste update era DESCARTADO. O
+      // supabase-js nao lanca excecao em erro do PostgREST: devolve { error }.
+      // Entao uma negativa de RLS ou violacao de constraint passava em silencio
+      // e o fluxo seguia declarando sucesso: marcava isSaved, APAGAVA o rascunho
+      // local e imprimia automaticamente um papel de admissao que nao existia no
+      // registro. O catch externo desta funcao ja mostra "Nao foi possivel
+      // registrar admissao" — faltava dar a ele o que tratar.
+      const { error: erroAdmissao } = await supabase
+        .from("patients")
+        .update(baseUpdate as any)
+        .eq("id", patient.id);
+      if (erroAdmissao) throw erroAdmissao;
 
       // Admissão persistida com sucesso — agora a impressão é segura.
       setIsSaved(true);
