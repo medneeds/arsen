@@ -5522,27 +5522,24 @@ const PrescricaoPage = () => {
   const isLoadingRef = useRef(true); // começa true — carregamento inicial em andamento
 
   useEffect(() => {
-    if (isLoadingRef.current) return; // aguarda carregamento completar
-    const serialized = JSON.stringify(items);
+    if (isLoadingRef.current) return;
 
-    // Nova regra: se todos os itens ativos já foram validados,
-    // a prescrição está em estado validado e nunca gera dirty.
-    // O médico pode fazer ajustes mas precisa salvar manualmente —
-    // o sistema não pede para salvar rascunho de uma prescrição validada.
-    const activeItems = items.filter(i => i.status === 'active');
-    const allValidated = activeItems.length > 0 && activeItems.every(i => i.validated);
-    if (allValidated) {
+    // Regra absoluta: prescrição validada (digitalSignature preenchida) nunca
+    // gera dirty state. O popup de salvar rascunho jamais aparece para uma
+    // prescrição que já foi validada — independente de qualquer mudança posterior.
+    if (digitalSignature) {
       isDirtyRef.current = false;
       setDirty(false);
       return;
     }
 
+    const serialized = JSON.stringify(items);
     const dirty = items.length > 0
       && !!patient.name?.trim()
       && serialized !== lastPersistedSerializedRef.current;
     isDirtyRef.current = dirty;
     setDirty(dirty);
-  }, [items, patient.name, setDirty]);
+  }, [items, patient.name, digitalSignature, setDirty]);
 
   // Registra o callback de salvar rascunho no Context para o PatientSidebar usar
   useEffect(() => {
