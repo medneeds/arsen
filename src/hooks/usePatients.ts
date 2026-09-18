@@ -970,7 +970,7 @@ export function usePatients(department?: Department, sector?: string) {
           filter: `hospital_unit_id=eq.${currentHospital.id}`,
         },
         (payload) => {
-          console.log('Realtime patient change:', payload.eventType, payload);
+          console.log('Realtime patient change:', payload.eventType); // auditoria 18/09: nao despejar o registro do paciente no console
           
           const eventType = payload.eventType;
           

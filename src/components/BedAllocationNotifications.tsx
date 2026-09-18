@@ -151,7 +151,7 @@ export function BedAllocationNotifications() {
           filter: `hospital_unit_id=eq.${currentHospital.id}`,
         },
         (payload) => {
-          console.log("New allocation request:", payload);
+          console.log("New allocation request"); // auditoria 18/09: payload continha dados do paciente
           if (payload.new.id !== lastNotifiedId) {
             setLastNotifiedId(payload.new.id as string);
             setShowPopup(true);

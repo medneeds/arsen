@@ -36,6 +36,19 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  // AUDITORIA 18/09/2026 — havia 425 chamadas console.* no src e nenhuma
+  // remocao no build, entao todas iam para producao. Varias despejavam o
+  // registro inteiro do paciente vindo do realtime no console do navegador de
+  // um terminal compartilhado de plantao.
+  //
+  // `pure` marca estas chamadas como sem efeito colateral: o minificador as
+  // remove no build de producao e elas continuam funcionando em `vite dev`.
+  // console.error e console.warn FICAM — sao o que resta para diagnosticar
+  // incidente em producao, inclusive o aviso de tempo esgotado do cliente
+  // Supabase.
+  esbuild: {
+    pure: ["console.log", "console.info", "console.debug"],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
