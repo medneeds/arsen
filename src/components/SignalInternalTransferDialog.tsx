@@ -88,7 +88,7 @@ export function SignalInternalTransferDialog({ patient, open, onOpenChange, onSu
         <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <AlertTriangle className="h-5 w-5 text-warning-on-soft" />
               <DialogTitle>Transferência já sinalizada</DialogTitle>
             </div>
             <DialogDescription>
@@ -111,7 +111,7 @@ export function SignalInternalTransferDialog({ patient, open, onOpenChange, onSu
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <ArrowRightLeft className="h-5 w-5 text-sky-600" />
+            <ArrowRightLeft className="h-5 w-5 text-foreground" />
             <DialogTitle>Sinalizar transferência interna</DialogTitle>
           </div>
           <DialogDescription>
@@ -146,18 +146,18 @@ export function SignalInternalTransferDialog({ patient, open, onOpenChange, onSu
           </div>
 
           {classification && (
-            <div className={`rounded-md border p-3 text-xs space-y-1 ${needsSaps ? "border-amber-300 bg-amber-50 dark:bg-amber-950/20" : "border-sky-300 bg-sky-50 dark:bg-sky-950/20"}`}>
+            <div className={`rounded-md border p-3 text-xs space-y-1 ${needsSaps ? "border-warning-border bg-warning-soft" : "border-border bg-muted"}`}>
               <div className="flex items-center gap-2">
-                {needsSaps ? <AlertTriangle className="h-4 w-4 text-amber-600" /> : <Info className="h-4 w-4 text-sky-600" />}
+                {needsSaps ? <AlertTriangle className="h-4 w-4 text-warning-on-soft" /> : <Info className="h-4 w-4 text-foreground" />}
                 <span className="font-medium">{classificationLabel(classification)}</span>
-                <Badge variant="outline" className="ml-auto text-[10px]">{classification}</Badge>
+                <Badge variant="outline" className="ml-auto text-xs">{classification}</Badge>
               </div>
-              <ul className="list-disc pl-5 text-muted-foreground space-y-0.5">
+              <ul className="list-disc pl-4 text-muted-foreground space-y-1">
                 <li>Leito atual será <strong>liberado imediatamente</strong> ao confirmar.</li>
                 <li>Paciente aparecerá em <strong>"Aguardando alocação por transferência interna"</strong> no setor destino.</li>
                 <li>Encounter e prontuário <strong>preservados</strong> até o desfecho final.</li>
                 {needsSaps ? (
-                  <li className="text-amber-700 dark:text-amber-400"><strong>Escalada crítica:</strong> após alocação no leito, exigirá <strong>SAPS 3</strong> (timer dispara automaticamente).</li>
+                  <li className="text-warning-on-soft"><strong>Escalada crítica:</strong> após alocação no leito, exigirá <strong>SAPS 3</strong> (timer dispara automaticamente).</li>
                 ) : (
                   <li>Alocação no destino será <strong>direta</strong> (sem nova admissão / sem SAPS).</li>
                 )}

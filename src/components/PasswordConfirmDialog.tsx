@@ -114,7 +114,7 @@ export function PasswordConfirmDialog({
       setPassword("");
       onOpenChange(false);
     } catch (err) {
-      toast.error("Erro ao validar senha");
+      toast.error("Não foi possível validar senha");
     } finally {
       setLoading(false);
     }
@@ -133,7 +133,7 @@ export function PasswordConfirmDialog({
       <DialogContent className="w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] sm:max-w-md max-h-[92vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-start gap-2 text-base leading-snug break-words">
-            <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-1" />
             {title}
           </DialogTitle>
           <DialogDescription className="text-xs leading-relaxed break-words">{description}</DialogDescription>
@@ -151,7 +151,7 @@ export function PasswordConfirmDialog({
               disabled={loading}
               placeholder="Sua senha de acesso"
             />
-            <p className="text-[11px] text-muted-foreground break-words">
+            <p className="text-xs text-muted-foreground break-words">
               Usuário: <span className="font-medium">{displayIdentity || "USUÁRIO AUTENTICADO"}</span>
             </p>
           </div>

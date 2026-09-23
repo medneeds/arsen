@@ -128,15 +128,15 @@ const DocumentosPacientePage = () => {
         <ClinicalHeader moduleLabel="Documentos" />
         <div className="p-6 space-y-6 max-w-5xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10">
+            <div className="p-2 rounded-lg bg-primary/15 border border-primary/10">
               <FolderOpen className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-foreground leading-tight">Documentos</h1>
+              <h1 className="text-lg font-medium text-foreground leading-tight">Documentos</h1>
               <p className="text-xs text-muted-foreground">Selecione um paciente pelo mapa de leitos ou painel clínico</p>
             </div>
           </div>
-          <div className="rounded-xl border border-dashed border-border bg-muted/20 p-12 text-center">
+          <div className="rounded-lg border border-dashed border-border bg-muted/20 p-8 text-center">
             <FolderOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
             <p className="text-lg font-medium text-muted-foreground">Nenhum paciente selecionado</p>
             <p className="text-sm text-muted-foreground/70 mt-1">Acesse pela sidebar do paciente ou painel clínico</p>
@@ -158,34 +158,34 @@ const DocumentosPacientePage = () => {
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 {patientBed && (
                   <div className="flex flex-col items-center justify-center h-12 w-12 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
-                    <span className="text-[7px] font-bold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
-                    <span className="text-base font-extrabold text-primary leading-tight mt-0.5">{patientBed}</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
+                    <span className="text-base font-semibold text-primary leading-tight mt-1">{patientBed}</span>
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="text-base font-extrabold text-foreground uppercase tracking-wide leading-tight truncate">
+                  <p className="text-base font-semibold text-foreground uppercase tracking-wide leading-tight truncate">
                     {patientName || "—"}
                   </p>
-                  <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                    {patientSector && <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold uppercase tracking-wide">{patientSector}</span>}
+                  <div className="flex items-center gap-2 flex-wrap mt-1">
+                    {patientSector && <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium uppercase tracking-wide">{patientSector}</span>}
                   </div>
                 </div>
               </div>
               {/* DIREITA */}
               <div className="text-right shrink-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground leading-tight">DOCUMENTOS DO PACIENTE</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Documentos clínicos vinculados</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">DOCUMENTOS DO PACIENTE</p>
+                <p className="text-xs text-muted-foreground mt-1">Documentos clínicos vinculados</p>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <Badge variant="outline" className="text-[11px]">
+              <Badge variant="outline" className="text-xs">
                 {docs.length} no total
               </Badge>
               <Button
                 type="button"
                 size="sm"
                 onClick={() => setMedDocOpen(true)}
-                className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-sm normal-case"
+                className="gap-2 bg-primary hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-sm normal-case"
               >
                 <FileSignature className="h-4 w-4" />
                 Emitir documento médico
@@ -198,36 +198,36 @@ const DocumentosPacientePage = () => {
             <QuickCta
               icon={Droplet}
               label="Hemocomponentes"
-              tone="text-rose-600 dark:text-rose-400"
-              bg="bg-rose-500/10"
+              tone="text-critical-on-soft"
+              bg="bg-critical/10"
               onClick={() => setHemoOpen(true)}
             />
             <QuickCta
               icon={Microscope}
               label="Cultura"
-              tone="text-emerald-600 dark:text-emerald-400"
-              bg="bg-emerald-500/10"
+              tone="text-released-on-soft"
+              bg="bg-released/10"
               onClick={() => handleNewByType("cultura")}
             />
             <QuickCta
               icon={FileCheck}
               label="APAC"
-              tone="text-orange-600 dark:text-orange-400"
-              bg="bg-orange-500/10"
+              tone="text-warning-on-soft"
+              bg="bg-warning/10"
               onClick={() => handleNewByType("apac")}
             />
             <QuickCta
               icon={Syringe}
               label="SAT"
-              tone="text-amber-600 dark:text-amber-400"
-              bg="bg-amber-500/10"
+              tone="text-warning-on-soft"
+              bg="bg-warning/10"
               onClick={() => setSatOpen(true)}
             />
             <QuickCta
               icon={FileText}
               label="AIH"
-              tone="text-indigo-600 dark:text-indigo-400"
-              bg="bg-indigo-500/10"
+              tone="text-foreground"
+              bg="bg-primary/10"
               badge="via internação"
               onClick={() => handleNewByType("aih")}
             />
@@ -310,19 +310,19 @@ function QuickCta({
     <button
       type="button"
       onClick={onClick}
-      className="group relative flex items-center gap-2 p-2.5 rounded-lg border border-border/60 bg-card/50 hover:bg-muted/50 hover:border-border transition-all text-left"
+      className="group relative flex items-center gap-2 p-3 rounded-lg border border-border/60 bg-card/50 hover:bg-muted/50 hover:border-border transition-all text-left"
     >
-      <div className={`p-1.5 rounded-md ${bg}`}>
+      <div className={`p-2 rounded-md ${bg}`}>
         <Icon className={`h-3.5 w-3.5 ${tone}`} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-foreground/90 truncate">{label}</p>
-        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
           <Plus className="h-2.5 w-2.5" /> Nova solicitação
         </p>
       </div>
       {badge && (
-        <Badge variant="outline" className="text-[9px] h-4 px-1.5 text-muted-foreground border-border">
+        <Badge variant="outline" className="text-xs h-4 px-2 text-muted-foreground border-border">
           {badge}
         </Badge>
       )}

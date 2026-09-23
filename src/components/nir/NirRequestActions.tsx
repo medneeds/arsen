@@ -110,33 +110,33 @@ export function NirRequestActions({ requests, typeFilter, defaultRequestType }: 
     <>
       <div className="flex items-center justify-end mb-2">
         <Button size="sm" onClick={() => setOpen(true)}>
-          <Plus className="h-3.5 w-3.5 mr-1.5" /> Nova solicitação
+          <Plus className="h-3.5 w-3.5 mr-2" /> Nova solicitação
         </Button>
       </div>
 
       <div className="space-y-2">
         {requests.length === 0 ? (
           <Card>
-            <CardContent className="py-10 text-center text-muted-foreground text-sm">
+            <CardContent className="py-8 text-center text-muted-foreground text-sm">
               Nenhuma solicitação. Clique em "Nova solicitação" para registrar.
             </CardContent>
           </Card>
         ) : (
           requests.map((req) => (
-            <Card key={req.id} className="hover:shadow-sm transition-shadow">
+            <Card key={req.id} className="hover:shadow-sm transition-shadow-sm">
               <CardContent className="py-3 px-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="patient-id text-sm font-semibold text-foreground truncate">{req.patient_name}</p>
-                      <Badge variant="outline" className="text-[10px]">{req.priority}</Badge>
+                      <p className="patient-id text-sm font-medium text-foreground truncate">{req.patient_name}</p>
+                      <Badge variant="outline" className="text-xs">{req.priority}</Badge>
                       <Badge
                         variant={
                           req.status === "pendente" ? "secondary" :
                           req.status === "aprovada" || req.status === "concluida" ? "default" :
                           req.status === "negada" || req.status === "cancelada" ? "destructive" : "outline"
                         }
-                        className="text-[10px]"
+                        className="text-xs"
                       >
                         {req.status}
                       </Badge>
@@ -151,10 +151,10 @@ export function NirRequestActions({ requests, typeFilter, defaultRequestType }: 
                     </div>
                     {req.reason && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{req.reason}</p>}
                     {req.clinical_summary && (
-                      <p className="text-[11px] text-muted-foreground/80 mt-1 italic line-clamp-2">{req.clinical_summary}</p>
+                      <p className="text-xs text-muted-foreground/80 mt-1 italic line-clamp-2">{req.clinical_summary}</p>
                     )}
                   </div>
-                  <div className="flex flex-col gap-1.5 shrink-0">
+                  <div className="flex flex-col gap-2 shrink-0">
                     {req.status === "pendente" && (
                       <>
                         <Button size="sm" variant="outline" className="h-7 text-xs"
@@ -258,7 +258,7 @@ export function NirRequestActions({ requests, typeFilter, defaultRequestType }: 
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
             <Button onClick={create} disabled={busy}>
-              {busy && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />} Criar solicitação
+              {busy && <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />} Criar solicitação
             </Button>
           </DialogFooter>
         </DialogContent>

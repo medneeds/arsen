@@ -161,7 +161,7 @@ export function PreRegistrationApprovalsPanel(_props?: { hospitalId?: string }) 
       })) as PreReq[]);
     } catch (e) {
       console.error(e);
-      toast.error("Erro ao carregar pré-cadastros");
+      toast.error("Não foi possível carregar pré-cadastros");
     } finally {
       setLoading(false);
     }
@@ -348,7 +348,7 @@ export function PreRegistrationApprovalsPanel(_props?: { hospitalId?: string }) 
               <Button
                 size="sm"
                 variant="outline"
-                className="text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/10"
+                className="text-released-on-soft border-released/30 hover:bg-released/10"
                 onClick={() => open(i, "approve")}
               >
                 <CheckCircle2 className="h-4 w-4 mr-1" /> Aprovar
@@ -356,7 +356,7 @@ export function PreRegistrationApprovalsPanel(_props?: { hospitalId?: string }) 
               <Button
                 size="sm"
                 variant="outline"
-                className="text-red-700 border-red-500/30 hover:bg-red-500/10"
+                className="text-critical-on-soft border-critical/30 hover:bg-critical/10"
                 onClick={() => open(i, "reject")}
               >
                 <XCircle className="h-4 w-4 mr-1" /> Recusar
@@ -395,7 +395,7 @@ export function PreRegistrationApprovalsPanel(_props?: { hospitalId?: string }) 
               size="sm"
               onClick={() => {
                 navigator.clipboard.writeText(publicUrl);
-                toast.success("Link copiado!");
+                toast.success("Link copiado");
               }}
             >
               <Copy className="h-4 w-4 mr-1" /> Copiar
@@ -419,7 +419,7 @@ export function PreRegistrationApprovalsPanel(_props?: { hospitalId?: string }) 
             <div className="flex items-center justify-between">
               <div>
                 <p className={`text-xs font-medium ${cls === "muted" ? "text-muted-foreground" : `text-${cls}-700`}`}>{label}</p>
-                <p className={`text-2xl font-bold ${cls === "muted" ? "" : `text-${cls}-700`}`}>
+                <p className={`text-2xl font-semibold ${cls === "muted" ? "" : `text-${cls}-700`}`}>
                   {(counters as any)[k]}
                 </p>
               </div>
@@ -437,7 +437,7 @@ export function PreRegistrationApprovalsPanel(_props?: { hospitalId?: string }) 
             placeholder="Buscar por nome, email, CPF ou CRM..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            className="pl-8"
           />
         </div>
         <Button variant="outline" onClick={fetchItems} disabled={loading}>
@@ -466,15 +466,15 @@ export function PreRegistrationApprovalsPanel(_props?: { hospitalId?: string }) 
           <TabsTrigger value="all">Todos</TabsTrigger>
         </TabsList>
         <TabsContent value={tab} className="mt-4">
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="text-xs font-bold">Solicitante</TableHead>
-                  <TableHead className="text-xs font-bold">Documentos</TableHead>
-                  <TableHead className="text-xs font-bold">Função / Unidade</TableHead>
-                  <TableHead className="text-xs font-bold">Status</TableHead>
-                  <TableHead className="text-xs font-bold text-right">Ações</TableHead>
+                  <TableHead className="text-xs font-semibold">Solicitante</TableHead>
+                  <TableHead className="text-xs font-semibold">Documentos</TableHead>
+                  <TableHead className="text-xs font-semibold">Função / Unidade</TableHead>
+                  <TableHead className="text-xs font-semibold">Status</TableHead>
+                  <TableHead className="text-xs font-semibold text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -486,7 +486,7 @@ export function PreRegistrationApprovalsPanel(_props?: { hospitalId?: string }) 
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-12 text-sm text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-8 text-sm text-muted-foreground">
                       Nenhum pré-cadastro nesta categoria.
                     </TableCell>
                   </TableRow>
@@ -505,12 +505,12 @@ export function PreRegistrationApprovalsPanel(_props?: { hospitalId?: string }) 
             <DialogTitle className="flex items-center gap-2">
               {decision === "approve" ? (
                 <>
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  <CheckCircle2 className="h-5 w-5 text-released-on-soft" />
                   Aprovar pré-cadastro
                 </>
               ) : (
                 <>
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                  <AlertTriangle className="h-5 w-5 text-critical-on-soft" />
                   Recusar pré-cadastro
                 </>
               )}

@@ -60,9 +60,9 @@ interface EvolutionTimelineProps {
 
 
 const STATUS_CONFIG = {
-  draft: { label: "Rascunho", color: "bg-amber-500/10 text-amber-600 border-amber-500/30", icon: Clock },
-  validated: { label: "Validada", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30", icon: ShieldCheck },
-  suspended: { label: "Suspensa", color: "bg-red-500/10 text-red-600 border-red-500/30", icon: ShieldOff },
+  draft: { label: "Rascunho", color: "bg-warning/10 text-warning-on-soft border-warning/30", icon: Clock },
+  validated: { label: "Validada", color: "bg-released/10 text-released-on-soft border-released/30", icon: ShieldCheck },
+  suspended: { label: "Suspensa", color: "bg-critical/10 text-critical-on-soft border-critical/30", icon: ShieldOff },
 };
 
 export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
@@ -181,15 +181,32 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     const validatedId = validateDialogId;
     setValidateDialogId(null);
     if (success !== false) {
-      const evo = evolutions.find(e => e.id === validatedId);
-      if (evo) {
-        setJustValidatedEvo(evo);
+      // Busca o evo atualizado diretamente do banco após validação
+      // para garantir que validated_at e validated_by_name estão corretos.
+      // Sem isso: o evo em memória ainda tem os campos vazios (banco não respondeu).
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: freshEvo } = await supabase
+          .from("clinical_evolutions")
+          .select("*")
+          .eq("id", validatedId)
+          .maybeSingle();
+        if (freshEvo) {
+          setJustValidatedEvo(freshEvo as unknown as EvolutionRecord);
+        } else {
+          // Fallback: usa o evo em memória se banco não respondeu
+          const evo = evolutions.find(e => e.id === validatedId);
+          if (evo) setJustValidatedEvo(evo);
+        }
+      } catch {
+        const evo = evolutions.find(e => e.id === validatedId);
+        if (evo) setJustValidatedEvo(evo);
       }
     }
   };
 
   const handlePrintEvolution = async (evo: EvolutionRecord) => {
-    // 🔒 Abrir janela ANTES de qualquer await — popup blocker bloqueia
+    // Abrir janela ANTES de qualquer await — popup blocker bloqueia
     // window.open chamado após awaits fora do tick do clique do usuário.
     const printWin1 = window.open("", "_blank", "width=1024,height=768");
     if (printWin1) printWin1.document.write("<html><body style='font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#475569'>Preparando evolução…</body></html>");
@@ -243,6 +260,9 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
           patientName: evo.patient_name || "Paciente",
           patientBed: evo.patient_bed || undefined,
           patientSector: evo.patient_sector || undefined,
+          // Preserva CID mesmo no fallback — sem isso o impresso saía sem CID
+          cidPrimary,
+          cidSecondary,
         }, printWin1);
       } catch (e2) {
         console.error("Falha no fallback de impressão:", e2);
@@ -266,10 +286,23 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
   };
 
   type ComplementaryKind = 'intercurrence' | 'vespertina' | 'noturna';
+  /**
+   * Tipo de evolucao complementar.
+   *
+   * Vespertina, noturna e intercorrencia dizem QUANDO a evolucao foi escrita —
+   * sao turno, nao estado clinico. Cada uma tinha uma familia de cor propria
+   * (ambar, laranja, indigo), o que gastava o vocabulario de alerta em
+   * informacao que o icone e o rotulo ja entregam. Numa linha do tempo com
+   * varias evolucoes, isso virava listra colorida sem leitura possivel.
+   *
+   * Agora sao neutras. A UNICA que mantem cor e a intercorrencia, porque ela
+   * sinaliza algo que fugiu do previsto e merece ser achada rapido — e e
+   * atencao, nao critico: a intercorrencia ja aconteceu e esta registrada.
+   */
   const COMPLEMENTARY_BADGE: Record<ComplementaryKind, { label: string; badgeClass: string; borderClass: string; bgClass: string; iconColor: string }> = {
-    intercurrence: { label: 'Intercorrência', badgeClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/40', borderClass: 'border-amber-500/30', bgClass: 'bg-amber-500/5', iconColor: 'text-amber-600' },
-    vespertina:    { label: 'Vespertina',     badgeClass: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/40', borderClass: 'border-orange-500/30', bgClass: 'bg-orange-500/5', iconColor: 'text-orange-600' },
-    noturna:       { label: 'Noturna',        badgeClass: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/40', borderClass: 'border-indigo-500/30', bgClass: 'bg-indigo-500/5', iconColor: 'text-indigo-600' },
+    intercurrence: { label: 'Intercorrência', badgeClass: 'bg-warning-soft text-warning-on-soft border-warning-border', borderClass: 'border-warning-border', bgClass: 'bg-warning-soft/40', iconColor: 'text-warning' },
+    vespertina:    { label: 'Vespertina',     badgeClass: 'bg-muted text-muted-foreground border-border', borderClass: 'border-border', bgClass: '', iconColor: 'text-muted-foreground' },
+    noturna:       { label: 'Noturna',        badgeClass: 'bg-muted text-muted-foreground border-border', borderClass: 'border-border', bgClass: '', iconColor: 'text-muted-foreground' },
   };
   const getComplementaryKind = (evo: EvolutionRecord): ComplementaryKind | null => {
     const t = (evo.soap_data as any)?.type;
@@ -353,17 +386,17 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
         {/* Toolbar: title + filters */}
         <div className="flex items-center gap-2 flex-wrap">
           <FileText className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-semibold text-foreground">
+          <span className="text-sm font-medium text-foreground">
             Timeline ({filteredEvolutions.length}{filteredEvolutions.length !== evolutions.length && ` de ${evolutions.length}`})
           </span>
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex items-center gap-2">
             <div className="relative">
               <Search className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 placeholder="Buscar..."
-                className="h-7 pl-7 pr-2 text-xs w-36"
+                className="h-7 pl-6 pr-2 text-xs w-36"
               />
             </div>
             <Button
@@ -375,7 +408,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
               <Filter className="h-3 w-3" />
               Filtros
               {activeFilterCount > 0 && (
-                <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px]">{activeFilterCount}</Badge>
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">{activeFilterCount}</Badge>
               )}
             </Button>
             {activeFilterCount > 0 && (
@@ -429,7 +462,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
         {dayGroups.map(group => {
           const isDayCollapsed = collapsedDays.has(group.dayNumber);
           return (
-            <div key={group.dayNumber} className="space-y-1.5">
+            <div key={group.dayNumber} className="space-y-2">
               {/* Day header */}
               <button
                 type="button"
@@ -440,9 +473,9 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                 )}
               >
                 <Calendar className="h-4 w-4 text-primary" />
-                <span className="text-xs font-bold text-primary">{group.dayLabel}</span>
-                <span className="text-[10px] text-muted-foreground">— {group.date}</span>
-                <span className="text-[10px] text-muted-foreground ml-auto">
+                <span className="text-xs font-semibold text-primary">{group.dayLabel}</span>
+                <span className="text-xs text-muted-foreground">— {group.date}</span>
+                <span className="text-xs text-muted-foreground ml-auto">
                   {group.evolutions.length} {group.evolutions.length === 1 ? "evolução" : "evoluções"}
                 </span>
                 {isDayCollapsed ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />}
@@ -463,48 +496,48 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
 
           return (
             <div key={evo.id} className={cn(
-              "rounded-xl border bg-card transition-all",
+              "rounded-lg border bg-card transition-all",
               evo.status === "suspended" && "opacity-60",
-              isCurrent && !isExpanded && "border-primary/50 shadow-sm shadow-primary/10",
+              isCurrent && !isExpanded && "border-primary/50 shadow-sm shadow-md",
               isExpanded ? "border-primary/30" : !isCurrent && "border-border"
             )}>
               {/* Collapsed header */}
               <button
                 type="button"
-                className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-muted/30 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-3 text-left hover:bg-muted/30 transition-colors"
                 onClick={() => toggleExpand(evo.id)}
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <div className="flex flex-col items-center gap-0.5">
+                  <div className="flex flex-col items-center gap-1">
                     <div className="w-2 h-2 rounded-full bg-primary" />
                     <div className="w-px h-3 bg-border" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-semibold text-foreground">
+                      <span className="text-xs font-medium text-foreground">
                         {format(new Date(evo.created_at), "dd/MM/yyyy", { locale: ptBR })}
                       </span>
                       {isCurrent && (
-                        <Badge className="text-[9px] px-1.5 py-0 h-4 bg-primary text-primary-foreground gap-0.5">
+                        <Badge className="text-xs px-2 py-0 h-4 bg-primary text-primary-foreground gap-1">
                           <Star className="h-2.5 w-2.5 fill-current" />
                           Atual
                         </Badge>
                       )}
                       {evo.status === "validated" && evo.validated_at && (
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                           Validada em {format(new Date(evo.validated_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                         </span>
                       )}
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         por <strong className="text-foreground">{evo.created_by_name || "Médico"}</strong>
                       </span>
                       {isAdmission && (
-                        <Badge className="text-[9px] px-1.5 py-0 h-4 bg-emerald-600 text-white gap-0.5 uppercase tracking-wider">
+                        <Badge className="text-xs px-2 py-0 h-4 bg-released text-white gap-1 uppercase tracking-wider">
                           {group.dayLabel} — Admissão Hospitalar
                         </Badge>
                       )}
-                      <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0", config.color)}>
-                        <StatusIcon className="h-2.5 w-2.5 mr-0.5" />
+                      <Badge variant="outline" className={cn("text-xs px-2 py-0", config.color)}>
+                        <StatusIcon className="h-2.5 w-2.5 mr-1" />
                         {config.label}
                       </Badge>
                       {(() => {
@@ -512,19 +545,19 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         if (!k) return null;
                         const m = COMPLEMENTARY_BADGE[k];
                         return (
-                          <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 gap-0.5", m.badgeClass)}>
+                          <Badge variant="outline" className={cn("text-xs px-2 py-0 gap-1", m.badgeClass)}>
                             <Zap className="h-2.5 w-2.5" />
                             {m.label}
                           </Badge>
                         );
                       })()}
                       {hasUnsaved && (
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-600 border-amber-500/30">
+                        <Badge variant="outline" className="text-xs px-2 py-0 bg-warning/10 text-warning-on-soft border-warning/30">
                           Não salvo
                         </Badge>
                       )}
                     </div>
-                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                    <p className="text-xs text-muted-foreground truncate mt-1">
                       {buildSummary(evo)}
                     </p>
                   </div>
@@ -542,7 +575,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       variant="ghost" size="icon" className="h-6 w-6"
                       onClick={async e => {
                         e.stopPropagation();
-                        // 🔒 Abrir janela ANTES de qualquer await — popup blocker
+                        // Abrir janela ANTES de qualquer await — popup blocker
                         const printWinBtn = window.open("", "_blank", "width=1024,height=768");
                         if (printWinBtn) printWinBtn.document.write("<html><body style='font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#475569'>Preparando evolução…</body></html>");
                         // Resolve identidade canônica (registry + guarda anti-NI)
@@ -596,6 +629,8 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                               patientName: evo.patient_name || "Paciente",
                               patientBed: evo.patient_bed || undefined,
                               patientSector: evo.patient_sector || undefined,
+                              cidPrimary,
+                              cidSecondary,
                             }, printWinBtn);
                           } catch (e2) {
                             toast.error("Não foi possível gerar o PDF da evolução");
@@ -633,9 +668,9 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
               {isExpanded && (
                 <div className="px-3 pb-3 border-t border-border/50">
                   {evo.status === "suspended" && evo.suspension_reason && (
-                    <div className="flex items-center gap-2 bg-red-500/5 rounded-lg p-2 mt-2 mb-2">
-                      <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-                      <span className="text-xs text-red-600">Motivo da suspensão: {evo.suspension_reason}</span>
+                    <div className="flex items-center gap-2 bg-critical/5 rounded-lg p-2 mt-2 mb-2">
+                      <AlertTriangle className="h-3.5 w-3.5 text-critical" />
+                      <span className="text-xs text-critical-on-soft">Motivo da suspensão: {evo.suspension_reason}</span>
                     </div>
                   )}
                   <div className="mt-2">
@@ -646,7 +681,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       <div className={cn("space-y-2 rounded-lg border p-3", m.borderClass, m.bgClass)}>
                         <div className="flex items-center gap-2">
                           <Zap className={cn("h-3.5 w-3.5", m.iconColor)} />
-                          <span className="text-xs font-semibold text-foreground">Descritivo — {m.label}</span>
+                          <span className="text-xs font-medium text-foreground">Descritivo — {m.label}</span>
                         </div>
                         <RichTextEditor
                           value={data.soap.subjective || ""}
@@ -661,7 +696,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 text-xs gap-1.5"
+                                className="h-7 text-xs gap-2"
                                 onClick={() => handleSave(evo.id)}
                                 disabled={savingId === evo.id}
                               >
@@ -672,7 +707,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             )}
                             <Button
                               size="sm"
-                              className="h-7 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                              className="h-7 text-xs gap-2 bg-released hover:bg-released"
                               onClick={() => setValidateDialogId(evo.id)}
                               disabled={savingId === evo.id}
                             >
@@ -788,7 +823,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
             <AlertDialogAction
               onClick={handleSuspend}
               disabled={!suspendReason.trim()}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-critical hover:bg-critical"
             >
               Suspender
             </AlertDialogAction>
@@ -807,7 +842,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={handleDelete} className="bg-critical hover:bg-critical">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>

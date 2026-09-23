@@ -42,7 +42,7 @@ interface PrescriptionDiffDialogProps {
 const STATUS_CONFIG: Record<DiffStatus, { label: string; className: string; icon: any }> = {
   added: {
     label: "Adicionado",
-    className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+    className: "border-released/40 bg-released/10 text-released-on-soft",
     icon: Plus,
   },
   removed: {
@@ -52,17 +52,17 @@ const STATUS_CONFIG: Record<DiffStatus, { label: string; className: string; icon
   },
   changed: {
     label: "Alterado",
-    className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+    className: "border-warning/40 bg-warning/10 text-warning-on-soft",
     icon: RefreshCw,
   },
   suspended: {
     label: "Suspenso",
-    className: "border-orange-500/40 bg-orange-500/10 text-orange-700 dark:text-orange-400",
+    className: "border-warning/40 bg-warning/10 text-warning-on-soft",
     icon: Pause,
   },
   reactivated: {
     label: "Reativado",
-    className: "border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-400",
+    className: "border-border/40 bg-primary/10 text-foreground",
     icon: Play,
   },
   unchanged: {
@@ -124,7 +124,7 @@ export function PrescriptionDiffDialog({
         setLeftItems(Array.isArray(left?.itens) ? (left!.itens as any[]) : []);
         setRightItems(Array.isArray(right?.itens) ? (right!.itens as any[]) : []);
       } catch (err: any) {
-        toast.error("Erro ao carregar versões", { description: err?.message });
+        toast.error("Não foi possível carregar versões", { description: err?.message });
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -163,7 +163,7 @@ export function PrescriptionDiffDialog({
         {/* Version pickers */}
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-3 items-center">
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Versão anterior (A)
             </label>
             <Select value={leftId} onValueChange={setLeftId}>
@@ -175,7 +175,7 @@ export function PrescriptionDiffDialog({
                   <SelectItem key={v.id} value={v.id} className="text-xs">
                     v{v.version} —{" "}
                     {format(new Date(v.created_at), "dd/MM HH:mm", { locale: ptBR })}
-                    {v.status === "signed" && " ✓"}
+                    {v.status === "signed" && " "}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -183,7 +183,7 @@ export function PrescriptionDiffDialog({
           </div>
           <ArrowRight className="h-5 w-5 text-muted-foreground hidden md:block mt-4" />
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Versão posterior (B)
             </label>
             <Select value={rightId} onValueChange={setRightId}>
@@ -195,7 +195,7 @@ export function PrescriptionDiffDialog({
                   <SelectItem key={v.id} value={v.id} className="text-xs">
                     v{v.version} —{" "}
                     {format(new Date(v.created_at), "dd/MM HH:mm", { locale: ptBR })}
-                    {v.status === "signed" && " ✓"}
+                    {v.status === "signed" && " "}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -204,7 +204,7 @@ export function PrescriptionDiffDialog({
         </div>
 
         {/* Summary chips */}
-        <div className="flex flex-wrap gap-2 text-[11px]">
+        <div className="flex flex-wrap gap-2 text-xs">
           {(["added", "removed", "changed", "suspended", "reactivated", "unchanged"] as DiffStatus[]).map(
             (s) => {
               const count = summary[s];
@@ -215,7 +215,7 @@ export function PrescriptionDiffDialog({
                 <span
                   key={s}
                   className={cn(
-                    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-medium",
+                    "inline-flex items-center gap-1 rounded-full border px-2 py-1 font-medium",
                     cfg.className
                   )}
                 >
@@ -264,7 +264,7 @@ export function PrescriptionDiffDialog({
         </Tabs>
 
         <DialogFooter className="flex items-center justify-between gap-2">
-          <div className="text-[10px] text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             {leftMeta && rightMeta && (
               <>
                 Comparando <strong>v{leftMeta.version}</strong> →{" "}
@@ -285,21 +285,21 @@ function DiffEntryRow({ entry }: { entry: PrescriptionDiffEntry }) {
   const cfg = STATUS_CONFIG[entry.status];
   const Icon = cfg.icon;
   return (
-    <div className={cn("rounded-lg border p-2.5", cfg.className)}>
+    <div className={cn("rounded-lg border p-3", cfg.className)}>
       <div className="flex items-start gap-2">
-        <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+        <Icon className="h-3.5 w-3.5 mt-1 shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-foreground truncate">{entry.name}</span>
-            <Badge variant="outline" className="text-[9px] h-4 px-1.5 capitalize">
+            <span className="text-xs font-medium text-foreground truncate">{entry.name}</span>
+            <Badge variant="outline" className="text-xs h-4 px-2 capitalize">
               {entry.category}
             </Badge>
-            <span className="text-[10px] font-medium opacity-80">{cfg.label}</span>
+            <span className="text-xs font-medium opacity-80">{cfg.label}</span>
           </div>
           {entry.changes.length > 0 && (
-            <div className="mt-1.5 space-y-0.5">
+            <div className="mt-2 space-y-1">
               {entry.changes.map((c, i) => (
-                <div key={i} className="flex items-center gap-2 text-[11px]">
+                <div key={i} className="flex items-center gap-2 text-xs">
                   <span className="text-muted-foreground font-medium min-w-[80px]">{c.label}:</span>
                   <span className="line-through text-muted-foreground/70 truncate">{c.before}</span>
                   <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />

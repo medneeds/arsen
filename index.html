@@ -2,18 +2,22 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="alternate icon" type="image/png" href="/favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#0f2847" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>Arsen - Plataforma Clínica Inteligente</title>
-    <meta name="description" content="Plataforma Clínica Inteligente">
+    <title>Arsen - Plataforma Hospitalar Inteligente</title>
+    <meta name="description" content="Plataforma Hospitalar Inteligente">
     <meta name="author" content="BigHelp Map" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <!-- Newsreader e a serifa da marca: as serifas em lamina e o contraste entre
+         hastes acompanham o desenho do "A" do Arsen. Playfair permanece apenas
+         para as paginas de relatorio, que ainda nao migraram. -->
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&family=Playfair+Display:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -23,14 +27,55 @@
   
   <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/9d08e297-1d43-4d2d-bf7d-4292415ae0ba">
   <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/9d08e297-1d43-4d2d-bf7d-4292415ae0ba">
-  <meta property="og:title" content="Arsen - Plataforma Clínica Inteligente">
-  <meta name="twitter:title" content="Arsen - Plataforma Clínica Inteligente">
-  <meta property="og:description" content="Plataforma Clínica Inteligente">
-  <meta name="twitter:description" content="Plataforma Clínica Inteligente">
+  <meta property="og:title" content="Arsen - Plataforma Hospitalar Inteligente">
+  <meta name="twitter:title" content="Arsen - Plataforma Hospitalar Inteligente">
+  <meta property="og:description" content="Plataforma Hospitalar Inteligente">
+  <meta name="twitter:description" content="Plataforma Hospitalar Inteligente">
 </head>
 
   <body>
     <div id="root"></div>
+
+    <!-- Polyfill: crypto.randomUUID — disponível só no Chrome/Edge 92+.
+         Sem isso, versões 80-91 (que suportam ES Modules) travam ao criar itens. -->
+    <script>
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID !== 'function') {
+        crypto.randomUUID = function() {
+          return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c) {
+            return (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16);
+          });
+        };
+      }
+    </script>
+
+    <!-- Fallback para browsers sem suporte a ES Modules (IE, Edge legado, Chrome < 61).
+         O script type="module" é ignorado por esses browsers — sem esse bloco a página
+         fica em branco sem nenhuma mensagem. -->
+    <script nomodule>
+      document.getElementById('root').innerHTML = [
+        '<div style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;',
+        'min-height:100vh;background:#f8fafc;padding:24px">',
+        '<div style="max-width:480px;text-align:center;background:#fff;border-radius:12px;',
+        'padding:40px 32px;box-shadow:0 4px 24px rgba(15,40,71,.12)">',
+        '<div style="font-size:48px;margin-bottom:16px">⚠️</div>',
+        '<h1 style="color:#0f2847;font-size:20px;margin:0 0 12px">Navegador não compatível</h1>',
+        '<p style="color:#475569;margin:0 0 24px;line-height:1.6">',
+        'O <strong>Arsen</strong> requer um navegador moderno.<br>',
+        'Por favor, use uma das opções abaixo:</p>',
+        '<div style="background:#f1f5f9;border-radius:8px;padding:16px;text-align:left;margin-bottom:24px">',
+        '<p style="margin:0 0 8px;font-weight:600;color:#0f2847">✅ Compatível:</p>',
+        '<ul style="margin:0;padding-left:20px;color:#334155;line-height:2">',
+        '<li>Google Chrome versão 80 ou superior</li>',
+        '<li>Microsoft Edge versão 80 ou superior</li>',
+        '<li>Mozilla Firefox versão 78 ou superior</li>',
+        '<li>Safari versão 14 ou superior</li>',
+        '</ul></div>',
+        '<p style="color:#94a3b8;font-size:13px;margin:0">',
+        'Internet Explorer não é compatível.</p>',
+        '</div></div>'
+      ].join('');
+    </script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

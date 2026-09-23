@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { PageLoader } from "@/components/PageLoader";
 import { usePageReady } from "@/hooks/usePageReady";
+import { safeSetItem } from "@/lib/safeStorage";
 
 const parseTextArray = (input: string | string[] | undefined | null): string[] => {
   if (!input) return [];
@@ -43,12 +44,12 @@ const parseTextArray = (input: string | string[] | undefined | null): string[] =
 };
 
 const clinicalStatusLabels: Record<string, { label: string; color: string }> = {
-  gravissimo: { label: "Gravíssimo", color: "bg-red-600 text-white" },
-  grave: { label: "Grave", color: "bg-red-500 text-white" },
-  grave_estavel: { label: "Grave estável", color: "bg-orange-500 text-white" },
-  potencialmente_grave: { label: "Potencialmente grave", color: "bg-amber-500 text-white" },
-  regular: { label: "Regular", color: "bg-blue-500 text-white" },
-  paliativado: { label: "Paliativado", color: "bg-purple-500 text-white" },
+  gravissimo: { label: "Gravíssimo", color: "bg-critical text-white" },
+  grave: { label: "Grave", color: "bg-critical text-white" },
+  grave_estavel: { label: "Grave estável", color: "bg-warning text-white" },
+  potencialmente_grave: { label: "Potencialmente grave", color: "bg-warning text-white" },
+  regular: { label: "Regular", color: "bg-primary text-white" },
+  paliativado: { label: "Paliativado", color: "bg-primary text-white" },
 };
 
 const formatStayDuration = (admissionDate: string): string => {
@@ -81,11 +82,11 @@ const getSectorLabel = (sector: string) => {
 
 const getSectorColor = (sector: string) => {
   const map: Record<string, string> = {
-    red: "bg-red-500/10 text-red-700 dark:text-red-400 border-red-200",
-    yellow: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200",
-    blue: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200",
+    red: "bg-critical/10 text-critical-on-soft border-critical-border",
+    yellow: "bg-warning/10 text-warning-on-soft border-warning-border",
+    blue: "bg-primary/10 text-foreground border-border",
     outside: "bg-muted text-muted-foreground border-border",
-    ucc: "bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-200",
+    ucc: "bg-primary/10 text-foreground border-border",
   };
   return map[sector] || "";
 };
@@ -104,11 +105,11 @@ const getEspecialidadesInfo = (patient: Patient): { specialties: string[]; typeL
 };
 
 const getPrescriptionStatus = (status: TodaysPrescriptionStatus): { label: string; variant: "default" | "secondary" | "outline" | "destructive"; dotColor: string; pulsing: boolean } => {
-  // 🔒 Bolinha verde vinculada à VALIDAÇÃO — não à assinatura digital
+  // Bolinha verde vinculada à VALIDAÇÃO — não à assinatura digital
   if (status === "signed" || status === "validated") {
-    return { label: "Validada", variant: "default", dotColor: "bg-emerald-500", pulsing: false };
+    return { label: "Validada", variant: "default", dotColor: "bg-released", pulsing: false };
   }
-  return { label: "Pendente", variant: "secondary", dotColor: "bg-amber-500", pulsing: true };
+  return { label: "Pendente", variant: "secondary", dotColor: "bg-warning", pulsing: true };
 };
 
 const getDischargeText = (patient: Patient): string => {
@@ -265,8 +266,8 @@ export default function PainelClinicoPage() {
       {/* Search bar below header */}
       <div className="px-4 py-2">
         <div className="flex gap-2 items-center">
-          <Select value={sectorFilter} onValueChange={(val) => { setSectorFilter(val); if (val !== "all") localStorage.setItem("selected_sector", val); }}>
-            <SelectTrigger className="h-8 w-auto gap-1 text-xs font-medium px-2.5 [&>svg]:h-3 [&>svg]:w-3 rounded-md">
+          <Select value={sectorFilter} onValueChange={(val) => { setSectorFilter(val); if (val !== "all") safeSetItem("selected_sector", val); }}>
+            <SelectTrigger className="h-8 w-auto gap-1 text-xs font-medium px-3 [&>svg]:h-3 [&>svg]:w-3 rounded-md">
               <SelectValue placeholder="Setor" />
             </SelectTrigger>
             <SelectContent>
@@ -285,7 +286,7 @@ export default function PainelClinicoPage() {
               placeholder="Buscar por nome, leito ou diagnóstico..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-9 h-8 text-sm"
+              className="pl-8 h-8 text-sm"
             />
           </div>
         </div>
@@ -331,19 +332,19 @@ export default function PainelClinicoPage() {
                             {patient.sectorName || getSectorLabel(patient.sector)}
                           </Badge>
                           <span className={cn("inline-block h-2 w-2 rounded-full", prescStatus.dotColor, prescStatus.pulsing && "animate-pulse-soft")} />
-                          <span className="text-[10px] text-muted-foreground">{prescStatus.label}</span>
+                          <span className="text-xs text-muted-foreground">{prescStatus.label}</span>
                         </div>
-                        <p className="font-medium text-sm text-foreground mt-1.5 leading-tight line-clamp-2">{patient.name}</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                        <p className="font-medium text-sm text-foreground mt-2 leading-tight line-clamp-2">{patient.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
                           {patient.age ? `${patient.age} anos` : "—"}
-                          {days !== null && <span className={cn("ml-2", days > 7 && "text-destructive font-semibold")}>{days}d int.</span>}
+                          {days !== null && <span className={cn("ml-2", days > 7 && "text-destructive font-medium")}>{days}d int.</span>}
                           {saps && saps.status !== 'pending' && <span className="ml-2">SAPS {saps.score}</span>}
                         </p>
                         {parseTextArray(patient.diagnoses)[0] && (
-                          <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{parseTextArray(patient.diagnoses)[0]}</p>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{parseTextArray(patient.diagnoses)[0]}</p>
                         )}
                         {pendencies.length > 0 && (
-                          <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1 line-clamp-1">⚠ {pendencies[0]}{pendencies.length > 1 && ` +${pendencies.length - 1}`}</p>
+                          <p className="text-xs text-warning-on-soft mt-1 line-clamp-1">{pendencies[0]}{pendencies.length > 1 && ` +${pendencies.length - 1}`}</p>
                         )}
                       </div>
                       <Button
@@ -400,7 +401,7 @@ export default function PainelClinicoPage() {
                       <TableCell>
                         <div>
                           <p className="font-medium text-foreground leading-tight hover:text-primary transition-colors">{patient.name}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
+                          <p className="text-xs text-muted-foreground mt-1">
                             {patient.age ? `${patient.age} anos` : "—"}
                           </p>
                           {parseTextArray(patient.diagnoses).length > 0 && (
@@ -414,15 +415,15 @@ export default function PainelClinicoPage() {
                         {sapsScores[patient.id] ? (
                           sapsScores[patient.id].status === 'pending' ? (
                             <div className="flex flex-col items-center gap-1">
-                              <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                              <div className="flex items-center gap-1 text-warning-on-soft">
                                 <Clock className="h-3.5 w-3.5 animate-pulse" />
-                                <span className="text-[10px] font-semibold">Pendente</span>
+                                <span className="text-xs font-medium">Pendente</span>
                               </div>
                               <SapsPendingMiniTimer pendingSince={sapsScores[patient.id].pending_since} />
                               <Button
                                 size="sm"
                                 variant="default"
-                                className="h-6 px-2 text-[10px] gap-1 bg-amber-600 hover:bg-amber-700 text-white"
+                                className="h-6 px-2 text-xs gap-1 bg-warning hover:bg-warning text-white"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const params = new URLSearchParams();
@@ -459,12 +460,12 @@ export default function PainelClinicoPage() {
                       </TableCell>
                       <TableCell>
                         {pendencies.length > 0 ? (
-                          <div className="flex flex-col gap-0.5">
+                          <div className="flex flex-col gap-1">
                             {pendencies.slice(0, 2).map((p, i) => (
                               <span key={i} className="text-xs text-muted-foreground line-clamp-1">{p}</span>
                             ))}
                             {pendencies.length > 2 && (
-                              <span className="text-[10px] text-primary">+{pendencies.length - 2} mais</span>
+                              <span className="text-xs text-primary">+{pendencies.length - 2} mais</span>
                             )}
                           </div>
                         ) : (
@@ -472,19 +473,19 @@ export default function PainelClinicoPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1.5">
+                        <div className="flex items-center justify-center gap-2">
                           <span className={cn(
                             "inline-block h-2.5 w-2.5 rounded-full shrink-0",
                             prescStatus.dotColor,
                             prescStatus.pulsing && "animate-pulse-soft"
                           )} />
-                          <Badge variant={prescStatus.variant} className="text-[11px]">
+                          <Badge variant={prescStatus.variant} className="text-xs">
                             {prescStatus.label}
                           </Badge>
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        <span className={cn("font-mono font-bold text-sm", days !== null && days > 7 ? "text-destructive" : "text-foreground")}>
+                        <span className={cn("font-mono font-semibold text-sm", days !== null && days > 7 ? "text-destructive" : "text-foreground")}>
                           {days !== null ? days : "—"}
                         </span>
                       </TableCell>
@@ -498,21 +499,21 @@ export default function PainelClinicoPage() {
                             return <span className="text-xs text-muted-foreground">—</span>;
                           }
                           return (
-                            <div className="flex flex-col gap-0.5">
+                            <div className="flex flex-col gap-1">
                               {specialties.length > 0 && (
                                 <div className="flex flex-wrap gap-1">
                                   {specialties.slice(0, 2).map(sp => (
-                                    <Badge key={sp} variant="outline" className="text-[10px] px-1.5 py-0 whitespace-nowrap font-normal">
+                                    <Badge key={sp} variant="outline" className="text-xs px-2 py-0 whitespace-nowrap font-normal">
                                       {sp}
                                     </Badge>
                                   ))}
                                   {specialties.length > 2 && (
-                                    <span className="text-[10px] text-primary">+{specialties.length - 2} mais</span>
+                                    <span className="text-xs text-primary">+{specialties.length - 2} mais</span>
                                   )}
                                 </div>
                               )}
                               {typeLabel && (
-                                <span className="text-[10px] text-muted-foreground">{typeLabel}</span>
+                                <span className="text-xs text-muted-foreground">{typeLabel}</span>
                               )}
                             </div>
                           );
@@ -607,14 +608,14 @@ function EditableInfoSection({ icon: Icon, title, items, onSave }: { icon: React
   };
 
   return (
-    <div className="space-y-1.5 group/section">
-      <div className="flex items-center gap-1.5">
+    <div className="space-y-2 group/section">
+      <div className="flex items-center gap-2">
         <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-        <h4 className="text-xs font-semibold text-muted-foreground tracking-wide flex-1">{title}</h4>
+        <h4 className="text-xs font-medium text-muted-foreground tracking-wide flex-1">{title}</h4>
         {!editing && (
           <button
             onClick={startEdit}
-            className="opacity-0 group-hover/section:opacity-100 transition-opacity p-0.5 rounded hover:bg-accent"
+            className="opacity-0 group-hover/section:opacity-100 transition-opacity p-1 rounded-md hover:bg-accent"
             title="Editar"
           >
             <Pencil className="h-3 w-3 text-muted-foreground" />
@@ -622,7 +623,7 @@ function EditableInfoSection({ icon: Icon, title, items, onSave }: { icon: React
         )}
       </div>
       {editing ? (
-        <div className="pl-5 space-y-1.5">
+        <div className="pl-4 space-y-2">
           {entries.map((entry, i) => (
             <div key={i} className="flex items-center gap-1">
               <Input
@@ -634,13 +635,13 @@ function EditableInfoSection({ icon: Icon, title, items, onSave }: { icon: React
                 autoFocus={i === entries.length - 1}
               />
               {entries.length > 1 && (
-                <button onClick={() => removeEntry(i)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                <button onClick={() => removeEntry(i)} className="p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
                   <X className="h-3 w-3" />
                 </button>
               )}
             </div>
           ))}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <Button size="sm" variant="ghost" onClick={addEntry} className="h-7 text-xs gap-1 text-muted-foreground">
               <Plus className="h-3 w-3" /> Adicionar
             </Button>
@@ -654,13 +655,13 @@ function EditableInfoSection({ icon: Icon, title, items, onSave }: { icon: React
           </div>
         </div>
       ) : items.length > 0 ? (
-        <ul className="space-y-0.5 list-disc list-inside pl-5 cursor-pointer" onClick={startEdit}>
+        <ul className="space-y-1 list-disc list-inside pl-4 cursor-pointer" onClick={startEdit}>
           {items.map((item, i) => (
             <li key={i} className="text-sm text-foreground">{item}</li>
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted-foreground italic pl-5 cursor-pointer" onClick={startEdit}>Nenhum registro — clique para adicionar</p>
+        <p className="text-sm text-muted-foreground italic pl-4 cursor-pointer" onClick={startEdit}>Nenhum registro — clique para adicionar</p>
       )}
     </div>
   );
@@ -688,18 +689,18 @@ function EditableTextBlock({ icon: Icon, title, value, onSave }: { icon: React.E
   };
 
   return (
-    <div className="space-y-1.5 group/section">
-      <div className="flex items-center gap-1.5">
+    <div className="space-y-2 group/section">
+      <div className="flex items-center gap-2">
         <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-        <h4 className="text-xs font-semibold text-muted-foreground tracking-wide flex-1">{title}</h4>
+        <h4 className="text-xs font-medium text-muted-foreground tracking-wide flex-1">{title}</h4>
         {!editing && (
-          <button onClick={startEdit} className="opacity-0 group-hover/section:opacity-100 transition-opacity p-0.5 rounded hover:bg-accent" title="Editar">
+          <button onClick={startEdit} className="opacity-0 group-hover/section:opacity-100 transition-opacity p-1 rounded-md hover:bg-accent" title="Editar">
             <Pencil className="h-3 w-3 text-muted-foreground" />
           </button>
         )}
       </div>
       {editing ? (
-        <div className="pl-5 space-y-2">
+        <div className="pl-4 space-y-2">
           <Textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -708,7 +709,7 @@ function EditableTextBlock({ icon: Icon, title, value, onSave }: { icon: React.E
             autoFocus
             style={{ minHeight: "80px" }}
           />
-          <div className="flex gap-1.5">
+          <div className="flex gap-2">
             <Button size="sm" variant="default" onClick={saveEdit} disabled={saving} className="h-7 text-xs gap-1">
               <Check className="h-3 w-3" /> Salvar
             </Button>
@@ -718,9 +719,9 @@ function EditableTextBlock({ icon: Icon, title, value, onSave }: { icon: React.E
           </div>
         </div>
       ) : value ? (
-        <p className="text-sm text-foreground pl-5 leading-relaxed whitespace-pre-line cursor-pointer" onClick={startEdit}>{value}</p>
+        <p className="text-sm text-foreground pl-4 leading-relaxed whitespace-pre-line cursor-pointer" onClick={startEdit}>{value}</p>
       ) : (
-        <p className="text-sm text-muted-foreground italic pl-5 cursor-pointer" onClick={startEdit}>Nenhum registro — clique para adicionar</p>
+        <p className="text-sm text-muted-foreground italic pl-4 cursor-pointer" onClick={startEdit}>Nenhum registro — clique para adicionar</p>
       )}
     </div>
   );
@@ -746,7 +747,7 @@ function SapsPendingMiniTimer({ pendingSince }: { pendingSince: string | null })
   if (!pendingSince) return null;
 
   return (
-    <span className="font-mono text-[10px] font-bold text-amber-600 dark:text-amber-400 animate-pulse">
+    <span className="font-mono text-xs font-semibold text-warning-on-soft animate-pulse">
       ⏱ {elapsed}
     </span>
   );
@@ -786,23 +787,23 @@ function SapsPendingGlobalBanner({
 
   return (
     <div className="px-4 pt-2">
-      <div className="rounded-xl border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-950/30 p-3 shadow-sm">
+      <div className="rounded-lg border-l-4 border-warning bg-warning-soft p-3 shadow-sm">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5 animate-pulse" />
+          <AlertTriangle className="h-5 w-5 text-warning-on-soft shrink-0 mt-1 animate-pulse" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+            <p className="text-sm font-medium text-warning-on-soft">
               {pendingPatients.length} ficha{pendingPatients.length > 1 ? "s" : ""} SAPS 3 pendente{pendingPatients.length > 1 ? "s" : ""} — prazo limite de 24h
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-xs text-muted-foreground mt-1">
               O fluxo clínico será travado se a ficha não for completada dentro do prazo.
             </p>
-            <div className="flex flex-wrap gap-1.5 mt-2">
+            <div className="flex flex-wrap gap-2 mt-2">
               {pendingPatients.map((p) => (
                 <Button
                   key={p.id}
                   size="sm"
                   variant="outline"
-                  className="h-7 px-2 text-xs gap-1.5 border-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                  className="h-7 px-2 text-xs gap-2 border-warning-border hover:bg-warning-soft"
                   onClick={() => onComplete(p)}
                 >
                   <ClipboardList className="h-3 w-3" />

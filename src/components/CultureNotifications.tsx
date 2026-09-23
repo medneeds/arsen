@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
@@ -126,10 +127,23 @@ export function CultureNotifications() {
 
   const markAsRead = async (id: string) => {
     // MIGRAÇÃO: read_by_doctor→lido_pelo_medico, read_at→lido_em.
-    await supabase
+    // AUDITORIA 18/09/2026 — o resultado deste update era descartado e a
+    // notificacao sumia da tela de qualquer jeito. Se a gravacao falhasse, o
+    // resultado de cultura continuava NAO LIDO no banco e o medico perdia o
+    // alerta: some da tela, volta no proximo carregamento, e ninguem entende.
+    // Agora so some da tela se realmente ficou marcado como lido.
+    const { error } = await supabase
       .from("resultados_cultura")
       .update({ lido_pelo_medico: true, lido_em: new Date().toISOString() } as any)
       .eq("id", id);
+
+    if (error) {
+      console.error("[CultureNotifications] falha ao marcar cultura como lida:", error);
+      toast.error("Nao foi possivel marcar o resultado como lido", {
+        description: "O alerta segue pendente. Tente novamente.",
+      });
+      return;
+    }
 
     setDismissed(prev => new Set(prev).add(id));
     setNotifications(prev => prev.filter(n => n.id !== id));
@@ -154,17 +168,17 @@ export function CultureNotifications() {
           <div
             key={notif.id}
             className={cn(
-              "bg-background border-2 border-violet-400 rounded-xl p-3 shadow-2xl",
+              "bg-background border-2 border-border rounded-lg p-3 shadow-md",
               "animate-in slide-in-from-right-5 fade-in-0 duration-300"
             )}
           >
             <div className="flex items-start gap-2">
-              <div className="p-1.5 rounded-lg bg-violet-500/10 shrink-0 mt-0.5">
-                <Microscope className="h-4 w-4 text-violet-600" />
+              <div className="p-2 rounded-lg bg-primary/10 shrink-0 mt-1">
+                <Microscope className="h-4 w-4 text-foreground" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1">
-                  <p className="text-xs font-bold text-foreground">Nova cultura disponível</p>
+                  <p className="text-xs font-semibold text-foreground">Nova cultura disponível</p>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -174,22 +188,22 @@ export function CultureNotifications() {
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
-                <p className="text-[11px] font-semibold text-foreground truncate">{notif.patient_name}</p>
-                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                  <Badge variant="outline" className="text-[9px]">
+                <p className="text-xs font-medium text-foreground truncate">{notif.patient_name}</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Badge variant="outline" className="text-xs">
                     {getSectorDisplayLabel(notif.patient_sector)} · {notif.patient_bed}
                   </Badge>
                   <span>{CULTURE_TYPES[notif.culture_type] || notif.culture_type}</span>
                 </div>
                 {notif.microorganism && (
-                  <p className="text-[10px] text-red-600 font-semibold mt-1">
-                    🦠 {notif.microorganism}
+                  <p className="text-xs text-critical-on-soft font-medium mt-1">
+                    {notif.microorganism}
                   </p>
                 )}
                 <Button
                   size="sm"
                   variant="outline"
-                  className="mt-2 h-6 text-[10px] gap-1 w-full border-violet-200 text-violet-700 hover:bg-violet-50"
+                  className="mt-2 h-6 text-xs gap-1 w-full border-border text-foreground hover:bg-muted"
                   onClick={() => handleView(notif)}
                 >
                   <Eye className="h-3 w-3" /> Ver resultado completo
@@ -205,7 +219,7 @@ export function CultureNotifications() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Microscope className="h-5 w-5 text-violet-600" />
+              <Microscope className="h-5 w-5 text-foreground" />
               Resultado de cultura — CCIH
             </DialogTitle>
             <DialogDescription>Registrado pela comissão de controle de infecção</DialogDescription>
@@ -213,34 +227,34 @@ export function CultureNotifications() {
           {viewDetail && (
             <div className="space-y-3">
               <div className="p-3 rounded-lg bg-muted/50 border space-y-1">
-                <p className="text-sm font-bold text-foreground">{viewDetail.patient_name}</p>
+                <p className="text-sm font-semibold text-foreground">{viewDetail.patient_name}</p>
                 <div className="text-xs text-muted-foreground">
                   <span>{getSectorDisplayLabel(viewDetail.patient_sector)} · Leito {viewDetail.patient_bed}</span>
                   <span className="ml-3">{CULTURE_TYPES[viewDetail.culture_type] || viewDetail.culture_type}</span>
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Registrado em {format(new Date(viewDetail.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                   {viewDetail.uploaded_by_name && ` por ${viewDetail.uploaded_by_name}`}
                 </p>
               </div>
 
               {viewDetail.microorganism && (
-                <div className="p-3 rounded-lg bg-red-50/50 border border-red-200 dark:bg-red-500/5 dark:border-red-500/20">
-                  <p className="text-xs font-semibold text-red-700 dark:text-red-400 mb-0.5">Microrganismo</p>
+                <div className="p-3 rounded-lg bg-critical-soft/50 border border-critical-border">
+                  <p className="text-xs font-medium text-critical-on-soft mb-1">Microrganismo</p>
                   <p className="text-sm font-medium text-foreground">{viewDetail.microorganism}</p>
                 </div>
               )}
 
               {viewDetail.antibiogram && (
-                <div className="p-3 rounded-lg bg-violet-50/50 border border-violet-200 dark:bg-violet-500/5 dark:border-violet-500/20">
-                  <p className="text-xs font-semibold text-violet-700 dark:text-violet-400 mb-0.5">Antibiograma</p>
+                <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-xs font-medium text-foreground mb-1">Antibiograma</p>
                   <p className="text-sm text-foreground whitespace-pre-wrap">{viewDetail.antibiogram}</p>
                 </div>
               )}
 
               {viewDetail.result_text && (
                 <div className="p-3 rounded-lg border bg-muted/30">
-                  <p className="text-xs font-semibold text-foreground mb-0.5">Observações</p>
+                  <p className="text-xs font-medium text-foreground mb-1">Observações</p>
                   <p className="text-sm text-foreground whitespace-pre-wrap">{viewDetail.result_text}</p>
                 </div>
               )}

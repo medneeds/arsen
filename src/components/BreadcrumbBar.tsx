@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2, ChevronRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
 import { ClinicalModuleTabs } from "@/components/ClinicalModuleTabs";
 import { PatientSwitcher } from "@/components/PatientSwitcher";
@@ -52,7 +53,7 @@ export function BreadcrumbBar({
     <nav
       aria-label="Hierarquia do setor"
       className={cn(
-        "print:hidden flex items-center justify-between gap-1.5 sm:gap-2 px-1.5 sm:px-3 py-1 sm:py-1.5 shadow-sm rounded-lg sm:rounded-xl backdrop-blur-sm",
+        "print:hidden flex items-center justify-between gap-2 sm:gap-2 px-2 sm:px-3 py-1 sm:py-2 shadow-sm rounded-lg sm:rounded-lg backdrop-blur-sm",
         // Mobile: nowrap + horizontal scroll keeps the bar to a single row.
         // Desktop: wraps as before so all chips stay visible.
         "flex-nowrap overflow-x-auto sm:flex-wrap sm:overflow-visible scrollbar-none",
@@ -71,6 +72,13 @@ export function BreadcrumbBar({
       }
     >
       <div className="flex items-center flex-nowrap sm:flex-wrap gap-x-1.5 sm:gap-x-2 gap-y-1.5 text-[11px] sm:text-xs font-medium tracking-wide min-w-0">
+        <SidebarTrigger
+          className={cn(
+            "flex-shrink-0 h-9 w-9 sm:h-7 sm:w-7",
+            isInstitutional && "text-primary-foreground hover:bg-white/10",
+          )}
+        />
+
         {showBack && (
           <Button
             variant="ghost"
@@ -90,14 +98,14 @@ export function BreadcrumbBar({
         {/* Hospital chip — desktop only (mobile saves space; hospital lives in sidebar/login) */}
         <span
           className={cn(
-            "hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border font-semibold",
+            "hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-md border font-medium",
             isInstitutional
-              ? "bg-white/25 text-white border-white/40 backdrop-blur shadow-md font-bold"
+              ? "bg-white/25 text-white border-white/40 backdrop-blur shadow-md font-semibold"
               : "bg-muted/60 text-muted-foreground border-border/50",
           )}
         >
           <Building2 className="h-3.5 w-3.5" />
-          <span className="uppercase">{whitelabel.institution.hospitalAbbreviation}</span>
+          <span className="uppercase tracking-wider">{whitelabel.institution.hospitalAbbreviation}</span>
         </span>
 
         {showSector && (
@@ -139,7 +147,7 @@ export function BreadcrumbBar({
             <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/80" : "text-muted-foreground/50")} />
             <span
               className={cn(
-                "px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md uppercase tracking-wide text-[10px] sm:text-xs whitespace-nowrap flex-shrink-0",
+                "px-2 sm:px-2 py-1 sm:py-1 rounded-md uppercase tracking-wide text-xs sm:text-xs whitespace-nowrap flex-shrink-0",
                 isInstitutional ? "bg-white/15 text-primary-foreground border border-white/20" : "bg-primary/10 text-primary",
               )}
             >
@@ -151,7 +159,7 @@ export function BreadcrumbBar({
 
       {actions && (
         <div className={cn(
-          "flex items-center gap-1.5 flex-shrink-0",
+          "flex items-center gap-2 flex-shrink-0",
           isInstitutional && "institutional-actions"
         )}>
           {actions}

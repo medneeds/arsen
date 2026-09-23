@@ -73,7 +73,7 @@ export function NirConfigPanel({ bedsBySector }: NirConfigPanelProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+        <h3 className="text-lg font-medium text-foreground flex items-center gap-2">
           <Settings2 className="h-4 w-4 text-primary" />
           Configuração — estrutura de leitos
         </h3>
@@ -85,7 +85,7 @@ export function NirConfigPanel({ bedsBySector }: NirConfigPanelProps) {
       </div>
 
       <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground flex items-start gap-2">
-        <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
+        <Info className="h-3.5 w-3.5 mt-1 shrink-0 text-primary" />
         <span>
           Estrutura real dos leitos por setor, direto do banco (alas → setores →
           leitos). <strong>Este painel é leitura</strong>: cadastro e bloqueio

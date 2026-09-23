@@ -40,20 +40,23 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
     try {
       // Schema refatorado: grava em consentimentos_usuario (antes: user_consents + profiles).
       const tipos = ["terms_of_use", "privacy_policy", "data_processing"];
-      for (const tipo of tipos) {
-        const { error } = await supabase.from("consentimentos_usuario").insert({
+      // Auditoria 18/09/2026 (aplicada ao schema novo): grava os tres consentimentos
+      // num unico insert em lote, em vez de tres INSERTs em serie — mais rapido e atomico
+      // (falhar no meio nao deixa consentimento parcialmente gravado).
+      const { error } = await supabase.from("consentimentos_usuario").insert(
+        tipos.map((tipo) => ({
           usuario_id: userId,
           tipo_consentimento: tipo,
           versao_consentimento: CURRENT_TERMS_VERSION,
           user_agent: navigator.userAgent,
-        });
-        if (error && !error.message.includes("duplicate")) throw error;
-      }
+        })),
+      );
+      if (error && !error.message.includes("duplicate")) throw error;
       toast.success("Termos aceitos com sucesso!");
       onAccept();
     } catch (error) {
       console.error("Erro ao registrar consentimento:", error);
-      toast.error("Erro ao registrar consentimento. Tente novamente.");
+      toast.error("Não foi possível registrar consentimento. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -66,9 +69,9 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
         onPointerDownOutside={(e) => e.preventDefault()}
       >
         {/* Header colorido compacto */}
-        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-b shrink-0">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 bg-primary/10 border-b shrink-0">
           <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <DialogTitle className="flex items-center gap-2 text-xl">
                 <Shield className="h-5 w-5 text-primary" />
                 TERMOS DE USO E POLÍTICA DE PRIVACIDADE
@@ -77,7 +80,7 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
                 Em conformidade com a LGPD (Lei 13.709/2018) e Resolução CFM 1.821/2007.
               </DialogDescription>
             </div>
-            <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
+            <Badge variant="outline" className="shrink-0 font-mono text-xs">
               v{CURRENT_TERMS_VERSION}
             </Badge>
           </div>
@@ -86,23 +89,23 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
         {/* Tabs de conteúdo */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <TabsList className="grid grid-cols-3 mx-4 sm:mx-6 mt-3 sm:mt-4 h-auto shrink-0">
-            <TabsTrigger value="terms" className="flex items-center gap-1 sm:gap-1.5 py-2 text-[11px] sm:text-xs">
+            <TabsTrigger value="terms" className="flex items-center gap-1 sm:gap-2 py-2 text-xs sm:text-xs">
               <FileText className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">TERMOS DE USO</span>
               <span className="sm:hidden">TERMOS</span>
-              {termsAccepted && <CheckCircle2 className="h-3 w-3 text-emerald-600" />}
+              {termsAccepted && <CheckCircle2 className="h-3 w-3 text-released-on-soft" />}
             </TabsTrigger>
-            <TabsTrigger value="privacy" className="flex items-center gap-1 sm:gap-1.5 py-2 text-[11px] sm:text-xs">
+            <TabsTrigger value="privacy" className="flex items-center gap-1 sm:gap-2 py-2 text-xs sm:text-xs">
               <Lock className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">PRIVACIDADE</span>
               <span className="sm:hidden">LGPD</span>
-              {privacyAccepted && <CheckCircle2 className="h-3 w-3 text-emerald-600" />}
+              {privacyAccepted && <CheckCircle2 className="h-3 w-3 text-released-on-soft" />}
             </TabsTrigger>
-            <TabsTrigger value="data" className="flex items-center gap-1 sm:gap-1.5 py-2 text-[11px] sm:text-xs">
+            <TabsTrigger value="data" className="flex items-center gap-1 sm:gap-2 py-2 text-xs sm:text-xs">
               <Database className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">DADOS DE PACIENTES</span>
               <span className="sm:hidden">DADOS</span>
-              {dataProcessingAccepted && <CheckCircle2 className="h-3 w-3 text-emerald-600" />}
+              {dataProcessingAccepted && <CheckCircle2 className="h-3 w-3 text-released-on-soft" />}
             </TabsTrigger>
           </TabsList>
 
@@ -116,10 +119,10 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
                 exclusivamente a profissionais de saúde devidamente credenciados e autorizados pela instituição.
               </p>
               <div className="rounded-lg border bg-card p-3 space-y-2">
-                <p className="font-semibold text-xs uppercase tracking-wide text-foreground">
+                <p className="font-medium text-xs uppercase tracking-wide text-foreground">
                   Responsabilidades do usuário
                 </p>
-                <ul className="space-y-1.5 text-xs text-muted-foreground">
+                <ul className="space-y-2 text-xs text-muted-foreground">
                   <li className="flex gap-2"><span className="text-primary">•</span> Manter credenciais em sigilo absoluto</li>
                   <li className="flex gap-2"><span className="text-primary">•</span> Não compartilhar login e senha com terceiros</li>
                   <li className="flex gap-2"><span className="text-primary">•</span> Utilizar o sistema apenas para fins profissionais legítimos</li>
@@ -127,8 +130,8 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
                   <li className="flex gap-2"><span className="text-primary">•</span> Fazer logoff ao se afastar do dispositivo</li>
                 </ul>
               </div>
-              <div className="rounded-lg border bg-card p-3 space-y-1.5">
-                <p className="font-semibold text-xs uppercase tracking-wide">Rastreabilidade</p>
+              <div className="rounded-lg border bg-card p-3 space-y-2">
+                <p className="font-medium text-xs uppercase tracking-wide">Rastreabilidade</p>
                 <p className="text-xs text-muted-foreground">
                   Todas as ações são registradas em log de auditoria imutável, associadas ao seu usuário,
                   conforme exigência do CFM e LGPD.
@@ -139,7 +142,7 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
             <TabsContent value="privacy" className="mt-0 space-y-3 text-sm">
               <div className="grid sm:grid-cols-2 gap-3">
                 <div className="rounded-lg border bg-card p-3 space-y-2">
-                  <p className="font-semibold text-xs uppercase tracking-wide">Dados coletados</p>
+                  <p className="font-medium text-xs uppercase tracking-wide">Dados coletados</p>
                   <ul className="text-xs text-muted-foreground space-y-1">
                     <li>• Identificação profissional (nome, CRM, especialidade)</li>
                     <li>• Contato (telefone, e-mail)</li>
@@ -148,7 +151,7 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
                   </ul>
                 </div>
                 <div className="rounded-lg border bg-card p-3 space-y-2">
-                  <p className="font-semibold text-xs uppercase tracking-wide">Finalidade</p>
+                  <p className="font-medium text-xs uppercase tracking-wide">Finalidade</p>
                   <ul className="text-xs text-muted-foreground space-y-1">
                     <li>• Controle de acesso e autenticação</li>
                     <li>• Auditoria de ações</li>
@@ -157,8 +160,8 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
                   </ul>
                 </div>
               </div>
-              <div className="rounded-lg border-l-4 border-l-primary bg-card p-3 space-y-1.5">
-                <p className="font-semibold text-xs uppercase tracking-wide">Seus direitos (Art. 18 LGPD)</p>
+              <div className="rounded-lg border-l-4 border-l-primary bg-card p-3 space-y-2">
+                <p className="font-medium text-xs uppercase tracking-wide">Seus direitos (Art. 18 LGPD)</p>
                 <p className="text-xs text-muted-foreground">
                   Confirmação de tratamento, acesso, correção, portabilidade e informação sobre compartilhamento
                   dos seus dados pessoais.
@@ -167,32 +170,32 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
             </TabsContent>
 
             <TabsContent value="data" className="mt-0 space-y-3 text-sm">
-              <div className="rounded-lg border bg-card p-3 space-y-1.5">
-                <p className="font-semibold text-xs uppercase tracking-wide">Base legal</p>
+              <div className="rounded-lg border bg-card p-3 space-y-2">
+                <p className="font-medium text-xs uppercase tracking-wide">Base legal</p>
                 <p className="text-xs text-muted-foreground">
                   Tratamento baseado no Art. 7º, VIII (tutela da saúde) e Art. 11, II, "f" (dados sensíveis para
                   tutela da saúde) da LGPD.
                 </p>
               </div>
-              <div className="rounded-lg border bg-card p-3 space-y-1.5">
-                <p className="font-semibold text-xs uppercase tracking-wide">Retenção</p>
+              <div className="rounded-lg border bg-card p-3 space-y-2">
+                <p className="font-medium text-xs uppercase tracking-wide">Retenção</p>
                 <p className="text-xs text-muted-foreground">
                   Conforme Resolução CFM 1.821/2007, prontuários e registros médicos são mantidos por no mínimo
                   <strong className="text-foreground"> 20 anos</strong> após o último atendimento.
                 </p>
               </div>
-              <div className="rounded-lg border bg-card p-3 space-y-1.5">
-                <p className="font-semibold text-xs uppercase tracking-wide">Sigilo profissional</p>
+              <div className="rounded-lg border bg-card p-3 space-y-2">
+                <p className="font-medium text-xs uppercase tracking-wide">Sigilo profissional</p>
                 <p className="text-xs text-muted-foreground">
                   O acesso é regido pelo sigilo médico do Código de Ética Médica. Violações serão reportadas ao CRM.
                 </p>
               </div>
-              <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900 p-3">
+              <div className="rounded-lg border border-warning-border bg-warning-soft p-3">
                 <div className="flex gap-2 items-start">
-                  <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                  <AlertTriangle className="h-4 w-4 text-warning-on-soft mt-1 shrink-0" />
                   <div className="space-y-1">
-                    <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">Consequências do descumprimento</p>
-                    <p className="text-xs text-amber-800 dark:text-amber-300">
+                    <p className="text-xs font-medium text-warning-on-soft">Consequências do descumprimento</p>
+                    <p className="text-xs text-warning-on-soft">
                       Suspensão de acesso, notificação ao CRM e responsabilização civil/criminal conforme legislação.
                     </p>
                   </div>
@@ -219,7 +222,7 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <label
               htmlFor="terms-cb"
-              className="flex items-center gap-2 rounded-lg border bg-card p-2.5 cursor-pointer hover:border-primary/50 transition-colors"
+              className="flex items-center gap-2 rounded-lg border bg-card p-3 cursor-pointer hover:border-primary/50 transition-colors"
             >
               <Checkbox
                 id="terms-cb"
@@ -230,7 +233,7 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
             </label>
             <label
               htmlFor="privacy-cb"
-              className="flex items-center gap-2 rounded-lg border bg-card p-2.5 cursor-pointer hover:border-primary/50 transition-colors"
+              className="flex items-center gap-2 rounded-lg border bg-card p-3 cursor-pointer hover:border-primary/50 transition-colors"
             >
               <Checkbox
                 id="privacy-cb"
@@ -241,7 +244,7 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
             </label>
             <label
               htmlFor="data-cb"
-              className="flex items-center gap-2 rounded-lg border bg-card p-2.5 cursor-pointer hover:border-primary/50 transition-colors"
+              className="flex items-center gap-2 rounded-lg border bg-card p-3 cursor-pointer hover:border-primary/50 transition-colors"
             >
               <Checkbox
                 id="data-cb"

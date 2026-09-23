@@ -254,8 +254,8 @@ export function PisRegistrySyncDialog({
       if (histErr) console.warn("[pis-sync] histórico falhou:", histErr.message);
 
       toast({
-        title: "✅ Prontuário sincronizado",
-        description: `${toApply.length} campo(s) atualizado(s) a partir do PIS.`,
+        title: "Prontuário sincronizado",
+        description: `${toApply.length} ${(toApply.length) === 1 ? 'campo' : 'campos'} ${(toApply.length) === 1 ? 'atualizado' : 'atualizados'} a partir do PIS.`,
       });
       onResolved?.(true);
       onOpenChange(false);
@@ -281,7 +281,7 @@ export function PisRegistrySyncDialog({
             Sincronizar prontuário com PIS
           </DialogTitle>
           <DialogDescription className="text-xs leading-relaxed">
-            Detectamos <strong>{diff.length}</strong> campo(s) divergentes entre o cadastro central
+            Detectamos <strong>{diff.length}</strong> {diff.length === 1 ? "campo divergente" : "campos divergentes"} entre o cadastro central
             (prontuário) e os dados do PIS ({contextLabel.toLowerCase()}). Revise cada item e marque
             o que deve ser <strong>sobrescrito no prontuário</strong>. Nada é alterado sem sua
             confirmação. Campos vazios no PIS nunca apagam o prontuário.
@@ -289,26 +289,26 @@ export function PisRegistrySyncDialog({
         </DialogHeader>
 
         {loading ? (
-          <div className="flex items-center justify-center py-10 text-xs text-muted-foreground">
+          <div className="flex items-center justify-center py-8 text-xs text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin mr-2" /> Carregando prontuário…
           </div>
         ) : diff.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 gap-2 text-center">
-            <ShieldCheck className="h-8 w-8 text-emerald-600" />
-            <p className="text-sm font-semibold">Prontuário já está 100% sincronizado com o PIS.</p>
+          <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
+            <ShieldCheck className="h-8 w-8 text-released-on-soft" />
+            <p className="text-sm font-medium">Prontuário já está 100% sincronizado com o PIS.</p>
             <p className="text-xs text-muted-foreground">Nenhuma ação necessária.</p>
           </div>
         ) : (
           <>
             <div className="flex items-center justify-between flex-shrink-0 px-1">
-              <Badge variant="outline" className="text-[10px]">
+              <Badge variant="outline" className="text-xs">
                 {acceptedCount}/{diff.length} selecionados
               </Badge>
               <div className="flex gap-1">
-                <Button type="button" variant="ghost" size="sm" onClick={() => handleToggleAll(true)} className="h-7 text-[11px]">
+                <Button type="button" variant="ghost" size="sm" onClick={() => handleToggleAll(true)} className="h-7 text-xs">
                   Marcar todos
                 </Button>
-                <Button type="button" variant="ghost" size="sm" onClick={() => handleToggleAll(false)} className="h-7 text-[11px]">
+                <Button type="button" variant="ghost" size="sm" onClick={() => handleToggleAll(false)} className="h-7 text-xs">
                   Desmarcar
                 </Button>
               </div>
@@ -320,29 +320,29 @@ export function PisRegistrySyncDialog({
                   <label
                     key={d.regKey}
                     htmlFor={`pis-${d.regKey}`}
-                    className="flex items-start gap-3 p-2.5 rounded-md border bg-card hover:bg-muted/40 cursor-pointer"
+                    className="flex items-start gap-3 p-3 rounded-md border bg-card hover:bg-muted/40 cursor-pointer"
                   >
                     <Checkbox
                       id={`pis-${d.regKey}`}
                       checked={!!accepted[d.regKey]}
                       onCheckedChange={(v) => setAccepted((prev) => ({ ...prev, [d.regKey]: !!v }))}
-                      className="mt-0.5"
+                      className="mt-1"
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                         {d.label}
                       </p>
                       <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center mt-1 text-xs">
                         <div className="min-w-0">
-                          <p className="text-[9px] text-muted-foreground">Atual</p>
-                          <p className="truncate font-medium text-rose-700 dark:text-rose-300 line-through decoration-rose-400/50">
+                          <p className="text-xs text-muted-foreground">Atual</p>
+                          <p className="truncate font-medium text-critical-on-soft line-through decoration-rose-400/50">
                             {d.current || <span className="italic text-muted-foreground no-underline">(vazio)</span>}
                           </p>
                         </div>
                         <ArrowRight className="h-3.5 w-3.5 text-primary shrink-0" />
                         <div className="min-w-0">
-                          <p className="text-[9px] text-muted-foreground">PIS</p>
-                          <p className="truncate font-semibold text-emerald-700 dark:text-emerald-300">
+                          <p className="text-xs text-muted-foreground">PIS</p>
+                          <p className="truncate font-medium text-released-on-soft">
                             {d.incoming}
                           </p>
                         </div>
@@ -353,8 +353,8 @@ export function PisRegistrySyncDialog({
               </div>
             </ScrollArea>
 
-            <div className="space-y-1.5 flex-shrink-0 pt-2 border-t">
-              <Label htmlFor="pis-reason" className="text-xs font-semibold">Motivo (auditado)</Label>
+            <div className="space-y-2 flex-shrink-0 pt-2 border-t">
+              <Label htmlFor="pis-reason" className="text-xs font-medium">Motivo (auditado)</Label>
               <Textarea
                 id="pis-reason"
                 value={reason}
@@ -372,7 +372,7 @@ export function PisRegistrySyncDialog({
             {diff.length === 0 ? "Fechar" : "Pular sem sincronizar"}
           </Button>
           {diff.length > 0 && (
-            <Button onClick={handleSave} disabled={saving || acceptedCount === 0} className="h-9 text-xs gap-1.5">
+            <Button onClick={handleSave} disabled={saving || acceptedCount === 0} className="h-9 text-xs gap-2">
               {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
               Confirmar sincronização ({acceptedCount})
             </Button>

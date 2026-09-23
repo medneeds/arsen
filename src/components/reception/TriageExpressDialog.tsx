@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
+import { normalizePatientNameInput } from "@/utils/normalizePatientName";
 import {
   AlertTriangle, Loader2, UserX, Stethoscope, Clock, Phone, FileWarning,
   ArrowRight, Zap, Cake, CalendarDays, Hash, Siren, Ambulance, Footprints,
@@ -166,7 +167,7 @@ export function TriageExpressDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl p-0 overflow-hidden">
         {/* Header com gradiente de urgência */}
-        <div className="bg-gradient-to-r from-rose-600 to-red-600 text-white px-5 py-4">
+        <div className="bg-critical-soft text-white px-4 py-4">
           <DialogHeader className="space-y-1">
             <DialogTitle className="flex items-center gap-2 text-white">
               <Zap className="h-5 w-5" />
@@ -174,14 +175,14 @@ export function TriageExpressDialog({
               {receptionPoint && (
                 <Badge
                   variant="outline"
-                  className="ml-2 text-[10px] h-5 border-white/40 text-white bg-white/10 font-normal"
+                  className="ml-2 text-xs h-5 border-white/40 text-white bg-white/10 font-normal"
                 >
                   {isHorizontal ? <Ambulance className="h-3 w-3 mr-1" /> : <Footprints className="h-3 w-3 mr-1" />}
                   Recepção {isHorizontal ? "Horizontal" : "Vertical"}
                 </Badge>
               )}
             </DialogTitle>
-            <DialogDescription className="text-rose-50/90 text-xs">
+            <DialogDescription className="text-critical/90 text-xs">
               {isHorizontal
                 ? "Maca/ambulância — destino prioritário sugerido: Sala Vermelha. Tudo é opcional."
                 : "Pergunte rapidamente o que conseguir. Tudo é opcional. Direcionamento padrão: Triagem."}
@@ -190,13 +191,13 @@ export function TriageExpressDialog({
         </div>
 
         <ScrollArea className="max-h-[65vh]">
-          <div className="px-5 py-4 space-y-4">
+          <div className="px-4 py-4 space-y-4">
             {/* ========== ATALHO PRIORITÁRIO — só na horizontal ========== */}
             {isHorizontal && salaVermelha && (
-              <section className="rounded-lg border-2 border-red-600/40 bg-red-600/5 p-3">
+              <section className="rounded-lg border-2 border-critical/40 bg-critical/5 p-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <Siren className="h-4 w-4 text-red-600 animate-pulse" />
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-red-700 dark:text-red-400">
+                  <Siren className="h-4 w-4 text-critical-on-soft animate-pulse" />
+                  <h3 className="text-xs font-medium uppercase tracking-wider text-critical-on-soft">
                     Direcionamento prioritário (Recepção Horizontal)
                   </h3>
                 </div>
@@ -205,31 +206,31 @@ export function TriageExpressDialog({
                     type="button"
                     onClick={() => setDestinationValue(triagemSector?.value || "triagem")}
                     className={cn(
-                      "flex items-center gap-2 p-2.5 rounded-md border text-left transition-all hover:bg-accent/50",
-                      destinationValue === (triagemSector?.value || "triagem") && "ring-2 ring-emerald-500 bg-emerald-500/10 border-emerald-500/40"
+                      "flex items-center gap-2 p-3 rounded-md border text-left transition-all hover:bg-accent/50",
+                      destinationValue === (triagemSector?.value || "triagem") && "ring-2 ring-released bg-released/10 border-released/40"
                     )}
                   >
-                    <div className="h-3 w-3 rounded-full bg-emerald-500 shrink-0" />
+                    <div className="h-3 w-3 rounded-full bg-released shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold">Triagem</div>
-                      <div className="text-[10px] text-muted-foreground">classificação de risco</div>
+                      <div className="text-xs font-medium">Triagem</div>
+                      <div className="text-xs text-muted-foreground">classificação de risco</div>
                     </div>
-                    <Badge variant="secondary" className="text-[8px] h-3.5 px-1">recomendado</Badge>
+                    <Badge variant="secondary" className="text-xs h-3.5 px-1">recomendado</Badge>
                   </button>
                   <button
                     type="button"
                     onClick={() => setDestinationValue("sala_vermelha")}
                     className={cn(
-                      "flex items-center gap-2 p-2.5 rounded-md border text-left transition-all hover:bg-accent/50",
-                      destinationValue === "sala_vermelha" && "ring-2 ring-red-600 bg-red-600/10 border-red-600/40"
+                      "flex items-center gap-2 p-3 rounded-md border text-left transition-all hover:bg-accent/50",
+                      destinationValue === "sala_vermelha" && "ring-2 ring-critical bg-critical/10 border-critical/40"
                     )}
                   >
-                    <div className="h-3 w-3 rounded-full bg-red-700 shrink-0" />
+                    <div className="h-3 w-3 rounded-full bg-critical shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold">Sala Vermelha</div>
-                      <div className="text-[10px] text-muted-foreground">emergência crítica</div>
+                      <div className="text-xs font-medium">Sala Vermelha</div>
+                      <div className="text-xs text-muted-foreground">emergência crítica</div>
                     </div>
-                    <Siren className="h-3 w-3 text-red-600" />
+                    <Siren className="h-3 w-3 text-critical-on-soft" />
                   </button>
                 </div>
               </section>
@@ -239,16 +240,16 @@ export function TriageExpressDialog({
             <section className="space-y-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <UserX className="h-4 w-4 text-muted-foreground" />
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Identificação rápida (opcional)
                 </h3>
                 {isUnidentified && (
-                  <Badge variant="outline" className="text-[9px] h-4 border-slate-500/50 bg-slate-500/10 text-slate-700 dark:text-slate-300 gap-1">
+                  <Badge variant="outline" className="text-xs h-4 border-border/50 bg-primary/10 text-foreground gap-1">
                     <UserX className="h-2.5 w-2.5" /> NI — código automático
                   </Badge>
                 )}
                 {!isUnidentified && !isFullyIdentified && partialName.trim() && (
-                  <Badge variant="outline" className="text-[9px] h-4 border-amber-500/40 text-amber-700 dark:text-amber-400">
+                  <Badge variant="outline" className="text-xs h-4 border-warning/40 text-warning-on-soft">
                     parcial
                   </Badge>
                 )}
@@ -257,9 +258,9 @@ export function TriageExpressDialog({
               {/* Toggle "Não identificado" */}
               <label
                 className={cn(
-                  "flex items-start gap-3 rounded-lg border p-2.5 cursor-pointer transition-all",
+                  "flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all",
                   isUnidentified
-                    ? "border-slate-500/50 bg-slate-500/10"
+                    ? "border-border/50 bg-primary/10"
                     : "border-border hover:bg-accent/40"
                 )}
               >
@@ -270,38 +271,38 @@ export function TriageExpressDialog({
                     setIsUnidentified(v);
                     if (v) setPartialName("");
                   }}
-                  className="mt-0.5"
+                  className="mt-1"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <UserX className="h-3.5 w-3.5 text-slate-600 dark:text-slate-300" />
-                    <span className="text-xs font-semibold">Paciente NÃO IDENTIFICADO (NI)</span>
+                    <UserX className="h-3.5 w-3.5 text-foreground" />
+                    <span className="text-xs font-medium">Paciente NÃO IDENTIFICADO (NI)</span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Marque quando não houver nenhuma informação de identificação. O sistema gera um código NI automático (ex.: NI-2026-0042) e oculta o campo de nome.
                   </p>
                 </div>
               </label>
 
               <div className={cn("grid grid-cols-1 md:grid-cols-3 gap-3", isUnidentified && "opacity-60")}>
-                <div className="md:col-span-2 space-y-1.5">
+                <div className="md:col-span-2 space-y-2">
                   <Label htmlFor="te-name" className="text-xs">Nome do paciente</Label>
                   <Input
                     id="te-name"
                     placeholder={isUnidentified ? "— gerado automaticamente como NI —" : "Ex.: JOÃO ou JOÃO DA SILVA SANTOS"}
                     value={partialName}
-                    onChange={(e) => setPartialName(e.target.value.toUpperCase())}
+                    onChange={(e) => setPartialName(normalizePatientNameInput(e.target.value))}
                     autoFocus={!isUnidentified}
                     disabled={isUnidentified}
                     className="font-medium"
                   />
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {isUnidentified
                       ? "Código NI será atribuído ao salvar. Você poderá complementar dados depois."
                       : "Vazio = paciente NÃO IDENTIFICADO (gera código NI automático)."}
                   </p>
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label className="text-xs">Sexo</Label>
                   <Select value={sex} onValueChange={(v) => setSex(v as any)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -315,7 +316,7 @@ export function TriageExpressDialog({
               </div>
 
               {/* Idade — toggle de modo */}
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <Label className="text-xs flex items-center gap-1">
                     <Clock className="h-3 w-3" /> Idade do paciente
@@ -327,13 +328,13 @@ export function TriageExpressDialog({
                     size="sm"
                     className="h-7"
                   >
-                    <ToggleGroupItem value="approx" className="text-[10px] h-7 px-2 gap-1">
+                    <ToggleGroupItem value="approx" className="text-xs h-7 px-2 gap-1">
                       <Hash className="h-3 w-3" /> Aproximada
                     </ToggleGroupItem>
-                    <ToggleGroupItem value="exact" className="text-[10px] h-7 px-2 gap-1">
+                    <ToggleGroupItem value="exact" className="text-xs h-7 px-2 gap-1">
                       <Cake className="h-3 w-3" /> Exata
                     </ToggleGroupItem>
-                    <ToggleGroupItem value="dob" className="text-[10px] h-7 px-2 gap-1">
+                    <ToggleGroupItem value="dob" className="text-xs h-7 px-2 gap-1">
                       <CalendarDays className="h-3 w-3" /> Data nasc.
                     </ToggleGroupItem>
                   </ToggleGroup>
@@ -370,7 +371,7 @@ export function TriageExpressDialog({
                       className="max-w-[200px]"
                     />
                     {birthDate && computedAge && (
-                      <Badge variant="secondary" className="text-[10px]">
+                      <Badge variant="secondary" className="text-xs">
                         {computedAge} anos
                       </Badge>
                     )}
@@ -379,7 +380,7 @@ export function TriageExpressDialog({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label htmlFor="te-phone" className="text-xs flex items-center gap-1">
                     <Phone className="h-3 w-3" /> Contato (acompanhante)
                   </Label>
@@ -390,7 +391,7 @@ export function TriageExpressDialog({
                     onChange={(e) => setContactPhone(e.target.value)}
                   />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label className="text-xs">Modo de chegada</Label>
                   <Select value={arrivalMode} onValueChange={setArrivalMode}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -408,7 +409,7 @@ export function TriageExpressDialog({
             <section className="space-y-2">
               <div className="flex items-center gap-2">
                 <Stethoscope className="h-4 w-4 text-muted-foreground" />
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Queixa principal (orienta a triagem)
                 </h3>
               </div>
@@ -421,19 +422,19 @@ export function TriageExpressDialog({
             </section>
 
             {/* Bloco 3 — Pendência */}
-            <section className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+            <section className="rounded-lg border border-warning/30 bg-warning/5 p-3">
               <label className="flex items-start gap-3 cursor-pointer">
                 <Checkbox
                   checked={documentsPending}
                   onCheckedChange={(c) => setDocumentsPending(Boolean(c))}
-                  className="mt-0.5"
+                  className="mt-1"
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <FileWarning className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <FileWarning className="h-4 w-4 text-warning-on-soft" />
                     <span className="text-sm font-medium">Marcar como documentação pendente</span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-1">
                     O atendimento aparecerá no painel da Recepção com indicador de pendência (CPF, CNS, RG ou nome completo) para complementação posterior.
                   </p>
                 </div>
@@ -444,7 +445,7 @@ export function TriageExpressDialog({
             <section className="space-y-2">
               <div className="flex items-center gap-2">
                 <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   {isHorizontal ? "Outros destinos disponíveis" : "Direcionamento do atendimento"}
                 </h3>
               </div>
@@ -452,10 +453,10 @@ export function TriageExpressDialog({
               <div className="space-y-3">
                 {groups.map((group) => (
                   <div key={group}>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5 font-medium">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 font-medium">
                       {group}
                     </p>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                       {sectors.filter((s) => s.group === group).map((sector) => (
                         <button
                           key={sector.value}
@@ -469,7 +470,7 @@ export function TriageExpressDialog({
                           <div className={cn("h-2.5 w-2.5 rounded-full shrink-0", sector.color)} />
                           <span className="text-xs font-medium truncate">{sector.label}</span>
                           {sector.isTriage && (
-                            <Badge variant="secondary" className="ml-auto text-[8px] h-3.5 px-1">
+                            <Badge variant="secondary" className="ml-auto text-xs h-3.5 px-1">
                               recomendado
                             </Badge>
                           )}
@@ -481,8 +482,8 @@ export function TriageExpressDialog({
               </div>
 
               {selectedSector && !selectedSector.isTriage && (
-                <div className="text-[11px] rounded-md bg-sky-500/10 border border-sky-500/30 p-2 flex items-start gap-2 text-sky-700 dark:text-sky-300">
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                <div className="text-xs rounded-md bg-primary/10 border border-border/30 p-2 flex items-start gap-2 text-foreground">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-1" />
                   <span>
                     Direcionamento direto para <strong>{selectedSector.label}</strong> — gera pré-admissão e pula a fila de triagem.
                   </span>
@@ -504,14 +505,14 @@ export function TriageExpressDialog({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="px-5 py-3 border-t bg-muted/30">
+        <DialogFooter className="px-4 py-3 border-t bg-muted/30">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             Cancelar
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className="bg-rose-600 hover:bg-rose-700 text-white"
+            className="bg-critical hover:bg-critical text-white"
           >
             {loading ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Gerando…</>

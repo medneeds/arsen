@@ -91,7 +91,7 @@ export function UserAuditHistoryPanel({ hospitalId }: UserAuditHistoryPanelProps
     if (hospitalId) q = q.eq("hospital_id", hospitalId);
     const { data, count, error } = await q;
     if (error) {
-      toast.error("Falha ao carregar histórico");
+      toast.error("Não foi possível carregar histórico");
     } else {
       const list = (data ?? []) as AuditRow[];
       setRows(list);
@@ -146,7 +146,7 @@ export function UserAuditHistoryPanel({ hospitalId }: UserAuditHistoryPanelProps
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow">
+        <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center shadow-sm">
           <History className="h-5 w-5 text-white" />
         </div>
         <div className="flex-1">
@@ -170,7 +170,7 @@ export function UserAuditHistoryPanel({ hospitalId }: UserAuditHistoryPanelProps
             placeholder="Buscar por e-mail, usuário, tabela, evento ou motivo…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            className="pl-8"
           />
         </div>
         <Select value={eventFilter} onValueChange={(v) => { setEventFilter(v); setPage(0); }}>
@@ -184,8 +184,8 @@ export function UserAuditHistoryPanel({ hospitalId }: UserAuditHistoryPanelProps
         </Select>
       </div>
 
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-muted/50 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+      <div className="rounded-lg border bg-card overflow-hidden">
+        <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-muted/50 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           <div className="col-span-2">Data/Hora</div>
           <div className="col-span-3">Evento</div>
           <div className="col-span-3">Alvo</div>
@@ -198,7 +198,7 @@ export function UserAuditHistoryPanel({ hospitalId }: UserAuditHistoryPanelProps
             {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="py-10 text-center text-sm text-muted-foreground">
+          <div className="py-8 text-center text-sm text-muted-foreground">
             <History className="h-6 w-6 mx-auto mb-2 opacity-60" />
             Nenhum evento encontrado.
           </div>
@@ -305,8 +305,8 @@ export function UserAuditHistoryPanel({ hospitalId }: UserAuditHistoryPanelProps
 function Field({ label, value, small }: { label: string; value: string; small?: boolean }) {
   return (
     <div>
-      <div className="text-[11px] font-bold uppercase text-muted-foreground">{label}</div>
-      <div className={`${small ? "text-[11px]" : "text-sm"} break-words`}>{value}</div>
+      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={`${small ? "text-xs" : "text-sm"} break-words`}>{value}</div>
     </div>
   );
 }

@@ -15,8 +15,6 @@ import {
   Layers,
   Palette,
   Stethoscope,
-  Moon,
-  Sun,
   HeartPulse,
   Activity,
   BedDouble,
@@ -27,8 +25,8 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home as HomeIcon } from "lucide-react";
 import { whitelabel } from "@/config/whitelabel";
-import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
-import { useEffect, useState } from "react";
+const socorraoCrossLogo = "/arsen-mark.svg";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -58,7 +56,11 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronDown, Repeat2 } from "lucide-react";
-import { ProfileSwitcherDialog } from "@/components/auth/ProfileSwitcherDialog";
+// Sob demanda: so abre quando o usuario troca de perfil, mas era o ULTIMO
+// ponto arrastando framer-motion (127 KB) para o pacote de entrada de toda a
+// aplicacao — baixado antes de a tela de login aparecer.
+const ProfileSwitcherDialog = lazy(() =>
+  import("@/components/auth/ProfileSwitcherDialog").then(m => ({ default: m.ProfileSwitcherDialog })));
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { SECTOR_NAVIGATION } from "@/config/sectorNavigation";
@@ -68,11 +70,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePendingPasswordResets } from "@/hooks/usePendingPasswordResets";
-import { useTheme } from "next-themes";
 import { useIsDev } from "@/hooks/useIsDev";
 import type { AccessProfile } from "@/config/userProfiles";
 import { useIsCoordenador } from "@/hooks/useIsCoordenador";
 import { SidebarPatientSearch } from "@/components/SidebarPatientSearch";
+import { safeSetItem } from "@/lib/safeStorage";
 
 function DevConsoleLink({ isCollapsed, onNavigate }: { isCollapsed: boolean; onNavigate: () => void }) {
   const { isDev } = useIsDev();
@@ -94,21 +96,6 @@ function DevConsoleLink({ isCollapsed, onNavigate }: { isCollapsed: boolean; onN
   );
 }
 
-function ThemeToggleInline() {
-  const { theme, setTheme } = useTheme();
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="h-7 w-7 text-muted-foreground hover:text-foreground"
-      title={theme === "dark" ? "Modo claro" : "Modo escuro"}
-    >
-      <Sun className="h-3.5 w-3.5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-3.5 w-3.5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-    </Button>
-  );
-}
 
 
 export function AppSidebar() {
@@ -360,7 +347,7 @@ export function AppSidebar() {
           { name: "Aguardando Admissão", link: "/recepcao?tab=aguardando", profiles: ["administrativo"] },
         ]},
         { title: "Documentos", icon: FolderOpen, profiles: ["administrativo"], items: [
-          { name: "Documentos do Paciente", link: "/documentos-paciente", profiles: ["administrativo"] },
+          { name: "Documentos do Paciente", link: "/documentos", profiles: ["administrativo"] },
           { name: "Ficha de Atendimento", link: "/ficha-atendimento", profiles: ["administrativo"] },
           { name: "Histórico de Internações", link: "/internment-history", profiles: ["administrativo"] },
         ]},
@@ -531,16 +518,16 @@ export function AppSidebar() {
 
   const sidebarContent = (
     <>
-      <SidebarHeader className="border-b border-border/50 px-3 py-3 bg-gradient-to-b from-card to-muted/20">
+      <SidebarHeader className="border-b border-border/50 px-3 py-3 bg-card">
         <div className="flex items-center justify-between gap-2">
           <div className={cn(
             "flex items-center flex-1 min-w-0",
-            isCollapsed ? "justify-center" : "justify-start gap-2.5"
+            isCollapsed ? "justify-center" : "justify-start gap-3"
           )}>
             <div className={cn(
               "relative flex items-center justify-center rounded-lg overflow-hidden flex-shrink-0",
-              "bg-white dark:bg-white/95 dark:ring-1 dark:ring-white/20",
-              "shadow-sm dark:shadow-[0_2px_8px_-2px_hsl(var(--primary)/0.4)]",
+              "bg-white",
+              "shadow-sm(var(--primary)/0.4)]",
               isCollapsed ? "h-9 w-9 p-1" : "h-10 w-10 p-1"
             )}>
               <img
@@ -552,10 +539,10 @@ export function AppSidebar() {
             </div>
             {!isCollapsed && (
               <div className="flex flex-col min-w-0 leading-tight">
-                <span className="text-[11px] font-semibold tracking-[0.18em] text-foreground uppercase truncate">
+                <span className="text-xs font-medium tracking-[0.18em] text-foreground uppercase truncate">
                   {whitelabel.institution.hospitalAbbreviation}
                 </span>
-                <span className="text-[9px] font-medium tracking-wider text-muted-foreground uppercase truncate">
+                <span className="text-xs font-medium tracking-wider text-muted-foreground uppercase truncate">
                   {whitelabel.institution.hospitalShortName}
                 </span>
               </div>
@@ -601,7 +588,7 @@ export function AppSidebar() {
               onClick={() => setShowProfileSwitcher(true)}
               className={cn(
                 "relative h-8 border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary",
-                isCollapsed ? "w-8" : "gap-2 px-2 text-[10px] font-semibold"
+                isCollapsed ? "w-8" : "gap-2 px-2 text-xs font-medium"
               )}
               title={isAdminLike ? "Alternar entre os módulos do sistema" : "Trocar perfil de acesso"}
             >
@@ -622,21 +609,21 @@ export function AppSidebar() {
         {role !== "super_admin" && !["porta","visitante","farmacia","ccih","imagem","laboratorio","administrativo","nir","gestor"].includes(accessProfile) && (
           <SidebarGroup className="py-0 my-0 border-b border-border/50">
             <div className={cn(
-              "pt-2 pb-1.5",
+              "pt-2 pb-2",
               isCollapsed ? "px-0 flex flex-col items-center gap-1" : "px-3"
             )}>
               {!isCollapsed && (
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
                     Setor Ativo
                   </span>
-                  <div className="flex-1 h-px bg-gradient-to-r from-primary/30 to-transparent" />
+                  <div className="flex-1 h-px bg-primary/30" />
                 </div>
               )}
               {!isCollapsed && (
-                <div className="flex items-center gap-1.5 mb-2 px-1.5 py-1 rounded-md bg-primary/10 ring-1 ring-primary/25 shadow-sm">
+                <div className="flex items-center gap-2 mb-2 px-2 py-1 rounded-md bg-primary/10 ring-1 ring-primary/25 shadow-sm">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse flex-shrink-0" />
-                  <span className="text-[10.5px] font-bold uppercase tracking-wide text-primary truncate">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-primary truncate">
                     {currentSectorLabel || currentDepartment}
                   </span>
                 </div>
@@ -656,8 +643,8 @@ export function AppSidebar() {
                         onClick={() => { safeNavigate(tab.link); if (isMobile) setOpenMobile(false); }}
                         title={`${tab.title} — ${currentSectorLabel || currentDepartment}`}
                         className={cn(
-                          "flex-1 flex items-center justify-center gap-1 px-1.5 py-1.5 text-[10px]",
-                          "transition-all duration-200 rounded-md font-semibold tracking-wide",
+                          "flex-1 flex items-center justify-center gap-1 px-2 py-2 text-xs",
+                          "transition-all duration-200 rounded-md font-medium tracking-wide",
                           isActive
                             ? "bg-primary text-primary-foreground shadow-md ring-1 ring-primary/40"
                             : "bg-background text-foreground/80 hover:bg-primary/10 hover:text-primary ring-1 ring-border/40 hover:ring-primary/30"
@@ -777,7 +764,7 @@ export function AppSidebar() {
                               <CollapsibleTrigger className="w-full">
                                 <SidebarMenuItem>
                                   <SidebarMenuButton
-                                    className="group/item hover:bg-primary/8 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 mb-1 justify-between"
+                                    className="group/item hover:bg-primary/8 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-xs rounded-lg hover:shadow-sm cursor-pointer gap-3 mb-1 justify-between"
                                     tooltip={itemName}
                                   >
                                     <div className="flex items-center gap-3 flex-1">
@@ -795,7 +782,7 @@ export function AppSidebar() {
                                   {item.subsections && Array.isArray(item.subsections) && item.subsections.map((subitem: any) => (
                                     <SidebarMenuItem key={subitem.name}>
                                       <SidebarMenuButton
-                                        className="group/subitem hover:bg-primary/5 transition-all duration-200 text-[10px] rounded-lg cursor-pointer gap-2 hover:translate-x-1 mb-1"
+                                        className="group/subitem hover:bg-primary/5 transition-all duration-200 text-xs rounded-lg cursor-pointer gap-2 hover:translate-x-1 mb-1"
                                         tooltip={subitem.name}
                                         onClick={() => handleItemClick(subitem)}
                                       >
@@ -818,7 +805,7 @@ export function AppSidebar() {
                         return (
                           <SidebarMenuItem key={itemKey}>
                                      <SidebarMenuButton
-                                        className="group/item hover:bg-primary/8 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 hover:translate-x-1 mb-1"
+                                        className="group/item hover:bg-primary/8 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-xs rounded-lg hover:shadow-sm cursor-pointer gap-3 hover:translate-x-1 mb-1"
                                         tooltip={itemName}
                                         onClick={() => handleItemClick(item, section)}
                                       >
@@ -829,7 +816,7 @@ export function AppSidebar() {
                               {itemBadge !== undefined && (
                                 <Badge 
                                   variant="destructive" 
-                                  className="h-5 min-w-5 px-1.5 text-[10px] font-bold animate-pulse"
+                                  className="h-5 min-w-5 px-2 text-xs font-semibold animate-pulse"
                                 >
                                   {itemBadge}
                                 </Badge>
@@ -845,7 +832,7 @@ export function AppSidebar() {
             </Collapsible>
             )}
             {index < menuItems.length - 1 && (
-              <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent my-3 mx-4" />
+              <div className="h-px bg-transparent my-3 mx-4" />
             )}
           </div>
         ))}
@@ -864,7 +851,7 @@ export function AppSidebar() {
             "group w-full flex items-center rounded-lg transition-all duration-200",
             "hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
             location.pathname === "/ajuda" && "bg-primary/10",
-            isCollapsed ? "justify-center p-2" : "gap-2.5 px-3 py-2"
+            isCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2"
           )}
         >
           <HelpCircle className={cn(
@@ -881,18 +868,17 @@ export function AppSidebar() {
         {/* Tema */}
         <div className={cn(
           "flex items-center rounded-lg transition-all duration-200",
-          isCollapsed ? "justify-center py-1" : "justify-between px-3 py-1.5 bg-card/30"
+          isCollapsed ? "justify-center py-1" : "justify-between px-3 py-2 bg-card/30"
         )}>
           {!isCollapsed && (
-            <span className="text-[10px] text-muted-foreground font-medium">Tema</span>
+            <span className="text-xs text-muted-foreground font-medium">Tema</span>
           )}
-          <ThemeToggleInline />
         </div>
 
         {/* Perfil + Sair */}
         <div className={cn(
-          "flex items-center rounded-xl transition-all duration-200",
-          isCollapsed ? "flex-col gap-1 py-1" : "gap-2 px-2 py-1.5 bg-card/50"
+          "flex items-center rounded-lg transition-all duration-200",
+          isCollapsed ? "flex-col gap-1 py-1" : "gap-2 px-2 py-2 bg-card/50"
         )}>
           <button
             type="button"
@@ -901,7 +887,7 @@ export function AppSidebar() {
             className={cn(
               "group flex items-center gap-3 rounded-lg transition-all duration-200",
               "hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-              isCollapsed ? "p-1.5 justify-center" : "flex-1 min-w-0 p-1 pr-2"
+              isCollapsed ? "p-2 justify-center" : "flex-1 min-w-0 p-1 pr-2"
             )}
           >
             <div className="bg-primary/10 group-hover:bg-primary/20 rounded-full flex items-center justify-center h-8 w-8 flex-shrink-0 transition-colors">
@@ -909,10 +895,10 @@ export function AppSidebar() {
             </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-xs font-semibold truncate group-hover:text-primary transition-colors">
+                <p className="text-xs font-medium truncate group-hover:text-primary transition-colors">
                   {user?.user_metadata?.username || user?.email?.split('@')[0]}
                 </p>
-                <p className="text-[10px] text-muted-foreground truncate">
+                <p className="text-xs text-muted-foreground truncate">
                   {user?.email}
                 </p>
               </div>
@@ -929,7 +915,7 @@ export function AppSidebar() {
           </Button>
         </div>
       </SidebarFooter>
-      <ProfileSwitcherDialog open={showProfileSwitcher} onOpenChange={setShowProfileSwitcher} />
+      <Suspense fallback={null}><ProfileSwitcherDialog open={showProfileSwitcher} onOpenChange={setShowProfileSwitcher} /></Suspense>
     </>
   );
 
@@ -938,7 +924,7 @@ export function AppSidebar() {
       <Drawer open={openMobile} onOpenChange={setOpenMobile} modal={true}>
         <DrawerContent className="max-h-[85vh]">
           <DrawerHeader className="border-b pb-3 pt-2">
-            <DrawerTitle className="text-center text-sm font-semibold tracking-wide">Menu de Navegação</DrawerTitle>
+            <DrawerTitle className="text-center text-sm font-medium tracking-wide">Menu de Navegação</DrawerTitle>
           </DrawerHeader>
           <div className="overflow-y-auto flex-1 px-2">
             {sidebarContent}

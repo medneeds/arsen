@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import socorraoIcon from "@/assets/socorrao-cross-logo.png";
+const socorraoIcon = "/arsen-mark.svg";
 
 interface PageLoaderProps {
   /** Mensagem contextual (ex: "Preparando UTI 2…"). Opcional — quando ausente, splash fica ainda mais limpo. */
@@ -24,7 +24,7 @@ export function PageLoader({ message, subMessage }: PageLoaderProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gradient-to-b from-slate-50/95 via-white/90 to-blue-50/80 backdrop-blur-sm transition-opacity duration-500 ease-out"
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-muted/95 backdrop-blur-sm transition-opacity duration-500 ease-out"
       style={{ opacity: visible ? 1 : 0 }}
       role="status"
       aria-live="polite"
@@ -50,12 +50,12 @@ export function PageLoader({ message, subMessage }: PageLoaderProps) {
       {(message || subMessage) && (
         <div className="mt-6 text-center px-6">
           {message && (
-            <div className="text-foreground/55 text-[11px] font-medium tracking-[0.18em] uppercase">
+            <div className="text-foreground/55 text-xs font-medium tracking-[0.18em] uppercase">
               {message}
             </div>
           )}
           {subMessage && (
-            <div className="mt-1 text-foreground/35 text-[10px] tracking-wide uppercase">
+            <div className="mt-1 text-foreground/35 text-xs tracking-wide uppercase">
               {subMessage}
             </div>
           )}

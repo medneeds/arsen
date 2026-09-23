@@ -46,8 +46,8 @@ export function ChangeUserEmailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <div className="mx-auto h-12 w-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-2">
-            <Mail className="h-6 w-6 text-blue-600" />
+          <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+            <Mail className="h-6 w-6 text-foreground" />
           </div>
           <DialogTitle className="text-center">Alterar e-mail</DialogTitle>
           <DialogDescription className="text-center preserve-case">

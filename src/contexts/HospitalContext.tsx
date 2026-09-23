@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { safeSetItem } from "@/lib/safeStorage";
 
 export interface State {
   id: string;
@@ -43,7 +44,7 @@ export function HospitalProvider({ children }: { children: ReactNode }) {
   const [hospitals, setHospitals] = useState<HospitalUnit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchStatesAndHospitals = async () => {
+  const fetchStatesAndHospitals = useCallback(async () => {
     try {
       setIsLoading(true);
 
@@ -78,40 +79,38 @@ export function HospitalProvider({ children }: { children: ReactNode }) {
 
       if (defaultHospital) {
         setCurrentHospitalState(defaultHospital);
-        localStorage.setItem(STORAGE_KEY_HOSPITAL, defaultHospital.id);
-        localStorage.setItem(STORAGE_KEY_STATE, DEFAULT_STATE.id);
+        safeSetItem(STORAGE_KEY_HOSPITAL, defaultHospital.id);
+        safeSetItem(STORAGE_KEY_STATE, DEFAULT_STATE.id);
       }
     } catch (error) {
       console.error("Error fetching hospitals:", error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const setCurrentHospital = (hospital: HospitalUnit) => {
+  const setCurrentHospital = useCallback((hospital: HospitalUnit) => {
     setCurrentHospitalState(hospital);
-    localStorage.setItem(STORAGE_KEY_HOSPITAL, hospital.id);
+    safeSetItem(STORAGE_KEY_HOSPITAL, hospital.id);
     // MIGRAÇÃO: sem estado por hospital — currentState permanece no placeholder.
     setCurrentState(DEFAULT_STATE);
-    localStorage.setItem(STORAGE_KEY_STATE, DEFAULT_STATE.id);
-  };
+    safeSetItem(STORAGE_KEY_STATE, DEFAULT_STATE.id);
+  }, []);
 
   useEffect(() => {
     fetchStatesAndHospitals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Memoizado: criado inline, o objeto era novo a cada render e os 70
+  // consumidores de useHospital re-renderizavam junto sem motivo.
+  const valor = useMemo(
+    () => ({ currentState, currentHospital, states, hospitals, isLoading, setCurrentHospital, fetchStatesAndHospitals }),
+    [currentState, currentHospital, states, hospitals, isLoading, setCurrentHospital, fetchStatesAndHospitals],
+  );
+
   return (
-    <HospitalContext.Provider
-      value={{
-        currentState,
-        currentHospital,
-        states,
-        hospitals,
-        isLoading,
-        setCurrentHospital,
-        fetchStatesAndHospitals,
-      }}
-    >
+    <HospitalContext.Provider value={valor}>
       {children}
     </HospitalContext.Provider>
   );

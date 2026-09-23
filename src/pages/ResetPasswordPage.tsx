@@ -81,7 +81,7 @@ export default function ResetPasswordPage() {
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (error) {
-      toast.error("Não foi possível redefinir a senha: " + error.message);
+      toast.error("Não foi possível redefinir a senha");
       return;
     }
     setDone(true);
@@ -94,17 +94,17 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-start sm:items-center justify-center bg-background px-4 pt-6 pb-10 sm:py-10">
+    <div className="min-h-screen flex items-start sm:items-center justify-center bg-background px-4 pt-6 pb-8 sm:py-8">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-md bg-card border border-border/70 rounded-2xl p-5 sm:p-6 shadow-xl"
+        className="w-full max-w-md bg-card border border-border/70 rounded-lg p-4 sm:p-6 shadow-md"
       >
         <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
           <KeyRound className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="preserve-case text-center text-lg font-semibold">
+        <h1 className="preserve-case text-center text-lg font-medium">
           {done ? "Senha redefinida" : "Definir nova senha"}
         </h1>
         <p className="preserve-case text-center text-xs text-muted-foreground mt-1">
@@ -114,7 +114,7 @@ export default function ResetPasswordPage() {
         </p>
 
         {done ? (
-          <div className="mt-6 flex items-center gap-2 justify-center text-emerald-600">
+          <div className="mt-6 flex items-center gap-2 justify-center text-released-on-soft">
             <CheckCircle2 className="h-5 w-5" />
             <span className="preserve-case text-sm">Tudo certo!</span>
           </div>
@@ -138,9 +138,9 @@ export default function ResetPasswordPage() {
             <span className="preserve-case text-sm">Validando link de recuperação...</span>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <div>
-              <Label className="text-[10px] font-medium text-muted-foreground mb-1.5 block tracking-[0.15em]">
+              <Label className="text-xs font-medium text-muted-foreground mb-2 block tracking-[0.15em]">
                 NOVA SENHA
               </Label>
               <div className="relative">
@@ -149,7 +149,7 @@ export default function ResetPasswordPage() {
                   type={show ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value.slice(0, 12))}
-                  className="pl-10 pr-12 h-12 text-base sm:h-11 sm:text-sm"
+                  className="pl-8 pr-8 h-12 text-base sm:h-11 sm:text-sm"
                   placeholder="6 a 12 caracteres"
                   maxLength={12}
                   autoFocus
@@ -169,7 +169,7 @@ export default function ResetPasswordPage() {
             </div>
 
             <div>
-              <Label className="text-[10px] font-medium text-muted-foreground mb-1.5 block tracking-[0.15em]">
+              <Label className="text-xs font-medium text-muted-foreground mb-2 block tracking-[0.15em]">
                 CONFIRMAR SENHA
               </Label>
               <div className="relative">
@@ -178,7 +178,7 @@ export default function ResetPasswordPage() {
                   type={show ? "text" : "password"}
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value.slice(0, 12))}
-                  className="pl-10 h-12 text-base sm:h-11 sm:text-sm"
+                  className="pl-8 h-12 text-base sm:h-11 sm:text-sm"
                   placeholder="Repita a nova senha"
                   maxLength={12}
                   autoCapitalize="none"
@@ -199,7 +199,7 @@ export default function ResetPasswordPage() {
               )}
             </Button>
 
-            <div className="pt-2 flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground/70">
+            <div className="pt-2 flex items-center justify-center gap-2 text-xs text-muted-foreground/70">
               <ShieldCheck className="h-3 w-3" />
               <span className="preserve-case">Conexão segura • LGPD • CFM</span>
             </div>

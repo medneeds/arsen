@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
+import { normalizePatientName, normalizePatientNameInput, normalizeAddressInput } from "@/utils/normalizePatientName";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -172,7 +173,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
       setTotal(count || 0);
     } catch (err: any) {
       console.error("Erro ao carregar prontuários:", err);
-      toast.error("Erro ao carregar prontuários", { description: err?.message });
+      toast.error("Não foi possível carregar prontuários", { description: err?.message });
     } finally {
       setIsLoading(false);
     }
@@ -211,7 +212,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
       // "Identificar" não aparece na prática; a RPC pode nem existir no backend novo.
       const { error } = await (supabase.rpc as any)("promote_unidentified_patient", {
         p_ni_id: promoteTarget.id,
-        p_full_name: promoteForm.full_name.trim().toUpperCase(),
+        p_full_name: normalizePatientName(promoteForm.full_name),
         p_birth_date: promoteForm.birth_date || null,
         p_sex: promoteForm.sex || null,
         p_cpf: promoteForm.cpf?.trim() || null,
@@ -228,7 +229,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
       fetchData();
     } catch (err: any) {
       console.error("Erro ao promover NI:", err);
-      toast.error("Erro ao identificar paciente", { description: err?.message });
+      toast.error("Não foi possível identificar paciente", { description: err?.message });
     } finally {
       setIsPromoting(false);
     }
@@ -245,29 +246,29 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total filtrado</p>
-              <p className="text-lg font-bold">{total.toLocaleString("pt-BR")}</p>
+              <p className="text-lg font-semibold">{total.toLocaleString("pt-BR")}</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-              <UserCheck className="h-4 w-4 text-emerald-600" />
+            <div className="h-9 w-9 rounded-lg bg-released/10 flex items-center justify-center">
+              <UserCheck className="h-4 w-4 text-released-on-soft" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Identificados (página)</p>
-              <p className="text-lg font-bold">{stats.identificados}</p>
+              <p className="text-lg font-semibold">{stats.identificados}</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-amber-500/10 flex items-center justify-center">
-              <UserX className="h-4 w-4 text-amber-600" />
+            <div className="h-9 w-9 rounded-lg bg-warning/10 flex items-center justify-center">
+              <UserX className="h-4 w-4 text-warning-on-soft" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">NI (página)</p>
-              <p className="text-lg font-bold">{stats.ni}</p>
+              <p className="text-lg font-semibold">{stats.ni}</p>
             </div>
           </CardContent>
         </Card>
@@ -330,7 +331,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
           {/* Filtros secundários */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
             <div>
-              <Label className="text-[10px] uppercase text-muted-foreground">Sexo</Label>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Sexo</Label>
               <Select value={sexFilter} onValueChange={(v) => setSexFilter(v as SexFilter)}>
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -342,23 +343,23 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
               </Select>
             </div>
             <div>
-              <Label className="text-[10px] uppercase text-muted-foreground">Cidade</Label>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Cidade</Label>
               <Input className="h-9" placeholder="Ex.: São Luís" value={cityFilter} onChange={(e) => setCityFilter(e.target.value)} />
             </div>
             <div>
-              <Label className="text-[10px] uppercase text-muted-foreground">Idade mín.</Label>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Idade mín.</Label>
               <Input className="h-9" type="number" min={0} max={130} placeholder="0" value={ageMin} onChange={(e) => setAgeMin(e.target.value)} />
             </div>
             <div>
-              <Label className="text-[10px] uppercase text-muted-foreground">Idade máx.</Label>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Idade máx.</Label>
               <Input className="h-9" type="number" min={0} max={130} placeholder="130" value={ageMax} onChange={(e) => setAgeMax(e.target.value)} />
             </div>
             <div>
-              <Label className="text-[10px] uppercase text-muted-foreground">Criado de</Label>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Criado de</Label>
               <Input className="h-9" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             </div>
             <div>
-              <Label className="text-[10px] uppercase text-muted-foreground">Criado até</Label>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Criado até</Label>
               <Input className="h-9" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
             </div>
           </div>
@@ -408,35 +409,35 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
                       Carregando prontuários...
                     </TableCell>
                   </TableRow>
                 ) : rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
                       Nenhum prontuário encontrado com os filtros atuais
                     </TableCell>
                   </TableRow>
                 ) : (
                   rows.map((p) => (
-                    <TableRow key={p.id} className={cn(p.is_unidentified && "bg-amber-500/5")}>
+                    <TableRow key={p.id} className={cn(p.is_unidentified && "bg-warning/5")}>
                       <TableCell>
-                        <Badge variant="outline" className="font-mono text-[10px]">
+                        <Badge variant="outline" className="font-mono text-xs">
                           {p.medical_record || "—"}
                         </Badge>
                         {p.is_unidentified && (
-                          <Badge className="ml-1 bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[9px] font-mono">
+                          <Badge className="ml-1 bg-warning/15 text-warning-on-soft border border-warning/30 text-xs font-mono">
                             {p.unidentified_code || "NI"}
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell>
-                        <p className="font-semibold text-sm">{p.full_name}</p>
+                        <p className="font-medium text-sm">{p.full_name}</p>
                         {p.social_name && (
-                          <p className="text-[11px] text-muted-foreground">Nome social: {p.social_name}</p>
+                          <p className="text-xs text-muted-foreground">Nome social: {p.social_name}</p>
                         )}
                       </TableCell>
                       <TableCell className="text-xs">{p.cpf || "—"}</TableCell>
@@ -452,7 +453,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
                           {p.is_unidentified && (
                             <Button
                               size="sm" variant="outline"
-                              className="h-7 text-[10px] border-amber-500/40 text-amber-700 hover:bg-amber-500/10"
+                              className="h-7 text-xs border-warning/40 text-warning-on-soft hover:bg-warning/10"
                               onClick={() => openPromote(p)}
                             >
                               <UserCheck className="h-3 w-3 mr-1" /> Identificar
@@ -473,7 +474,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
                             <Activity className="h-3.5 w-3.5" />
                           </Button>
                           <Button
-                            size="sm" variant="outline" className="h-7 text-[10px]"
+                            size="sm" variant="outline" className="h-7 text-xs"
                             onClick={() => onStartEncounter(p)}
                           >
                             <Play className="h-3 w-3 mr-1" /> Atender
@@ -530,11 +531,11 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-emerald-600" />
+              <UserCheck className="h-5 w-5 text-released-on-soft" />
               Identificar Paciente
             </DialogTitle>
             <DialogDescription>
-              Vinculando dados ao prontuário <span className="font-mono font-semibold">{promoteTarget?.medical_record}</span>
+              Vinculando dados ao prontuário <span className="font-mono font-medium">{promoteTarget?.medical_record}</span>
               {promoteTarget?.unidentified_code && (
                 <> (código original: <span className="font-mono">{promoteTarget.unidentified_code}</span>)</>
               )}.
@@ -547,7 +548,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
               <Label>Nome Completo *</Label>
               <Input
                 value={promoteForm.full_name}
-                onChange={(e) => setPromoteForm(f => ({ ...f, full_name: e.target.value.toUpperCase() }))}
+                onChange={(e) => setPromoteForm(f => ({ ...f, full_name: normalizePatientNameInput(e.target.value) }))}
                 placeholder="NOME COMPLETO DO PACIENTE"
               />
             </div>
@@ -580,7 +581,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
             <div className="md:col-span-2">
               <Label>Nome da Mãe</Label>
               <Input value={promoteForm.mother_name}
-                onChange={(e) => setPromoteForm(f => ({ ...f, mother_name: e.target.value.toUpperCase() }))} />
+                onChange={(e) => setPromoteForm(f => ({ ...f, mother_name: normalizePatientNameInput(e.target.value) }))} />
             </div>
             <div>
               <Label>Telefone</Label>
@@ -590,14 +591,14 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
             <div>
               <Label>Endereço</Label>
               <Input value={promoteForm.address}
-                onChange={(e) => setPromoteForm(f => ({ ...f, address: e.target.value.toUpperCase() }))} />
+                onChange={(e) => setPromoteForm(f => ({ ...f, address: normalizeAddressInput(e.target.value) }))} />
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setPromoteTarget(null)}>Cancelar</Button>
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-released hover:bg-released text-white"
               onClick={handlePromote}
               disabled={isPromoting || !promoteForm.full_name.trim()}
             >

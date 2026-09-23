@@ -61,7 +61,7 @@ function copyValue(value: string | null | undefined, label: string) {
   if (!value) return;
   navigator.clipboard.writeText(value).then(
     () => toast.success(`${label} copiado`),
-    () => toast.error("Falha ao copiar"),
+    () => toast.error("Não foi possível copiar"),
   );
 }
 
@@ -112,22 +112,22 @@ export function PatientIdentityHeader({
       )}>
         <div className="min-w-0 flex-1">
           <h3 className={cn(
-            "patient-id font-bold leading-tight text-foreground",
+            "patient-id font-semibold leading-tight text-foreground",
             alwaysExpanded ? "text-base sm:text-lg break-words" : "truncate",
             isCockpit ? "text-sm" : "text-base"
           )}>
             {displayName}
           </h3>
           <p className={cn(
-            "text-muted-foreground mt-0.5 preserve-case",
-            isCockpit ? "text-[11px]" : "text-xs"
+            "text-muted-foreground mt-1 preserve-case",
+            isCockpit ? "text-xs" : "text-xs"
           )}>
             {age ? `${age} anos` : "—"} • {sector || "—"} • Leito{" "}
             <span className="font-medium text-foreground">{bed}</span>
           </p>
         </div>
         <div className={cn(
-          "flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap",
+          "flex items-center gap-2 px-2 py-1 rounded-md text-xs font-medium uppercase tracking-wide whitespace-nowrap",
           status.bg
         )}>
           <span className={cn("h-1.5 w-1.5 rounded-full", status.dot)} />
@@ -150,16 +150,16 @@ export function PatientIdentityHeader({
           <button
             type="button"
             onClick={() => setShowFullId((v) => !v)}
-            className="mt-2 w-full inline-flex items-center justify-between gap-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border/50 hover:bg-muted/40"
+            className="mt-2 w-full inline-flex items-center justify-between gap-1 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md border border-border/50 hover:bg-muted/40"
           >
-            <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-2">
               <IdCard className="h-3 w-3" />
               {showFullId ? "Ocultar dados completos" : "Ver dados do prontuário"}
             </span>
             <ChevronDown className={cn("h-3 w-3 transition-transform", showFullId && "rotate-180")} />
           </button>
           {showFullId && (
-            <div className="mt-2 rounded-md border border-border/60 bg-background/60 p-2.5 space-y-1.5 text-[11px]">
+            <div className="mt-2 rounded-md border border-border/60 bg-background/60 p-3 space-y-2 text-xs">
               <FullIdRow label="Nome social" value={registry?.socialName} />
               <FullIdRow label="CPF" value={registry?.cpf} mono />
               <FullIdRow label="CNS" value={registry?.cns} mono />
@@ -179,13 +179,13 @@ export function PatientIdentityHeader({
               <FullIdRow label="Alergias" value={registry?.allergies} />
               <FullIdRow label="Comorbidades" value={registry?.comorbidities} />
               {registry?.isUnidentified && (
-                <div className="text-[10px] uppercase font-semibold text-warning inline-flex items-center gap-1">
+                <div className="text-xs uppercase tracking-wider font-medium text-warning inline-flex items-center gap-1">
                   <ShieldAlert className="h-3 w-3" />
                   Paciente não identificado · {registry.unidentifiedCode || "—"}
                 </div>
               )}
               {patientId && (
-                <div className="pt-1 border-t border-border/40 text-[10px] text-muted-foreground/80 font-mono break-all">
+                <div className="pt-1 border-t border-border/40 text-xs text-muted-foreground/80 font-mono break-all">
                   ID interno: {patientId}
                 </div>
               )}
@@ -196,7 +196,7 @@ export function PatientIdentityHeader({
 
       {/* Painel completo sempre aberto (usado em telas onde a revisão cadastral é prioritária) */}
       {alwaysExpanded && (
-        <div className="mt-2 rounded-md border border-border/60 bg-background/60 p-3 text-[11px]">
+        <div className="mt-2 rounded-md border border-border/60 bg-background/60 p-3 text-xs">
           {/* Linha 1: documentos */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2">
             <CompactIdRow label="CPF" value={registry?.cpf} mono />
@@ -237,7 +237,7 @@ export function PatientIdentityHeader({
           </div>
 
           {registry?.isUnidentified && (
-            <div className="mt-2 text-[10px] uppercase font-semibold text-warning inline-flex items-center gap-1">
+            <div className="mt-2 text-xs uppercase tracking-wider font-medium text-warning inline-flex items-center gap-1">
               <ShieldAlert className="h-3 w-3" />
               Paciente não identificado · {registry.unidentifiedCode || "—"}
             </div>
@@ -251,8 +251,8 @@ export function PatientIdentityHeader({
 function IdRow({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
   const has = !!value;
   return (
-    <div className="group flex items-center justify-between gap-2 text-[11px]">
-      <span className="text-muted-foreground uppercase tracking-wide text-[10px]">{label}</span>
+    <div className="group flex items-center justify-between gap-2 text-xs">
+      <span className="text-muted-foreground uppercase tracking-wide text-xs">{label}</span>
       <span className="flex items-center gap-1 min-w-0">
         <span className={cn("truncate font-medium", has ? "text-foreground" : "text-muted-foreground/60", mono && "font-mono")}>
           {value || "—"}
@@ -261,7 +261,7 @@ function IdRow({ label, value, mono }: { label: string; value?: string | null; m
           <button
             type="button"
             onClick={() => copyValue(value, label)}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted/60"
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-muted/60"
             title={`Copiar ${label}`}
           >
             <Copy className="h-3 w-3 text-muted-foreground" />
@@ -275,7 +275,7 @@ function IdRow({ label, value, mono }: { label: string; value?: string | null; m
 function FullIdRow({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
   return (
     <div className="grid grid-cols-[110px_1fr] gap-2 items-start">
-      <span className="text-muted-foreground uppercase tracking-wide text-[10px]">{label}</span>
+      <span className="text-muted-foreground uppercase tracking-wide text-xs">{label}</span>
       <span className={cn("text-foreground break-words", mono && "font-mono", !value && "text-muted-foreground/60")}>
         {value || "—"}
       </span>
@@ -297,8 +297,8 @@ function CompactIdRow({
 }) {
   const has = !!value;
   return (
-    <div className={cn("group flex flex-col gap-0.5 min-w-0", wide && "col-span-full")}>
-      <span className="text-muted-foreground uppercase tracking-wide text-[10px] leading-none">
+    <div className={cn("group flex flex-col gap-1 min-w-0", wide && "col-span-full")}>
+      <span className="text-muted-foreground uppercase tracking-wide text-xs leading-none">
         {label}
       </span>
       <div className="flex items-center gap-1 min-w-0">
@@ -315,7 +315,7 @@ function CompactIdRow({
           <button
             type="button"
             onClick={() => copyValue(value, label)}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted/60 shrink-0"
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-muted/60 shrink-0"
             title={`Copiar ${label}`}
           >
             <Copy className="h-3 w-3 text-muted-foreground" />

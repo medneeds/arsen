@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useHospital } from "@/contexts/HospitalContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -41,6 +42,8 @@ const PRINTABLE_TYPES = new Set<TimelineEventType>([
   "admission_history",
   "discharge_document",
   "culture_result",
+  "documento_medico",
+  "receituario",
 ]);
 
 const ICONS: Record<TimelineEventType, React.ElementType> = {
@@ -59,6 +62,8 @@ const ICONS: Record<TimelineEventType, React.ElementType> = {
   vital_signs: HeartPulse,
   round: Users,
   discharge_document: FileCheck,
+  documento_medico: FileText,
+  receituario: FileText,
 };
 
 const ALLOWED_PROFILES = new Set([
@@ -71,6 +76,9 @@ const ALLOWED_PROFILES = new Set([
 ]);
 
 export default function HistoricoPacientePage() {
+  // Necessario para os reimpressos: o nome do hospital entra no cabecalho do
+  // receituario e do documento medico.
+  const { currentHospital } = useHospital();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -90,7 +98,7 @@ export default function HistoricoPacientePage() {
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <Card className="max-w-md p-6 text-center space-y-3">
           <Hospital className="h-10 w-10 mx-auto text-muted-foreground" />
-          <h1 className="text-lg font-semibold">ACESSO RESTRITO</h1>
+          <h1 className="text-lg font-medium">ACESSO RESTRITO</h1>
           <p className="text-sm text-muted-foreground">
             O histórico longitudinal do prontuário é restrito a médicos, gestores e coordenações
             (médica, enfermagem, multiprofissional).
@@ -415,13 +423,48 @@ export default function HistoricoPacientePage() {
           .eq("id", e.event_id)
           .maybeSingle();
         if (!data) { alert("Sumário de alta não encontrado."); setPrintingId(null); return; }
-        // Reaproveita o mesmo builder usado na emissão original (Norma Zero) —
-        // em vez de remontar o HTML na mão como os demais tipos acima, garante
-        // que a reimpressão saia idêntica ao documento que foi de fato emitido.
         await printDischargeDocument(
           fromAltaTipoDb((data as any).tipo),
           (data as any).conteudo as DischargeDocPayload,
         );
+        setPrintingId(null);
+        return;
+      }
+
+      if (e.event_type === "documento_medico") {
+        const { data } = await supabase
+          .from("documentos_medicos")
+          .select("*")
+          .eq("id", e.event_id)
+          .maybeSingle();
+        if (!data) { alert("Documento não encontrado."); setPrintingId(null); return; }
+        const { printDocumentoMedico } = await import("@/lib/documentoMedico");
+        // O `hospitalName` era `x ? undefined : undefined` — os dois ramos
+        // davam undefined, entao o nome do hospital NUNCA era passado. E o
+        // `onPrint` nao existe na assinatura. Passa o hospital de verdade.
+        await printDocumentoMedico(data as any, {
+          hospitalName: currentHospital?.name,
+        });
+        setPrintingId(null);
+        return;
+      }
+
+      if (e.event_type === "receituario") {
+        const { data } = await supabase
+          .from("receituarios")
+          .select("*")
+          .eq("id", e.event_id)
+          .maybeSingle();
+        if (!data) { alert("Receituário não encontrado."); setPrintingId(null); return; }
+        const { printReceituario } = await import("@/lib/receituario");
+        // AUDITORIA 18/09/2026 — aqui ia `{ onPrint: () => {} }`, um OBJETO, no
+        // parametro que e o NOME DO HOSPITAL (string). Objeto e truthy, entao
+        // passava direto pelo `hospitalName || "<padrao>"` de receituario.ts e
+        // era interpolado no documento: o receituario reimpresso pelo historico
+        // saia com "[object Object]" onde deveria estar o nome do hospital.
+        // Os outros cinco chamadores ja passavam a string certa; so este nao.
+        // O `onPrint` sequer existe na assinatura da funcao.
+        await printReceituario(data as any, currentHospital?.name);
         setPrintingId(null);
         return;
       }
@@ -450,7 +493,7 @@ export default function HistoricoPacientePage() {
           <Separator orientation="vertical" className="h-6" />
           <Clock className="h-4 w-4 text-primary" />
           <div className="flex-1 min-w-0">
-            <h1 className="text-base font-semibold truncate patient-id">
+            <h1 className="text-base font-medium truncate patient-id">
               Histórico longitudinal • {patientName}
             </h1>
             <p className="text-xs text-muted-foreground">
@@ -472,7 +515,7 @@ export default function HistoricoPacientePage() {
               placeholder="Buscar no histórico..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-7 h-8 text-xs"
+              className="pl-6 h-8 text-xs"
             />
           </div>
           <Input
@@ -501,7 +544,7 @@ export default function HistoricoPacientePage() {
                 {(Object.keys(EVENT_TYPE_LABELS) as TimelineEventType[]).map((t) => (
                   <label
                     key={t}
-                    className="flex items-center gap-2 p-1.5 hover:bg-muted rounded cursor-pointer text-xs"
+                    className="flex items-center gap-2 p-2 hover:bg-muted rounded-md cursor-pointer text-xs"
                   >
                     <Checkbox
                       checked={selectedTypes.includes(t)}
@@ -509,7 +552,7 @@ export default function HistoricoPacientePage() {
                     />
                     <span className="flex-1">{EVENT_TYPE_LABELS[t]}</span>
                     {counts[t] ? (
-                      <Badge variant="secondary" className="h-4 text-[10px] px-1">
+                      <Badge variant="secondary" className="h-4 text-xs px-1">
                         {counts[t]}
                       </Badge>
                     ) : null}
@@ -539,7 +582,7 @@ export default function HistoricoPacientePage() {
             subMessage="Buscando todos os registros longitudinais do paciente"
           />
         ) : events.length === 0 ? (
-          <Card className="p-12 text-center">
+          <Card className="p-8 text-center">
             <Clock className="h-10 w-10 mx-auto text-muted-foreground/40 mb-2" />
             <p className="text-sm text-muted-foreground">
               Nenhum evento encontrado para os filtros aplicados.
@@ -549,11 +592,11 @@ export default function HistoricoPacientePage() {
           <div className="space-y-6 max-w-4xl mx-auto">
             {grouped.map(([day, items]) => (
               <div key={day}>
-                <div className="sticky top-[105px] z-[1] bg-background/95 backdrop-blur py-1.5 mb-2 border-b print:static">
+                <div className="sticky top-[105px] z-[1] bg-background/95 backdrop-blur py-2 mb-2 border-b print:static">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       {format(new Date(day + "T00:00:00"), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                      <Badge variant="secondary" className="ml-2 h-4 text-[10px]">
+                      <Badge variant="secondary" className="ml-2 h-4 text-xs">
                         {items.length}
                       </Badge>
                     </h2>
@@ -562,7 +605,7 @@ export default function HistoricoPacientePage() {
                         items,
                         format(new Date(day + "T00:00:00"), "EEEE, dd/MM/yyyy", { locale: ptBR })
                       )}
-                      className="print:hidden flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-muted"
+                      className="print:hidden flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-muted"
                       title="Imprimir registros deste dia"
                     >
                       <Printer className="h-3 w-3" />
@@ -581,19 +624,19 @@ export default function HistoricoPacientePage() {
                         )}>
                           <Icon className="h-2.5 w-2.5" />
                         </div>
-                        <Card className="p-3 hover:shadow-sm transition-shadow group">
+                        <Card className="p-3 hover:shadow-sm transition-shadow-sm group">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <Badge variant="outline" className={cn("h-5 text-[10px]", EVENT_TYPE_COLORS[e.event_type])}>
+                                <Badge variant="outline" className={cn("h-5 text-xs", EVENT_TYPE_COLORS[e.event_type])}>
                                   {EVENT_TYPE_LABELS[e.event_type]}
                                 </Badge>
-                                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
                                   {format(new Date(e.event_at), "HH:mm")}
                                 </span>
                                 {e.author_email && (
-                                  <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
                                     <UserIcon className="h-3 w-3" />
                                     {e.author_email}
                                   </span>
@@ -601,14 +644,14 @@ export default function HistoricoPacientePage() {
                               </div>
                               <p className="text-sm font-medium mt-1">{e.event_label}</p>
                               {e.summary && (
-                                <p className="text-xs text-muted-foreground mt-0.5">{e.summary}</p>
+                                <p className="text-xs text-muted-foreground mt-1">{e.summary}</p>
                               )}
                             </div>
                             {PRINTABLE_TYPES.has(e.event_type) && (
                               <button
                                 onClick={() => printDocumentFromHistory(e)}
                                 disabled={printingId === e.event_id}
-                                className="print:hidden opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-50"
+                                className="print:hidden opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-50"
                                 title="Imprimir documento"
                               >
                                 {printingId === e.event_id

@@ -67,14 +67,14 @@ const PROCEDURES: Procedure[] = [
 
 /* Quick-access buttons */
 const QUICK_ACCESS = [
-  { code: "02.06.01.007-9", label: "TC Crânio", color: "bg-blue-600 hover:bg-blue-700 text-white" },
-  { code: "02.06.03.001-0", label: "TC Tórax", color: "bg-emerald-600 hover:bg-emerald-700 text-white" },
-  { code: "02.06.03.002-9", label: "TC Abdome Sup", color: "bg-amber-600 hover:bg-amber-700 text-white" },
-  { code: "02.06.03.003-7", label: "TC Abdome Inf", color: "bg-orange-600 hover:bg-orange-700 text-white" },
-  { code: "02.06.03.004-5", label: "TC Abdome Total", color: "bg-red-600 hover:bg-red-700 text-white" },
-  { code: "02.06.01.005-2", label: "AngioTC Pulmonar", color: "bg-purple-600 hover:bg-purple-700 text-white" },
-  { code: "02.06.01.001-0", label: "AngioTC Cervical", color: "bg-indigo-600 hover:bg-indigo-700 text-white" },
-  { code: "02.06.03.005-3", label: "TC Pelve", color: "bg-pink-600 hover:bg-pink-700 text-white" },
+  { code: "02.06.01.007-9", label: "TC Crânio", color: "bg-primary hover:bg-primary text-white" },
+  { code: "02.06.03.001-0", label: "TC Tórax", color: "bg-released hover:bg-released text-white" },
+  { code: "02.06.03.002-9", label: "TC Abdome Sup", color: "bg-warning hover:bg-warning text-white" },
+  { code: "02.06.03.003-7", label: "TC Abdome Inf", color: "bg-warning hover:bg-warning text-white" },
+  { code: "02.06.03.004-5", label: "TC Abdome Total", color: "bg-critical hover:bg-critical text-white" },
+  { code: "02.06.01.005-2", label: "AngioTC Pulmonar", color: "bg-primary hover:bg-primary text-white" },
+  { code: "02.06.01.001-0", label: "AngioTC Cervical", color: "bg-primary hover:bg-primary text-white" },
+  { code: "02.06.03.005-3", label: "TC Pelve", color: "bg-primary hover:bg-primary text-white" },
 ];
 
 /* ── Fixed institution data ────────────────────────────────────── */
@@ -397,7 +397,7 @@ const RequisicaoImagensPage = () => {
           solicitadoPor = (prof as any)?.id ?? null;
         }
 
-        await supabase.from("solicitacoes_exame").insert({
+        const { error: erroNaoBloqueante2 } = await supabase.from("solicitacoes_exame").insert({
           internacao_id: internacaoId,
           categoria: "apac",
           itens: apacItems.length > 0 ? apacItems : [{ name: "APAC" }],
@@ -407,6 +407,8 @@ const RequisicaoImagensPage = () => {
           observacoes: notesMeta.join(" | ") || null,
           solicitado_por: solicitadoPor,
         });
+        // Nao bloqueia o fluxo, mas nao pode sumir: antes o resultado era descartado.
+        if (erroNaoBloqueante2) console.warn("[RequisicaoImagensPage] falha nao-bloqueante ao registrar em solicitacoes_exame:", erroNaoBloqueante2);
       } catch (err) {
         console.warn("[APAC] falha ao registrar em solicitacoes_exame:", err);
       }
@@ -432,11 +434,11 @@ const RequisicaoImagensPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-primary/10">
+            <div className="p-3 rounded-lg bg-primary/10">
               <ScanLine className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">APAC — Solicitação de Alta Complexidade</h1>
+              <h1 className="text-2xl font-semibold text-foreground">APAC — Solicitação de Alta Complexidade</h1>
               <p className="text-sm text-muted-foreground">Laudo para Solicitação/Autorização de Procedimento Ambulatorial</p>
             </div>
           </div>
@@ -453,7 +455,7 @@ const RequisicaoImagensPage = () => {
         {/* Quick access buttons */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Acesso Rápido — Tomografias</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Acesso Rápido — Tomografias</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
@@ -464,7 +466,7 @@ const RequisicaoImagensPage = () => {
                   <Button
                     key={qa.code}
                     size="sm"
-                    className={`${isSelected ? "ring-2 ring-offset-2 ring-primary opacity-60" : qa.color} transition-all font-semibold`}
+                    className={`${isSelected ? "ring-2 ring-offset-2 ring-primary opacity-60" : qa.color} transition-all font-medium`}
                     onClick={() => proc && addProcedure(proc)}
                     disabled={isSelected}
                   >
@@ -483,7 +485,7 @@ const RequisicaoImagensPage = () => {
             {/* Institution (read-only) */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Estabelecimento Solicitante</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Estabelecimento Solicitante</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex gap-3">
@@ -493,7 +495,7 @@ const RequisicaoImagensPage = () => {
                   </div>
                   <div className="w-28">
                     <Label className="text-xs text-muted-foreground">CNES</Label>
-                    <Input value={INSTITUTION.cnes} readOnly className="bg-muted/50 font-mono font-bold text-sm text-center" />
+                    <Input value={INSTITUTION.cnes} readOnly className="bg-muted/50 font-mono font-semibold text-sm text-center" />
                   </div>
                 </div>
               </CardContent>
@@ -502,7 +504,7 @@ const RequisicaoImagensPage = () => {
             {/* Patient identification */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Identificação do Paciente</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Identificação do Paciente</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-3 gap-3">
@@ -565,7 +567,7 @@ const RequisicaoImagensPage = () => {
             {/* Justification */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Justificativa Clínica</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Justificativa Clínica</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
@@ -599,7 +601,7 @@ const RequisicaoImagensPage = () => {
             {/* Manual / Avulso (sem SIGTAP) — destacado no topo */}
             <Card className="border-2 border-primary/40 bg-primary/5">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+                <CardTitle className="text-sm font-medium text-primary uppercase tracking-wider flex items-center gap-2">
                   <Plus className="h-4 w-4" /> Procedimento avulso (sem SIGTAP)
                 </CardTitle>
                 <p className="text-xs text-muted-foreground">
@@ -646,7 +648,7 @@ const RequisicaoImagensPage = () => {
             {/* Procedure search */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Catálogo de Procedimentos SIGTAP</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Catálogo de Procedimentos SIGTAP</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex gap-2">
@@ -656,7 +658,7 @@ const RequisicaoImagensPage = () => {
                       value={searchProcedure}
                       onChange={(e) => setSearchProcedure(e.target.value)}
                       placeholder="Buscar por nome ou código..."
-                      className="pl-9"
+                      className="pl-8"
                     />
                   </div>
                   <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -699,7 +701,7 @@ const RequisicaoImagensPage = () => {
             <Card className={selectedProcedures.length > 0 ? "border-primary/30" : ""}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                     Procedimentos Selecionados ({selectedProcedures.length}/6)
                   </CardTitle>
                 </div>
@@ -742,7 +744,7 @@ const RequisicaoImagensPage = () => {
             {/* Contrast & Sedation */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Requisitos do Exame</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Requisitos do Exame</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between rounded-lg border p-3">
@@ -771,7 +773,7 @@ const RequisicaoImagensPage = () => {
             {/* Doctor info */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Profissional Solicitante</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Profissional Solicitante</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>

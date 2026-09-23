@@ -153,27 +153,32 @@ export function CidSearchInput({
             onFocus={() => setIsOpen(true)}
             onClick={() => setIsOpen(true)}
             onKeyDown={e => {
-              // Enter com texto digitado: aceitar entrada livre mesmo sem estar no catálogo
               if (e.key === "Enter" && search.trim()) {
                 const exact = catalog.find(c => normalize(c.code) === normalize(search.trim()));
                 if (exact) {
                   handleSelect(exact);
                 } else {
-                  // Aceitar como entrada livre: "CÓDIGO - descrição" ou só o código
-                  onChange(search.trim());
-                  setSearch("");
-                  setIsOpen(false);
+                  // Tenta buscar pelo início do código (ex: "I10" → "I10 - Hipertensão...")
+                  const partial = catalog.find(c => normalize(c.code).startsWith(normalize(search.trim())));
+                  if (partial) {
+                    handleSelect(partial);
+                  }
+                  // Se não encontrar no catálogo, não salva — exige seleção do dropdown
                 }
                 e.preventDefault();
               }
               if (e.key === "Escape") setIsOpen(false);
             }}
             onBlur={() => {
-              // Ao sair do campo sem selecionar: se há texto digitado, aceitar
+              // Ao sair do campo: tenta encontrar no catálogo antes de salvar
               setTimeout(() => {
                 if (search.trim() && !value) {
-                  onChange(search.trim());
-                  setSearch("");
+                  const exact = catalog.find(c => normalize(c.code) === normalize(search.trim()));
+                  if (exact) {
+                    handleSelect(exact);
+                  } else {
+                    setSearch(""); // descarta texto que não está no catálogo
+                  }
                 }
               }, 200);
             }}
@@ -195,9 +200,9 @@ export function CidSearchInput({
       )}
 
       {isOpen && !value && (
-        <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg overflow-hidden">
-          <div className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground bg-muted/40 border-b flex items-center justify-between">
-            <span>{search ? `${filtered.length} resultado(s)` : `${catalog.length} CIDs disponíveis`}</span>
+        <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md overflow-hidden">
+          <div className="px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground bg-muted/40 border-b flex items-center justify-between">
+            <span>{search ? `${filtered.length} ${(filtered.length) === 1 ? 'resultado' : 'resultados'}` : `${catalog.length} CIDs disponíveis`}</span>
             <span className="font-normal">Role ou digite</span>
           </div>
           <div ref={listRef} className="max-h-72 overflow-y-auto">
@@ -215,7 +220,7 @@ export function CidSearchInput({
 
             {!isLoading && grouped.map(([cat, items]) => (
               <div key={cat}>
-                <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500 bg-slate-50 sticky top-0">
+                <div className="px-3 py-1 text-xs font-medium uppercase tracking-wide text-muted-foreground bg-muted sticky top-0">
                   {cat}
                 </div>
                 {items.map(item => (
@@ -225,7 +230,7 @@ export function CidSearchInput({
                     onClick={() => handleSelect(item)}
                     className="w-full text-left px-3 py-2 hover:bg-accent text-sm flex items-start gap-2 border-b last:border-b-0"
                   >
-                    <Badge variant="outline" className="shrink-0 font-mono text-[10px] mt-0.5">
+                    <Badge variant="outline" className="shrink-0 font-mono text-xs mt-1">
                       {item.code}
                     </Badge>
                     <span className="text-xs leading-snug">{item.description}</span>

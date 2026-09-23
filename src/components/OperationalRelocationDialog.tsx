@@ -206,7 +206,7 @@ export function OperationalRelocationDialog({
               </div>
               <div>
                 <DialogTitle>Remanejamento operacional</DialogTitle>
-                <DialogDescription className="text-xs mt-0.5">
+                <DialogDescription className="text-xs mt-1">
                   Mudança de leito por motivo administrativo — sem decisão clínica.
                   O histórico do paciente é preservado integralmente.
                 </DialogDescription>
@@ -217,9 +217,9 @@ export function OperationalRelocationDialog({
           {isTransferPending ? (
             <div className="py-2">
               <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
-                <div className="space-y-1.5">
-                  <p className="text-sm font-semibold text-destructive">
+                <AlertTriangle className="h-5 w-5 text-destructive mt-1 shrink-0" />
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-destructive">
                     Transferência {transferPendingType} sinalizada — remanejamento bloqueado
                   </p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
@@ -239,20 +239,20 @@ export function OperationalRelocationDialog({
 
           <div className="space-y-4 py-2">
             {/* Paciente */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                 Paciente
               </Label>
               <div className="p-3 bg-muted/60 rounded-lg">
-                <p className="font-medium text-sm uppercase">{patient.name}</p>
-                <p className="text-xs text-muted-foreground mt-0.5 uppercase">
+                <p className="font-medium text-sm uppercase tracking-wider">{patient.name}</p>
+                <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wider">
                   {sectorLabelFromCode(patient.sector) || patient.sector} • Leito {patient.bedNumber}
                 </p>
               </div>
             </div>
 
             {/* Setor destino */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wider">Setor de destino *</Label>
               <Select value={targetSector} onValueChange={(v) => { setTargetSector(v); setTargetBedId(""); }}>
                 <SelectTrigger>
@@ -264,14 +264,14 @@ export function OperationalRelocationDialog({
                       <div className="flex items-center gap-2">
                         <BedDouble className="h-3.5 w-3.5 text-muted-foreground" />
                         <span>{sectorLabelFromCode(s) || s}</span>
-                        <Badge variant="secondary" className="ml-1 text-[10px]">
+                        <Badge variant="secondary" className="ml-1 text-xs">
                           {vacantBeds.filter((b) => b.sector === s).length} vago(s)
                         </Badge>
                       </div>
                     </SelectItem>
                   ))}
                   {!loading && sectors.length === 0 && (
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    <div className="px-2 py-2 text-xs text-muted-foreground">
                       Nenhum leito vago nesta unidade.
                     </div>
                   )}
@@ -281,7 +281,7 @@ export function OperationalRelocationDialog({
 
             {/* Leito destino */}
             {targetSector && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-wider">Leito vago *</Label>
                 <Select value={targetBedId} onValueChange={setTargetBedId}>
                   <SelectTrigger>
@@ -299,7 +299,7 @@ export function OperationalRelocationDialog({
             )}
 
             {/* Motivo */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wider">Motivo operacional *</Label>
               <Select value={reasonValue} onValueChange={setReasonValue}>
                 <SelectTrigger>
@@ -313,7 +313,7 @@ export function OperationalRelocationDialog({
               </Select>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wider">
                 Observação {reasonValue === "outro"
                   ? <span className="text-destructive normal-case">(obrigatória)</span>
@@ -328,9 +328,9 @@ export function OperationalRelocationDialog({
               />
             </div>
 
-            <div className="flex items-start gap-2 p-2.5 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-              <p className="text-[11px] text-foreground leading-relaxed">
+            <div className="flex items-start gap-2 p-3 rounded-md bg-warning-soft border border-warning-border">
+              <AlertTriangle className="h-4 w-4 text-warning-on-soft mt-1 shrink-0" />
+              <p className="text-xs text-foreground leading-relaxed">
                 Esta ação <strong>não substitui</strong> transferência clínica.
                 Para mudanças por decisão médica, use o <strong>Painel Clínico</strong> do paciente.
               </p>

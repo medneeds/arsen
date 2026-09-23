@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
+import { safeSetItem } from "@/lib/safeStorage";
 
 export type ReceptionPoint = "vertical" | "horizontal";
 
@@ -103,10 +104,11 @@ export function useReceptionPost(): ReceptionPostState {
       return;
     }
     const beat = async () => {
-      await supabase
+      const { error } = await supabase
         .from("sessoes_recepcao")
         .update({ ultimo_heartbeat_em: new Date().toISOString() })
         .eq("id", sessionId);
+      if (error) console.debug("[useReceptionPost] batimento nao gravou:", error.message);
     };
     beat();
     heartbeatRef.current = window.setInterval(beat, HEARTBEAT_MS);
@@ -121,16 +123,17 @@ export function useReceptionPost(): ReceptionPostState {
 
       // 1) Encerra sessão anterior se existir e for diferente
       if (sessionId && point !== next) {
-        await supabase
+        const { error: erroEncerrar } = await supabase
           .from("sessoes_recepcao")
           .update({ finalizado_em: new Date().toISOString() })
           .eq("id", sessionId);
+        if (erroEncerrar) console.warn("[useReceptionPost] sessao anterior nao foi encerrada:", erroEncerrar);
       }
 
       // 2) Se for o mesmo ponto e sessão já ativa, só persiste localmente
       if (sessionId && point === next) {
         setPointState(next);
-        localStorage.setItem(`${STORAGE_KEY}:${user.id}`, next);
+        safeSetItem(`${STORAGE_KEY}:${user.id}`, next);
         return;
       }
 
@@ -158,8 +161,8 @@ export function useReceptionPost(): ReceptionPostState {
       setPointState(next);
       setSessionId(row.id);
       setStartedAt(row.iniciado_em);
-      localStorage.setItem(`${STORAGE_KEY}:${user.id}`, next);
-      localStorage.setItem(`${SESSION_KEY}:${user.id}`, row.id);
+      safeSetItem(`${STORAGE_KEY}:${user.id}`, next);
+      safeSetItem(`${SESSION_KEY}:${user.id}`, row.id);
     },
     [user, hospitalId, sessionId, point],
   );
@@ -167,10 +170,11 @@ export function useReceptionPost(): ReceptionPostState {
   const clearPoint = useCallback(async () => {
     if (!user?.id) return;
     if (sessionId) {
-      await supabase
+      const { error: erroLimpar } = await supabase
         .from("sessoes_recepcao")
         .update({ finalizado_em: new Date().toISOString() })
         .eq("id", sessionId);
+      if (erroLimpar) console.warn("[useReceptionPost] sessao nao foi encerrada ao sair do posto:", erroLimpar);
     }
     setPointState(null);
     setSessionId(null);

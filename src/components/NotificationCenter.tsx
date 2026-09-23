@@ -208,34 +208,34 @@ export const NotificationCenter = () => {
           {unreadNotifications > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -top-1 -right-1 h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-[9px] sm:text-[10px] font-bold shadow-lg animate-pulse"
+              className="absolute -top-1 -right-1 h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-xs sm:text-xs font-semibold shadow-md animate-pulse"
             >
               {unreadNotifications > 9 ? '9+' : unreadNotifications}
             </Badge>
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-xl border-l-0 bg-gradient-to-br from-background via-background to-accent/5 p-0">
+      <SheetContent className="w-full sm:max-w-xl border-l-0 bg-background p-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent pointer-events-none" />
         
         <SheetHeader className="relative px-6 pt-6 pb-4 border-b border-border/50 bg-card/50 backdrop-blur-xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg">
+              <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
                 <Bell className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <SheetTitle className="text-lg font-bold tracking-tight">
+                <SheetTitle className="text-lg font-semibold tracking-tight">
                   Central de Notificações
                 </SheetTitle>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground mt-1">
                   {currentDepartment}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               {notifications.length > 0 && (
-                <Badge variant="secondary" className="h-7 px-3 font-semibold shadow-sm">
+                <Badge variant="secondary" className="h-7 px-3 font-medium shadow-sm">
                   {notifications.length} {notifications.length === 1 ? 'item' : 'itens'}
                 </Badge>
               )}
@@ -254,16 +254,16 @@ export const NotificationCenter = () => {
         </SheetHeader>
 
         <ScrollArea className="relative h-[calc(100vh-140px)] px-6 py-4">
-          <div className="space-y-5">
+          <div className="space-y-4">
             {/* Checklist Items */}
             {checklistItems.length > 0 && (
               <div className="animate-fade-in">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-600/10 flex items-center justify-center">
-                    <ListChecks className="h-4 w-4 text-blue-600" />
+                  <div className="h-8 w-8 rounded-lg bg-muted/10 flex items-center justify-center">
+                    <ListChecks className="h-4 w-4 text-foreground" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-bold tracking-tight">Check-list</h3>
+                    <h3 className="text-sm font-semibold tracking-tight">Check-list</h3>
                     <p className="text-xs text-muted-foreground">
                       {checklistItems.filter(i => !i.completed).length} pendente(s)
                     </p>
@@ -291,8 +291,8 @@ export const NotificationCenter = () => {
                             className={cn(
                               "h-5 w-5 transition-all duration-300",
                               item.completed 
-                                ? "text-green-500 fill-green-500" 
-                                : "text-muted-foreground hover:text-green-500"
+                                ? "text-released fill-green-500" 
+                                : "text-muted-foreground hover:text-released"
                             )}
                           />
                         </Button>
@@ -317,7 +317,7 @@ export const NotificationCenter = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => markAsRead(item.id)}
-                              className="h-7 w-7 p-0 hover:bg-blue-500/10 hover:text-blue-600 rounded-full transition-all"
+                              className="h-7 w-7 p-0 hover:bg-primary/10 hover:text-foreground rounded-full transition-all"
                               title="Marcar como lida"
                             >
                               <CheckCircle2 className="h-3.5 w-3.5" />
@@ -342,13 +342,13 @@ export const NotificationCenter = () => {
             {/* Scheduled Popups */}
             {scheduledItems.length > 0 && (
               <div className="animate-fade-in">
-                <Separator className="my-5" />
+                <Separator className="my-4" />
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-amber-500/10 to-orange-500/10 flex items-center justify-center">
-                    <Clock className="h-4 w-4 text-amber-600" />
+                  <div className="h-8 w-8 rounded-lg bg-warning-soft/10 flex items-center justify-center">
+                    <Clock className="h-4 w-4 text-warning-on-soft" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-bold tracking-tight">Lembretes Programados</h3>
+                    <h3 className="text-sm font-semibold tracking-tight">Lembretes Programados</h3>
                     <p className="text-xs text-muted-foreground">
                       {scheduledItems.length} agendado(s)
                     </p>
@@ -359,7 +359,7 @@ export const NotificationCenter = () => {
                     <Card 
                       key={item.id} 
                       className={cn(
-                        "group border border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-orange-500/5 hover:border-amber-500/50 transition-all duration-300 hover:shadow-md relative",
+                        "group border border-warning/30 bg-warning-soft/5 hover:border-warning/50 transition-all duration-300 hover:shadow-md relative",
                         !item.read && "border-l-4 border-l-amber-600"
                       )}
                       style={{ animationDelay: `${index * 50}ms` }}
@@ -367,7 +367,7 @@ export const NotificationCenter = () => {
                       <CardContent className="p-3 space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-2 flex-1 min-w-0">
-                            <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                            <AlertCircle className="h-4 w-4 text-warning-on-soft mt-1 flex-shrink-0" />
                             <p className="text-sm font-medium leading-tight break-words">{item.content}</p>
                           </div>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
@@ -376,7 +376,7 @@ export const NotificationCenter = () => {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => markAsRead(item.id)}
-                                className="h-7 w-7 p-0 hover:bg-blue-500/10 hover:text-blue-600 rounded-full transition-all"
+                                className="h-7 w-7 p-0 hover:bg-primary/10 hover:text-foreground rounded-full transition-all"
                                 title="Marcar como lida"
                               >
                                 <CheckCircle2 className="h-3.5 w-3.5" />
@@ -406,13 +406,13 @@ export const NotificationCenter = () => {
             {/* Free Text Notes */}
             {freeTextItems.length > 0 && (
               <div className="animate-fade-in">
-                <Separator className="my-5" />
+                <Separator className="my-4" />
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-orange-500/10 to-amber-500/10 flex items-center justify-center">
-                    <FileText className="h-4 w-4 text-orange-600" />
+                  <div className="h-8 w-8 rounded-lg bg-warning-soft/10 flex items-center justify-center">
+                    <FileText className="h-4 w-4 text-warning-on-soft" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-bold tracking-tight">Anotações Salvas</h3>
+                    <h3 className="text-sm font-semibold tracking-tight">Anotações Salvas</h3>
                     <p className="text-xs text-muted-foreground">
                       {freeTextItems.length} anotação(ões)
                     </p>
@@ -423,7 +423,7 @@ export const NotificationCenter = () => {
                     <Card 
                       key={item.id}
                       className={cn(
-                        "group border border-border/50 hover:border-border transition-all duration-300 hover:shadow-md bg-gradient-to-br from-card to-accent/5 relative",
+                        "group border border-border/50 hover:border-border transition-all duration-300 hover:shadow-md bg-card relative",
                         !item.read && "border-l-4 border-l-orange-500"
                       )}
                       style={{ animationDelay: `${index * 50}ms` }}
@@ -441,7 +441,7 @@ export const NotificationCenter = () => {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => markAsRead(item.id)}
-                                className="h-7 w-7 p-0 hover:bg-blue-500/10 hover:text-blue-600 rounded-full transition-all"
+                                className="h-7 w-7 p-0 hover:bg-primary/10 hover:text-foreground rounded-full transition-all"
                                 title="Marcar como lida"
                               >
                                 <CheckCircle2 className="h-3.5 w-3.5" />
@@ -472,9 +472,9 @@ export const NotificationCenter = () => {
             )}
 
             {notifications.length === 0 && (
-              <Card className="border-dashed border-2 bg-gradient-to-br from-card to-accent/5">
-                <CardContent className="p-12 text-center">
-                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <Card className="border-dashed border-2 bg-card">
+                <CardContent className="p-8 text-center">
+                  <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center mx-auto mb-4 animate-pulse">
                     <Bell className="h-8 w-8 text-muted-foreground opacity-50" />
                   </div>
                   <p className="text-sm font-medium text-muted-foreground tracking-wide">

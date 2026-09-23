@@ -8,6 +8,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { isExtraBed } from "@/utils/bedNaming";
 import { formatAge } from "@/lib/patientAge";
+import { normalizePatientName } from "@/utils/normalizePatientName";
 
 export const GHOST_PREFIXES = ['ARQ-', 'ARCHIVED-', '_GHOST_'];
 
@@ -195,7 +196,7 @@ export function usePatients(department?: Department, sector?: string) {
       const pacienteUpdates: Record<string, any> = {};
       // MIGRAÇÃO: `name` é derivado (nome_social || nome_completo); ao gravar,
       // atualizamos nome_completo.
-      if (updates.name !== undefined) pacienteUpdates.nome_completo = updates.name;
+      if (updates.name !== undefined) pacienteUpdates.nome_completo = normalizePatientName(updates.name);
 
       // Campos do leito.
       const leitoUpdates: Record<string, any> = {};
@@ -593,7 +594,10 @@ export function usePatients(department?: Department, sector?: string) {
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
+          // Ao (re)conectar, faz refetch imediato para recuperar mudanças que
+          // possam ter sido perdidas durante uma instabilidade anterior.
           console.log('[usePatients] Realtime SUBSCRIBED — mapa atualiza em tempo real');
+          fetchPatients();
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.warn('[usePatients] Realtime problema:', status, '— fazendo refetch manual');
           scheduleRefetch();

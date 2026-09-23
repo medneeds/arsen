@@ -42,7 +42,7 @@ export async function logUserAdminAction(params: {
       metadata: { ...(params.metadata ?? {}), source: "client" },
     };
 
-    await supabase.from("logs_auditoria").insert([{
+    const { error: erroAuditoria } = await supabase.from("logs_auditoria").insert([{
       tipo_evento: params.action,          // action → tipo_evento (REQUIRED)
       nome_tabela: "profissionais",        // gestão de usuários afeta profissionais (REQUIRED)
       acao: null,                          // enum acao_auditoria restrito: não adivinhar
@@ -55,6 +55,9 @@ export async function logUserAdminAction(params: {
       hospital_id: params.hospitalUnitId ?? null,
       user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
     }]);
+    if (erroAuditoria) {
+      console.warn("userAdminAudit: registro NAO gravado (trilha incompleta):", erroAuditoria);
+    }
   } catch (e) {
     // Auditoria não deve quebrar fluxo do usuário
     console.warn("userAdminAudit: falha ao registrar", e);

@@ -32,11 +32,11 @@ export function IpRestricted({ moduleKey, children, moduleLabel }: IpRestrictedP
 
   return (
     <div className="flex min-h-[70vh] items-center justify-center p-6">
-      <div className="max-w-md w-full rounded-2xl border border-border bg-card/80 backdrop-blur p-8 text-center shadow-lg">
+      <div className="max-w-md w-full rounded-lg border border-border bg-card/80 backdrop-blur p-8 text-center shadow-md">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
           <ShieldAlert className="h-7 w-7 text-destructive" />
         </div>
-        <h1 className="text-xl font-semibold uppercase tracking-tight">
+        <h1 className="text-xl font-medium uppercase tracking-tight">
           ACESSO RESTRITO À REDE AUTORIZADA
         </h1>
         <p className="mt-3 text-sm text-muted-foreground">
@@ -46,7 +46,7 @@ export function IpRestricted({ moduleKey, children, moduleLabel }: IpRestrictedP
           </span>{" "}
           só pode ser acessado a partir de IPs autorizados pela administração.
         </p>
-        <div className="mt-5 rounded-lg bg-muted/50 px-4 py-3 text-left text-xs space-y-1">
+        <div className="mt-4 rounded-lg bg-muted/50 px-4 py-3 text-left text-xs space-y-1">
           <div>
             <span className="text-muted-foreground">Seu IP detectado:</span>{" "}
             <span className="font-mono">{ip ?? "—"}</span>

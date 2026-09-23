@@ -51,24 +51,24 @@ const SECTION_ICONS: Record<string, typeof Stethoscope> = {
 };
 
 const SECTION_COLORS: Record<string, string> = {
-  medico_ccih_farm: "from-blue-500/20 to-blue-600/5 border-blue-500/30",
-  fisio_to: "from-emerald-500/20 to-emerald-600/5 border-emerald-500/30",
-  enfermagem: "from-pink-500/20 to-pink-600/5 border-pink-500/30",
-  nutricao: "from-amber-500/20 to-amber-600/5 border-amber-500/30",
-  fono: "from-cyan-500/20 to-cyan-600/5 border-cyan-500/30",
-  odonto: "from-indigo-500/20 to-indigo-600/5 border-indigo-500/30",
-  servico_social: "from-violet-500/20 to-violet-600/5 border-violet-500/30",
-  psico: "from-rose-500/20 to-rose-600/5 border-rose-500/30",
-  medico_alta: "from-green-500/20 to-green-600/5 border-green-500/30",
+  medico_ccih_farm: "from-muted/20 to-muted/5 border-border/30",
+  fisio_to: "from-released-soft/20 to-released-soft/5 border-released/30",
+  enfermagem: "from-muted/20 to-muted/5 border-border/30",
+  nutricao: "from-warning-soft/20 to-warning-soft/5 border-warning/30",
+  fono: "from-muted/20 to-muted/5 border-border/30",
+  odonto: "from-muted/20 to-muted/5 border-border/30",
+  servico_social: "from-muted/20 to-muted/5 border-border/30",
+  psico: "from-critical-soft/20 to-critical-soft/5 border-critical/30",
+  medico_alta: "from-released-soft/20 to-released-soft/5 border-released/30",
 };
 
 const STATUS_BADGE_COLORS: Record<string, string> = {
-  S: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
-  N: "bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/30",
-  CI: "bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30",
+  S: "bg-released/20 text-released-on-soft border-released/30",
+  N: "bg-critical/20 text-critical-on-soft border-critical/30",
+  CI: "bg-warning/20 text-warning-on-soft border-warning/30",
   NA: "bg-muted text-muted-foreground border-border",
-  O: "bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500/30",
-  D: "bg-violet-500/20 text-violet-700 dark:text-violet-400 border-violet-500/30",
+  O: "bg-primary/20 text-foreground border-border/30",
+  D: "bg-primary/20 text-foreground border-border/30",
 };
 
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
@@ -149,7 +149,7 @@ export default function RoundPage() {
       }
       toast.success("Dados do paciente sincronizados");
     } catch (err: any) {
-      toast.error("Erro ao sincronizar: " + (err.message || ""));
+      toast.error("Não foi possível sincronizar");
     } finally {
       setSyncingPatientId(null);
     }
@@ -288,14 +288,16 @@ export default function RoundPage() {
         currentSessionId = newSession.id;
         setSessionId(currentSessionId);
       } else {
-        await supabase
+        const { error: erroGrav1 } = await supabase
           .from("sessoes_visita")
           .update({ observacoes: observations, atualizado_em: new Date().toISOString() } as any)
           .eq("id", currentSessionId);
+        if (erroGrav1) throw erroGrav1;
       }
 
       // Delete existing responses and re-insert (round_responses→respostas_visita)
-      await supabase.from("respostas_visita").delete().eq("sessao_id", currentSessionId);
+      const { error: erroGrav2 } = await supabase.from("respostas_visita").delete().eq("sessao_id", currentSessionId);
+      if (erroGrav2) throw erroGrav2;
 
       const responseRows = Object.entries(responses)
         .filter(([, v]) => v.status || v.observation)
@@ -317,7 +319,8 @@ export default function RoundPage() {
       }
 
       // Upsert goals (round_section_goals→metas_secao_visita)
-      await supabase.from("metas_secao_visita").delete().eq("sessao_id", currentSessionId);
+      const { error: erroGrav3 } = await supabase.from("metas_secao_visita").delete().eq("sessao_id", currentSessionId);
+      if (erroGrav3) throw erroGrav3;
       const goalRows = Object.entries(goals)
         .filter(([, v]) => v.trim())
         .map(([sectionCode, goal]) => ({
@@ -331,10 +334,10 @@ export default function RoundPage() {
         if (goalError) throw goalError;
       }
 
-      toast.success("Round salvo com sucesso!");
+      toast.success("Round salvo com sucesso");
     } catch (err: any) {
       console.error(err);
-      toast.error("Erro ao salvar round: " + (err.message || ""));
+      toast.error("Não foi possível salvar round");
     } finally {
       setSaving(false);
     }
@@ -352,15 +355,15 @@ export default function RoundPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-5 max-w-6xl mx-auto">
+    <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20">
+          <div className="p-3 rounded-lg bg-primary/20 border border-primary/20">
             <ClipboardCheck className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground tracking-tight">Round Diário Multiprofissional</h1>
+            <h1 className="text-xl font-semibold text-foreground tracking-tight">Round Diário Multiprofissional</h1>
             <p className="text-xs text-muted-foreground">Checklist estruturado por equipe • UTI</p>
           </div>
         </div>
@@ -373,11 +376,11 @@ export default function RoundPage() {
           />
           {selectedPatient && (
             <>
-              <Button size="sm" variant="outline" onClick={handlePrintPDF} className="text-xs gap-1.5">
+              <Button size="sm" variant="outline" onClick={handlePrintPDF} className="text-xs gap-2">
                 <Printer className="h-3.5 w-3.5" />
                 PDF
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={saving} className="text-xs gap-1.5">
+              <Button size="sm" onClick={handleSave} disabled={saving} className="text-xs gap-2">
                 <Save className="h-3.5 w-3.5" />
                 {saving ? "Salvando..." : "Salvar"}
               </Button>
@@ -389,7 +392,7 @@ export default function RoundPage() {
       {/* Status legend */}
       <div className="flex flex-wrap gap-2">
         {STATUS_OPTIONS.map((s) => (
-          <Badge key={s.code} variant="outline" className={`text-[10px] px-2 py-0.5 ${STATUS_BADGE_COLORS[s.code]}`}>
+          <Badge key={s.code} variant="outline" className={`text-xs px-2 py-1 ${STATUS_BADGE_COLORS[s.code]}`}>
             {s.code} = {s.label}
           </Badge>
         ))}
@@ -404,11 +407,11 @@ export default function RoundPage() {
               Paciente
             </CardTitle>
             {!selectedPatient && !manualMode && (
-              <div className="flex gap-1.5">
-                <Button size="sm" variant="outline" onClick={() => setManualMode(false)} className={`text-[10px] h-7 ${!manualMode ? "bg-primary/10 border-primary/30" : ""}`}>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setManualMode(false)} className={`text-xs h-7 ${!manualMode ? "bg-primary/10 border-primary/30" : ""}`}>
                   Buscar paciente
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setManualMode(true)} className="text-[10px] h-7">
+                <Button size="sm" variant="outline" onClick={() => setManualMode(true)} className="text-xs h-7">
                   Preenchimento avulso
                 </Button>
               </div>
@@ -474,7 +477,7 @@ export default function RoundPage() {
                   placeholder="Buscar por nome, leito ou setor..."
                   value={patientSearch}
                   onChange={(e) => setPatientSearch(e.target.value)}
-                  className="pl-9 text-sm"
+                  className="pl-8 text-sm"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
@@ -485,10 +488,10 @@ export default function RoundPage() {
                   >
                     <button
                       onClick={() => setSelectedPatient(p)}
-                      className="w-full text-left p-3 pr-10 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/50 transition-all text-sm"
+                      className="w-full text-left p-3 pr-8 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/50 transition-all text-sm"
                     >
                       <div className="patient-id font-medium text-foreground group-hover:text-primary transition-colors truncate">{p.name}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
+                      <div className="text-xs text-muted-foreground mt-1">
                         {getSectorLabel(p.sector)} • Leito {p.bed_number} {p.age ? `• ${p.age}` : ""}
                       </div>
                     </button>
@@ -496,7 +499,7 @@ export default function RoundPage() {
                       onClick={(e) => handleSyncPatient(e, p.id)}
                       disabled={syncingPatientId === p.id}
                       title="Sincronizar dados deste paciente"
-                      className="absolute top-2 right-2 p-1.5 rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
+                      className="absolute top-2 right-2 p-2 rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${syncingPatientId === p.id ? "animate-spin" : ""}`} />
                     </button>
@@ -516,10 +519,10 @@ export default function RoundPage() {
                   <User className="h-5 w-5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-semibold text-foreground truncate">
+                  <div className="font-medium text-foreground truncate">
                     {selectedPatient.name}
                     {selectedPatient.id.startsWith("manual_") && (
-                      <Badge variant="outline" className="ml-2 text-[9px] px-1.5 py-0 align-middle border-amber-500/30 text-amber-600 dark:text-amber-400">Avulso</Badge>
+                      <Badge variant="outline" className="ml-2 text-xs px-2 py-0 align-middle border-warning/30 text-warning-on-soft">Avulso</Badge>
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
@@ -564,8 +567,8 @@ export default function RoundPage() {
                     <CollapsibleTrigger asChild>
                       <button className={`w-full flex items-center gap-3 px-4 py-3 text-left bg-gradient-to-r ${SECTION_COLORS[section.code]} hover:opacity-90 transition-all`}>
                         <SectionIcon className="h-4 w-4 text-foreground/70 flex-shrink-0" />
-                        <span className="font-semibold text-sm text-foreground flex-1">{section.title}</span>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
+                        <span className="font-medium text-sm text-foreground flex-1">{section.title}</span>
+                        <Badge variant="secondary" className="text-xs px-2 py-0 font-mono">
                           {sectionFilled}/{section.items.length}
                         </Badge>
                         {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
@@ -580,15 +583,15 @@ export default function RoundPage() {
                           return (
                             <div key={item.id} className="px-4 py-3 space-y-2">
                               <div className="flex items-start gap-2">
-                                <span className="text-[10px] font-mono text-muted-foreground mt-0.5 w-5 flex-shrink-0">{item.id}.</span>
+                                <span className="text-xs font-mono text-muted-foreground mt-1 w-5 flex-shrink-0">{item.id}.</span>
                                 <span className="text-sm text-foreground flex-1">{item.text}</span>
                               </div>
-                              <div className="flex flex-wrap gap-1.5 ml-7">
+                              <div className="flex flex-wrap gap-2 ml-6">
                                 {STATUS_OPTIONS.map((s) => (
                                   <button
                                     key={s.code}
                                     onClick={() => setItemStatus(section.code, item.id, s.code)}
-                                    className={`px-2.5 py-1 rounded-md text-[10px] font-semibold border transition-all ${
+                                    className={`px-3 py-1 rounded-md text-xs font-medium border transition-all ${
                                       resp?.status === s.code
                                         ? STATUS_BADGE_COLORS[s.code] + " ring-1 ring-offset-1 ring-offset-background ring-current scale-105"
                                         : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
@@ -600,7 +603,7 @@ export default function RoundPage() {
                               </div>
                               {/* Observation toggle */}
                               {(resp?.observation || resp?.status) && (
-                                <div className="ml-7">
+                                <div className="ml-6">
                                   <Textarea
                                     placeholder="Observação..."
                                     value={resp?.observation || ""}
@@ -617,9 +620,9 @@ export default function RoundPage() {
 
                       {/* Section goal */}
                       <div className="px-4 py-3 bg-muted/30 border-t border-border">
-                        <div className="flex items-center gap-2 mb-1.5">
+                        <div className="flex items-center gap-2 mb-2">
                           <Target className="h-3.5 w-3.5 text-primary" />
-                          <Label className="text-xs font-semibold text-primary">Meta do dia</Label>
+                          <Label className="text-xs font-medium text-primary">Meta do dia</Label>
                         </div>
                         <Textarea
                           placeholder="Definir meta do dia para esta equipe..."
@@ -656,11 +659,11 @@ export default function RoundPage() {
 
             {/* Footer actions */}
             <div className="flex justify-end gap-2 pb-4">
-              <Button variant="outline" onClick={handlePrintPDF} className="text-xs gap-1.5">
+              <Button variant="outline" onClick={handlePrintPDF} className="text-xs gap-2">
                 <Printer className="h-3.5 w-3.5" />
                 Imprimir PDF
               </Button>
-              <Button onClick={handleSave} disabled={saving} className="text-xs gap-1.5">
+              <Button onClick={handleSave} disabled={saving} className="text-xs gap-2">
                 <Save className="h-3.5 w-3.5" />
                 {saving ? "Salvando..." : "Salvar Round"}
               </Button>

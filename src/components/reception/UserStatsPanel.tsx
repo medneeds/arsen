@@ -48,9 +48,9 @@ const formatAvgSec = (sec: number | null) => {
 
 const pointBadgeClasses = (p: ReceptionPoint | null) =>
   p === "vertical"
-    ? "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30"
+    ? "bg-primary/15 text-foreground border-border/30"
     : p === "horizontal"
-    ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30"
+    ? "bg-critical/15 text-critical-on-soft border-critical/30"
     : "bg-muted text-muted-foreground border-border";
 
 /**
@@ -71,10 +71,10 @@ export function UserStatsPanel({ stats, currentUserId }: Props) {
   if (stats.length === 0) {
     return (
       <Card>
-        <CardContent className="py-10 text-center text-muted-foreground">
+        <CardContent className="py-8 text-center text-muted-foreground">
           <Trophy className="h-8 w-8 mx-auto mb-2 opacity-30" />
           <p className="text-sm">Nenhum recepcionista ativo no posto hoje</p>
-          <p className="text-[11px] mt-1">Os atendimentos abertos aparecem aqui após o login no posto</p>
+          <p className="text-xs mt-1">Os atendimentos abertos aparecem aqui após o login no posto</p>
         </CardContent>
       </Card>
     );
@@ -84,27 +84,27 @@ export function UserStatsPanel({ stats, currentUserId }: Props) {
     <div className="space-y-3">
       {/* Resumo agregado */}
       <div className="grid grid-cols-4 gap-2">
-        <div className="rounded-lg border bg-card p-2.5">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Equipe ativa</p>
-          <p className="text-lg font-bold flex items-center gap-1">
-            <CircleDot className="h-3 w-3 text-emerald-500 animate-pulse" />
+        <div className="rounded-lg border bg-card p-3">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Equipe ativa</p>
+          <p className="text-lg font-semibold flex items-center gap-1">
+            <CircleDot className="h-3 w-3 text-released animate-pulse" />
             {totals.onlineCount}
-            <span className="text-[10px] text-muted-foreground font-normal">/ {stats.length}</span>
+            <span className="text-xs text-muted-foreground font-normal">/ {stats.length}</span>
           </p>
         </div>
-        <div className="rounded-lg border bg-card p-2.5">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Atendimentos</p>
-          <p className="text-lg font-bold">{totals.total}</p>
+        <div className="rounded-lg border bg-card p-3">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Atendimentos</p>
+          <p className="text-lg font-semibold">{totals.total}</p>
         </div>
-        <div className="rounded-lg border bg-card p-2.5">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">% Express</p>
-          <p className="text-lg font-bold">
+        <div className="rounded-lg border bg-card p-3">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">% Express</p>
+          <p className="text-lg font-semibold">
             {totals.total > 0 ? `${Math.round((totals.totalExpress / totals.total) * 100)}%` : "—"}
           </p>
         </div>
-        <div className="rounded-lg border bg-card p-2.5">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Pendências</p>
-          <p className="text-lg font-bold text-amber-600">{totals.totalPending}</p>
+        <div className="rounded-lg border bg-card p-3">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Pendências</p>
+          <p className="text-lg font-semibold text-warning-on-soft">{totals.totalPending}</p>
         </div>
       </div>
 
@@ -134,10 +134,10 @@ export function UserStatsPanel({ stats, currentUserId }: Props) {
                     <div className="flex items-center gap-2 mb-2">
                       <div
                         className={cn(
-                          "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
-                          idx === 0 && "bg-amber-500/20 text-amber-700 dark:text-amber-300",
-                          idx === 1 && "bg-slate-400/20 text-slate-600 dark:text-slate-300",
-                          idx === 2 && "bg-orange-700/20 text-orange-700 dark:text-orange-400",
+                          "w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold shrink-0",
+                          idx === 0 && "bg-warning/20 text-warning-on-soft",
+                          idx === 1 && "bg-primary/20 text-foreground",
+                          idx === 2 && "bg-warning/20 text-warning-on-soft",
                           idx > 2 && "bg-muted text-muted-foreground",
                         )}
                       >
@@ -145,20 +145,20 @@ export function UserStatsPanel({ stats, currentUserId }: Props) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold truncate">{s.userName}</span>
+                          <span className="text-sm font-medium truncate">{s.userName}</span>
                           {isMe && (
-                            <Badge variant="outline" className="text-[9px] h-4 border-primary/40 text-primary">
+                            <Badge variant="outline" className="text-xs h-4 border-primary/40 text-primary">
                               você
                             </Badge>
                           )}
                           {s.isOnline && (
-                            <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
+                            <span className="flex items-center gap-1 text-xs text-released-on-soft">
                               <CircleDot className="h-2.5 w-2.5 animate-pulse" />
                               online
                             </span>
                           )}
                           {s.point && (
-                            <Badge variant="outline" className={cn("text-[9px] h-4 gap-1 border", pointBadgeClasses(s.point))}>
+                            <Badge variant="outline" className={cn("text-xs h-4 gap-1 border", pointBadgeClasses(s.point))}>
                               {s.point === "vertical" ? <Footprints className="h-2.5 w-2.5" /> : <Ambulance className="h-2.5 w-2.5" />}
                               {RECEPTION_POINT_SHORT[s.point]}
                             </Badge>
@@ -166,8 +166,8 @@ export function UserStatsPanel({ stats, currentUserId }: Props) {
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-lg font-bold leading-none">{s.totalEncounters}</p>
-                        <p className="text-[9px] text-muted-foreground uppercase tracking-wider">atend.</p>
+                        <p className="text-lg font-semibold leading-none">{s.totalEncounters}</p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider">atend.</p>
                       </div>
                     </div>
 
@@ -177,46 +177,46 @@ export function UserStatsPanel({ stats, currentUserId }: Props) {
                     </div>
 
                     {/* Linha 3 — Métricas */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
-                      <div className="flex items-center gap-1.5">
-                        <Timer className="h-3 w-3 text-sky-600" />
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <Timer className="h-3 w-3 text-foreground" />
                         <div>
                           <p className="text-muted-foreground">Tempo médio</p>
-                          <p className="font-semibold text-foreground">{formatAvgSec(s.avgRegistrationSec)}</p>
+                          <p className="font-medium text-foreground">{formatAvgSec(s.avgRegistrationSec)}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <Zap className="h-3 w-3 text-rose-600" />
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-3 w-3 text-critical-on-soft" />
                         <div>
                           <p className="text-muted-foreground">Express</p>
-                          <p className="font-semibold text-foreground">
+                          <p className="font-medium text-foreground">
                             {s.expressCount} <span className="text-muted-foreground font-normal">({expressPct}%)</span>
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <FileWarning className="h-3 w-3 text-amber-600" />
+                      <div className="flex items-center gap-2">
+                        <FileWarning className="h-3 w-3 text-warning-on-soft" />
                         <div>
                           <p className="text-muted-foreground">Pendentes</p>
-                          <p className="font-semibold text-foreground">{s.pendingDocsCount}</p>
+                          <p className="font-medium text-foreground">{s.pendingDocsCount}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="h-3 w-3 text-emerald-600" />
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-3 w-3 text-released-on-soft" />
                         <div>
                           <p className="text-muted-foreground">Logado</p>
-                          <p className="font-semibold text-foreground">{formatActiveTime(s.activeMinutes)}</p>
+                          <p className="font-medium text-foreground">{formatActiveTime(s.activeMinutes)}</p>
                         </div>
                       </div>
                     </div>
 
                     {/* Linha 4 — Top destinos */}
                     {topDestinations.length > 0 && (
-                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
                         <BarChart3 className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground">Destinos:</span>
+                        <span className="text-xs text-muted-foreground">Destinos:</span>
                         {topDestinations.map(([dest, count]) => (
-                          <Badge key={dest} variant="secondary" className="text-[9px] h-4 capitalize">
+                          <Badge key={dest} variant="secondary" className="text-xs h-4 capitalize">
                             {dest.replace(/_/g, " ")} · {count}
                           </Badge>
                         ))}

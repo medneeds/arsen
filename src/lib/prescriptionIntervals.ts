@@ -48,7 +48,7 @@ export const PRESCRIPTION_INTERVALS: PrescriptionInterval[] = [
 
   // ── Contínuo / dose única ──────────────────────────────────────────────────
   { value: 'Contínuo', label: 'Contínuo (BIC)', phases: 0, group: 'continuo' },
-  { value: 'Única',    label: 'Dose única',     phases: 1, group: 'continuo' },
+  { value: 'Dose única', label: 'Dose única',     phases: 1, group: 'continuo' },
   // "Agora" (antiga flag AG): dose pontual imediata. NÃO renova na virada de
   // plantão — a lógica de renovação lê este valor. (Unificação 22/07/2026.)
   { value: 'Agora',    label: 'Agora (dose imediata)', phases: 1, group: 'continuo' },

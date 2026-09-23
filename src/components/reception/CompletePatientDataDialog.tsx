@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizePatientName, normalizePatientNameInput } from "@/utils/normalizePatientName";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -65,7 +66,7 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
       .maybeSingle()
       .then(({ data, error }) => {
         if (error || !data) {
-          toast.error("Erro ao carregar dados do paciente");
+          toast.error("Não foi possível carregar dados do paciente");
           setLoading(false);
           return;
         }
@@ -90,12 +91,12 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
       // mais docs_pending/partial_identification/completed_by. Só gravamos os
       // dados reais; a pendência passa a ser inferida pela ausência de documentos.
       const updates: Record<string, any> = {
-        nome_completo: fullName.trim().toUpperCase(),
+        nome_completo: normalizePatientName(fullName),
         cpf: cpf.trim() || null,
         cns: cns.trim() || null,
         data_nascimento: birthDate || null,
         telefone: phone.trim() || null,
-        nome_mae: motherName.trim().toUpperCase() || null,
+        nome_mae: normalizePatientName(motherName) || null,
       };
 
       const providedAnyDoc = Boolean(cpf.trim() || cns.trim() || birthDate);
@@ -128,7 +129,7 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
       onSaved?.();
       onOpenChange(false);
     } catch (err: any) {
-      toast.error("Erro ao salvar", { description: err?.message });
+      toast.error("Não foi possível salvar", { description: err?.message });
     } finally {
       setSaving(false);
     }
@@ -139,7 +140,7 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileWarning className="h-5 w-5 text-amber-600" />
+            <FileWarning className="h-5 w-5 text-warning-on-soft" />
             Complementar dados do paciente
           </DialogTitle>
           <DialogDescription>
@@ -160,29 +161,29 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
               </Badge>
             )}
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="cp-name" className="text-xs">Nome completo</Label>
               <Input
                 id="cp-name"
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value.toUpperCase())}
+                onChange={(e) => setFullName(normalizePatientNameInput(e.target.value))}
                 className="font-medium"
               />
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Mínimo de 2 palavras para considerar identificação completa.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="cp-cpf" className="text-xs">CPF</Label>
                 <Input id="cp-cpf" placeholder="000.000.000-00" value={cpf} onChange={(e) => setCpf(e.target.value)} />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="cp-cns" className="text-xs">Cartão SUS (CNS)</Label>
                 <Input id="cp-cns" placeholder="000 0000 0000 0000" value={cns} onChange={(e) => setCns(e.target.value)} />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="cp-dn" className="text-xs">Data de nascimento</Label>
                 <Input
                   id="cp-dn"
@@ -192,18 +193,18 @@ export function CompletePatientDataDialog({ open, onOpenChange, registryId, onSa
                   max={new Date().toISOString().slice(0, 10)}
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="cp-phone" className="text-xs">Telefone</Label>
                 <Input id="cp-phone" placeholder="(99) 99999-9999" value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="cp-mom" className="text-xs">Nome da mãe</Label>
-              <Input id="cp-mom" value={motherName} onChange={(e) => setMotherName(e.target.value.toUpperCase())} />
+              <Input id="cp-mom" value={motherName} onChange={(e) => setMotherName(normalizePatientNameInput(e.target.value))} />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="cp-obs" className="text-xs">Observações desta complementação</Label>
               <Textarea
                 id="cp-obs"

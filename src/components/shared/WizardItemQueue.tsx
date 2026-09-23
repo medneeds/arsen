@@ -13,7 +13,7 @@ interface Props<T> {
   /** Texto do botão "+ Acrescentar" quando não está editando. */
   addLabel?: string;
   /** Texto/cores específicos de cada wizard. */
-  accentClassName?: string; // ex: "border-blue-300 bg-blue-50/40 text-blue-700"
+  accentClassName?: string; // ex: "border-border bg-muted/40 text-foreground"
   /** Texto explicativo curto. */
   hint?: string;
   /** Bloqueia adicionar (ex: form inválido). */
@@ -41,7 +41,7 @@ export function WizardItemQueue<T>({
       hasItems ? accentClassName : "border-dashed border-border bg-muted/20 text-muted-foreground"
     )}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[10px] uppercase tracking-wider font-semibold flex items-center gap-1">
+        <p className="text-xs uppercase tracking-wider font-medium flex items-center gap-1">
           <ListChecks className="h-3 w-3" />
           {hasItems ? `Itens preparados (${items.length})` : "Nenhum item conjugado ainda"}
         </p>
@@ -51,7 +51,7 @@ export function WizardItemQueue<T>({
           size="sm"
           onClick={isEditing ? onSaveCurrent : onAddCurrent}
           disabled={disableAdd}
-          className="h-6 px-2 gap-1 text-[11px]"
+          className="h-6 px-2 gap-1 text-xs"
         >
           <Plus className="h-3 w-3" />
           {isEditing ? "Salvar e continuar" : addLabel}
@@ -66,25 +66,25 @@ export function WizardItemQueue<T>({
               <li
                 key={it.uid}
                 className={cn(
-                  "flex items-start gap-2 rounded border bg-background/70 px-2 py-1.5 text-xs",
-                  isCurrent ? "border-amber-400 ring-1 ring-amber-400/40" : "border-border/60"
+                  "flex items-start gap-2 rounded-md border bg-background/70 px-2 py-2 text-xs",
+                  isCurrent ? "border-warning ring-1 ring-warning/40" : "border-border/60"
                 )}
               >
-                <span className="text-[10px] font-bold text-muted-foreground mt-0.5 shrink-0 w-4">
+                <span className="text-xs font-semibold text-muted-foreground mt-1 shrink-0 w-4">
                   {idx + 1}.
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{it.label}</p>
                   {it.sublabel && (
-                    <p className="text-[10px] text-muted-foreground truncate">{it.sublabel}</p>
+                    <p className="text-xs text-muted-foreground truncate">{it.sublabel}</p>
                   )}
                   {isCurrent && (
-                    <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">
-                      ✎ Editando — ajuste no formulário acima e clique em "Salvar e continuar".
+                    <p className="text-xs text-warning-on-soft mt-1">
+                      Editando — ajuste no formulário acima e clique em "Salvar e continuar".
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-0.5 shrink-0">
+                <div className="flex items-center gap-1 shrink-0">
                   <Button
                     type="button"
                     variant="ghost"
@@ -100,7 +100,7 @@ export function WizardItemQueue<T>({
                     variant="ghost"
                     size="sm"
                     onClick={() => onRemove(it.uid)}
-                    className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                    className="h-6 w-6 p-0 text-critical-on-soft hover:text-critical-on-soft"
                     aria-label="Remover item"
                   >
                     <X className="h-3 w-3" />
@@ -113,7 +113,7 @@ export function WizardItemQueue<T>({
       )}
 
       {hint && !hasItems && (
-        <p className="text-[10px] leading-snug">{hint}</p>
+        <p className="text-xs leading-snug">{hint}</p>
       )}
     </div>
   );

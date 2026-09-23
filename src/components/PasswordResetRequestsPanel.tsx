@@ -119,7 +119,7 @@ export function PasswordResetRequestsPanel(_props: PasswordResetRequestsPanelPro
       setRequests((data as PasswordResetRequest[]) || []);
     } catch (error) {
       console.error("Erro ao buscar solicitações:", error);
-      toast.error("Erro ao carregar solicitações");
+      toast.error("Não foi possível carregar solicitações");
     } finally {
       setLoading(false);
     }

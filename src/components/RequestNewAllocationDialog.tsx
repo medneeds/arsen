@@ -84,8 +84,8 @@ function EditableListItem({
   };
 
   return (
-    <div className="flex items-start gap-1.5 group/item">
-      <span className="text-[10px] font-semibold text-muted-foreground pt-2 w-4 flex-shrink-0">{index + 1}.</span>
+    <div className="flex items-start gap-2 group/item">
+      <span className="text-xs font-medium text-muted-foreground pt-2 w-4 flex-shrink-0">{index + 1}.</span>
       <Input
         ref={inputRef}
         value={value}
@@ -350,18 +350,18 @@ export function RequestNewAllocationDialog({
 
   const getSectorColor = () => {
     switch (targetSector) {
-      case "Cuidados Especiais": return "text-red-500";
-      case "Observação Amarela": return "text-yellow-500";
-      case "Observação Azul": return "text-blue-500";
+      case "Cuidados Especiais": return "text-critical";
+      case "Observação Amarela": return "text-warning";
+      case "Observação Azul": return "text-muted-foreground";
       default: return "";
     }
   };
 
   const getSectorBgColor = () => {
     switch (targetSector) {
-      case "Cuidados Especiais": return "bg-red-500/10 border-red-500/30";
-      case "Observação Amarela": return "bg-yellow-500/10 border-yellow-500/30";
-      case "Observação Azul": return "bg-blue-500/10 border-blue-500/30";
+      case "Cuidados Especiais": return "bg-critical/10 border-critical/30";
+      case "Observação Amarela": return "bg-warning/10 border-warning/30";
+      case "Observação Azul": return "bg-primary/10 border-border/30";
       default: return "bg-muted/50";
     }
   };
@@ -378,7 +378,7 @@ export function RequestNewAllocationDialog({
             </DialogTitle>
             <DialogDescription>
               Cadastre o paciente com todos os dados clínicos e solicite alocação em{" "}
-              <span className={`font-semibold ${getSectorColor()}`}>{targetSector}</span>.
+              <span className={`font-medium ${getSectorColor()}`}>{targetSector}</span>.
             </DialogDescription>
           </DialogHeader>
 
@@ -388,7 +388,7 @@ export function RequestNewAllocationDialog({
             <div className={`p-3 rounded-lg border ${getSectorBgColor()}`}>
               <p className="text-sm font-medium">
                 <strong>Setor solicitado:</strong>{" "}
-                <span className={`font-semibold ${getSectorColor()}`}>{targetSector}</span>
+                <span className={`font-medium ${getSectorColor()}`}>{targetSector}</span>
               </p>
             </div>
 
@@ -396,13 +396,13 @@ export function RequestNewAllocationDialog({
             <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-primary" />
-                <p className="text-sm font-semibold text-primary tracking-wide">Médico Solicitante</p>
+                <p className="text-sm font-medium text-primary tracking-wide">Médico Solicitante</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Label htmlFor="doctor-name" className="text-xs">Nome do Médico</Label>
-                    <Badge variant="destructive" className="h-4 text-[10px] px-1.5">Obrigatório</Badge>
+                    <Badge variant="destructive" className="h-4 text-xs px-2">Obrigatório</Badge>
                   </div>
                   <Input
                     ref={doctorNameRef}
@@ -414,10 +414,10 @@ export function RequestNewAllocationDialog({
                     className="h-9 text-sm"
                   />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Label htmlFor="office-number" className="text-xs">Nº Consultório</Label>
-                    <Badge variant="secondary" className="h-4 text-[10px] px-1.5 opacity-60">Opcional</Badge>
+                    <Badge variant="secondary" className="h-4 text-xs px-2 opacity-60">Opcional</Badge>
                   </div>
                   <Input
                     ref={officeNumberRef}
@@ -436,13 +436,13 @@ export function RequestNewAllocationDialog({
             <div className="p-4 rounded-lg bg-muted/30 border space-y-3">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground" />
-                <p className="text-sm font-semibold text-muted-foreground tracking-wide">Identificação do Paciente</p>
+                <p className="text-sm font-medium text-muted-foreground tracking-wide">Identificação do Paciente</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Label htmlFor="patient-name" className="text-xs">Nome do Paciente</Label>
-                    <Badge variant="destructive" className="h-4 text-[10px] px-1.5">Obrigatório</Badge>
+                    <Badge variant="destructive" className="h-4 text-xs px-2">Obrigatório</Badge>
                   </div>
                   <Input
                     ref={patientNameRef}
@@ -454,10 +454,10 @@ export function RequestNewAllocationDialog({
                     className="h-9 text-sm"
                   />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Label htmlFor="patient-age" className="text-xs">Idade</Label>
-                    <Badge variant="secondary" className="h-4 text-[10px] px-1.5 opacity-60">Opcional</Badge>
+                    <Badge variant="secondary" className="h-4 text-xs px-2 opacity-60">Opcional</Badge>
                   </div>
                   <Input
                     ref={patientAgeRef}
@@ -484,10 +484,10 @@ export function RequestNewAllocationDialog({
                   <button className="w-full p-4 flex items-center justify-between bg-accent/30 hover:bg-accent/50 transition-colors">
                     <div className="flex items-center gap-2">
                       <Stethoscope className="h-4 w-4 text-accent-foreground" />
-                      <span className="text-sm font-semibold text-accent-foreground tracking-wide">
+                      <span className="text-sm font-medium text-accent-foreground tracking-wide">
                         Dados Clínicos
                       </span>
-                      <Badge variant="secondary" className="h-4 text-[10px] px-1.5 opacity-60">Opcional</Badge>
+                      <Badge variant="secondary" className="h-4 text-xs px-2 opacity-60">Opcional</Badge>
                     </div>
                     <div className="flex items-center gap-2">
                       {!clinicalOpen && (
@@ -514,7 +514,7 @@ export function RequestNewAllocationDialog({
                             <Plus className="h-3 w-3" />
                           </Button>
                         </Label>
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                           {diagnosesList.map((item, index) => (
                             <EditableListItem
                               key={index}
@@ -551,7 +551,7 @@ export function RequestNewAllocationDialog({
                             <Plus className="h-3 w-3" />
                           </Button>
                         </Label>
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                           {medicalHistoryList.map((item, index) => (
                             <EditableListItem
                               key={index}
@@ -588,7 +588,7 @@ export function RequestNewAllocationDialog({
                             <Plus className="h-3 w-3" />
                           </Button>
                         </Label>
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                           {relevantExamsList.map((item, index) => (
                             <EditableListItem
                               key={index}
@@ -625,7 +625,7 @@ export function RequestNewAllocationDialog({
                             <Plus className="h-3 w-3" />
                           </Button>
                         </Label>
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                           {pendenciesList.map((item, index) => (
                             <EditableListItem
                               key={index}
@@ -649,7 +649,7 @@ export function RequestNewAllocationDialog({
                       </div>
 
                       {/* Admission History - Textarea for longer text */}
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         <Label htmlFor="admission-history" className="text-xs font-medium">
                           História Admissional / Anamnese
                         </Label>

@@ -28,9 +28,9 @@ interface GNotification {
 }
 
 const LEVEL_STYLES: Record<GNotification["level"], string> = {
-  critical: "border-red-500/40 bg-red-500/5",
-  warning: "border-amber-500/40 bg-amber-500/5",
-  info: "border-blue-500/40 bg-blue-500/5",
+  critical: "border-critical/40 bg-critical/5",
+  warning: "border-warning/40 bg-warning/5",
+  info: "border-border/40 bg-primary/5",
 };
 
 function buildNotifications(d: GestorMetricsForNotifications): GNotification[] {
@@ -58,7 +58,7 @@ function buildNotifications(d: GestorMetricsForNotifications): GNotification[] {
     list.push({
       id: "door-patients",
       level: d.bedStats.doorPatients >= 5 ? "critical" : "warning",
-      title: `${d.bedStats.doorPatients} paciente(s) em "porta"`,
+      title: `${d.bedStats.doorPatients} ${(d.bedStats.doorPatients) === 1 ? 'paciente' : 'pacientes'} em "porta"`,
       message: "Pacientes aguardando vaga. Acionar regulação interna (NIR).",
       icon: Users,
     });
@@ -69,7 +69,7 @@ function buildNotifications(d: GestorMetricsForNotifications): GNotification[] {
     list.push({
       id: "clin-critical",
       level: "critical",
-      title: `${critical.length} alerta(s) clínico(s) crítico(s)`,
+      title: `${critical.length} ${(critical.length) === 1 ? 'alerta' : 'alertas'} ${(critical.length) === 1 ? 'clínico crítico' : 'clínicos críticos'}`,
       message: "Pacientes graves identificados nos setores. Verificar painel de alertas.",
       icon: AlertTriangle,
     });
@@ -92,7 +92,7 @@ function buildNotifications(d: GestorMetricsForNotifications): GNotification[] {
       list.push({
         id: "presc-validation",
         level: "info",
-        title: `${unvalidated} prescrição(ões) sem validação farmacêutica`,
+        title: `${unvalidated} ${(unvalidated) === 1 ? 'prescrição' : 'prescrições'} sem validação farmacêutica`,
         message: "Acompanhar produtividade da farmácia clínica.",
         icon: Pill,
       });
@@ -125,13 +125,13 @@ export function GestorNotificationCenter({ data }: Props) {
   return (
     <Popover open={autoOpen || undefined} onOpenChange={(o) => { if (!o) setAutoOpen(false); }}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="relative h-9 gap-2 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground dark:bg-background dark:text-foreground">
-          <Bell className={cn("h-4 w-4", criticalCount > 0 && "text-red-500 animate-pulse")} />
+        <Button variant="outline" size="sm" className="relative h-9 gap-2 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground">
+          <Bell className={cn("h-4 w-4", criticalCount > 0 && "text-critical animate-pulse")} />
           <span className="text-xs font-medium hidden md:inline">Notificações</span>
           {total > 0 && (
             <Badge
               variant={criticalCount > 0 ? "destructive" : "secondary"}
-              className="h-5 px-1.5 text-[10px]"
+              className="h-5 px-2 text-xs"
             >
               {total}
             </Badge>
@@ -141,39 +141,39 @@ export function GestorNotificationCenter({ data }: Props) {
       <PopoverContent align="end" className="w-96 p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
           <div>
-            <p className="text-sm font-semibold">Notificações do Gestor</p>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-sm font-medium">Notificações do Gestor</p>
+            <p className="text-xs text-muted-foreground">
               {criticalCount} crítica(s) · {total - criticalCount} alerta(s)
             </p>
           </div>
         </div>
         <ScrollArea className="max-h-96">
           {total === 0 ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">
+            <div className="py-8 text-center text-sm text-muted-foreground">
               <Bell className="h-8 w-8 mx-auto mb-2 opacity-30" />
               Nenhuma notificação ativa.
-              <p className="text-[11px] mt-1">Operação dentro das metas.</p>
+              <p className="text-xs mt-1">Operação dentro das metas.</p>
             </div>
           ) : (
-            <ul className="p-2 space-y-1.5">
+            <ul className="p-2 space-y-2">
               {notifications.map((n) => {
                 const Icon = n.icon;
                 return (
                   <li
                     key={n.id}
-                    className={cn("rounded-md border p-2.5 flex gap-2.5", LEVEL_STYLES[n.level])}
+                    className={cn("rounded-md border p-3 flex gap-3", LEVEL_STYLES[n.level])}
                   >
                     <Icon
                       className={cn(
-                        "h-4 w-4 mt-0.5 shrink-0",
-                        n.level === "critical" && "text-red-500",
-                        n.level === "warning" && "text-amber-500",
-                        n.level === "info" && "text-blue-500",
+                        "h-4 w-4 mt-1 shrink-0",
+                        n.level === "critical" && "text-critical",
+                        n.level === "warning" && "text-warning",
+                        n.level === "info" && "text-muted-foreground",
                       )}
                     />
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-foreground">{n.title}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{n.message}</p>
+                      <p className="text-xs font-medium text-foreground">{n.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{n.message}</p>
                     </div>
                   </li>
                 );

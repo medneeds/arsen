@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { whitelabel } from "@/config/whitelabel";
-import arsenLogo from "@/assets/arsen-logo.png";
+import { ArsenMark } from "@/components/brand/ArsenMark";
 import {
   Activity,
   Brain,
@@ -59,18 +59,18 @@ export default function LandingPage() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-slate-700">
+    <div className="min-h-screen flex flex-col bg-white text-foreground">
       {/* ─── HEADER ──────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-slate-100">
+      <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-border">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Brand */}
           <button
             onClick={() => navigate("/")}
             className="flex items-center gap-3 group"
           >
-            <img src={arsenLogo} alt="Arsen" className="h-6 w-6 object-contain" />
+            <ArsenMark size={24} variant="compact" className="text-primary" />
             <span
-              className="preserve-case text-lg font-light tracking-[0.25em] text-slate-800"
+              className="preserve-case text-lg font-normal tracking-[0.25em] text-foreground"
               style={{ fontFamily: SERIF }}
             >
               ARSEN
@@ -78,11 +78,11 @@ export default function LandingPage() {
           </button>
 
           {/* Nav */}
-          <nav className="hidden md:flex items-center gap-8 text-sm preserve-case text-slate-500">
-            <a href="#plataforma" className="hover:text-slate-800 transition-colors">
+          <nav className="hidden md:flex items-center gap-8 text-sm preserve-case text-muted-foreground">
+            <a href="#plataforma" className="hover:text-foreground transition-colors">
               Plataforma
             </a>
-            <a href="#conformidade" className="hover:text-slate-800 transition-colors">
+            <a href="#conformidade" className="hover:text-foreground transition-colors">
               Conformidade
             </a>
           </nav>
@@ -90,7 +90,7 @@ export default function LandingPage() {
           {/* CTA */}
           <button
             onClick={() => navigate("/auth")}
-            className="preserve-case inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium transition-colors"
+            className="preserve-case inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary hover:bg-primary text-white text-xs font-medium transition-colors"
           >
             Acessar
             <ArrowRight className="h-3.5 w-3.5" />
@@ -102,8 +102,8 @@ export default function LandingPage() {
       <section className="relative flex-1 flex flex-col items-center justify-center px-6 py-20 md:py-32 overflow-hidden">
         {/* Soft ambient gradients */}
         <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-gradient-to-br from-sky-100/60 via-blue-50/40 to-transparent rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-gradient-to-tl from-teal-50/50 to-transparent rounded-full blur-3xl" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-muted/60 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-released-soft/50 rounded-full blur-3xl" />
         </div>
 
         {/* Subtle grid */}
@@ -122,10 +122,10 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200/80 shadow-sm mb-10"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-border/80 shadow-sm mb-8"
           >
-            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="preserve-case text-[10px] font-semibold text-slate-600 tracking-[0.25em] uppercase">
+            <div className="h-1.5 w-1.5 rounded-full bg-released animate-pulse" />
+            <span className="preserve-case text-xs font-medium text-foreground tracking-[0.25em] uppercase">
               Plataforma de gestão clínica hospitalar
             </span>
           </motion.div>
@@ -137,7 +137,7 @@ export default function LandingPage() {
             transition={{ duration: 0.7, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
             className="flex justify-center mb-8"
           >
-            <img src={arsenLogo} alt="Arsen" className="h-16 w-16 object-contain" />
+            <ArsenMark size={64} className="text-primary" />
           </motion.div>
 
           {/* Brand name — serif elegante */}
@@ -145,7 +145,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="preserve-case text-5xl md:text-6xl lg:text-7xl font-extralight tracking-[0.3em] text-slate-800 mb-5 leading-none"
+            className="preserve-case text-5xl md:text-6xl lg:text-7xl font-normal tracking-[0.3em] text-foreground mb-4 leading-none"
             style={{ fontFamily: SERIF }}
           >
             ARSEN
@@ -158,9 +158,9 @@ export default function LandingPage() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="flex items-center justify-center gap-2 mb-6"
           >
-            <span className="h-px w-10 bg-gradient-to-r from-transparent to-slate-300" />
-            <span className="h-1 w-1 rounded-full bg-sky-500/70" />
-            <span className="h-px w-10 bg-gradient-to-l from-transparent to-slate-300" />
+            <span className="h-px w-10 bg-transparent" />
+            <span className="h-1 w-1 rounded-full bg-primary/70" />
+            <span className="h-px w-10 bg-transparent" />
           </motion.div>
 
           {/* Slogan */}
@@ -168,9 +168,9 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.5 }}
-            className="preserve-case text-sm md:text-base text-slate-500 font-light tracking-[0.2em] uppercase mb-12"
+            className="preserve-case text-sm md:text-base text-muted-foreground font-normal tracking-[0.2em] uppercase mb-8"
           >
-            Plataforma Clínica Inteligente
+            Plataforma Hospitalar Inteligente
           </motion.p>
 
           {/* CTA */}
@@ -184,14 +184,14 @@ export default function LandingPage() {
               onClick={() => navigate("/auth")}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="preserve-case group inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium transition-all shadow-lg shadow-slate-900/10 hover:shadow-xl hover:shadow-slate-900/15"
+              className="preserve-case group inline-flex items-center gap-2 px-8 py-4 rounded-full bg-primary hover:bg-primary text-white text-sm font-medium transition-all shadow-md shadow-md hover:shadow-md hover:shadow-md"
             >
               Acessar plataforma
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </motion.button>
             <a
               href="#plataforma"
-              className="preserve-case inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors"
+              className="preserve-case inline-flex items-center gap-2 px-8 py-4 rounded-full text-foreground hover:text-foreground text-sm font-medium transition-colors"
             >
               Conhecer recursos
             </a>
@@ -200,28 +200,28 @@ export default function LandingPage() {
       </section>
 
       {/* ─── ADVANTAGES ──────────────────────────────────────────────── */}
-      <section id="plataforma" className="py-20 md:py-28 px-6 bg-gradient-to-b from-white to-slate-50/60">
+      <section id="plataforma" className="py-20 md:py-28 px-6 bg-white">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6 }}
-            className="text-center max-w-2xl mx-auto mb-16"
+            className="text-center max-w-2xl mx-auto mb-8"
           >
-            <p className="preserve-case text-xs font-medium text-sky-600 mb-3 tracking-wide">
+            <p className="preserve-case text-xs font-medium text-foreground mb-3 tracking-wide">
               Recursos
             </p>
-            <h2 className="preserve-case text-3xl md:text-4xl font-bold text-slate-800 tracking-tight mb-4">
+            <h2 className="preserve-case text-3xl md:text-4xl font-semibold text-foreground tracking-tight mb-4">
               Tecnologia que transforma a gestão hospitalar
             </h2>
-            <p className="preserve-case text-base text-slate-500 leading-relaxed">
+            <p className="preserve-case text-base text-muted-foreground leading-relaxed">
               Uma plataforma integrada para coordenar leitos, equipes e cuidados em
               um só lugar.
             </p>
           </motion.div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {advantages.map((item, idx) => (
               <motion.div
                 key={idx}
@@ -229,15 +229,15 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-40px" }}
                 transition={{ duration: 0.5, delay: idx * 0.06 }}
-                className="group p-7 rounded-2xl bg-white border border-slate-100 hover:border-slate-200 hover:shadow-xl hover:shadow-slate-200/40 transition-all duration-500"
+                className="group p-6 rounded-lg bg-white border border-border hover:border-border hover:shadow-md hover:shadow-md transition-all duration-500"
               >
-                <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-sky-50 to-blue-100/60 border border-sky-100 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
-                  <item.icon className="h-5 w-5 text-sky-600" strokeWidth={2} />
+                <div className="h-11 w-11 rounded-lg bg-muted border border-border flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                  <item.icon className="h-5 w-5 text-foreground" strokeWidth={2} />
                 </div>
-                <h3 className="preserve-case text-base font-semibold text-slate-800 mb-2">
+                <h3 className="preserve-case text-base font-medium text-foreground mb-2">
                   {item.title}
                 </h3>
-                <p className="preserve-case text-sm text-slate-500 leading-relaxed">
+                <p className="preserve-case text-sm text-muted-foreground leading-relaxed">
                   {item.description}
                 </p>
               </motion.div>
@@ -247,24 +247,24 @@ export default function LandingPage() {
       </section>
 
       {/* ─── COMPLIANCE ──────────────────────────────────────────────── */}
-      <section id="conformidade" className="py-16 px-6 bg-white border-t border-slate-100">
+      <section id="conformidade" className="py-8 px-6 bg-white border-t border-border">
         <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.5 }}
-            className="flex flex-col md:flex-row items-center justify-between gap-6 p-6 md:p-8 rounded-2xl bg-gradient-to-br from-emerald-50/60 via-white to-sky-50/40 border border-emerald-100/60"
+            className="flex flex-col md:flex-row items-center justify-between gap-6 p-6 md:p-8 rounded-lg bg-released-soft/60 border border-released-border/60"
           >
             <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-xl bg-white border border-emerald-200 flex items-center justify-center shadow-sm">
-                <FileCheck className="h-5 w-5 text-emerald-600" />
+              <div className="h-12 w-12 rounded-lg bg-white border border-released-border flex items-center justify-center shadow-sm">
+                <FileCheck className="h-5 w-5 text-released-on-soft" />
               </div>
               <div>
-                <p className="preserve-case text-sm font-semibold text-slate-800">
+                <p className="preserve-case text-sm font-medium text-foreground">
                   {whitelabel.compliance.complianceBadgeTitle}
                 </p>
-                <p className="preserve-case text-xs text-slate-500 mt-0.5">
+                <p className="preserve-case text-xs text-muted-foreground mt-1">
                   {whitelabel.compliance.legalReferences}
                 </p>
               </div>
@@ -274,7 +274,7 @@ export default function LandingPage() {
               onClick={() => navigate("/auth")}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="preserve-case group inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium transition-all"
+              className="preserve-case group inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary hover:bg-primary text-white text-sm font-medium transition-all"
             >
               Acessar
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -284,24 +284,24 @@ export default function LandingPage() {
       </section>
 
       {/* ─── FOOTER ──────────────────────────────────────────────────── */}
-      <footer className="border-t border-slate-100 bg-slate-50/50 py-10 px-6">
+      <footer className="border-t border-border bg-muted/50 py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <img src={arsenLogo} alt="Arsen" className="h-6 w-6 object-contain" />
+          <div className="flex items-center gap-3">
+            <ArsenMark size={24} variant="compact" className="text-primary" />
             <span
-              className="preserve-case text-sm font-light tracking-[0.25em] text-slate-700"
+              className="preserve-case text-sm font-normal tracking-[0.25em] text-foreground"
               style={{ fontFamily: SERIF }}
             >
               ARSEN
             </span>
           </div>
 
-          <p className="preserve-case text-xs text-slate-400 text-center">
+          <p className="preserve-case text-xs text-muted-foreground text-center">
             © {currentYear} Arsen. Todos os direitos reservados.
           </p>
 
-          <p className="preserve-case text-xs text-slate-400">
-            Desenvolvido por <span className="font-medium text-slate-600">Medneeds</span>
+          <p className="preserve-case text-xs text-muted-foreground">
+            Desenvolvido por <span className="font-medium text-foreground">Medneeds</span>
           </p>
         </div>
       </footer>

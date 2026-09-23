@@ -106,7 +106,7 @@ export function FirstAccessSetup({ userId, fullName, onComplete }: FirstAccessSe
       });
       if (updErr) throw updErr;
 
-      toast.success("Primeiro acesso concluído!");
+      toast.success("Primeiro acesso concluído");
       onComplete();
     } catch (err) {
       console.error(err);
@@ -118,7 +118,7 @@ export function FirstAccessSetup({ userId, fullName, onComplete }: FirstAccessSe
 
   return (
     <div
-      className="relative flex items-start sm:items-center justify-center px-3 sm:px-4 py-6 sm:py-10 bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 min-h-[100dvh] overflow-y-auto"
+      className="relative flex items-start sm:items-center justify-center px-3 sm:px-4 py-6 sm:py-8 bg-muted min-h-[100dvh] overflow-y-auto"
       style={{
         paddingTop: "max(env(safe-area-inset-top), 1rem)",
         paddingBottom: "max(env(safe-area-inset-bottom), 1.5rem)",
@@ -127,17 +127,17 @@ export function FirstAccessSetup({ userId, fullName, onComplete }: FirstAccessSe
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-32 -left-24 h-96 w-96 rounded-full bg-primary/15 blur-3xl animate-pulse" />
         <div
-          className="absolute top-1/3 -right-32 h-[28rem] w-[28rem] rounded-full bg-emerald-500/10 blur-3xl animate-pulse"
+          className="absolute top-1/3 -right-32 h-[28rem] w-[28rem] rounded-full bg-released/10 blur-3xl animate-pulse"
           style={{ animationDelay: "1.2s", animationDuration: "6s" }}
         />
       </div>
 
-      <Card className="relative w-full max-w-md p-5 sm:p-7 space-y-5 backdrop-blur-xl bg-card/80 border-border/60 shadow-2xl shadow-primary/10 animate-in fade-in zoom-in-95 duration-500 my-auto">
+      <Card className="relative w-full max-w-md p-4 sm:p-6 space-y-4 backdrop-blur-xl bg-card/80 border-border/60 shadow-md shadow-md animate-in fade-in zoom-in-95 duration-500 my-auto">
         <div className="text-center space-y-2">
-          <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/30 via-primary/15 to-emerald-500/20 ring-1 ring-primary/30 flex items-center justify-center shadow-lg shadow-primary/20">
-            <ShieldCheck className="h-7 w-7 text-primary drop-shadow" />
+          <div className="mx-auto h-14 w-14 rounded-lg bg-primary/30 ring-1 ring-primary/30 flex items-center justify-center shadow-md shadow-md">
+            <ShieldCheck className="h-7 w-7 text-primary drop-shadow-sm" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">PRIMEIRO ACESSO</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">PRIMEIRO ACESSO</h1>
           <p className="text-sm text-muted-foreground">
             {fullName ? `Olá, ${fullName.split(" ")[0]}.` : "Bem-vindo(a)."} Para finalizar
             o cadastro, escolha seu <b>nome de usuário</b> e uma <b>nova senha</b>.
@@ -163,13 +163,13 @@ export function FirstAccessSetup({ userId, fullName, onComplete }: FirstAccessSe
               {!username ? (
                 <span className="text-muted-foreground">3–30 caracteres, letras/números, ponto, hífen ou underline.</span>
               ) : !usernameOk(username) ? (
-                <span className="text-amber-600">Formato inválido (use letras, números, ponto, hífen ou underline).</span>
+                <span className="text-warning-on-soft">Formato inválido (use letras, números, ponto, hífen ou underline).</span>
               ) : checking ? (
                 <span className="text-muted-foreground inline-flex items-center gap-1">
                   <Loader2 className="h-3 w-3 animate-spin" /> verificando...
                 </span>
               ) : available === true ? (
-                <span className="text-emerald-600 inline-flex items-center gap-1">
+                <span className="text-released-on-soft inline-flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3" /> disponível
                 </span>
               ) : available === false ? (
@@ -203,7 +203,7 @@ export function FirstAccessSetup({ userId, fullName, onComplete }: FirstAccessSe
                 {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            <div className={`text-xs ${pwdStrong.ok ? "text-emerald-600" : "text-amber-600"}`}>
+            <div className={`text-xs ${pwdStrong.ok ? "text-released-on-soft" : "text-warning-on-soft"}`}>
               {pwd ? pwdStrong.msg : "Mínimo 8 caracteres, letras e números."}
             </div>
           </div>
@@ -219,7 +219,7 @@ export function FirstAccessSetup({ userId, fullName, onComplete }: FirstAccessSe
               required
             />
             {pwd2 && pwd !== pwd2 && (
-              <div className="text-xs text-red-600">As senhas não coincidem.</div>
+              <div className="text-xs text-critical-on-soft">As senhas não coincidem.</div>
             )}
           </div>
 
@@ -234,7 +234,7 @@ export function FirstAccessSetup({ userId, fullName, onComplete }: FirstAccessSe
           </Button>
         </form>
 
-        <p className="text-[11px] text-center text-muted-foreground">
+        <p className="text-xs text-center text-muted-foreground">
           Após concluir, você usará seu <b>usuário, CPF ou e-mail</b> + a nova senha em todos os próximos acessos.
         </p>
       </Card>

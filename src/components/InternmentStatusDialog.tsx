@@ -34,39 +34,39 @@ interface InternmentStatusDialogProps {
 
 const statusConfig = {
   SOLICITACAO_PENDENTE: {
-    label: "🕐 Solicitação Pendente",
+    label: "Solicitação Pendente",
     icon: Clock,
-    color: "text-amber-600",
-    bgColor: "bg-amber-50",
-    borderColor: "border-amber-300",
+    color: "text-warning-on-soft",
+    bgColor: "bg-warning-soft",
+    borderColor: "border-warning-border",
   },
   PSM_FAVORAVEL: {
-    label: "✅ Solicitada Internação PSM Favorável",
+    label: "Solicitada Internação PSM Favorável",
     icon: CheckCircle2,
-    color: "text-green-600",
-    bgColor: "bg-green-50",
-    borderColor: "border-green-300",
+    color: "text-released-on-soft",
+    bgColor: "bg-released-soft",
+    borderColor: "border-released-border",
   },
   AGUARDANDO_VAGA: {
-    label: "🏥 Aguardando Alocação no SIGA Vaga",
+    label: "Aguardando Alocação no SIGA Vaga",
     icon: BedDouble,
-    color: "text-blue-600",
-    bgColor: "bg-blue-50",
-    borderColor: "border-blue-300",
+    color: "text-foreground",
+    bgColor: "bg-muted",
+    borderColor: "border-border",
   },
   IR_PARA_UTI: {
-    label: "🚨 IR PARA LEITO DE UTI",
+    label: "IR PARA LEITO DE UTI",
     icon: AlertTriangle,
-    color: "text-red-600",
-    bgColor: "bg-red-50",
-    borderColor: "border-red-300",
+    color: "text-critical-on-soft",
+    bgColor: "bg-critical-soft",
+    borderColor: "border-critical-border",
   },
   IR_PARA_ENFERMARIA: {
-    label: "🏥 IR PARA LEITO DE ENFERMARIA",
+    label: "IR PARA LEITO DE ENFERMARIA",
     icon: BedDouble,
-    color: "text-purple-600",
-    bgColor: "bg-purple-50",
-    borderColor: "border-purple-300",
+    color: "text-foreground",
+    bgColor: "bg-muted",
+    borderColor: "border-border",
   },
 };
 
@@ -182,13 +182,13 @@ export function InternmentStatusDialog({
           </DialogTitle>
           <DialogDescription>
             Gerenciar status de solicitação de internação para{" "}
-            <span className="patient-id font-semibold">{patientName}</span>
+            <span className="patient-id font-medium">{patientName}</span>
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="status" className="text-xs font-semibold">
+            <Label htmlFor="status" className="text-xs font-medium">
               Status da Solicitação
             </Label>
             <Select value={status} onValueChange={setStatus}>
@@ -212,7 +212,7 @@ export function InternmentStatusDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes" className="text-xs font-semibold">
+            <Label htmlFor="notes" className="text-xs font-medium">
               Observações (opcional)
             </Label>
             <Textarea

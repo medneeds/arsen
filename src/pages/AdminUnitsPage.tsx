@@ -86,7 +86,7 @@ export default function AdminUnitsPage() {
       setUnits(mapped);
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
-      toast.error("Erro ao carregar dados");
+      toast.error("Não foi possível carregar dados");
     } finally {
       setLoading(false);
     }
@@ -126,14 +126,14 @@ export default function AdminUnitsPage() {
           .eq("id", editingUnit.id);
 
         if (error) throw error;
-        toast.success("Unidade atualizada com sucesso!");
+        toast.success("Unidade atualizada com sucesso");
       } else {
         const { error } = await supabase
           .from("hospitais")
           .insert(dataToSave);
 
         if (error) throw error;
-        toast.success("Unidade cadastrada com sucesso!");
+        toast.success("Unidade cadastrada com sucesso");
       }
 
       setIsDialogOpen(false);
@@ -143,7 +143,7 @@ export default function AdminUnitsPage() {
       if (error.message?.includes("duplicate")) {
         toast.error("Esta unidade já existe");
       } else {
-        toast.error("Erro ao salvar unidade");
+        toast.error("Não foi possível salvar unidade");
       }
     } finally {
       setIsSaving(false);
@@ -158,14 +158,14 @@ export default function AdminUnitsPage() {
         .eq("id", unitId);
 
       if (error) throw error;
-      toast.success("Unidade excluída com sucesso!");
+      toast.success("Unidade excluída com sucesso");
       fetchData();
     } catch (error: any) {
       console.error("Erro ao excluir unidade:", error);
       if (error.message?.includes("foreign key")) {
         toast.error("Não é possível excluir: existem dados vinculados a esta unidade");
       } else {
-        toast.error("Erro ao excluir unidade");
+        toast.error("Não foi possível excluir unidade");
       }
     }
   };
@@ -175,7 +175,7 @@ export default function AdminUnitsPage() {
       <div className="container mx-auto py-6 px-4 max-w-5xl">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
+            <h1 className="text-2xl font-semibold flex items-center gap-2">
               <Building2 className="h-6 w-6" />
               Gerenciar Unidades Hospitalares
             </h1>

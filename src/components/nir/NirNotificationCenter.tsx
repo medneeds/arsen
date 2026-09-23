@@ -35,9 +35,9 @@ const LEVEL_LABEL: Record<NirNotification["level"], string> = {
 };
 
 const LEVEL_DOT: Record<NirNotification["level"], string> = {
-  critical: "bg-red-500",
-  warning: "bg-amber-500",
-  info: "bg-blue-500",
+  critical: "bg-critical",
+  warning: "bg-warning",
+  info: "bg-primary",
 };
 
 function buildNotifications(metrics: any): NirNotification[] {
@@ -80,7 +80,7 @@ function buildNotifications(metrics: any): NirNotification[] {
       id: "stuck-24h",
       level: "warning",
       category: "tempo",
-      title: `${metrics.stuck24h.length} paciente(s) aguardando vaga há +24h`,
+      title: `${metrics.stuck24h.length} ${(metrics.stuck24h.length) === 1 ? 'paciente' : 'pacientes'} aguardando vaga há +24h`,
       message: "Revisar fluxo de regulação e prioridades.",
       ts: now,
     });
@@ -92,7 +92,7 @@ function buildNotifications(metrics: any): NirNotification[] {
       id: "sisreg",
       level: "warning",
       category: "sisreg",
-      title: `${metrics.sisregStuck.length} solicitação(ões) SISREG sem resposta +12h`,
+      title: `${metrics.sisregStuck.length} ${(metrics.sisregStuck.length) === 1 ? 'solicitação' : 'solicitações'} SISREG sem resposta +12h`,
       message: "Acionar central de regulação externa.",
       ts: now,
     });
@@ -104,7 +104,7 @@ function buildNotifications(metrics: any): NirNotification[] {
       id: "cleaning",
       level: "info",
       category: "tempo",
-      title: `${metrics.longCleaning.length} leito(s) em higienização há +4h`,
+      title: `${metrics.longCleaning.length} ${(metrics.longCleaning.length) === 1 ? 'leito' : 'leitos'} em higienização há +4h`,
       message: "Verificar processo de hotelaria/limpeza.",
       ts: now,
     });
@@ -114,9 +114,9 @@ function buildNotifications(metrics: any): NirNotification[] {
 }
 
 const LEVEL_STYLES: Record<NirNotification["level"], string> = {
-  critical: "border-red-500/40 bg-red-500/5",
-  warning: "border-amber-500/40 bg-amber-500/5",
-  info: "border-blue-500/40 bg-blue-500/5",
+  critical: "border-critical/40 bg-critical/5",
+  warning: "border-warning/40 bg-warning/5",
+  info: "border-border/40 bg-primary/5",
 };
 
 const CATEGORY_ICON: Record<NirNotification["category"], any> = {
@@ -156,14 +156,14 @@ export function NirNotificationCenter({ metrics }: Props) {
         <Button
           variant="outline"
           size="sm"
-          className="relative h-9 gap-2 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground dark:bg-background dark:text-foreground"
+          className="relative h-9 gap-2 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground"
         >
-          <Bell className={cn("h-4 w-4", criticalCount > 0 && "text-red-500 animate-pulse")} />
+          <Bell className={cn("h-4 w-4", criticalCount > 0 && "text-critical animate-pulse")} />
           <span className="text-xs font-medium">Notificações</span>
           {total > 0 && (
             <Badge
               variant={criticalCount > 0 ? "destructive" : "secondary"}
-              className="h-5 px-1.5 text-[10px]"
+              className="h-5 px-2 text-xs"
             >
               {total}
             </Badge>
@@ -173,18 +173,18 @@ export function NirNotificationCenter({ metrics }: Props) {
       <PopoverContent align="end" className="w-96 p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
           <div>
-            <p className="text-sm font-semibold">Central de Notificações NIR</p>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-sm font-medium">Central de Notificações NIR</p>
+            <p className="text-xs text-muted-foreground">
               {criticalCount} crítica(s) · {warningCount} alerta(s)
             </p>
           </div>
         </div>
         <ScrollArea className="max-h-96">
           {total === 0 ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">
+            <div className="py-8 text-center text-sm text-muted-foreground">
               <Bell className="h-8 w-8 mx-auto mb-2 opacity-30" />
               Nenhuma notificação ativa.
-              <p className="text-[11px] mt-1">Tudo dentro das metas.</p>
+              <p className="text-xs mt-1">Tudo dentro das metas.</p>
             </div>
           ) : (
             <div className="p-2 space-y-3">
@@ -198,38 +198,38 @@ export function NirNotificationCenter({ metrics }: Props) {
                 if (doNivel.length === 0) return null;
                 return (
                   <div key={level}>
-                    <div className="flex items-center gap-1.5 px-0.5 pb-1">
+                    <div className="flex items-center gap-2 px-1 pb-1">
                       <span className={cn("h-1.5 w-1.5 rounded-full", LEVEL_DOT[level])} />
-                      <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                      <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                         {LEVEL_LABEL[level]}
                       </span>
-                      <span className="text-[9px] text-muted-foreground/70 tabular-nums">
+                      <span className="text-xs text-muted-foreground/70 tabular-nums">
                         {doNivel.length}
                       </span>
                       <div className="flex-1 h-px bg-border/60" />
                     </div>
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-2">
               {doNivel.map((n) => {
                 const Icon = CATEGORY_ICON[n.category];
                 return (
                   <li
                     key={n.id}
                     className={cn(
-                      "rounded-md border p-2.5 flex gap-2.5",
+                      "rounded-md border p-3 flex gap-3",
                       LEVEL_STYLES[n.level],
                     )}
                   >
                     <Icon
                       className={cn(
-                        "h-4 w-4 mt-0.5 shrink-0",
-                        n.level === "critical" && "text-red-500",
-                        n.level === "warning" && "text-amber-500",
-                        n.level === "info" && "text-blue-500",
+                        "h-4 w-4 mt-1 shrink-0",
+                        n.level === "critical" && "text-critical",
+                        n.level === "warning" && "text-warning",
+                        n.level === "info" && "text-muted-foreground",
                       )}
                     />
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-foreground">{n.title}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{n.message}</p>
+                      <p className="text-xs font-medium text-foreground">{n.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{n.message}</p>
                     </div>
                   </li>
                 );

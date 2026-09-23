@@ -12,9 +12,9 @@ interface Props {
 }
 
 const occupancyTone = (rate: number) => {
-  if (rate >= 95) return { color: "text-red-600 dark:text-red-400", bg: "bg-red-500/10", border: "border-red-500/30", label: "CRÍTICO" };
-  if (rate >= 80) return { color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30", label: "ALERTA" };
-  return { color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30", label: "OK" };
+  if (rate >= 95) return { color: "text-critical-on-soft", bg: "bg-critical/10", border: "border-critical/30", label: "CRÍTICO" };
+  if (rate >= 80) return { color: "text-warning-on-soft", bg: "bg-warning/10", border: "border-warning/30", label: "ALERTA" };
+  return { color: "text-released-on-soft", bg: "bg-released/10", border: "border-released/30", label: "OK" };
 };
 
 interface KpiCardProps {
@@ -28,28 +28,28 @@ interface KpiCardProps {
 
 const toneClasses: Record<string, { bg: string; border: string; text: string }> = {
   neutral: { bg: "bg-card", border: "border-border", text: "text-foreground" },
-  success: { bg: "bg-emerald-500/5", border: "border-emerald-500/20", text: "text-emerald-600 dark:text-emerald-400" },
-  warning: { bg: "bg-amber-500/5", border: "border-amber-500/20", text: "text-amber-600 dark:text-amber-400" },
-  danger: { bg: "bg-red-500/5", border: "border-red-500/20", text: "text-red-600 dark:text-red-400" },
-  info: { bg: "bg-blue-500/5", border: "border-blue-500/20", text: "text-blue-600 dark:text-blue-400" },
+  success: { bg: "bg-released/5", border: "border-released/20", text: "text-released-on-soft" },
+  warning: { bg: "bg-warning/5", border: "border-warning/20", text: "text-warning-on-soft" },
+  danger: { bg: "bg-critical/5", border: "border-critical/20", text: "text-critical-on-soft" },
+  info: { bg: "bg-primary/5", border: "border-border/20", text: "text-foreground" },
 };
 
 function KpiCard({ icon: Icon, label, value, hint, tone = "neutral", badge }: KpiCardProps) {
   const t = toneClasses[tone];
   return (
     <Card className={cn("border", t.border, t.bg)}>
-      <CardContent className="py-3 px-3.5">
+      <CardContent className="py-3 px-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 mb-1">
+            <div className="flex items-center gap-2 mb-1">
               <Icon className={cn("h-3.5 w-3.5", t.text)} />
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium truncate">{label}</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium truncate">{label}</p>
             </div>
-            <p className={cn("text-2xl font-bold leading-tight", t.text)}>{value}</p>
-            {hint && <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{hint}</p>}
+            <p className={cn("text-2xl font-semibold leading-tight", t.text)}>{value}</p>
+            {hint && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{hint}</p>}
           </div>
           {badge && (
-            <Badge variant="outline" className={cn("text-[9px] h-4 shrink-0", t.text, t.border)}>
+            <Badge variant="outline" className={cn("text-xs h-4 shrink-0", t.text, t.border)}>
               {badge}
             </Badge>
           )}
@@ -63,7 +63,7 @@ export function NirKpiStrip({ metrics }: Props) {
   const tone = occupancyTone(metrics.occupancyRate);
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2.5">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
       <KpiCard
         icon={Activity}
         label="Ocupação geral"

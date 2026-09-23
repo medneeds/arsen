@@ -151,7 +151,7 @@ export function RegisterHandoverDialog({ open, onOpenChange, patients }: Registe
         <div className="space-y-4 py-4">
           {/* Data e Hora */}
           <div className="space-y-2">
-            <Label htmlFor="handover-datetime" className="uppercase text-sm font-semibold">
+            <Label htmlFor="handover-datetime" className="uppercase tracking-wider text-sm font-medium">
               Data e Hora da Passagem *
             </Label>
             <input
@@ -159,41 +159,41 @@ export function RegisterHandoverDialog({ open, onOpenChange, patients }: Registe
               type="datetime-local"
               value={handoverDatetime}
               onChange={(e) => setHandoverDatetime(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase tracking-wider"
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
             <div>
-              <p className="text-sm text-muted-foreground uppercase">Leitos Ocupados</p>
-              <p className="text-2xl font-bold text-foreground">{occupiedBeds}</p>
+              <p className="text-sm text-muted-foreground uppercase tracking-wider">Leitos Ocupados</p>
+              <p className="text-2xl font-semibold text-foreground">{occupiedBeds}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground uppercase">Total de Leitos</p>
-              <p className="text-2xl font-bold text-foreground">{totalPatients}</p>
+              <p className="text-sm text-muted-foreground uppercase tracking-wider">Total de Leitos</p>
+              <p className="text-2xl font-semibold text-foreground">{totalPatients}</p>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="shift-type" className="uppercase text-sm font-semibold">
+            <Label htmlFor="shift-type" className="uppercase tracking-wider text-sm font-medium">
               Tipo de Plantão *
             </Label>
             <Select value={shiftType} onValueChange={setShiftType}>
-              <SelectTrigger id="shift-type" className="uppercase">
+              <SelectTrigger id="shift-type" className="uppercase tracking-wider">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="MATUTINO" className="uppercase">MATUTINO</SelectItem>
-                <SelectItem value="VESPERTINO" className="uppercase">VESPERTINO</SelectItem>
-                <SelectItem value="NOTURNO" className="uppercase">NOTURNO</SelectItem>
-                <SelectItem value="OUTRO" className="uppercase">OUTRO</SelectItem>
+                <SelectItem value="MATUTINO" className="uppercase tracking-wider">MATUTINO</SelectItem>
+                <SelectItem value="VESPERTINO" className="uppercase tracking-wider">VESPERTINO</SelectItem>
+                <SelectItem value="NOTURNO" className="uppercase tracking-wider">NOTURNO</SelectItem>
+                <SelectItem value="OUTRO" className="uppercase tracking-wider">OUTRO</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="handover-from" className="uppercase text-sm font-semibold">
+            <Label htmlFor="handover-from" className="uppercase tracking-wider text-sm font-medium">
               Passagem De (Médicos) - Opcional
             </Label>
             <input
@@ -202,12 +202,12 @@ export function RegisterHandoverDialog({ open, onOpenChange, patients }: Registe
               value={handoverFrom}
               onChange={(e) => setHandoverFrom(e.target.value.toUpperCase())}
               placeholder="NOMES DOS MÉDICOS SEPARADOS POR VÍRGULA"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase tracking-wider"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="handover-to" className="uppercase text-sm font-semibold">
+            <Label htmlFor="handover-to" className="uppercase tracking-wider text-sm font-medium">
               Passagem Para (Médicos) - Opcional
             </Label>
             <input
@@ -216,13 +216,13 @@ export function RegisterHandoverDialog({ open, onOpenChange, patients }: Registe
               value={handoverTo}
               onChange={(e) => setHandoverTo(e.target.value.toUpperCase())}
               placeholder="NOMES DOS MÉDICOS SEPARADOS POR VÍRGULA"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase tracking-wider"
             />
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="notes" className="uppercase text-sm font-semibold">
+              <Label htmlFor="notes" className="uppercase tracking-wider text-sm font-medium">
                 Observações - Opcional
               </Label>
               <VoiceRecorder onTranscriptionComplete={handleTranscription} />
@@ -232,7 +232,7 @@ export function RegisterHandoverDialog({ open, onOpenChange, patients }: Registe
               value={notes}
               onChange={(e) => setNotes(e.target.value.toUpperCase())}
               placeholder="ADICIONE OBSERVAÇÕES SOBRE ESTA PASSAGEM OU USE O BOTÃO DE VOZ..."
-              className="min-h-[100px] resize-none uppercase"
+              className="min-h-[100px] resize-none uppercase tracking-wider"
             />
           </div>
         </div>

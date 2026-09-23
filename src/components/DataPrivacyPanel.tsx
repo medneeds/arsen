@@ -153,7 +153,7 @@ export function DataPrivacyPanel() {
       fetchPrivacyData();
     } catch (error) {
       console.error("Erro ao solicitar exclusão:", error);
-      toast.error("Erro ao registrar solicitação. Tente novamente.");
+      toast.error("Não foi possível registrar solicitação. Tente novamente.");
     } finally {
       setRequestingDeletion(false);
     }
@@ -205,11 +205,11 @@ export function DataPrivacyPanel() {
   const getRequestTypeIcon = (type: string) => {
     switch (type) {
       case "export":
-        return <Download className="h-4 w-4 text-blue-600" />;
+        return <Download className="h-4 w-4 text-foreground" />;
       case "deletion":
-        return <Trash2 className="h-4 w-4 text-red-600" />;
+        return <Trash2 className="h-4 w-4 text-critical-on-soft" />;
       default:
-        return <FileText className="h-4 w-4 text-orange-600" />;
+        return <FileText className="h-4 w-4 text-warning-on-soft" />;
     }
   };
 
@@ -245,7 +245,7 @@ export function DataPrivacyPanel() {
                   className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <CheckCircle2 className="h-5 w-5 text-released-on-soft" />
                     <div>
                       <p className="font-medium">{getConsentTypeLabel(consent.tipo_consentimento)}</p>
                       <p className="text-xs text-muted-foreground">
@@ -351,10 +351,10 @@ export function DataPrivacyPanel() {
       </Card>
 
       {/* Exclusão de Dados */}
-      <Card className="border-red-200 dark:border-red-800">
+      <Card className="border-critical-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Trash2 className="h-5 w-5 text-red-600" />
+            <Trash2 className="h-5 w-5 text-critical-on-soft" />
             Exclusão de Dados (Art. 18, VI LGPD)
           </CardTitle>
           <CardDescription>
@@ -362,8 +362,8 @@ export function DataPrivacyPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
-            <p className="text-sm text-red-800 dark:text-red-200">
+          <div className="p-4 bg-critical-soft rounded-lg border border-critical-border">
+            <p className="text-sm text-critical-on-soft">
               <strong>Atenção:</strong> A exclusão de dados é irreversível. Alguns dados podem ser 
               mantidos por obrigação legal (ex: prontuários médicos por 20 anos conforme CFM 1.821/2007). 
               Sua solicitação será analisada pela equipe de conformidade.
@@ -388,7 +388,7 @@ export function DataPrivacyPanel() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-red-600">Solicitar Exclusão de Dados</AlertDialogTitle>
+                <AlertDialogTitle className="text-critical-on-soft">Solicitar Exclusão de Dados</AlertDialogTitle>
                 <AlertDialogDescription className="space-y-2">
                   <p>
                     Você está solicitando a exclusão dos seus dados pessoais do sistema. 
@@ -408,7 +408,7 @@ export function DataPrivacyPanel() {
                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
                 <AlertDialogAction 
                   onClick={handleRequestDeletion}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-critical hover:bg-critical"
                 >
                   Confirmar Solicitação de Exclusão
                 </AlertDialogAction>
@@ -451,15 +451,15 @@ export function DataPrivacyPanel() {
       </Card>
 
       {/* Aviso Legal */}
-      <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+      <Card className="border-warning-border bg-warning-soft">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <AlertCircle className="h-5 w-5 text-warning-on-soft shrink-0 mt-1" />
             <div className="space-y-1">
-              <p className="font-medium text-amber-900 dark:text-amber-100">
+              <p className="font-medium text-warning-on-soft">
                 Informações sobre seus Direitos
               </p>
-              <p className="text-sm text-amber-800 dark:text-amber-200">
+              <p className="text-sm text-warning-on-soft">
                 Conforme a LGPD (Lei 13.709/2018), você tem direito a solicitar acesso, 
                 correção, exclusão ou portabilidade dos seus dados pessoais. Para exercer 
                 esses direitos ou obter mais informações, entre em contato com o 

@@ -53,24 +53,24 @@ export function AllocationPendingBadge({ patient, onStatusChange }: AllocationPe
       icon: Clock,
       label: "Aguardando Aprovação",
       description: "Solicitação enviada, aguardando análise do líder",
-      className: "bg-amber-500/20 text-amber-500 border-amber-500/30 hover:bg-amber-500/30",
-      iconClassName: "text-amber-500",
+      className: "bg-warning/20 text-warning border-warning/30 hover:bg-warning/30",
+      iconClassName: "text-warning",
       pulseClassName: "animate-pulse",
     },
     discussing: {
       icon: MessageSquare,
       label: "Em Discussão",
       description: "O caso está sendo discutido pela equipe",
-      className: "bg-sky-500/20 text-sky-500 border-sky-500/30 hover:bg-sky-500/30",
-      iconClassName: "text-sky-500",
+      className: "bg-primary/20 text-muted-foreground border-border/30 hover:bg-primary/30",
+      iconClassName: "text-muted-foreground",
       pulseClassName: "",
     },
     rejected: {
       icon: XCircle,
       label: "Negado",
       description: "A solicitação foi negada",
-      className: "bg-red-500/20 text-red-500 border-red-500/30 hover:bg-red-500/30",
-      iconClassName: "text-red-500",
+      className: "bg-critical/20 text-critical border-critical/30 hover:bg-critical/30",
+      iconClassName: "text-critical",
       pulseClassName: "",
     },
   };
@@ -143,7 +143,7 @@ export function AllocationPendingBadge({ patient, onStatusChange }: AllocationPe
           <TooltipTrigger asChild>
             <Badge
               variant="outline"
-              className={`allocation-badge-trigger cursor-pointer transition-all ${config.className} ${config.pulseClassName} flex items-center gap-1.5 px-2 py-1 print:hidden`}
+              className={`allocation-badge-trigger cursor-pointer transition-all ${config.className} ${config.pulseClassName} flex items-center gap-2 px-2 py-1 print:hidden`}
               onClick={(e) => {
                 e.stopPropagation();
                 setIsDialogOpen(true);
@@ -183,7 +183,7 @@ export function AllocationPendingBadge({ patient, onStatusChange }: AllocationPe
                     <Icon className={`h-5 w-5 ${config.iconClassName}`} />
                   </div>
                   <div>
-                    <p className="font-semibold text-lg">{patient.name || "Paciente"}</p>
+                    <p className="font-medium text-lg">{patient.name || "Paciente"}</p>
                     {patient.age && <p className="text-sm text-muted-foreground">{patient.age}</p>}
                   </div>
                 </div>
@@ -221,7 +221,7 @@ export function AllocationPendingBadge({ patient, onStatusChange }: AllocationPe
                   variant="outline"
                   onClick={handleSetDiscussing}
                   disabled={isApproving || isSettingDiscussing}
-                  className="w-full sm:w-auto border-sky-500/50 text-sky-500 hover:bg-sky-500/10"
+                  className="w-full sm:w-auto border-border/50 text-muted-foreground hover:bg-primary/10"
                 >
                   {isSettingDiscussing ? (
                     <>
@@ -239,7 +239,7 @@ export function AllocationPendingBadge({ patient, onStatusChange }: AllocationPe
               <Button
                 onClick={handleApprove}
                 disabled={isApproving || isSettingDiscussing}
-                className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="w-full sm:w-auto bg-released hover:bg-released text-white"
               >
                 {isApproving ? (
                   <>
@@ -267,7 +267,7 @@ export function AllocationPendingBadge({ patient, onStatusChange }: AllocationPe
         <TooltipTrigger asChild>
           <Badge
             variant="outline"
-            className={`transition-all ${config.className} ${config.pulseClassName} flex items-center gap-1.5 px-2 py-1`}
+            className={`transition-all ${config.className} ${config.pulseClassName} flex items-center gap-2 px-2 py-1`}
           >
             <Icon className={`h-3.5 w-3.5 ${config.iconClassName}`} />
             <span className="text-xs font-medium">{config.label}</span>

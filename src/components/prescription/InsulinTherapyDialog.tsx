@@ -73,7 +73,7 @@ export function InsulinTherapyDialog({
     if (open) {
       setStep(1);
       if (existingPlan) {
-        // 🔒 Ao editar: restaurar SEMPRE o plano já salvo.
+        // Ao editar: restaurar SEMPRE o plano já salvo.
         // Sem isso, o useState inicial é reutilizado com os defaults
         // e as doses editadas anteriormente se perdem.
         setPlan(existingPlan);
@@ -140,9 +140,9 @@ export function InsulinTherapyDialog({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Syringe className="h-5 w-5 text-red-500" />
+            <Syringe className="h-5 w-5 text-critical" />
             ASSISTENTE DE INSULINOTERAPIA
-            <Badge variant="outline" className="ml-2 text-[10px]">{medicationName}</Badge>
+            <Badge variant="outline" className="ml-2 text-xs">{medicationName}</Badge>
           </DialogTitle>
           <DialogDescription>
             Construa o esquema completo (basal · bolus · resgate · EV) com sugestões SBD 2024 / ADA 2024 / AMIB.
@@ -154,7 +154,7 @@ export function InsulinTherapyDialog({
           {[1, 2, 3].map(n => (
             <React.Fragment key={n}>
               <div className={cn(
-                "h-8 w-8 rounded-full grid place-items-center text-xs font-semibold transition-colors",
+                "h-8 w-8 rounded-full grid place-items-center text-xs font-medium transition-colors",
                 step >= n ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
               )}>{n}</div>
               {n < 3 && <div className={cn("flex-1 h-0.5", step > n ? "bg-primary" : "bg-muted")} />}
@@ -183,9 +183,9 @@ export function InsulinTherapyDialog({
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <Icon className={cn("h-4 w-4", active ? "text-primary" : "text-muted-foreground")} />
-                    <span className="text-sm font-bold">{opt.label}</span>
+                    <span className="text-sm font-semibold">{opt.label}</span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground leading-snug">{opt.desc}</p>
+                  <p className="text-xs text-muted-foreground leading-snug">{opt.desc}</p>
                 </button>
               );
             })}
@@ -255,7 +255,7 @@ export function InsulinTherapyDialog({
           <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
             <div className="flex items-center gap-2 mb-3">
               <Check className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-bold">{review.headline}</h3>
+              <h3 className="text-sm font-semibold">{review.headline}</h3>
             </div>
             <ul className="space-y-1 text-xs leading-relaxed">
               {review.lines.map((l, i) => (
@@ -266,9 +266,9 @@ export function InsulinTherapyDialog({
               ))}
             </ul>
             {plan.scheme === 'iv_continuous' && (
-              <div className="mt-3 flex items-start gap-2 rounded-md bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 p-2">
-                <AlertTriangle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-red-700 dark:text-red-300">
+              <div className="mt-3 flex items-start gap-2 rounded-md bg-critical-soft border border-critical-border p-2">
+                <AlertTriangle className="h-4 w-4 text-critical-on-soft shrink-0 mt-1" />
+                <p className="text-xs text-critical-on-soft">
                   <strong>ALTA VIGILÂNCIA:</strong> bomba de infusão, dupla checagem, HGT seriado e K+ sérico monitorado.
                 </p>
               </div>
@@ -318,15 +318,15 @@ function validateStep2(plan: InsulinPlan): boolean {
  */
 function HypoglycemiaProtocolField({ plan, onChange }: { plan: InsulinPlan; onChange: (p: Partial<InsulinPlan>) => void }) {
   return (
-    <div className="rounded-md border border-rose-300/70 bg-rose-50/60 dark:bg-rose-950/20 p-2 space-y-1">
+    <div className="rounded-md border border-critical-border/70 bg-critical-soft/60 p-2 space-y-1">
       <div className="flex items-center gap-2">
-        <Badge variant="outline" className="text-[9px] px-1 bg-rose-100 text-rose-700 border-rose-300">HGT &lt; 70 mg/dL · HIPOGLICEMIA</Badge>
+        <Badge variant="outline" className="text-xs px-1 bg-critical-soft text-critical-on-soft border-critical-border">HGT &lt; 70 mg/dL · HIPOGLICEMIA</Badge>
       </div>
       <Textarea
         value={plan.hypoglycemiaProtocol ?? DEFAULT_HYPO_PROTOCOL}
         onChange={e => onChange({ hypoglycemiaProtocol: e.target.value })}
         placeholder={DEFAULT_HYPO_PROTOCOL}
-        className="text-[11px] min-h-[44px] bg-white dark:bg-slate-900 border-rose-200 dark:border-rose-900 focus-visible:ring-rose-400/50"
+        className="text-xs min-h-[44px] bg-white border-critical-border focus-visible:ring-critical/50"
       />
     </div>
   );
@@ -376,7 +376,7 @@ function BasalBolusEditor({ plan, onChange, onRecalc }: { plan: InsulinPlan; onC
       </div>
 
       {plan.totalDailyDose !== undefined && (
-        <div className="text-[11px] text-muted-foreground">
+        <div className="text-xs text-muted-foreground">
           TDD calculada: <strong>{plan.totalDailyDose} U/dia</strong> (peso × 0,4 U/kg)
         </div>
       )}
@@ -407,10 +407,10 @@ export function SlidingEditor({
   return (
     <div className={cn("space-y-2 rounded-lg border border-border/50 p-3 bg-card/40", compact && "p-2")}>
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <Label className="text-xs font-semibold">{title}</Label>
+        <Label className="text-xs font-medium">{title}</Label>
         {rowsKey === 'slidingRows' && (
           <div className="flex items-center gap-2">
-            <Label className="text-[10px] text-muted-foreground">Frequência HGT</Label>
+            <Label className="text-xs text-muted-foreground">Frequência HGT</Label>
             <Select value={plan.hgtFrequency ?? '6/6h'} onValueChange={(v: NonNullable<InsulinPlan['hgtFrequency']>) => onChange({ hgtFrequency: v })}>
               <SelectTrigger className="h-7 w-44 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -425,17 +425,17 @@ export function SlidingEditor({
         )}
       </div>
 
-      <div className="flex gap-1.5 mb-2 flex-wrap">
-        <Button size="sm" variant="outline" onClick={() => setRows([...SLIDING_LOW])} className="text-[10px] h-7">SENSÍVEL (6 faixas)</Button>
-        <Button size="sm" variant="outline" onClick={() => setRows([...SLIDING_MEDIUM])} className="text-[10px] h-7">MÉDIA (6 faixas)</Button>
-        <Button size="sm" variant="outline" onClick={() => setRows([...SLIDING_HIGH])} className="text-[10px] h-7">RESISTENTE (6 faixas)</Button>
+      <div className="flex gap-2 mb-2 flex-wrap">
+        <Button size="sm" variant="outline" onClick={() => setRows([...SLIDING_LOW])} className="text-xs h-7">SENSÍVEL (6 faixas)</Button>
+        <Button size="sm" variant="outline" onClick={() => setRows([...SLIDING_MEDIUM])} className="text-xs h-7">MÉDIA (6 faixas)</Button>
+        <Button size="sm" variant="outline" onClick={() => setRows([...SLIDING_HIGH])} className="text-xs h-7">RESISTENTE (6 faixas)</Button>
       </div>
 
       {/* Linha fixa de hipoglicemia (HGT < 70) — totalmente editável */}
       <HypoglycemiaProtocolField plan={plan} onChange={onChange} />
 
       {/* Cabeçalho de colunas */}
-      <div className="grid grid-cols-[80px_18px_80px_18px_64px_1fr_28px] items-center gap-1 text-[9px] uppercase tracking-wide text-muted-foreground px-1">
+      <div className="grid grid-cols-[80px_18px_80px_18px_64px_1fr_28px] items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground px-1">
         <span>HGT mín</span>
         <span></span>
         <span>HGT máx</span>
@@ -471,7 +471,7 @@ export function SlidingEditor({
               value={r.note ?? ''}
               onChange={e => updateRow(i, { note: e.target.value })}
               placeholder="ex.: repetir HGT 1h após; chamar plantonista"
-              className="h-7 text-[11px]"
+              className="h-7 text-xs"
             />
             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setRows(rows.filter((_, j) => j !== i))}>
               <Trash2 className="h-3 w-3" />
@@ -481,12 +481,12 @@ export function SlidingEditor({
         <Button
           size="sm" variant="ghost"
           onClick={() => setRows([...rows, { min: 0, max: 0, units: 0, note: '' }])}
-          className="text-[10px] h-7"
+          className="text-xs h-7"
         >
           <Plus className="h-3 w-3 mr-1" /> ADICIONAR FAIXA
         </Button>
       </div>
-      <p className="text-[10px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         Faixas, observação e protocolo de hipoglicemia totalmente editáveis. Use <code>-1</code> em "U" para "CHAMAR MÉDICO".
       </p>
     </div>
@@ -497,7 +497,7 @@ function NphFixedEditor({ plan, onChange, onRecalc }: { plan: InsulinPlan; onCha
   return (
     <div className="space-y-3 rounded-lg border border-border/50 p-3 bg-card/40">
       <div className="flex items-center justify-between">
-        <Label className="text-xs font-semibold">NPH fixa (2/3 manhã + 1/3 noite)</Label>
+        <Label className="text-xs font-medium">NPH fixa (2/3 manhã + 1/3 noite)</Label>
         <Button size="sm" variant="secondary" onClick={onRecalc}>RECALCULAR</Button>
       </div>
       <DoseList
@@ -506,7 +506,7 @@ function NphFixedEditor({ plan, onChange, onRecalc }: { plan: InsulinPlan; onCha
         onChange={(doses) => onChange({ nphDoses: doses })}
       />
       <HypoglycemiaProtocolField plan={plan} onChange={onChange} />
-      <p className="text-[10px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         SBD: iniciar 0,2 U/kg/dia, ajustar conforme HGT pré-refeição. Considerar bedtime se hiperglicemia matinal.
       </p>
     </div>
@@ -517,10 +517,10 @@ function IvContinuousEditor({
   plan, onChange, onApplyProtocol,
 }: { plan: InsulinPlan; onChange: (p: Partial<InsulinPlan>) => void; onApplyProtocol: (k: InsulinPlan['ivProtocol']) => void }) {
   return (
-    <div className="space-y-3 rounded-lg border border-red-200 dark:border-red-900 p-3 bg-red-50/40 dark:bg-red-950/10">
+    <div className="space-y-3 rounded-lg border border-critical-border p-3 bg-critical-soft/40">
       <div className="flex items-center gap-2">
-        <AlertTriangle className="h-4 w-4 text-red-600" />
-        <Label className="text-xs font-semibold">PROTOCOLO EV CONTÍNUO — alta vigilância</Label>
+        <AlertTriangle className="h-4 w-4 text-critical-on-soft" />
+        <Label className="text-xs font-medium">PROTOCOLO EV CONTÍNUO — alta vigilância</Label>
       </div>
       <div className="grid grid-cols-2 gap-2">
         {(['dka', 'hhs', 'uti_glicemia', 'pos_op_cardiaco'] as const).map(k => (
@@ -528,7 +528,7 @@ function IvContinuousEditor({
             key={k} type="button" size="sm"
             variant={plan.ivProtocol === k ? "default" : "outline"}
             onClick={() => onApplyProtocol(k)}
-            className="text-[10px] h-8"
+            className="text-xs h-8"
           >
             {k === 'dka' ? 'CETOACIDOSE (DKA)'
              : k === 'hhs' ? 'HIPEROSMOLAR (HHS)'
@@ -600,7 +600,7 @@ function DoseList({ title, doses, onChange }: { title: string; doses: InsulinDos
           </Button>
         </div>
       ))}
-      <Button size="sm" variant="ghost" onClick={() => onChange([...doses, { time: '07:00', insulin: 'NPH', units: 0 }])} className="text-[10px] h-7">
+      <Button size="sm" variant="ghost" onClick={() => onChange([...doses, { time: '07:00', insulin: 'NPH', units: 0 }])} className="text-xs h-7">
         <Plus className="h-3 w-3 mr-1" /> ADICIONAR DOSE
       </Button>
     </div>

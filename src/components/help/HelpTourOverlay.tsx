@@ -50,11 +50,11 @@ export function HelpTourOverlay() {
       aria-labelledby="help-tour-title"
     >
       <div
-        className="relative mx-4 w-full max-w-md rounded-2xl border border-border bg-card text-card-foreground shadow-2xl animate-in zoom-in-95 fade-in-0 duration-200"
+        className="relative mx-4 w-full max-w-md rounded-lg border border-border bg-card text-card-foreground shadow-md animate-in zoom-in-95 fade-in-0 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Cabeçalho */}
-        <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+        <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-4">
           <div className="flex items-start gap-3 min-w-0">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
               <HelpCircle className="h-5 w-5" />
@@ -62,7 +62,7 @@ export function HelpTourOverlay() {
             <div className="min-w-0">
               <h2
                 id="help-tour-title"
-                className="text-sm font-semibold uppercase tracking-wide truncate"
+                className="text-sm font-medium uppercase tracking-wide truncate"
               >
                 {tour.title}
               </h2>
@@ -83,15 +83,15 @@ export function HelpTourOverlay() {
         </div>
 
         {/* Corpo do passo */}
-        <div className="px-5 py-5">
-          <h3 className="text-base font-semibold mb-2">{step.title}</h3>
+        <div className="px-4 py-4">
+          <h3 className="text-base font-medium mb-2">{step.title}</h3>
           <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
             {step.body}
           </p>
         </div>
 
         {/* Indicador de progresso (dots) */}
-        <div className="flex items-center justify-center gap-1.5 pb-3">
+        <div className="flex items-center justify-center gap-2 pb-3">
           {tour.steps.map((_, i) => (
             <button
               key={i}
@@ -109,7 +109,7 @@ export function HelpTourOverlay() {
         </div>
 
         {/* Rodapé / navegação */}
-        <div className="flex items-center justify-between gap-2 border-t border-border px-5 py-3">
+        <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-3">
           <span className="text-xs text-muted-foreground tabular-nums">
             {currentStep + 1} / {total}
           </span>

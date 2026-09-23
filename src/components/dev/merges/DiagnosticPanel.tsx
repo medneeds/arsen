@@ -153,7 +153,7 @@ export function DiagnosticPanel() {
       <Card className="p-3 space-y-3">
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1 min-w-[220px]">
-            <Label className="text-[10px] uppercase text-muted-foreground">Setor</Label>
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Setor</Label>
             <Select value={sectorCode} onValueChange={setSectorCode}>
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue />
@@ -178,7 +178,7 @@ export function DiagnosticPanel() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <Label className="text-[10px] uppercase text-muted-foreground">Regras de match</Label>
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Regras de match</Label>
             <div className="flex flex-wrap gap-1">
               {ALL_RULES.map((r) => {
                 const on = rules.has(r);
@@ -186,7 +186,7 @@ export function DiagnosticPanel() {
                   <button
                     key={r}
                     onClick={() => toggleRule(r)}
-                    className={`px-2 py-1 text-[10px] rounded border transition-colors ${
+                    className={`px-2 py-1 text-xs rounded-md border transition-colors ${
                       on ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"
                     }`}
                   >
@@ -198,15 +198,15 @@ export function DiagnosticPanel() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <Label className="text-[10px] uppercase text-muted-foreground">Regras especiais (opt-in)</Label>
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Regras especiais (opt-in)</Label>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <Switch id="sim" checked={includeSimilarity} onCheckedChange={setIncludeSimilarity} />
                 <Label htmlFor="sim" className="text-xs">R6 similaridade fonética (≥ 0.85 + DOB)</Label>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <Switch id="hom" checked={includeHomonym} onCheckedChange={setIncludeHomonym} />
-                <Label htmlFor="hom" className="text-xs text-orange-700 dark:text-orange-400">
+                <Label htmlFor="hom" className="text-xs text-warning-on-soft">
                   R8 homônimo/familiar (nome+mãe sem DOB · só revisão humana)
                 </Label>
               </div>
@@ -215,7 +215,7 @@ export function DiagnosticPanel() {
 
           <div className="ml-auto">
             <Button onClick={runScan} disabled={loading} size="sm">
-              {loading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Play className="h-3.5 w-3.5 mr-1.5" />}
+              {loading ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Play className="h-3.5 w-3.5 mr-2" />}
               Rodar varredura
             </Button>
           </div>
@@ -273,7 +273,7 @@ export function DiagnosticPanel() {
 
       {/* Barra fixa do lote */}
       {batchHashes.size > 0 && (
-        <div className="fixed bottom-5 right-5 z-40 bg-card border border-border shadow-lg rounded-lg p-3 flex items-center gap-3">
+        <div className="fixed bottom-5 right-5 z-40 bg-card border border-border shadow-md rounded-lg p-3 flex items-center gap-3">
           <Badge>{batchHashes.size} no lote</Badge>
           <Button size="sm" variant="ghost" onClick={() => setBatchHashes(new Set())}>Limpar</Button>
           <Button size="sm" onClick={() => setReviewOpen(true)}>Revisar e executar</Button>

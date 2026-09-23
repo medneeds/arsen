@@ -133,13 +133,13 @@ export function ExaminusAIDialog({
       setIsProcessing(false);
       
       if (lines.length > 0) {
-        toast.success(`${lines.length} exame(s) extraído(s) com sucesso!`);
+        toast.success(`${lines.length} ${(lines.length) === 1 ? 'exame' : 'exames'} ${(lines.length) === 1 ? 'extraído' : 'extraídos'} com sucesso`);
       } else {
         toast.warning("Nenhum exame identificado no texto");
       }
     } catch (error) {
       console.error("Erro ao processar:", error);
-      toast.error("Erro ao processar exames com IA");
+      toast.error("Não foi possível processar exames com IA");
       setIsProcessing(false);
       setIsStreaming(false);
     }
@@ -225,7 +225,7 @@ ${extractedExams.join('\n')}`
       if (criticalLine && criticalLine !== "SEM ALTERAÇÕES CRÍTICAS") {
         setFilteredCriticalExams([criticalLine]);
         setShowOnlyCritical(true);
-        toast.success("Valores críticos identificados!");
+        toast.success("Valores críticos identificados");
       } else {
         toast.info("Nenhuma alteração crítica identificada nos exames");
       }
@@ -233,7 +233,7 @@ ${extractedExams.join('\n')}`
       setIsFilteringCritical(false);
     } catch (error) {
       console.error("Erro ao filtrar críticos:", error);
-      toast.error("Erro ao identificar valores críticos");
+      toast.error("Não foi possível identificar valores críticos");
       setIsFilteringCritical(false);
     }
   }, [extractedExams]);
@@ -262,7 +262,7 @@ ${extractedExams.join('\n')}`
     }
     
     onImportExams([...currentExams, ...examsToImport]);
-    toast.success(`${examsToImport.length} exame(s) adicionado(s)!`);
+    toast.success(`${examsToImport.length} ${(examsToImport.length) === 1 ? 'exame' : 'exames'} ${(examsToImport.length) === 1 ? 'adicionado' : 'adicionados'}`);
     handleReset();
     onOpenChange(false);
   };
@@ -284,7 +284,7 @@ ${extractedExams.join('\n')}`
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <div 
-              className="p-1.5 rounded-lg"
+              className="p-2 rounded-lg"
               style={{ backgroundColor: `${sectorColor}20` }}
             >
               <Sparkles className="h-5 w-5" style={{ color: sectorColor }} />
@@ -377,7 +377,7 @@ ${extractedExams.join('\n')}`
                       size="sm"
                       onClick={filterCriticalValues}
                       disabled={isFilteringCritical}
-                      className="h-7 text-xs gap-1.5 border-warning/50 text-warning hover:bg-warning/10 hover:text-warning"
+                      className="h-7 text-xs gap-2 border-warning/50 text-warning hover:bg-warning/10 hover:text-warning"
                     >
                       {isFilteringCritical ? (
                         <>
@@ -397,7 +397,7 @@ ${extractedExams.join('\n')}`
                       variant="outline"
                       size="sm"
                       onClick={() => setShowOnlyCritical(false)}
-                      className="h-7 text-xs gap-1.5"
+                      className="h-7 text-xs gap-2"
                     >
                       <Filter className="h-3 w-3" />
                       Ver Todos ({extractedExams.length})
@@ -415,18 +415,18 @@ ${extractedExams.join('\n')}`
                     <div
                       key={idx}
                       className={cn(
-                        "flex items-start gap-2 p-2 rounded hover:bg-accent/50 group",
+                        "flex items-start gap-2 p-2 rounded-md hover:bg-accent/50 group",
                         showOnlyCritical && "bg-warning/10 border border-warning/30"
                       )}
                     >
-                      <span className="text-xs font-semibold text-muted-foreground flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-medium text-muted-foreground flex-shrink-0 mt-1">
                         {idx + 1}.
                       </span>
                       <input
                         type="text"
                         value={exam}
                         onChange={(e) => handleEditExtracted(idx, e.target.value)}
-                        className="flex-1 text-xs uppercase bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary rounded px-1"
+                        className="flex-1 text-xs uppercase tracking-wider bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary rounded-md px-1"
                       />
                       <Button
                         variant="ghost"

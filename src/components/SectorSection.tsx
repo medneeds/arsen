@@ -44,30 +44,29 @@ interface SectorSectionProps {
   customTitle?: string;
   customIcon?: string;
   onRefetch?: () => void;
-  onQuickView?: (patient: Patient) => void;
 }
 
 const sectorInfo: Record<string, { title: string; subtitle: string; icon: string; gradientClass: string }> = {
-  red: { title: "UTI 1", subtitle: "Unidade de Terapia Intensiva 1", icon: "🔴", gradientClass: "bg-gradient-critical" },
-  yellow: { title: "UTI 2", subtitle: "Unidade de Terapia Intensiva 2", icon: "🟡", gradientClass: "bg-gradient-warning" },
-  blue: { title: "UCI 1", subtitle: "Unidade de Cuidados Intermediários 1", icon: "🔵", gradientClass: "bg-gradient-stable" },
-  outside: { title: "UCI 2", subtitle: "Unidade de Cuidados Intermediários 2", icon: "🟢", gradientClass: "bg-gradient-stable" },
-  ucc: { title: "UCC", subtitle: "Unidade de Cuidados Clínicos", icon: "🟣", gradientClass: "bg-gradient-to-r from-violet-500/20 to-violet-600/10" },
-  neuro_01: { title: "Neuro 01", subtitle: "Enfermaria Neuro 01", icon: "🧠", gradientClass: "bg-gradient-to-r from-cyan-500/20 to-cyan-600/10" },
-  neuro_02: { title: "Neuro 02", subtitle: "Enfermaria Neuro 02", icon: "🧠", gradientClass: "bg-gradient-to-r from-cyan-500/20 to-cyan-600/10" },
-  clinica_cirurgica: { title: "Clínica Cirúrgica", subtitle: "Enfermaria Clínica Cirúrgica", icon: "🏥", gradientClass: "bg-gradient-to-r from-teal-500/20 to-teal-600/10" },
-  enfermaria_transicao: { title: "Enf. Transição", subtitle: "Enfermaria de Transição", icon: "🔄", gradientClass: "bg-gradient-to-r from-amber-500/20 to-amber-600/10" },
-  enfermaria_vascular: { title: "Enf. Vascular", subtitle: "Enfermaria Vascular", icon: "💗", gradientClass: "bg-gradient-to-r from-pink-500/20 to-pink-600/10" },
-  sala_vermelha: { title: "Sala Vermelha", subtitle: "Urgência - Sala Vermelha", icon: "🚨", gradientClass: "bg-gradient-critical" },
-  sala_laranja: { title: "Sala Laranja", subtitle: "Urgência - Sala Laranja", icon: "🟠", gradientClass: "bg-gradient-warning" },
-  observacao_clinica: { title: "Obs. Clínica", subtitle: "Observação Clínica", icon: "👁️", gradientClass: "bg-gradient-to-r from-sky-500/20 to-sky-600/10" },
-  internacao_ue: { title: "Posto de Internação", subtitle: "Posto de Internação", icon: "🏨", gradientClass: "bg-gradient-to-r from-indigo-500/20 to-indigo-600/10" },
-  ue_vertical: { title: "UE Vertical", subtitle: "UE Vertical", icon: "⬆️", gradientClass: "bg-gradient-to-r from-purple-500/20 to-purple-600/10" },
-  ue_horizontal: { title: "UE Horizontal", subtitle: "UE Horizontal", icon: "➡️", gradientClass: "bg-gradient-to-r from-indigo-500/20 to-indigo-600/10" },
-  riv: { title: "RIV", subtitle: "Referência de Internação Vascular", icon: "🩸", gradientClass: "bg-gradient-to-r from-rose-500/20 to-rose-600/10" },
-  cc_preparo: { title: "CC Preparo", subtitle: "Centro Cirúrgico - Preparo", icon: "⚕️", gradientClass: "bg-gradient-to-r from-slate-500/20 to-slate-600/10" },
-  cc_bloco: { title: "CC Bloco", subtitle: "Centro Cirúrgico - Bloco", icon: "🔪", gradientClass: "bg-gradient-to-r from-slate-500/20 to-slate-600/10" },
-  cc_rpa: { title: "CC RPA", subtitle: "Centro Cirúrgico - RPA", icon: "💤", gradientClass: "bg-gradient-to-r from-slate-500/20 to-slate-600/10" },
+  red: { title: "UTI 1", subtitle: "Unidade de Terapia Intensiva 1", icon: "", gradientClass: "bg-gradient-critical" },
+  yellow: { title: "UTI 2", subtitle: "Unidade de Terapia Intensiva 2", icon: "", gradientClass: "bg-gradient-warning" },
+  blue: { title: "UCI 1", subtitle: "Unidade de Cuidados Intermediários 1", icon: "", gradientClass: "bg-gradient-stable" },
+  outside: { title: "UCI 2", subtitle: "Unidade de Cuidados Intermediários 2", icon: "", gradientClass: "bg-gradient-stable" },
+  ucc: { title: "UCC", subtitle: "Unidade de Cuidados Clínicos", icon: "", gradientClass: "bg-muted/20" },
+  neuro_01: { title: "Neuro 01", subtitle: "Enfermaria Neuro 01", icon: "", gradientClass: "bg-muted/20" },
+  neuro_02: { title: "Neuro 02", subtitle: "Enfermaria Neuro 02", icon: "", gradientClass: "bg-muted/20" },
+  clinica_cirurgica: { title: "Clínica Cirúrgica", subtitle: "Enfermaria Clínica Cirúrgica", icon: "", gradientClass: "bg-released-soft/20" },
+  enfermaria_transicao: { title: "Enf. Transição", subtitle: "Enfermaria de Transição", icon: "", gradientClass: "bg-warning-soft/20" },
+  enfermaria_vascular: { title: "Enf. Vascular", subtitle: "Enfermaria Vascular", icon: "", gradientClass: "bg-muted/20" },
+  sala_vermelha: { title: "Sala Vermelha", subtitle: "Urgência - Sala Vermelha", icon: "", gradientClass: "bg-gradient-critical" },
+  sala_laranja: { title: "Sala Laranja", subtitle: "Urgência - Sala Laranja", icon: "", gradientClass: "bg-gradient-warning" },
+  observacao_clinica: { title: "Obs. Clínica", subtitle: "Observação Clínica", icon: "", gradientClass: "bg-muted/20" },
+  internacao_ue: { title: "Posto de Internação", subtitle: "Posto de Internação", icon: "", gradientClass: "bg-muted/20" },
+  ue_vertical: { title: "UE Vertical", subtitle: "UE Vertical", icon: "⬆", gradientClass: "bg-muted/20" },
+  ue_horizontal: { title: "UE Horizontal", subtitle: "UE Horizontal", icon: "", gradientClass: "bg-muted/20" },
+  riv: { title: "RIV", subtitle: "Referência de Internação Vascular", icon: "", gradientClass: "bg-critical-soft/20" },
+  cc_preparo: { title: "CC Preparo", subtitle: "Centro Cirúrgico - Preparo", icon: "", gradientClass: "bg-muted/20" },
+  cc_bloco: { title: "CC Bloco", subtitle: "Centro Cirúrgico - Bloco", icon: "", gradientClass: "bg-muted/20" },
+  cc_rpa: { title: "CC RPA", subtitle: "Centro Cirúrgico - RPA", icon: "", gradientClass: "bg-muted/20" },
 };
 
 interface SortablePatientCardProps {
@@ -82,7 +81,6 @@ interface SortablePatientCardProps {
   onTransfer?: (patientId: string, newSector: Patient['sector']) => void;
   onPrintPatient?: (patientId: string) => void;
   onRefetch?: () => void;
-  onQuickView?: (patient: Patient) => void;
 }
 
 function SortablePatientCard(props: SortablePatientCardProps) {
@@ -111,7 +109,7 @@ function SortablePatientCard(props: SortablePatientCardProps) {
       data-patient-id={props.patient.id}
     >
       <button
-        className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded flex-shrink-0 print:hidden"
+        className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded-md flex-shrink-0 print:hidden"
         {...attributes}
         {...listeners}
       >
@@ -144,9 +142,8 @@ export function SectorSection({
   customTitle,
   customIcon,
   onRefetch,
-  onQuickView
 }: SectorSectionProps) {
-  const info = sectorInfo[sector] || { title: sector, subtitle: sector, icon: "🏥", gradientClass: "bg-gradient-stable" };
+  const info = sectorInfo[sector] || { title: sector, subtitle: sector, icon: "", gradientClass: "bg-gradient-stable" };
   const displayTitle = customTitle || info.title;
   const displayIcon = customIcon || info.icon;
   const [internalIsOpen, setInternalIsOpen] = useState(patients.length > 0);
@@ -209,8 +206,8 @@ export function SectorSection({
   };
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-3 mb-4 print:space-y-0.5 print:mb-1 print:break-inside-avoid">
-      <div className={`${info.gradientClass} rounded-xl p-2 border border-border/50 shadow-md print:p-1 print:mb-0.5 print:rounded-md transition-all duration-200 min-h-[48px] print:h-auto flex items-center`}>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-3 mb-4 print:space-y-1 print:mb-1 print:break-inside-avoid">
+      <div className={`${info.gradientClass} rounded-lg p-2 border border-border/50 shadow-md print:p-1 print:mb-1 print:rounded-md transition-all duration-200 min-h-[48px] print:h-auto flex items-center`}>
         <div className="flex items-center justify-between w-full gap-3">
           {/* Checkbox de seleção em massa removido do cabeçalho a pedido — não é necessário */}
           <CollapsibleTrigger asChild>
@@ -218,7 +215,7 @@ export function SectorSection({
               <ChevronDown className={`h-5 w-5 transition-transform print:hidden ${isOpen ? '' : '-rotate-90'}`} />
               <div className="flex items-center gap-2 print:gap-1">
                 <span className="text-lg print:text-sm">{displayIcon}</span>
-                <h2 className="text-lg font-bold text-foreground print:text-[10px]">{displayTitle}</h2>
+                <h2 className="text-lg font-semibold text-foreground print:text-xs">{displayTitle}</h2>
               </div>
             </button>
           </CollapsibleTrigger>
@@ -245,7 +242,7 @@ export function SectorSection({
               </Button>
             )}
             <div className="flex items-center justify-center h-8 min-w-[2rem] px-2 bg-card/80 backdrop-blur-sm rounded-lg border border-border/50 print:h-6 print:min-w-[1.5rem]">
-              <p className="text-base font-bold text-foreground print:text-[10px]">
+              <p className="text-base font-semibold text-foreground print:text-xs">
                 {regularBedCount(patients)}
                 {sectorCapacity(sector) > 0 && (
                   <span className="text-xs font-normal text-muted-foreground">/{sectorCapacity(sector)}</span>
@@ -256,7 +253,7 @@ export function SectorSection({
         </div>
       </div>
 
-      <CollapsibleContent className="space-y-1.5 print:space-y-0.5">
+      <CollapsibleContent className="space-y-2 print:space-y-1">
         {displayPatients.length === 0 ? (
           <EmptySectorState
             sectorName={displayTitle}
@@ -287,7 +284,6 @@ export function SectorSection({
                   onTransfer={onTransfer}
                   onPrintPatient={onPrintPatient}
                   onRefetch={onRefetch}
-                  onQuickView={onQuickView}
                 />
               ))}
             </SortableContext>

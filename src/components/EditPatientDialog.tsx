@@ -127,14 +127,14 @@ export function EditPatientDialog({
             <div className="space-y-4 py-3">
               {/* Banner: PIS divergente (sincronização pendente) */}
               {pisDiffCount > 0 && registryId && pisSource && (
-                <section className="p-3 rounded-lg border border-amber-400/70 bg-amber-50/80 dark:bg-amber-950/30">
-                  <div className="flex items-start gap-2.5">
-                    <RefreshCw className="h-4 w-4 text-amber-700 mt-0.5 shrink-0" />
+                <section className="p-3 rounded-lg border border-warning/70 bg-warning-soft/80">
+                  <div className="flex items-start gap-3">
+                    <RefreshCw className="h-4 w-4 text-warning-on-soft mt-1 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-amber-900 dark:text-amber-100">
+                      <p className="text-xs font-medium text-warning-on-soft">
                         {pisDiffCount} campo(s) do PIS pendentes de sincronização
                       </p>
-                      <p className="text-[11px] text-amber-800/90 dark:text-amber-200/80 mt-0.5 leading-snug">
+                      <p className="text-xs text-warning-on-soft/90 mt-1 leading-snug">
                         Os dados vindos da pré-admissão (PIS) divergem do prontuário central.
                         Revise e sincronize para manter o cadastro 100% alinhado.
                       </p>
@@ -143,7 +143,7 @@ export function EditPatientDialog({
                       type="button"
                       size="sm"
                       onClick={() => setPisSyncOpen(true)}
-                      className="h-8 text-[11px] gap-1.5 bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+                      className="h-8 text-xs gap-2 bg-warning hover:bg-warning text-white shrink-0"
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
                       Revisar e sincronizar
@@ -155,7 +155,7 @@ export function EditPatientDialog({
               {/* Bloco 1: Identificação (somente leitura) — painel cadastral completo sincronizado com o Cockpit */}
               <section className="space-y-3 px-3 py-3 rounded-lg border bg-muted/30">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-sm font-semibold">
+                  <div className="flex items-center gap-2 text-sm font-medium">
                     <IdCard className="h-4 w-4 text-primary" />
                     Identificação do Paciente
                   </div>
@@ -165,7 +165,7 @@ export function EditPatientDialog({
                       variant="outline"
                       size="sm"
                       onClick={() => setRecordEditOpen(true)}
-                      className="h-8 text-[11px] gap-1.5 shrink-0"
+                      className="h-8 text-xs gap-2 shrink-0"
                     >
                       <FileText className="h-3.5 w-3.5 text-primary" />
                       Editar Prontuário
@@ -184,7 +184,7 @@ export function EditPatientDialog({
                   showFullDetailsToggle={false}
                 />
 
-                <p className="text-[10px] text-muted-foreground italic leading-snug">
+                <p className="text-xs text-muted-foreground italic leading-snug">
                   Nome e código de atendimento são definidos no fluxo de admissão. O número do prontuário
                   pode ser editado pelo botão acima (auditado). Use este painel para conferir se o cadastro
                   está completo antes de prescrever ou evoluir.
@@ -193,14 +193,14 @@ export function EditPatientDialog({
 
               {/* Bloco 2: Dados Hospitalares */}
               <section className="space-y-3 p-3 rounded-lg border bg-card">
-                <div className="flex items-center gap-2 text-sm font-semibold">
+                <div className="flex items-center gap-2 text-sm font-medium">
                   <ClipboardList className="h-4 w-4 text-primary" />
                   Dados Hospitalares
                 </div>
 
                 {/* Especialidades envolvidas */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold flex items-center gap-1.5">
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium flex items-center gap-2">
                     <UserCog className="h-3.5 w-3.5 text-muted-foreground" />
                     Especialidades Envolvidas
                   </Label>
@@ -215,7 +215,7 @@ export function EditPatientDialog({
                       ? [
                           formData.medicalResponsibility?.type?.toUpperCase(),
                           (formData.medicalResponsibility?.specialties?.length ?? 0) > 0
-                            ? `${formData.medicalResponsibility!.specialties!.length} especialidade(s)`
+                            ? `${formData.medicalResponsibility!.specialties!.length} ${(formData.medicalResponsibility!.specialties!.length) === 1 ? 'especialidade' : 'especialidades'}`
                             : null,
                         ].filter(Boolean).join(" · ")
                       : "Definir especialidades envolvidas"}
@@ -223,8 +223,8 @@ export function EditPatientDialog({
                 </div>
 
                 {/* Status clínico */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold flex items-center gap-1.5">
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium flex items-center gap-2">
                     <Stethoscope className="h-3.5 w-3.5 text-muted-foreground" />
                     Status Clínico (Severidade)
                   </Label>
@@ -267,8 +267,8 @@ export function EditPatientDialog({
                       )
                     }
                   />
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold flex items-center gap-1.5">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium flex items-center gap-2">
                       <CalendarCheck className="h-3.5 w-3.5 text-muted-foreground" />
                       Previsão de Alta
                     </Label>
@@ -284,7 +284,7 @@ export function EditPatientDialog({
                       presets={[3, 5, 7, 10]}
                       placeholder="DD/MM/AAAA"
                     />
-                    <p className="text-[10px] text-muted-foreground italic">
+                    <p className="text-xs text-muted-foreground italic">
                       Calendário e atalhos (+3d / +5d / +7d / +10d) a partir da admissão no setor.
                       Sincroniza com o card e com a Evolução Médica.
                     </p>
@@ -292,8 +292,8 @@ export function EditPatientDialog({
                 </div>
 
                 {isUti && (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium">
                       Setor de Origem
                     </Label>
                     <Input
@@ -305,7 +305,7 @@ export function EditPatientDialog({
                         })
                       }
                       placeholder="Ex: EMERGÊNCIA"
-                      className="h-9 text-xs uppercase"
+                      className="h-9 text-xs uppercase tracking-wider"
                     />
                   </div>
                 )}
@@ -314,11 +314,11 @@ export function EditPatientDialog({
               {/* Bloco 3: Remanejamento operacional (administrativo, sem decisão clínica) */}
               {patient.name && (
                 <section className="space-y-2 p-3 rounded-lg border bg-card">
-                  <div className="flex items-center gap-2 text-sm font-semibold">
+                  <div className="flex items-center gap-2 text-sm font-medium">
                     <ArrowRightLeft className="h-4 w-4 text-primary" />
                     Remanejamento Operacional
                   </div>
-                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     Use somente para <strong>mudança de leito por motivo operacional</strong>
                     (reforma, manutenção, isolamento, conforto) — sem decisão clínica.
                     O histórico do paciente é preservado integralmente.
@@ -328,7 +328,7 @@ export function EditPatientDialog({
                     variant="outline"
                     size="sm"
                     onClick={() => setOperationalRelocOpen(true)}
-                    className="w-full h-9 text-xs gap-1.5 justify-start"
+                    className="w-full h-9 text-xs gap-2 justify-start"
                   >
                     <ArrowRightLeft className="h-3.5 w-3.5 text-primary" />
                     Remanejar para outro leito (operacional)
@@ -338,11 +338,11 @@ export function EditPatientDialog({
 
               {/* Banner: decisões clínicas migraram para o Painel Clínico */}
               {patient.name && (
-                <section className="space-y-2 p-3 rounded-lg border border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/20">
+                <section className="space-y-2 p-3 rounded-lg border border-warning-border/60 bg-warning-soft/60">
                   <div className="flex items-start gap-2 text-xs leading-relaxed">
-                    <ClipboardList className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                    <ClipboardList className="h-4 w-4 text-warning-on-soft mt-1 shrink-0" />
                     <div>
-                      <p className="font-semibold text-amber-900 dark:text-amber-200">
+                      <p className="font-medium text-warning-on-soft">
                         Decisões clínicas migraram para o Painel Clínico
                       </p>
                       <p className="mt-1 text-muted-foreground">

@@ -22,10 +22,10 @@ export function CollapsibleInfoCard({ title, summary, badge, defaultOpen = false
         className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground transition-colors rounded-t-lg"
       >
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
           <p className="text-xs text-foreground truncate">{summary}</p>
         </div>
-        {badge && <Badge variant="outline" className="shrink-0 text-[10px]">{badge}</Badge>}
+        {badge && <Badge variant="outline" className="shrink-0 text-xs">{badge}</Badge>}
         {open ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
       </button>
       {open && <CardContent className="pt-3 border-t">{children}</CardContent>}

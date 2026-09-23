@@ -1,6 +1,6 @@
+import { useState, useEffect, useRef, useMemo } from "react";
 import { ADMISSION_STATUS } from "@/lib/admissionStatus";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState, useMemo } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -281,56 +281,52 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         onClick={() => setMobileSheetOpen(true)}
         aria-label="Abrir painel do paciente"
         className={cn(
-          "group fixed right-2 top-24 z-50 w-9 print:hidden rounded-xl border-r",
-          "h-[20dvh] min-h-[140px]",
-          "flex flex-col items-center justify-center gap-3 py-4",
-          "rounded-xl border border-[hsl(217,30%,75%)] dark:border-[hsl(217,30%,28%)]",
-          "bg-card dark:bg-card",
-          "shadow-[-2px_0_10px_rgba(10,22,56,0.18)]",
-          "hover:bg-accent/30",
-          "transition-colors duration-200 cursor-pointer overflow-hidden"
+          "group fixed right-0 top-28 z-50 print:hidden",
+          "w-8 h-auto min-h-[120px]",
+          "flex flex-col items-center justify-center gap-2 py-3",
+          "rounded-l-lg",
+          "border border-r-0 border-[hsl(217,30%,78%)]",
+          "bg-card",
+          "shadow-[-3px_2px_12px_rgba(10,22,56,0.14)]",
+          "hover:bg-[hsl(217,55%,97%)]",
+          "transition-colors duration-150 cursor-pointer"
         )}
       >
         {/* Borda esquerda institucional */}
         <span
           aria-hidden
-          className="absolute left-0 top-0 bottom-0 w-[3px] pointer-events-none"
+          className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-lg pointer-events-none"
           style={{
             background: "linear-gradient(to bottom, #94a3b8 0%, #0f2847 40%, #1a3a5c 70%, #0a1628 100%)"
           }}
         />
-        <ChevronLeft className="h-3.5 w-3.5 text-[hsl(217,72%,42%)] group-hover:text-[hsl(217,72%,28%)] shrink-0" />
+
+        {/* Seta indicando abertura */}
+        <ChevronLeft className="h-3 w-3 text-[hsl(217,72%,45%)] group-hover:text-[hsl(217,72%,28%)] shrink-0 transition-colors" />
+
+        {/* Leito — info principal */}
+        {patient.bedNumber && (
+          <span
+            className="text-xs font-semibold text-[hsl(217,72%,32%)] shrink-0 leading-none"
+            style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
+          >
+            {patient.bedNumber}
+          </span>
+        )}
+
+        {/* Indicador de status */}
         <div className={cn("h-2 w-2 rounded-full shrink-0", status.dot)} title={status.label} />
-        <div
-          className="flex-1 flex items-center justify-center"
-          style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
-        >
-          <div className="flex flex-col items-center gap-3">
-            {patient.bedNumber && (
-              <span className="text-[10px] font-black tracking-[0.18em] text-[hsl(217,72%,30%)]">
-                {patient.bedNumber}
-              </span>
-            )}
-            <span className="text-[7px] font-bold tracking-[0.25em] uppercase text-foreground/50">
-              {sector}
-            </span>
-            {patient.name && (
-              <>
-                <span className="w-3 h-px bg-border" />
-                <span className="text-[8px] font-semibold tracking-wide text-foreground/70">
-                  {patient.name.split(' ').slice(0, 3).join(' ')}
-                </span>
-              </>
-            )}
-          </div>
-        </div>
+
+        {/* Alerta de alergia */}
         {allergies.length > 0 && (
           <span title={`Alergia: ${allergies.join(", ")}`} className="inline-flex shrink-0">
             <ShieldAlert className="h-3 w-3 text-destructive" />
           </span>
         )}
+
+        {/* Label VER */}
         <span
-          className="text-[6px] font-bold tracking-[0.2em] uppercase text-[hsl(217,72%,52%)]/70 shrink-0"
+          className="text-xs font-semibold tracking-[0.15em] uppercase text-[hsl(217,40%,55%)] shrink-0"
           style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
         >
           ver
@@ -367,14 +363,14 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               ? "max-h-[calc(100vh-5rem)] overflow-y-auto"
               : "max-h-[calc(100vh-5rem)] overflow-hidden",
             // Cantos arredondados + overflow-hidden para clipar o conteúdo interno
-            "rounded-xl overflow-hidden",
+            "rounded-lg overflow-hidden",
             // Sombra de profundidade multicamadas
             "shadow-[-2px_0_8px_rgba(10,22,56,0.08),_-8px_0_32px_rgba(10,22,56,0.18),_-16px_0_48px_rgba(10,22,56,0.08)]",
             "backdrop-blur-sm",
             "transition-[width] duration-300 ease-out",
             isExpanded ? "w-[min(24rem,85vw)]" : "w-11",
           ],
-          variant === "inline" && "w-full h-full bg-card border border-[hsl(217,30%,82%)]/70 dark:border-[hsl(217,30%,24%)]/70 rounded-lg overflow-hidden",
+          variant === "inline" && "w-full h-full bg-card border border-[hsl(217,30%,82%)]/70 rounded-lg overflow-hidden",
           "flex-col print:hidden",
           className
         )}
@@ -395,9 +391,8 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               "rounded-none",
               // Fundo: degradê sutil cabeçalho institucional
               "bg-gradient-to-b from-[#0a1628]/5 via-[#0f2847]/8 to-[#1a3a5c]/5",
-              "dark:from-[#0a1628]/30 dark:via-[#0f2847]/40 dark:to-[#1a3a5c]/30",
               // Borda sutil em todos os lados
-              "border border-[hsl(217,30%,75%)]/40 dark:border-[hsl(217,30%,24%)]/50",
+              "border border-[hsl(217,30%,75%)]/40",
               // Hover: ligeiramente mais opaco
               "hover:bg-gradient-to-b hover:from-[#0a1628]/10 hover:via-[#0f2847]/15 hover:to-[#1a3a5c]/10",
               "relative overflow-hidden",
@@ -429,17 +424,17 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               >
                 <div className="flex flex-col items-center gap-3">
                   {patient.bedNumber && (
-                    <span className="text-[11px] font-black tracking-[0.18em] text-[hsl(217,72%,30%)] group-hover:text-[hsl(217,72%,20%)]">
+                    <span className="text-xs font-semibold tracking-[0.18em] text-[hsl(217,72%,30%)] group-hover:text-[hsl(217,72%,20%)]">
                       {patient.bedNumber}
                     </span>
                   )}
-                  <span className="text-[8px] font-bold tracking-[0.25em] uppercase text-foreground/50 group-hover:text-foreground/80">
+                  <span className="text-xs font-semibold tracking-[0.25em] uppercase text-foreground/50 group-hover:text-foreground/80">
                     {sector}
                   </span>
                   {patient.name && patient.name.trim() !== '' && (
                     <>
                       <span className="w-3 h-px bg-border" />
-                      <span className="text-[9px] font-semibold tracking-wide text-foreground/70 group-hover:text-foreground">
+                      <span className="text-xs font-medium tracking-wide text-foreground/70 group-hover:text-foreground">
                         {patient.name.split(' ').slice(0, 3).join(' ')}
                       </span>
                     </>
@@ -456,7 +451,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
 
               {/* Label VER */}
               <span
-                className="text-[7px] font-bold tracking-[0.2em] uppercase text-[hsl(217,72%,52%)]/70 group-hover:text-[hsl(217,72%,32%)] transition-colors shrink-0"
+                className="text-xs font-semibold tracking-[0.2em] uppercase text-[hsl(217,72%,52%)]/70 group-hover:text-[hsl(217,72%,32%)] transition-colors shrink-0"
                 style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
               >
                 ver
@@ -472,13 +467,13 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           variant === "fixed" && !isExpanded && "hidden"
         )}>
         {variant === "fixed" && isExpanded && (
-          <div className="flex justify-end px-2 pt-2 bg-gradient-to-b from-[hsl(217,55%,40%)]/[0.06] via-[hsl(217,55%,40%)]/[0.03] to-transparent border-b border-[hsl(217,30%,86%)]/40 dark:border-[hsl(217,30%,26%)]/40">
+          <div className="flex justify-end px-2 pt-2 bg-gradient-to-b from-[hsl(217,55%,40%)]/[0.06] via-[hsl(217,55%,40%)]/[0.03] to-transparent border-b border-[hsl(217,30%,86%)]/40">
             <button
               type="button"
               title={pinned ? "Desafixar (recolher ao tirar o mouse)" : "Fixar painel aberto"}
               onClick={() => setPinned((v) => !v)}
               className={cn(
-                "inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full transition-all duration-200",
+                "inline-flex items-center gap-1 text-xs uppercase tracking-wider px-3 py-1 rounded-full transition-all duration-200",
                 pinned
                   ? "bg-gradient-to-r from-[hsl(217,70%,40%)] to-[hsl(217,72%,36%)] text-white shadow-sm hover:shadow-md"
                   : "bg-muted/60 text-muted-foreground hover:bg-[hsl(217,55%,40%)]/10 hover:text-[hsl(217,72%,32%)]"
@@ -490,7 +485,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           </div>
         )}
         {/* ===== ZONA 1: IDENTIDADE (sticky) ===== */}
-        <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2.5 sm:pb-3 border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
+        <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-3 sm:pb-3 border-b border-border bg-primary/5">
           <PatientIdentityHeader
             patientId={patient.id}
             fallbackName={patient.name}
@@ -501,7 +496,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             variant="cockpit"
           />
 
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] mt-2">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs mt-2">
             <div className="text-muted-foreground">
               Internação: <span className="text-foreground font-medium"><StayDays admissionDate={patient.admissionDate} /></span>
             </div>
@@ -514,7 +509,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             type="button"
             onClick={() => setRecordEditOpen(true)}
             title="Editar prontuário e ficha cadastral (auditado)"
-            className="mt-2 w-full inline-flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground px-2 py-1 rounded border border-border/50 hover:bg-muted/40 transition-colors"
+            className="mt-2 w-full inline-flex items-center justify-center gap-1 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground px-2 py-1 rounded-md border border-border/50 hover:bg-muted/40 transition-colors"
           >
             <Pencil className="h-3 w-3" />
             Editar prontuário / ficha cadastral
@@ -592,7 +587,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                     size="sm"
                     variant={variant}
                     className={cn(
-                      "h-8 text-xs gap-1.5",
+                      "h-8 text-xs gap-2",
                       // Item impar sozinho na ultima linha ocupa a largura toda,
                       // em vez de deixar meia coluna vazia.
                       todas.length % 2 === 1 && key === todas[todas.length - 1].key && "col-span-2",
@@ -609,7 +604,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         </div>
 
         {/* ===== ZONA 3: ALERTAS CLÍNICOS ===== */}
-        <div className="px-3 py-2.5 border-b border-border space-y-1.5">
+        <div className="px-3 py-3 border-b border-border space-y-2">
           {allergies.length > 0 ? (
             <AlertChip
               icon={ShieldAlert}
@@ -637,16 +632,16 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             const total = hasEvoDevices ? evoDevices.length : fallbackDevices.length;
             if (total === 0) return null;
             return (
-              <div className="rounded-md border border-border/70 bg-muted/30 px-2 py-1.5">
-                <div className="flex items-center gap-1.5 mb-1">
+              <div className="rounded-md border border-border/70 bg-muted/30 px-2 py-2">
+                <div className="flex items-center gap-2 mb-1">
                   <Activity className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Dispositivos invasivos
                   </span>
-                  <span className="text-[9px] text-muted-foreground">({total})</span>
+                  <span className="text-xs text-muted-foreground">({total})</span>
                 </div>
                 {hasEvoDevices ? (
-                  <ul className="space-y-0.5">
+                  <ul className="space-y-1">
                     {[...evoDevices]
                       .sort((a, b) => {
                         const da = a.insertedAt ? calcDIH(a.insertedAt) ?? -1 : -1;
@@ -668,12 +663,12 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                         return (
                           <li
                             key={`${d.id}-${idx}`}
-                            className="flex items-center justify-between gap-2 text-[11px] py-0.5"
+                            className="flex items-center justify-between gap-2 text-xs py-1"
                           >
                             <div className="flex flex-col min-w-0 flex-1">
                               <span className="truncate font-medium text-foreground leading-tight">{formatDeviceLabel(d) || "—"}</span>
                               {(catalogHint || insertedBR) && (
-                                <span className="text-[9px] text-muted-foreground truncate leading-tight">
+                                <span className="text-xs text-muted-foreground truncate leading-tight">
                                   {catalogHint}
                                   {catalogHint && insertedBR ? " · " : ""}
                                   {insertedBR && `inserido ${insertedBR}`}
@@ -684,10 +679,10 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                               <Badge
                                 variant="outline"
                                 className={cn(
-                                  "h-4 px-1 text-[9px] font-semibold border shrink-0",
-                                  tone === "ok" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
-                                  tone === "amber" && "bg-amber-500/10 text-amber-700 border-amber-500/40 dark:text-amber-400",
-                                  tone === "red" && "bg-red-500/10 text-red-700 border-red-500/40 dark:text-red-400",
+                                  "h-4 px-1 text-xs font-medium border shrink-0",
+                                  tone === "ok" && "bg-released/10 text-released-on-soft border-released/30",
+                                  tone === "amber" && "bg-warning/10 text-warning-on-soft border-warning/40",
+                                  tone === "red" && "bg-critical/10 text-critical-on-soft border-critical/40",
                                 )}
                               >
                                 D{days}
@@ -698,9 +693,9 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                       })}
                   </ul>
                 ) : (
-                  <ul className="space-y-0.5">
+                  <ul className="space-y-1">
                     {fallbackDevices.map((label, idx) => (
-                      <li key={idx} className="text-[11px] text-foreground truncate">{label}</li>
+                      <li key={idx} className="text-xs text-foreground truncate">{label}</li>
                     ))}
                   </ul>
                 )}
@@ -722,18 +717,18 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         {prescription && (
           <button
             onClick={() => goPatient("/prescricao")}
-            className="mx-3 mt-2 mb-1 flex items-center justify-between gap-2 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition px-2.5 py-1.5 text-left"
+            className="mx-3 mt-2 mb-1 flex items-center justify-between gap-2 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition px-3 py-2 text-left"
           >
             <div className="flex items-center gap-2 min-w-0">
               <Pill className="h-3.5 w-3.5 text-primary shrink-0" />
               <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-semibold text-foreground">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-foreground">
                     Prescrição v{prescription.version}
                   </span>
                   <PrescriptionStatusBadge status={prescription.status} signed={prescription.signed} />
                 </div>
-                <p className="text-[10px] text-muted-foreground leading-tight">
+                <p className="text-xs text-muted-foreground leading-tight">
                   {prescription.itemsCount} {prescription.itemsCount === 1 ? "item" : "itens"} •{" "}
                   {(() => {
                     try {
@@ -756,21 +751,21 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         {evolution && (
           <button
             onClick={() => goPatient("/evolucao")}
-            className="mx-3 mt-1 mb-1 flex items-start justify-between gap-2 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition px-2.5 py-1.5 text-left"
+            className="mx-3 mt-1 mb-1 flex items-start justify-between gap-2 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition px-3 py-2 text-left"
           >
             <div className="flex items-start gap-2 min-w-0">
-              <NotebookPen className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+              <NotebookPen className="h-3.5 w-3.5 text-primary shrink-0 mt-1" />
               <div className="min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[11px] font-semibold text-foreground">Última evolução</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-medium text-foreground">Última evolução</span>
                   <EvolutionStatusBadge status={evolution.status} validatedAt={evolution.validatedAt} />
                 </div>
                 {evolution.preview && (
-                  <p className="text-[10px] text-foreground/80 leading-tight line-clamp-2 preserve-case mt-0.5">
+                  <p className="text-xs text-foreground/80 leading-tight line-clamp-2 preserve-case mt-1">
                     {evolution.preview}
                   </p>
                 )}
-                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 preserve-case">
+                <p className="text-xs text-muted-foreground leading-tight mt-1 preserve-case">
                   {evolution.createdByName ? `${evolution.createdByName} • ` : ""}
                   {(() => {
                     try {
@@ -785,7 +780,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 </p>
               </div>
             </div>
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />
           </button>
         )}
 
@@ -793,16 +788,16 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         {vitals && (
           <button
             onClick={() => goPatient("/monitoramento")}
-            className="mx-3 mt-1 mb-1 flex items-start justify-between gap-2 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition px-2.5 py-1.5 text-left"
+            className="mx-3 mt-1 mb-1 flex items-start justify-between gap-2 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition px-3 py-2 text-left"
           >
             <div className="flex items-start gap-2 min-w-0 flex-1">
-              <Activity className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+              <Activity className="h-3.5 w-3.5 text-primary shrink-0 mt-1" />
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[11px] font-semibold text-foreground">Sinais vitais</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-medium text-foreground">Sinais vitais</span>
                   {vitals.news2Risk && <News2Badge risk={vitals.news2Risk} score={vitals.news2Score} />}
                 </div>
-                <div className="grid grid-cols-3 gap-x-2 gap-y-0 mt-0.5 text-[10px] text-foreground/90 tabular-nums">
+                <div className="grid grid-cols-3 gap-x-2 gap-y-0 mt-1 text-xs text-foreground/90 tabular-nums">
                   {vitals.systolicBp != null && vitals.diastolicBp != null && (
                     <span>PA <strong>{vitals.systolicBp}/{vitals.diastolicBp}</strong></span>
                   )}
@@ -811,12 +806,12 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                   {vitals.respiratoryRate != null && <span>FR <strong>{vitals.respiratoryRate}</strong></span>}
                   {vitals.temperature != null && <span>T <strong>{vitals.temperature}°</strong></span>}
                   {vitals.lactate != null && (
-                    <span className={cn(Number(vitals.lactate) > 4 && "text-destructive font-semibold")}>
+                    <span className={cn(Number(vitals.lactate) > 4 && "text-destructive font-medium")}>
                       Lac <strong>{vitals.lactate}</strong>
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 preserve-case">
+                <p className="text-xs text-muted-foreground leading-tight mt-1 preserve-case">
                   {vitals.recordedByName ? `${vitals.recordedByName} • ` : ""}
                   {(() => {
                     try {
@@ -831,7 +826,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 </p>
               </div>
             </div>
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />
           </button>
         )}
 
@@ -840,21 +835,21 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           <div className="mx-3 mt-1 mb-1 flex items-stretch gap-1 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition overflow-hidden">
             <button
               onClick={() => goPatient("/round")}
-              className="flex items-start justify-between gap-2 px-2.5 py-1.5 text-left flex-1 min-w-0"
+              className="flex items-start justify-between gap-2 px-3 py-2 text-left flex-1 min-w-0"
             >
               <div className="flex items-start gap-2 min-w-0 flex-1">
-                <Users className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                <Users className="h-3.5 w-3.5 text-primary shrink-0 mt-1" />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[11px] font-semibold text-foreground">Round multiprofissional</span>
-                    <span className="inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide bg-primary/10 text-primary">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-medium text-foreground">Round multiprofissional</span>
+                    <span className="inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium uppercase tracking-wide bg-primary/10 text-primary">
                       {formatDate(round.roundDate)}
                     </span>
                   </div>
-                  <p className="text-[10px] text-foreground/80 leading-tight mt-0.5 tabular-nums">
+                  <p className="text-xs text-foreground/80 leading-tight mt-1 tabular-nums">
                     {round.responsesCount} {round.responsesCount === 1 ? "resposta" : "respostas"} • {round.goalsCount} {round.goalsCount === 1 ? "meta" : "metas"}
                   </p>
-                  <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                  <p className="text-xs text-muted-foreground leading-tight mt-1">
                     {(() => {
                       try {
                         return `Atualizado ${formatDistanceToNow(new Date(round.updatedAt), { addSuffix: true, locale: ptBR })}`;
@@ -863,7 +858,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                   </p>
                 </div>
               </div>
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />
             </button>
             <button
               type="button"
@@ -878,11 +873,11 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           <button
             type="button"
             onClick={() => setRoundPrintOpen(true)}
-            className="mx-3 mt-1 mb-1 flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/20 hover:bg-muted/50 transition px-2.5 py-1.5 text-left w-[calc(100%-1.5rem)]"
+            className="mx-3 mt-1 mb-1 flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/20 hover:bg-muted/50 transition px-3 py-2 text-left w-[calc(100%-1.5rem)]"
           >
             <Printer className="h-3.5 w-3.5 text-primary shrink-0" />
-            <span className="text-[11px] font-medium text-foreground">Imprimir folha do Round</span>
-            <span className="text-[10px] text-muted-foreground ml-auto">em branco</span>
+            <span className="text-xs font-medium text-foreground">Imprimir folha do Round</span>
+            <span className="text-xs text-muted-foreground ml-auto">em branco</span>
           </button>
         )}
 
@@ -905,9 +900,9 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           const isPending = nirRequest.status === "pending";
           const trackingTone =
             elapsedMin > 180 ? "bg-destructive/10 text-destructive border-destructive/30" :
-            elapsedMin > 120 ? "bg-amber-500/10 text-amber-700 border-amber-500/30" :
-            elapsedMin > 60  ? "bg-yellow-400/10 text-yellow-700 border-yellow-400/30" :
-                               "bg-emerald-500/10 text-emerald-700 border-emerald-500/30";
+            elapsedMin > 120 ? "bg-warning/10 text-warning-on-soft border-warning/30" :
+            elapsedMin > 60  ? "bg-warning/10 text-warning-on-soft border-warning/30" :
+                               "bg-released/10 text-released-on-soft border-released/30";
           const fmtElapsed = elapsedMin < 60
             ? `${elapsedMin}min`
             : `${Math.floor(elapsedMin / 60)}h${String(elapsedMin % 60).padStart(2, "0")}`;
@@ -925,31 +920,31 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             <div className="mx-3 mt-1 mb-1 rounded-md border border-border bg-muted/40">
               <button
                 onClick={() => goPatient("/nir")}
-                className="w-full flex items-start justify-between gap-2 hover:bg-muted/70 transition px-2.5 py-1.5 text-left rounded-t-md"
+                className="w-full flex items-start justify-between gap-2 hover:bg-muted/70 transition px-3 py-2 text-left rounded-t-md"
               >
                 <div className="flex items-start gap-2 min-w-0 flex-1">
-                  <BedDouble className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                  <BedDouble className="h-3.5 w-3.5 text-primary shrink-0 mt-1" />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[11px] font-semibold text-foreground">Solicitação NIR</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-medium text-foreground">Solicitação NIR</span>
                       <NirStatusBadge status={nirRequest.status} />
                       {isPending && (
-                        <span className={cn("inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wide", trackingTone)}>
+                        <span className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs font-semibold uppercase tracking-wide", trackingTone)}>
                           <ClockIcon className="h-2.5 w-2.5" />
                           {fmtElapsed} aguardando
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-foreground/80 leading-tight mt-0.5 preserve-case">
+                    <p className="text-xs text-foreground/80 leading-tight mt-1 preserve-case">
                       Setor <strong>{nirRequest.requestedSector}</strong>
                       {nirRequest.requestedBed ? ` • Leito ${nirRequest.requestedBed}` : ""}
                     </p>
                     {nirRequest.status === "rejected" && nirRequest.rejectionReason && (
-                      <p className="text-[10px] text-destructive leading-tight mt-0.5 preserve-case line-clamp-2">
+                      <p className="text-xs text-destructive leading-tight mt-1 preserve-case line-clamp-2">
                         {nirRequest.rejectionReason}
                       </p>
                     )}
-                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 preserve-case">
+                    <p className="text-xs text-muted-foreground leading-tight mt-1 preserve-case">
                       {nirRequest.requestingDoctorName ? `${nirRequest.requestingDoctorName} • ` : ""}
                       {(() => {
                         try {
@@ -959,18 +954,18 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                     </p>
                   </div>
                 </div>
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />
               </button>
               {/* Autonomia médica — aparece em pending após 30min ou imediatamente se >60min */}
               {isPending && (
-                <div className="border-t border-border/60 px-2.5 py-1.5 flex items-center justify-between gap-2">
-                  <span className="text-[9px] text-muted-foreground uppercase tracking-wide">
+                <div className="border-t border-border/60 px-3 py-2 flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide">
                     Autonomia médica
                   </span>
                   <Button
                     size="sm"
                     variant="default"
-                    className="h-6 text-[10px] px-2 gap-1"
+                    className="h-6 text-xs px-2 gap-1"
                     disabled={approvingBed}
                     onClick={handleApproveBed}
                   >
@@ -996,31 +991,31 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 });
                 navigate(`/requisicoes?${params.toString()}&especial=apac`);
               }}
-              className="w-full flex items-center justify-between gap-2 hover:bg-muted/70 transition px-2.5 py-1.5 text-left rounded-md"
+              className="w-full flex items-center justify-between gap-2 hover:bg-muted/70 transition px-3 py-2 text-left rounded-md"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <FileCheckIcon />
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-semibold text-foreground">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-foreground">
                       Requisições especiais
                     </span>
                     {specialSummary.pending > 0 && (
-                      <span className="inline-flex items-center rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide bg-warning/15 text-warning">
+                      <span className="inline-flex items-center rounded-md px-2 py-0 text-xs font-medium uppercase tracking-wide bg-warning/15 text-warning">
                         {specialSummary.pending} pendente{specialSummary.pending > 1 ? "s" : ""}
                       </span>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground mt-0.5">
+                  <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs text-muted-foreground mt-1">
                     {specialSummary.hemocomponente > 0 && (
                       <span className="inline-flex items-center gap-1">
-                        <Droplet className="h-2.5 w-2.5 text-rose-500" />
+                        <Droplet className="h-2.5 w-2.5 text-critical" />
                         Hemo <strong className="text-foreground">{specialSummary.hemocomponente}</strong>
                       </span>
                     )}
                     {specialSummary.sat > 0 && (
                       <span className="inline-flex items-center gap-1">
-                        <Syringe className="h-2.5 w-2.5 text-amber-500" />
+                        <Syringe className="h-2.5 w-2.5 text-warning" />
                         SAT <strong className="text-foreground">{specialSummary.sat}</strong>
                       </span>
                     )}
@@ -1036,19 +1031,19 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             </button>
             {specialItems.length > 0 && (
-              <ul className="border-t border-border/60 px-2.5 py-1.5 space-y-1">
+              <ul className="border-t border-border/60 px-3 py-2 space-y-1">
                 {specialItems.slice(0, 3).map((it) => (
                   <li
                     key={`${it.kind}-${it.id}`}
-                    className="flex items-center justify-between gap-2 text-[10px]"
+                    className="flex items-center justify-between gap-2 text-xs"
                   >
-                    <span className="flex items-center gap-1.5 min-w-0">
+                    <span className="flex items-center gap-2 min-w-0">
                       <SpecialKindDot kind={it.kind} />
                       <span className="truncate text-foreground preserve-case">{it.label}</span>
                     </span>
                     <span className={cn(
-                      "text-[9px] uppercase font-semibold px-1 rounded shrink-0",
-                      it.status === "completed" && "text-emerald-700 dark:text-emerald-400",
+                      "text-xs uppercase font-medium px-1 rounded-md shrink-0",
+                      it.status === "completed" && "text-released-on-soft",
                       it.status === "pending" && "text-warning",
                     )}>
                       {it.status}
@@ -1061,16 +1056,16 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         )}
 
         <Tabs defaultValue="resumo" className="flex flex-col">
-          <TabsList className="mx-2 sm:mx-3 mt-2 grid grid-cols-4 h-9 sm:h-8 p-0.5 shrink-0">
-            <TabsTrigger value="resumo" className="text-[11px] h-8 sm:h-7 px-1">Resumo</TabsTrigger>
-            <TabsTrigger value="exames" className="text-[11px] h-8 sm:h-7 px-1">Exames</TabsTrigger>
-            <TabsTrigger value="condutas" className="text-[11px] h-8 sm:h-7 px-1">Condutas</TabsTrigger>
-            <TabsTrigger value="trajeto" className="text-[11px] h-8 sm:h-7 px-1">Trajeto</TabsTrigger>
+          <TabsList className="mx-2 sm:mx-3 mt-2 grid grid-cols-4 h-9 sm:h-8 p-1 shrink-0">
+            <TabsTrigger value="resumo" className="text-xs h-8 sm:h-7 px-1">Resumo</TabsTrigger>
+            <TabsTrigger value="exames" className="text-xs h-8 sm:h-7 px-1">Exames</TabsTrigger>
+            <TabsTrigger value="condutas" className="text-xs h-8 sm:h-7 px-1">Condutas</TabsTrigger>
+            <TabsTrigger value="trajeto" className="text-xs h-8 sm:h-7 px-1">Trajeto</TabsTrigger>
           </TabsList>
 
           <div className="mt-1 pb-3">
             {/* ABA RESUMO: diagnósticos + antecedentes + responsável */}
-            <TabsContent value="resumo" className="px-2.5 sm:px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
+            <TabsContent value="resumo" className="px-3 sm:px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
               <CockpitSection icon={Stethoscope} title="Diagnósticos" count={diagnoses.length}>
                 <ItemList items={diagnoses} emptyMsg="Sem diagnósticos registrados." />
               </CockpitSection>
@@ -1087,9 +1082,9 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </TabsContent>
 
             {/* ABA EXAMES: realtime + relevantes + dispositivos */}
-            <TabsContent value="exames" className="px-2.5 sm:px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
+            <TabsContent value="exames" className="px-3 sm:px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
               <CockpitSection icon={TestTubes} title="Atividade em tempo real">
-                <div className="grid grid-cols-2 gap-1.5 mb-2">
+                <div className="grid grid-cols-2 gap-2 mb-2">
                   <PendingStat label="Exames pendentes" value={pendingSummary.pendingExams} tone="warning" />
                   <PendingStat label="Exames concluídos" value={pendingSummary.completedExams} tone="success" />
                   <PendingStat label="Culturas pendentes" value={pendingSummary.pendingCultures} tone="warning" />
@@ -1102,9 +1097,9 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                     {pendingItems.slice(0, 5).map((it) => (
                       <li
                         key={`${it.kind}-${it.id}`}
-                        className="flex items-center justify-between gap-2 text-[11px] py-1 border-b border-border/50 last:border-0"
+                        className="flex items-center justify-between gap-2 text-xs py-1 border-b border-border/50 last:border-0"
                       >
-                        <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
                           {it.kind === "culture" ? (
                             <ShieldAlert className={cn("h-3 w-3 shrink-0", it.critical ? "text-destructive" : "text-muted-foreground")} />
                           ) : (
@@ -1113,8 +1108,8 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                           <span className="truncate preserve-case">{it.label}</span>
                         </div>
                         <span className={cn(
-                          "text-[9px] uppercase font-semibold px-1 rounded shrink-0",
-                          it.status === "completed" && "text-emerald-700 dark:text-emerald-400",
+                          "text-xs uppercase font-medium px-1 rounded-md shrink-0",
+                          it.status === "completed" && "text-released-on-soft",
                           it.status === "pending" && "text-warning",
                           it.critical && "text-destructive",
                         )}>
@@ -1132,7 +1127,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               {evolution && evolution.culturesHtml && (
                 <CockpitSection icon={FlaskConical} title="Culturas (última evolução)" count={0}>
                   {(evolution.createdByName || evolution.validatedAt || evolution.createdAt) && (
-                    <p className="text-[9px] text-muted-foreground mb-1.5 preserve-case">
+                    <p className="text-xs text-muted-foreground mb-2 preserve-case">
                       {(() => {
                         const ref = evolution.validatedAt || evolution.createdAt;
                         try {
@@ -1146,7 +1141,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                     </p>
                   )}
                   <div
-                    className="text-[11px] leading-snug text-foreground/90 prose-sm max-w-none [&_p]:my-1 [&_strong]:font-semibold"
+                    className="text-xs leading-snug text-foreground/90 prose-sm max-w-none [&_p]:my-1 [&_strong]:font-medium"
                     dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(evolution.culturesHtml) }}
                   />
                 </CockpitSection>
@@ -1154,7 +1149,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </TabsContent>
 
             {/* ABA CONDUTAS: condutas do dia + pendências */}
-            <TabsContent value="condutas" className="px-2.5 sm:px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
+            <TabsContent value="condutas" className="px-3 sm:px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
               <CockpitSection icon={Heart} title="Condutas do dia" count={conducts.length}>
                 <ItemList items={conducts} emptyMsg="Nenhuma conduta lançada." />
               </CockpitSection>
@@ -1164,7 +1159,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </TabsContent>
 
             {/* ABA TRAJETO: previsão de alta + movimentações realtime */}
-            <TabsContent value="trajeto" className="px-2.5 sm:px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
+            <TabsContent value="trajeto" className="px-3 sm:px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
               <CockpitSection icon={TrendingUp} title="Previsão de alta">
                 <div className="text-xs text-foreground preserve-case">
                   {patient.utiDischargePrediction && patient.utiDischargePrediction.length > 0
@@ -1177,24 +1172,24 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 {movements.length === 0 ? (
                   <EmptyMsg>Nenhuma movimentação registrada.</EmptyMsg>
                 ) : (
-                  <ul className="space-y-1.5">
+                  <ul className="space-y-2">
                     {movements.slice(0, 5).map((m) => {
                       const origin = [m.patientSector, m.patientBed].filter(Boolean).join(" · ");
                       const released = m.releaseStatus === "released";
                       return (
-                        <li key={m.id} className="text-[11px] border-b border-border/40 last:border-0 pb-1.5 last:pb-0">
+                        <li key={m.id} className="text-xs border-b border-border/40 last:border-0 pb-2 last:pb-0">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="font-semibold text-foreground uppercase tracking-wide text-[10px]">
+                            <span className="font-medium text-foreground uppercase tracking-wide text-xs">
                               {m.movementType.replace(/_/g, " ")}
                             </span>
                             <span className={cn(
-                              "text-[9px] uppercase font-semibold px-1 rounded",
-                              released ? "text-emerald-700 dark:text-emerald-400" : "text-warning",
+                              "text-xs uppercase font-medium px-1 rounded-md",
+                              released ? "text-released-on-soft" : "text-warning",
                             )}>
                               {released ? "liberado" : "pendente"}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 text-muted-foreground preserve-case mt-0.5">
+                          <div className="flex items-center gap-1 text-muted-foreground preserve-case mt-1">
                             <span className="truncate">{origin || "—"}</span>
                             {m.destination && (
                               <>
@@ -1203,7 +1198,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                               </>
                             )}
                           </div>
-                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                          <div className="text-xs text-muted-foreground mt-1">
                             {(() => {
                               try {
                                 return formatDistanceToNow(new Date(m.createdAt), { addSuffix: true, locale: ptBR });
@@ -1253,8 +1248,8 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               reimprimir. Antes disso não existia nenhum jeito de consultar o
               que já tinha sido preenchido. */}
           {receituarios.length > 0 && (
-            <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5 space-y-1.5">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
+            <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground px-1">
                 Histórico ({receituarios.length})
               </p>
               <div className="max-h-32 overflow-y-auto space-y-1">
@@ -1264,14 +1259,14 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                   return (
                     <div
                       key={r.id}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-background/80 border border-border/40 text-xs"
+                      className="flex items-center gap-2 px-2 py-2 rounded-md bg-background/80 border border-border/40 text-xs"
                     >
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-foreground/90 truncate">
                           {typeLabel}
                           {itemCount > 0 && <span className="text-muted-foreground font-normal"> · {itemCount} {itemCount === 1 ? "item" : "itens"}</span>}
                         </p>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           {r.created_at ? format(new Date(r.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : ""}
                           {r.signed_by_name ? ` · ${r.signed_by_name}` : ""}
                         </p>
@@ -1365,7 +1360,7 @@ function DischargeQuickActions({ patientId, patientName, admissionStatus, fallba
       onClick={fallback}
       title="Sinalizar movimentação interna, transferência, alta ou óbito"
       className={cn(
-        "group w-full h-9 text-xs font-medium gap-1.5",
+        "group w-full h-9 text-xs font-medium gap-2",
         // Destaque MODERADO: e a acao mais buscada do cockpit, mas alta,
         // transferencia e obito sao irreversiveis ou quase. Realce de borda e
         // fundo sutil, sem virar botao primario cheio — chamar demais a
@@ -1388,10 +1383,10 @@ function FileCheckIcon() {
 
 function SpecialKindDot({ kind }: { kind: "hemocomponente" | "sat" | "apac" | "cultura" }) {
   const map: Record<string, string> = {
-    hemocomponente: "bg-rose-500",
-    sat: "bg-amber-500",
-    apac: "bg-indigo-500",
-    cultura: "bg-emerald-500",
+    hemocomponente: "bg-critical",
+    sat: "bg-warning",
+    apac: "bg-primary",
+    cultura: "bg-released",
   };
   return <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", map[kind])} />;
 }
@@ -1408,25 +1403,25 @@ function AlertChip({ icon: Icon, tone, label, value, count }: AlertChipProps) {
   const toneStyles = {
     danger: { wrap: "border-l-destructive/70", icon: "text-destructive", count: "text-destructive" },
     warning: { wrap: "border-l-warning/70", icon: "text-warning", count: "text-warning" },
-    success: { wrap: "border-l-emerald-500/70", icon: "text-emerald-600 dark:text-emerald-400", count: "text-emerald-600 dark:text-emerald-400" },
+    success: { wrap: "border-l-emerald-500/70", icon: "text-released-on-soft", count: "text-released-on-soft" },
     muted: { wrap: "border-l-border", icon: "text-muted-foreground", count: "text-muted-foreground" },
   }[tone];
 
   return (
     <div
       className={cn(
-        "flex items-start gap-2 px-2.5 py-1.5 rounded-md border border-border/60 bg-muted/30 border-l-2",
+        "flex items-start gap-2 px-3 py-2 rounded-md border border-border/60 bg-muted/30 border-l-2",
         toneStyles.wrap,
       )}
     >
-      <Icon className={cn("h-3.5 w-3.5 mt-0.5 shrink-0", toneStyles.icon)} />
+      <Icon className={cn("h-3.5 w-3.5 mt-1 shrink-0", toneStyles.icon)} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[11px] font-semibold leading-tight text-foreground">{label}</span>
-          {count && <span className={cn("text-[10px] font-bold", toneStyles.count)}>{count}</span>}
+          <span className="text-xs font-medium leading-tight text-foreground">{label}</span>
+          {count && <span className={cn("text-xs font-semibold", toneStyles.count)}>{count}</span>}
         </div>
         {value && (
-          <p className="text-[11px] leading-snug text-muted-foreground truncate preserve-case mt-0.5">{value}</p>
+          <p className="text-xs leading-snug text-muted-foreground truncate preserve-case mt-1">{value}</p>
         )}
       </div>
     </div>
@@ -1442,12 +1437,12 @@ interface CockpitSectionProps {
 
 function CockpitSection({ icon: Icon, title, count, children }: CockpitSectionProps) {
   return (
-    <section className="space-y-1.5">
-      <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+    <section className="space-y-2">
+      <div className="flex items-center gap-2 text-xs font-medium text-foreground">
         <Icon className="h-3.5 w-3.5 text-muted-foreground" />
         <span>{title}</span>
         {count !== undefined && count > 0 && (
-          <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-medium">
+          <Badge variant="secondary" className="h-4 px-2 text-xs font-medium">
             {count}
           </Badge>
         )}
@@ -1460,10 +1455,10 @@ function CockpitSection({ icon: Icon, title, count, children }: CockpitSectionPr
 function ItemList({ items, emptyMsg }: { items: string[]; emptyMsg: string }) {
   if (items.length === 0) return <EmptyMsg>{emptyMsg}</EmptyMsg>;
   return (
-    <ul className="space-y-1.5">
+    <ul className="space-y-2">
       {items.map((item, i) => (
-        <li key={i} className="text-xs text-foreground leading-snug flex gap-1.5">
-          <ChevronRight className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+        <li key={i} className="text-xs text-foreground leading-snug flex gap-2">
+          <ChevronRight className="h-3 w-3 mt-1 text-muted-foreground shrink-0" />
           <span className="preserve-case">{item}</span>
         </li>
       ))}
@@ -1472,7 +1467,7 @@ function ItemList({ items, emptyMsg }: { items: string[]; emptyMsg: string }) {
 }
 
 function EmptyMsg({ children }: { children: React.ReactNode }) {
-  return <p className="text-[11px] text-muted-foreground italic preserve-case">{children}</p>;
+  return <p className="text-xs text-muted-foreground italic preserve-case">{children}</p>;
 }
 
 function PrescriptionStatusBadge({ status, signed }: { status: string; signed: boolean }) {
@@ -1481,11 +1476,11 @@ function PrescriptionStatusBadge({ status, signed }: { status: string; signed: b
     pending_validation: { label: "Aguard. validação", className: "bg-warning/15 text-warning" },
     validated: { label: "Validada", className: "bg-primary/10 text-primary" },
     suspended: { label: "Suspensa", className: "bg-destructive/10 text-destructive" },
-    finalized: { label: "Finalizada", className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
+    finalized: { label: "Finalizada", className: "bg-released/10 text-released-on-soft" },
   };
   const cfg = map[status] || map.draft;
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide", cfg.className)}>
+    <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium uppercase tracking-wide", cfg.className)}>
       {cfg.label}
       {signed && <span className="opacity-80">• assinada</span>}
     </span>
@@ -1498,10 +1493,10 @@ function EvolutionStatusBadge({ status, validatedAt }: { status: string; validat
   const cfg = isSuspended
     ? { label: "Suspensa", className: "bg-destructive/10 text-destructive" }
     : isValidated
-      ? { label: "Validada", className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" }
+      ? { label: "Validada", className: "bg-released/10 text-released-on-soft" }
       : { label: "Em andamento", className: "bg-warning/15 text-warning" };
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide", cfg.className)}>
+    <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium uppercase tracking-wide", cfg.className)}>
       {cfg.label}
     </span>
   );
@@ -1513,9 +1508,9 @@ function News2Badge({ risk, score }: { risk: string; score: number | null }) {
       ? { label: `NEWS2 ${score ?? "?"}`, className: "bg-destructive/15 text-destructive" }
       : risk === "medium"
         ? { label: `NEWS2 ${score ?? "?"}`, className: "bg-warning/15 text-warning" }
-        : { label: `NEWS2 ${score ?? "?"}`, className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" };
+        : { label: `NEWS2 ${score ?? "?"}`, className: "bg-released/10 text-released-on-soft" };
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide", cfg.className)}>
+    <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium uppercase tracking-wide", cfg.className)}>
       {cfg.label}
     </span>
   );
@@ -1525,12 +1520,12 @@ function NirStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string }> = {
     pending: { label: "Pendente", className: "bg-warning/15 text-warning" },
     discussing: { label: "Em discussão", className: "bg-primary/10 text-primary" },
-    approved: { label: "Aprovada", className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
+    approved: { label: "Aprovada", className: "bg-released/10 text-released-on-soft" },
     rejected: { label: "Rejeitada", className: "bg-destructive/10 text-destructive" },
   };
   const cfg = map[status] || map.pending;
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide", cfg.className)}>
+    <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium uppercase tracking-wide", cfg.className)}>
       {cfg.label}
     </span>
   );
@@ -1539,13 +1534,13 @@ function NirStatusBadge({ status }: { status: string }) {
 function PendingStat({ label, value, tone }: { label: string; value: number; tone: "warning" | "success" | "danger" }) {
   const toneClasses = {
     warning: "bg-warning/10 text-warning border-warning/20",
-    success: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+    success: "bg-released/10 text-released-on-soft border-released/20",
     danger: "bg-destructive/10 text-destructive border-destructive/20",
   }[tone];
   return (
     <div className={cn("rounded-md border px-2 py-1 flex items-center justify-between gap-1", toneClasses)}>
-      <span className="text-[9.5px] font-medium leading-tight uppercase tracking-tight">{label}</span>
-      <span className="text-sm font-bold tabular-nums">{value}</span>
+      <span className="text-xs font-medium leading-tight uppercase tracking-tight">{label}</span>
+      <span className="text-sm font-semibold tabular-nums">{value}</span>
     </div>
   );
 }
@@ -1562,14 +1557,14 @@ function IdRow({ label, value, mono }: { label: string; value?: string | null; m
     );
   };
   return (
-    <div className="flex items-center justify-between gap-2 text-[11px] group">
-      <span className="text-muted-foreground uppercase tracking-wide text-[9.5px] font-semibold">
+    <div className="flex items-center justify-between gap-2 text-xs group">
+      <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium">
         {label}
       </span>
       <div className="flex items-center gap-1 min-w-0">
         <span
           className={cn(
-            "text-foreground font-semibold truncate",
+            "text-foreground font-medium truncate",
             mono && "font-mono",
             !value && "text-muted-foreground italic font-normal",
           )}
@@ -1581,7 +1576,7 @@ function IdRow({ label, value, mono }: { label: string; value?: string | null; m
           <button
             type="button"
             onClick={handleCopy}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
             aria-label={`Copiar ${label}`}
           >
             <Copy className="h-2.5 w-2.5" />
@@ -1594,7 +1589,7 @@ function IdRow({ label, value, mono }: { label: string; value?: string | null; m
 
 function FullIdRow({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
   return (
-    <div className="flex justify-between gap-2 text-[11px] preserve-case">
+    <div className="flex justify-between gap-2 text-xs preserve-case">
       <span className="text-muted-foreground shrink-0">{label}:</span>
       <span
         className={cn(

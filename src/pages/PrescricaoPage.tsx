@@ -1,12 +1,12 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { formatPresentation } from "@/lib/formatPresentation";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { useUnsavedPrescription } from "@/contexts/UnsavedPrescriptionContext";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import ReactMarkdown from "react-markdown";
 import { format, addDays, isAfter, setHours, setMinutes, setSeconds, startOfDay } from "date-fns";
-import arsenLogo from "@/assets/arsen-logo.png";
+import { ArsenMark } from "@/components/brand/ArsenMark";
 import { NormaZeroPrintHeader, NormaZeroPrintFooter, generatePrintDocCode } from "@/components/NormaZeroPrintHeader";
 import { ptBR } from "date-fns/locale";
 import {
@@ -14,8 +14,7 @@ import {
   Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe, History,
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText, FlaskConical,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
-  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, List, AlignJustify, ChevronUp, Wand2, BedDouble,
-} from "lucide-react";
+  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, List, AlignJustify, ChevronUp, Wand2, BedDouble, PlusCircle, ChevronDown } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -41,6 +40,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
@@ -122,7 +122,7 @@ import { getInfusionProfile, applyInfusionProfileDefaults } from "@/lib/ivInfusi
 import { MedicationFlagChips } from "@/components/MedicationFlagChips";
 import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog";
 import { AtmStatusDialog } from "@/components/AtmStatusDialog";
-import { useUnifiedMedicationCatalog } from "@/hooks/useUnifiedMedicationCatalog";
+import { useUnifiedMedicationCatalog, invalidateMedicationCatalog } from "@/hooks/useUnifiedMedicationCatalog";
 import { PsychotropicFormDialog, isPsychotropicMedication } from "@/components/PsychotropicFormDialog";
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { TevProtocolDialog } from "@/components/TevProtocolDialog";
@@ -234,10 +234,27 @@ interface PrescriptionItem {
   atbStartDate?: string;      // YYYY-MM-DD
   atbPlannedDays?: string;    // ex: "7"
   atbInfectionSite?: string;
+  // Dados que a CCIH exige para autorizar antimicrobiano. O medico preenche na
+  // Guia ATM e o AtmStatusDialog ja os consumia, mas o item nunca os declarou e
+  // handleAntimicrobialConfirm nunca os copiava — o preenchimento era perdido.
+  atbJustification?: string;
+  atbCultureCollected?: string;  // "sim" | "nao"
+  atbCultureResult?: string;
   nutConsistency?: string;    // IDDSI / textura (oral)
   nutAccess?: string;         // NPT: CVC / PICC / Periférico
   nutComposition?: string;    // NPT: composição resumida
   nutMonitoring?: string;     // NPT: monitorização
+  // Configuração completa do Assistente de Terapia Nutricional. Guardar o plano
+  // inteiro (e não apenas a projeção achatada nos campos abaixo) é o que
+  // permite reabrir o assistente preenchido e o que impede a familia de bugs em
+  // que um campo novo do assistente nunca chega ao item.
+  nutritionPlan?: NutritionPlan;
+  /**
+   * Orientação derivada da configuração do assistente. DIFERENTE de
+   * `instructions`, que é a observação do médico: guidance se atualiza quando a
+   * configuração muda, instructions nunca é sobrescrito.
+   */
+  guidance?: string;
   nutWaterVolPerAdmin?: string; // Água: mL por administração
   nutWaterFreq?: string;      // Água: frequência
   nutZeroReason?: string;     // Motivo do jejum
@@ -260,6 +277,23 @@ interface PrescriptionItem {
   // Reconstituição (pó liofilizado) — Sprint A
   reconstitutionSolvent?: string;   // Ex.: 'AD', 'SF 0,9%', 'próprio diluente'
   reconstitutionVolume?: string;    // mL adicionados ao frasco-ampola
+  // Substâncias combinadas (Hidratação, Reposição, Inalação)
+  // Permite prescrever ex: SF 0,9% + KCl 10% ou Ipratrópio + Salbutamol como item único
+  combinedItems?: CombinedSubItem[];
+}
+
+interface CombinedSubItem {
+  id: string;
+  name: string;
+  presentation?: string;
+  dose?: string;
+  doseUnit?: string;
+  // Inalação
+  nebDose?: string;
+  nebDoseUnit?: 'mg' | 'gts' | 'mL' | 'mcg';
+  // Hidratação/Reposição
+  quantity?: string;
+  quantityUnit?: string;
 }
 
 // Detect nutrition subtype from wizard-generated item name
@@ -290,6 +324,12 @@ import {
   ENTERAL_DILUTION_DEFAULT_ML, quantityUnitShort, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital, parseDecimalBR, isIVRoute, isOralLikeRoute } from "@/lib/solutoToken";
 import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydration";
 import { buildAtbDayLine, buildAtbLineParts } from "@/lib/atbLine";
+import { NUTRITION_STRUCTURED_KEYS } from "@/components/NutritionWizard";
+import { ENTERAL_ROUTE_VALUES, SUPPLEMENT_ROUTE_OPTIONS, normalizeEnteralRoute } from "@/lib/enteralRoutes";
+import { readNutritionPlan, type NutritionPlan } from "@/lib/nutritionPlan";
+import { DEFAULT_WATER_STATE } from "@/components/shared/WaterOfferingFields";
+import { DIET_PROFILE_OPTIONS, readDietProfiles, writeDietProfiles } from "@/lib/dietProfiles";
+import { ORAL_DIET_CONSISTENCIES, normalizeConsistency } from "@/lib/oralConsistency";
 
 // Compose dose token combining `dose` (texto livre, geralmente do preset do wizard)
 // e `quantity`+`quantityUnit` (campos editados inline pelo médico).
@@ -527,7 +567,11 @@ function calcConcentration(item: PrescriptionItem): string {
 
 function posologyToIntervals(posology: string): number {
   // Fase 2: delega à lista canônica compartilhada (inclui 48/48h, 72/72h).
-  // Mantém compatibilidade com legacy 'Dose única' → 1 (canonical usa 'Única').
+  // O canônico é 'Dose única' (commit 96016c99, que removeu a duplicata do
+  // dropdown). O valor legado é 'Única', gravado em prescrições anteriores —
+  // ele não está na lista canônica e cai no fallback de intervalToPhases, que
+  // devolve 1, o valor correto para dose única.
+  // (O comentário anterior aqui dizia o inverso e induzia ao erro.)
   if (posology === 'Dose única') return 1;
   return canonicalIntervalToPhases(posology);
 }
@@ -795,11 +839,11 @@ const TAB_ORDER: PrescriptionCategory[] = [
 export function getCategoryContainerClass(category?: string): string {
   const base = "relative rounded-md p-2 border";
   // Azul institucional unificado (mesmo tom da plataforma — slate-50 + border-l blue-700)
-  const blue = `${base} bg-slate-50/70 dark:bg-slate-900/30 border-slate-200/70 dark:border-slate-800/60 border-l-[3px] border-l-[hsl(217,60%,38%)] dark:border-l-[hsl(217,55%,55%)]`;
+  const blue = `${base} bg-muted/70 border-border/70 border-l-[3px] border-l-[hsl(217,60%,38%)]`;
   switch (category) {
     case 'high_alert':
       // CONVENÇÃO ISMP — mantém vermelho para sinal cromático de segurança no container
-      return `${base} bg-red-50/50 dark:bg-red-950/20 border-red-200/60 dark:border-red-900/50 border-l-[3px] border-l-red-500/70 dark:border-l-red-400/70`;
+      return `${base} bg-critical-soft/50 border-critical-border/60 border-l-[3px] border-l-red-500/70`;
     case 'nutrition':
     case 'hydration':
     case 'replacement':
@@ -818,7 +862,7 @@ export function getCategoryContainerClass(category?: string): string {
 // `high_alert` mantém o vermelho coerente com o container.
 export function getCategoryFieldAccent(category?: string): { border: string; ring: string; descendantOverrides: string } {
   if (category === 'high_alert') {
-    return { border: 'border-red-300/70 focus-visible:border-red-400', ring: 'focus-visible:ring-red-400/60', descendantOverrides: '[&_input.bg-white]:border-red-200/70 [&_input.bg-white]:focus-visible:ring-red-400/60 [&_button.bg-white]:border-red-200/70 [&_button.bg-white]:focus-visible:ring-red-400/60' };
+    return { border: 'border-critical-border/70 focus-visible:border-critical', ring: 'focus-visible:ring-critical/60', descendantOverrides: '[&_input.bg-white]:border-critical-border/70 [&_input.bg-white]:focus-visible:ring-critical/60 [&_button.bg-white]:border-critical-border/70 [&_button.bg-white]:focus-visible:ring-critical/60' };
   }
   return {
     border: 'border-[hsl(217,40%,80%)] focus-visible:border-[hsl(217,60%,50%)]',
@@ -876,9 +920,9 @@ function MedicationAutocomplete({
             onBlur={() => setTimeout(() => setFocused(false), 200)}
             placeholder={placeholder}
             className={cn(
-              "pl-9 bg-background/60 h-7 text-xs transition-colors",
+              "pl-8 bg-background/60 h-7 text-xs transition-colors",
               category ? `${accent.border} ${accent.ring}` : "border-border/50 focus:border-primary/50",
-              onAssistantClick && "pr-9"
+              onAssistantClick && "pr-8"
             )}
           />
           {onAssistantClick && (
@@ -887,7 +931,7 @@ function MedicationAutocomplete({
                 <button
                   type="button"
                   onClick={onAssistantClick}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 rounded-md flex items-center justify-center bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/30 text-primary hover:from-primary/25 hover:to-primary/10 transition-all"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 rounded-md flex items-center justify-center bg-primary/15 border border-primary/30 text-primary hover:from-primary/25 hover:to-primary/10 transition-all"
                   aria-label={assistantTooltip || "Abrir assistente"}
                 >
                   <Sparkles className="h-3 w-3" />
@@ -901,7 +945,7 @@ function MedicationAutocomplete({
         </div>
       </div>
       {focused && filtered.length > 0 && (
-        <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-border bg-popover shadow-lg max-h-64 overflow-y-auto">
+        <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-border bg-popover shadow-md max-h-64 overflow-y-auto">
           {filtered.map((med) => {
             const fav = favCount(med.id);
             return (
@@ -910,17 +954,17 @@ function MedicationAutocomplete({
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleSelect(med)}
-                className="w-full px-3 py-2.5 text-left hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 border-b border-border/30 last:border-0"
+                className="w-full px-3 py-3 text-left hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 border-b border-border/30 last:border-0"
               >
                 <div className="min-w-0">
                   <span className="text-sm font-medium text-foreground block truncate">
-                    {fav > 0 && <Star className="inline h-3 w-3 mr-1 fill-amber-400 text-amber-400" />}
+                    {fav > 0 && <Star className="inline h-3 w-3 mr-1 fill-amber-400 text-warning" />}
                     {med.name}
-                    {med.highAlert && <AlertTriangle className="inline h-3 w-3 ml-1 text-red-500" />}
+                    {med.highAlert && <AlertTriangle className="inline h-3 w-3 ml-1 text-critical" />}
                   </span>
                   <span className="text-xs text-muted-foreground block truncate">
                     {med.isStandard && (
-                      <Badge variant="outline" className="mr-1 text-[9px] px-1 py-0 h-4 border-emerald-500/60 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10">
+                      <Badge variant="outline" className="mr-1 text-xs px-1 py-0 h-4 border-released/60 text-released-on-soft bg-released/10">
                         PADRÃO HMDM
                       </Badge>
                     )}
@@ -928,7 +972,7 @@ function MedicationAutocomplete({
                   </span>
                 </div>
                 {med.defaultRoute !== '-' && (
-                  <Badge variant="outline" className="text-[10px] shrink-0">{med.defaultRoute}</Badge>
+                  <Badge variant="outline" className="text-xs shrink-0">{med.defaultRoute}</Badge>
                 )}
               </button>
             );
@@ -1001,13 +1045,13 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
   return (
     <div className="space-y-2">
       {/* Category chips — pop-up categories open dialogs; others filter the search */}
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap">
         {/* "Todas" reset chip */}
         <button
           type="button"
           onClick={() => { setSelectedCat('all'); inputRef.current?.focus(); }}
           className={cn(
-            "text-[10px] font-medium px-2.5 py-1 rounded-full border transition-all",
+            "text-xs font-medium px-3 py-1 rounded-full border transition-all",
             selectedCat === 'all'
               ? "bg-foreground text-background border-foreground"
               : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60"
@@ -1027,7 +1071,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
               onClick={() => handleChipClick(cat)}
               title={isPopup ? `Abrir guia de ${config.label}` : `Filtrar busca por ${config.label}`}
               className={cn(
-                "text-[10px] font-medium px-2.5 py-1 rounded-full border transition-all flex items-center gap-1",
+                "text-xs font-medium px-3 py-1 rounded-full border transition-all flex items-center gap-1",
                 active
                   ? cn("border-current", config.color, config.bgColor)
                   : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60",
@@ -1036,7 +1080,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
             >
               <Icon className="h-3 w-3" />
               {config.shortLabel ?? config.label}
-              {isPopup && <span className="text-[8px] opacity-60 ml-0.5">▸</span>}
+              {isPopup && <span className="text-xs opacity-60 ml-1">▸</span>}
             </button>
           );
         })}
@@ -1057,11 +1101,11 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
                 ? "Buscar em todas as categorias..."
                 : `Buscar em ${CATEGORY_CONFIG[selectedCat]?.label.toLowerCase()}...`
             }
-            className="pl-9 bg-background/60 border-border/50 h-9 text-sm focus:border-primary/50 transition-colors"
+            className="pl-8 bg-background/60 border-border/50 h-9 text-sm focus:border-primary/50 transition-colors"
           />
         </div>
         {focused && filtered.length > 0 && (
-          <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-border bg-popover shadow-lg max-h-72 overflow-y-auto">
+          <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-border bg-popover shadow-md max-h-72 overflow-y-auto">
             {filtered.map((med) => {
               const catConfig = CATEGORY_CONFIG[med.category];
               const fav = favCount(med.id);
@@ -1075,30 +1119,30 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
                 >
                   <div className="min-w-0 flex-1">
                     <span className="text-sm font-medium text-foreground block truncate">
-                      {fav > 0 && <Star className="inline h-3 w-3 mr-1 fill-amber-400 text-amber-400" />}
+                      {fav > 0 && <Star className="inline h-3 w-3 mr-1 fill-amber-400 text-warning" />}
                       {med.name}
                       {med.highAlert && <AlertTriangle className="inline h-3 w-3 ml-1 text-destructive" />}
                     </span>
                     <span className="text-xs text-muted-foreground block truncate">
                       {med.isStandard && (
-                        <Badge variant="outline" className="mr-1 text-[9px] px-1 py-0 h-4 border-emerald-500/60 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10">
+                        <Badge variant="outline" className="mr-1 text-xs px-1 py-0 h-4 border-released/60 text-released-on-soft bg-released/10">
                           PADRÃO HMDM
                         </Badge>
                       )}
                       <span className="normal-case">{formatPresentation(med.presentation)}</span>
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     {fav > 0 && (
-                      <Badge variant="outline" className="text-[9px] px-1.5 border-amber-400/50 text-amber-700 dark:text-amber-300">
+                      <Badge variant="outline" className="text-xs px-2 border-warning/50 text-warning-on-soft">
                         {fav}×
                       </Badge>
                     )}
                     {catConfig && (
-                      <Badge variant="outline" className={cn("text-[9px] px-1.5", catConfig.color)}>{catConfig.label}</Badge>
+                      <Badge variant="outline" className={cn("text-xs px-2", catConfig.color)}>{catConfig.label}</Badge>
                     )}
                     {med.defaultRoute !== '-' && (
-                      <Badge variant="outline" className="text-[9px]">{med.defaultRoute}</Badge>
+                      <Badge variant="outline" className="text-xs">{med.defaultRoute}</Badge>
                     )}
                   </div>
                 </button>
@@ -1110,7 +1154,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
 
       {/* Free text for nonstandard */}
       {selectedCat === 'nonstandard' && (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <Input
             value={freeText}
             onChange={(e) => setFreeText(e.target.value)}
@@ -1136,10 +1180,10 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
 // Renderizado no modo expandido para itens da categoria 'nutrition' no lugar
 // dos campos de medicação. Todos os campos são OPCIONAIS.
 const NutFieldLabel = ({ children }: { children: React.ReactNode }) => (
-  <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">{children}</span>
+  <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">{children}</span>
 );
 const NutTinyInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
-  <Input {...props} className={cn("h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600", props.className)} />
+  <Input {...props} className={cn("h-6 text-xs bg-white border-border", props.className)} />
 );
 // Input com sufixo de unidade fixo à direita (ex.: "1500 mL")
 const NutSuffixInput = ({
@@ -1160,9 +1204,9 @@ const NutSuffixInput = ({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="h-7 text-[12px] font-semibold pr-9 bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 focus-visible:ring-emerald-400/60"
+      className="h-7 text-xs font-medium pr-8 bg-white border-released-border focus-visible:ring-released/60"
     />
-    <span className="absolute right-2 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 pointer-events-none select-none">
+    <span className="absolute right-2 text-xs font-medium text-released-on-soft pointer-events-none select-none">
       {suffix}
     </span>
   </div>
@@ -1212,12 +1256,17 @@ function NutritionFields({
   })();
 
   // === Listas de opções da nova solicitação de dieta ===
-  const ORAL_DIET_TYPES = ['Líquida', 'Líquida restrita', 'Pastosa', 'Branda', 'Leve', 'Geral'];
+  // Vocabulario unico com o assistente — ver src/lib/oralConsistency.ts.
+  // Antes eram duas listas (6 aqui, 7 la) e um mapa achatando uma na outra,
+  // que fazia "Semilíquida" virar "Pastosa" no caminho.
+  const ORAL_DIET_TYPES = ORAL_DIET_CONSISTENCIES;
   const ENTERAL_DIET_TYPES = ['Polimérica padrão', 'Polimérica hipercalórica', 'Oligomérica', 'Específica diabético', 'Específica renal', 'Específica hepatopata', 'Imunomoduladora', 'Pediátrica'];
   const SUPPLEMENT_TYPES = ['Hiperproteico', 'Hipercalórico', 'Específico diabético', 'Específico renal', 'Espessante', 'Módulo de proteína', 'Módulo de fibra'];
   const DIET_PROFILES = ['Geral', 'Diabético', 'Cardiopata/Hipertenso', 'Renal', 'Hepatopata', 'Anêmico', 'Gastrointestinal', 'Pós-operatório', 'Oncológico', 'Pediátrico', 'Idoso'];
-  const ENTERAL_ROUTES = ['Nasogástrica (NGT)', 'Nasoenteral (NET)', 'Orogástrica (OGT)', 'Gastrostomia', 'Jejunostomia'];
-  const SUPPLEMENT_ROUTES = ['Oral', 'Nasogástrica (NGT)', 'Nasoenteral (NET)', 'Gastrostomia'];
+  // Vocabulario unico com o assistente — ver src/lib/enteralRoutes.ts. Antes
+  // cada lado escrevia a via de um jeito e o seletor abria vazio.
+  const ENTERAL_ROUTES = ENTERAL_ROUTE_VALUES;
+  const SUPPLEMENT_ROUTES = SUPPLEMENT_ROUTE_OPTIONS;
   const DIET_INTERVALS = ['2/2h', '3/3h', '4/4h', '6/6h', '8/8h', '12/12h', '24h', 'Contínua'];
   const DIET_STEPS = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
@@ -1228,7 +1277,7 @@ function NutritionFields({
     <div className="flex items-center gap-1">
       <NutFieldLabel>{label}:</NutFieldLabel>
       <Select value={value || ''} onValueChange={onChange}>
-        <SelectTrigger className={cn("h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 focus-visible:ring-emerald-400/60", width)}>
+        <SelectTrigger className={cn("h-7 text-xs font-medium bg-white border-released-border focus-visible:ring-released/60", width)}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -1238,19 +1287,96 @@ function NutritionFields({
     </div>
   );
 
+  /**
+   * Perfil da dieta: SELECAO MULTIPLA.
+   *
+   * Um paciente pode precisar de dieta hipossodica E para diabetico ao mesmo
+   * tempo. O assistente sempre permitiu escolher varios e os enviava unidos por
+   * virgula; aqui havia um seletor de escolha unica, com OUTRO vocabulario --
+   * entao o campo abria vazio e metade da prescricao se perdia no caminho.
+   * Ver src/lib/dietProfiles.ts.
+   */
+  const ProfileField = ({ item, onUpdate, width = 'w-64' }: {
+    item: PrescriptionItem; onUpdate: (id: string, field: string, value: string) => void; width?: string;
+  }) => {
+    const selecionados = readDietProfiles(item.dietProfile);
+    const alterna = (perfil: string) => {
+      const novo = selecionados.includes(perfil)
+        ? selecionados.filter(p => p !== perfil)
+        : [...selecionados, perfil];
+      onUpdate(item.id, 'dietProfile', writeDietProfiles(novo));
+    };
+    return (
+      <div className="flex items-center gap-1">
+        <NutFieldLabel>Perfil:</NutFieldLabel>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn("h-7 justify-between px-2 text-xs font-medium bg-white border-released-border", width)}
+            >
+              {/* Ate tres perfis aparecem por extenso; so a partir do quarto
+                  vira contagem. Resumir em "2 perfis" logo no segundo escondia
+                  justamente a informacao que o medico acabou de configurar. */}
+              <span className="truncate">
+                {selecionados.length === 0
+                  ? '—'
+                  : selecionados.length <= 3
+                    ? selecionados.join(', ')
+                    : `${selecionados.slice(0, 3).join(', ')} +${selecionados.length - 3}`}
+              </span>
+              <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-80 p-3">
+            <p className="text-xs text-muted-foreground mb-2">
+              Selecione quantas condições o paciente tiver. A característica que cada uma impõe à dieta aparece ao lado.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {DIET_PROFILE_OPTIONS.map(o => {
+                const sel = selecionados.includes(o.label);
+                return (
+                  <button
+                    key={o.key}
+                    type="button"
+                    title={o.efeito}
+                    onClick={() => alterna(o.label)}
+                    className={cn(
+                      "text-xs px-2.5 py-1.5 rounded-lg border transition-all text-left",
+                      sel
+                        ? "border-released bg-released text-white"
+                        : "border-border hover:border-released-border",
+                    )}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+            {selecionados.length > 0 && (
+              <p className="mt-3 border-t border-border pt-2 text-xs text-muted-foreground">
+                Dieta: {DIET_PROFILE_OPTIONS.filter(o => selecionados.includes(o.label)).map(o => o.efeito).join(' · ')}
+              </p>
+            )}
+          </PopoverContent>
+        </Popover>
+      </div>
+    );
+  };
+
   // Mini-toggle (2 opções) reutilizável
   const MiniToggle = ({ value, options, onChange }: { value: string; options: { v: string; label: string }[]; onChange: (v: string) => void }) => (
-    <div className="inline-flex rounded-md border border-emerald-300 dark:border-emerald-700 overflow-hidden h-7 bg-white dark:bg-slate-800">
+    <div className="inline-flex rounded-md border border-released-border overflow-hidden h-7 bg-white">
       {options.map(o => (
         <button
           key={o.v}
           type="button"
           onClick={() => onChange(o.v)}
           className={cn(
-            "px-2 text-[10px] font-semibold transition",
+            "px-2 text-xs font-medium transition",
             value === o.v
-              ? "bg-emerald-600 text-white"
-              : "text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+              ? "bg-released text-white"
+              : "text-released-on-soft hover:bg-released-soft"
           )}
         >
           {o.label}
@@ -1262,7 +1388,7 @@ function NutritionFields({
   // Bloco "Intervalo ↔ Etapas" (switch)
   const scheduleMode: 'interval' | 'steps' = item.nutScheduleMode ?? 'interval';
   const ScheduleSwitch = (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       <MiniToggle
         value={scheduleMode}
         options={[{ v: 'interval', label: 'Intervalo' }, { v: 'steps', label: 'Etapas' }]}
@@ -1270,7 +1396,7 @@ function NutritionFields({
       />
       {scheduleMode === 'interval' ? (
         <Select value={item.dietInterval || ''} onValueChange={(v) => onUpdate(item.id, 'dietInterval', v)}>
-          <SelectTrigger className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-28">
+          <SelectTrigger className="h-7 text-xs font-medium bg-white border-released-border w-28">
             <SelectValue placeholder="—" />
           </SelectTrigger>
           <SelectContent>
@@ -1279,7 +1405,7 @@ function NutritionFields({
         </Select>
       ) : (
         <Select value={item.nutSteps || ''} onValueChange={(v) => onUpdate(item.id, 'nutSteps', v)}>
-          <SelectTrigger className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-28">
+          <SelectTrigger className="h-7 text-xs font-medium bg-white border-released-border w-28">
             <SelectValue placeholder="—" />
           </SelectTrigger>
           <SelectContent>
@@ -1290,10 +1416,32 @@ function NutritionFields({
     </div>
   );
 
-  // Bloco "Correr em" (switch mL/h ↔ gts/min)
+  // Bloco "Correr em" (switch mL/h ↔ gts/min).
+  //
+  // So faz sentido em infusao CONTINUA. Em dieta intermitente ou em bolus o
+  // que a equipe precisa saber e o volume POR TOMADA — uma vazao horaria ali
+  // nao corresponde a nada que se administre, e o placeholder "62" fazia o
+  // campo parecer preenchido. Quando nao e continua, mostra-se o volume por
+  // tomada, derivado do volume/dia e do numero de tomadas.
   const rateMode: 'mlh' | 'gtt' = item.nutRateMode ?? 'mlh';
+  const modoContinuo = !item.dietInterval
+    || /cont[ií]nu|bic|24\s*h/i.test(item.dietInterval || '');
+  const volPorTomada = (() => {
+    const vd = parseFloat((item.nutVolDay || '').replace(',', '.'));
+    const n = parseInt((item.nutFraction || '').replace(/\D/g, ''), 10);
+    if (!Number.isFinite(vd) || vd <= 0 || !Number.isFinite(n) || n <= 0) return null;
+    return Math.round(vd / n);
+  })();
+  const PerIntake = (
+    <div className="flex items-center gap-2">
+      <NutFieldLabel>Por tomada:</NutFieldLabel>
+      <span className="text-xs font-medium text-released-on-soft whitespace-nowrap">
+        {volPorTomada !== null ? `≈ ${volPorTomada} mL` : '—'}
+      </span>
+    </div>
+  );
   const RateSwitch = (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       <NutFieldLabel>Correr em:</NutFieldLabel>
       <MiniToggle
         value={rateMode}
@@ -1309,14 +1457,51 @@ function NutritionFields({
     </div>
   );
 
+  // Orientacao do assistente: derivada da configuracao, nao editavel. Fica
+  // ACIMA das recomendacoes para deixar claro quem escreveu o que — o medico
+  // reconhece de imediato o que e dele e o que o sistema deduziu.
+  /**
+   * Orientacao do assistente: OPCIONAL, aplicada por escolha do medico.
+   *
+   * Antes ela ocupava um bloco fixo acima das Recomendacoes, sempre visivel e
+   * so de leitura -- o item passava a ter dois textos concorrendo pelo mesmo
+   * espaco, e o medico nao tinha o que fazer com aquele.
+   *
+   * Agora e um botao discreto ao lado do rotulo. Clicar acrescenta o texto ao
+   * campo de Recomendacoes, que continua sendo do medico: ele edita, corta ou
+   * remove o que quiser depois. Nada e escrito sem ele pedir, e o botao some
+   * quando a orientacao ja esta aplicada.
+   */
+  const orientacaoAplicada = !!item.guidance
+    && (item.instructions || "").includes(item.guidance);
+
+  const aplicarOrientacao = () => {
+    if (!item.guidance) return;
+    const atual = (item.instructions || "").trim();
+    onUpdate(item.id, 'instructions', atual ? `${atual} · ${item.guidance}` : item.guidance);
+  };
+
   const RecommendationsField = (
     <div className="space-y-1">
-      <NutFieldLabel>Recomendações:</NutFieldLabel>
+      <div className="flex items-center gap-2">
+        <NutFieldLabel>Recomendações:</NutFieldLabel>
+        {item.guidance && !orientacaoAplicada && (
+          <button
+            type="button"
+            onClick={aplicarOrientacao}
+            title={item.guidance}
+            className="inline-flex items-center gap-1 rounded border border-released-border/70 bg-released-soft/40 px-1.5 py-0.5 text-[11px] font-medium text-released-on-soft transition-colors hover:bg-released-soft"
+          >
+            <Sparkles className="h-3 w-3" aria-hidden />
+            Aplicar orientação do assistente
+          </button>
+        )}
+      </div>
       <Textarea
         value={item.instructions}
         onChange={(e) => onUpdate(item.id, 'instructions', e.target.value)}
         onKeyDown={(e) => e.stopPropagation()}
-        className="min-h-[44px] text-[11px] bg-muted/10 border-border/20 italic focus:not-italic"
+        className="min-h-[44px] text-xs bg-muted/10 border-border/20 italic focus:not-italic"
         placeholder="Orientações à equipe (restrições, alergias, conduta em caso de intolerância, metas calóricas, observações específicas...)"
       />
     </div>
@@ -1330,14 +1515,14 @@ function NutritionFields({
     };
     return (
       <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-2")}>
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <NutFieldLabel>Modalidade:</NutFieldLabel>
           <Select value={subtype} onValueChange={(v) => {
             setSubtype(v);
             const label = MODALITY_LABELS[v] || v;
             onUpdate(item.id, 'name', label);
           }}>
-            <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-44">
+            <SelectTrigger className="h-6 text-xs bg-white border-released-border w-44">
               <SelectValue>{MODALITY_LABELS[subtype] || subtype}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -1348,7 +1533,7 @@ function NutritionFields({
               <SelectItem value="zero" className="text-xs">Zero (jejum)</SelectItem>
             </SelectContent>
           </Select>
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold uppercase tracking-wide">manual</span>
+          <span className="text-xs px-2 py-1 rounded-md bg-released-soft text-released-on-soft font-medium uppercase tracking-wide">manual</span>
         </div>
         {RecommendationsField}
       </div>
@@ -1361,10 +1546,10 @@ function NutritionFields({
   return (
     <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-2")}>
       {/* Header com tipo de modalidade (somente leitura visual) */}
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap">
         <NutFieldLabel>Modalidade:</NutFieldLabel>
         <Select value={subtype} onValueChange={setSubtype}>
-          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-44">
+          <SelectTrigger className="h-6 text-xs bg-white border-border w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -1382,12 +1567,15 @@ function NutritionFields({
       {/* ============== ORAL ============== */}
       {subtype === 'diet_oral' && (
         <>
-          <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
-            <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
-            <SelectField label="Tipo" value={item.dietType} options={ORAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-40" />
-            <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-44" />
-            <NutFieldLabel>Quantidade:</NutFieldLabel>
-            <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="300" />
+          <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
+            <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
+            <SelectField label="Tipo" value={normalizeConsistency(item.dietType)} options={ORAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-44" />
+            <ProfileField item={item} onUpdate={onUpdate} width="w-64" />
+            {/* Sem "Quantidade": dieta oral se prescreve por consistencia e
+                intervalo, nao por volume. Quem serve a bandeja nao mede mL, e
+                o campo em branco so ocupava espaco na linha. Volume/dia segue
+                existindo para enteral e parenteral, onde e a propria
+                prescricao. */}
             <SelectField label="Intervalo" value={item.dietInterval} options={DIET_INTERVALS} onChange={(v) => onUpdate(item.id, 'dietInterval', v)} width="w-28" />
           </div>
           {RecommendationsField}
@@ -1397,12 +1585,12 @@ function NutritionFields({
       {/* ============== ENTERAL ============== */}
       {subtype === 'diet_enteral' && (
         <>
-          <div className="space-y-1.5 px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
+          <div className="space-y-2 px-3 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
             <div className="flex items-center gap-2 flex-wrap">
-              <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
+              <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
               <SelectField label="Tipo" value={item.dietType} options={ENTERAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
-              <SelectField label="Via" value={item.route && item.route !== '-' ? item.route : ''} options={ENTERAL_ROUTES} onChange={(v) => onUpdate(item.id, 'route', v)} width="w-44" />
-              <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
+              <SelectField label="Via" value={normalizeEnteralRoute(item.route)} options={ENTERAL_ROUTES} onChange={(v) => onUpdate(item.id, 'route', v)} width="w-44" />
+              <ProfileField item={item} onUpdate={onUpdate} width="w-64" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <NutFieldLabel>Vol/dia:</NutFieldLabel>
@@ -1411,12 +1599,12 @@ function NutritionFields({
                 const vd = parseFloat((item.nutVolDay || '').replace(',', '.'));
                 const st = parseInt(item.nutSteps || '', 10);
                 if (!isNaN(vd) && vd > 0 && st > 0) {
-                  return <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 whitespace-nowrap">≈ {Math.round(vd / st)} mL/etapa</span>;
+                  return <span className="text-xs font-medium text-released-on-soft whitespace-nowrap">≈ {Math.round(vd / st)} mL/etapa</span>;
                 }
                 return null;
               })()}
               {ScheduleSwitch}
-              {RateSwitch}
+              {modoContinuo ? RateSwitch : PerIntake}
             </div>
           </div>
           {RecommendationsField}
@@ -1426,15 +1614,15 @@ function NutritionFields({
       {/* ============== PARENTERAL ============== */}
       {subtype === 'diet_parenteral' && (
         <>
-          <div className="space-y-1.5 px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
+          <div className="space-y-2 px-3 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
             <div className="flex items-center gap-2 flex-wrap">
-              <Droplets className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
+              <Droplets className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
               <SelectField label="Tipo" value={item.dietType} options={ENTERAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
               <div className="flex items-center gap-1">
                 <NutFieldLabel>Via:</NutFieldLabel>
-                <Input value="Endovenosa" disabled className="h-7 text-[12px] font-semibold bg-emerald-100/60 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 w-36" />
+                <Input value="Endovenosa" disabled className="h-7 text-xs font-medium bg-released-soft/60 border-released-border w-36" />
               </div>
-              <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
+              <ProfileField item={item} onUpdate={onUpdate} width="w-64" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <NutFieldLabel>Vol/dia:</NutFieldLabel>
@@ -1443,12 +1631,12 @@ function NutritionFields({
                 const vd = parseFloat((item.nutVolDay || '').replace(',', '.'));
                 const st = parseInt(item.nutSteps || '', 10);
                 if (!isNaN(vd) && vd > 0 && st > 0) {
-                  return <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 whitespace-nowrap">≈ {Math.round(vd / st)} mL/etapa</span>;
+                  return <span className="text-xs font-medium text-released-on-soft whitespace-nowrap">≈ {Math.round(vd / st)} mL/etapa</span>;
                 }
                 return null;
               })()}
               {ScheduleSwitch}
-              {RateSwitch}
+              {modoContinuo ? RateSwitch : PerIntake}
             </div>
           </div>
           {RecommendationsField}
@@ -1458,13 +1646,13 @@ function NutritionFields({
       {/* ============== ZERO ============== */}
       {subtype === 'zero' && (
         <>
-          <div className="px-2.5 py-2 rounded-md bg-amber-50/70 dark:bg-amber-950/20 border border-amber-300/60 dark:border-amber-800/50 border-l-[3px] border-l-amber-500/70 space-y-1">
+          <div className="px-3 py-2 rounded-md bg-warning-soft/70 border border-warning-border/60 border-l-[3px] border-l-amber-500/70 space-y-1">
             <NutFieldLabel>Motivo do jejum:</NutFieldLabel>
             <Input
               value={item.nutZeroReason || ''}
               onChange={(e) => onUpdate(item.id, 'nutZeroReason', e.target.value)}
               placeholder="pré-operatório, broncoaspiração, íleo, avaliação..."
-              className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-amber-300 dark:border-amber-700"
+              className="h-7 text-xs font-medium bg-white border-warning-border"
             />
           </div>
           {RecommendationsField}
@@ -1474,12 +1662,12 @@ function NutritionFields({
       {/* ============== SUPLEMENTAÇÃO ============== */}
       {subtype === 'supplement' && (
         <>
-          <div className="space-y-1.5 px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
+          <div className="space-y-2 px-3 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
             <div className="flex items-center gap-2 flex-wrap">
-              <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
+              <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
               <SelectField label="Tipo" value={item.dietType} options={SUPPLEMENT_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
-              <SelectField label="Via" value={item.route && item.route !== '-' ? item.route : ''} options={SUPPLEMENT_ROUTES} onChange={(v) => onUpdate(item.id, 'route', v)} width="w-44" />
-              <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
+              <SelectField label="Via" value={item.route === 'Oral' ? 'Oral' : normalizeEnteralRoute(item.route)} options={SUPPLEMENT_ROUTES} onChange={(v) => onUpdate(item.id, 'route', v)} width="w-44" />
+              <ProfileField item={item} onUpdate={onUpdate} width="w-64" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <NutFieldLabel>Quantidade:</NutFieldLabel>
@@ -1496,12 +1684,12 @@ function NutritionFields({
       {/* ============== LEGADO: água ============== */}
       {subtype === 'water' && (
         <>
-          <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
-            <Droplets className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
+          <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
+            <Droplets className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
             <NutFieldLabel>Vol/adm:</NutFieldLabel>
             <NutSuffixInput value={item.nutWaterVolPerAdmin || ''} onChange={(v) => onUpdate(item.id, 'nutWaterVolPerAdmin', v)} suffix="mL" placeholder="50" />
             <NutFieldLabel>Frequência:</NutFieldLabel>
-            <Input value={item.nutWaterFreq || ''} onChange={(e) => onUpdate(item.id, 'nutWaterFreq', e.target.value)} placeholder="antes/após dieta e meds" className="h-7 text-[12px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-48" />
+            <Input value={item.nutWaterFreq || ''} onChange={(e) => onUpdate(item.id, 'nutWaterFreq', e.target.value)} placeholder="antes/após dieta e meds" className="h-7 text-xs bg-white border-released-border w-48" />
             <NutFieldLabel>Meta/24h:</NutFieldLabel>
             <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="800" />
           </div>
@@ -1512,8 +1700,8 @@ function NutritionFields({
       {/* ============== LEGADO: NPT ============== */}
       {subtype === 'npt' && (
         <>
-          <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
-            <Droplets className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
+          <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-md bg-released-soft/70 border border-released-border/60 border-l-[3px] border-l-emerald-500/70">
+            <Droplets className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
             <NutFieldLabel>Vol total:</NutFieldLabel>
             <NutSuffixInput value={item.volumeTotal || ''} onChange={(v) => onUpdate(item.id, 'volumeTotal', v)} suffix="mL" placeholder="2000" />
             <NutFieldLabel>Vazão:</NutFieldLabel>
@@ -1538,7 +1726,7 @@ function FlagToggle({ flag, active, onToggle }: {
           type="button"
           onClick={onToggle}
           className={cn(
-            "text-[9px] font-bold px-1.5 py-0.5 rounded border transition-all",
+            "text-xs font-semibold px-2 py-1 rounded-md border transition-all",
             active ? flag.color : "bg-muted/30 text-muted-foreground/50 border-border/30"
           )}
         >
@@ -1551,15 +1739,20 @@ function FlagToggle({ flag, active, onToggle }: {
 }
 
 // --- Hydration optimized fields (expanded view) ---
-const HYDRATION_PHASE_OPTIONS: Array<{ phases: number; interval: string }> = [
-  { phases: 1, interval: '24/24h' },
-  { phases: 2, interval: '12/12h' },
-  { phases: 3, interval: '8/8h' },
-  { phases: 4, interval: '6/6h' },
-  { phases: 6, interval: '4/4h' },
-  { phases: 8, interval: '3/3h' },
+const HYDRATION_PHASE_OPTIONS: Array<{ phases: number; interval: string; label?: string }> = [
+  { phases: 1,  interval: '24/24h' },
+  { phases: 2,  interval: '12/12h' },
+  { phases: 3,  interval: '8/8h' },
+  { phases: 4,  interval: '6/6h' },
+  { phases: 6,  interval: '4/4h' },
+  { phases: 8,  interval: '3/3h' },
   { phases: 12, interval: '2/2h' },
   { phases: 24, interval: '1/1h' },
+  { phases: 1,  interval: 'ACM',       label: 'ACM' },
+  { phases: 1,  interval: 'SOS',       label: 'SOS' },
+  { phases: 1,  interval: 'Agora',     label: 'Agora' },
+  { phases: 1,  interval: 'Dose única',label: 'Dose única' },
+  { phases: 1,  interval: 'Contínuo',  label: 'Contínuo' },
 ];
 const HYDRATION_DRIP_FACTOR = DRIP_FACTOR_MACRO; // macrogotas/mL — fonte única (solutoToken)
 
@@ -1576,7 +1769,7 @@ function HydrationFields({
   onUpdate: (id: string, field: keyof PrescriptionItem, value: string) => void;
 }) {
   const FieldLabel = ({ children }: { children: React.ReactNode }) => (
-    <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">{children}</span>
+    <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">{children}</span>
   );
 
   const phases = intervalToPhases(item.posology);
@@ -1595,7 +1788,7 @@ function HydrationFields({
   const volTotal24 = volPhase * phases;
 
   // Auto-sync calculated drip rate into infusionRate.
-  // ⚠️ Não incluir `onUpdate` nas deps — a referência muda a cada render do pai
+  // Não incluir `onUpdate` nas deps — a referência muda a cada render do pai
   // e dispararia este effect em loop, causando re-renders que roubam o foco
   // do <Input> ativo (sintoma: clique no campo não habilita digitação).
   const calcRateStr = isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '';
@@ -1609,7 +1802,7 @@ function HydrationFields({
   }, [calcRateStr, item.infusionRate, item.id]);
 
   const handlePhasesChange = (v: string) => {
-    const opt = HYDRATION_PHASE_OPTIONS.find(o => String(o.phases) === v);
+    const opt = HYDRATION_PHASE_OPTIONS.find(o => o.interval === v);
     if (opt) onUpdate(item.id, 'posology', opt.interval);
   };
 
@@ -1620,25 +1813,25 @@ function HydrationFields({
   const isOral = isOralLikeRoute(item.route);
 
   return (
-    <div className="space-y-1.5">
-      <div className="relative flex items-center gap-x-3 gap-y-2 flex-wrap rounded-md p-2 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/50 border-l-[3px] border-l-blue-500/70 dark:border-l-blue-400/70">
+    <div className="space-y-2">
+      <div className="relative flex items-center gap-x-3 gap-y-2 flex-wrap rounded-md p-2 bg-muted/50 border border-border/60 border-l-[3px] border-l-blue-500/70">
         <NutFieldLabel>Volume / fase:</NutFieldLabel>
         <Input
           type="number"
           value={item.volumeTotal || ''}
           onChange={(e) => onUpdate(item.id, 'volumeTotal', e.target.value)}
-          className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center font-medium focus-visible:ring-1 focus-visible:ring-blue-400"
+          className="h-6 text-xs bg-white border-border w-16 text-center font-medium focus-visible:ring-1 focus-visible:ring-ring"
           placeholder="mL"
         />
-        <span className="text-[10px] text-muted-foreground">mL</span>
+        <span className="text-xs text-muted-foreground">mL</span>
 
         <NutFieldLabel>Fases / intervalo:</NutFieldLabel>
-        <Select value={String(phases)} onValueChange={handlePhasesChange}>
-          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-36 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
+        <Select value={interval} onValueChange={handlePhasesChange}>
+          <SelectTrigger className="h-6 text-xs bg-white border-border w-36 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
           <SelectContent>
             {HYDRATION_PHASE_OPTIONS.map(o => (
-              <SelectItem key={o.phases} value={String(o.phases)} className="text-xs">
-                {o.phases} fase{o.phases > 1 ? 's' : ''} ({o.interval})
+              <SelectItem key={o.interval} value={o.interval} className="text-xs">
+                {o.label ?? `${o.phases} fase${o.phases > 1 ? 's' : ''} (${o.interval})`}
               </SelectItem>
             ))}
           </SelectContent>
@@ -1651,11 +1844,11 @@ function HydrationFields({
               type="number"
               value={item.infusionTime || ''}
               onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)}
-              className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-14 text-center focus-visible:ring-1 focus-visible:ring-blue-400"
+              className="h-6 text-xs bg-white border-border w-14 text-center focus-visible:ring-1 focus-visible:ring-ring"
               placeholder="—"
             />
             <Select value={tUnit} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-6 text-xs bg-white border-border w-16 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="h" className="text-xs">h</SelectItem>
                 <SelectItem value="min" className="text-xs">min</SelectItem>
@@ -1663,11 +1856,11 @@ function HydrationFields({
             </Select>
 
             <NutFieldLabel>Gotejamento:</NutFieldLabel>
-            <div className="h-6 px-2 flex items-center rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-[11px] font-semibold w-16 justify-center">
+            <div className="h-6 px-2 flex items-center rounded-md border border-border bg-white text-xs font-medium w-16 justify-center">
               {isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '—'}
             </div>
             <Select value={dripMode} onValueChange={(v) => onUpdate(item.id, 'infusionMode', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-6 text-xs bg-white border-border w-20 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="BIC" className="text-xs">mL/h</SelectItem>
                 <SelectItem value="gts" className="text-xs">gts/min</SelectItem>
@@ -1678,20 +1871,20 @@ function HydrationFields({
 
         <NutFieldLabel>Via:</NutFieldLabel>
         <Select value={item.route || 'EV'} onValueChange={(v) => onUpdate(item.id, 'route', v)}>
-          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20 font-semibold focus:ring-1 focus:ring-blue-400">
+          <SelectTrigger className="h-6 text-xs bg-white border-border w-20 font-medium focus:ring-1 focus:ring-ring">
             <SelectValue>{routeShort(item.route || 'EV')}</SelectValue>
           </SelectTrigger>
           <SelectContent className="max-h-72">
             {ROUTES.map((r) => (
               <SelectItem key={r} value={r} className="text-xs">
-                <span className="font-semibold mr-1.5">{routeShort(r)}</span>
+                <span className="font-medium mr-2">{routeShort(r)}</span>
                 <span className="text-muted-foreground">— {routeLabel(r)}</span>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        <span className="basis-full text-right text-[10px] font-medium text-blue-700 dark:text-blue-300 mt-1">
+        <span className="basis-full text-right text-xs font-medium text-foreground mt-1">
           Total: {volTotal24}mL / 24h
         </span>
       </div>
@@ -1701,7 +1894,7 @@ function HydrationFields({
         <Textarea
           value={item.instructions || ''}
           onChange={(e) => onUpdate(item.id, 'instructions', e.target.value)}
-          className="min-h-[56px] text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 mt-0.5 focus-visible:ring-1 focus-visible:ring-blue-400"
+          className="min-h-[56px] text-xs bg-white border-border mt-1 focus-visible:ring-1 focus-visible:ring-ring"
           placeholder="Ex.: manter acesso pérvio; observar sinais de sobrecarga; reavaliar em 24h; trocar equipo a cada 72h..."
         />
       </div>
@@ -1711,6 +1904,158 @@ function HydrationFields({
 
 
 // --- Sortable Prescription Item Row ---
+// ── CombinedItemsBlock ───────────────────────────────────────────────────────
+// Exibe substâncias combinadas de um item (Hidratação, Reposição, Inalação)
+// e permite adicionar novas via busca no catálogo da mesma categoria.
+function CombinedItemsBlock({
+  item, onUpdate, catalog, categoryLabel,
+}: {
+  item: PrescriptionItem;
+  onUpdate: (id: string, field: string, value: any) => void;
+  catalog: MedicationEntry[];
+  categoryLabel: string;
+}) {
+  const combined = item.combinedItems || [];
+  const [adding, setAdding] = useState(false);
+
+  const addCombined = (med: MedicationEntry) => {
+    const newSub: CombinedSubItem = {
+      id: crypto.randomUUID(),
+      name: med.name,
+      presentation: med.presentation || '',
+      dose: med.defaultDose || '',
+      doseUnit: '',
+      nebDose: '',
+      nebDoseUnit: 'gts',
+      quantity: '1',
+      quantityUnit: med.presentation?.toLowerCase().includes('ampola') ? 'amp' : '',
+    };
+    onUpdate(item.id, 'combinedItems' as any, [...combined, newSub]);
+    setAdding(false);
+  };
+
+  const updateSub = (subId: string, field: string, value: string) => {
+    onUpdate(item.id, 'combinedItems' as any, combined.map(s =>
+      s.id === subId ? { ...s, [field]: value } : s
+    ));
+  };
+
+  const removeSub = (subId: string) => {
+    onUpdate(item.id, 'combinedItems' as any, combined.filter(s => s.id !== subId));
+  };
+
+  const isInhalation = item.category === 'inhalation';
+
+  return (
+    <div className="mt-1 space-y-2">
+      {combined.map((sub) => (
+        <div key={sub.id} className="flex items-start gap-2 pl-3 border-l-2 border-dashed border-primary/30 ml-1">
+          <div className="flex-1 space-y-1">
+            {/* Nome da substância combinada */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-foreground/80">+</span>
+              <span className="text-xs font-medium">{sub.name}</span>
+              {sub.presentation && (
+                <span className="text-xs text-muted-foreground">({sub.presentation})</span>
+              )}
+            </div>
+            {/* Campos específicos por categoria */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {isInhalation ? (
+                <>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground">Dose:</span>
+                    <Input
+                      value={sub.nebDose || ''}
+                      onChange={e => updateSub(sub.id, 'nebDose', e.target.value)}
+                      className="h-6 text-xs w-14 text-center"
+                      placeholder="—"
+                    />
+                    <Select value={sub.nebDoseUnit || 'gts'} onValueChange={v => updateSub(sub.id, 'nebDoseUnit', v)}>
+                      <SelectTrigger className="h-6 text-xs w-16">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gts" className="text-xs">gts</SelectItem>
+                        <SelectItem value="mg" className="text-xs">mg</SelectItem>
+                        <SelectItem value="mL" className="text-xs">mL</SelectItem>
+                        <SelectItem value="mcg" className="text-xs">mcg</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground">Qtd:</span>
+                    <Input
+                      value={sub.quantity || ''}
+                      onChange={e => updateSub(sub.id, 'quantity', e.target.value)}
+                      className="h-6 text-xs w-12 text-center"
+                      placeholder="1"
+                    />
+                    <Input
+                      value={sub.quantityUnit || ''}
+                      onChange={e => updateSub(sub.id, 'quantityUnit', e.target.value)}
+                      className="h-6 text-xs w-16"
+                      placeholder="amp/mL"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground">Dose:</span>
+                    <Input
+                      value={sub.dose || ''}
+                      onChange={e => updateSub(sub.id, 'dose', e.target.value)}
+                      className="h-6 text-xs w-24"
+                      placeholder="ex: 19,1%"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => removeSub(sub.id)}
+            className="text-muted-foreground/50 hover:text-destructive transition-colors mt-1 shrink-0"
+            title="Remover substância combinada"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ))}
+
+      {/* Botão + e busca */}
+      {adding ? (
+        <div className="pl-3 ml-1">
+          <MedicationAutocomplete
+            source={catalog}
+            onSelect={(med) => addCombined(med)}
+            placeholder={`Buscar em ${categoryLabel}...`}
+          />
+          <button
+            type="button"
+            onClick={() => setAdding(false)}
+            className="text-xs text-muted-foreground mt-1 hover:text-foreground"
+          >
+            Cancelar
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="flex items-center gap-1 text-xs text-primary/70 hover:text-primary transition-colors ml-1 pl-1"
+          title={`Adicionar substância combinada em ${categoryLabel}`}
+        >
+          <PlusCircle className="h-3 w-3" />
+          <span>Adicionar substância combinada</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
 const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItemRow({
   item,
   index,
@@ -1735,6 +2080,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   prescriptionLocked,
   missingFields = [],
   previousInhalationItem,
+  unifiedCatalog,
 }: {
   item: PrescriptionItem;
   index: number;
@@ -1761,6 +2107,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   missingFields?: string[];
   /** Item de inalação imediatamente anterior na lista (mesma categoria), para conjugação. */
   previousInhalationItem?: { id: string; name: string };
+  unifiedCatalog?: Record<string, MedicationEntry[]>;
 }) {
   const [individualExpanded, setIndividualExpanded] = useState(false);
   // Item recém-adicionado nasce expandido, pronto para preenchimento.
@@ -1804,7 +2151,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
       <DropdownMenuContent align="end" className="w-52">
         {onAssistant && ['replacement', 'hydration', 'nutrition'].includes(item.category) && (
           <>
-            <DropdownMenuItem onClick={() => onAssistant(item.id)} className="text-xs gap-2 text-sky-600 focus:text-sky-700">
+            <DropdownMenuItem onClick={() => onAssistant(item.id)} className="text-xs gap-2 text-foreground focus:text-foreground">
               <Wand2 className="h-3.5 w-3.5" /> Configurar com assistente
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -1816,13 +2163,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         {item.status === 'active' && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onRequestSuspend(item.id)} className="text-xs gap-2 text-yellow-600">
+            <DropdownMenuItem onClick={() => onRequestSuspend(item.id)} className="text-xs gap-2 text-warning-on-soft">
               <Pause className="h-3.5 w-3.5" /> Suspender item
             </DropdownMenuItem>
           </>
         )}
         {onTogglePrintOnly && (
-          <DropdownMenuItem onClick={() => onTogglePrintOnly(item.id)} className="text-xs gap-2 text-indigo-600 focus:text-indigo-700">
+          <DropdownMenuItem onClick={() => onTogglePrintOnly(item.id)} className="text-xs gap-2 text-foreground focus:text-foreground">
             <Printer className="h-3.5 w-3.5" />
             {item.printOnly ? "Desmarcar 'Só impressão'" : "Marcar como 'Só impressão'"}
           </DropdownMenuItem>
@@ -1877,7 +2224,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           >
             <Circle className={cn(
               "h-3 w-3 fill-current",
-              isSuspended ? "text-muted-foreground/60" : isValidated ? "text-emerald-500" : isBlocked ? "text-red-500 animate-pulse" : "text-amber-500"
+              isSuspended ? "text-muted-foreground/60" : isValidated ? "text-released" : isBlocked ? "text-critical animate-pulse" : "text-warning"
             )} />
           </button>
         </TooltipTrigger>
@@ -1922,14 +2269,14 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           item.status === 'suspended'
             ? "border-destructive/30 bg-destructive/5 opacity-60"
             : isSlidingSchemeItem
-              ? "border-emerald-300/50 bg-emerald-50/30 dark:bg-emerald-950/10"
+              ? "border-released-border/50 bg-released-soft/30"
               : "border-border/40 bg-muted/20",
           selected && "ring-2 ring-primary/40 border-primary/30",
-          isDragging && "shadow-lg"
+          isDragging && "shadow-md"
         )}
       >
         {/* Linha principal — sempre visível */}
-        <div className="flex items-center gap-2 px-2.5 py-2">
+        <div className="flex items-center gap-2 px-3 py-2">
           <ValidationDot />
           <button
             className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0 touch-none"
@@ -1953,10 +2300,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 type="button"
                 onClick={() => setIndividualExpanded(v => !v)}
                 className={cn(
-                  "shrink-0 inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+                  "shrink-0 inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors",
                   individualExpanded
-                    ? "border-emerald-400/60 bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                    : "border-border/50 bg-secondary text-secondary-foreground hover:border-emerald-400/50 hover:bg-emerald-50"
+                    ? "border-released/60 bg-released-soft text-released-on-soft"
+                    : "border-border/50 bg-secondary text-secondary-foreground hover:border-released/50 hover:bg-released-soft"
                 )}
                 title={individualExpanded ? "Fechar visualização das faixas" : "Ver e editar faixas de correção"}
               >
@@ -1965,10 +2312,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               </button>
             )}
             {item.status === 'suspended' && item.suspensionReason && (
-              <p className="text-[10px] text-destructive/70 italic truncate">Motivo: {item.suspensionReason}</p>
+              <p className="text-xs text-destructive/70 italic truncate">Motivo: {item.suspensionReason}</p>
             )}
           </div>
-          {item.dose !== '-' && <Badge variant="outline" className="text-[10px]">{item.dose}</Badge>}
+          {item.dose !== '-' && <Badge variant="outline" className="text-xs">{item.dose}</Badge>}
           {isSimple ? (
             <Popover>
               <PopoverTrigger asChild>
@@ -1976,7 +2323,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   type="button"
                   disabled={isLocked || item.status === 'suspended'}
                   className={cn(
-                    "shrink-0 inline-flex items-center gap-1 rounded-md border border-border/50 bg-secondary text-secondary-foreground text-[10px] px-1.5 py-0.5 hover:border-primary/50 hover:bg-secondary/80 transition-colors",
+                    "shrink-0 inline-flex items-center gap-1 rounded-md border border-border/50 bg-secondary text-secondary-foreground text-xs px-2 py-1 hover:border-primary/50 hover:bg-secondary/80 transition-colors",
                     (isLocked || item.status === 'suspended') && "opacity-60 cursor-not-allowed"
                   )}
                   title="Ajustar aprazamento"
@@ -1986,7 +2333,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </button>
               </PopoverTrigger>
             <PopoverContent className="w-64 p-3" align="end">
-              <p className="text-[11px] font-semibold text-muted-foreground mb-2">Aprazamento</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Aprazamento</p>
               {(() => {
                 // Unificação 22/07/2026: as marcações SN/ACM/AG saíram das flags
                 // e vivem aqui. Regras confirmadas pelo gestor:
@@ -2008,7 +2355,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         opcao entre os intervalos nao a encontrava, porque ela
                         existia apenas como toggle abaixo. Aqui ela liga/desliga o
                         modificador, preservando o intervalo escolhido. (23/07/2026.) */}
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-3 gap-2">
                       {PRESCRIPTION_INTERVALS.map(p => p.value)
                         .map(opt => {
                           const isAcm = opt === 'ACM';
@@ -2025,11 +2372,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                                 ? onUpdate(item.id, 'posology', withPRN(item.posology, !prnOn))
                                 : pickInterval(opt)}
                               className={cn(
-                                "text-[10px] px-2 py-1 rounded-md border transition-colors",
+                                "text-xs px-2 py-1 rounded-md border transition-colors",
                                 selected && isPrn
-                                  ? "border-amber-400 bg-amber-500/15 text-amber-700 font-semibold"
+                                  ? "border-warning bg-warning/15 text-warning-on-soft font-medium"
                                   : selected
-                                    ? "border-primary bg-primary/10 text-primary font-semibold"
+                                    ? "border-primary bg-primary/10 text-primary font-medium"
                                     : "border-border/50 hover:border-primary/40 hover:bg-muted",
                                 acmLocked && !isAcm && "opacity-40 cursor-not-allowed hover:border-border/50 hover:bg-transparent"
                               )}
@@ -2041,10 +2388,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     </div>
 
                     {/* Modificador condicional — soma-se ao intervalo escolhido */}
-                    <div className="mt-2.5 flex items-center justify-between gap-2 rounded-md border border-border/50 px-2 py-1.5">
+                    <div className="mt-3 flex items-center justify-between gap-2 rounded-md border border-border/50 px-2 py-2">
                       <div className="min-w-0">
-                        <p className="text-[10px] font-medium text-foreground">S/N</p>
-                        <p className="text-[9px] text-muted-foreground leading-tight">
+                        <p className="text-xs font-medium text-foreground">S/N</p>
+                        <p className="text-xs text-muted-foreground leading-tight">
                           {acmLocked ? 'Indisponível com ACM' : 'Se necessário — combina com o intervalo'}
                         </p>
                       </div>
@@ -2053,10 +2400,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         disabled={acmLocked}
                         onClick={() => onUpdate(item.id, 'posology', withPRN(item.posology, !prnOn))}
                         className={cn(
-                          "text-[10px] px-2 py-1 rounded-md border transition-colors shrink-0",
+                          "text-xs px-2 py-1 rounded-md border transition-colors shrink-0",
                           prnOn
-                            ? "border-amber-400 bg-amber-500/15 text-amber-700 font-semibold"
-                            : "border-border/50 hover:border-amber-400/60 hover:bg-muted",
+                            ? "border-warning bg-warning/15 text-warning-on-soft font-medium"
+                            : "border-border/50 hover:border-warning/60 hover:bg-muted",
                           acmLocked && "opacity-40 cursor-not-allowed"
                         )}
                       >
@@ -2064,8 +2411,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       </button>
                     </div>
 
-                    <div className="mt-2.5">
-                      <label className="text-[10px] font-medium text-muted-foreground">Personalizado</label>
+                    <div className="mt-3">
+                      <label className="text-xs font-medium text-muted-foreground">Personalizado</label>
                       <Input
                         value={item.posology === '-' ? '' : item.posology}
                         disabled={acmLocked}
@@ -2080,20 +2427,20 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             </PopoverContent>
           </Popover>
         ) : (
-          item.posology !== '-' && <Badge variant="secondary" className="text-[10px]">{item.posology}</Badge>
+          item.posology !== '-' && <Badge variant="secondary" className="text-xs">{item.posology}</Badge>
         )}
         {item.isExtra && (
-          <Badge variant="outline" className="text-[9px] px-1.5 bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800">EXTRA</Badge>
+          <Badge variant="outline" className="text-xs px-2 bg-warning-soft text-warning-on-soft border-warning-border">EXTRA</Badge>
         )}
         {item.printOnly && (
-          <Badge variant="outline" className="text-[9px] px-1.5 bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-300 dark:border-indigo-800 gap-1">
+          <Badge variant="outline" className="text-xs px-2 bg-muted text-foreground border-border gap-1">
             <Printer className="h-2.5 w-2.5" /> SÓ IMPRESSÃO
           </Badge>
         )}
         {item.status === 'suspended' && (
-           <Badge variant="destructive" className="text-[9px] px-1.5">Suspenso</Badge>
+           <Badge variant="destructive" className="text-xs px-2">Suspenso</Badge>
         )}
-        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           {PRESCRIPTION_FLAGS.map(f => (
             <FlagToggle
               key={f.key}
@@ -2109,13 +2456,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
 
       {/* Painel sanfonado de faixas — só para item de esquema de correção */}
       {isSlidingSchemeItem && individualExpanded && !isLocked && item.status !== 'suspended' && (
-        <div className="border-t border-emerald-200/60 dark:border-emerald-800/40 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-2.5 space-y-1.5">
-          <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide mb-2">
+        <div className="border-t border-released-border/60 bg-released-soft/50 px-3 py-3 space-y-2">
+          <p className="text-xs font-medium text-released-on-soft uppercase tracking-wide mb-2">
             Faixas de correção — editáveis
           </p>
           {slidingRows.map((row, i) => (
             <div key={i} className="flex items-center gap-2">
-              <span className="text-[10px] text-muted-foreground w-48 shrink-0 truncate" title={row.label}>
+              <span className="text-xs text-muted-foreground w-48 shrink-0 truncate" title={row.label}>
                 {row.label}:
               </span>
               <Input
@@ -2127,13 +2474,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   );
                   onUpdate(item.id, 'instructions', serializeSlidingInstructions(updated));
                 }}
-                className="h-6 text-[11px] flex-1 min-w-0 bg-white dark:bg-slate-800 border-emerald-200 dark:border-emerald-800 focus-visible:ring-emerald-400"
+                className="h-6 text-xs flex-1 min-w-0 bg-white border-released-border focus-visible:ring-released"
                 placeholder="Ex: 2 UI SC"
               />
             </div>
           ))}
           {slidingRows.length === 0 && (
-            <p className="text-[10px] text-muted-foreground italic">Nenhuma faixa encontrada. Edite o campo de instruções manualmente.</p>
+            <p className="text-xs text-muted-foreground italic">Nenhuma faixa encontrada. Edite o campo de instruções manualmente.</p>
           )}
         </div>
       )}
@@ -2159,38 +2506,38 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           "rounded-lg border-2 transition-all overflow-hidden",
           item.status === 'suspended'
             ? "border-destructive/30 bg-destructive/5 opacity-60"
-            : "border-red-300/60 bg-red-50/40 dark:bg-red-950/10 hover:border-red-400/60",
+            : "border-critical-border/60 bg-critical-soft/40 hover:border-critical/60",
           selected && "ring-2 ring-primary/40",
         )}
       >
-        <div className="flex items-start gap-2 px-2.5 py-2">
+        <div className="flex items-start gap-2 px-3 py-2">
           <ValidationDot />
-          <button className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground shrink-0 touch-none mt-0.5" {...attributes} {...listeners}>
+          <button className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground shrink-0 touch-none mt-1" {...attributes} {...listeners}>
             <GripVertical className="h-3.5 w-3.5" />
           </button>
-          <Checkbox checked={selected} onCheckedChange={() => onToggleSelect(item.id)} className="shrink-0 mt-0.5" />
-          <span className="text-[10px] font-mono text-muted-foreground w-5 text-right shrink-0 mt-0.5">{index + 1}.</span>
+          <Checkbox checked={selected} onCheckedChange={() => onToggleSelect(item.id)} className="shrink-0 mt-1" />
+          <span className="text-xs font-mono text-muted-foreground w-5 text-right shrink-0 mt-1">{index + 1}.</span>
           <div className="flex-1 min-w-0">
             {/* Cabeçalho do item de insulinoterapia */}
-            <div className="flex items-center gap-1.5 flex-wrap mb-2">
-              <AlertTriangle className="h-3 w-3 text-red-600 shrink-0" />
-              <span className={cn("text-xs font-bold text-foreground", item.status === 'suspended' && "line-through")}>
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              <AlertTriangle className="h-3 w-3 text-critical-on-soft shrink-0" />
+              <span className={cn("text-xs font-semibold text-foreground", item.status === 'suspended' && "line-through")}>
                 INSULINOTERAPIA
               </span>
               <span className="text-xs text-muted-foreground font-normal">—</span>
-              <span className={cn("text-xs font-semibold text-red-700 dark:text-red-400", item.status === 'suspended' && "line-through")}>
+              <span className={cn("text-xs font-medium text-critical-on-soft", item.status === 'suspended' && "line-through")}>
                 {desc.headline}
               </span>
-              <Badge variant="outline" className="text-[8px] px-1 bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-300">MAV</Badge>
+              <Badge variant="outline" className="text-xs px-1 bg-critical-soft text-critical-on-soft border-critical-border">MAV</Badge>
               {plan.scheme === 'iv_continuous' && (
-                <Badge variant="outline" className="text-[8px] px-1 bg-amber-100 text-amber-700 border-amber-300">BIC</Badge>
+                <Badge variant="outline" className="text-xs px-1 bg-warning-soft text-warning-on-soft border-warning-border">BIC</Badge>
               )}
-              <div className="ml-auto flex items-center gap-1.5">
+              <div className="ml-auto flex items-center gap-2">
                 {canInlineEdit && (
                   <button
                     type="button"
                     onClick={() => setIndividualExpanded(v => !v)}
-                    className="text-[10px] px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+                    className="text-xs px-2 py-1 rounded-md border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
                     title="Ajustar faixas sem reabrir o assistente"
                   >
                     {showInline ? '↑ Fechar ajuste' : '↓ Ajustar faixas'}
@@ -2199,31 +2546,31 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 <button
                   type="button"
                   onClick={() => onEditInsulin?.(item.id)}
-                  className="text-[10px] px-2 py-0.5 rounded border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors font-medium"
+                  className="text-xs px-2 py-1 rounded-md border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors font-medium"
                 >
-                  ✏ Editar esquema
+                  Editar esquema
                 </button>
               </div>
             </div>
 
             {/* Doses em grid compacto */}
-            <div className="grid gap-x-3 gap-y-0.5 text-[11px] leading-relaxed"
+            <div className="grid gap-x-3 gap-y-1 text-xs leading-relaxed"
               style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}
             >
               {desc.lines.map((l, i) => (
                 <div key={i} className={cn(
-                  "flex items-baseline gap-1.5",
-                  l.startsWith('  •') ? "pl-3 text-muted-foreground text-[10px]" : ""
+                  "flex items-baseline gap-2",
+                  l.startsWith('  •') ? "pl-3 text-muted-foreground text-xs" : ""
                 )}>
                   {!l.startsWith('  •') && (
-                    <span className="shrink-0 h-1.5 w-1.5 rounded-full bg-red-400/70 mt-1.5" />
+                    <span className="shrink-0 h-1.5 w-1.5 rounded-full bg-critical/70 mt-2" />
                   )}
                   <span>{l.replace(/^ {2}• /, '').replace(/^• /, '')}</span>
                 </div>
               ))}
             </div>
             {showInline && (
-              <div className="mt-2 rounded-lg border border-red-200 dark:border-red-900/40 bg-white/70 dark:bg-slate-900/40 p-2">
+              <div className="mt-2 rounded-lg border border-critical-border bg-white/70 p-2">
                 <SlidingEditor
                   plan={plan}
                   onChange={(patch) => {
@@ -2237,7 +2584,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               </div>
             )}
             {isLocked && supportsInline && (
-              <p className="mt-1 text-[10px] text-emerald-700 dark:text-emerald-400">
+              <p className="mt-1 text-xs text-released-on-soft">
                 Item validado — para alterar, suspenda e reescreva ou aguarde a renovação 05h.
               </p>
             )}
@@ -2356,11 +2703,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         ref={setNodeRef}
         style={style}
         className={cn(
-          "flex items-center gap-2 px-2.5 py-1.5 rounded-lg border group transition-all cursor-pointer",
+          "flex items-center gap-2 px-3 py-2 rounded-lg border group transition-all cursor-pointer",
           item.status === 'suspended'
             ? "border-destructive/30 bg-destructive/5 opacity-60"
             : "border-border/40 bg-card/50 hover:border-primary/20",
-          item.highAlert && item.status !== 'suspended' && "border-red-300/40",
+          item.highAlert && item.status !== 'suspended' && "border-critical-border/40",
           selected && "ring-2 ring-primary/40 border-primary/30",
         )}
         onClick={(e) => {
@@ -2381,37 +2728,40 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           onCheckedChange={() => onToggleSelect(item.id)}
           className="shrink-0"
         />
-        <span className="text-[10px] font-mono text-muted-foreground w-5 text-right shrink-0">{index + 1}.</span>
-        <div className="flex-1 min-w-0 flex items-center gap-1.5">
-          <span className={cn("text-xs font-semibold text-foreground shrink-0", item.status === 'suspended' && "line-through")}>
-            {item.highAlert && <AlertTriangle className="inline h-2.5 w-2.5 mr-0.5 text-red-500" />}
+        <span className="text-xs font-mono text-muted-foreground w-5 text-right shrink-0">{index + 1}.</span>
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <span className={cn("text-xs font-medium text-foreground shrink-0", item.status === 'suspended' && "line-through")}>
+            {item.highAlert && <AlertTriangle className="inline h-2.5 w-2.5 mr-1 text-critical" />}
             {item.name}
             {item.presentation && item.presentation !== '-' && (
               <span className="font-normal text-muted-foreground normal-case"> ({formatPresentation(item.presentation)})</span>
             )}
+            {item.combinedItems && item.combinedItems.length > 0 && item.combinedItems.map(s => (
+              <span key={s.id} className="font-normal text-muted-foreground normal-case"> + {s.name}{s.presentation ? ` (${formatPresentation(s.presentation)})` : ''}</span>
+            ))}
           </span>
           {compactParts.length > 0 && (
-            <span className="text-[10px] text-muted-foreground truncate">
+            <span className="text-xs text-muted-foreground truncate">
               <span className="text-muted-foreground/50 mx-1">|</span>
               {compactParts.join(' | ')}
             </span>
           )}
           {routePosology.length > 0 && (
-            <span className="text-[10px] font-medium text-foreground/70 shrink-0">
+            <span className="text-xs font-medium text-foreground/70 shrink-0">
               <span className="text-muted-foreground/50 mx-1">|</span>
               {routePosology.join(' | ')}
             </span>
           )}
           <MedicationFlagChips name={item.name} route={item.route} className="shrink-0" size="xs" />
           {item.isExtra && (
-            <Badge variant="outline" className="text-[8px] px-1 shrink-0 bg-muted/50 text-muted-foreground border-border/50">EXTRA</Badge>
+            <Badge variant="outline" className="text-xs px-1 shrink-0 bg-muted/50 text-muted-foreground border-border/50">EXTRA</Badge>
           )}
           {item.printOnly && (
-            <Badge variant="outline" className="text-[8px] px-1 shrink-0 bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-300 dark:border-indigo-800">SÓ IMPRESSÃO</Badge>
+            <Badge variant="outline" className="text-xs px-1 shrink-0 bg-muted text-foreground border-border">SÓ IMPRESSÃO</Badge>
           )}
           {item.flags.length > 0 && item.flags.map(fk => {
             const f = PRESCRIPTION_FLAGS.find(pf => pf.key === fk);
-            return f ? <Badge key={fk} variant="outline" className="text-[8px] px-1 shrink-0 text-muted-foreground border-border/50">{f.label}</Badge> : null;
+            return f ? <Badge key={fk} variant="outline" className="text-xs px-1 shrink-0 text-muted-foreground border-border/50">{f.label}</Badge> : null;
           })}
         </div>
         {/* Aprazamento removido — feito manualmente pela enfermagem */}
@@ -2430,14 +2780,14 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         item.status === 'suspended'
           ? "border-destructive/30 bg-destructive/5 opacity-60"
           : "border-border/50 bg-card/50 hover:border-primary/20",
-        item.highAlert && item.status !== 'suspended' && "border-red-300/50 bg-red-50/30 dark:bg-red-950/10",
+        item.highAlert && item.status !== 'suspended' && "border-critical-border/50 bg-critical-soft/30",
         selected && "ring-2 ring-primary/40 border-primary/30",
-        isDragging && "shadow-lg",
+        isDragging && "shadow-md",
       )}
     >
-      <div className="flex items-start gap-2 p-2.5">
+      <div className="flex items-start gap-2 p-3">
         {/* Left: validation dot + drag + checkbox */}
-        <div className="flex flex-col items-center gap-1.5 shrink-0 pt-1">
+        <div className="flex flex-col items-center gap-2 shrink-0 pt-1">
           <ValidationDot />
           <button
             className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors touch-none"
@@ -2451,26 +2801,26 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             onCheckedChange={() => onToggleSelect(item.id)}
           />
         </div>
-        <span className="text-xs font-mono text-muted-foreground w-6 text-center shrink-0 pt-1.5">
+        <span className="text-xs font-mono text-muted-foreground w-6 text-center shrink-0 pt-2">
           {index + 1}.
         </span>
 
         {/* Center: main content */}
-        <div className="flex-1 min-w-0 space-y-1.5">
+        <div className="flex-1 min-w-0 space-y-2">
           {/* Name row with flags */}
           <div className="flex items-center gap-2 flex-wrap">
             {isCompact && individualExpanded && (
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setIndividualExpanded(false); }}
-                className="shrink-0 p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                className="shrink-0 p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                 title="Compactar"
               >
                 <ChevronUp className="h-4 w-4" />
               </button>
             )}
-            <p className={cn("text-sm font-semibold text-foreground", item.status === 'suspended' && "line-through")}>
-              {item.highAlert && <AlertTriangle className="inline h-3 w-3 mr-1 text-red-500" />}
+            <p className={cn("text-sm font-medium text-foreground", item.status === 'suspended' && "line-through")}>
+              {item.highAlert && <AlertTriangle className="inline h-3 w-3 mr-1 text-critical" />}
               {item.name}
               {item.presentation && item.presentation !== '-' && (
                 <span className="font-normal text-muted-foreground ml-1 normal-case">({formatPresentation(item.presentation)})</span>
@@ -2501,24 +2851,24 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   size="sm"
                   variant="ghost"
                   onClick={(e) => { e.stopPropagation(); apply(); }}
-                  className="h-5 px-2 text-[10px] rounded border border-border/60 text-foreground/80 hover:bg-muted hover:text-foreground"
+                  className="h-5 px-2 text-xs rounded-md border border-border/60 text-foreground/80 hover:bg-muted hover:text-foreground"
                 >
                   Sugerir
                 </Button>
               );
             })()}
             {item.isExtra && (
-              <Badge variant="outline" className="text-[9px] px-1.5 bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800">EXTRA</Badge>
+              <Badge variant="outline" className="text-xs px-2 bg-warning-soft text-warning-on-soft border-warning-border">EXTRA</Badge>
             )}
             {item.status === 'suspended' && (
-              <Badge variant="destructive" className="text-[9px] px-1.5">Suspenso</Badge>
+              <Badge variant="destructive" className="text-xs px-2">Suspenso</Badge>
             )}
             {isLocked && item.status !== 'suspended' && (
-              <Badge variant="outline" className="text-[9px] px-1.5 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800">
+              <Badge variant="outline" className="text-xs px-2 bg-released-soft text-released-on-soft border-released-border">
                 VALIDADO · BLOQUEADO
               </Badge>
             )}
-            <div className="flex gap-0.5 ml-auto">
+            <div className="flex gap-1 ml-auto">
               {PRESCRIPTION_FLAGS.map(f => (
                 <FlagToggle
                   key={f.key}
@@ -2531,9 +2881,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             </div>
           </div>
           {item.status === 'suspended' && item.suspensionReason && (
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-destructive/10 border border-destructive/20">
+            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-destructive/10 border border-destructive/20">
               <Pause className="h-3 w-3 text-destructive/70 shrink-0" />
-              <p className="text-[10px] text-destructive/80 italic">
+              <p className="text-xs text-destructive/80 italic">
                 Motivo: {item.suspensionReason}
                 {item.suspendedAt && <span className="ml-1 text-destructive/50">({item.suspendedAt})</span>}
               </p>
@@ -2543,18 +2893,18 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             {...(isLocked ? ({ inert: '' } as any) : {})}
             className={cn(
               isLocked && "opacity-80",
-              !isLocked && missingFields.length > 0 && "rounded-md ring-1 ring-red-300/70 ring-offset-1 ring-offset-background p-1.5 -m-1.5"
+              !isLocked && missingFields.length > 0 && "rounded-md ring-1 ring-critical/70 ring-offset-1 ring-offset-background p-2 -m-2"
             )}
             aria-disabled={isLocked || undefined}
           >
           {!isLocked && missingFields.length > 0 && item.status === 'active' && (
-            <div className="mb-1.5 flex items-start gap-1.5 px-2 py-1 rounded bg-red-50 border border-red-200 dark:bg-red-950/30 dark:border-red-900">
-              <AlertTriangle className="h-3 w-3 mt-0.5 text-red-600 dark:text-red-400 shrink-0" />
+            <div className="mb-2 flex items-start gap-2 px-2 py-1 rounded-md bg-critical-soft border border-critical-border">
+              <AlertTriangle className="h-3 w-3 mt-1 text-critical-on-soft shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide">
+                <p className="text-xs font-medium text-critical-on-soft uppercase tracking-wide">
                   Pendente para validação — preencha:
                 </p>
-                <p className="text-[10px] text-red-700/90 dark:text-red-300/90">
+                <p className="text-xs text-critical-on-soft/90">
                   {missingFields.join(' · ')}
                 </p>
               </div>
@@ -2564,15 +2914,31 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             <NutritionFields item={item} onUpdate={onUpdate} />
           )}
           {item.status === 'active' && item.category === 'hydration' && (
-            <HydrationFields item={item} onUpdate={onUpdate} />
+            <>
+              <HydrationFields item={item} onUpdate={onUpdate} />
+              <CombinedItemsBlock
+                item={item}
+                onUpdate={onUpdate}
+                catalog={unifiedCatalog?.['hydration'] || []}
+                categoryLabel="hidratação"
+              />
+            </>
           )}
           {item.status === 'active' && item.category === 'inhalation' && (
-            <InhalationFields
-              item={item as any}
-              onUpdate={onUpdate}
-              previousInhalationItemId={previousInhalationItem?.id}
-              previousInhalationItemName={previousInhalationItem?.name}
-            />
+            <>
+              <InhalationFields
+                item={item as any}
+                onUpdate={onUpdate}
+                previousInhalationItemId={previousInhalationItem?.id}
+                previousInhalationItemName={previousInhalationItem?.name}
+              />
+              <CombinedItemsBlock
+                item={item}
+                onUpdate={onUpdate}
+                catalog={unifiedCatalog?.['inhalation'] || []}
+                categoryLabel="inalação"
+              />
+            </>
           )}
           {item.status === 'active' && item.category !== 'nutrition' && item.category !== 'hydration' && item.category !== 'inhalation' && (() => {
             const ptype = inferPresentationType(item.presentation, item.route, item.name);
@@ -2589,46 +2955,46 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               {item.category === 'antimicrobial' && (() => {
                 const dayLine = buildAtbDayLine(item);
                 return (
-                  <div className="flex items-center gap-2 flex-wrap pb-2 mb-1.5 px-2 py-1.5 rounded-md bg-gradient-to-r from-[hsl(217,55%,94%)]/80 via-[hsl(217,55%,97%)]/60 to-transparent dark:from-[hsl(217,55%,18%)]/30 dark:via-[hsl(217,55%,16%)]/15 dark:to-transparent border border-[hsl(217,55%,82%)]/60 dark:border-[hsl(217,55%,30%)]/40 border-l-[3px] border-l-[hsl(217,70%,40%)]/80">
-                    <div className="flex items-center gap-1.5 text-[hsl(217,72%,28%)] dark:text-[hsl(217,55%,80%)] shrink-0">
+                  <div className="flex items-center gap-2 flex-wrap pb-2 mb-2 px-2 py-2 rounded-md bg-gradient-to-r from-[hsl(217,55%,94%)]/80 via-[hsl(217,55%,97%)]/60 to-transparent(217,55%,18%)]/30(217,55%,16%)]/15 border border-[hsl(217,55%,82%)]/60 border-l-[3px] border-l-[hsl(217,70%,40%)]/80">
+                    <div className="flex items-center gap-2 text-[hsl(217,72%,28%)] shrink-0">
                       <div className="flex items-center justify-center h-5 w-5 rounded-md bg-[hsl(217,70%,40%)] text-white shadow-sm shadow-[hsl(217,70%,40%)]/30">
                         <Pill className="h-3 w-3" />
                       </div>
-                      <span className="text-[10px] font-bold uppercase tracking-[0.08em]">Antibiótico</span>
+                      <span className="text-xs font-semibold uppercase tracking-[0.08em]">Antibiótico</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-[hsl(217,72%,36%)]/80 dark:text-[hsl(217,55%,75%)]/80 font-medium">Início:</span>
+                      <span className="text-xs text-[hsl(217,72%,36%)]/80 font-medium">Início:</span>
                       <Input
                         type="date"
                         value={item.atbStartDate || ''}
                         onChange={(e) => onUpdate(item.id, 'atbStartDate' as any, e.target.value)}
-                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-[hsl(217,55%,82%)]/70 dark:border-[hsl(217,55%,30%)]/60 w-[124px] px-1.5"
+                        className="h-6 text-xs bg-white border-[hsl(217,55%,82%)]/70 w-[124px] px-2"
                       />
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-[hsl(217,72%,36%)]/80 dark:text-[hsl(217,55%,75%)]/80 font-medium">Duração:</span>
+                      <span className="text-xs text-[hsl(217,72%,36%)]/80 font-medium">Duração:</span>
                       <Input
                         type="number"
                         min="1"
                         value={item.atbPlannedDays || ''}
                         onChange={(e) => onUpdate(item.id, 'atbPlannedDays' as any, e.target.value)}
-                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-[hsl(217,55%,82%)]/70 dark:border-[hsl(217,55%,30%)]/60 w-12 text-center px-1"
+                        className="h-6 text-xs bg-white border-[hsl(217,55%,82%)]/70 w-12 text-center px-1"
                         placeholder="—"
                       />
-                      <span className="text-[10px] text-[hsl(217,72%,36%)]/70 dark:text-[hsl(217,55%,75%)]/70">dias</span>
+                      <span className="text-xs text-[hsl(217,72%,36%)]/70">dias</span>
                     </div>
                     <div className="flex items-center gap-1 flex-1 min-w-[160px]">
-                      <span className="text-[10px] text-[hsl(217,72%,36%)]/80 dark:text-[hsl(217,55%,75%)]/80 font-medium shrink-0">Sítio:</span>
+                      <span className="text-xs text-[hsl(217,72%,36%)]/80 font-medium shrink-0">Sítio:</span>
                       <Input
                         value={item.atbInfectionSite || ''}
                         onChange={(e) => onUpdate(item.id, 'atbInfectionSite' as any, e.target.value)}
-                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-[hsl(217,55%,82%)]/70 dark:border-[hsl(217,55%,30%)]/60 flex-1 px-1.5"
+                        className="h-6 text-xs bg-white border-[hsl(217,55%,82%)]/70 flex-1 px-2"
                         placeholder="ex.: pneumonia comunitária"
                       />
                     </div>
-                    <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                    <div className="ml-auto flex items-center gap-2 shrink-0">
                       {dayLine && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[hsl(217,70%,40%)] text-white border border-[hsl(217,72%,36%)]/40 shadow-sm shadow-[hsl(217,70%,40%)]/20">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-[hsl(217,70%,40%)] text-white border border-[hsl(217,72%,36%)]/40 shadow-sm shadow-[hsl(217,70%,40%)]/20">
                           {dayLine.split(' — ')[0]} · {dayLine.match(/— (\d{2}\/\d{2})/)?.[1] || ''}
                         </span>
                       )}
@@ -2636,7 +3002,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         <button
                           type="button"
                           onClick={onOpenAntimicrobialGuide}
-                          className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-semibold bg-[hsl(217,70%,40%)] hover:bg-[hsl(217,72%,36%)] text-white border border-[hsl(217,72%,36%)]/50 transition-colors"
+                          className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-xs font-medium bg-[hsl(217,70%,40%)] hover:bg-[hsl(217,72%,36%)] text-white border border-[hsl(217,72%,36%)]/50 transition-colors"
                           title="Abrir Guia ATM (CCIH / Norma Zero)"
                         >
                           <Shield className="h-3 w-3" />
@@ -2654,21 +3020,21 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 const recon = getReconstitutionDefault(item.name);
                 if (!recon.required) return null;
                 return (
-                  <div className="flex items-center gap-1.5 flex-wrap px-2 py-1 rounded-md bg-muted/40 dark:bg-slate-900/30 border border-border/60">
-                    <span className="text-[10px] text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-wide">Reconstituir</span>
-                    <span className="text-[10px] text-muted-foreground">com</span>
+                  <div className="flex items-center gap-2 flex-wrap px-2 py-1 rounded-md bg-muted/40 border border-border/60">
+                    <span className="text-xs text-foreground font-medium uppercase tracking-wide">Reconstituir</span>
+                    <span className="text-xs text-muted-foreground">com</span>
                     <Input
                       value={item.reconstitutionVolume ?? recon.volumeMl ?? ''}
                       onChange={(e) => onUpdate(item.id, "reconstitutionVolume", e.target.value)}
                       placeholder="mL"
-                      className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-14 text-center"
+                      className="h-6 text-xs bg-white border-border w-14 text-center"
                     />
-                    <span className="text-[10px] text-muted-foreground">mL de</span>
+                    <span className="text-xs text-muted-foreground">mL de</span>
                     <Select
                       value={item.reconstitutionSolvent ?? recon.solvent ?? ''}
                       onValueChange={(v) => onUpdate(item.id, "reconstitutionSolvent", v)}
                     >
-                      <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-36"><SelectValue placeholder="solvente" /></SelectTrigger>
+                      <SelectTrigger className="h-6 text-xs bg-white border-border w-36"><SelectValue placeholder="solvente" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="AD" className="text-xs">AD</SelectItem>
                         <SelectItem value="SF 0,9%" className="text-xs">SF 0,9%</SelectItem>
@@ -2676,7 +3042,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         <SelectItem value="próprio diluente" className="text-xs">Próprio diluente do fabricante</SelectItem>
                       </SelectContent>
                     </Select>
-                    <span className="text-[10px] text-muted-foreground italic ml-auto">Sugestão do catálogo · ajustável</span>
+                    <span className="text-xs text-muted-foreground italic ml-auto">Sugestão do catálogo · ajustável</span>
                   </div>
                 );
               })()}
@@ -2689,8 +3055,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   "2 AMP" sozinho não diz a massa de cada unidade. Nunca bloqueia
                   validação; item.dose alimenta o impresso via buildSolutoToken. */}
               <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Qtd:</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xs text-foreground font-medium shrink-0">Qtd:</span>
                   <Input
                     type="number"
                     inputMode="decimal"
@@ -2713,20 +3079,20 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         }
                       }
                     }}
-                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 px-1.5 text-center focus-visible:ring-1 focus-visible:ring-primary"
+                    className="h-6 text-xs bg-white border-border px-2 text-center focus-visible:ring-1 focus-visible:ring-primary"
                     style={{ width: `${Math.max(2.75, (String(item.quantity || '').length || 1) * 0.7 + 1.5)}ch`, minWidth: '3rem' }}
                     placeholder="1"
                     title={item.quantityUnit ? `Quantidade em ${item.quantityUnit}` : 'Quantidade'}
                   />
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0 ml-1">Forma:</span>
+                  <span className="text-xs text-foreground font-medium shrink-0 ml-1">Forma:</span>
                   <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-[78px] font-semibold focus:ring-1 focus:ring-primary" title={item.quantityUnit || 'Forma/unidade'}>
+                    <SelectTrigger className="h-6 text-xs bg-white border-border w-[78px] font-medium focus:ring-1 focus:ring-primary" title={item.quantityUnit || 'Forma/unidade'}>
                       <SelectValue placeholder="—">{quantityUnitShort(item.quantityUnit)}</SelectValue>
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
                       {QUANTITY_UNITS.map(u => (
                         <SelectItem key={u} value={u} className="text-xs">
-                          <span className="font-semibold mr-1.5">{quantityUnitShort(u)}</span>
+                          <span className="font-medium mr-2">{quantityUnitShort(u)}</span>
                           <span className="text-muted-foreground">— {u}</span>
                         </SelectItem>
                       ))}
@@ -2748,22 +3114,22 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   // têm layout próprio). Só condicionamos por massa/volume.
                   if (prescritoEmMassaOuVolume) return null;
                   return (
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal shrink-0">Dose:</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xs text-muted-foreground font-normal shrink-0">Dose:</span>
                       <Input
                         value={item.dose || ''}
                         onChange={(e) => onUpdate(item.id, "dose", e.target.value)}
                         placeholder="opcional — ex: 500mg"
                         title="Opcional. Detalhe a dose por unidade (ex.: '500mg' para '1 AMP') se quiser que apareça no impresso. Não é obrigatório — a Qtd já libera a validação."
-                        className="h-6 text-[11px] bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-700/50 px-1.5 text-slate-500 dark:text-slate-400 placeholder:text-slate-300 dark:placeholder:text-slate-600 focus-visible:ring-1 focus-visible:ring-primary focus-visible:text-foreground"
+                        className="h-6 text-xs bg-muted/60 border-border/70 px-2 text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary focus-visible:text-foreground"
                         style={{ width: `${Math.max(5, (String(item.dose || '').length || 12) * 0.6 + 1.5)}ch`, minWidth: '6.5rem', maxWidth: '14rem' }}
                       />
                     </div>
                   );
                 })()}
                 {renderDiluent && <>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Diluente:</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-foreground font-medium">Diluente:</span>
                   <Select value={item.diluent || ''} onValueChange={(v) => {
                     onUpdate(item.id, "diluent", v);
                     const tempItem = { ...item, diluent: v };
@@ -2784,7 +3150,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       onUpdate(item.id, "diluentVolume", '');
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-xs bg-white border-border w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       <SelectItem value="sem_diluente" className="text-xs font-medium">Sem diluente</SelectItem>
                       <SelectItem value="diluente_proprio" className="text-xs font-medium">Diluente próprio</SelectItem>
@@ -2799,8 +3165,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   </Select>
                 </div>
                 {item.diluent && !isNoDiluent(item.diluent) && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Vol. dil:</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-foreground font-medium">Vol. dil:</span>
                   <Input value={item.diluentVolume || ''} onChange={(e) => {
                     onUpdate(item.id, "diluentVolume", e.target.value);
                     const tempItem = { ...item, diluentVolume: e.target.value };
@@ -2809,35 +3175,35 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     const tempItem2 = { ...tempItem, volumeTotal: autoVol || item.volumeTotal || '' };
                     const autoConc = calcConcentration(tempItem2);
                     if (autoConc) onUpdate(item.id, "concentration", autoConc);
-                  }} className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center focus-visible:ring-1 focus-visible:ring-primary" placeholder="mL" />
+                  }} className="h-6 text-xs bg-white border-border w-16 text-center focus-visible:ring-1 focus-visible:ring-primary" placeholder="mL" />
                 </div>
                 )}
                 </>}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Via:</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-foreground font-medium">Via:</span>
                   <Select value={item.route} onValueChange={(v) => {
                     onUpdate(item.id, "route", v);
                     if (isIVRoute(v) && !item.infusionMode) {
                       onUpdate(item.id, "infusionMode", 'BIC');
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20 font-semibold focus:ring-1 focus:ring-primary">
+                    <SelectTrigger className="h-6 text-xs bg-white border-border w-20 font-medium focus:ring-1 focus:ring-primary">
                       <SelectValue>{routeShort(item.route)}</SelectValue>
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
                       {ROUTES.map((r) => (
                         <SelectItem key={r} value={r} className="text-xs">
-                          <span className="font-semibold mr-1.5">{routeShort(r)}</span>
+                          <span className="font-medium mr-2">{routeShort(r)}</span>
                           <span className="text-muted-foreground">— {routeLabel(r)}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Int.:</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-foreground font-medium">Int.:</span>
                   <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 font-semibold w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-xs bg-white border-border font-medium w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent className="max-h-72">{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
@@ -2847,25 +3213,25 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     só ajusta se quiser, e a validação deixa de exigir que ele
                     escreva nas Observações. (22/07/2026.) */}
                 {isOralSolidViaEnteral(item) && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap">Diluição:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-foreground font-medium whitespace-nowrap">Diluição:</span>
                     <Input
                       type="text"
                       inputMode="decimal"
                       value={item.enteralDilutionVolume ?? ''}
                       onChange={(e) => onUpdate(item.id, 'enteralDilutionVolume', e.target.value)}
                       placeholder={ENTERAL_DILUTION_DEFAULT_ML}
-                      className="h-6 w-14 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 font-semibold text-center focus:ring-1 focus:ring-primary"
+                      className="h-6 w-14 text-xs bg-white border-border font-medium text-center focus:ring-1 focus:ring-primary"
                     />
-                    <span className="text-[10px] text-muted-foreground">mL de água</span>
+                    <span className="text-xs text-muted-foreground">mL de água</span>
                   </div>
                 )}
               </div>
 
               {renderIVOnly && (
-              <div className="flex items-center gap-2 flex-wrap pt-1.5 border-t border-border/40">
+              <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border/40">
                 <Droplets className="h-3 w-3 text-muted-foreground shrink-0" />
-                <span className="text-[10px] text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-wide">Infusão EV</span>
+                <span className="text-xs text-foreground font-medium uppercase tracking-wide">Infusão EV</span>
                 {(() => {
                   // Bolus toggle: habilitado só p/ IV intermitente NÃO antimicrobiano e posologia ≠ Contínuo
                   const canBolusToggle =
@@ -2877,8 +3243,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   const nameLower = (item.name || '').toLowerCase();
                   const isBolusSafeDrug = /\b(atropina|adrenalina|epinefrina)\b/.test(nameLower);
                   return (
-                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md border border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20">
-                      <span className={`text-[10px] font-medium ${!isBolus ? 'text-slate-700 dark:text-slate-200' : 'text-muted-foreground'}`}>Tempo</span>
+                    <div className="flex items-center gap-2 px-2 py-1 rounded-md border border-warning-border bg-warning-soft/60">
+                      <span className={`text-xs font-medium ${!isBolus ? 'text-foreground' : 'text-muted-foreground'}`}>Tempo</span>
                       <Switch
                         checked={isBolus}
                         onCheckedChange={(v) => {
@@ -2889,11 +3255,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                             onUpdate(item.id, "infusionRate", "");
                           }
                         }}
-                        className="h-4 w-8 data-[state=checked]:bg-amber-500"
+                        className="h-4 w-8 data-[state=checked]:bg-warning"
                       />
-                      <span className={`text-[10px] font-semibold ${isBolus ? 'text-amber-700 dark:text-amber-300' : 'text-muted-foreground'}`}>Bolus</span>
+                      <span className={`text-xs font-medium ${isBolus ? 'text-warning-on-soft' : 'text-muted-foreground'}`}>Bolus</span>
                       {isBolus && !isBolusSafeDrug && (
-                        <span className="flex items-center gap-1 ml-1 text-[10px] text-amber-700 dark:text-amber-300" title="Bolus EV é tipicamente reservado para drogas como atropina e adrenalina. Confirme a indicação antes de prescrever.">
+                        <span className="flex items-center gap-1 ml-1 text-xs text-warning-on-soft" title="Bolus EV é tipicamente reservado para drogas como atropina e adrenalina. Confirme a indicação antes de prescrever.">
                           <AlertTriangle className="h-3 w-3" />
                           confirmar indicação
                         </span>
@@ -2904,7 +3270,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 {item.ivBolus ? (
                   <>
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-muted-foreground font-medium">Vol. final:</span>
+                      <span className="text-xs text-muted-foreground font-medium">Vol. final:</span>
                       <Input
                         value={item.volumeTotal || ''}
                         onChange={(e) => {
@@ -2914,17 +3280,17 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                           const autoConc = calcConcentration(tempItem);
                           if (autoConc) onUpdate(item.id, "concentration", autoConc);
                         }}
-                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center font-medium"
+                        className="h-6 text-xs bg-white border-border w-16 text-center font-medium"
                         placeholder="opcional"
                       />
-                      <span className="text-[10px] text-muted-foreground">mL</span>
+                      <span className="text-xs text-muted-foreground">mL</span>
                     </div>
-                    <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">EV em bolus</span>
+                    <span className="text-xs font-medium text-warning-on-soft uppercase tracking-wide">EV em bolus</span>
                   </>
                 ) : (
                   <>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">Vol. final:</span>
+                  <span className="text-xs text-muted-foreground font-medium">Vol. final:</span>
                   <Input
                     value={item.volumeTotal || ''}
                     onChange={(e) => {
@@ -2940,15 +3306,15 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                       }
                     }}
-                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center font-medium"
+                    className="h-6 text-xs bg-white border-border w-16 text-center font-medium"
                     placeholder="opcional"
                     title="Volume final da solução (medicamento + diluente). Auto-calculado quando possível."
                   />
-                  <span className="text-[10px] text-muted-foreground">mL</span>
+                  <span className="text-xs text-muted-foreground">mL</span>
                 </div>
                 <span className="text-muted-foreground/40">│</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">Correr em:</span>
+                  <span className="text-xs text-muted-foreground font-medium">Correr em:</span>
                   <Input
                     value={item.infusionTime || ''}
                     onChange={(e) => {
@@ -2960,7 +3326,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                       }
                     }}
-                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-14 text-center"
+                    className="h-6 text-xs bg-white border-border w-14 text-center"
                     placeholder="—"
                   />
                   <Select value={item.infusionTimeUnit || 'min'} onValueChange={(v) => {
@@ -2970,7 +3336,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16">
+                    <SelectTrigger className="h-6 text-xs bg-white border-border w-16">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -2981,7 +3347,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </div>
                 <span className="text-muted-foreground/40">⇄</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">Vazão:</span>
+                  <span className="text-xs text-muted-foreground font-medium">Vazão:</span>
                   <Input
                     value={item.infusionRate || ''}
                     onChange={(e) => {
@@ -2993,7 +3359,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         if (autoTime) onUpdate(item.id, "infusionTime", autoTime);
                       }
                     }}
-                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center font-medium"
+                    className="h-6 text-xs bg-white border-border w-16 text-center font-medium"
                     placeholder="—"
                   />
                   <Select value={item.infusionMode || 'BIC'} onValueChange={(v) => {
@@ -3004,7 +3370,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-24">
+                    <SelectTrigger className="h-6 text-xs bg-white border-border w-24">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -3015,21 +3381,21 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </div>
                 <span className="text-muted-foreground/40">│</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">Conc. final:</span>
+                  <span className="text-xs text-muted-foreground font-medium">Conc. final:</span>
                   <Input
                     value={item.concentration || ''}
                     onChange={(e) => onUpdate(item.id, "concentration", e.target.value)}
-                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-24 text-center"
+                    className="h-6 text-xs bg-white border-border w-24 text-center"
                     placeholder="auto"
                   />
                 </div>
                 {item.volumeTotal && item.posology && item.posology !== 'Contínuo' && item.posology !== 'Dose única' && (
-                  <span className="text-[10px] text-muted-foreground ml-auto">
+                  <span className="text-xs text-muted-foreground ml-auto">
                     {posologyToIntervals(item.posology)}x/dia · {((parseDecimalBR(item.volumeTotal || '0') || 0) * posologyToIntervals(item.posology)).toFixed(0)}mL/24h
                   </span>
                 )}
                 {item.posology === 'Contínuo' && item.volumeTotal && (
-                  <span className="text-[10px] text-muted-foreground ml-auto">infusão contínua 24h</span>
+                  <span className="text-xs text-muted-foreground ml-auto">infusão contínua 24h</span>
                 )}
                   </>
                 )}
@@ -3043,11 +3409,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 const conc = calcConcentration(item);
                 if (!conc) return null;
                 return (
-                  <div className="flex items-center gap-1.5 px-2.5">
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/50 bg-muted/40 text-[10px] font-medium text-muted-foreground">
+                  <div className="flex items-center gap-2 px-3">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border/50 bg-muted/40 text-xs font-medium text-muted-foreground">
                       {item.category === 'antimicrobial' && <span className="atb-subchip">Concentração</span>}
                       {item.category !== 'antimicrobial' && <>Conc. final:</>}
-                      <span className="text-foreground font-semibold">{conc}</span>
+                      <span className="text-foreground font-medium">{conc}</span>
                     </span>
                   </div>
                 );
@@ -3058,18 +3424,18 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 const tokens = buildLine2Tokens(item);
                 if (tokens.length === 0) return null;
                 return (
-                  <div className="flex items-center flex-wrap gap-x-1.5 gap-y-1 px-2.5 py-1 rounded bg-muted/20 border border-border/20">
+                  <div className="flex items-center flex-wrap gap-x-2 gap-y-1 px-3 py-1 rounded-md bg-muted/20 border border-border/20">
                     {tokens.map((tok, i) => (
                       <React.Fragment key={i}>
                         {i > 0 && !tok.isBadge && !tokens[i - 1]?.isBadge && (
-                          <span className="text-[10px] text-muted-foreground/40 select-none">|</span>
+                          <span className="text-xs text-muted-foreground/40 select-none">|</span>
                         )}
                         {tok.isBadge ? (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30 tracking-wide">
+                          <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-primary/15 text-foreground border border-border/30 tracking-wide">
                             {tok.text}
                           </span>
                         ) : (
-                          <span className="text-[11px] text-foreground/80">{tok.text}</span>
+                          <span className="text-xs text-foreground/80">{tok.text}</span>
                         )}
                       </React.Fragment>
                     ))}
@@ -3081,12 +3447,20 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               <Input
                 value={item.instructions}
                 onChange={(e) => onUpdate(item.id, "instructions", e.target.value)}
-                className="h-7 text-[11px] bg-muted/10 border-border/20 text-muted-foreground italic pl-2.5 focus:text-foreground focus:not-italic"
+                className="h-7 text-xs bg-muted/10 border-border/20 text-muted-foreground italic pl-3 focus:text-foreground focus:not-italic"
                 placeholder="Observações adicionais..."
               />
             </>
             );
           })()}
+          {item.status === 'active' && item.category === 'replacement' && (
+            <CombinedItemsBlock
+              item={item}
+              onUpdate={onUpdate}
+              catalog={unifiedCatalog?.['replacement'] || []}
+              categoryLabel="reposição"
+            />
+          )}
           {item.status === 'active' && isTabletOrCapsule(item.presentation) && isEnteralRoute(item.route) && (
             <CompoundedTabletFields item={item} onUpdate={onUpdate} />
           )}
@@ -3095,7 +3469,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               {item.flags.map(fk => {
                 const f = PRESCRIPTION_FLAGS.find(pf => pf.key === fk);
                 return f ? (
-                  <Badge key={fk} variant="outline" className={cn("text-[9px] px-1.5", f.color)}>
+                  <Badge key={fk} variant="outline" className={cn("text-xs px-2", f.color)}>
                     {f.fullLabel}
                   </Badge>
                 ) : null;
@@ -3145,7 +3519,7 @@ function SuspensionDialog({
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-yellow-600">
+          <DialogTitle className="flex items-center gap-2 text-warning-on-soft">
             <Pause className="h-5 w-5" />
             Suspender {isBatch ? `${batchCount} itens` : 'Item'}
           </DialogTitle>
@@ -3165,13 +3539,13 @@ function SuspensionDialog({
             className="min-h-[80px] text-sm"
             autoFocus
           />
-          <div className="flex gap-1.5 flex-wrap">
+          <div className="flex gap-2 flex-wrap">
             {['Reação adversa', 'Alta médica', 'Substituição terapêutica', 'Suspensão temporária', 'Erro de prescrição'].map(r => (
               <button
                 key={r}
                 type="button"
                 onClick={() => setReason(r)}
-                className="text-[10px] px-2 py-0.5 rounded-full border border-border bg-muted/50 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                className="text-xs px-2 py-1 rounded-full border border-border bg-muted/50 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
               >
                 {r}
               </button>
@@ -3180,7 +3554,7 @@ function SuspensionDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={handleClose}>Cancelar</Button>
-          <Button size="sm" onClick={handleConfirm} disabled={!reason.trim()} className="gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white">
+          <Button size="sm" onClick={handleConfirm} disabled={!reason.trim()} className="gap-2 bg-warning hover:bg-warning text-white">
             <Pause className="h-3.5 w-3.5" /> Confirmar Suspensão
           </Button>
         </DialogFooter>
@@ -3217,8 +3591,31 @@ function ExtraPrescriptionDialog({
   doctorCrm?: string;
   sectorLabel?: string;
 }) {
+  // Fix ReferenceError "UNIFIED_CATALOG is not defined": este diálogo
+  // renderiza <SortablePrescriptionItemRow>, que precisa do catálogo por
+  // categoria para os blocos de itens combinados (hidratação/inalação/
+  // reposição). Antes, o código referenciava a constante UNIFIED_CATALOG
+  // do componente PrescricaoPage (fora de escopo aqui) diretamente.
+  const { byCategory: UNIFIED_CATALOG } = useUnifiedMedicationCatalog();
   const [extraItems, setExtraItems] = useState<PrescriptionItem[]>([]);
   const [freeText, setFreeText] = useState("");
+  /*
+    DOIS assistentes na prescrição extra, com papéis distintos — não são
+    duplicata, e por isso ambos ficam:
+
+    1. ReplacementWizard (`extraAssistantOpen`) — MONTA itens de reposição do
+       zero, a partir do distúrbio. Botão próprio no corpo do diálogo.
+
+    2. ItemAssistantWizard (`extraAssistantId`) — AJUSTA um item já adicionado:
+       diluente, acesso, modo, tempo e volume de infusão. Vive no botão da
+       barra de busca, que a extra montava sem `onAssistantClick` — o botão nem
+       aparecia aqui, e quem prescrevia um antimicrobiano pelo fluxo extra
+       ficava sem a orientação que o fluxo principal oferece.
+
+    Um responde "o que prescrever"; o outro, "como infundir".
+  */
+  const [extraAssistantOpen, setExtraAssistantOpen] = useState(false);
+  const [extraAssistantId, setExtraAssistantId] = useState<string | null>(null);
 
   // Filter catalog by chosen category (if not "all")
   const filteredMedications = useMemo(
@@ -3447,6 +3844,9 @@ function ExtraPrescriptionDialog({
           nutResidualCheck: i.nutResidualCheck,
           nutWaterVolPerAdmin: i.nutWaterVolPerAdmin,
           nutWaterFreq: i.nutWaterFreq,
+          // Orientação do assistente. Sem este repasse o impresso declara o
+          // campo e recebe vazio — o mesmo elo que rompia nos demais casos.
+          guidance: i.guidance,
           nutZeroReason: i.nutZeroReason,
           // Nutrição — novos campos (sync PDF ↔ tela compacta)
           dietType: i.dietType,
@@ -3474,7 +3874,7 @@ function ExtraPrescriptionDialog({
         categoryLabel: categoryConfigLabel,
       });
     } catch (err: any) {
-      toast.error("Erro ao gerar PDF da prescrição extra", { description: err?.message });
+      toast.error("Não foi possível gerar PDF da prescrição extra", { description: err?.message });
     }
   };
 
@@ -3483,10 +3883,10 @@ function ExtraPrescriptionDialog({
       <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-orange-500" />
+            <Zap className="h-5 w-5 text-warning" />
             Prescrição Extra
             {categoryConfigLabel && (
-              <Badge variant="outline" className="text-[10px] bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-800 ml-1">
+              <Badge variant="outline" className="text-xs bg-warning-soft text-warning-on-soft border-warning-border ml-1">
                 {categoryConfigLabel}
               </Badge>
             )}
@@ -3504,6 +3904,19 @@ function ExtraPrescriptionDialog({
             onSelect={addFromAutocomplete}
             placeholder={categoryConfigLabel ? `Buscar em ${categoryConfigLabel.toLowerCase()}...` : "Buscar medicação para prescrição extra..."}
             category={initialCategory !== 'all' ? initialCategory : undefined}
+            onAssistantClick={() => {
+              const alvos = extraItems.filter(i => !i.suspendedAt);
+              if (alvos.length === 0) {
+                toast.info('Adicione um item primeiro', {
+                  description: 'O assistente ajusta diluição, acesso e tempo de infusão de um item já adicionado.',
+                });
+                return;
+              }
+              // Na extra a lista costuma ser curta: abre no último adicionado,
+              // que é quase sempre o que a pessoa quer ajustar.
+              setExtraAssistantId(alvos[alvos.length - 1].id);
+            }}
+            assistantTooltip="Assistente de diluição e infusão"
           />
           <div className="flex gap-2">
             <Input
@@ -3518,6 +3931,61 @@ function ExtraPrescriptionDialog({
             </Button>
           </div>
         </div>
+
+        {/* ReplacementWizard conectado à Prescrição Extra */}
+        <ReplacementWizard
+          open={extraAssistantOpen}
+          onOpenChange={setExtraAssistantOpen}
+          onAdd={(entries) => {
+            // Converte MedicationEntry → PrescriptionItem marcado como Extra
+            entries.forEach(e => {
+              const autoUnit = detectQuantityUnit(e.presentation, e.defaultDose);
+              const autoDefaults = detectDiluentDefaults(e.instructions || '');
+              const isIV = isIVRoute(e.defaultRoute);
+              const item: PrescriptionItem = {
+                id: crypto.randomUUID(),
+                name: e.name,
+                presentation: e.presentation,
+                dose: e.defaultDose,
+                route: e.defaultRoute,
+                posology: e.defaultPosology && e.defaultPosology !== '-' ? e.defaultPosology : 'Agora',
+                schedule: '',
+                instructions: '',
+                category: e.category,
+                flags: [],
+                highAlert: e.highAlert || false,
+                status: 'active',
+                isExtra: true,
+                infusionMode: 'BIC',
+                infusionTime: autoDefaults.infusionTime,
+                infusionTimeUnit: (autoDefaults.infusionTimeUnit || 'min') as 'min' | 'h',
+                diluent: autoDefaults.diluent,
+                diluentVolume: autoDefaults.diluentVolume,
+                quantity: e.defaultQuantity || '1',
+                quantityUnit: autoUnit,
+                volumeTotal: (() => {
+                  const dilVol = parseDecimalBR(autoDefaults.diluentVolume || '') || 0;
+                  const doseStr = e.defaultDose || '';
+                  const qtyForVol = parseFloat((e.defaultQuantity || '1').replace(',', '.')) || 1;
+                  const mlMatch = doseStr.match(/^([\d.,]+)\s*mL/i) || doseStr.match(/([\d.,]+)\s*mL/i);
+                  const medVol = mlMatch ? (parseFloat(mlMatch[1].replace(',', '.')) || 0) * qtyForVol : 0;
+                  if (dilVol > 0 && medVol > 0) return String(Math.round(dilVol + medVol));
+                  if (dilVol > 0) return String(dilVol);
+                  if (medVol > 0) return String(medVol);
+                  return '';
+                })(),
+                validated: false,
+                // `highAlertConfirmed: false` removido na auditoria de
+                // 18/09/2026: era escrito aqui e NUNCA lido em lugar nenhum do
+                // codigo, nao existe em PrescriptionItem, e ainda ia parar no
+                // JSONB da prescricao. A marcacao que vale e o `highAlert`
+                // acima, herdado do guia e de fato consumido pela interface.
+              };
+              setExtraItems(prev => [...prev, item]);
+            });
+            toast.success(`${entries.length} ${entries.length === 1 ? 'item adicionado' : 'itens adicionados'} à prescrição extra`);
+          }}
+        />
 
         {/* Items list — usa o MESMO row do corpo principal para respeitar campos
             específicos por categoria (nutrição, hidratação, inalação, MAV, meds IV...) */}
@@ -3538,7 +4006,7 @@ function ExtraPrescriptionDialog({
                 items={extraItems.map(i => i.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {extraItems.map((item, idx) => (
                     <SortablePrescriptionItemRow
                       key={item.id}
@@ -3554,7 +4022,7 @@ function ExtraPrescriptionDialog({
                       onToggleSelect={noop}
                       onDuplicate={duplicateExtraItem}
                       onRequestSuspend={noop}
-                      
+                      unifiedCatalog={UNIFIED_CATALOG}
                       onToggleValidation={noop}
                       isPastRenewalTime={false}
                       prescriptionLocked={false}
@@ -3569,23 +4037,46 @@ function ExtraPrescriptionDialog({
 
         {/* Summary footer */}
         {extraItems.length > 0 && (
-          <div className="p-2.5 rounded-lg bg-muted/50 border border-border text-xs space-y-1">
+          <div className="p-3 rounded-lg bg-muted/50 border border-border text-xs space-y-1">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total de itens</span>
-              <span className="font-semibold">{extraItems.length}</span>
+              <span className="font-medium">{extraItems.length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Itens "Agora" <span className="text-orange-500">(não renovam)</span></span>
-              <span className="font-semibold text-orange-600">{agoraCount}</span>
+              <span className="text-muted-foreground">Itens "Agora" <span className="text-warning">(não renovam)</span></span>
+              <span className="font-medium text-warning-on-soft">{agoraCount}</span>
             </div>
             {scheduledCount > 0 && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Itens com horário <span className="text-primary">(entram na rotina)</span></span>
-                <span className="font-semibold text-primary">{scheduledCount}</span>
+                <span className="font-medium text-primary">{scheduledCount}</span>
               </div>
             )}
           </div>
         )}
+
+        {/* Assistente da prescrição extra — opera sobre os itens desta janela */}
+        <ItemAssistantWizard
+          open={!!extraAssistantId}
+          onOpenChange={(o) => { if (!o) setExtraAssistantId(null); }}
+          item={(() => {
+            const it = extraItems.find(i => i.id === extraAssistantId);
+            return it ? {
+              id: it.id, name: it.name, category: it.category,
+              diluent: it.diluent, diluentVolume: it.diluentVolume, volumeTotal: it.volumeTotal,
+              route: it.route, accessType: it.accessType,
+              infusionMode: it.infusionMode, infusionRate: it.infusionRate,
+              infusionTime: it.infusionTime, infusionTimeUnit: it.infusionTimeUnit,
+              posology: it.posology, instructions: it.instructions,
+            } : null;
+          })()}
+          onApply={(patch) => {
+            setExtraItems(prev => prev.map(i => i.id === extraAssistantId ? ({ ...i, ...patch } as PrescriptionItem) : i));
+            setExtraAssistantId(null);
+            toast.success('Parâmetros aplicados ao item');
+          }}
+        />
+
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="outline" size="sm" onClick={handleClose}>Cancelar</Button>
@@ -3594,12 +4085,12 @@ function ExtraPrescriptionDialog({
             size="sm"
             onClick={handlePrintIsolated}
             disabled={extraItems.length === 0 || !patient}
-            className="gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-950/30"
+            className="gap-2 border-warning-border text-warning-on-soft hover:bg-warning-soft"
             title="Imprime esta prescrição extra como anexo isolado (Norma Zero)"
           >
             <Printer className="h-3.5 w-3.5" /> Imprimir Anexo
           </Button>
-          <Button size="sm" onClick={handleConfirm} disabled={extraItems.length === 0} className="gap-1.5 bg-orange-600 hover:bg-orange-700 text-white">
+          <Button size="sm" onClick={handleConfirm} disabled={extraItems.length === 0} className="gap-2 bg-warning hover:bg-warning text-white">
             <Zap className="h-3.5 w-3.5" /> Adicionar {extraItems.length} item{extraItems.length !== 1 ? 's' : ''} à prescrição
           </Button>
         </DialogFooter>
@@ -3638,7 +4129,7 @@ function RenewalDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="p-3 rounded-lg bg-muted/50 border border-border space-y-1.5">
+          <div className="p-3 rounded-lg bg-muted/50 border border-border space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span>Itens ativos</span>
               <Badge variant="secondary">{activeCount}</Badge>
@@ -3646,7 +4137,7 @@ function RenewalDialog({
             {suspendedCount > 0 && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Itens suspensos</span>
-                <Badge variant="destructive" className="text-[10px]">{suspendedCount}</Badge>
+                <Badge variant="destructive" className="text-xs">{suspendedCount}</Badge>
               </div>
             )}
           </div>
@@ -3666,7 +4157,7 @@ function RenewalDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={onClose}>Cancelar</Button>
-          <Button size="sm" onClick={() => onConfirm(includeSuspended)} className="gap-1.5">
+          <Button size="sm" onClick={() => onConfirm(includeSuspended)} className="gap-2">
             <RefreshCw className="h-3.5 w-3.5" /> Renovar para {tomorrow}
           </Button>
         </DialogFooter>
@@ -3724,7 +4215,7 @@ function BatchActionBar({
   if (selectedCount === 0 || typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="fixed bottom-20 right-5 z-[70] flex items-center gap-2 px-3 py-2.5 rounded-xl bg-background/95 backdrop-blur-sm border border-border shadow-lg animate-in fade-in slide-in-from-bottom-3 duration-300">
+    <div className="fixed bottom-20 right-5 z-[70] flex items-center gap-2 px-3 py-3 rounded-lg bg-background/95 backdrop-blur-sm border border-border shadow-md animate-in fade-in slide-in-from-bottom-3 duration-300">
       <Checkbox
         checked={allSelected}
         onCheckedChange={() => allSelected ? onDeselectAll() : onSelectAll()}
@@ -3743,7 +4234,7 @@ function BatchActionBar({
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-sky-600 hover:text-sky-700" onClick={onPrintSelected}>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-foreground hover:text-foreground" onClick={onPrintSelected}>
             <Printer className="h-3.5 w-3.5" />
           </Button>
         </TooltipTrigger>
@@ -3837,9 +4328,9 @@ function SignPrescriptionDialog({
           <div className="flex justify-between"><span className="text-muted-foreground">Data/Hora</span><span className="font-medium">{format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}</span></div>
         </div>
         <div className="flex items-center gap-2 justify-center">
-          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors", step >= 1 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30 text-muted-foreground")}>1</div>
+          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border-2 transition-colors", step >= 1 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30 text-muted-foreground")}>1</div>
           <div className={cn("w-12 h-0.5 transition-colors", step >= 2 ? "bg-primary" : "bg-muted-foreground/20")} />
-          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors", step >= 2 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30 text-muted-foreground")}>2</div>
+          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border-2 transition-colors", step >= 2 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30 text-muted-foreground")}>2</div>
         </div>
         {step === 1 ? (
           <div className="space-y-4">
@@ -3850,7 +4341,7 @@ function SignPrescriptionDialog({
             <div className="space-y-2">
               <Label htmlFor="sig-crm" className="text-xs font-medium">Número do CRM</Label>
               <Input id="sig-crm" value={crm} onChange={(e) => setCrm(e.target.value.replace(/\D/g, ''))} placeholder="Ex: 12345" maxLength={8} className="bg-muted/30" />
-              {crm && !/^\d{4,8}$/.test(crm) && <p className="text-[10px] text-destructive">CRM deve conter entre 4 e 8 dígitos</p>}
+              {crm && !/^\d{4,8}$/.test(crm) && <p className="text-xs text-destructive">CRM deve conter entre 4 e 8 dígitos</p>}
             </div>
           </div>
         ) : (
@@ -3862,7 +4353,7 @@ function SignPrescriptionDialog({
             <div className="space-y-2">
               <Label htmlFor="sig-pwd" className="text-xs font-medium">Senha</Label>
               <div className="relative">
-                <Input id="sig-pwd" type={showPassword ? "text" : "password"} value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} placeholder="Digite sua senha" className="bg-muted/30 pr-9" autoFocus />
+                <Input id="sig-pwd" type={showPassword ? "text" : "password"} value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} placeholder="Digite sua senha" className="bg-muted/30 pr-8" autoFocus />
                 <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword(!showPassword)}>
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -3871,12 +4362,12 @@ function SignPrescriptionDialog({
             <div className="space-y-2">
               <Label htmlFor="sig-pwd2" className="text-xs font-medium">Confirmar senha</Label>
               <div className="relative">
-                <Input id="sig-pwd2" type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }} placeholder="Confirme sua senha" className="bg-muted/30 pr-9" />
+                <Input id="sig-pwd2" type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }} placeholder="Confirme sua senha" className="bg-muted/30 pr-8" />
                 <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowConfirm(!showConfirm)}>
                   {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              {password && confirmPassword && password === confirmPassword && <p className="text-[10px] text-green-600 flex items-center gap-1"><Check className="h-3 w-3" /> Senhas coincidem</p>}
+              {password && confirmPassword && password === confirmPassword && <p className="text-xs text-released-on-soft flex items-center gap-1"><Check className="h-3 w-3" /> Senhas coincidem</p>}
             </div>
             {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" /> {error}</p>}
           </div>
@@ -3885,9 +4376,9 @@ function SignPrescriptionDialog({
           {step === 2 && <Button variant="ghost" size="sm" onClick={() => setStep(1)} disabled={verifying} className="mr-auto text-xs">Voltar</Button>}
           <Button variant="outline" size="sm" onClick={handleClose} disabled={verifying} className="text-xs">Cancelar</Button>
           {step === 1 ? (
-            <Button size="sm" onClick={handleStep1} disabled={!isStep1Valid} className="gap-1.5 text-xs">Próximo <Check className="h-3 w-3" /></Button>
+            <Button size="sm" onClick={handleStep1} disabled={!isStep1Valid} className="gap-2 text-xs">Próximo <Check className="h-3 w-3" /></Button>
           ) : (
-            <Button size="sm" onClick={handleSign} disabled={verifying || !password || !confirmPassword} className="gap-1.5 text-xs">
+            <Button size="sm" onClick={handleSign} disabled={verifying || !password || !confirmPassword} className="gap-2 text-xs">
               {verifying ? (<><span className="animate-spin h-3 w-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full inline-block" /> Verificando...</>) : (<><ShieldCheck className="h-3.5 w-3.5" /> Assinar Prescrição</>)}
             </Button>
           )}
@@ -3930,63 +4421,68 @@ function DrugInteractionDialog({
     setError("");
 
     try {
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-interactions`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ medications, patientContext }),
-        }
+      // Usa a mesma verificação local da validação — runClinicalAlertChecks
+      // com detectSevereInteractions. Não depende de servidor externo.
+      const { runClinicalAlertChecks } = await import("@/lib/clinicalAlertChecks");
+      const alerts = runClinicalAlertChecks(
+        items.filter(i => i.status === 'active'),
+        patientContext?.allergies || ""
       );
 
-      if (!resp.ok) {
-        const errData = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
-        throw new Error(errData.error || `Erro ${resp.status}`);
+      const interactions = alerts.filter(a => a.type === 'interaction');
+      const duplicates = alerts.filter(a => a.type === 'duplicate');
+      const allergyAlerts = alerts.filter(a => a.type === 'allergy');
+      const routeAlerts = alerts.filter(a => a.type === 'route');
+
+      if (alerts.length === 0) {
+        setResult("## Nenhum alerta identificado\n\nA verificação automática não detectou interações graves, duplicatas, vias incompatíveis ou alertas de alergia entre os medicamentos ativos desta prescrição.\n\n> Esta verificação usa uma lista de pares de alto risco validados clinicamente. Consulte sempre fontes especializadas para casos complexos.");
+        return;
       }
 
-      if (!resp.body) throw new Error("Resposta vazia");
+      let output = "";
 
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let accumulated = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) {
-              accumulated += content;
-              setResult(accumulated);
-            }
-          } catch {
-            buffer = line + "\n" + buffer;
-            break;
-          }
-        }
+      // Via proibida vem primeiro: é o achado de maior prioridade em
+      // runClinicalAlertChecks (typePriority route = 0) e não pode ficar
+      // abaixo de seções que o médico talvez não role até o fim.
+      if (routeAlerts.length > 0) {
+        output += "## Vias de Administração Incompatíveis\n\n";
+        routeAlerts.forEach(a => {
+          output += `**${a.title}**\n- Gravidade: ALTA\n- ${a.detail || "Via incompatível com o fármaco prescrito."}\n\n`;
+        });
       }
+
+      if (interactions.length > 0) {
+        output += "## Interações Graves Identificadas\n\n";
+        interactions.forEach(a => {
+          output += `**${a.title}**\n- Gravidade: ALTA\n- ${a.detail || "Monitorar rigorosamente."}\n\n`;
+        });
+      } else {
+        output += "## Sem interações graves identificadas\n\nNenhuma interação de alto risco detectada.\n\n";
+      }
+
+      if (duplicates.length > 0) {
+        output += "## Duplicatas / Sobreposição Terapêutica\n\n";
+        duplicates.forEach(a => {
+          output += `**${a.title}**\n- ${a.detail || "Verificar se a duplicação é intencional."}\n\n`;
+        });
+      }
+
+      if (allergyAlerts.length > 0) {
+        output += "## Alertas de Alergia\n\n";
+        allergyAlerts.forEach(a => {
+          output += `**${a.title}**\n- ${a.detail || "Paciente tem alergia registrada."}\n\n`;
+        });
+      }
+
+      output += `## Resumo\n- Vias incompatíveis: ${routeAlerts.length}\n- Interações graves: ${interactions.length}\n- Duplicatas: ${duplicates.length}\n- Alertas de alergia: ${allergyAlerts.length}\n\n> Verificação automática baseada em lista de pares de alto risco. Consulte fontes especializadas para análise completa.`;
+
+      setResult(output);
     } catch (err: any) {
       setError(err.message || "Erro ao verificar interações");
     } finally {
       setLoading(false);
     }
-  }, [medications, patientContext]);
+  }, [medications, patientContext, items]);
 
   useEffect(() => {
     if (open && !result && !loading && !error) {
@@ -4016,7 +4512,7 @@ function DrugInteractionDialog({
 
         <div className="flex-1 overflow-y-auto min-h-0">
           {loading && !result && (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="flex flex-col items-center justify-center py-8 gap-3">
               <Loader2 className="h-8 w-8 text-primary animate-spin" />
               <p className="text-sm text-muted-foreground">Analisando interações medicamentosas...</p>
             </div>
@@ -4024,13 +4520,13 @@ function DrugInteractionDialog({
 
           {error && (
             <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-1" />
               <span>{error}</span>
             </div>
           )}
 
           {result && (
-            <div className="prose prose-sm dark:prose-invert max-w-none px-1">
+            <div className="prose prose-sm max-w-none px-1">
               <ReactMarkdown>{result}</ReactMarkdown>
             </div>
           )}
@@ -4038,7 +4534,7 @@ function DrugInteractionDialog({
 
         <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t">
           {result && (
-            <Button variant="outline" size="sm" onClick={runCheck} disabled={loading} className="mr-auto gap-1.5 text-xs">
+            <Button variant="outline" size="sm" onClick={runCheck} disabled={loading} className="mr-auto gap-2 text-xs">
               <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} /> Reanalisar
             </Button>
           )}
@@ -4118,6 +4614,11 @@ async function resolveProfissionalId(userId: string | null | undefined): Promise
 
 const PrescricaoPage = () => {
   const { user, loading: authLoading } = useAuth();
+  // Perfil do medico logado (tabela profiles). Usado como fallback de nome/CRM
+  // na reimpressao da Guia ATM: ate entao o nome so existia dentro do
+  // SignPrescriptionDialog, e a 2a via estourava ReferenceError quando nao
+  // havia assinatura digital no estado.
+  const currentDoctor = useCurrentDoctor();
   const { currentHospital, currentState } = useHospital();
   const [searchParams] = useSearchParams();
   const { getCount: getFavoriteCount, trackUse: trackMedicationUse } = useMedicationFavorites();
@@ -4133,7 +4634,7 @@ const PrescricaoPage = () => {
   const sectorMapInit: Record<string, string> = { red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2" };
 
   const [patient, setPatient] = useState<PatientHeader>(() => {
-    // ⚠️  CRÍTICO: jamais usar dados-demo quando há patientId real na URL.
+    //  CRÍTICO: jamais usar dados-demo quando há patientId real na URL.
     // Demos antigos (L09/L10/L11 = "Maria das Graças", etc) provocavam o
     // cabeçalho do PDF a vir com nome de outro paciente em UTI 2 leito 10.
     // Os campos abaixo serão hidratados pelos efeitos de pré-admissão,
@@ -4158,7 +4659,7 @@ const PrescricaoPage = () => {
     };
   });
 
-  // 🔒 FIX: items demo NUNCA aparecem quando há patientId real na URL.
+  // FIX: items demo NUNCA aparecem quando há patientId real na URL.
   // Antes, initialDemoItems era sempre calculado por leito — mesmo com paciente
   // real — fazendo itens fictícios aparecerem por 1-2s antes da prescrição
   // real chegar, gerando sensação de bug/travamento para o usuário.
@@ -4301,6 +4802,8 @@ const PrescricaoPage = () => {
   const [hydrationWizardOpen, setHydrationWizardOpen] = useState(false);
   const [replacementWizardOpen, setReplacementWizardOpen] = useState(false);
   const [itemAssistantTargetId, setItemAssistantTargetId] = useState<string | null>(null);
+  // Categoria cujo seletor de item do assistente está aberto (2+ itens candidatos).
+  const [assistantPickerCat, setAssistantPickerCat] = useState<string | null>(null);
   const [compactView, setCompactView] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<PrescriptionCategory>>(new Set());
   // Item recém-adicionado: abre expandido para preenchimento imediato, sem
@@ -4344,13 +4847,13 @@ const PrescricaoPage = () => {
   // dependentes de `patient.name` re-disparem (auto-load das últimas 24h,
   // pré-admissão, lista de prescrições, dispensações).
   const urlPatientId = searchParams.get('patientId') || '';
-  // 🔒 Chave de afinidade ROBUSTA — UUID do patient_registry vinculado ao leito.
+  // Chave de afinidade ROBUSTA — UUID do patient_registry vinculado ao leito.
   // ATENÇÃO: `urlPatientId` é `patients.id` (linha do leito), NÃO é
   // `patient_registry.id`. Precisamos resolver o registry_id real consultando
   // a tabela `patients` — usar `urlPatientId` direto fazia todas as queries
   // de prescrição/validação/dispensação voltarem vazias (homônimos OK, mas
   // o paciente original também não achava o próprio histórico).
-  // 🔒 Resolução blindada via helper único — fonte da verdade para registry_id.
+  // Resolução blindada via helper único — fonte da verdade para registry_id.
   // Ver src/hooks/useResolvedRegistryId.ts para detalhes da garantia anti-vazamento.
   const { registryId: patientRegistryId } = useResolvedRegistryId(urlPatientId);
   const { encounterId: activeEncounterId } = useActiveEncounterId(urlPatientId);
@@ -4384,7 +4887,7 @@ const PrescricaoPage = () => {
       vitalSigns: undefined,
       riskClassification: undefined,
       allergies: '',
-      // ⚠️  Campos vindos do `patient_registry` (sincronizados pelo effect
+      //  Campos vindos do `patient_registry` (sincronizados pelo effect
       // logo abaixo via usePatientIdentifiers). Limpar aqui evita que dados
       // de identificação do paciente ANTERIOR (DN, sexo, mãe, endereço, CPF/CNS
       // exibidos no cabeçalho do PDF) "vazem" por 1-2 frames até o registry
@@ -4758,6 +5261,17 @@ const PrescricaoPage = () => {
   const [validationSessionExpiresAt, setValidationSessionExpiresAt] = useState<number | null>(null);
   // Etapa pós-validação (só na validação TOTAL — por item seria intrusivo)
   const [justValidatedPrescription, setJustValidatedPrescription] = useState<Date | null>(null);
+  // Flag para abrir o pop-up de impressão no próximo render, APÓS setItems ser processado
+  const [pendingValidationPopup, setPendingValidationPopup] = useState(false);
+
+  // Abre o pop-up de impressão somente depois que o React processou o novo state de items
+  // Sem isso, o pop-up abria antes do setItems ser aplicado e o PDF saía com dados antigos
+  useEffect(() => {
+    if (pendingValidationPopup) {
+      setPendingValidationPopup(false);
+      setJustValidatedPrescription(new Date());
+    }
+  }, [pendingValidationPopup, items]);
   const [sessionTick, setSessionTick] = useState(0); // força re-render para countdown
 
   // Tick a cada 30s enquanto a sessão estiver ativa (suficiente p/ countdown em min)
@@ -4796,7 +5310,7 @@ const PrescricaoPage = () => {
       sigOverride?: DigitalSignature | null;
       silent?: boolean;
       /**
-       * 🔒 Fase C — quando true, se o registro atual está SIGNED e não há nova
+       * Fase C — quando true, se o registro atual está SIGNED e não há nova
        * assinatura (sig=null), em vez do skip B1 promove automaticamente para
        * `newVersion` (parent_id + bump version). Usado por mutações conscientes
        * sobre prescrição assinada (suspender/reativar item). Autosave NÃO usa.
@@ -4820,7 +5334,7 @@ const PrescricaoPage = () => {
       (initialPatientSector && (sectorMapInit[initialPatientSector] || initialPatientSector)) ||
       'GERAL';
     try {
-      // 🔒 Fase C — pré-checagem de status para decidir se update vira newVersion.
+      // Fase C — pré-checagem de status para decidir se update vira newVersion.
       // Roda apenas quando há id, modo update, sem nova assinatura e autoNewVersionIfSigned ligado.
       if (
         mode === 'update' &&
@@ -4828,16 +5342,27 @@ const PrescricaoPage = () => {
         !sig &&
         opts.autoNewVersionIfSigned
       ) {
-        try {
-          const { data: existing } = await supabase
-            .from('prescricoes')
-            .select('status')
-            .eq('id', currentPrescriptionId)
-            .single();
-          if ((existing as any)?.status === 'signed' || (existing as any)?.status === 'validated') {
-            mode = 'newVersion';
-          }
-        } catch {}
+        // AUDITORIA 18/09/2026 — esta checagem FALHAVA ABERTA.
+        // O erro caia num `catch {}` vazio e o fluxo seguia como 'update',
+        // sobrescrevendo um registro possivelmente assinado. Pior: `.single()`
+        // NAO lanca quando a linha nao e visivel (RLS ou 0 linhas) — devolve
+        // { data: null, error }, o `if` dava falso e o update acontecia igual.
+        // Agora: sem resposta confiavel, aborta. O autosave e `silent` e tem
+        // queda para localStorage, entao a edicao do medico nao se perde.
+        const { data: existing, error: erroStatus } = await supabase
+          .from('prescricoes')
+          .select('status')
+          .eq('id', currentPrescriptionId)
+          .maybeSingle();
+        if (erroStatus || !existing) {
+          throw new Error(
+            'Nao foi possivel confirmar o status da prescricao antes de salvar. ' +
+            'Nada foi gravado, para nao sobrescrever um documento assinado.',
+          );
+        }
+        if ((existing as any).status === 'signed' || (existing as any).status === 'validated') {
+          mode = 'newVersion';
+        }
       }
 
       // Calcular status baseado em validação dos itens (não na assinatura digital)
@@ -4860,16 +5385,23 @@ const PrescricaoPage = () => {
       };
 
       if (mode === 'newVersion' && currentPrescriptionId) {
-        // Busca version atual para incrementar
-        let nextVersion = 2;
-        try {
-          const { data: parentData } = await supabase
-            .from('prescricoes')
-            .select('versao')
-            .eq('id', currentPrescriptionId)
-            .single();
-          nextVersion = ((parentData as any)?.versao || 1) + 1;
-        } catch {}
+        // Busca version atual para incrementar.
+        // AUDITORIA 18/09/2026 — antes, qualquer falha aqui era engolida por um
+        // `catch {}` e a versao ia como 2 fixo, podendo colidir com uma versao 2
+        // ja existente e criar duas linhas com o mesmo numero no prontuario.
+        // Sem leitura confiavel da versao atual, nao ha numero correto a gravar.
+        const { data: parentData, error: erroVersao } = await supabase
+          .from('prescricoes')
+          .select('versao')
+          .eq('id', currentPrescriptionId)
+          .maybeSingle();
+        if (erroVersao || !parentData) {
+          throw new Error(
+            'Nao foi possivel ler a versao atual da prescricao. Nada foi gravado, ' +
+            'para nao criar duas versoes com o mesmo numero.',
+          );
+        }
+        const nextVersion = ((parentData as any)?.versao || 1) + 1;
         const { data, error } = await supabase
           .from('prescricoes')
           .insert({
@@ -4887,25 +5419,40 @@ const PrescricaoPage = () => {
       }
 
       if (currentPrescriptionId) {
-        // 🔒 B1 — blindagem: nunca rebaixar uma prescrição já SIGNED via update.
+        // B1 — blindagem: nunca rebaixar uma prescrição já SIGNED via update.
         // Só permite update se for newVersion (tratado acima) OU se o caller traz uma
         // assinatura válida (sig). Autosave (sig=null) em registro signed → skip silencioso.
         // Fase C: se autoNewVersionIfSigned estava ligado, já foi promovido acima.
-        try {
-          const { data: existing } = await supabase
-            .from('prescricoes')
-            .select('status')
-            .eq('id', currentPrescriptionId)
-            .single();
-          if ((existing as any)?.status === 'signed' && !sig) {
-            // Registro já assinado e não há nova assinatura → não rebaixar.
-            return;
-          }
-        } catch {}
-        const { error } = await supabase
+        // AUDITORIA 18/09/2026 — esta era a guarda que mais falhava aberta:
+        // o `catch {}` engolia o erro e o update seguia assim mesmo. E, mesmo
+        // sem erro, `.single()` devolvendo linha invisivel (RLS/0 linhas) fazia
+        // o `if` dar falso e o update acontecer sobre um registro assinado.
+        const { data: existing, error: erroStatus } = await supabase
+          .from('prescricoes')
+          .select('status')
+          .eq('id', currentPrescriptionId)
+          .maybeSingle();
+        if (erroStatus || !existing) {
+          throw new Error(
+            'Nao foi possivel confirmar o status da prescricao antes de salvar. ' +
+            'Nada foi gravado, para nao sobrescrever um documento assinado.',
+          );
+        }
+        if ((existing as any).status === 'signed' && !sig) {
+          // Registro ja assinado e nao ha nova assinatura -> nao rebaixar.
+          return;
+        }
+        // Defesa em profundidade: entre o SELECT acima e o UPDATE abaixo existe
+        // uma ida e volta de rede (~250ms medidos ate o servidor) em que outro
+        // medico pode assinar. Sem nova assinatura, o filtro impede no proprio
+        // banco que um registro assinado seja rebaixado — a checagem de cima
+        // sozinha nao e atomica.
+        let consulta = supabase
           .from('prescricoes')
           .update(basePayload)
           .eq('id', currentPrescriptionId);
+        if (!sig) consulta = consulta.neq('status', 'signed');
+        const { error } = await consulta;
         if (error) throw error;
       } else {
         // BUGFIX (07/08/2026) — Pontos 1 e 4 da otimização de rascunhos:
@@ -4960,7 +5507,7 @@ const PrescricaoPage = () => {
     } catch (err: any) {
       console.error('[persistItems] persist failed', err);
       if (!opts.silent) {
-        toast.error("Erro ao persistir alteração", {
+        toast.error("Não foi possível persistir alteração", {
           description: "A alteração ficou apenas em memória. Salve manualmente para garantir.",
         });
       }
@@ -4987,7 +5534,7 @@ const PrescricaoPage = () => {
   const lastPersistedSerializedRef = useRef<string>('');
   const autosaveSkipFirstRef = useRef(true);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // 🔒 B2 — cache "existe signed hoje?" por (paciente+dia) para evitar query a cada keystroke.
+  // B2 — cache "existe signed hoje?" por (paciente+dia) para evitar query a cada keystroke.
   const signedTodayCacheRef = useRef<{ key: string; exists: boolean } | null>(null);
 
   const draftStorageKey = useMemo(() => {
@@ -5035,14 +5582,28 @@ const PrescricaoPage = () => {
   const isLoadingRef = useRef(true); // começa true — carregamento inicial em andamento
 
   useEffect(() => {
-    if (isLoadingRef.current) return; // aguarda carregamento completar
+    if (isLoadingRef.current) return;
+
+    // Regra absoluta: prescrição validada NUNCA gera dirty state.
+    // Duas condições que indicam validação:
+    // 1. digitalSignature preenchida (validada com senha)
+    // 2. Todos os itens ativos têm validated=true (validada sem senha / sessão ativa)
+    // Em qualquer um dos casos, o popup NUNCA aparece.
+    const activeItems = items.filter(i => i.status === 'active');
+    const allValidated = activeItems.length > 0 && activeItems.every(i => i.validated);
+    if (digitalSignature || allValidated) {
+      isDirtyRef.current = false;
+      setDirty(false);
+      return;
+    }
+
     const serialized = JSON.stringify(items);
     const dirty = items.length > 0
       && !!patient.name?.trim()
       && serialized !== lastPersistedSerializedRef.current;
     isDirtyRef.current = dirty;
     setDirty(dirty);
-  }, [items, patient.name, setDirty]);
+  }, [items, patient.name, digitalSignature, setDirty]);
 
   // Registra o callback de salvar rascunho no Context para o PatientSidebar usar
   useEffect(() => {
@@ -5058,18 +5619,25 @@ const PrescricaoPage = () => {
   useEffect(() => () => { setDirty(false); }, [setDirty]);
 
   // ── useBlocker substituído por popstate ────────────────────────────────────
-  // useBlocker requer createBrowserRouter (Data Router API) — o ARSen usa
-  // BrowserRouter legado, então useBlocker causava tela branca.
-  // popstate cobre o botão Voltar do browser. Outros cenários de navegação
-  // (troca de módulo pelo AppSidebar, troca de paciente pelo PatientSidebar)
-  // são cobertos pelo interceptador no próprio componente de navegação.
   const [backBlockerOpen, setBackBlockerOpen] = useState(false);
   const pendingBackRef = useRef(false);
 
+  // Referência para verificar validação diretamente nos handlers de evento
+  // sem depender do timing do useEffect do dirty state
+  const digitalSignatureRef = useRef(digitalSignature);
+  const itemsRef = useRef(items);
+  useEffect(() => { digitalSignatureRef.current = digitalSignature; }, [digitalSignature]);
+  useEffect(() => { itemsRef.current = items; }, [items]);
+
+  const isPrescricaoValidada = () => {
+    if (digitalSignatureRef.current) return true;
+    const activeItems = itemsRef.current.filter(i => i.status === 'active');
+    return activeItems.length > 0 && activeItems.every(i => i.validated);
+  };
+
   useEffect(() => {
     const handler = () => {
-      if (!isDirtyRef.current) return;
-      // Empurra um estado para "cancelar" o voltar e mostrar o pop-up
+      if (!isDirtyRef.current || isPrescricaoValidada()) return;
       window.history.pushState(null, '', window.location.href);
       setBackBlockerOpen(true);
       pendingBackRef.current = true;
@@ -5082,7 +5650,7 @@ const PrescricaoPage = () => {
   // ── beforeunload: fechar aba ou recarregar página ──
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
-      if (isDirtyRef.current) {
+      if (isDirtyRef.current && !isPrescricaoValidada()) {
         e.preventDefault();
         e.returnValue = '';
       }
@@ -5095,10 +5663,36 @@ const PrescricaoPage = () => {
     if (!draftStorageKey) return;
     if (currentPrescriptionId) { draftRestoreAttemptedRef.current = true; return; }
     if (items.length > 0) { draftRestoreAttemptedRef.current = true; return; }
+
+    // Limpa todos os drafts antigos do localStorage (de plantões anteriores)
+    // antes de tentar restaurar — evita contaminar o state com dados velhos.
+    const clinicalStart = getClinicalDayWindowSP().start;
+    try {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('rx-draft::'))
+        .forEach(k => {
+          try {
+            const raw = localStorage.getItem(k);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            // Remove se savedAt é anterior ao início do plantão atual
+            if (parsed?.savedAt && new Date(parsed.savedAt) < clinicalStart) {
+              localStorage.removeItem(k);
+            }
+          } catch { localStorage.removeItem(k); }
+        });
+    } catch {}
+
     try {
       const raw = localStorage.getItem(draftStorageKey);
       if (!raw) { draftRestoreAttemptedRef.current = true; return; }
       const parsed = JSON.parse(raw);
+      // Só restaura se o draft foi salvo no plantão atual (após 05h de hoje)
+      if (parsed?.savedAt && new Date(parsed.savedAt) < clinicalStart) {
+        localStorage.removeItem(draftStorageKey);
+        draftRestoreAttemptedRef.current = true;
+        return;
+      }
       if (Array.isArray(parsed?.items) && parsed.items.length > 0) {
         setItems((parsed.items as PrescriptionItem[]).map(normalizeLegacyIntervalFlags));
       }
@@ -5122,25 +5716,63 @@ const PrescricaoPage = () => {
   // snapshot do dia anterior (auditoria/CCIH).
   const applyValidation = useCallback((action: { type: 'all' } | { type: 'item'; itemId: string }) => {
     const now = new Date().toISOString();
+    const cutoff = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
+    const isPast = isAfter(new Date(), cutoff);
+
+    // Limpa o draft do localStorage imediatamente ao validar.
+    // Sem isso: se o browser tiver draft antigo e houver race condition,
+    // o popup de impressão pode capturar dados velhos do localStorage.
+    if (draftStorageKey) {
+      try { localStorage.removeItem(draftStorageKey); } catch {}
+    }
+    // Limpa também qualquer outro draft expirado
+    try {
+      const clinicalStart = getClinicalDayWindowSP().start;
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('rx-draft::'))
+        .forEach(k => {
+          try {
+            const raw = localStorage.getItem(k);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            if (parsed?.savedAt && new Date(parsed.savedAt) < clinicalStart) {
+              localStorage.removeItem(k);
+            }
+          } catch { localStorage.removeItem(k); }
+        });
+    } catch {}
+
+    // Calcula nextItems FORA do setItems para usar abaixo sem closure stale
     let nextItems: PrescriptionItem[] = [];
     let isRevalidationPostCutoff = false;
-    setItems(prev => {
-      // Detecta revalidação: pelo menos 1 item afetado já tinha validatedAt anterior ao corte 05h de hoje
-      const cutoff = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
-      const isPast = isAfter(new Date(), cutoff);
-      const affected = action.type === 'all'
-        ? prev.filter(i => i.status === 'active')
-        : prev.filter(i => i.id === action.itemId);
-      isRevalidationPostCutoff = isPast && affected.some(i => i.validated && i.validatedAt && new Date(i.validatedAt) <= cutoff);
 
-      nextItems = prev.map(item => {
-        if (action.type === 'all') {
-          return item.status === 'active' ? { ...item, validated: true, validatedAt: now } : item;
-        }
-        return item.id === action.itemId ? { ...item, validated: true, validatedAt: now } : item;
+    // flushSync força o React a processar o setItems SINCRONICAMENTE antes de continuar.
+    // Sem isso: setItems agenda o update, persistItems e o pop-up rodam antes do
+    // render, e o PDF sai com os dados do render anterior (prescrição antiga).
+    flushSync(() => {
+      setItems(prev => {
+        const affected = action.type === 'all'
+          ? prev.filter(i => i.status === 'active')
+          : prev.filter(i => i.id === action.itemId);
+        isRevalidationPostCutoff = isPast && affected.some(i => i.validated && i.validatedAt && new Date(i.validatedAt) <= cutoff);
+
+        nextItems = prev.map(item => {
+          if (action.type === 'all') {
+            return item.status === 'active' ? { ...item, validated: true, validatedAt: now } : item;
+          }
+          return item.id === action.itemId ? { ...item, validated: true, validatedAt: now } : item;
+        });
+        return nextItems;
       });
-      return nextItems;
     });
+    // Após flushSync: items já está atualizado no DOM e no state do React.
+
+    // Marca imediatamente como "já salvo" para evitar dirty state falso
+    // no intervalo entre o flushSync e o banco responder.
+    // Sem isso: dirty = true aparecia por milissegundos após validar.
+    lastPersistedSerializedRef.current = JSON.stringify(nextItems);
+    isDirtyRef.current = false;
+    setDirty(false);
 
     // Persistência imediata — best-effort, mas crítico para imutabilidade
     persistItems(nextItems, { mode: isRevalidationPostCutoff ? 'newVersion' : 'update' });
@@ -5152,6 +5784,7 @@ const PrescricaoPage = () => {
             ? "Snapshot do dia anterior preservado no histórico."
             : "Todos os itens ativos foram validados e registrados." }
       );
+      // Com flushSync acima, items já está atualizado — abre o pop-up diretamente.
       setJustValidatedPrescription(new Date());
     } else {
       toast.success(isRevalidationPostCutoff ? "Item revalidado (nova versão)" : "Item validado");
@@ -5197,7 +5830,7 @@ const PrescricaoPage = () => {
         const miss = itemMissingMap.get(i.id) || [];
         return `• ${i.name}: ${miss.join(', ')}`;
       });
-      const extra = blockedValidationItems.length > 4 ? `\n+ ${blockedValidationItems.length - 4} outro(s)` : '';
+      const extra = blockedValidationItems.length > 4 ? `\n+ ${blockedValidationItems.length - 4} ${(blockedValidationItems.length - 4) === 1 ? 'outro' : 'outros'}` : '';
       toast.error("Validação bloqueada — campos obrigatórios faltando", {
         description: lines.join('\n') + extra,
         duration: 6000,
@@ -5285,7 +5918,7 @@ const PrescricaoPage = () => {
     currentHospital?.id ?? null,
   );
 
-  // ⚠️  Sincroniza LEITO + UNIDADE em tempo real a partir da tabela `patients`.
+  //  Sincroniza LEITO + UNIDADE em tempo real a partir da tabela `patients`.
   // Antes deste sync, `patient.bed`/`patient.unit` só eram alimentados pelo
   // searchParam inicial ou por `loadPrescription` (que herdava o snapshot
   // antigo). Resultado: PDF do L07 saía com bed="L05" após troca rápida de
@@ -5306,7 +5939,7 @@ const PrescricaoPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [livePatientForBed?.bedNumber, livePatientForBed?.sector]);
 
-  // ⚠️  Sincroniza nome canônico, nome social, mãe, endereço, nascimento e sexo
+  //  Sincroniza nome canônico, nome social, mãe, endereço, nascimento e sexo
   // a partir do `patient_registry` resolvido (com guarda anti-NI). Isso garante
   // que o cabeçalho do PDF de prescrição/evolução jamais apareça com dados de
   // outro paciente — bug observado em UTI 2 leito 10 e potencialmente em
@@ -5378,7 +6011,7 @@ const PrescricaoPage = () => {
     }
   }, [registryAtendimento, patient.encounterCode]);
 
-  // 🔄 Fallback de identificação a partir da própria tabela `patients`
+  // Fallback de identificação a partir da própria tabela `patients`
   // (quando o registry não traz birth_date/idade — comum em pacientes NI e
   // em leitos onde o registry ainda não foi vinculado). Garante que o
   // cabeçalho exiba idade, data de admissão hospitalar e admissão UTI em
@@ -5544,7 +6177,7 @@ const PrescricaoPage = () => {
       });
       fetchDispensations();
     } catch (err: any) {
-      toast.error("Erro ao registrar dispensação", { description: err.message });
+      toast.error("Não foi possível registrar dispensação", { description: err.message });
     }
   }, [currentPrescriptionId, currentHospital, currentState, items, patient, user, fetchDispensations]);
 
@@ -5633,17 +6266,29 @@ const PrescricaoPage = () => {
     // a entry (NutritionStructured). Sem esta cópia, o item nascia só com o
     // texto (dose/instructions) e o editor inline + resumo compacto + impressos
     // mostravam a dieta vazia — "como se a configuração não persistisse".
+    //
+    // A lista de chaves vem do PROPRIO assistente (NUTRITION_STRUCTURED_KEYS).
+    // Ate 16/09/2026 havia aqui uma copia manual que ficou para tras: o
+    // assistente passou a emitir dietProfile (perfil da dieta oral, sistema da
+    // enteral) e nutAccess (via enteral, acesso parenteral central x
+    // periferico), o corpo do item passou a ler os dois, mas a copia nunca foi
+    // atualizada. O medico configurava e o dado sumia — na tela e no impresso.
     {
-      const NUT_STRUCT_KEYS = [
-        'nutritionType', 'dietType', 'nutConsistency', 'dietInterval',
-        'nutScheduleMode', 'nutVolDay', 'nutMode', 'nutFraction',
-        'infusionRate', 'nutProgression', 'nutBedHead', 'nutZeroReason',
-        'nutWaterVolPerAdmin', 'nutWaterFreq',
-      ] as const;
-      for (const k of NUT_STRUCT_KEYS) {
+      for (const k of NUTRITION_STRUCTURED_KEYS) {
         const v = (med as unknown as Record<string, unknown>)[k];
         if (v !== undefined && v !== null && v !== '') (baseItem as unknown as Record<string, unknown>)[k] = v;
       }
+      // O plano completo viaja como UM campo. Campo novo no assistente entra
+      // aqui sozinho — nao ha lista para manter em sincronia.
+      const plano = (med as unknown as { nutritionPlan?: NutritionPlan }).nutritionPlan;
+      if (plano) baseItem.nutritionPlan = plano;
+    }
+    // Orientacao derivada: vale para TODOS os assistentes (nutricao, reposicao,
+    // hidratacao), nao so nutricao. Fica fora do bloco acima para deixar isso
+    // explicito — o escopo estava certo, mas o lugar sugeria o contrario.
+    {
+      const orientacao = (med as unknown as { guidance?: string }).guidance;
+      if (orientacao) baseItem.guidance = orientacao;
     }
     // Autofills clínicos IV — FONTE ÚNICA (applyIvClinicalAutofills, definida
     // no nível do módulo). Extraída em 21/07/2026: o import de template
@@ -5729,7 +6374,7 @@ const PrescricaoPage = () => {
     // focusNewItem — ANTES esta função tinha uma cópia local do destaque, e
     // expandia a CATEGORIA inteira, tirando todos os itens daquela seção do
     // modo compacto sem necessidade. (Correção 22/07/2026.)
-    focusNewItem(newItem.id, isMAV ? 'ring-red-400' : isControlled ? 'ring-amber-400' : 'ring-primary');
+    focusNewItem(newItem.id, isMAV ? 'ring-critical' : isControlled ? 'ring-warning' : 'ring-primary');
 
     // Sugestão de esquema de correção de insulina ao adicionar controle
     // glicêmico (HGT/glicemia capilar). Centralizado aqui — não só no
@@ -5746,7 +6391,7 @@ const PrescricaoPage = () => {
 
     if (isMAV && isControlled) {
       // ── MAV + Portaria 344 (opioides, midazolam, ketamina) ───────────
-      toast.error(`✓ ADICIONADO — ${med.name}`, {
+      toast.error(`ADICIONADO — ${med.name}`, {
         description: fromGlobalSearch
           ? `ALTA VIGILÂNCIA + CONTROLADO (${newItem.controlledList ?? '344'}). ${docLabel ?? 'Receita controlada'} será gerada na impressão.`
           : `ALTA VIGILÂNCIA + CONTROLADO (${newItem.controlledList ?? '344'}). ${docLabel ?? 'Receita controlada'} será gerada na impressão. Aplicando modelo MAV...`,
@@ -5759,7 +6404,7 @@ const PrescricaoPage = () => {
       }
     } else if (isMAV) {
       // ── Apenas MAV (insulinas, anticoagulantes, eletrólitos, BNM, aminas) ──
-      toast.success(`✓ ADICIONADO — ${med.name}`, {
+      toast.success(`ADICIONADO — ${med.name}`, {
         description: fromGlobalSearch
           ? "ALTA VIGILÂNCIA: dose, diluição e dupla checagem ficam sob sua responsabilidade."
           : "ALTA VIGILÂNCIA: aplicando modelo padronizado (diluição, dose, BIC, dupla checagem)...",
@@ -5771,7 +6416,7 @@ const PrescricaoPage = () => {
       }
     } else if (isControlled) {
       // ── Apenas Portaria 344 (benzo VO, Z-drugs, metilfenidato, tramadol, etc.) ──
-      toast.warning(`✓ ADICIONADO — ${med.name}`, {
+      toast.warning(`ADICIONADO — ${med.name}`, {
         description: `CONTROLADO Lista ${newItem.controlledList ?? '344'} — ${docLabel ?? 'Receita controlada'} será gerada automaticamente ao imprimir.`,
         duration: 4500,
       });
@@ -5861,21 +6506,31 @@ const PrescricaoPage = () => {
 
   // Callback when antimicrobial guide is confirmed — add both guide entry data and the prescription item
   const handleAntimicrobialConfirm = useCallback((confirmedEntries: Array<{
-    medication: string; dose: string; route: string; posology: string;
+    medication: string; presentation?: string; dose: string; route: string; posology: string;
     startDate?: string; plannedDuration?: string; infectionSite?: string;
+    justification?: string; cultureCollected?: string; cultureResult?: string;
     reconSolvent?: string; reconVolume?: string;
     reconFinalDiluent?: string; reconFinalVolume?: string;
     reconInfusionTime?: string;
   }>) => {
     const antimicrobialOptions = UNIFIED_CATALOG['antimicrobial'] || [];
     const newItems: PrescriptionItem[] = confirmedEntries.map(entry => {
-      const matchedMed = antimicrobialOptions.find(m => m.name === entry.medication);
+      // Busca no catálogo local por nome + apresentação exata.
+      // Sem fallback por nome: se não achar, usa os dados estruturados do entry.
+      // Uma apresentação nunca pode ser silenciosamente substituída por outra.
+      const matchedMed = entry.presentation
+        ? antimicrobialOptions.find(m => m.name === entry.medication && m.presentation === entry.presentation)
+        : antimicrobialOptions.find(m => m.name === entry.medication && !m.presentation);
+
       const base: PrescriptionItem = matchedMed
-        ? { ...createItem(matchedMed), instructions: '', dose: entry.dose || createItem(matchedMed).dose, route: entry.route || createItem(matchedMed).route, posology: entry.posology || createItem(matchedMed).posology }
+        ? { ...createItem(matchedMed), instructions: '',
+            dose: entry.dose || createItem(matchedMed).dose,
+            route: entry.route || createItem(matchedMed).route,
+            posology: entry.posology || createItem(matchedMed).posology }
         : {
             id: crypto.randomUUID(),
             name: entry.medication,
-            presentation: '',
+            presentation: entry.presentation || '',
             dose: entry.dose,
             route: entry.route,
             posology: entry.posology,
@@ -5886,6 +6541,11 @@ const PrescricaoPage = () => {
             highAlert: false,
             status: 'active' as const,
           };
+      // Presentation do entry é sempre fonte de verdade — sobrescreve o que
+      // createItem trouxe do catálogo local (pode estar stale ou diferente).
+      if (entry.presentation) {
+        base.presentation = entry.presentation;
+      }
       // Alinha a Qtd. com os demais fluxos: se a dose do guia for apenas uma
       // contagem ("2 comprimido"), move para quantity+quantityUnit e limpa a
       // dose, evitando texto duplicado na linha. (23/07/2026.)
@@ -5899,6 +6559,12 @@ const PrescricaoPage = () => {
       base.atbStartDate = entry.startDate || format(new Date(), 'yyyy-MM-dd');
       base.atbPlannedDays = entry.plannedDuration || '';
       base.atbInfectionSite = entry.infectionSite || '';
+      // Justificativa e cultura: o medico ja preenchia na Guia ATM e o dado
+      // parava ali. Sao os campos que a CCIH exige para autorizar o
+      // antimicrobiano, e o AtmStatusDialog os exibe.
+      base.atbJustification = entry.justification || '';
+      base.atbCultureCollected = entry.cultureCollected || 'nao';
+      base.atbCultureResult = entry.cultureResult || '';
 
       // Migração Guia ATM → corpo da prescrição (NÃO sobrescrever campos já preenchidos)
       // RECONSTITUIÇÃO (solvente + volume do frasco-ampola) — o guia grava em
@@ -5952,7 +6618,7 @@ const PrescricaoPage = () => {
       isFirstDay: d1Items.length > 0,
       names: newItems.map(it => it.name),
     });
-    toast.success(`${newItems.length} antimicrobiano(s) adicionado(s) à prescrição via Guia ATM`);
+    toast.success(`${newItems.length} ${(newItems.length) === 1 ? 'antimicrobiano' : 'antimicrobianos'} ${(newItems.length) === 1 ? 'adicionado' : 'adicionados'} à prescrição via Guia ATM`);
   }, []);
 
   // Estado do pop-up de pré-visualização do perfil de cuidado
@@ -6161,7 +6827,7 @@ const PrescricaoPage = () => {
         );
         return nextItems;
       });
-      toast.success(`${selectedIds.size} item(ns) suspenso(s)`);
+      toast.success(`${selectedIds.size} ${(selectedIds.size) === 1 ? 'item' : 'itens'} ${(selectedIds.size) === 1 ? 'suspenso' : 'suspensos'}`);
       setSelectedIds(new Set());
     } else if (suspendTarget.id) {
       setItems(prev => {
@@ -6220,7 +6886,7 @@ const PrescricaoPage = () => {
 
   const deleteSelected = useCallback(() => {
     setItems(prev => prev.filter(item => !selectedIds.has(item.id)));
-    toast.success(`${selectedIds.size} item(ns) excluído(s)`);
+    toast.success(`${selectedIds.size} ${(selectedIds.size) === 1 ? 'item' : 'itens'} ${(selectedIds.size) === 1 ? 'excluído' : 'excluídos'}`);
     setSelectedIds(new Set());
   }, [selectedIds]);
 
@@ -6231,7 +6897,7 @@ const PrescricaoPage = () => {
         .map(item => ({ ...item, id: crypto.randomUUID(), status: 'active' as const, suspensionReason: undefined, suspendedAt: undefined }));
       return [...prev, ...duplicates];
     });
-    toast.success(`${selectedIds.size} item(ns) duplicado(s)`);
+    toast.success(`${selectedIds.size} ${(selectedIds.size) === 1 ? 'item' : 'itens'} ${(selectedIds.size) === 1 ? 'duplicado' : 'duplicados'}`);
     setSelectedIds(new Set());
   }, [selectedIds]);
 
@@ -6389,13 +7055,24 @@ const PrescricaoPage = () => {
         const items = (Array.isArray(d.items) ? d.items : []) as unknown as PrescriptionItem[];
         const hasValidatedItem = items.some((it: any) => it && it.validated === true);
         const isValidated = d.status !== 'draft' || !!d.digital_signature || hasValidatedItem;
-        return {
-          ...d,
-          items,
-          digital_signature: d.digital_signature as unknown as DigitalSignature | null,
-          isValidated,
-        };
+        return { ...d, items, digital_signature: d.digital_signature as unknown as DigitalSignature | null, isValidated };
       }));
+
+      // Separa validadas e rascunhos do plantão atual
+      const validated = allRows.filter((d: any) => d.isValidated);
+      const draftsThisShift = allRows.filter((d: any) =>
+        !d.isValidated &&
+        new Date(d.created_at).getTime() >= clinicalDayStartMs
+      );
+
+      // Só o rascunho mais recente do plantão atual (maior created_at)
+      const latestDraft = draftsThisShift.length > 0
+        ? [draftsThisShift.reduce((a: any, b: any) =>
+            new Date(a.created_at) > new Date(b.created_at) ? a : b
+          )]
+        : [];
+
+      setSavedPrescriptions([...validated, ...latestDraft]);
     } catch (err) {
       console.error('Error fetching prescriptions:', err);
     } finally {
@@ -6529,7 +7206,7 @@ const PrescricaoPage = () => {
   const autoLoadAttemptedRef = useRef(false);
   const [autoLoadTriggered, setAutoLoadTriggered] = useState(false); // sinaliza que pode executar
 
-  // 🔒 Reset ao montar — garante que o auto-load dispare mesmo quando
+  // Reset ao montar — garante que o auto-load dispare mesmo quando
   // o componente é reusado pelo React (mesma key, mesmo patientId).
   // Acontece ao navegar entre módulos (Evolução → Prescrição) com o
   // mesmo paciente: sem este reset, autoLoadAttemptedRef ficaria true
@@ -6542,13 +7219,13 @@ const PrescricaoPage = () => {
     loadGenerationRef.current += 1;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // [] = executa apenas na montagem
-  // 🔒 FIX: autoLoadDone começa como false quando há paciente real na URL,
+  // FIX: autoLoadDone começa como false quando há paciente real na URL,
   // garantindo que o spinner cubra 100% da área de prescrição desde o primeiro
   // frame — sem piscar itens demo intermediários.
   // Sem paciente real (modo apresentação): começa true (sem loading desnecessário).
   const [autoLoadDone, setAutoLoadDone] = useState(!hasRealPatientUrl);
 
-  // 🔒 Safety timeout: se o auto-load não completar em 10s (rede lenta, erro
+  // Safety timeout: se o auto-load não completar em 10s (rede lenta, erro
   // silencioso, race condition), força autoLoadDone=true para não prender o
   // usuário indefinidamente no spinner.
   useEffect(() => {
@@ -6563,7 +7240,7 @@ const PrescricaoPage = () => {
   const loadGenerationRef = useRef(0); // incrementa a cada troca de paciente — cancela loads antigos
   const loadPrescriptionRef = useRef<((id: string) => Promise<void>) | null>(null);
 
-  // 🔒 ESPERA PROGRESSIVA: aguarda registry e encounter resolverem,
+  // ESPERA PROGRESSIVA: aguarda registry e encounter resolverem,
   // mas não aborta se encounter não chegar — usa fallback após 3s.
   // Isso garante que pacientes legados (sem encounter vinculado) também
   // tenham sua prescrição carregada.
@@ -6587,7 +7264,7 @@ const PrescricaoPage = () => {
     if (currentPrescriptionId) return;
     if (!internacaoId) return;
 
-    // 🔒 Aguardar encounter por até 3s antes de prosseguir sem ele.
+    // Aguardar encounter por até 3s antes de prosseguir sem ele.
     // Se encounter chegar: usa como filtro (ideal).
     // Se não chegar em 3s: dispara com fallback por registry_id apenas.
     const ENCOUNTER_WAIT_MS = 3000;
@@ -6682,6 +7359,9 @@ const PrescricaoPage = () => {
             needsShiftRevalidation: true,
           }));
           if (capturedGeneration !== loadGenerationRef.current) return false;
+          // Atualiza ref antes de setar items — evita dirty state falso após renovação
+          lastPersistedSerializedRef.current = JSON.stringify(renewedItems);
+          isLoadingRef.current = false;
           setItems(renewedItems);
           setDigitalSignature(null);
           setCurrentPrescriptionId(null);
@@ -6779,7 +7459,7 @@ const PrescricaoPage = () => {
         fetchVersionHistory(id);
       }
     } catch (err: any) {
-      toast.error("Erro ao carregar prescrição", { description: err.message });
+      toast.error("Não foi possível carregar prescrição", { description: err.message });
     }
   }, [fetchVersionHistory]);
 
@@ -6876,7 +7556,7 @@ const PrescricaoPage = () => {
       // Pré-seleciona todos
       setRepeatSelectedIds(new Set(sourceItems.map(i => i.id)));
     } catch (err: any) {
-      toast.error("Erro ao buscar prescrição anterior", { description: err.message });
+      toast.error("Não foi possível buscar prescrição anterior", { description: err.message });
       setRepeatDialogOpen(false);
     } finally {
       setRepeatLoading(false);
@@ -6901,7 +7581,7 @@ const PrescricaoPage = () => {
         isExtra: false,
       }));
     setItems(prev => [...prev, ...cloned]);
-    toast.success(`${cloned.length} item(ns) repetido(s) da prescrição anterior`);
+    toast.success(`${cloned.length} ${(cloned.length) === 1 ? 'item' : 'itens'} ${(cloned.length) === 1 ? 'repetido' : 'repetidos'} da prescrição anterior`);
     setRepeatDialogOpen(false);
     setRepeatSourceItems([]);
     setRepeatSelectedIds(new Set());
@@ -6942,13 +7622,13 @@ const PrescricaoPage = () => {
     }
     if (added === 0) {
       toast.info("Nenhum item novo para somar", {
-        description: skipped > 0 ? `${skipped} item(ns) já existem no rascunho atual.` : undefined,
+        description: skipped > 0 ? `${skipped} ${(skipped) === 1 ? 'item' : 'itens'} já existem no rascunho atual.` : undefined,
       });
       return;
     }
     setItems(prev => [...prev, ...cloned]);
-    toast.success(`v${source.version} restaurada — ${added} item(ns) somado(s)`, {
-      description: skipped > 0 ? `${skipped} duplicado(s) ignorado(s).` : "Revise e assine quando estiver pronto.",
+    toast.success(`v${source.version} restaurada — ${added} ${(added) === 1 ? 'item' : 'itens'} ${(added) === 1 ? 'somado' : 'somados'}`, {
+      description: skipped > 0 ? `${skipped} ${(skipped) === 1 ? 'duplicado' : 'duplicados'} ${(skipped) === 1 ? 'ignorado' : 'ignorados'}.` : "Revise e assine quando estiver pronto.",
     });
   }, [items]);
 
@@ -7021,7 +7701,7 @@ const PrescricaoPage = () => {
     setItems((prev) => [...prev, ...cloned]);
     bumpQuickTemplateUse(tpl.id);
     toast.success(`Template aplicado: ${tpl.name}`, {
-      description: `${cloned.length} item(ns) adicionado(s) à prescrição`,
+      description: `${cloned.length} ${(cloned.length) === 1 ? 'item' : 'itens'} ${(cloned.length) === 1 ? 'adicionado' : 'adicionados'} à prescrição`,
     });
     setQuickTemplatesDialogOpen(false);
   }, [bumpQuickTemplateUse, mapTemplateCategory]);
@@ -7073,7 +7753,7 @@ const PrescricaoPage = () => {
       fetchPrescriptions();
     } catch (err: any) {
       const detail = err?.message || err?.toString() || "Verifique sua conexão e tente novamente.";
-      toast.error("Erro ao salvar prescrição", {
+      toast.error("Não foi possível salvar prescrição", {
         description: detail.length < 200 ? detail : "Falha no servidor. Verifique se há itens com campos obrigatórios em branco e tente novamente.",
         duration: 7000,
       });
@@ -7144,7 +7824,7 @@ const PrescricaoPage = () => {
     return !cat.notification_type;
   });
 
-  // ⚠️  BUGFIX (07/08/2026): gate de prontidão do cabeçalho impresso.
+  //  BUGFIX (07/08/2026): gate de prontidão do cabeçalho impresso.
   //
   // O cabeçalho (nome, leito, prontuário, idade, peso, sexo, admissão,
   // nascimento, unidade, atendimento, alergias) é hidratado por buscas
@@ -7355,7 +8035,7 @@ const PrescricaoPage = () => {
       await persistItems(items, { sigOverride: null, autoNewVersionIfSigned: true });
       const savedAt = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
       toast.success(`Rascunho salvo às ${savedAt}`, {
-        description: `${renewalPendingCount} item(ns) pendente(s) preservado(s). Marcado com ponto cinza no calendário (some às 05h).`,
+        description: `${renewalPendingCount} ${(renewalPendingCount) === 1 ? 'item' : 'itens'} ${(renewalPendingCount) === 1 ? 'pendente preservado' : 'pendentes preservados'}. Marcado com ponto cinza no calendário (some às 05h).`,
       });
     } catch {
       // persistItems já reportou erro
@@ -7414,7 +8094,7 @@ const PrescricaoPage = () => {
         const criadoPor = await resolveProfissionalId(user?.id);
         // Save current prescription first if it exists
         if (currentPrescriptionId) {
-          await supabase
+          const { error: erroGrav1 } = await supabase
             .from('prescricoes')
             .update({
               itens: items as any,
@@ -7427,6 +8107,7 @@ const PrescricaoPage = () => {
               })(),
             })
             .eq('id', currentPrescriptionId);
+          if (erroGrav1) throw erroGrav1;
         }
 
         // Get current version number
@@ -7465,7 +8146,7 @@ const PrescricaoPage = () => {
           description: `${renewedItems.length} itens renovados${includeSuspended ? ' (incluindo suspensos reativados)' : ''}.`,
         });
       } catch (err: any) {
-        toast.error("Erro ao renovar prescrição", { description: err.message });
+        toast.error("Não foi possível renovar prescrição", { description: err.message });
       } finally {
         setSaving(false);
       }
@@ -7605,7 +8286,7 @@ const PrescricaoPage = () => {
       <div className="max-w-6xl mx-auto p-4 sm:p-6 flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
         <div className="flex flex-col items-center gap-6">
           <div className="animate-pulse">
-            <img src={arsenLogo} alt="Arsen" className="h-16 w-16 object-contain" />
+            <ArsenMark size={56} className="text-primary" />
           </div>
           <div className="flex flex-col items-center gap-2">
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -7666,7 +8347,7 @@ const PrescricaoPage = () => {
     <div className="animate-fade-in">
       <ClinicalHeader moduleLabel="Prescrição Médica" />
       <div className="flex print:block">
-        <div className="flex-1 min-w-0 p-3 sm:p-6 space-y-4 sm:space-y-5">
+        <div className="flex-1 min-w-0 p-3 sm:p-6 space-y-4 sm:space-y-4">
         {/* SAPS pending alert removed */}
       {/* Print styles — hide everything except portal */}
       <style dangerouslySetInnerHTML={{ __html: `
@@ -7712,10 +8393,10 @@ const PrescricaoPage = () => {
 
       {/* Banner didático — peso e alergias obrigatórios para liberar a prescrição */}
       {(!patient.weight.trim() || !patient.allergies.trim()) && (
-        <div className="print:hidden mb-2 flex items-start gap-2 rounded-lg border border-amber-300/70 bg-amber-50/80 dark:border-amber-500/40 dark:bg-amber-950/20 px-3 py-2 text-amber-900 dark:text-amber-200">
-          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-          <div className="text-[12px] leading-snug">
-            <strong className="font-semibold">PESO e ALERGIAS</strong> são obrigatórios para liberar o ato de prescrição (validar, assinar ou imprimir).{' '}
+        <div className="print:hidden mb-2 flex items-start gap-2 rounded-lg border border-warning-border/70 bg-warning-soft/80 px-3 py-2 text-warning-on-soft">
+          <AlertTriangle className="h-4 w-4 mt-1 shrink-0" />
+          <div className="text-xs leading-snug">
+            <strong className="font-medium">PESO e ALERGIAS</strong> são obrigatórios para liberar o ato de prescrição (validar, assinar ou imprimir).{' '}
             <span className="opacity-80">
               Falta: {!patient.weight.trim() && !patient.allergies.trim() ? 'peso e alergias' : !patient.weight.trim() ? 'peso' : 'alergias'}.
             </span>
@@ -7731,39 +8412,39 @@ const PrescricaoPage = () => {
         );
         if (todays.length === 0) return null;
         return (
-          <div className="print:hidden mb-2 rounded-lg border border-emerald-200/70 bg-emerald-50/40 dark:border-emerald-500/30 dark:bg-emerald-950/10 px-3 py-2">
-            <div className="flex items-center justify-between gap-2 mb-1.5">
-              <div className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider uppercase text-emerald-800 dark:text-emerald-300">
+          <div className="print:hidden mb-2 rounded-lg border border-released-border/70 bg-released-soft/40 px-3 py-2">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2 text-xs font-medium tracking-wider uppercase text-released-on-soft">
                 <ShieldCheck className="h-3 w-3" />
                 Validadas hoje
-                <span className="font-mono text-emerald-700/70 dark:text-emerald-300/70">({todays.length})</span>
+                <span className="font-mono text-released-on-soft/70">({todays.length})</span>
               </div>
-              <span className="text-[10px] text-emerald-700/70 dark:text-emerald-300/70 italic">
+              <span className="text-xs text-released-on-soft/70 italic">
                 Clique em "Abrir" para visualizar a versão no editor.
               </span>
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {todays.map(p => {
                 const isCurrent = currentPrescriptionId === p.id;
                 return (
                   <div
                     key={p.id}
                     className={cn(
-                      "flex items-center gap-1.5 rounded-md border bg-card/80 px-2 py-1 text-[11px] transition-colors",
-                      isCurrent ? "border-primary ring-1 ring-primary/30" : "border-emerald-200/70 dark:border-emerald-500/30 hover:border-emerald-400",
+                      "flex items-center gap-2 rounded-md border bg-card/80 px-2 py-1 text-xs transition-colors",
+                      isCurrent ? "border-primary ring-1 ring-primary/30" : "border-released-border/70 hover:border-released",
                     )}
                   >
-                    <Badge className="text-[9px] h-4 px-1.5 bg-emerald-600 hover:bg-emerald-600 shrink-0">v{p.version}</Badge>
-                    <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                    <Badge className="text-xs h-4 px-2 bg-released hover:bg-released shrink-0">v{p.version}</Badge>
+                    <span className="text-xs text-muted-foreground font-mono shrink-0">
                       {format(new Date(p.created_at), "HH:mm", { locale: ptBR })}
                     </span>
                     {isCurrent && (
-                      <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">Atual</Badge>
+                      <Badge variant="secondary" className="text-xs h-4 px-2 shrink-0">Atual</Badge>
                     )}
                     <button
                       type="button"
                       onClick={() => setPreviewPrescription(p)}
-                      className="shrink-0 p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                      className="shrink-0 p-1 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                       title="Visualizar prescrição"
                       aria-label="Visualizar prescrição"
                     >
@@ -7773,7 +8454,7 @@ const PrescricaoPage = () => {
                       <button
                         type="button"
                         onClick={() => loadPrescription(p.id)}
-                        className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border border-emerald-300/70 text-emerald-800 hover:bg-emerald-100/60 dark:text-emerald-200 dark:border-emerald-500/40 dark:hover:bg-emerald-900/30 transition-colors"
+                        className="shrink-0 px-2 py-1 rounded-md text-xs font-medium border border-released-border/70 text-released-on-soft hover:bg-released-soft/60 transition-colors"
                         title="Abrir esta versão no editor"
                       >
                         Abrir
@@ -7782,7 +8463,7 @@ const PrescricaoPage = () => {
                     <button
                       type="button"
                       onClick={() => restoreFromPrescription(p)}
-                      className="shrink-0 p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                      className="shrink-0 p-1 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                       title="Somar itens desta versão no rascunho atual (sem duplicar)"
                       aria-label="Restaurar somando itens"
                     >
@@ -7801,10 +8482,10 @@ const PrescricaoPage = () => {
           Para incluir item novo: basta adicionar pelo caminho normal — o item entra pendente (bolinha amarela)
           e bloqueia a impressão até ser validado. */}
       {allItemsValidated && (
-        <div className="print:hidden mb-2 flex items-center gap-2 rounded-lg border border-emerald-300/70 bg-emerald-50/80 dark:border-emerald-500/40 dark:bg-emerald-950/20 px-3 py-2 text-emerald-900 dark:text-emerald-200">
+        <div className="print:hidden mb-2 flex items-center gap-2 rounded-lg border border-released-border/70 bg-released-soft/80 px-3 py-2 text-released-on-soft">
           <ShieldCheck className="h-4 w-4 shrink-0" />
-          <div className="text-[12px] leading-snug min-w-0">
-            <strong className="font-semibold">PRESCRIÇÃO VALIDADA HOJE</strong>
+          <div className="text-xs leading-snug min-w-0">
+            <strong className="font-medium">PRESCRIÇÃO VALIDADA HOJE</strong>
             {". "}
             <span className="opacity-80">A assinatura legal é feita manualmente (carimbo + caneta) no PDF impresso.</span>
           </div>
@@ -7812,44 +8493,44 @@ const PrescricaoPage = () => {
       )}
 
       {/* ===== UNIFIED HEADER — title + context (peso/alergias/data/templates) + actions ===== */}
-      <div className="print:hidden rounded-xl border border-border bg-card/60 shadow-[0_4px_18px_-8px_hsl(var(--primary)/0.18),0_1px_2px_-1px_hsl(var(--foreground)/0.06)] hover:shadow-[0_6px_24px_-8px_hsl(var(--primary)/0.22),0_1px_2px_-1px_hsl(var(--foreground)/0.08)] transition-shadow duration-300">
+      <div className="print:hidden rounded-lg border border-border bg-card/60 shadow-[0_4px_18px_-8px_hsl(var(--primary)/0.18),0_1px_2px_-1px_hsl(var(--foreground)/0.06)] hover:shadow-[0_6px_24px_-8px_hsl(var(--primary)/0.22),0_1px_2px_-1px_hsl(var(--foreground)/0.08)] transition-shadow-sm duration-300">
         {/* Row 0 — Paciente em destaque (esq) · Título do módulo (dir) */}
-        <div className="hidden sm:flex items-center justify-between gap-4 px-3 pt-2.5 pb-2">
+        <div className="hidden sm:flex items-center justify-between gap-4 px-3 pt-3 pb-2">
           {/* ESQUERDA: identidade do paciente */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="flex flex-col items-center justify-center h-12 w-12 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
-              <span className="text-[7px] font-bold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
-              <span className="text-base font-extrabold text-primary leading-tight mt-0.5">
+              <span className="text-xs font-semibold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
+              <span className="text-base font-semibold text-primary leading-tight mt-1">
                 {patient.bed || "—"}
               </span>
             </div>
             <div className="min-w-0">
-              <p className="text-base font-extrabold text-foreground uppercase tracking-wide leading-tight truncate">
+              <p className="text-base font-semibold text-foreground uppercase tracking-wide leading-tight truncate">
                 {patient.name || "Paciente não identificado"}
               </p>
-              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+              <div className="flex items-center gap-2 flex-wrap mt-1">
                 {patient.unit && (
-                  <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold uppercase tracking-wide">
+                  <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium uppercase tracking-wide">
                     {patient.unit}
                   </span>
                 )}
                 {patient.age && (
-                  <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold">
+                  <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium">
                     {patient.age}
                   </span>
                 )}
                 {patient.birthDate && (
                   <>
-                    <span className="text-muted-foreground/40 text-[10px]">·</span>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-muted-foreground/40 text-xs">·</span>
+                    <span className="text-xs text-muted-foreground">
                       {(() => { try { const d = new Date(patient.birthDate + 'T12:00:00'); return isNaN(d.getTime()) ? patient.birthDate : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch { return patient.birthDate; } })()}
                     </span>
                   </>
                 )}
                 {registryProntuario && (
                   <>
-                    <span className="text-muted-foreground/40 text-[10px]">·</span>
-                    <span className="text-[10px] text-muted-foreground font-mono">
+                    <span className="text-muted-foreground/40 text-xs">·</span>
+                    <span className="text-xs text-muted-foreground font-mono">
                       Pront. {registryProntuario}
                     </span>
                   </>
@@ -7860,46 +8541,46 @@ const PrescricaoPage = () => {
 
           {/* DIREITA: título do módulo + número + data */}
           <div className="text-right shrink-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
               Prescrição Médica Diária
             </p>
-            <div className="flex items-center justify-end gap-1.5 mt-0.5 flex-wrap">
+            <div className="flex items-center justify-end gap-2 mt-1 flex-wrap">
               {currentPrescriptionId && (
-                <Badge variant="outline" className="text-[9px] h-4 px-1.5 text-primary border-primary/30">
+                <Badge variant="outline" className="text-xs h-4 px-2 text-primary border-primary/30">
                   Salva
                 </Badge>
               )}
               {patient.encounterCode && (
-                <span className="font-mono text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-                  <Hash className="inline h-2.5 w-2.5 mr-0.5" />{patient.encounterCode}
+                <span className="font-mono text-xs bg-muted text-muted-foreground px-2 py-1 rounded-md">
+                  <Hash className="inline h-2.5 w-2.5 mr-1" />{patient.encounterCode}
                 </span>
               )}
-              <span className="text-[9px] text-muted-foreground font-mono">{prescriptionDate}</span>
+              <span className="text-xs text-muted-foreground font-mono">{prescriptionDate}</span>
             </div>
           </div>
         </div>
 
         {/* Row 1 — Clinical context (peso, alergias, calendário, dose/kg, templates, atalhos) */}
-        <div className="flex items-center gap-1.5 flex-wrap px-2 sm:px-3 py-2 sm:border-t sm:border-border/40">
-          <div className="flex items-center gap-1.5">
-            <Label className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
+        <div className="flex items-center gap-2 flex-wrap px-2 sm:px-3 py-2 sm:border-t sm:border-border/40">
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
             <Input
               value={patient.weight}
               onChange={(e) => updatePatient("weight", e.target.value)}
               placeholder="72"
               className={cn(
                 "h-7 w-14 text-xs font-medium",
-                !patient.weight.trim() && "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
+                !patient.weight.trim() && "border-warning/60 bg-warning-soft/30"
               )}
             />
           </div>
           {(() => {
             const isNDAM = patient.allergies.trim().toUpperCase() === "NDAM";
             return (
-              <div className="flex items-center gap-1.5">
-                <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground font-medium flex items-center gap-1 whitespace-nowrap">
                   {isNDAM ? (
-                    <ShieldCheck className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                    <ShieldCheck className="h-3 w-3 text-released-on-soft" />
                   ) : (
                     <AlertTriangle className="h-3 w-3 text-destructive" />
                   )}{" "}
@@ -7914,21 +8595,21 @@ const PrescricaoPage = () => {
             );
           })()}
           {(!patient.weight.trim() || !patient.allergies.trim()) && (
-            <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+            <span className="inline-flex items-center gap-1 text-xs text-warning-on-soft font-medium">
               <AlertTriangle className="h-3 w-3" />
               Preencha {!patient.weight.trim() && !patient.allergies.trim() ? 'peso e alergias' : !patient.weight.trim() ? 'o peso' : 'as alergias'}
             </span>
           )}
 
-          <span className="h-5 w-px bg-border/60 mx-0.5" />
+          <span className="h-5 w-px bg-border/60 mx-1" />
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1 px-2">
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1 px-2">
                 <CalendarDays className="h-3 w-3" />
                 {historyDate ? format(historyDate, "dd/MM/yyyy") : "Calendário"}
                 {savedPrescriptions.length > 0 && (
-                  <span className="ml-0.5 text-[9px] font-mono text-muted-foreground">({savedPrescriptions.length})</span>
+                  <span className="ml-1 text-xs font-mono text-muted-foreground">({savedPrescriptions.length})</span>
                 )}
               </Button>
             </PopoverTrigger>
@@ -7955,7 +8636,7 @@ const PrescricaoPage = () => {
                     "relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-muted-foreground/60",
                 }}
               />
-              <div className="px-3 pb-2 -mt-1 flex items-center gap-3 text-[10px] text-muted-foreground">
+              <div className="px-3 pb-2 -mt-1 flex items-center gap-3 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
                   Validada
@@ -7973,11 +8654,11 @@ const PrescricaoPage = () => {
                 </div>
               )}
               <div className="border-t p-2 max-h-64 overflow-y-auto">
-                <div className="flex items-center justify-between mb-1.5 px-1">
-                  <h3 className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase">
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <h3 className="text-xs font-medium text-muted-foreground tracking-wider uppercase">
                     Prescrições anteriores
                   </h3>
-                  <span className="text-[10px] text-muted-foreground">{savedPrescriptions.length}</span>
+                  <span className="text-xs text-muted-foreground">{savedPrescriptions.length}</span>
                 </div>
                 {savedPrescriptions.length > 0 ? (
                   <div className="space-y-1">
@@ -7985,7 +8666,7 @@ const PrescricaoPage = () => {
                       <div
                         key={p.id}
                         className={cn(
-                          "w-full flex items-center gap-1 px-2 py-1.5 rounded-md border text-xs transition-colors",
+                          "w-full flex items-center gap-1 px-2 py-2 rounded-md border text-xs transition-colors",
                           currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border hover:bg-accent/50"
                         )}
                       >
@@ -7994,24 +8675,24 @@ const PrescricaoPage = () => {
                           onClick={() => setPreviewPrescription(p)}
                           className="flex-1 text-left min-w-0"
                         >
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap">
                             {p.isValidated ? (
-                              <Badge variant="default" className="text-[9px] h-4 px-1.5 bg-emerald-600 hover:bg-emerald-600">
-                                ✓ Oficial validada
+                              <Badge variant="default" className="text-xs h-4 px-2 bg-released hover:bg-released">
+                                Oficial validada
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-amber-400 text-amber-700 dark:text-amber-300">
+                              <Badge variant="outline" className="text-xs h-4 px-2 border-warning text-warning-on-soft">
                                 Rascunho
                               </Badge>
                             )}
-                            <span className="text-[9px] text-muted-foreground">v{p.version}</span>
-                            <span className="text-[9px] text-muted-foreground ml-auto">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                            <span className="text-xs text-muted-foreground">v{p.version}</span>
+                            <span className="text-xs text-muted-foreground ml-auto">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
                           </div>
                         </button>
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setPreviewPrescription(p); }}
-                          className="shrink-0 p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                          className="shrink-0 p-1 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                           title="Visualizar prescrição"
                           aria-label="Visualizar prescrição"
                         >
@@ -8021,7 +8702,7 @@ const PrescricaoPage = () => {
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setDraftToDelete(p); setDraftDeleteReason(""); }}
-                            className="shrink-0 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                            className="shrink-0 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                             title="Excluir rascunho"
                             aria-label="Excluir rascunho"
                           >
@@ -8032,19 +8713,19 @@ const PrescricaoPage = () => {
                     ))}
                   </div>
                 ) : historyDate && prescriptionDateKeys.size > 0 ? (
-                  <div className="px-1 py-2 space-y-1.5">
-                    <p className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">
+                  <div className="px-1 py-2 space-y-2">
+                    <p className="text-xs text-warning-on-soft font-medium">
                       Nenhuma prescrição nesta data.
                     </p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Existem prescrições deste paciente em {prescriptionDateKeys.size} {prescriptionDateKeys.size === 1 ? 'outra data' : 'outras datas'} (marcadas no calendário com ●).
                     </p>
-                    <Button variant="outline" size="sm" className="w-full h-7 text-[11px] mt-1" onClick={() => setHistoryDate(undefined)}>
+                    <Button variant="outline" size="sm" className="w-full h-7 text-xs mt-1" onClick={() => setHistoryDate(undefined)}>
                       Limpar filtro e ver todas
                     </Button>
                   </div>
                 ) : (
-                  <p className="text-[11px] text-muted-foreground italic px-1 py-2">Nenhuma prescrição encontrada{historyDate ? ' nesta data' : ''}.</p>
+                  <p className="text-xs text-muted-foreground italic px-1 py-2">Nenhuma prescrição encontrada{historyDate ? ' nesta data' : ''}.</p>
                 )}
               </div>
             </PopoverContent>
@@ -8053,7 +8734,7 @@ const PrescricaoPage = () => {
             <button
               type="button"
               onClick={() => setHistoryDate(undefined)}
-              className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 text-[10px] font-medium text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
+              className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-warning-border bg-warning-soft text-xs font-medium text-warning-on-soft hover:bg-warning-soft transition-colors"
               title="Existem prescrições em outras datas — clique para limpar o filtro"
             >
               <AlertTriangle className="h-3 w-3" />
@@ -8064,43 +8745,43 @@ const PrescricaoPage = () => {
             variant="outline"
             size="sm"
             onClick={() => { setDoseCalcInitialMed(undefined); setDoseCalcOpen(true); }}
-            className="h-7 text-[10px] gap-1 px-2 border-blue-400/40 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+            className="h-7 text-xs gap-1 px-2 border-border/40 hover:bg-muted"
             title="Calculadora de dose por peso/superfície corporal"
           >
-            <Calculator className="h-3 w-3 text-blue-500" /> Dose/kg
+            <Calculator className="h-3 w-3 text-muted-foreground" /> Dose/kg
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setQuickTemplatesDialogOpen(true)}
-            className="h-7 text-[10px] gap-1 px-2 border-amber-400/40 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+            className="h-7 text-xs gap-1 px-2 border-warning/40 hover:bg-warning-soft"
             title="Templates clínicos prontos (Sepse, Pós-op, DPOC...)"
           >
-            <Zap className="h-3 w-3 text-amber-500" /> Templates
+            <Zap className="h-3 w-3 text-warning" /> Templates
             {quickTemplates.length > 0 && (
-              <span className="ml-0.5 text-[9px] font-mono text-muted-foreground">
+              <span className="ml-1 text-xs font-mono text-muted-foreground">
                 ({quickTemplates.length})
               </span>
             )}
           </Button>
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" onClick={() => setShortcutsHelpOpen(true)} className="h-7 px-1.5 text-[10px] gap-1 text-muted-foreground hover:text-foreground">
-                  <kbd className="px-1 py-0 rounded border border-border bg-muted text-[9px] font-mono">?</kbd>
+                <Button variant="ghost" size="sm" onClick={() => setShortcutsHelpOpen(true)} className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground">
+                  <kbd className="px-1 py-0 rounded-md border border-border bg-muted text-xs font-mono">?</kbd>
                   <span className="hidden md:inline">Atalhos</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-xs">Atalhos de teclado (?)</TooltipContent>
             </Tooltip>
-            <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-7 text-[10px] gap-1 px-2">
+            <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-7 text-xs gap-1 px-2">
               <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
             </Button>
           </div>
         </div>
 
         {/* Row 2 — Prescription actions (Nova, Extra, Interações, ATM, TEV, Validar | Compacto | Imprimir) */}
-        <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-[hsl(217,30%,88%)]/70 dark:border-[hsl(217,30%,22%)]/70 bg-gradient-to-r from-[hsl(217,45%,97%)] via-[hsl(217,40%,98.5%)] to-[hsl(217,45%,97%)] dark:from-[hsl(217,35%,12%)] dark:via-[hsl(217,30%,14%)] dark:to-[hsl(217,35%,12%)] rounded-b-xl [&_button.h-7]:hover:bg-[hsl(217,55%,40%)]/8 [&_button.h-7]:hover:text-[hsl(217,60%,32%)] dark:[&_button.h-7]:hover:text-[hsl(217,55%,75%)] [&_button.h-7]:transition-colors">
+        <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-[hsl(217,30%,88%)]/70 bg-gradient-to-r from-[hsl(217,45%,97%)] via-[hsl(217,40%,98.5%)] to-[hsl(217,45%,97%)] rounded-b-lg [&_button.h-7]:hover:bg-[hsl(217,55%,40%)]/8 [&_button.h-7]:hover:text-[hsl(217,60%,32%)]&_button.h-7]:hover:text-[hsl(217,55%,75%)] [&_button.h-7]:transition-colors">
 
           <Tooltip>
             <TooltipTrigger asChild>
@@ -8141,7 +8822,7 @@ const PrescricaoPage = () => {
           >
             <Syringe className="h-3 w-3" /> Extra
           </Button>
-          <span className="h-5 w-px bg-border/60 mx-0.5" />
+          <span className="h-5 w-px bg-border/60 mx-1" />
           <Button
             variant="ghost"
             size="sm"
@@ -8157,32 +8838,14 @@ const PrescricaoPage = () => {
           >
             <Zap className="h-3 w-3" /> Interações
           </Button>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setAtmStatusOpen(true)}
-                className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
-              >
-                <Shield className="h-3 w-3" /> Guia ATM
-                {hasActiveAtb && (
-                  <span className="ml-0.5 inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs max-w-[240px]">
-              Acompanhe o status dos antibióticos em curso ou inicie uma nova solicitação (acréscimo / troca).
-            </TooltipContent>
-          </Tooltip>
           <Button variant="ghost" size="sm" onClick={() => setTevProtocolOpen(true)} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
             <Droplets className="h-3 w-3" /> TEV
           </Button>
-          <span className="h-5 w-px bg-border/60 mx-0.5" />
+          <span className="h-5 w-px bg-border/60 mx-1" />
           {isValidationSessionActive && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                <span className="inline-flex items-center gap-1 rounded-md border border-released/30 bg-released/10 px-2 py-1 text-xs font-medium text-released-on-soft">
                   <ShieldCheck className="h-3 w-3" />
                   Sessão validada · {sessionMinutesLeft}min
                 </span>
@@ -8219,7 +8882,7 @@ const PrescricaoPage = () => {
                 "gap-1 text-xs h-7 px-2",
                 prescriptionLocked
                   ? "text-muted-foreground hover:text-foreground"
-                  : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : "bg-released hover:bg-released text-white"
               )}
             >
               <ShieldCheck className="h-3 w-3" />
@@ -8241,7 +8904,7 @@ const PrescricaoPage = () => {
                     }
                     handlePrint();
                   }}
-                  className="gap-1.5 text-xs h-7 px-3 text-white font-semibold border-0 bg-gradient-to-br from-sky-400 via-blue-500 to-blue-600 hover:from-sky-300 hover:via-blue-400 hover:to-blue-500 shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
+                  className="gap-2 text-xs h-7 px-3 text-white font-medium border-0 bg-muted hover:from-muted hover:via-muted hover:to-muted shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
                 >
                   <Printer className="h-3.5 w-3.5" /> Imprimir
                 </Button>
@@ -8258,75 +8921,10 @@ const PrescricaoPage = () => {
 
       {/* "Prescrições anteriores" foi integrado ao workbench unificado abaixo. */}
       {/* ===== VERSION HISTORY ===== */}
-      {versionHistory.length > 1 && currentPrescriptionId && (
-        <div className="rounded-xl border border-border bg-card p-3 print:hidden">
-          <div className="w-full flex items-center justify-between text-xs gap-2">
-            <button
-              onClick={() => setShowHistory(!showHistory)}
-              className="flex items-center gap-2 font-semibold text-muted-foreground tracking-wider hover:text-foreground transition-colors"
-            >
-              <History className="h-3.5 w-3.5" /> Histórico de versões ({versionHistory.length})
-              <span className="text-muted-foreground/70 text-[10px] font-normal">
-                {showHistory ? '— ocultar' : '— expandir'}
-              </span>
-            </button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setDiffDialogOpen(true)}
-              disabled={versionHistory.length < 2}
-              className="h-6 text-[10px] gap-1 px-2"
-            >
-              <RefreshCw className="h-3 w-3" />
-              Comparar versões
-            </Button>
-          </div>
-          {showHistory && (
-            <div className="mt-3 space-y-1">
-              {versionHistory.map((v, i) => (
-                <button
-                  key={v.id}
-                  onClick={() => loadPrescription(v.id)}
-                  className={cn(
-                    "w-full flex items-center gap-3 p-2 rounded-lg border text-xs transition-colors hover:bg-accent/50 text-left",
-                    currentPrescriptionId === v.id ? "border-primary bg-primary/5" : "border-border/50"
-                  )}
-                >
-                  <div className="flex flex-col items-center gap-0.5">
-                    <div className={cn(
-                      "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border",
-                      currentPrescriptionId === v.id ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30 text-muted-foreground"
-                    )}>
-                      {v.version}
-                    </div>
-                    {i < versionHistory.length - 1 && <div className="w-px h-2 bg-border" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Versão {v.version}</span>
-                      <Badge variant={v.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
-                        {v.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
-                      </Badge>
-                      {currentPrescriptionId === v.id && (
-                        <Badge variant="secondary" className="text-[9px] h-4 px-1.5">Atual</Badge>
-                      )}
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {format(new Date(v.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                      {v.digital_signature && ``}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Toolbar de ações migrada para o cabeçalho superior (acima do workbench). */}
 
       {/* ===== UNIFIED PRESCRIPTION WORKBENCH (itens + histórico + busca) ===== */}
-      <div className="rounded-xl border border-border bg-card overflow-visible print:hidden divide-y divide-border/40">
+      <div className="rounded-lg border border-border bg-card overflow-visible print:hidden divide-y divide-border/40">
 
         {/* Prescrições anteriores agora acessíveis via popup do Calendário no cabeçalho. */}
 
@@ -8356,15 +8954,15 @@ const PrescricaoPage = () => {
 
       {/* ===== DISPENSATION HISTORY ===== */}
       {dispensations.length > 0 && (
-        <div className="rounded-xl border border-border bg-card p-3 print:hidden">
-          <h2 className="text-xs font-semibold text-muted-foreground tracking-wider mb-2 flex items-center gap-2">
+        <div className="rounded-lg border border-border bg-card p-3 print:hidden">
+          <h2 className="text-xs font-medium text-muted-foreground tracking-wider mb-2 flex items-center gap-2">
             <Package className="h-3.5 w-3.5" /> Dispensações ({dispensations.length})
           </h2>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {dispensations.map(d => (
               <div key={d.id} className="shrink-0 p-2 rounded-lg border border-border text-xs">
-                <div className="font-mono font-bold text-primary">{d.dispensation_code}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">
+                <div className="font-mono font-semibold text-primary">{d.dispensation_code}</div>
+                <div className="text-xs text-muted-foreground mt-1">
                   {format(new Date(d.dispensed_at), "dd/MM HH:mm", { locale: ptBR })}
                   {d.dispensed_by_name && ` — ${d.dispensed_by_name}`}
                 </div>
@@ -8404,7 +9002,7 @@ const PrescricaoPage = () => {
                 return (
                   <div key={group.id} className="space-y-3">
                     <div className="flex items-center gap-2 pt-1">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                      <span className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">
                         {group.label}
                       </span>
                       <div className="flex-1 h-px bg-border/60" />
@@ -8418,7 +9016,7 @@ const PrescricaoPage = () => {
               if (catItems.length === 0 && !manualOpenCategories.has(cat)) return null;
 
               return (
-                <div key={cat} id={`prescription-cat-${cat}`} className="rounded-xl border border-border bg-card scroll-mt-24">
+                <div key={cat} id={`prescription-cat-${cat}`} className="rounded-lg border border-border bg-card scroll-mt-24">
                   {/* Category header with inline search */}
                   <div className={cn("flex items-center gap-2 px-3 py-2 border-b border-border/50", config.bgColor)}>
                     {catItems.length > 0 && (
@@ -8448,8 +9046,8 @@ const PrescricaoPage = () => {
                       </Tooltip>
                     )}
                     <IconComp className={cn("h-3.5 w-3.5 shrink-0", config.color)} />
-                    <span className="text-xs font-semibold text-foreground whitespace-nowrap" title={config.label}>{config.shortLabel ?? config.label}</span>
-                    <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">{catItems.length}</Badge>
+                    <span className="text-xs font-medium text-foreground whitespace-nowrap" title={config.label}>{config.shortLabel ?? config.label}</span>
+                    <Badge variant="secondary" className="text-xs h-4 px-2 shrink-0">{catItems.length}</Badge>
                     {compactView && catItems.length > 0 && !isSimpleCategory(cat) && (
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -8476,7 +9074,7 @@ const PrescricaoPage = () => {
                     )}
                     <div className="flex-1 ml-2">
                       {cat === 'nonstandard' ? (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <Input
                             value={activeTab === 'nonstandard' ? nonStdName : ''}
                             onChange={(e) => { setActiveTab('nonstandard'); setNonStdName(e.target.value); }}
@@ -8498,16 +9096,16 @@ const PrescricaoPage = () => {
                                   type="button"
                                   onClick={() => setNutritionConfirmOpen(true)}
                                   className={cn(
-                                    "relative w-full h-7 rounded-md bg-background/60 text-xs pl-9 pr-9 text-left text-muted-foreground transition-colors flex items-center",
+                                    "relative w-full h-7 rounded-md bg-background/60 text-xs pl-8 pr-8 text-left text-muted-foreground transition-colors flex items-center",
                                     "border", nutAccent.border, nutAccent.ring,
-                                    "hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20"
+                                    "hover:bg-released-soft/40"
                                   )}
                                   aria-label="Abrir opções de nutrição"
                                 >
                                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                                   <span className="truncate">Adicionar nutrição — manual · guiada · assistente</span>
                                   <span
-                                    className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 rounded-md flex items-center justify-center bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
+                                    className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 rounded-md flex items-center justify-center bg-released/20 border border-released/40 text-released-on-soft"
                                     aria-hidden
                                   >
                                     <Sparkles className="h-3 w-3" />
@@ -8535,15 +9133,43 @@ const PrescricaoPage = () => {
                             cat === 'hydration' ? () => setHydrationWizardOpen(true) :
                             cat === 'replacement' ? () => setReplacementWizardOpen(true) :
                             cat === 'care' ? () => setCareCatalogOpen(true) :
+                            /*
+                              Estas cinco categorias mostravam o botao do
+                              assistente e respondiam "em construcao". O
+                              ItemAssistantWizard ja existia e ja era acionavel
+                              pelo menu de CADA ITEM — so nao estava ligado
+                              aqui, na barra de busca.
+
+                              Diferenca de escopo: os assistentes de hidratacao,
+                              reposicao e cuidados MONTAM itens do zero; o
+                              ItemAssistantWizard AJUSTA um item existente
+                              (diluente, acesso, modo, tempo, volume). Por isso
+                              aqui ele orienta a escolher o item primeiro, em
+                              vez de abrir vazio — abrir sem alvo seria um
+                              formulario sem paciente.
+                            */
                             ['medication','antimicrobial','high_alert','inhalation','hemotherapy'].includes(cat)
-                              ? () => toast.info('Assistente desta categoria em construção.')
+                              ? () => {
+                                  const doCat = items.filter(i => i.category === cat && !i.suspendedAt);
+                                  if (doCat.length === 0) {
+                                    toast.info('Adicione um item primeiro', {
+                                      description: 'O assistente ajusta diluição, acesso e tempo de infusão de um item já prescrito.',
+                                    });
+                                    return;
+                                  }
+                                  // Um item só: abre direto, sem perguntar o óbvio.
+                                  if (doCat.length === 1) { setItemAssistantTargetId(doCat[0].id); return; }
+                                  setAssistantPickerCat(cat);
+                                }
                               : undefined
                           }
                           assistantTooltip={
                             cat === 'hydration' ? 'Assistente de Hidratação' :
                             cat === 'replacement' ? 'Assistente de Reposição / Correção Eletrolítica' :
                             cat === 'care' ? 'Assistente de Cuidados (perfis clínicos)' :
-                            'Assistente — em breve'
+                            ['medication','antimicrobial','high_alert','inhalation','hemotherapy'].includes(cat)
+                              ? 'Assistente de diluição e infusão'
+                              : 'Assistente — em breve'
                           }
                         />
                       )}
@@ -8555,8 +9181,8 @@ const PrescricaoPage = () => {
                     <div className="border-b border-border/50 bg-muted/20 p-3 space-y-3">
                       {/* Profile buttons */}
                       <div>
-                        <p className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-2">Perfis de Cuidados</p>
-                        <div className="flex flex-wrap gap-1.5">
+                        <p className="text-xs font-medium text-muted-foreground tracking-wider mb-2">Perfis de Cuidados</p>
+                        <div className="flex flex-wrap gap-2">
                           {CARE_PROFILES.map(profile => {
                             const ProfileIcon = CATEGORY_ICONS[profile.icon] || ClipboardList;
                             const applied = appliedCareProfiles.has(profile.id);
@@ -8567,7 +9193,7 @@ const PrescricaoPage = () => {
                                     variant={applied ? "default" : "outline"}
                                     size="sm"
                                     className={cn(
-                                      "h-7 text-[11px] gap-1.5 transition-all",
+                                      "h-7 text-xs gap-2 transition-all",
                                       applied && "opacity-70"
                                     )}
                                     onClick={() => applyCareProfile(profile)}
@@ -8590,8 +9216,8 @@ const PrescricaoPage = () => {
 
                       {/* Free recommendation input */}
                       <div>
-                        <p className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-1.5">Recomendação Avulsa</p>
-                        <div className="flex items-start gap-1.5">
+                        <p className="text-xs font-medium text-muted-foreground tracking-wider mb-2">Recomendação Avulsa</p>
+                        <div className="flex items-start gap-2">
                           <Textarea
                             value={freeRecommendation}
                             onChange={(e) => setFreeRecommendation(e.target.value)}
@@ -8621,7 +9247,7 @@ const PrescricaoPage = () => {
 
                   {/* Items */}
                   {catItems.length > 0 && (
-                    <div className="p-2 space-y-1.5">
+                    <div className="p-2 space-y-2">
                       {catItems.map((item, i) => {
                         // Calcula o item de inalação imediatamente anterior (mesma categoria)
                         const prevInhal = item.category === 'inhalation' && i > 0 && catItems[i - 1].category === 'inhalation'
@@ -8643,7 +9269,7 @@ const PrescricaoPage = () => {
                             onToggleSelect={toggleSelect}
                             onDuplicate={duplicateItem}
                             onRequestSuspend={requestSuspendItem}
-                            
+                            unifiedCatalog={UNIFIED_CATALOG}
                             onAssistant={(id) => setItemAssistantTargetId(id)}
                             onEditInsulin={(id) => { setEditingInsulinItemId(id); setPendingInsulinMed(null); setInsulinDialogOpen(true); }}
                             onUpdateInsulinPlan={updateInsulinPlan}
@@ -8701,6 +9327,15 @@ const PrescricaoPage = () => {
         open={nutritionWizardOpen}
         onOpenChange={setNutritionWizardOpen}
         patientWeight={patient.weight}
+        // Reabre PREENCHIDO quando ja existe dieta prescrita. Sem isto o
+        // assistente era de uso unico: ajustar a via de uma dieta ja lancada
+        // exigia refazer o fluxo do zero, e por isso ninguem reabria.
+        initialPlan={
+          readNutritionPlan(
+            items.find(i => i.category === 'nutrition' && i.nutritionPlan)?.nutritionPlan,
+            DEFAULT_WATER_STATE,
+          )
+        }
         onAdd={(entries) => {
           // Substitui qualquer item de nutrição existente para evitar duplicidade conflitante
           setItems(prev => {
@@ -8726,22 +9361,22 @@ const PrescricaoPage = () => {
                   <>Você vai excluir o rascunho <strong>v{draftToDelete.version}</strong> de <strong>{draftToDelete.patient_name}</strong> criado em {format(new Date(draftToDelete.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}.</>
                 )}
               </span>
-              <span className="block text-amber-700 dark:text-amber-400 text-xs">
+              <span className="block text-warning-on-soft text-xs">
                 Esta ação é irreversível na interface, mas o conteúdo completo do rascunho e seu motivo ficam registrados em auditoria (resgate forense por administradores).
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <label className="text-xs font-medium">Motivo da exclusão <span className="text-destructive">*</span></label>
             <textarea
               value={draftDeleteReason}
               onChange={(e) => setDraftDeleteReason(e.target.value)}
               placeholder="Ex.: Rascunho duplicado / criado por engano / paciente trocado..."
               rows={3}
-              className="w-full text-xs rounded-md border border-input bg-background px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full text-xs rounded-md border border-input bg-background px-2 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
               disabled={draftDeleting}
             />
-            <p className="text-[10px] text-muted-foreground">Mínimo 5 caracteres. Será gravado na auditoria.</p>
+            <p className="text-xs text-muted-foreground">Mínimo 5 caracteres. Será gravado na auditoria.</p>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={draftDeleting}>Cancelar</AlertDialogCancel>
@@ -8765,9 +9400,9 @@ const PrescricaoPage = () => {
               Visualização compacta da prescrição
               {previewPrescription && (
                 previewPrescription.isValidated ? (
-                  <Badge className="text-[9px] h-4 px-1.5 bg-emerald-600 hover:bg-emerald-600">✓ Oficial validada</Badge>
+                  <Badge className="text-xs h-4 px-2 bg-released hover:bg-released">Oficial validada</Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-amber-400 text-amber-700 dark:text-amber-300">Rascunho</Badge>
+                  <Badge variant="outline" className="text-xs h-4 px-2 border-warning text-warning-on-soft">Rascunho</Badge>
                 )
               )}
             </DialogTitle>
@@ -8775,45 +9410,45 @@ const PrescricaoPage = () => {
               {previewPrescription && (
                 <>
                   <strong>{previewPrescription.patient_name}</strong> · v{previewPrescription.version} · {format(new Date(previewPrescription.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                  {previewPrescription.digital_signature && <> · 🔏 Assinada</>}
+                  {previewPrescription.digital_signature && <> · Assinada</>}
                 </>
               )}
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto -mx-6 px-6">
             {previewPrescription && previewPrescription.items.length > 0 ? (
-              <table className="w-full text-[11px] border-collapse">
+              <table className="w-full text-xs border-collapse">
                 <thead className="sticky top-0 bg-background z-10">
-                  <tr className="border-b text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <th className="py-1.5 pr-2 w-6">#</th>
-                    <th className="py-1.5 pr-2">Item</th>
-                    <th className="py-1.5 pr-2">Via</th>
-                    <th className="py-1.5 pr-2">Posologia</th>
-                    <th className="py-1.5 pr-2 w-12 text-center">Status</th>
+                  <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
+                    <th className="py-2 pr-2 w-6">#</th>
+                    <th className="py-2 pr-2">Item</th>
+                    <th className="py-2 pr-2">Via</th>
+                    <th className="py-2 pr-2">Posologia</th>
+                    <th className="py-2 pr-2 w-12 text-center">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {previewPrescription.items.map((it, idx) => (
                     <tr key={it.id} className={cn("border-b last:border-0 align-top", it.status === 'suspended' && "opacity-50 line-through")}>
-                      <td className="py-1.5 pr-2 text-muted-foreground tabular-nums">{idx + 1}</td>
-                      <td className="py-1.5 pr-2">
-                        <div className="font-medium uppercase">{it.name || '—'}</div>
+                      <td className="py-2 pr-2 text-muted-foreground tabular-nums">{idx + 1}</td>
+                      <td className="py-2 pr-2">
+                        <div className="font-medium uppercase tracking-wider">{it.name || '—'}</div>
                         {(it.dose || it.presentation) && (
-                          <div className="text-[10px] text-muted-foreground">{[it.presentation, it.dose].filter(Boolean).join(' · ')}</div>
+                          <div className="text-xs text-muted-foreground">{[it.presentation, it.dose].filter(Boolean).join(' · ')}</div>
                         )}
                         {it.instructions && (
-                          <div className="text-[10px] text-muted-foreground italic mt-0.5">{it.instructions}</div>
+                          <div className="text-xs text-muted-foreground italic mt-1">{it.instructions}</div>
                         )}
                       </td>
-                      <td className="py-1.5 pr-2 uppercase text-[10px]">{it.route || '—'}</td>
-                      <td className="py-1.5 pr-2 text-[10px]">{it.posology || '—'}</td>
-                      <td className="py-1.5 pr-2 text-center">
+                      <td className="py-2 pr-2 uppercase tracking-wider text-xs">{it.route || '—'}</td>
+                      <td className="py-2 pr-2 text-xs">{it.posology || '—'}</td>
+                      <td className="py-2 pr-2 text-center">
                         {it.validated ? (
-                          <Badge className="text-[9px] h-4 px-1 bg-emerald-600 hover:bg-emerald-600">VAL</Badge>
+                          <Badge className="text-xs h-4 px-1 bg-released hover:bg-released">VAL</Badge>
                         ) : it.status === 'suspended' ? (
-                          <Badge variant="outline" className="text-[9px] h-4 px-1">SUSP</Badge>
+                          <Badge variant="outline" className="text-xs h-4 px-1">SUSP</Badge>
                         ) : (
-                          <span className="text-muted-foreground text-[10px]">—</span>
+                          <span className="text-muted-foreground text-xs">—</span>
                         )}
                       </td>
                     </tr>
@@ -8835,12 +9470,12 @@ const PrescricaoPage = () => {
             const willMerge = hasCurrentValidated;
             return (
               <div className={cn(
-                "mx-6 mb-2 rounded-md border px-3 py-2 text-[11px] leading-snug",
+                "mx-6 mb-2 rounded-md border px-3 py-2 text-xs leading-snug",
                 willMerge
-                  ? "border-amber-300/70 bg-amber-50/70 text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/20 dark:text-amber-200"
-                  : "border-sky-300/70 bg-sky-50/70 text-sky-900 dark:border-sky-500/40 dark:bg-sky-950/20 dark:text-sky-200",
+                  ? "border-warning-border/70 bg-warning-soft/70 text-warning-on-soft"
+                  : "border-border/70 bg-muted/70 text-foreground",
               )}>
-                <strong className="font-semibold">
+                <strong className="font-medium">
                   {willMerge ? "Há prescrição validada hoje" : "Restauração integral"}
                 </strong>
                 {": "}
@@ -8859,7 +9494,7 @@ const PrescricaoPage = () => {
                 return (
                   <Button
                     size="sm"
-                    className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
+                    className="gap-2 bg-warning hover:bg-warning text-white"
                     onClick={() => { restoreFromPrescription(previewPrescription); setPreviewPrescription(null); }}
                     title="Soma os itens desta versão no rascunho atual, ignorando duplicados"
                   >
@@ -8871,7 +9506,7 @@ const PrescricaoPage = () => {
               return (
                 <Button
                   size="sm"
-                  className="gap-1.5"
+                  className="gap-2"
                   onClick={() => { loadPrescription(previewPrescription.id); setPreviewPrescription(null); }}
                   title="Restaura por completo — substitui o corpo da prescrição atual"
                 >
@@ -8891,7 +9526,7 @@ const PrescricaoPage = () => {
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <UtensilsCrossed className="h-4 w-4 text-emerald-600" />
+              <UtensilsCrossed className="h-4 w-4 text-released-on-soft" />
               Como deseja prescrever a dieta?
             </DialogTitle>
             <DialogDescription>
@@ -8907,15 +9542,15 @@ const PrescricaoPage = () => {
                 setNutritionManualText("");
                 setNutritionManualOpen(true);
               }}
-              className="group text-left rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition p-3 flex flex-col gap-2"
+              className="group text-left rounded-lg border border-released-border bg-white hover:border-released hover:bg-released-soft/50 transition p-3 flex flex-col gap-2"
             >
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-md bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center">
-                  <Pencil className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
+                <div className="h-8 w-8 rounded-md bg-released-soft flex items-center justify-center">
+                  <Pencil className="h-4 w-4 text-released-on-soft" />
                 </div>
-                <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Adição manual</span>
+                <span className="text-sm font-medium text-foreground">Adição manual</span>
               </div>
-              <p className="text-[11.5px] text-slate-600 dark:text-slate-400 leading-snug">
+              <p className="text-xs text-foreground leading-snug">
                 Escreva livremente a conduta nutricional. Salvo como item de nutrição genérico com seu texto nas recomendações.
               </p>
             </button>
@@ -8928,15 +9563,15 @@ const PrescricaoPage = () => {
                 setNutritionGuidedOpen(true);
               }}
 
-              className="group text-left rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition p-3 flex flex-col gap-2"
+              className="group text-left rounded-lg border border-released-border bg-white hover:border-released hover:bg-released-soft/50 transition p-3 flex flex-col gap-2"
             >
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-md bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center">
-                  <ClipboardList className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
+                <div className="h-8 w-8 rounded-md bg-released-soft flex items-center justify-center">
+                  <ClipboardList className="h-4 w-4 text-released-on-soft" />
                 </div>
-                <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Solicitação guiada</span>
+                <span className="text-sm font-medium text-foreground">Solicitação guiada</span>
               </div>
-              <p className="text-[11.5px] text-slate-600 dark:text-slate-400 leading-snug">
+              <p className="text-xs text-foreground leading-snug">
                 Escolha a modalidade (Oral, Enteral, Parenteral, Suplementação ou Zero) e preencha os campos estruturados.
               </p>
             </button>
@@ -8948,15 +9583,15 @@ const PrescricaoPage = () => {
                 setNutritionConfirmOpen(false);
                 setNutritionWizardOpen(true);
               }}
-              className="group text-left rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50/60 dark:bg-emerald-950/30 hover:border-emerald-500 hover:bg-emerald-100/60 dark:hover:bg-emerald-950/50 transition p-3 flex flex-col gap-2"
+              className="group text-left rounded-lg border border-released-border bg-released-soft/60 hover:border-released hover:bg-released-soft/60 transition p-3 flex flex-col gap-2"
             >
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-md bg-emerald-600 flex items-center justify-center">
+                <div className="h-8 w-8 rounded-md bg-released flex items-center justify-center">
                   <Sparkles className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Assistente clínico</span>
+                <span className="text-sm font-medium text-released-on-soft">Assistente clínico</span>
               </div>
-              <p className="text-[11.5px] text-emerald-700/90 dark:text-emerald-300/90 leading-snug">
+              <p className="text-xs text-released-on-soft/90 leading-snug">
                 Sugere estratégia, volume e cuidados com base no paciente (peso, condição clínica e via disponível).
               </p>
             </button>
@@ -8972,7 +9607,7 @@ const PrescricaoPage = () => {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Pencil className="h-4 w-4 text-emerald-600" />
+              <Pencil className="h-4 w-4 text-released-on-soft" />
               Adição manual de nutrição
             </DialogTitle>
             <DialogDescription>
@@ -8982,9 +9617,9 @@ const PrescricaoPage = () => {
 
           <div className="space-y-3">
             {/* 1) Modalidade — chips compactos */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">Modalidade</label>
-              <div className="flex flex-wrap gap-1.5">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-released-on-soft uppercase tracking-wide">Modalidade</label>
+              <div className="flex flex-wrap gap-2">
                 {([
                   { v: 'diet_oral',       label: 'Oral' },
                   { v: 'diet_enteral',    label: 'Enteral' },
@@ -8997,10 +9632,10 @@ const PrescricaoPage = () => {
                     type="button"
                     onClick={() => setNutritionManualType(opt.v)}
                     className={cn(
-                      "h-8 px-3 rounded-md border text-[12px] font-semibold transition",
+                      "h-8 px-3 rounded-md border text-xs font-medium transition",
                       nutritionManualType === opt.v
-                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                        : "bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                        ? "bg-released text-white border-released shadow-sm"
+                        : "bg-white text-released-on-soft border-released-border hover:bg-released-soft"
                     )}
                   >
                     {opt.label}
@@ -9010,8 +9645,8 @@ const PrescricaoPage = () => {
             </div>
 
             {/* 2) Recomendações (opcional) */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-released-on-soft uppercase tracking-wide">
                 Recomendações <span className="text-muted-foreground font-normal normal-case">(opcional)</span>
               </label>
               <Textarea
@@ -9019,10 +9654,10 @@ const PrescricaoPage = () => {
                 onChange={(e) => setNutritionManualRecs(e.target.value)}
                 placeholder="Orientações à equipe (descritivo da dieta, restrições, alergias, conduta em caso de intolerância, metas calóricas, observações específicas...)"
                 rows={5}
-                className="resize-none text-[12px] italic focus:not-italic"
+                className="resize-none text-xs italic focus:not-italic"
                 autoFocus
               />
-              <p className="text-[10.5px] text-muted-foreground">Campo opcional — basta selecionar a modalidade para validar.</p>
+              <p className="text-xs text-muted-foreground">Campo opcional — basta selecionar a modalidade para validar.</p>
             </div>
           </div>
 
@@ -9031,7 +9666,7 @@ const PrescricaoPage = () => {
               Cancelar
             </Button>
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-released hover:bg-released text-white"
               onClick={() => {
                 const recs = nutritionManualRecs.trim();
                 const MODALITY_LABELS: Record<string, string> = {
@@ -9068,7 +9703,7 @@ const PrescricaoPage = () => {
                 toast.success('Conduta nutricional adicionada');
               }}
             >
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              <Plus className="h-3.5 w-3.5 mr-2" />
               Adicionar
             </Button>
           </DialogFooter>
@@ -9081,7 +9716,7 @@ const PrescricaoPage = () => {
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4 text-emerald-600" />
+              <ClipboardList className="h-4 w-4 text-released-on-soft" />
               Escolha a modalidade
             </DialogTitle>
             <DialogDescription>
@@ -9113,15 +9748,15 @@ const PrescricaoPage = () => {
                   // Abre só o item novo e direciona até ele. (22/07/2026.)
                   focusNewItem(it.id);
                 }}
-                className="text-left rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition p-3 flex flex-col gap-1"
+                className="text-left rounded-lg border border-released-border bg-white hover:border-released hover:bg-released-soft/50 transition p-3 flex flex-col gap-1"
               >
                 <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-md bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center">
-                    <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300" />
+                  <div className="h-7 w-7 rounded-md bg-released-soft flex items-center justify-center">
+                    <UtensilsCrossed className="h-3.5 w-3.5 text-released-on-soft" />
                   </div>
-                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{m.label}</span>
+                  <span className="text-sm font-medium text-foreground">{m.label}</span>
                 </div>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug pl-9">{m.desc}</p>
+                <p className="text-xs text-foreground leading-snug pl-8">{m.desc}</p>
               </button>
             ))}
           </div>
@@ -9154,6 +9789,38 @@ const PrescricaoPage = () => {
         }}
       />
 
+      {/*
+        Seletor de alvo do assistente — aparece só quando a categoria tem 2+
+        itens. Com um item, o assistente abre direto; sem nenhum, o botão
+        orienta a adicionar antes.
+      */}
+      <Dialog open={!!assistantPickerCat} onOpenChange={(o) => { if (!o) setAssistantPickerCat(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base">Assistente de diluição e infusão</DialogTitle>
+            <DialogDescription className="text-xs">
+              Escolha o item que deseja ajustar — diluente, acesso, modo e tempo de infusão.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-72 overflow-y-auto">
+            {items
+              .filter(i => i.category === assistantPickerCat && !i.suspendedAt)
+              .map(i => (
+                <button
+                  key={i.id}
+                  onClick={() => { setItemAssistantTargetId(i.id); setAssistantPickerCat(null); }}
+                  className="w-full text-left px-3 py-2 rounded-md border border-border hover:bg-accent hover:border-primary/40 transition-colors"
+                >
+                  <div className="text-xs font-medium text-foreground">{i.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {[i.dose, i.route, i.posology].filter(Boolean).join(" · ") || "sem parâmetros definidos"}
+                  </div>
+                </button>
+              ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <ItemAssistantWizard
         open={!!itemAssistantTargetId}
         onOpenChange={(o) => { if (!o) setItemAssistantTargetId(null); }}
@@ -9178,7 +9845,7 @@ const PrescricaoPage = () => {
       />
 
         {!autoLoadDone && (hasRealPatientUrl || !!patient.name) && !currentPrescriptionId && (
-          <div className="flex flex-col items-center justify-center py-16 px-6 gap-7 rounded-xl border border-border/50 bg-card/60 animate-in fade-in duration-300">
+          <div className="flex flex-col items-center justify-center py-8 px-6 gap-6 rounded-lg border border-border/50 bg-card/60 animate-in fade-in duration-300">
 
             {/* Spinner com ícone central */}
             <div className="relative w-16 h-16">
@@ -9193,9 +9860,9 @@ const PrescricaoPage = () => {
 
             {/* Chip do paciente */}
             {patient.bed && (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/60 bg-background text-xs text-muted-foreground">
+              <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full border border-border/60 bg-background text-xs text-muted-foreground">
                 <BedDouble className="h-3.5 w-3.5 text-primary shrink-0" />
-                <span className="font-semibold text-primary">{patient.bed}</span>
+                <span className="font-medium text-primary">{patient.bed}</span>
                 <span className="text-border">·</span>
                 <span className="font-medium text-foreground uppercase tracking-wide truncate max-w-[220px]">
                   {patient.name}
@@ -9204,13 +9871,13 @@ const PrescricaoPage = () => {
             )}
 
             {/* Texto */}
-            <div className="text-center space-y-1.5">
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-foreground">
+            <div className="text-center space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-foreground">
                 Carregando prescrição
               </p>
-              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+              <p className="text-xs text-muted-foreground flex items-center justify-center gap-2">
                 Buscando a última versão validada
-                <span className="inline-flex gap-0.5 items-center">
+                <span className="inline-flex gap-1 items-center">
                   <span className="w-1 h-1 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:0ms]" />
                   <span className="w-1 h-1 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:150ms]" />
                   <span className="w-1 h-1 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:300ms]" />
@@ -9229,11 +9896,11 @@ const PrescricaoPage = () => {
         {items.length === 0 && autoLoadDone && !currentPrescriptionId && (() => {
           const admissionTpls = quickTemplates.filter(t => t.clinical_category === 'admissao');
           return (
-            <div className="rounded-xl border border-dashed border-border bg-gradient-to-br from-primary/5 via-background to-muted/20 p-6">
-              <div className="text-center mb-5">
+            <div className="rounded-lg border border-dashed border-border bg-primary/5 p-6">
+              <div className="text-center mb-4">
                 <Pill className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
                 <p className="text-sm font-medium text-foreground">Comece a prescrição em 1 clique</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground mt-1">
                   Aplique um modelo de admissão, abra um assistente ou use a busca acima
                 </p>
               </div>
@@ -9243,45 +9910,45 @@ const PrescricaoPage = () => {
                 <button
                   type="button"
                   onClick={() => setNutritionConfirmOpen(true)}
-                  className="text-left rounded-lg border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 hover:border-emerald-400 dark:bg-emerald-950/20 dark:border-emerald-900 transition-all p-3 group"
+                  className="text-left rounded-lg border border-released-border bg-released-soft/50 hover:bg-released-soft hover:border-released transition-all p-3 group"
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <UtensilsCrossed className="h-4 w-4 text-emerald-600" />
-                    <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">Nutrição</span>
-                    <Sparkles className="h-3 w-3 text-emerald-500 ml-auto opacity-60 group-hover:opacity-100" />
+                    <UtensilsCrossed className="h-4 w-4 text-released-on-soft" />
+                    <span className="text-xs font-semibold text-released-on-soft">Nutrição</span>
+                    <Sparkles className="h-3 w-3 text-released ml-auto opacity-60 group-hover:opacity-100" />
                   </div>
-                  <p className="text-[10px] text-muted-foreground leading-tight">Zero · Oral · Enteral · NPT</p>
+                  <p className="text-xs text-muted-foreground leading-tight">Zero · Oral · Enteral · NPT</p>
                 </button>
                 <button
                   type="button"
                   onClick={() => setHydrationWizardOpen(true)}
-                  className="text-left rounded-lg border border-blue-200 bg-blue-50/50 hover:bg-blue-50 hover:border-blue-400 dark:bg-blue-950/20 dark:border-blue-900 transition-all p-3 group"
+                  className="text-left rounded-lg border border-border bg-muted/50 hover:bg-muted hover:border-border transition-all p-3 group"
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <Droplets className="h-4 w-4 text-blue-600" />
-                    <span className="text-xs font-bold text-blue-800 dark:text-blue-300">Hidratação</span>
-                    <Sparkles className="h-3 w-3 text-blue-500 ml-auto opacity-60 group-hover:opacity-100" />
+                    <Droplets className="h-4 w-4 text-foreground" />
+                    <span className="text-xs font-semibold text-foreground">Hidratação</span>
+                    <Sparkles className="h-3 w-3 text-muted-foreground ml-auto opacity-60 group-hover:opacity-100" />
                   </div>
-                  <p className="text-[10px] text-muted-foreground leading-tight">SF · RL · SG · Soluções preparadas</p>
+                  <p className="text-xs text-muted-foreground leading-tight">SF · RL · SG · Soluções preparadas</p>
                 </button>
                 <button
                   type="button"
                   onClick={() => setReplacementWizardOpen(true)}
-                  className="text-left rounded-lg border border-sky-200 bg-sky-50/50 hover:bg-sky-50 hover:border-sky-400 dark:bg-sky-950/20 dark:border-sky-900 transition-all p-3 group"
+                  className="text-left rounded-lg border border-border bg-muted/50 hover:bg-muted hover:border-border transition-all p-3 group"
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <FlaskConical className="h-4 w-4 text-sky-600" />
-                    <span className="text-xs font-bold text-sky-800 dark:text-sky-300">Reposição / Correção</span>
-                    <Sparkles className="h-3 w-3 text-sky-500 ml-auto opacity-60 group-hover:opacity-100" />
+                    <FlaskConical className="h-4 w-4 text-foreground" />
+                    <span className="text-xs font-semibold text-foreground">Reposição / Correção</span>
+                    <Sparkles className="h-3 w-3 text-muted-foreground ml-auto opacity-60 group-hover:opacity-100" />
                   </div>
-                  <p className="text-[10px] text-muted-foreground leading-tight">HipoK · HipoMg · HipoNa · HiperK</p>
+                  <p className="text-xs text-muted-foreground leading-tight">HipoK · HipoMg · HipoNa · HiperK</p>
                 </button>
               </div>
               {admissionTpls.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-2 px-1">
-                    <Zap className="h-3.5 w-3.5 text-amber-500" />
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <Zap className="h-3.5 w-3.5 text-warning" />
+                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                       Modelos de admissão
                     </span>
                   </div>
@@ -9293,18 +9960,18 @@ const PrescricaoPage = () => {
                         onClick={() => applyQuickTemplate(tpl)}
                         className="group text-left rounded-lg border border-border bg-card hover:border-primary hover:shadow-md hover:-translate-y-0.5 transition-all p-3"
                       >
-                        <div className="flex items-start justify-between gap-2 mb-1.5">
-                          <h4 className="text-xs font-bold text-foreground leading-tight uppercase tracking-wide line-clamp-2">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h4 className="text-xs font-semibold text-foreground leading-tight uppercase tracking-wide line-clamp-2">
                             {tpl.name}
                           </h4>
                           <Plus className="h-3.5 w-3.5 text-primary shrink-0 opacity-60 group-hover:opacity-100" />
                         </div>
                         {tpl.description && (
-                          <p className="text-[10px] text-muted-foreground line-clamp-2 mb-2">
+                          <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
                             {tpl.description}
                           </p>
                         )}
-                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Pill className="h-2.5 w-2.5" />
                           <span>{tpl.items.length} itens</span>
                           {tpl.use_count > 0 && (
@@ -9320,7 +9987,7 @@ const PrescricaoPage = () => {
                   <button
                     type="button"
                     onClick={() => setQuickTemplatesDialogOpen(true)}
-                    className="mt-3 w-full text-[11px] text-primary hover:underline font-medium"
+                    className="mt-3 w-full text-xs text-primary hover:underline font-medium"
                   >
                     Ver todos os templates →
                   </button>
@@ -9380,13 +10047,13 @@ const PrescricaoPage = () => {
       })()}
 
       {/* ===== FOOTER SUMMARY ===== */}
-      <div className="rounded-xl border border-[hsl(217,30%,84%)]/70 dark:border-[hsl(217,30%,24%)]/70 bg-gradient-to-b from-[hsl(217,45%,98%)] to-[hsl(217,40%,96%)] dark:from-[hsl(217,35%,13%)] dark:to-[hsl(217,32%,11%)] p-4 flex items-center justify-between print:hidden shadow-[0_4px_16px_-6px_hsl(217,50%,30%,0.18)] dark:shadow-[0_4px_16px_-6px_hsl(217,80%,5%,0.45)] ring-1 ring-[hsl(217,55%,90%)]/40 dark:ring-[hsl(217,40%,22%)]/40">
+      <div className="rounded-lg border border-[hsl(217,30%,84%)]/70 bg-gradient-to-b from-[hsl(217,45%,98%)] to-[hsl(217,40%,96%)] p-4 flex items-center justify-between print:hidden shadow-[0_4px_16px_-6px_hsl(217,50%,30%,0.18)] ring-1 ring-[hsl(217,55%,90%)]/40">
         <div className="flex items-center gap-4 flex-wrap">
           <Badge variant="outline" className="gap-1 text-xs">
             <Pill className="h-3 w-3" /> {totalItems} itens
           </Badge>
           {suspendedItemsCount > 0 && (
-            <Badge variant="destructive" className="gap-1 text-[10px]">
+            <Badge variant="destructive" className="gap-1 text-xs">
               <Pause className="h-3 w-3" /> {suspendedItemsCount} suspenso{suspendedItemsCount > 1 ? 's' : ''}
             </Badge>
           )}
@@ -9404,11 +10071,11 @@ const PrescricaoPage = () => {
             variant="outline"
             onClick={handleSaveDraft}
             disabled={savingDraft || renewalPendingCount === 0 || !patient.name.trim()}
-            className="gap-1.5 text-xs"
+            className="gap-2 text-xs"
             title={
               renewalPendingCount === 0
                 ? "Nenhum item pendente — só salva rascunho com itens ainda não validados"
-                : `Salvar ${renewalPendingCount} item(ns) pendente(s) como rascunho (visível só p/ você)`
+                : `Salvar ${renewalPendingCount} ${(renewalPendingCount) === 1 ? 'item' : 'itens'} ${(renewalPendingCount) === 1 ? 'pendente' : 'pendentes'} como rascunho (visível só p/ você)`
             }
           >
             <Save className="h-3.5 w-3.5" />
@@ -9421,8 +10088,8 @@ const PrescricaoPage = () => {
             onClick={requestValidateAll}
             disabled={allItemsValidated}
             className={cn(
-              "gap-1.5 text-xs",
-              !prescriptionLocked && "bg-emerald-600 hover:bg-emerald-700 text-white"
+              "gap-2 text-xs",
+              !prescriptionLocked && "bg-released hover:bg-released text-white"
             )}
             title={allItemsValidated ? "Todos os itens já validados" : prescriptionLocked ? "Validar itens pendentes" : "Validar prescrição"}
           >
@@ -9442,7 +10109,7 @@ const PrescricaoPage = () => {
               }
               handlePrint();
             }}
-            className="gap-1.5 text-xs text-white font-semibold border-0 bg-gradient-to-br from-sky-400 via-blue-500 to-blue-600 hover:from-sky-300 hover:via-blue-400 hover:to-blue-500 shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
+            className="gap-2 text-xs text-white font-medium border-0 bg-muted hover:from-muted hover:via-muted hover:to-muted shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
             title="Imprimir a prescrição validada e, quando aplicável, as guias regulatórias"
           >
             <Printer className="h-3.5 w-3.5" /> Imprimir
@@ -9494,9 +10161,9 @@ const PrescricaoPage = () => {
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="max-h-[55vh] overflow-y-auto space-y-1.5 pr-1">
+                <div className="max-h-[55vh] overflow-y-auto space-y-2 pr-1">
                   {structured.length > 0 && (
-                    <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mt-1 mb-1">
+                    <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mt-1 mb-1">
                       Cuidados estruturados
                     </div>
                   )}
@@ -9515,18 +10182,18 @@ const PrescricaoPage = () => {
                           checked={checked}
                           disabled={already}
                           onCheckedChange={() => toggleCarePreviewKey(key)}
-                          className="mt-0.5"
+                          className="mt-1"
                         />
                         <span className="flex-1 leading-snug">
                           {opt.name}
-                          {already && <span className="ml-1.5 text-[10px] italic">(já incluído)</span>}
+                          {already && <span className="ml-2 text-xs italic">(já incluído)</span>}
                         </span>
                       </label>
                     );
                   })}
 
                   {extras.length > 0 && (
-                    <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mt-3 mb-1">
+                    <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mt-3 mb-1">
                       Recomendações adicionais
                     </div>
                   )}
@@ -9545,11 +10212,11 @@ const PrescricaoPage = () => {
                           checked={checked}
                           disabled={already}
                           onCheckedChange={() => toggleCarePreviewKey(key)}
-                          className="mt-0.5"
+                          className="mt-1"
                         />
                         <span className="flex-1 leading-snug">
                           {text}
-                          {already && <span className="ml-1.5 text-[10px] italic">(já incluído)</span>}
+                          {already && <span className="ml-2 text-xs italic">(já incluído)</span>}
                         </span>
                       </label>
                     );
@@ -9606,20 +10273,20 @@ const PrescricaoPage = () => {
           {dispensationSlip && (
             <div className="border border-border rounded-lg p-4 space-y-3" id="dispensation-slip">
               <div className="text-center border-b border-border pb-2">
-                <div className="text-xs font-bold tracking-wider uppercase text-foreground">Guia de Dispensação Farmacêutica</div>
-                <div className="font-mono text-lg font-extrabold text-primary mt-1">{dispensationSlip.code}</div>
+                <div className="text-xs font-semibold tracking-wider uppercase text-foreground">Guia de Dispensação Farmacêutica</div>
+                <div className="font-mono text-lg font-semibold text-primary mt-1">{dispensationSlip.code}</div>
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                <div><span className="text-muted-foreground">Paciente:</span> <span className="font-semibold text-foreground">{dispensationSlip.patientName}</span></div>
-                <div><span className="text-muted-foreground">Leito:</span> <span className="font-semibold text-foreground">{dispensationSlip.bed}</span></div>
+                <div><span className="text-muted-foreground">Paciente:</span> <span className="font-medium text-foreground">{dispensationSlip.patientName}</span></div>
+                <div><span className="text-muted-foreground">Leito:</span> <span className="font-medium text-foreground">{dispensationSlip.bed}</span></div>
                 <div><span className="text-muted-foreground">Data/Hora:</span> <span className="font-medium text-foreground">{dispensationSlip.date}</span></div>
                 {patient.encounterCode && <div><span className="text-muted-foreground">Atendimento:</span> <span className="font-mono font-medium text-foreground">{patient.encounterCode}</span></div>}
               </div>
               <div className="border-t border-border pt-2">
-                <div className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-1.5">ITENS DISPENSADOS ({dispensationSlip.items.length})</div>
+                <div className="text-xs font-medium text-muted-foreground tracking-wider mb-2">ITENS DISPENSADOS ({dispensationSlip.items.length})</div>
                 <div className="space-y-1">
                   {dispensationSlip.items.map((item, i) => (
-                    <div key={item.id} className="flex items-start gap-2 text-xs py-0.5 border-b border-border/30 last:border-0">
+                    <div key={item.id} className="flex items-start gap-2 text-xs py-1 border-b border-border/30 last:border-0">
                       <span className="font-mono text-muted-foreground w-5 shrink-0 text-right">{i + 1}.</span>
                       <div className="flex-1 min-w-0">
                         <span className="font-medium text-foreground">{item.name}</span>
@@ -9640,7 +10307,7 @@ const PrescricaoPage = () => {
                   ))}
                 </div>
               </div>
-              <div className="flex items-center justify-between pt-2 border-t border-border text-[10px] text-muted-foreground">
+              <div className="flex items-center justify-between pt-2 border-t border-border text-xs text-muted-foreground">
                 <span>Dispensado por: {user?.email?.split('@')[0] || '—'}</span>
                 <span>Arsen · Dispensação Digital</span>
               </div>
@@ -9674,7 +10341,7 @@ const PrescricaoPage = () => {
                   printW.print();
                 }
               }
-            }} className="gap-1.5">
+            }} className="gap-2">
               <Printer className="h-3.5 w-3.5" /> Imprimir Guia
             </Button>
           </DialogFooter>
@@ -9716,7 +10383,7 @@ const PrescricaoPage = () => {
           setItems(prev => [...prev, ...newItems]);
           const agoraCount = newItems.filter(i => isNowInterval(i.posology) || (i.flags as readonly string[]).includes('ag')).length;
           const scheduledCount = newItems.length - agoraCount;
-          toast.success(`${newItems.length} item(ns) extra adicionado(s)`, {
+          toast.success(`${newItems.length} ${(newItems.length) === 1 ? 'item' : 'itens'} extra ${(newItems.length) === 1 ? 'adicionado' : 'adicionados'}`, {
             description: agoraCount > 0
               ? `${agoraCount} "Agora" (não renovam)${scheduledCount > 0 ? ` + ${scheduledCount} de horário (renovam)` : ''}`
               : `${scheduledCount} de horário (serão incorporados na renovação)`,
@@ -9735,16 +10402,36 @@ const PrescricaoPage = () => {
       <AntimicrobialGuideDialog
         open={antimicrobialGuideOpen}
         onOpenChange={(open) => {
+          if (open) invalidateMedicationCatalog(); // força revalidação do catálogo
           setAntimicrobialGuideOpen(open);
           if (!open) { setPendingAntimicrobialMed(null); setPendingAtbMode(null); }
         }}
         patient={patient}
         antimicrobialItems={
           pendingAntimicrobialMed
-            ? [{ id: 'pending', name: pendingAntimicrobialMed.name, dose: pendingAntimicrobialMed.defaultDose, route: pendingAntimicrobialMed.defaultRoute, posology: pendingAntimicrobialMed.defaultPosology, category: 'antimicrobial', status: 'active' }]
+            ? [{
+                id: 'pending',
+                name: pendingAntimicrobialMed.name,
+                presentation: pendingAntimicrobialMed.presentation || '',
+                // Dose: usa defaultDose se preenchido; senão extrai concentração da presentation
+                // (ex: Penicilina G tem defaultDose=null mas presentation="5.000.000UI — fr-amp")
+                dose: pendingAntimicrobialMed.defaultDose
+                  || (pendingAntimicrobialMed.presentation?.includes(' — ')
+                    ? pendingAntimicrobialMed.presentation.split(' — ')[0].trim()
+                    : ''),
+                route: pendingAntimicrobialMed.defaultRoute,
+                posology: pendingAntimicrobialMed.defaultPosology,
+                category: 'antimicrobial',
+                status: 'active',
+              }]
             : pendingAtbMode
               ? [] // Nova ATB do zero (acréscimo / troca / inicial)
-              : items.filter(i => i.category === 'antimicrobial').map(i => ({ id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology, category: i.category, status: i.status }))
+              : items.filter(i => i.category === 'antimicrobial').map(i => ({
+                  id: i.id, name: i.name,
+                  presentation: i.presentation || '', // preserva presentation do item existente
+                  dose: i.dose, route: i.route, posology: i.posology,
+                  category: i.category, status: i.status,
+                }))
         }
         doctorName={digitalSignature?.doctorName}
         doctorCrm={digitalSignature?.crm}
@@ -9768,9 +10455,17 @@ const PrescricaoPage = () => {
         activeItems={items
           .filter(i => i.category === 'antimicrobial' && i.status === 'active')
           .map(i => ({
-            id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology,
+            id: i.id, name: i.name, presentation: i.presentation,
+            dose: i.dose, quantity: i.quantity, quantityUnit: i.quantityUnit,
+            route: i.route, posology: i.posology,
             status: i.status, atbStartDate: i.atbStartDate, atbPlannedDays: i.atbPlannedDays,
             atbInfectionSite: i.atbInfectionSite,
+            // Terceiro elo da mesma corrente: o dialogo declara estes campos
+            // desde sempre, mas a prescricao parava de repassar no
+            // atbInfectionSite. Justificativa e cultura chegavam vazias.
+            atbJustification: i.atbJustification,
+            atbCultureCollected: i.atbCultureCollected,
+            atbCultureResult: i.atbCultureResult,
           }))
         }
         onSuspendItem={(id) => {
@@ -9780,57 +10475,77 @@ const PrescricaoPage = () => {
         onReprintItem={async (it) => {
           try {
             const { printAtmGuide } = await import("@/lib/printAtmGuide");
+            // doctorName: prioriza assinatura digital (médico que validou);
+            // fallback para perfil do médico logado (currentDoctor.fullName da tabela profiles);
+            // último fallback para user_metadata (cadastro do Supabase Auth).
+            const doctorName = digitalSignature?.doctorName
+              || currentDoctor.fullName
+              || user?.user_metadata?.full_name
+              || user?.email
+              || '';
+            const doctorCrm = digitalSignature?.crm || currentDoctor.crm || '';
+            // Dose legível: usa buildSolutoToken para reconstruir "1 FA (500.000UI)"
+            // quando dose está vazio mas quantity+presentation têm a info.
+            const doseLabel = buildSolutoTokenLabeled(it) || it.dose || '';
             await printAtmGuide({
               patient,
               entries: [{
                 medication: it.name,
-                dose: it.dose,
+                presentation: it.presentation,
+                dose: doseLabel,
                 route: it.route,
                 posology: it.posology,
                 startDate: it.atbStartDate,
                 plannedDuration: it.atbPlannedDays,
                 infectionSite: it.atbInfectionSite,
               }],
-              doctorName: digitalSignature?.doctorName || '',
-              doctorCrm: digitalSignature?.crm || '',
+              doctorName,
+              doctorCrm,
               hospitalName: currentHospital?.name,
               reprint: true,
             });
             toast.success("2ª via da Guia ATM enviada para impressão");
           } catch (err) {
             console.error(err);
-            toast.error("Falha ao reimprimir Guia ATM");
+            toast.error("Não foi possível reimprimir Guia ATM");
           }
         }}
         onReprintAll={async (its) => {
           try {
             const { printAtmGuide } = await import("@/lib/printAtmGuide");
+            const doctorName = digitalSignature?.doctorName
+              || currentDoctor.fullName
+              || user?.user_metadata?.full_name
+              || user?.email
+              || '';
+            const doctorCrm = digitalSignature?.crm || currentDoctor.crm || '';
             await printAtmGuide({
               patient,
               entries: its.map(it => ({
                 medication: it.name,
-                dose: it.dose,
+                presentation: it.presentation,
+                dose: buildSolutoTokenLabeled(it) || it.dose || '',
                 route: it.route,
                 posology: it.posology,
                 startDate: it.atbStartDate,
                 plannedDuration: it.atbPlannedDays,
                 infectionSite: it.atbInfectionSite,
               })),
-              doctorName: digitalSignature?.doctorName || '',
-              doctorCrm: digitalSignature?.crm || '',
+              doctorName,
+              doctorCrm,
               hospitalName: currentHospital?.name,
               reprint: true,
             });
             toast.success(`Guia ATM consolidada (${its.length} antibióticos) enviada para impressão`);
           } catch (err) {
             console.error(err);
-            toast.error("Falha ao reimprimir Guia ATM consolidada");
+            toast.error("Não foi possível reimprimir Guia ATM consolidada");
           }
         }}
         onStartNew={(mode, suspendIds) => {
           if (mode === 'troca' && suspendIds.length > 0) {
             setItems(prev => prev.map(it => suspendIds.includes(it.id) ? { ...it, status: 'suspended' } : it));
-            toast.info(`${suspendIds.length} antibiótico(s) suspenso(s) — preencha o substituto na Guia ATM.`);
+            toast.info(`${suspendIds.length} ${(suspendIds.length) === 1 ? 'antibiótico' : 'antibióticos'} ${(suspendIds.length) === 1 ? 'suspenso' : 'suspensos'} — preencha o substituto na Guia ATM.`);
           }
           setPendingAtbMode(mode);
           transitioningToAtmGuideRef.current = true;
@@ -9908,17 +10623,17 @@ const PrescricaoPage = () => {
                 <label
                   key={opt.id}
                   className={cn(
-                    "flex items-start gap-2.5 p-2.5 rounded-md border cursor-pointer",
+                    "flex items-start gap-3 p-3 rounded-md border cursor-pointer",
                     regulatoria
-                      ? "border-[hsl(217,55%,82%)] dark:border-[hsl(217,55%,30%)]/40 bg-[hsl(217,55%,96%)]/60 dark:bg-[hsl(217,55%,16%)]/15 hover:bg-[hsl(217,55%,94%)]/80"
+                      ? "border-[hsl(217,55%,82%)]/40 bg-[hsl(217,55%,96%)]/60 hover:bg-[hsl(217,55%,94%)]/80"
                       : "border-border hover:bg-muted/30",
                   )}
                 >
-                  <Checkbox checked={marcado} onCheckedChange={(v) => alternar(!!v)} className="mt-0.5" />
+                  <Checkbox checked={marcado} onCheckedChange={(v) => alternar(!!v)} className="mt-1" />
                   <div className="text-xs">
                     <div className={cn(
-                      "font-semibold",
-                      regulatoria && "text-[hsl(217,72%,32%)] dark:text-[hsl(217,55%,78%)]",
+                      "font-medium",
+                      regulatoria && "text-[hsl(217,72%,32%)]",
                     )}>
                       {opt.label}
                     </div>
@@ -9930,7 +10645,7 @@ const PrescricaoPage = () => {
           </div>
           <DialogFooter className="gap-2">
             <Button variant="ghost" size="sm" onClick={() => setPrintGuidesOpen(false)}>Cancelar</Button>
-            <Button size="sm" onClick={() => executePrintSelection()} className="gap-1.5" disabled={!printPrescription && !printGuideAtm && !printGuidePsy}>
+            <Button size="sm" onClick={() => executePrintSelection()} className="gap-2" disabled={!printPrescription && !printGuideAtm && !printGuidePsy}>
               <Printer className="h-3.5 w-3.5" /> Imprimir selecionados
             </Button>
           </DialogFooter>
@@ -9999,13 +10714,13 @@ const PrescricaoPage = () => {
               flags: plan.scheme === 'iv_continuous' ? ['bi' as PrescriptionFlag] : baseItem.flags,
             };
             setItems(prev => [...stripGenericScheme(prev), grouped]);
-            toast.success(`✓ ${desc.headline}`, {
+            toast.success(`${desc.headline}`, {
               description: 'ALTA VIGILÂNCIA · esquema completo gerado para enfermagem.',
               duration: 4000,
             });
             // Abre só o esquema recém-criado, com anel de alta vigilância —
             // antes expandia toda a seção de alta vigilância. (22/07/2026.)
-            focusNewItem(grouped.id, 'ring-red-400');
+            focusNewItem(grouped.id, 'ring-critical');
           }
         }}
       />
@@ -10043,7 +10758,7 @@ const PrescricaoPage = () => {
           }
           if (newItems.length > 0) {
             setItems(prev => [...prev, ...newItems]);
-            toast.success(`${newItems.length} cuidado(s) adicionado(s)${profile ? ` — ${profile.label}` : ''}`);
+            toast.success(`${newItems.length} ${(newItems.length) === 1 ? 'cuidado' : 'cuidados'} ${(newItems.length) === 1 ? 'adicionado' : 'adicionados'}${profile ? ` — ${profile.label}` : ''}`);
             const addedGlycemic = newItems.some(i => isGlycemicControlName(i.name));
             if (addedGlycemic) {
               setInsulinSchemePromptOpen(true);
@@ -10062,7 +10777,7 @@ const PrescricaoPage = () => {
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-sm">
-              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+              <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
               Prescrição com alterações não salvas
             </AlertDialogTitle>
             <AlertDialogDescription className="text-xs text-muted-foreground">
@@ -10107,7 +10822,7 @@ const PrescricaoPage = () => {
       {/* Pop-up: sugerir incluir esquema padrão de correção de insulina ao adicionar controle glicêmico */}
       <AlertDialog open={insulinSchemePromptOpen} onOpenChange={setInsulinSchemePromptOpen}>
         <AlertDialogContent className="max-w-sm w-[calc(100vw-2rem)] p-4">
-          <AlertDialogHeader className="space-y-1.5">
+          <AlertDialogHeader className="space-y-2">
             <AlertDialogTitle className="flex items-center gap-2 text-sm">
               <Syringe className="h-4 w-4 text-primary shrink-0" />
               Incluir esquema de correção de insulina?
@@ -10117,15 +10832,15 @@ const PrescricaoPage = () => {
                 <p className="text-xs text-muted-foreground leading-snug">
                   Insulina Regular SC conforme HGT — esquema padrão:
                 </p>
-                <div className="rounded-md border bg-muted/40 px-2 py-1.5 font-mono text-[10px] leading-5 space-y-0">
-                  <div className="flex justify-between gap-2"><span className="text-destructive font-semibold">&lt;70 mg/dL</span><span>SG 50% 40 mL EV + reavaliar 15 min</span></div>
+                <div className="rounded-md border bg-muted/40 px-2 py-2 font-mono text-xs leading-5 space-y-0">
+                  <div className="flex justify-between gap-2"><span className="text-destructive font-medium">&lt;70 mg/dL</span><span>SG 50% 40 mL EV + reavaliar 15 min</span></div>
                   <div className="flex justify-between gap-2"><span className="text-muted-foreground">70–149</span><span>não administrar</span></div>
                   <div className="flex justify-between gap-2"><span>150–200</span><span>2 UI SC</span></div>
                   <div className="flex justify-between gap-2"><span>201–250</span><span>4 UI SC</span></div>
                   <div className="flex justify-between gap-2"><span>251–300</span><span>6 UI SC</span></div>
                   <div className="flex justify-between gap-2"><span>301–350</span><span>8 UI SC</span></div>
                   <div className="flex justify-between gap-2"><span>351–400</span><span>10 UI SC + comunicar médico</span></div>
-                  <div className="flex justify-between gap-2"><span className="text-destructive font-semibold">&gt;400</span><span>chamar médico imediatamente</span></div>
+                  <div className="flex justify-between gap-2"><span className="text-destructive font-medium">&gt;400</span><span>chamar médico imediatamente</span></div>
                 </div>
               </div>
             </AlertDialogDescription>
@@ -10160,7 +10875,7 @@ const PrescricaoPage = () => {
                 toast.success('Esquema de correção adicionado aos Cuidados');
               }}
             >
-              <Syringe className="h-3.5 w-3.5 mr-1.5" /> Sim, adicionar aos Cuidados
+              <Syringe className="h-3.5 w-3.5 mr-2" /> Sim, adicionar aos Cuidados
             </AlertDialogAction>
             <div className="flex gap-2">
               <AlertDialogCancel className="flex-1 h-8 text-xs">Não, somente HGT</AlertDialogCancel>
@@ -10194,19 +10909,19 @@ const PrescricaoPage = () => {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Antimicrobiano(s) anexado(s) à prescrição</AlertDialogTitle>
+            <AlertDialogTitle>Antimicrobianos anexados à prescrição</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
                 {atbAttachNotice.names.length > 0 && (
                   <div className="rounded-md border bg-muted/40 p-2 text-xs">
-                    <div className="font-semibold mb-1">Itens incluídos:</div>
-                    <ul className="list-disc pl-4 space-y-0.5">
+                    <div className="font-medium mb-1">Itens incluídos:</div>
+                    <ul className="list-disc pl-4 space-y-1">
                       {atbAttachNotice.names.map((n, i) => <li key={i}>{n}</li>)}
                     </ul>
                   </div>
                 )}
                 {atbAttachNotice.isFirstDay ? (
-                  <div className="rounded-md border-l-[3px] border-l-amber-500 bg-amber-50/70 dark:bg-amber-950/30 p-2 text-xs leading-relaxed">
+                  <div className="rounded-md border-l-[3px] border-l-amber-500 bg-warning-soft/70 p-2 text-xs leading-relaxed">
                     <strong>Atenção — D1 (primeiro dia de antibiótico):</strong> ao imprimir a prescrição
                     do dia, é obrigatório anexar a <strong>Guia ATM em 2 vias</strong> (1 via para a
                     farmácia/CCIH e 1 via para o prontuário). Marque "Imprimir Guia ATM" no botão de
@@ -10218,7 +10933,7 @@ const PrescricaoPage = () => {
                     ser reimpressa diariamente — apenas no D1, na troca de esquema ou no escalonamento.
                   </p>
                 )}
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   A duração programada (7, 10, 14 dias) e o sítio infeccioso ficam visíveis no cabeçalho
                   roxo do item — você pode editar a qualquer momento.
                 </p>
@@ -10243,15 +10958,15 @@ const PrescricaoPage = () => {
             <AlertDialogTitle>Esquema antimicrobiano termina hoje</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
-                <div className="rounded-md border-l-[3px] border-l-amber-500 bg-amber-50/70 dark:bg-amber-950/30 p-2 text-xs leading-relaxed">
+                <div className="rounded-md border-l-[3px] border-l-amber-500 bg-warning-soft/70 p-2 text-xs leading-relaxed">
                   Os seguintes esquemas chegam ao <strong>último dia previsto</strong> nesta data.
                   Avalie a conduta: <strong>suspensão</strong>, <strong>descalonamento</strong>,
                   <strong> troca para via oral</strong> ou <strong>prorrogação justificada</strong>
                   (com novo registro de duração e indicação clínica).
                 </div>
                 <div className="rounded-md border bg-muted/40 p-2 text-xs">
-                  <div className="font-semibold mb-1">Esquemas que terminam hoje:</div>
-                  <ul className="list-disc pl-4 space-y-0.5">
+                  <div className="font-medium mb-1">Esquemas que terminam hoje:</div>
+                  <ul className="list-disc pl-4 space-y-1">
                     {atbEndNotice.schemes.map((s, i) => {
                       const [y, m, d] = s.startDate.split('-');
                       const startBr = (y && m && d) ? `${d}/${m}/${y}` : s.startDate;
@@ -10263,7 +10978,7 @@ const PrescricaoPage = () => {
                     })}
                   </ul>
                 </div>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Este aviso aparece apenas uma vez por paciente a cada dia. Nenhuma alteração foi feita
                   na prescrição — a decisão clínica é sua.
                 </p>
@@ -10283,7 +10998,7 @@ const PrescricaoPage = () => {
         <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
-              <Zap className="h-4 w-4 text-amber-500" />
+              <Zap className="h-4 w-4 text-warning" />
               Templates de Prescrição Rápida
             </DialogTitle>
             <DialogDescription className="text-xs">
@@ -10309,7 +11024,7 @@ const PrescricaoPage = () => {
                   type="button"
                   onClick={() => setTemplateScopeFilter(s)}
                   className={cn(
-                    "text-[10px] font-medium px-2.5 py-1 rounded-full border transition-all",
+                    "text-xs font-medium px-3 py-1 rounded-full border transition-all",
                     templateScopeFilter === s
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60"
@@ -10370,24 +11085,24 @@ const PrescricaoPage = () => {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-sm font-semibold text-foreground">{tpl.name}</h4>
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">
+                        <h4 className="text-sm font-medium text-foreground">{tpl.name}</h4>
+                        <Badge variant="outline" className="text-xs px-2 py-0 h-4">
                           {tpl.clinical_category}
                         </Badge>
                         <Badge
                           variant={tpl.scope === "shared" ? "secondary" : "outline"}
-                          className="text-[9px] px-1.5 py-0 h-4"
+                          className="text-xs px-2 py-0 h-4"
                         >
                           {tpl.scope === "shared" ? "Hospital" : "Pessoal"}
                         </Badge>
                         {tpl.use_count > 0 && (
-                          <span className="text-[9px] text-muted-foreground">
+                          <span className="text-xs text-muted-foreground">
                             usado {tpl.use_count}x
                           </span>
                         )}
                       </div>
                       {tpl.description && (
-                        <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                           {tpl.description}
                         </p>
                       )}
@@ -10395,14 +11110,14 @@ const PrescricaoPage = () => {
                         {tpl.items.slice(0, 6).map((it, i) => (
                           <span
                             key={i}
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-muted/60 text-foreground border border-border/50"
+                            className="text-xs px-2 py-1 rounded-md bg-muted/60 text-foreground border border-border/50"
                           >
                             {it.name}
                             {it.dose ? ` · ${it.dose}` : ""}
                           </span>
                         ))}
                         {tpl.items.length > 6 && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/40 text-muted-foreground">
+                          <span className="text-xs px-2 py-1 rounded-md bg-muted/40 text-muted-foreground">
                             +{tpl.items.length - 6}
                           </span>
                         )}
@@ -10411,7 +11126,7 @@ const PrescricaoPage = () => {
                     <div className="flex flex-col gap-1 shrink-0">
                       <Button
                         size="sm"
-                        className="h-7 text-[11px] gap-1"
+                        className="h-7 text-xs gap-1"
                         onClick={() => applyQuickTemplate(tpl)}
                       >
                         <Plus className="h-3 w-3" /> Aplicar
@@ -10420,7 +11135,7 @@ const PrescricaoPage = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 text-[10px] text-destructive hover:text-destructive"
+                          className="h-6 text-xs text-destructive hover:text-destructive"
                           onClick={() => deleteQuickTemplate(tpl.id)}
                         >
                           <Trash2 className="h-3 w-3" />
@@ -10479,12 +11194,12 @@ const PrescricaoPage = () => {
               { keys: ["Esc"], desc: "Fechar diálogos" },
               { keys: ["?"], desc: "Mostrar este painel" },
             ].map((s) => (
-              <div key={s.desc} className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-accent/40 transition-colors">
+              <div key={s.desc} className="flex items-center justify-between py-2 px-2 rounded-md hover:bg-accent/40 transition-colors">
                 <span className="text-sm text-foreground">{s.desc}</span>
                 <div className="flex items-center gap-1">
                   {s.keys.map((k, i) => (
                     <span key={i} className="flex items-center gap-1">
-                      <kbd className="inline-flex items-center justify-center min-w-[28px] h-6 px-1.5 rounded border border-border bg-muted text-[11px] font-mono font-medium text-muted-foreground shadow-sm">
+                      <kbd className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-md border border-border bg-muted text-xs font-mono font-medium text-muted-foreground shadow-sm">
                         {k}
                       </kbd>
                       {i < s.keys.length - 1 && <span className="text-muted-foreground text-xs">+</span>}
@@ -10494,8 +11209,8 @@ const PrescricaoPage = () => {
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-muted-foreground text-center mt-1">
-            Atalhos não disparam enquanto você digita em campos de texto (exceto <kbd className="px-1 py-0.5 rounded border border-border bg-muted text-[10px] font-mono">Ctrl/⌘+K</kbd>).
+          <p className="text-xs text-muted-foreground text-center mt-1">
+            Atalhos não disparam enquanto você digita em campos de texto (exceto <kbd className="px-1 py-1 rounded-md border border-border bg-muted text-xs font-mono">Ctrl/⌘+K</kbd>).
           </p>
         </DialogContent>
       </Dialog>
@@ -10547,7 +11262,7 @@ const PrescricaoPage = () => {
                     Selecionar todos ({repeatSelectedIds.size}/{repeatSourceItems.length})
                   </label>
                 </div>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   Itens copiados sem validação — você revalida no fluxo padrão
                 </span>
               </div>
@@ -10572,7 +11287,7 @@ const PrescricaoPage = () => {
                         });
                       }}
                     >
-                      <Checkbox checked={checked} className="mt-0.5" onClick={(e) => e.stopPropagation()} onCheckedChange={() => {
+                      <Checkbox checked={checked} className="mt-1" onClick={(e) => e.stopPropagation()} onCheckedChange={() => {
                         setRepeatSelectedIds(prev => {
                           const n = new Set(prev);
                           if (n.has(item.id)) n.delete(item.id);
@@ -10583,25 +11298,25 @@ const PrescricaoPage = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           {catConfig && (
-                            <Badge variant="outline" className="text-[9px] h-4 px-1.5">
+                            <Badge variant="outline" className="text-xs h-4 px-2">
                               {catConfig.label}
                             </Badge>
                           )}
-                          <span className="text-sm font-semibold text-foreground">{item.name}</span>
+                          <span className="text-sm font-medium text-foreground">{item.name}</span>
                           {item.highAlert && (
-                            <Badge variant="destructive" className="text-[9px] h-4 px-1.5 gap-1">
+                            <Badge variant="destructive" className="text-xs h-4 px-2 gap-1">
                               <AlertTriangle className="h-2.5 w-2.5" /> Alta vigilância
                             </Badge>
                           )}
                         </div>
-                        <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
+                        <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
                           {item.presentation && <span>{item.presentation}</span>}
                           {item.dose && <span>· {item.dose}</span>}
                           {item.route && <span>· {item.route}</span>}
                           {item.posology && <span>· {item.posology}</span>}
                         </div>
                         {item.instructions && (
-                          <div className="text-[10px] text-muted-foreground/80 mt-1 italic line-clamp-2">
+                          <div className="text-xs text-muted-foreground/80 mt-1 italic line-clamp-2">
                             {item.instructions}
                           </div>
                         )}
@@ -10623,7 +11338,7 @@ const PrescricaoPage = () => {
               className="gap-2"
             >
               <CopyPlus className="h-4 w-4" />
-              Adicionar {repeatSelectedIds.size > 0 ? `${repeatSelectedIds.size} item(ns)` : ''} à prescrição
+              Adicionar {repeatSelectedIds.size > 0 ? `${repeatSelectedIds.size} ${(repeatSelectedIds.size) === 1 ? 'item' : 'itens'}` : ''} à prescrição
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -10809,7 +11524,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
             <td style={cellStyle}>{patient.unit || '—'}</td>
             <td style={headerCellStyle}>Atendimento</td>
             <td style={cellStyle}>{patient.encounterCode ? `#${patient.encounterCode}` : '—'}</td>
-            <td style={{ ...headerCellStyle, color: '#dc2626', fontSize: '6pt' }}>⚠ ALERGIAS</td>
+            <td style={{ ...headerCellStyle, color: '#dc2626', fontSize: '6pt' }}>ALERGIAS</td>
             <td style={{ ...cellStyle, fontWeight: 700, color: '#991b1b', fontSize: '7.5pt', backgroundColor: '#fef2f2' }}>{patient.allergies || 'NDAM'}</td>
           </tr>
         </tbody>
@@ -10963,6 +11678,30 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                       <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> — {item.instructions}</span>
 
                     )}
+                  </div>
+                )}
+
+                {/* Subitens combinados — Hidratação, Reposição, Inalação */}
+                {(item.category === 'hydration' || item.category === 'replacement' || item.category === 'inhalation') &&
+                  item.combinedItems && item.combinedItems.length > 0 && (
+                  <div style={{ marginTop: '3px', paddingLeft: '8px', borderLeft: '2px solid #e2e8f0' }}>
+                    {item.combinedItems.map((sub) => {
+                      const subDose = item.category === 'inhalation'
+                        ? [sub.nebDose, sub.nebDoseUnit].filter(Boolean).join(' ')
+                        : [sub.quantity, sub.quantityUnit, sub.dose].filter(Boolean).join(' ');
+                      return (
+                        <div key={sub.id} style={{ fontSize: '7pt', color: '#334155', lineHeight: 1.4, marginTop: '1px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontWeight: 700, color: '#64748b', fontSize: '7.5pt' }}>+</span>
+                          <span style={{ fontWeight: 700, color: '#0f172a' }}>{sub.name}</span>
+                          {sub.presentation && (
+                            <span style={{ color: '#64748b', fontWeight: 400 }}>({sub.presentation})</span>
+                          )}
+                          {subDose && (
+                            <span style={{ color: '#334155', fontWeight: 600 }}>· {subDose}</span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 

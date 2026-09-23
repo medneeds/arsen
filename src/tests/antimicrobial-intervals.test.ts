@@ -81,7 +81,13 @@ const DEVEM_EXISTIR = [
   "72/72h",
   "1x/semana",
   "Contínuo",  // infusão estendida de betalactâmico
-  "Única",
+  // O valor canônico é "Dose única" desde o commit 96016c99, que removeu a
+  // duplicata do dropdown. Este teste ainda cobrava "Única" e falhava desde
+  // então — sem ninguém notar, porque a suíte não é executada por nada.
+  // Não era regressão clínica: dose única continua disponível para ATB, e
+  // prescrições antigas gravadas com "Única" seguem resolvendo 1 fase, porque
+  // intervalToPhases cai em 1 para valor desconhecido.
+  "Dose única",
   "Agora",     // primeira dose imediata na sepse
 ];
 

@@ -571,7 +571,7 @@ export function PatientMovementDialog({
       */}
       {signaling.kind && !overrideSignaled ? (
         <div className="rounded-lg border border-dashed border-border p-3 space-y-2">
-          <p className="text-[12px] text-muted-foreground leading-snug">
+          <p className="text-xs text-muted-foreground leading-snug">
             {signaling.kind === "transfer"
               ? "Para trocar o destino desta transferência, use \u201cAlterar destino\u201d acima. Sinalizar outro tipo de movimentação por cima cria estados contraditórios."
               : "Este paciente já tem um desfecho sinalizado. Para registrar outra movimentação, suspenda o desfecho atual acima — assim o histórico fica coerente."}
@@ -579,7 +579,7 @@ export function PatientMovementDialog({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-[11px] text-muted-foreground hover:text-foreground"
+            className="h-7 text-xs text-muted-foreground hover:text-foreground"
             onClick={() => setOverrideSignaled(true)}
           >
             Ainda assim, sinalizar outra movimentação
@@ -587,10 +587,10 @@ export function PatientMovementDialog({
         </div>
       ) : (
       <>
-      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-medium">
         Selecione o tipo de movimentação
       </p>
-      <div className="grid grid-cols-1 gap-2.5">
+      <div className="grid grid-cols-1 gap-3">
         {MOVEMENT_CATEGORIES.map((cat) => {
           const t = TONE_CLASSES[cat.tone];
           const Icon = cat.icon;
@@ -604,7 +604,7 @@ export function PatientMovementDialog({
                 setStep("subtype");
               }}
               className={cn(
-                "group flex items-center gap-4 p-4 rounded-xl border bg-card text-left transition-all",
+                "group flex items-center gap-4 p-4 rounded-lg border bg-card text-left transition-all",
                 t.border,
                 t.hoverBorder,
                 "hover:shadow-md hover:-translate-y-0.5",
@@ -614,11 +614,11 @@ export function PatientMovementDialog({
                 <Icon className={cn("h-5 w-5", t.icon)} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm uppercase tracking-wide">{cat.label}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{cat.description}</p>
+                <p className="font-medium text-sm uppercase tracking-wide">{cat.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">{cat.description}</p>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground/70">
-                <span className="text-[10px] uppercase tracking-wider">{count} opções</span>
+                <span className="text-xs uppercase tracking-wider">{count} opções</span>
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </div>
             </button>
@@ -641,7 +641,7 @@ export function PatientMovementDialog({
         <button
           type="button"
           onClick={() => setStep("category")}
-          className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-3 w-3" /> Voltar
         </button>
@@ -668,10 +668,10 @@ export function PatientMovementDialog({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{s.label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{s.description}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{s.description}</p>
                 </div>
                 {s.linksToDischargeSummary && (
-                  <span className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  <span className="text-xs uppercase tracking-wider px-2 py-1 rounded-full bg-muted text-muted-foreground">
                     + Sumário
                   </span>
                 )}
@@ -696,17 +696,17 @@ export function PatientMovementDialog({
         <div className={cn("flex items-center gap-3 p-3 rounded-lg border", t.bg, t.border)}>
           <Icon className={cn("h-5 w-5", t.icon)} />
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
               {cat.label}
             </p>
-            <p className="font-semibold text-sm">{subtypeDef.label}</p>
+            <p className="font-medium text-sm">{subtypeDef.label}</p>
           </div>
           {/* Only allow changing if not pre-set from card */}
           {!movementType && (
             <button
               type="button"
               onClick={() => setStep("subtype")}
-              className="text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
+              className="text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground"
             >
               Alterar
             </button>
@@ -714,11 +714,11 @@ export function PatientMovementDialog({
         </div>
 
         {subtypeDef.id === "TRANSFERENCIA_INTERNA" && (
-          <div className="flex items-start gap-2.5 p-3 rounded-lg bg-primary/5 border border-primary/20">
-            <ArrowRightLeft className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-            <div className="text-[12px] leading-relaxed text-foreground">
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <ArrowRightLeft className="h-4 w-4 text-primary mt-1 shrink-0" />
+            <div className="text-xs leading-relaxed text-foreground">
               <p className="font-medium mb-1">Esta ação <strong>sinaliza</strong> a transferência interna.</p>
-              <ul className="list-disc list-inside space-y-0.5 text-foreground/90">
+              <ul className="list-disc list-inside space-y-1 text-foreground/90">
                 <li>O card no Mapa de Leitos ganha a tarja <strong>"TRANSF. INT"</strong> indicando ao setor administrativo/enfermagem que o paciente está autorizado a sair.</li>
                 <li>O setor destino fica registrado como <strong>pré-sinalização</strong> para o receptor.</li>
                 <li>A <strong>movimentação física</strong> (escolher leito destino + repoint do histórico) continua sendo feita no Mapa de Leitos via menu do card.</li>
@@ -730,13 +730,13 @@ export function PatientMovementDialog({
         <>
 
         {/* Patient */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
             Paciente
           </Label>
           <div className="p-3 bg-muted/60 rounded-lg">
             <p className="font-medium text-sm">{patient.name}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-xs text-muted-foreground mt-1">
               Leito: {patient.bedNumber} • Setor: {sectorLabelFromCode(patient.sector) || patient.sector}
             </p>
           </div>
@@ -744,7 +744,7 @@ export function PatientMovementDialog({
 
         {/* Destination */}
         {subtypeDef.needsDestination && (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label htmlFor="destination" className="text-xs uppercase tracking-wider">
               Destino *
             </Label>
@@ -766,18 +766,18 @@ export function PatientMovementDialog({
                 placeholder="Especifique o destino"
                 value={customDestination}
                 onChange={(e) => setCustomDestination(e.target.value.toUpperCase())}
-                className="mt-2 uppercase"
+                className="mt-2 uppercase tracking-wider"
               />
             )}
           </div>
         )}
 
         {/* Doctor — pré-preenchido com o usuário logado */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label htmlFor="responsibleDoctor" className="text-xs uppercase tracking-wider flex items-center gap-2">
             Médico Responsável
             {signerProfile.name && (
-              <span className="text-[10px] normal-case text-muted-foreground">
+              <span className="text-xs normal-case text-muted-foreground">
                 (sincronizado com o login{signerProfile.crm ? ` • CRM ${signerProfile.crm}` : ""})
               </span>
             )}
@@ -787,12 +787,12 @@ export function PatientMovementDialog({
             placeholder="Nome do médico"
             value={responsibleDoctor}
             onChange={(e) => setResponsibleDoctor(e.target.value.toUpperCase())}
-            className="uppercase"
+            className="uppercase tracking-wider"
           />
         </div>
 
         {/* Notes */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label htmlFor="notes" className="text-xs uppercase tracking-wider">
             Observações
           </Label>
@@ -811,9 +811,9 @@ export function PatientMovementDialog({
         {/* Required document for Alta / Óbito */}
         {requiredDocType && (
           <div className="space-y-2">
-            <div className="flex items-start gap-2 p-2.5 rounded-lg bg-warning/10 border border-warning/30">
-              <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
-              <p className="text-[11px] text-foreground leading-relaxed">
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30">
+              <AlertTriangle className="h-4 w-4 text-warning mt-1 shrink-0" />
+              <p className="text-xs text-foreground leading-relaxed">
                 {requiredDocType === "obito"
                   ? "É obrigatório preencher o Relatório de Óbito antes de confirmar."
                   : "É obrigatório preencher o Sumário de Alta antes de confirmar."}{" "}
@@ -846,7 +846,7 @@ export function PatientMovementDialog({
         {/* Legacy hint (other linked subtypes) */}
         {!requiredDocType && subtypeDef.linksToDischargeSummary && (
           <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border/60">
-            <FileText className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <FileText className="h-4 w-4 text-primary mt-1 shrink-0" />
             <p className="text-xs text-muted-foreground leading-relaxed">
               Documento complementar disponível em <span className="font-medium text-foreground">/alta-desfecho</span>.
             </p>
@@ -883,7 +883,7 @@ export function PatientMovementDialog({
                   ? headerCat.label
                   : "Sinalizar Movimentação (Painel Clínico)"}
               </DialogTitle>
-              <DialogDescription className="text-xs mt-0.5">
+              <DialogDescription className="text-xs mt-1">
                 {step === "form" && subtypeDef
                   ? `${subtypeDef.description} — Esta ação SINALIZA o desfecho no prontuário. A desalocação física do leito é feita no Mapa de Leitos.`
                   : step === "subtype" && headerCat
@@ -903,8 +903,8 @@ export function PatientMovementDialog({
         {step === "form" && (
           <DialogFooter className="gap-2 sm:gap-2 sm:flex-col sm:items-stretch">
             {requiredDocType && dischargeChecklist.blocking.length > 0 && (
-              <div className="flex items-start gap-2 p-2 rounded-md bg-warning/10 border border-warning/30 text-[11px] text-warning-foreground">
-                <AlertTriangle className="h-3.5 w-3.5 text-warning mt-0.5 shrink-0" />
+              <div className="flex items-start gap-2 p-2 rounded-md bg-warning/10 border border-warning/30 text-xs text-warning-foreground">
+                <AlertTriangle className="h-3.5 w-3.5 text-warning mt-1 shrink-0" />
                 <span>
                   Há {dischargeChecklist.blocking.length} pendência(s) obrigatória(s). Você poderá ver o detalhe ao clicar em <strong>Revisar e confirmar</strong>.
                 </span>
@@ -1035,11 +1035,11 @@ export function PatientMovementDialog({
     <Dialog open={!!signaledInfo} onOpenChange={(o) => { if (!o) setSignaledInfo(null); }}>
       <DialogContent className="sm:max-w-md">
         <div className="flex flex-col items-center text-center gap-2 pt-2 pb-1">
-          <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center">
-            <CheckCircle2 className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+          <div className="h-12 w-12 rounded-full bg-released-soft flex items-center justify-center">
+            <CheckCircle2 className="h-7 w-7 text-released-on-soft" />
           </div>
           <div>
-            <p className="font-semibold text-base">
+            <p className="font-medium text-base">
               {signaledInfo?.subtypeDef.label} sinalizada
             </p>
             <p className="text-sm text-muted-foreground mt-1">
@@ -1050,31 +1050,31 @@ export function PatientMovementDialog({
         </div>
 
         <div className="space-y-2 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
             O que já aconteceu / o que fazer a partir daqui
           </p>
           <div className="rounded-md border bg-muted/30 divide-y">
-            <div className="flex items-start gap-2.5 p-2.5">
-              <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-              <p className="text-[12.5px] leading-snug">
+            <div className="flex items-start gap-3 p-3">
+              <MapPin className="h-4 w-4 text-primary mt-1 shrink-0" />
+              <p className="text-xs leading-snug">
                 O <strong>Mapa de Leitos</strong> já mostra a marcação desta sinalização no leito de {patient?.name?.split(" ")[0] || "paciente"}.
               </p>
             </div>
-            <div className="flex items-start gap-2.5 p-2.5">
-              <RefreshCw className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-              <p className="text-[12.5px] leading-snug">
+            <div className="flex items-start gap-3 p-3">
+              <RefreshCw className="h-4 w-4 text-primary mt-1 shrink-0" />
+              <p className="text-xs leading-snug">
                 O <strong>Cockpit do paciente</strong> já atualizou sozinho com o novo status — não precisa recarregar a página.
               </p>
             </div>
-            <div className="flex items-start gap-2.5 p-2.5">
-              <Unlock className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-              <p className="text-[12.5px] leading-snug">
+            <div className="flex items-start gap-3 p-3">
+              <Unlock className="h-4 w-4 text-primary mt-1 shrink-0" />
+              <p className="text-xs leading-snug">
                 O leito já pode ser <strong>desalocado no Mapa de Leitos</strong> (botão "Desalocar leito") assim que a saída física acontecer — a sinalização libera essa permissão.
               </p>
             </div>
-            <div className="flex items-start gap-2.5 p-2.5">
-              <Undo2 className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-              <p className="text-[12.5px] leading-snug">
+            <div className="flex items-start gap-3 p-3">
+              <Undo2 className="h-4 w-4 text-warning-on-soft mt-1 shrink-0" />
+              <p className="text-xs leading-snug">
                 Sinalizou por engano? Dá pra <strong>suspender</strong> essa sinalização a qualquer momento, direto no Cockpit do paciente (pede senha + motivo).
               </p>
             </div>

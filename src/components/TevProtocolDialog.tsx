@@ -293,7 +293,7 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
       <DialogContent className="max-w-3xl max-h-[90vh] p-0 gap-0">
         <DialogHeader className="px-6 pt-6 pb-3">
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <Shield className="h-5 w-5 text-blue-600" />
+            <Shield className="h-5 w-5 text-foreground" />
             Protocolo TEV — Prevenção de Tromboembolismo Venoso
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -310,10 +310,10 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
           <Tabs value={scoreType} onValueChange={(v) => { setScoreType(v as "padua" | "caprini"); setSelectedFactors(new Set()); setStep("score"); }}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="padua" className="text-xs">
-                <Heart className="h-3.5 w-3.5 mr-1.5" /> Pádua (Clínico)
+                <Heart className="h-3.5 w-3.5 mr-2" /> Pádua (Clínico)
               </TabsTrigger>
               <TabsTrigger value="caprini" className="text-xs">
-                <Activity className="h-3.5 w-3.5 mr-1.5" /> Caprini (Cirúrgico)
+                <Activity className="h-3.5 w-3.5 mr-2" /> Caprini (Cirúrgico)
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -321,24 +321,24 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
 
         {/* Progress indicator */}
         <div className="px-6 pb-3 flex items-center gap-2 text-xs text-muted-foreground">
-          <button onClick={() => setStep("score")} className={cn("flex items-center gap-1 px-2 py-1 rounded", step === "score" ? "bg-[hsl(217,55%,92%)] text-[hsl(217,72%,32%)] font-medium" : "hover:text-foreground")}>
-            <span className="w-4 h-4 rounded-full bg-[hsl(217,70%,40%)] text-white flex items-center justify-center text-[10px]">1</span>
+          <button onClick={() => setStep("score")} className={cn("flex items-center gap-1 px-2 py-1 rounded-md", step === "score" ? "bg-[hsl(217,55%,92%)] text-[hsl(217,72%,32%)] font-medium" : "hover:text-foreground")}>
+            <span className="w-4 h-4 rounded-full bg-[hsl(217,70%,40%)] text-white flex items-center justify-center text-xs">1</span>
             Risco Trombótico
           </button>
           <ChevronRight className="h-3 w-3" />
-          <button onClick={() => setStep("bleeding")} className={cn("flex items-center gap-1 px-2 py-1 rounded", step === "bleeding" ? "bg-[hsl(217,55%,90%)] text-[hsl(217,72%,30%)] font-medium" : "hover:text-foreground")}>
-            <span className={cn("w-4 h-4 rounded-full flex items-center justify-center text-[10px]", step !== "score" ? "bg-[hsl(217,65%,45%)] text-white" : "bg-muted text-muted-foreground")}>2</span>
+          <button onClick={() => setStep("bleeding")} className={cn("flex items-center gap-1 px-2 py-1 rounded-md", step === "bleeding" ? "bg-[hsl(217,55%,90%)] text-[hsl(217,72%,30%)] font-medium" : "hover:text-foreground")}>
+            <span className={cn("w-4 h-4 rounded-full flex items-center justify-center text-xs", step !== "score" ? "bg-[hsl(217,65%,45%)] text-white" : "bg-muted text-muted-foreground")}>2</span>
             Risco Sangramento
           </button>
           <ChevronRight className="h-3 w-3" />
-          <button onClick={() => setStep("result")} className={cn("flex items-center gap-1 px-2 py-1 rounded", step === "result" ? "bg-green-100 text-green-700 font-medium" : "hover:text-foreground")}>
-            <span className={cn("w-4 h-4 rounded-full flex items-center justify-center text-[10px]", step === "result" ? "bg-green-600 text-white" : "bg-muted text-muted-foreground")}>3</span>
+          <button onClick={() => setStep("result")} className={cn("flex items-center gap-1 px-2 py-1 rounded-md", step === "result" ? "bg-released-soft text-released-on-soft font-medium" : "hover:text-foreground")}>
+            <span className={cn("w-4 h-4 rounded-full flex items-center justify-center text-xs", step === "result" ? "bg-released text-white" : "bg-muted text-muted-foreground")}>3</span>
             Conduta
           </button>
 
           {/* Live score */}
           <div className="ml-auto flex items-center gap-2">
-            <Badge variant={riskLevel.color} className="text-[10px]">
+            <Badge variant={riskLevel.color} className="text-xs">
               {currentScore} pts — {riskLevel.label}
             </Badge>
           </div>
@@ -352,7 +352,7 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
             {/* ── STEP 1: Risk score ── */}
             {step === "score" && scoreType === "padua" && (
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <p className="text-xs text-muted-foreground flex items-center gap-2">
                   <Info className="h-3.5 w-3.5" />
                   Selecione todos os fatores de risco presentes. Escore ≥ 4 = Alto risco.
                 </p>
@@ -362,21 +362,21 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
                     className={cn(
                       "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
                       selectedFactors.has(factor.id)
-                        ? "border-blue-300 bg-blue-50 dark:bg-blue-950/30"
+                        ? "border-border bg-muted"
                         : "border-border hover:bg-accent/50"
                     )}
                   >
                     <Checkbox
                       checked={selectedFactors.has(factor.id)}
                       onCheckedChange={() => toggleFactor(factor.id, "risk")}
-                      className="mt-0.5"
+                      className="mt-1"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{factor.label}</span>
-                        <Badge variant="outline" className="text-[10px] shrink-0">{factor.points} pt{factor.points > 1 ? "s" : ""}</Badge>
+                        <Badge variant="outline" className="text-xs shrink-0">{factor.points} pt{factor.points > 1 ? "s" : ""}</Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">{factor.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{factor.description}</p>
                     </div>
                   </label>
                 ))}
@@ -385,24 +385,24 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
 
             {step === "score" && scoreType === "caprini" && (
               <div className="space-y-4">
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <p className="text-xs text-muted-foreground flex items-center gap-2">
                   <Info className="h-3.5 w-3.5" />
                   Selecione todos os fatores aplicáveis. O escore total determina o nível de risco.
                 </p>
                 {CAPRINI_SECTIONS.map((section) => (
                   <div key={section.title} className="space-y-2">
-                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                    <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                       {section.title}
-                      <Badge variant="outline" className="text-[10px]">{section.points} pt{section.points > 1 ? "s" : ""} cada</Badge>
+                      <Badge variant="outline" className="text-xs">{section.points} pt{section.points > 1 ? "s" : ""} cada</Badge>
                     </h3>
-                    <div className="grid gap-1.5">
+                    <div className="grid gap-2">
                       {section.items.map((item) => (
                         <label
                           key={item.id}
                           className={cn(
-                            "flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors",
+                            "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
                             selectedFactors.has(item.id)
-                              ? "border-blue-300 bg-blue-50 dark:bg-blue-950/30"
+                              ? "border-border bg-muted"
                               : "border-border hover:bg-accent/50"
                           )}
                         >
@@ -422,20 +422,20 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
             {/* ── STEP 2: Bleeding risk ── */}
             {step === "bleeding" && (
               <div className="space-y-3">
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                  <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
+                <p className="text-xs text-muted-foreground flex items-center gap-2">
+                  <AlertTriangle className="h-3.5 w-3.5 text-warning" />
                   Avalie contraindic ações à profilaxia farmacológica. Fatores "maiores" contraindicam o uso de anticoagulantes.
                 </p>
 
                 <div className="space-y-2">
-                  <h3 className="text-xs font-semibold text-red-600 uppercase tracking-wider">Contraindicações Maiores</h3>
+                  <h3 className="text-xs font-medium text-critical-on-soft uppercase tracking-wider">Contraindicações Maiores</h3>
                   {BLEEDING_FACTORS.filter(f => f.major).map((factor) => (
                     <label
                       key={factor.id}
                       className={cn(
-                        "flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors",
+                        "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
                         bleedingFactors.has(factor.id)
-                          ? "border-red-300 bg-red-50 dark:bg-red-950/30"
+                          ? "border-critical-border bg-critical-soft"
                           : "border-border hover:bg-accent/50"
                       )}
                     >
@@ -444,20 +444,20 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
                         onCheckedChange={() => toggleFactor(factor.id, "bleeding")}
                       />
                       <span className="text-sm">{factor.label}</span>
-                      <Badge variant="destructive" className="text-[10px] ml-auto">MAIOR</Badge>
+                      <Badge variant="destructive" className="text-xs ml-auto">MAIOR</Badge>
                     </label>
                   ))}
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-xs font-semibold text-orange-600 uppercase tracking-wider">Fatores de Risco Adicionais</h3>
+                  <h3 className="text-xs font-medium text-warning-on-soft uppercase tracking-wider">Fatores de Risco Adicionais</h3>
                   {BLEEDING_FACTORS.filter(f => !f.major).map((factor) => (
                     <label
                       key={factor.id}
                       className={cn(
-                        "flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors",
+                        "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
                         bleedingFactors.has(factor.id)
-                          ? "border-orange-300 bg-orange-50 dark:bg-orange-950/30"
+                          ? "border-warning-border bg-warning-soft"
                           : "border-border hover:bg-accent/50"
                       )}
                     >
@@ -478,12 +478,12 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
                 {/* Score summary */}
                 <div className={cn(
                   "p-4 rounded-lg border-2",
-                  riskLevel.level === "baixo" ? "border-green-200 bg-green-50 dark:bg-green-950/20" :
-                  riskLevel.level === "moderado" ? "border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20" :
-                  "border-red-200 bg-red-50 dark:bg-red-950/20"
+                  riskLevel.level === "baixo" ? "border-released-border bg-released-soft" :
+                  riskLevel.level === "moderado" ? "border-warning-border bg-warning-soft" :
+                  "border-critical-border bg-critical-soft"
                 )}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold">
+                    <span className="text-sm font-medium">
                       {scoreType === "padua" ? "Escore de Pádua" : "Escore de Caprini"}
                     </span>
                     <Badge variant={riskLevel.color} className="text-sm px-3">
@@ -495,47 +495,47 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
 
                 {/* Bleeding alert */}
                 {hasMajorBleedingRisk && (
-                  <div className="p-3 rounded-lg bg-red-100 border border-red-300 flex items-start gap-2 dark:bg-red-950/40">
-                    <AlertTriangle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+                  <div className="p-3 rounded-lg bg-critical-soft border border-critical-border flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-critical-on-soft shrink-0 mt-1" />
                     <div>
-                      <p className="text-sm font-semibold text-red-700">Profilaxia farmacológica CONTRAINDICADA</p>
-                      <p className="text-xs text-red-600 mt-0.5">Presença de contraindicação maior ao uso de anticoagulantes. Utilizar exclusivamente profilaxia mecânica.</p>
+                      <p className="text-sm font-medium text-critical-on-soft">Profilaxia farmacológica CONTRAINDICADA</p>
+                      <p className="text-xs text-critical-on-soft mt-1">Presença de contraindicação maior ao uso de anticoagulantes. Utilizar exclusivamente profilaxia mecânica.</p>
                     </div>
                   </div>
                 )}
 
                 {hasAnyBleedingRisk && !hasMajorBleedingRisk && (
-                  <div className="p-3 rounded-lg bg-orange-100 border border-orange-300 flex items-start gap-2 dark:bg-orange-950/40">
-                    <AlertTriangle className="h-4 w-4 text-orange-600 shrink-0 mt-0.5" />
+                  <div className="p-3 rounded-lg bg-warning-soft border border-warning-border flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-warning-on-soft shrink-0 mt-1" />
                     <div>
-                      <p className="text-sm font-semibold text-orange-700">Atenção: Fatores de risco de sangramento presentes</p>
-                      <p className="text-xs text-orange-600 mt-0.5">Avaliar risco-benefício individualmente antes de iniciar profilaxia farmacológica.</p>
+                      <p className="text-sm font-medium text-warning-on-soft">Atenção: Fatores de risco de sangramento presentes</p>
+                      <p className="text-xs text-warning-on-soft mt-1">Avaliar risco-benefício individualmente antes de iniciar profilaxia farmacológica.</p>
                     </div>
                   </div>
                 )}
 
                 {/* Recommendation */}
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-blue-600" />
+                  <h3 className="text-sm font-medium flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-foreground" />
                     Conduta Recomendada
                   </h3>
 
                   <div className="grid gap-3">
-                    <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-950/20">
-                      <Label className="text-xs text-blue-700 font-semibold">Profilaxia Farmacológica</Label>
-                      <p className={cn("text-sm mt-1", hasMajorBleedingRisk ? "text-red-600 font-semibold" : "text-foreground")}>
+                    <div className="p-3 rounded-lg bg-muted border border-border">
+                      <Label className="text-xs text-foreground font-medium">Profilaxia Farmacológica</Label>
+                      <p className={cn("text-sm mt-1", hasMajorBleedingRisk ? "text-critical-on-soft font-medium" : "text-foreground")}>
                         {recommendation.pharmacological || "Não indicada para este nível de risco"}
                       </p>
                     </div>
 
-                    <div className="p-3 rounded-lg bg-green-50 border border-green-200 dark:bg-green-950/20">
-                      <Label className="text-xs text-green-700 font-semibold">Profilaxia Mecânica</Label>
+                    <div className="p-3 rounded-lg bg-released-soft border border-released-border">
+                      <Label className="text-xs text-released-on-soft font-medium">Profilaxia Mecânica</Label>
                       <p className="text-sm mt-1">{recommendation.mechanical}</p>
                     </div>
 
                     <div className="p-3 rounded-lg bg-muted border">
-                      <Label className="text-xs text-muted-foreground font-semibold">Notas Clínicas</Label>
+                      <Label className="text-xs text-muted-foreground font-medium">Notas Clínicas</Label>
                       <p className="text-sm mt-1">{recommendation.notes}</p>
                     </div>
                   </div>
@@ -543,7 +543,7 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
 
                 {/* Observations */}
                 <div>
-                  <Label className="text-xs font-semibold">Observações Adicionais</Label>
+                  <Label className="text-xs font-medium">Observações Adicionais</Label>
                   <Textarea
                     value={observations}
                     onChange={(e) => setObservations(e.target.value)}
@@ -560,20 +560,20 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
 
         {/* Footer */}
         <div className="px-6 py-3 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={handleReset} className="text-xs gap-1.5">
+          <Button variant="ghost" size="sm" onClick={handleReset} className="text-xs gap-2">
             <RotateCw className="h-3.5 w-3.5" /> Limpar
           </Button>
 
           <div className="flex items-center gap-2">
             {step === "score" && (
-              <Button size="sm" onClick={() => setStep("bleeding")} className="text-xs gap-1.5">
+              <Button size="sm" onClick={() => setStep("bleeding")} className="text-xs gap-2">
                 Avaliar Sangramento <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             )}
             {step === "bleeding" && (
               <>
                 <Button variant="outline" size="sm" onClick={() => setStep("score")} className="text-xs">Voltar</Button>
-                <Button size="sm" onClick={() => setStep("result")} className="text-xs gap-1.5">
+                <Button size="sm" onClick={() => setStep("result")} className="text-xs gap-2">
                   Ver Conduta <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               </>
@@ -586,7 +586,7 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
                   size="sm"
                   onClick={() => handleFinalize("prophylactic")}
                   disabled={hasMajorBleedingRisk || !onAddToPrescription}
-                  className="text-xs gap-1.5"
+                  className="text-xs gap-2"
                   title={hasMajorBleedingRisk ? "Contraindicado: risco maior de sangramento" : "Anexar enoxaparina 40 mg SC 1x/dia"}
                 >
                   <Plus className="h-3.5 w-3.5" /> Anexar Profilática
@@ -596,7 +596,7 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
                   size="sm"
                   onClick={() => handleFinalize("full")}
                   disabled={hasMajorBleedingRisk || !onAddToPrescription}
-                  className="text-xs gap-1.5"
+                  className="text-xs gap-2"
                   title={hasMajorBleedingRisk ? "Contraindicado: risco maior de sangramento" : "Anexar enoxaparina 1 mg/kg SC 12/12h"}
                 >
                   <Plus className="h-3.5 w-3.5" /> Anexar Plena
@@ -604,7 +604,7 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
                 <Button
                   size="sm"
                   onClick={() => handleFinalize("none")}
-                  className="text-xs gap-1.5 bg-blue-600 hover:bg-blue-700"
+                  className="text-xs gap-2 bg-primary hover:bg-primary"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" /> Finalizar Protocolo
                 </Button>

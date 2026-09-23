@@ -41,7 +41,7 @@ export function PatientRowActions({ patient, onReopenEncounter }: Props) {
       await navigator.clipboard.writeText(patient.medical_record);
       toast.success("Prontuário copiado", { description: patient.medical_record });
     } catch {
-      toast.error("Falha ao copiar");
+      toast.error("Não foi possível copiar");
     }
   };
 
@@ -81,7 +81,7 @@ export function PatientRowActions({ patient, onReopenEncounter }: Props) {
       onReopenEncounter("", patient.id, patient.full_name);
       toast.success("Atendimento reaberto");
     } catch (err: any) {
-      toast.error("Erro ao verificar atendimento", { description: err?.message });
+      toast.error("Não foi possível verificar atendimento", { description: err?.message });
     } finally {
       setChecking(false);
     }

@@ -103,7 +103,7 @@ export function ClearSignalingTab() {
       const ids = preview.results.map((r) => r.patientId);
       const r = await callOps("clear_patient_signaling", { patientIds: ids, dryRun: false }, true);
       toast.success(
-        `Limpeza concluída: ${r.totals.patientsAffected} paciente(s), ${r.totals.movementsDeleted} movimentação(ões), ${r.totals.documentsDeleted} documento(s) removido(s).`,
+        `Limpeza concluída: ${r.totals.patientsAffected} ${(r.totals.patientsAffected) === 1 ? 'paciente' : 'pacientes'}, ${r.totals.movementsDeleted} ${(r.totals.movementsDeleted) === 1 ? 'movimentação' : 'movimentações'}, ${r.totals.documentsDeleted} ${(r.totals.documentsDeleted) === 1 ? 'documento' : 'documentos'} ${(r.totals.documentsDeleted) === 1 ? 'removido' : 'removidos'}.`,
       );
       setPreview(null);
       refresh();
@@ -114,13 +114,13 @@ export function ClearSignalingTab() {
 
   return (
     <div className="space-y-4">
-      <Card className="border-amber-200 bg-amber-50/40 dark:bg-amber-950/20 dark:border-amber-900/40">
+      <Card className="border-warning-border bg-warning-soft/40">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2 text-amber-900 dark:text-amber-200">
+          <CardTitle className="text-sm flex items-center gap-2 text-warning-on-soft">
             <ShieldAlert className="h-4 w-4" /> Como funciona
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-xs text-amber-900/80 dark:text-amber-100/80 space-y-1.5">
+        <CardContent className="text-xs text-warning-on-soft/80 space-y-2">
           <p>
             Esta ação remove <strong>somente</strong> as sinalizações de saída ainda pendentes:
             movimentações <code className="font-mono">ALTA</code> / <code className="font-mono">ÓBITO</code> / <code className="font-mono">TRANSFERÊNCIA</code> com <code className="font-mono">release_status='pending_release'</code> e documentos de alta/óbito.
@@ -154,7 +154,7 @@ export function ClearSignalingTab() {
             <Button
               size="sm"
               variant="destructive"
-              className="gap-1.5"
+              className="gap-2"
               disabled={selected.size === 0}
               onClick={() => openPreview(Array.from(selected))}
             >
@@ -206,15 +206,15 @@ export function ClearSignalingTab() {
                     <td className="font-mono">{r.bed_number ?? "—"}</td>
                     <td className="text-muted-foreground">{r.sector ?? "—"}</td>
                     <td>
-                      <Badge variant="secondary" className="text-[10px] font-mono">
+                      <Badge variant="secondary" className="text-xs font-mono">
                         {r.admission_status ?? "—"}
                       </Badge>
                     </td>
                     <td className="text-center">{r.movementsCount}</td>
                     <td className="text-center">{r.documentsCount}</td>
                     <td className="text-muted-foreground">
-                      {r.lastMovementType ? <span className="font-mono text-[10px]">{r.lastMovementType}</span> : "—"}
-                      <div className="text-[10px]">{fmtDate(r.lastSignalAt)}</div>
+                      {r.lastMovementType ? <span className="font-mono text-xs">{r.lastMovementType}</span> : "—"}
+                      <div className="text-xs">{fmtDate(r.lastSignalAt)}</div>
                     </td>
                     <td className="text-right p-2">
                       <Button
@@ -249,7 +249,7 @@ export function ClearSignalingTab() {
                 </p>
 
                 <div className="rounded-md border border-border bg-muted/30 p-2 max-h-[280px] overflow-auto">
-                  <table className="w-full text-[11px]">
+                  <table className="w-full text-xs">
                     <thead className="text-muted-foreground">
                       <tr>
                         <th className="text-left p-1">Paciente</th>
@@ -266,7 +266,7 @@ export function ClearSignalingTab() {
                           <td className="font-mono">{r.bed ?? "—"}</td>
                           <td className="text-center">{r.movementsToDelete}</td>
                           <td className="text-center">{r.documentsToDelete}</td>
-                          <td className="font-mono text-[10px]">
+                          <td className="font-mono text-xs">
                             {r.previousStatus ?? "—"} {r.statusReset ? "→ admitido" : "(preservado)"}
                           </td>
                         </tr>
@@ -275,7 +275,7 @@ export function ClearSignalingTab() {
                   </table>
                 </div>
 
-                <div className="flex gap-4 text-[11px] font-medium">
+                <div className="flex gap-4 text-xs font-medium">
                   <span>Pacientes: <strong>{preview?.totals.patientsAffected ?? 0}</strong></span>
                   <span>Movimentações: <strong>{preview?.totals.movementsDeleted ?? 0}</strong></span>
                   <span>Documentos: <strong>{preview?.totals.documentsDeleted ?? 0}</strong></span>

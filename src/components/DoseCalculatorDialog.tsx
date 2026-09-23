@@ -174,7 +174,7 @@ export function DoseCalculatorDialog({
                 {(["antimicrobial", "vasoactive", "sedation", "analgesia", "anticoagulant"] as const).map(
                   (cat) => (
                     <div key={cat}>
-                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      <div className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                         {cat === "antimicrobial"
                           ? "Antimicrobianos"
                           : cat === "vasoactive"
@@ -212,7 +212,7 @@ export function DoseCalculatorDialog({
                     onChange={(e) => setDoseValue(e.target.value)}
                     className="h-9"
                   />
-                  <p className="text-[10px] text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Faixa: {ref.doseMin}–{ref.doseMax}
                   </p>
                 </div>
@@ -247,7 +247,7 @@ export function DoseCalculatorDialog({
                       placeholder="ex: 64"
                       className="h-9"
                     />
-                    <p className="text-[10px] text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Para calcular mL/h
                     </p>
                   </div>
@@ -257,18 +257,18 @@ export function DoseCalculatorDialog({
               {/* Resultado */}
               {calculation && weightKg > 0 && (
                 <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                  <div className="flex items-center gap-2 text-sm font-medium text-primary">
                     <Calculator className="h-4 w-4" />
                     Resultado do Cálculo
                   </div>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <span className="text-xs text-muted-foreground">Dose por administração</span>
-                      <div className="font-mono font-bold text-base">{calculation.formattedDose}</div>
+                      <div className="font-mono font-semibold text-base">{calculation.formattedDose}</div>
                     </div>
                     <div>
                       <span className="text-xs text-muted-foreground">Posologia</span>
-                      <div className="font-mono font-bold text-base">{calculation.formattedSchedule}</div>
+                      <div className="font-mono font-semibold text-base">{calculation.formattedSchedule}</div>
                     </div>
                     {calculation.dosePerDay && (
                       <div>
@@ -279,15 +279,15 @@ export function DoseCalculatorDialog({
                     {calculation.formattedRate && (
                       <div>
                         <span className="text-xs text-muted-foreground">Vazão (BIC)</span>
-                        <div className="font-mono font-bold text-base text-amber-600">{calculation.formattedRate}</div>
+                        <div className="font-mono font-semibold text-base text-warning-on-soft">{calculation.formattedRate}</div>
                       </div>
                     )}
                   </div>
 
                   {calculation.warnings.length > 0 && (
-                    <div className="flex items-start gap-2 p-2 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-300">
-                      <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                      <div className="text-xs text-amber-900 dark:text-amber-200 space-y-1">
+                    <div className="flex items-start gap-2 p-2 rounded-md bg-warning-soft border border-warning-border">
+                      <AlertTriangle className="h-4 w-4 text-warning-on-soft shrink-0 mt-1" />
+                      <div className="text-xs text-warning-on-soft space-y-1">
                         {calculation.warnings.map((w, i) => (
                           <div key={i}>{w}</div>
                         ))}
@@ -299,15 +299,15 @@ export function DoseCalculatorDialog({
 
               {/* Nota clínica */}
               {ref.clinicalNote && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
-                  <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                  <p className="text-xs text-blue-900 dark:text-blue-200">{ref.clinicalNote}</p>
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-muted border border-border">
+                  <Info className="h-4 w-4 text-foreground shrink-0 mt-1" />
+                  <p className="text-xs text-foreground">{ref.clinicalNote}</p>
                 </div>
               )}
 
               {ref.renalAdjust && (
-                <Badge variant="outline" className="text-xs border-orange-400 text-orange-700">
-                  ⚠ Requer ajuste por função renal (ClCr)
+                <Badge variant="outline" className="text-xs border-warning text-warning-on-soft">
+                  Requer ajuste por função renal (ClCr)
                 </Badge>
               )}
             </>

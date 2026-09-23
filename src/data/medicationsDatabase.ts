@@ -22,6 +22,16 @@ export interface MedicationEntry {
   defaultPosology: string;
   defaultSchedule: string;
   instructions?: string;
+  /**
+   * Orientação clínica DERIVADA, montada pelos assistentes (protocolo de
+   * reposição, cuidados com a sonda, total hídrico). Separada de
+   * `instructions`, que é a nota do médico.
+   *
+   * Os dois disputavam o mesmo campo, e createItem zera `instructions` para
+   * tudo que não é esquema de insulina — então toda orientação de assistente
+   * era descartada na conversão para item, sem aviso.
+   */
+  guidance?: string;
   category: PrescriptionCategory;
   highAlert?: boolean;
   aliases?: string[]; // Nomes alternativos para busca
@@ -123,8 +133,8 @@ export const routeLabel = (r?: string): string => (r ? (ROUTE_LABEL[r] || r) : '
 
 export const POSOLOGIES: string[] = [
   '1x/dia', '2x/dia', '3x/dia', '4x/dia',
-  '6/6h', '8/8h', '12/12h', '24/24h', '4/4h', '2/2h',
-  'ACM', 'SOS', 'Única', 'Dose única', 'Contínuo',
+  '6/6h', '8/8h', '12/12h', '24/24h', '48/48h', '4/4h', '2/2h',
+  'ACM', 'SOS', 'Agora', 'Dose única', 'Contínuo',
 ];
 
 export const COMMON_SCHEDULES: string[] = [

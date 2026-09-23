@@ -10,9 +10,7 @@ import { MainLayout } from "@/components/MainLayout";
 import { IpRestricted } from "@/components/IpRestricted";
 import { PrivacyProvider } from "@/contexts/PrivacyContext";
 import { lazy, Suspense, useEffect } from "react";
-import { FloatingThemeToggle } from "@/components/FloatingThemeToggle";
 import { PageLoader } from "@/components/PageLoader";
-import { startIdlePrefetch } from "@/lib/prefetchRoutes";
 import { HelpTourProvider } from "@/contexts/HelpTourContext";
 import { HelpTourButton } from "@/components/help/HelpTourButton";
 import { HelpTourOverlay } from "@/components/help/HelpTourOverlay";
@@ -23,10 +21,14 @@ import { UnsavedPrescriptionProvider } from "@/contexts/UnsavedPrescriptionConte
 // Telas críticas (eager): impactam first paint do app
 // Index (mapa de leitos) é pesado e requer auth — lazy para não competir com o login
 const Index = lazy(() => import("./pages/Index"));
-import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import LandingPage from "./pages/LandingPage";
+// Sob demanda: estas tres nao sao o caminho comum e arrastavam framer-motion
+// (a LandingPage sozinha usa motion em 22 pontos) para o pacote de entrada,
+// que e baixado antes de qualquer pixel aparecer.
+const NotFound = lazy(() => import("./pages/NotFound"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 const SetupPage = lazy(() => import("./pages/SetupPage"));
 
 // Demais páginas: lazy para reduzir bundle inicial e uso de memória
@@ -79,6 +81,7 @@ const SetorImagemPage = lazy(() => import("./pages/SetorImagemPage"));
 const SetorLaboratorioPage = lazy(() => import("./pages/SetorLaboratorioPage"));
 const Saps3Page = lazy(() => import("./pages/Saps3Page"));
 const ClinicalDashboardPage = lazy(() => import("./pages/ClinicalDashboardPage"));
+const SectorLauncherPage = lazy(() => import("./pages/SectorLauncherPage"));
 const ProtocolosUtiPage = lazy(() => import("./pages/ProtocolosUtiPage"));
 const CcihDashboardPage = lazy(() => import("./pages/CcihDashboardPage"));
 const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
@@ -176,7 +179,7 @@ function BootstrapGate({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * 🔒 Wrappers clínicos — força remontagem completa ao trocar de paciente.
+ * Wrappers clínicos — força remontagem completa ao trocar de paciente.
  *
  * PROBLEMA: sem key, React reutiliza a instância do componente ao navegar
  * entre pacientes ou ao voltar ao mesmo módulo. Hooks com estado interno
@@ -240,10 +243,6 @@ function DocumentosPageWrapper() {
 
 const App = () => {
 
-  useEffect(() => {
-    startIdlePrefetch();
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <PrivacyProvider>
@@ -254,8 +253,14 @@ const App = () => {
             <Sonner />
             <ImpersonationBanner />
             <MaintenanceModeBanner />
+            {/* Contem erros de renderizacao e de efeitos. Sem ele, qualquer
+                excecao nao tratada desmontava a arvore inteira e o usuario via
+                tela branca, sem mensagem nem saida. Fica DENTRO do Suspense e
+                em volta das rotas: cobre todas as telas, mas preserva toasts e
+                provedores, para que a mensagem de erro consiga renderizar. */}
             <Suspense fallback={<PageFallback />}>
             <BootstrapGate>
+            <ErrorBoundary>
             <Routes>
               <Route path="/welcome" element={<LandingPage />} />
               <Route path="/apresentacao" element={<ApresentacaoPage />} />
@@ -268,6 +273,10 @@ const App = () => {
               <Route path="/cadastro" element={<SignupRedirectPage />} />
               <Route path="/pre-cadastro" element={<PreCadastroPage />} />
               <Route path="/" element={<ProtectedRoute><ProfileHomeRedirect /></ProtectedRoute>} />
+              {/* Escolha de setor logo apos o login. Fica FORA do MainLayout:
+                  antes de escolher o setor, a navegacao lateral apontaria para
+                  um setor que a pessoa ainda nao definiu. */}
+              <Route path="/setores" element={<ProtectedRoute><SectorLauncherPage /></ProtectedRoute>} />
               <Route path="/mapa" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/painel-clinico" element={<ProtectedRoute><MainLayout><PainelClinicoPage /></MainLayout></ProtectedRoute>} />
               <Route path="/paciente" element={<ProtectedRoute><MainLayout><PacienteHubPageWrapper /></MainLayout></ProtectedRoute>} />
@@ -341,6 +350,7 @@ const App = () => {
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </ErrorBoundary>
             </BootstrapGate>
             </Suspense>
             <HelpTourButton />

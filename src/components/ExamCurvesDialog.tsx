@@ -23,17 +23,17 @@ interface ExamTemplate {
 }
 
 const EXAM_TEMPLATES: ExamTemplate[] = [
-  { id: 'sodio', name: 'SÓDIO', abbreviation: 'Na', color: 'from-blue-500 to-cyan-500' },
-  { id: 'potassio', name: 'POTÁSSIO', abbreviation: 'K', color: 'from-rose-500 to-pink-500' },
-  { id: 'troponina', name: 'TROPONINA', abbreviation: 'TROP', color: 'from-red-500 to-orange-500' },
-  { id: 'cpk', name: 'CPK', abbreviation: 'CPK', color: 'from-amber-500 to-yellow-500' },
-  { id: 'leucocitos', name: 'LEUCÓCITOS', abbreviation: 'LEUCO', color: 'from-green-500 to-emerald-500' },
-  { id: 'creatinina', name: 'CREATININA', abbreviation: 'Cr', color: 'from-teal-500 to-cyan-500' },
-  { id: 'ureia', name: 'UREIA', abbreviation: 'Ur', color: 'from-indigo-500 to-blue-500' },
-  { id: 'hemoglobina', name: 'HEMOGLOBINA', abbreviation: 'Hb', color: 'from-rose-500 to-red-500' },
-  { id: 'plaquetas', name: 'PLAQUETAS', abbreviation: 'Plaq', color: 'from-sky-500 to-blue-500' },
-  { id: 'pcr', name: 'PCR', abbreviation: 'PCR', color: 'from-orange-500 to-amber-500' },
-  { id: 'lactato', name: 'LACTATO', abbreviation: 'Lac', color: 'from-lime-500 to-green-500' },
+  { id: 'sodio', name: 'SÓDIO', abbreviation: 'Na', color: 'from-muted to-muted' },
+  { id: 'potassio', name: 'POTÁSSIO', abbreviation: 'K', color: 'from-critical-soft to-muted' },
+  { id: 'troponina', name: 'TROPONINA', abbreviation: 'TROP', color: 'from-critical-soft to-warning-soft' },
+  { id: 'cpk', name: 'CPK', abbreviation: 'CPK', color: 'from-warning-soft to-warning-soft' },
+  { id: 'leucocitos', name: 'LEUCÓCITOS', abbreviation: 'LEUCO', color: 'from-released-soft to-released-soft' },
+  { id: 'creatinina', name: 'CREATININA', abbreviation: 'Cr', color: 'from-released-soft to-muted' },
+  { id: 'ureia', name: 'UREIA', abbreviation: 'Ur', color: 'from-muted to-muted' },
+  { id: 'hemoglobina', name: 'HEMOGLOBINA', abbreviation: 'Hb', color: 'from-critical-soft to-critical-soft' },
+  { id: 'plaquetas', name: 'PLAQUETAS', abbreviation: 'Plaq', color: 'from-muted to-muted' },
+  { id: 'pcr', name: 'PCR', abbreviation: 'PCR', color: 'from-warning-soft to-warning-soft' },
+  { id: 'lactato', name: 'LACTATO', abbreviation: 'Lac', color: 'from-released-soft to-released-soft' },
 ];
 
 interface ExamValues {
@@ -125,21 +125,21 @@ export function ExamCurvesDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
         {/* Header com gradiente */}
-        <DialogHeader className="px-6 py-4 bg-gradient-to-r from-primary/10 via-primary/5 to-background border-b sticky top-0 z-10">
+        <DialogHeader className="px-6 py-4 bg-primary/10 border-b sticky top-0 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg">
+              <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
                 <TrendingUp className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <DialogTitle className="text-lg font-semibold">Curvas de Exames</DialogTitle>
+                <DialogTitle className="text-lg font-medium">Curvas de Exames</DialogTitle>
                 {patientName && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{patientName}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{patientName}</p>
                 )}
               </div>
             </div>
             {selectedExams.length > 0 && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full animate-in fade-in zoom-in duration-300">
+              <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 rounded-full animate-in fade-in zoom-in duration-300">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
                 <span className="text-xs font-medium text-primary">
                   {selectedExams.length} selecionado{selectedExams.length !== 1 ? 's' : ''}
@@ -155,7 +155,7 @@ export function ExamCurvesDialog({
               placeholder="Pesquisar exames..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-9 h-10 bg-background/50 border-muted-foreground/20 focus:border-primary transition-all"
+              className="pl-8 pr-8 h-10 bg-background/50 border-muted-foreground/20 focus:border-primary transition-all"
             />
             {searchTerm && (
               <Button
@@ -174,7 +174,7 @@ export function ExamCurvesDialog({
         <ScrollArea className="flex-1 px-6">
           <div className="py-6 space-y-4">
             {filteredExams.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
+              <div className="text-center py-8 text-muted-foreground">
                 <Search className="h-12 w-12 mx-auto mb-3 opacity-20" />
                 <p className="text-sm">Nenhum exame encontrado</p>
               </div>
@@ -183,9 +183,9 @@ export function ExamCurvesDialog({
                 <div
                   key={exam.id}
                   className={cn(
-                    "rounded-xl border-2 transition-all duration-300",
+                    "rounded-lg border-2 transition-all duration-300",
                     selectedExams.includes(exam.id)
-                      ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
+                      ? "border-primary bg-primary/5 shadow-md shadow-md"
                       : "border-border/50 bg-card hover:border-border hover:shadow-md"
                   )}
                 >
@@ -202,13 +202,13 @@ export function ExamCurvesDialog({
                         className="flex-1 flex items-center gap-3 cursor-pointer"
                       >
                         <div className={cn(
-                          "h-8 w-8 rounded-lg bg-gradient-to-br flex items-center justify-center text-white text-xs font-bold shadow-md",
+                          "h-8 w-8 rounded-lg bg-gradient-to-br flex items-center justify-center text-white text-xs font-semibold shadow-md",
                           exam.color
                         )}>
                           {exam.abbreviation}
                         </div>
                         <div>
-                          <div className="text-sm font-semibold">{exam.name}</div>
+                          <div className="text-sm font-medium">{exam.name}</div>
                           <div className="text-xs text-muted-foreground">
                             {exam.abbreviation}
                           </div>
@@ -275,7 +275,7 @@ export function ExamCurvesDialog({
           <Button
             onClick={handleAdd}
             disabled={selectedExams.length === 0}
-            className="flex-1 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all"
+            className="flex-1 gap-2 bg-primary hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-md transition-all"
           >
             <TrendingUp className="h-4 w-4" />
             Adicionar {selectedExams.length > 0 && `(${selectedExams.length})`}

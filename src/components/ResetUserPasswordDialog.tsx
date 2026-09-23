@@ -153,7 +153,7 @@ export function ResetUserPasswordDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <KeyRound className="h-5 w-5 text-amber-600" />
+            <KeyRound className="h-5 w-5 text-warning-on-soft" />
             Redefinir Senha do Usuário
           </DialogTitle>
           <DialogDescription>
@@ -220,8 +220,8 @@ export function ResetUserPasswordDialog({
         ) : (
           <div className="space-y-4">
             {/* User Info */}
-            <div className="bg-gray-50 rounded-lg p-3 border">
-              <p className="text-xs text-gray-500 font-semibold mb-1">Usuário</p>
+            <div className="bg-muted rounded-lg p-3 border">
+              <p className="text-xs text-muted-foreground font-medium mb-1">Usuário</p>
               <p className="font-medium">{userName || "—"}</p>
               <p className="text-xs text-gray-500">
                 {userEmail?.replace("@sistema.local", "") || "—"}
@@ -229,7 +229,7 @@ export function ResetUserPasswordDialog({
             </div>
 
             {/* Warning */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <div className="bg-warning-soft border border-warning-border rounded-lg p-3">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-amber-800">
@@ -272,7 +272,7 @@ export function ResetUserPasswordDialog({
             </div>
 
             {/* LGPD Notice */}
-            <div className="flex items-center gap-2 text-xs text-gray-400 pt-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">
               <Shield className="h-3 w-3" />
               <span>Esta ação será registrada na trilha de auditoria</span>
             </div>

@@ -46,11 +46,11 @@ export function MaintenanceModeBanner() {
   if (!state.active) return null;
 
   return (
-    <div className="fixed top-0 inset-x-0 z-[9999] bg-amber-500 text-amber-950 shadow-lg border-b-2 border-amber-700">
-      <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center gap-3">
+    <div className="fixed top-0 inset-x-0 z-[9999] bg-warning text-warning-on-soft shadow-md border-b-2 border-warning">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
         <AlertTriangle className="h-5 w-5 shrink-0 animate-pulse" />
         <div className="flex-1 text-sm font-medium">
-          <span className="font-bold uppercase tracking-wide">SISTEMA EM MODO MANUTENÇÃO</span>
+          <span className="font-semibold uppercase tracking-wide">SISTEMA EM MODO MANUTENÇÃO</span>
           <span className="ml-2 hidden md:inline">
             Operações de escrita estão temporariamente bloqueadas (restore de banco em andamento).
             {state.reason ? ` Motivo: ${state.reason.slice(0, 120)}` : ""}

@@ -34,11 +34,11 @@ import { formatAge } from "@/lib/patientAge";
 const SECTORS = ["red", "yellow", "blue", "outside", "ucc"] as const;
 
 const SECTOR_COLORS: Record<string, { border: string; bg: string; text: string; dot: string }> = {
-  red: { border: "border-red-300", bg: "bg-red-50/50 dark:bg-red-500/5", text: "text-red-700 dark:text-red-400", dot: "bg-red-500" },
-  yellow: { border: "border-amber-300", bg: "bg-amber-50/50 dark:bg-amber-500/5", text: "text-amber-700 dark:text-amber-400", dot: "bg-amber-500" },
-  blue: { border: "border-blue-300", bg: "bg-blue-50/50 dark:bg-blue-500/5", text: "text-blue-700 dark:text-blue-400", dot: "bg-blue-500" },
-  outside: { border: "border-emerald-300", bg: "bg-emerald-50/50 dark:bg-emerald-500/5", text: "text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-500" },
-  ucc: { border: "border-violet-300", bg: "bg-violet-50/50 dark:bg-violet-500/5", text: "text-violet-700 dark:text-violet-400", dot: "bg-violet-500" },
+  red: { border: "border-critical-border", bg: "bg-critical-soft/50", text: "text-critical-on-soft", dot: "bg-critical" },
+  yellow: { border: "border-warning-border", bg: "bg-warning-soft/50", text: "text-warning-on-soft", dot: "bg-warning" },
+  blue: { border: "border-border", bg: "bg-muted/50", text: "text-foreground", dot: "bg-primary" },
+  outside: { border: "border-released-border", bg: "bg-released-soft/50", text: "text-released-on-soft", dot: "bg-released" },
+  ucc: { border: "border-border", bg: "bg-muted/50", text: "text-foreground", dot: "bg-primary" },
 };
 
 const CULTURE_TYPES = [
@@ -219,7 +219,7 @@ const CcihDashboardPage = () => {
       setCultureResults((culturesRes.data || []).map(mapCulture));
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao carregar dados");
+      toast.error("Não foi possível carregar dados");
     } finally {
       setLoading(false);
     }
@@ -419,7 +419,7 @@ const CcihDashboardPage = () => {
       fetchData();
     } catch (err: any) {
       console.error(err);
-      toast.error("Erro ao salvar resultado de cultura");
+      toast.error("Não foi possível salvar resultado de cultura");
     } finally {
       setSaving(false);
     }
@@ -445,50 +445,50 @@ const CcihDashboardPage = () => {
             variant="outline"
             size="sm"
             onClick={fetchData}
-            className="gap-2 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground dark:bg-background dark:text-foreground"
+            className="gap-2 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground"
           >
             <RefreshCw className="h-3.5 w-3.5" /> Atualizar
           </Button>
         }
       />
 
-    <div className="p-4 sm:p-6 space-y-5">
+    <div className="p-4 sm:p-6 space-y-4">
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="border-violet-200 bg-violet-50/50 dark:bg-violet-500/5">
+        <Card className="border-border bg-muted/50">
           <CardContent className="p-3 flex items-center gap-3">
-            <Microscope className="h-8 w-8 text-violet-500" />
+            <Microscope className="h-8 w-8 text-muted-foreground" />
             <div>
-              <p className="text-2xl font-bold text-violet-700">{stats.total}</p>
-              <p className="text-[10px] text-violet-600 uppercase tracking-wider font-medium">Total de culturas</p>
+              <p className="text-2xl font-semibold text-foreground">{stats.total}</p>
+              <p className="text-xs text-foreground uppercase tracking-wider font-medium">Total de culturas</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-500/5">
+        <Card className="border-warning-border bg-warning-soft/50">
           <CardContent className="p-3 flex items-center gap-3">
-            <Clock className="h-8 w-8 text-amber-500" />
+            <Clock className="h-8 w-8 text-warning" />
             <div>
-              <p className="text-2xl font-bold text-amber-700">{stats.pending}</p>
-              <p className="text-[10px] text-amber-600 uppercase tracking-wider font-medium">Aguardando</p>
+              <p className="text-2xl font-semibold text-warning-on-soft">{stats.pending}</p>
+              <p className="text-xs text-warning-on-soft uppercase tracking-wider font-medium">Aguardando</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-emerald-200 bg-emerald-50/50 dark:bg-emerald-500/5">
+        <Card className="border-released-border bg-released-soft/50">
           <CardContent className="p-3 flex items-center gap-3">
-            <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+            <CheckCircle2 className="h-8 w-8 text-released" />
             <div>
-              <p className="text-2xl font-bold text-emerald-700">{stats.completed}</p>
-              <p className="text-[10px] text-emerald-600 uppercase tracking-wider font-medium">Concluídas</p>
+              <p className="text-2xl font-semibold text-released-on-soft">{stats.completed}</p>
+              <p className="text-xs text-released-on-soft uppercase tracking-wider font-medium">Concluídas</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-red-200 bg-red-50/50 dark:bg-red-500/5">
+        <Card className="border-critical-border bg-critical-soft/50">
           <CardContent className="p-3 flex items-center gap-3">
-            <AlertTriangle className="h-8 w-8 text-red-500" />
+            <AlertTriangle className="h-8 w-8 text-critical" />
             <div>
-              <p className="text-2xl font-bold text-red-700">{stats.unread}</p>
-              <p className="text-[10px] text-red-600 uppercase tracking-wider font-medium">Não lidos</p>
+              <p className="text-2xl font-semibold text-critical-on-soft">{stats.unread}</p>
+              <p className="text-xs text-critical-on-soft uppercase tracking-wider font-medium">Não lidos</p>
             </div>
           </CardContent>
         </Card>
@@ -501,7 +501,7 @@ const CcihDashboardPage = () => {
             variant={activeSector === "all" ? "default" : "outline"}
             size="sm"
             onClick={() => setActiveSector("all")}
-            className={cn("text-xs shrink-0", activeSector === "all" && "bg-violet-500 hover:bg-violet-600 text-white")}
+            className={cn("text-xs shrink-0", activeSector === "all" && "bg-primary hover:bg-primary text-white")}
           >
             Todos os setores
           </Button>
@@ -514,7 +514,7 @@ const CcihDashboardPage = () => {
                 size="sm"
                 onClick={() => setActiveSector(s)}
                 className={cn(
-                  "text-xs shrink-0 gap-1.5",
+                  "text-xs shrink-0 gap-2",
                   activeSector === s && `${colors.bg} ${colors.text} border ${colors.border}`
                 )}
               >
@@ -530,15 +530,15 @@ const CcihDashboardPage = () => {
             placeholder="Buscar paciente por nome ou leito..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            className="pl-8"
           />
         </div>
       </div>
 
       {/* Sectors with patients */}
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : (
         <div className="space-y-4">
@@ -549,10 +549,10 @@ const CcihDashboardPage = () => {
             return (
               <Card key={sector} className={cn("border", colors.border)}>
                 <CardHeader className={cn("py-3 px-4", colors.bg)}>
-                  <CardTitle className={cn("text-sm font-bold flex items-center gap-2", colors.text)}>
+                  <CardTitle className={cn("text-sm font-semibold flex items-center gap-2", colors.text)}>
                     <span className={cn("h-3 w-3 rounded-full", colors.dot)} />
                     {getSectorDisplayLabel(sector)}
-                    <Badge variant="outline" className="text-[10px] ml-auto">
+                    <Badge variant="outline" className="text-xs ml-auto">
                       {sectorPatients.length} pacientes
                     </Badge>
                   </CardTitle>
@@ -574,19 +574,19 @@ const CcihDashboardPage = () => {
                             key={patient.id}
                             className={cn(
                               "border transition-all hover:shadow-md",
-                              hasPending && "border-amber-300 bg-amber-50/20 dark:bg-amber-500/5"
+                              hasPending && "border-warning-border bg-warning-soft/20"
                             )}
                           >
                             <CardContent className="p-3 space-y-2">
                               <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5 mb-0.5">
+                                  <div className="flex items-center gap-2 mb-1">
                                     <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                    <span className="text-xs font-bold text-foreground truncate">
+                                    <span className="text-xs font-semibold text-foreground truncate">
                                       {patient.name}
                                     </span>
                                   </div>
-                                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     <span className="flex items-center gap-1">
                                       <BedDouble className="h-3 w-3" /> {patient.bed_number}
                                     </span>
@@ -595,16 +595,16 @@ const CcihDashboardPage = () => {
                                 </div>
                                 <div className="flex gap-1 shrink-0">
                                   {hasCompleted && (
-                                    <span className="h-2 w-2 rounded-full bg-emerald-500" title="Com resultado" />
+                                    <span className="h-2 w-2 rounded-full bg-released" title="Com resultado" />
                                   )}
                                   {hasPending && (
-                                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" title="Pendente" />
+                                    <span className="h-2 w-2 rounded-full bg-warning animate-pulse" title="Pendente" />
                                   )}
                                 </div>
                               </div>
 
                               {patient.uti_cultures_antibiotics && (
-                                <p className="text-[10px] text-muted-foreground line-clamp-2 bg-muted/50 p-1.5 rounded">
+                                <p className="text-xs text-muted-foreground line-clamp-2 bg-muted/50 p-2 rounded-md">
                                   {patient.uti_cultures_antibiotics}
                                 </p>
                               )}
@@ -615,33 +615,33 @@ const CcihDashboardPage = () => {
                                   {pCultures.slice(0, 2).map(c => (
                                     <div
                                       key={c.id}
-                                      className="flex items-center gap-1.5 text-[10px] p-1.5 rounded bg-muted/30 border cursor-pointer hover:bg-muted/60 transition-colors"
+                                      className="flex items-center gap-2 text-xs p-2 rounded-md bg-muted/30 border cursor-pointer hover:bg-muted/60 transition-colors"
                                       onClick={() => openViewCulture(c)}
                                     >
-                                      <Microscope className="h-3 w-3 text-violet-500 shrink-0" />
+                                      <Microscope className="h-3 w-3 text-muted-foreground shrink-0" />
                                       <span className="truncate flex-1">
                                         {CULTURE_TYPES.find(ct => ct.value === c.culture_type)?.label || c.culture_type}
                                       </span>
                                       {c.status === "completed" ? (
-                                        <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                                        <CheckCircle2 className="h-3 w-3 text-released shrink-0" />
                                       ) : (
-                                        <Clock className="h-3 w-3 text-amber-500 shrink-0" />
+                                        <Clock className="h-3 w-3 text-warning shrink-0" />
                                       )}
                                     </div>
                                   ))}
                                   {pCultures.length > 2 && (
-                                    <p className="text-[9px] text-muted-foreground text-center">
+                                    <p className="text-xs text-muted-foreground text-center">
                                       +{pCultures.length - 2} culturas anteriores
                                     </p>
                                   )}
                                 </div>
                               )}
 
-                              <div className="flex gap-1.5">
+                              <div className="flex gap-2">
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="flex-1 text-[10px] h-7 gap-1 border-blue-200 text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-500/10"
+                                  className="flex-1 text-xs h-7 gap-1 border-border text-foreground hover:bg-muted"
                                   onClick={() => openPatientDetail(patient)}
                                 >
                                   <Info className="h-3 w-3" /> Detalhes
@@ -649,7 +649,7 @@ const CcihDashboardPage = () => {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="flex-1 text-[10px] h-7 gap-1 border-violet-200 text-violet-700 hover:bg-violet-50 dark:hover:bg-violet-500/10"
+                                  className="flex-1 text-xs h-7 gap-1 border-border text-foreground hover:bg-muted"
                                   onClick={() => openNewCulture(patient)}
                                 >
                                   <Plus className="h-3 w-3" /> Cultura
@@ -671,46 +671,46 @@ const CcihDashboardPage = () => {
       {/* Recent cultures tab */}
       <Card>
         <CardHeader className="py-3 px-4">
-          <CardTitle className="text-sm font-bold flex items-center gap-2">
-            <FileText className="h-4 w-4 text-violet-500" />
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <FileText className="h-4 w-4 text-muted-foreground" />
             Culturas registradas recentemente
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-2 space-y-1.5">
+        <CardContent className="p-2 space-y-2">
           {cultureResults.slice(0, 10).map(c => {
             const colors = SECTOR_COLORS[c.patient_sector] || SECTOR_COLORS.red;
             return (
               <div
                 key={c.id}
-                className="flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
+                className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() => openViewCulture(c)}
               >
                 <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", colors.dot)} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="patient-id text-xs font-bold text-foreground truncate">{c.patient_name}</span>
-                    <Badge variant="outline" className="text-[9px] shrink-0">
+                    <span className="patient-id text-xs font-semibold text-foreground truncate">{c.patient_name}</span>
+                    <Badge variant="outline" className="text-xs shrink-0">
                       {getSectorDisplayLabel(c.patient_sector)} · {c.patient_bed}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                     <span>{CULTURE_TYPES.find(ct => ct.value === c.culture_type)?.label || c.culture_type}</span>
                     {c.microorganism && <span>· {c.microorganism}</span>}
                     <span>· {format(new Date(c.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   {c.status === "completed" ? (
-                    <Badge className="text-[9px] bg-emerald-500/15 text-emerald-700 border-emerald-300">
+                    <Badge className="text-xs bg-released/15 text-released-on-soft border-released-border">
                       <CheckCircle2 className="h-3 w-3 mr-1" /> Concluída
                     </Badge>
                   ) : (
-                    <Badge className="text-[9px] bg-amber-500/15 text-amber-700 border-amber-300 animate-pulse">
+                    <Badge className="text-xs bg-warning/15 text-warning-on-soft border-warning-border animate-pulse">
                       <Clock className="h-3 w-3 mr-1" /> Pendente
                     </Badge>
                   )}
                   {!c.read_by_doctor && c.status === "completed" && (
-                    <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" title="Não lido pelo médico" />
+                    <span className="h-2 w-2 rounded-full bg-critical animate-pulse" title="Não lido pelo médico" />
                   )}
                 </div>
               </div>
@@ -729,7 +729,7 @@ const CcihDashboardPage = () => {
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Microscope className="h-5 w-5 text-violet-600" />
+              <Microscope className="h-5 w-5 text-foreground" />
               Registrar resultado de cultura
             </DialogTitle>
             <DialogDescription>
@@ -743,7 +743,7 @@ const CcihDashboardPage = () => {
 
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Tipo de cultura</Label>
                 <Select value={cultureType} onValueChange={setCultureType}>
                   <SelectTrigger className="text-xs h-9">
@@ -758,7 +758,7 @@ const CcihDashboardPage = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Data da coleta</Label>
                 <Input
                   type="date"
@@ -769,7 +769,7 @@ const CcihDashboardPage = () => {
               </div>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Microrganismo identificado</Label>
               <Input
                 placeholder="Ex: Staphylococcus aureus, Klebsiella pneumoniae..."
@@ -779,7 +779,7 @@ const CcihDashboardPage = () => {
               />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Perfil de sensibilidade / antibiograma</Label>
               <Textarea
                 placeholder="Descreva o perfil de sensibilidade aos antimicrobianos..."
@@ -789,7 +789,7 @@ const CcihDashboardPage = () => {
               />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Observações adicionais</Label>
               <Textarea
                 placeholder="Observações relevantes do resultado..."
@@ -817,7 +817,7 @@ const CcihDashboardPage = () => {
             <Button
               onClick={handleSaveCulture}
               disabled={saving || !microorganism.trim()}
-              className="bg-violet-500 hover:bg-violet-600 text-white gap-1.5"
+              className="bg-primary hover:bg-primary text-white gap-2"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               Registrar cultura
@@ -831,7 +831,7 @@ const CcihDashboardPage = () => {
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Microscope className="h-5 w-5 text-violet-600" />
+              <Microscope className="h-5 w-5 text-foreground" />
               Detalhes da cultura
             </DialogTitle>
             <DialogDescription>
@@ -841,14 +841,14 @@ const CcihDashboardPage = () => {
 
           {viewCulture && (
             <div className="space-y-4">
-              <div className="p-3 rounded-lg bg-muted/50 border space-y-1.5">
+              <div className="p-3 rounded-lg bg-muted/50 border space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="patient-id font-bold text-sm text-foreground">{viewCulture.patient_name}</span>
-                  <Badge variant="outline" className="text-[10px]">
+                  <span className="patient-id font-semibold text-sm text-foreground">{viewCulture.patient_name}</span>
+                  <Badge variant="outline" className="text-xs">
                     {getSectorDisplayLabel(viewCulture.patient_sector)} · {viewCulture.patient_bed}
                   </Badge>
                 </div>
-                <div className="text-xs text-muted-foreground space-y-0.5">
+                <div className="text-xs text-muted-foreground space-y-1">
                   <p><strong>Tipo:</strong> {CULTURE_TYPES.find(ct => ct.value === viewCulture.culture_type)?.label || viewCulture.culture_type}</p>
                   {viewCulture.collection_date && (
                     <p><strong>Data da coleta:</strong> {format(new Date(viewCulture.collection_date + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}</p>
@@ -861,22 +861,22 @@ const CcihDashboardPage = () => {
               </div>
 
               {viewCulture.microorganism && (
-                <div className="p-3 rounded-lg bg-red-50/50 border border-red-200 dark:bg-red-500/5 dark:border-red-500/20">
-                  <p className="text-xs font-semibold text-red-700 dark:text-red-400 mb-1">Microrganismo identificado</p>
+                <div className="p-3 rounded-lg bg-critical-soft/50 border border-critical-border">
+                  <p className="text-xs font-medium text-critical-on-soft mb-1">Microrganismo identificado</p>
                   <p className="text-sm text-foreground font-medium">{viewCulture.microorganism}</p>
                 </div>
               )}
 
               {viewCulture.antibiogram && (
-                <div className="p-3 rounded-lg bg-violet-50/50 border border-violet-200 dark:bg-violet-500/5 dark:border-violet-500/20">
-                  <p className="text-xs font-semibold text-violet-700 dark:text-violet-400 mb-1">Antibiograma / sensibilidade</p>
+                <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-xs font-medium text-foreground mb-1">Antibiograma / sensibilidade</p>
                   <p className="text-sm text-foreground whitespace-pre-wrap">{viewCulture.antibiogram}</p>
                 </div>
               )}
 
               {viewCulture.result_text && (
                 <div className="p-3 rounded-lg border bg-muted/30">
-                  <p className="text-xs font-semibold text-foreground mb-1">Observações</p>
+                  <p className="text-xs font-medium text-foreground mb-1">Observações</p>
                   <p className="text-sm text-foreground whitespace-pre-wrap">{viewCulture.result_text}</p>
                 </div>
               )}
@@ -893,13 +893,13 @@ const CcihDashboardPage = () => {
                 />
               )}
 
-              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {viewCulture.read_by_doctor ? (
-                  <span className="flex items-center gap-1 text-emerald-600">
+                  <span className="flex items-center gap-1 text-released-on-soft">
                     <Eye className="h-3 w-3" /> Lido pelo médico
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 text-amber-600">
+                  <span className="flex items-center gap-1 text-warning-on-soft">
                     <Clock className="h-3 w-3" /> Aguardando leitura do médico
                   </span>
                 )}
@@ -913,7 +913,7 @@ const CcihDashboardPage = () => {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <User className="h-5 w-5 text-violet-600" />
+              <User className="h-5 w-5 text-foreground" />
               Perfil infeccioso — CCIH
             </DialogTitle>
             <DialogDescription>
@@ -928,14 +928,14 @@ const CcihDashboardPage = () => {
           {detailPatient && (
             <div className="space-y-4">
               {/* Patient header */}
-              <div className="p-3 rounded-lg bg-muted/50 border space-y-1.5">
+              <div className="p-3 rounded-lg bg-muted/50 border space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="patient-id font-bold text-sm text-foreground">{detailPatient.name}</span>
-                  <Badge variant="outline" className="text-[10px]">
+                  <span className="patient-id font-semibold text-sm text-foreground">{detailPatient.name}</span>
+                  <Badge variant="outline" className="text-xs">
                     {getSectorDisplayLabel(detailPatient.sector)} · {detailPatient.bed_number}
                   </Badge>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] text-muted-foreground">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-muted-foreground">
                   {detailPatient.age && <span><strong>Idade:</strong> {detailPatient.age}</span>}
                   {detailPatient.admission_date && (
                     <span><strong>Admissão:</strong> {format(new Date(detailPatient.admission_date), "dd/MM/yyyy", { locale: ptBR })}</span>
@@ -948,13 +948,13 @@ const CcihDashboardPage = () => {
 
               {/* Diagnoses */}
               {detailPatient.diagnoses && (
-                <div className="p-3 rounded-lg bg-blue-50/50 border border-blue-200 dark:bg-blue-500/5 dark:border-blue-500/20">
-                  <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1 flex items-center gap-1.5">
+                <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-xs font-medium text-foreground mb-1 flex items-center gap-2">
                     <Stethoscope className="h-3.5 w-3.5" /> Diagnósticos
                   </p>
                   <div className="flex flex-wrap gap-1">
                     {detailPatient.diagnoses.split("\n").filter(Boolean).map((d, i) => (
-                      <Badge key={i} variant="secondary" className="text-[10px]">{d.trim()}</Badge>
+                      <Badge key={i} variant="secondary" className="text-xs">{d.trim()}</Badge>
                     ))}
                   </div>
                 </div>
@@ -962,13 +962,13 @@ const CcihDashboardPage = () => {
 
               {/* Invasive Devices */}
               {detailPatient.uti_devices && (
-                <div className="p-3 rounded-lg bg-orange-50/50 border border-orange-200 dark:bg-orange-500/5 dark:border-orange-500/20">
-                  <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 mb-1 flex items-center gap-1.5">
+                <div className="p-3 rounded-lg bg-warning-soft/50 border border-warning-border">
+                  <p className="text-xs font-medium text-warning-on-soft mb-1 flex items-center gap-2">
                     <Activity className="h-3.5 w-3.5" /> Dispositivos invasivos
                   </p>
                   <div className="flex flex-wrap gap-1">
                     {detailPatient.uti_devices.split("\n").filter(Boolean).map((d, i) => (
-                      <Badge key={i} variant="outline" className="text-[10px] border-orange-300 text-orange-700 dark:text-orange-400">{d.trim()}</Badge>
+                      <Badge key={i} variant="outline" className="text-xs border-warning-border text-warning-on-soft">{d.trim()}</Badge>
                     ))}
                   </div>
                 </div>
@@ -976,8 +976,8 @@ const CcihDashboardPage = () => {
 
               {/* Cultures / ATB field from patient card */}
               {detailPatient.uti_cultures_antibiotics && (
-                <div className="p-3 rounded-lg bg-violet-50/50 border border-violet-200 dark:bg-violet-500/5 dark:border-violet-500/20">
-                  <p className="text-xs font-semibold text-violet-700 dark:text-violet-400 mb-1 flex items-center gap-1.5">
+                <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-xs font-medium text-foreground mb-1 flex items-center gap-2">
                     <FlaskConical className="h-3.5 w-3.5" /> Culturas e antibióticos (prontuário)
                   </p>
                   <p className="text-xs text-foreground whitespace-pre-wrap">{detailPatient.uti_cultures_antibiotics}</p>
@@ -986,14 +986,14 @@ const CcihDashboardPage = () => {
 
               {loadingDetail ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : (
                 <>
                   {/* Culture exam requests (solicitations) */}
                   <div>
-                    <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                      <Microscope className="h-3.5 w-3.5 text-violet-500" />
+                    <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-2 uppercase tracking-wider">
+                      <Microscope className="h-3.5 w-3.5 text-muted-foreground" />
                       Solicitações de culturas
                     </p>
                     {detailCultureRequests.length === 0 ? (
@@ -1001,7 +1001,7 @@ const CcihDashboardPage = () => {
                         Nenhuma solicitação de cultura encontrada
                       </p>
                     ) : (
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         {detailCultureRequests.map(req => {
                           const items = Array.isArray(req.items) ? req.items : [];
                           const cultureItems = items.filter((item: any) => {
@@ -1010,23 +1010,23 @@ const CcihDashboardPage = () => {
                               .some(kw => name.includes(kw));
                           });
                           return (
-                            <div key={req.id} className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
+                            <div key={req.id} className="p-3 rounded-lg border bg-muted/20 space-y-1">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                   <CalendarDays className="h-3 w-3 text-muted-foreground" />
-                                  <span className="text-[10px] font-medium text-foreground">
+                                  <span className="text-xs font-medium text-foreground">
                                     {format(new Date(req.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                                   </span>
                                   {req.requested_by_name && (
-                                    <span className="text-[10px] text-muted-foreground">por {req.requested_by_name}</span>
+                                    <span className="text-xs text-muted-foreground">por {req.requested_by_name}</span>
                                   )}
                                 </div>
                                 <Badge
                                   variant="outline"
-                                  className={cn("text-[9px]",
-                                    req.status === "completed" ? "text-emerald-600 border-emerald-300" :
-                                    req.status === "pending" ? "text-amber-600 border-amber-300" :
-                                    "text-blue-600 border-blue-300"
+                                  className={cn("text-xs",
+                                    req.status === "completed" ? "text-released-on-soft border-released-border" :
+                                    req.status === "pending" ? "text-warning-on-soft border-warning-border" :
+                                    "text-foreground border-border"
                                   )}
                                 >
                                   {req.status === "completed" ? "Concluído" :
@@ -1037,15 +1037,15 @@ const CcihDashboardPage = () => {
                               </div>
                               <div className="flex flex-wrap gap-1">
                                 {cultureItems.map((item: any, idx: number) => (
-                                  <Badge key={idx} variant="secondary" className="text-[9px] gap-1">
+                                  <Badge key={idx} variant="secondary" className="text-xs gap-1">
                                     <Microscope className="h-2.5 w-2.5" />
                                     {item.name || item}
                                   </Badge>
                                 ))}
                               </div>
                               {req.results && (
-                                <p className="text-[10px] text-foreground bg-emerald-50/50 dark:bg-emerald-500/5 p-1.5 rounded border border-emerald-200 dark:border-emerald-500/20 mt-1">
-                                  <strong className="text-emerald-700 dark:text-emerald-400">Resultado:</strong> {req.results}
+                                <p className="text-xs text-foreground bg-released-soft/50 p-2 rounded-md border border-released-border mt-1">
+                                  <strong className="text-released-on-soft">Resultado:</strong> {req.results}
                                 </p>
                               )}
                             </div>
@@ -1057,8 +1057,8 @@ const CcihDashboardPage = () => {
 
                   {/* CCIH culture results */}
                   <div>
-                    <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                      <FlaskConical className="h-3.5 w-3.5 text-red-500" />
+                    <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-2 uppercase tracking-wider">
+                      <FlaskConical className="h-3.5 w-3.5 text-critical" />
                       Resultados de culturas (CCIH)
                     </p>
                     {culturesForPatient(detailPatient.id).length === 0 ? (
@@ -1066,41 +1066,41 @@ const CcihDashboardPage = () => {
                         Nenhum resultado de cultura registrado pela CCIH
                       </p>
                     ) : (
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         {culturesForPatient(detailPatient.id).map(c => (
                           <div
                             key={c.id}
-                            className="p-2.5 rounded-lg border bg-muted/20 space-y-1 cursor-pointer hover:bg-muted/40 transition-colors"
+                            className="p-3 rounded-lg border bg-muted/20 space-y-1 cursor-pointer hover:bg-muted/40 transition-colors"
                             onClick={() => { setShowPatientDetail(false); setTimeout(() => openViewCulture(c), 200); }}
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <Microscope className="h-3 w-3 text-violet-500" />
-                                <span className="text-[10px] font-medium text-foreground">
+                                <Microscope className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-xs font-medium text-foreground">
                                   {CULTURE_TYPES.find(ct => ct.value === c.culture_type)?.label || c.culture_type}
                                 </span>
                                 {c.collection_date && (
-                                  <span className="text-[9px] text-muted-foreground">
+                                  <span className="text-xs text-muted-foreground">
                                     Coleta: {format(new Date(c.collection_date + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-2">
                                 {c.status === "completed" ? (
-                                  <Badge className="text-[9px] bg-emerald-500/15 text-emerald-700 border-emerald-300">Concluída</Badge>
+                                  <Badge className="text-xs bg-released/15 text-released-on-soft border-released-border">Concluída</Badge>
                                 ) : (
-                                  <Badge className="text-[9px] bg-amber-500/15 text-amber-700 border-amber-300">Pendente</Badge>
+                                  <Badge className="text-xs bg-warning/15 text-warning-on-soft border-warning-border">Pendente</Badge>
                                 )}
                                 <ChevronRight className="h-3 w-3 text-muted-foreground" />
                               </div>
                             </div>
                             {c.microorganism && (
-                              <p className="text-[10px] text-red-600 dark:text-red-400 font-semibold">
-                                🦠 {c.microorganism}
+                              <p className="text-xs text-critical-on-soft font-medium">
+                                {c.microorganism}
                               </p>
                             )}
                             {c.antibiogram && (
-                              <p className="text-[10px] text-muted-foreground line-clamp-1">
+                              <p className="text-xs text-muted-foreground line-clamp-1">
                                 Antibiograma: {c.antibiogram}
                               </p>
                             )}
@@ -1112,8 +1112,8 @@ const CcihDashboardPage = () => {
 
                   {/* Antibiotic prescriptions history */}
                   <div>
-                    <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                      <Pill className="h-3.5 w-3.5 text-amber-500" />
+                    <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-2 uppercase tracking-wider">
+                      <Pill className="h-3.5 w-3.5 text-warning" />
                       Histórico de antibióticos
                     </p>
                     {detailPrescriptions.length === 0 ? (
@@ -1121,7 +1121,7 @@ const CcihDashboardPage = () => {
                         Nenhuma prescrição com antimicrobianos encontrada
                       </p>
                     ) : (
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         {detailPrescriptions.map(rx => {
                           const items = Array.isArray(rx.items) ? rx.items : [];
                           const abxItems = items.filter((item: any) => {
@@ -1140,21 +1140,21 @@ const CcihDashboardPage = () => {
                           });
 
                           return (
-                            <div key={rx.id} className="p-2.5 rounded-lg border bg-muted/20 space-y-1.5">
+                            <div key={rx.id} className="p-3 rounded-lg border bg-muted/20 space-y-2">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                   <CalendarDays className="h-3 w-3 text-muted-foreground" />
-                                  <span className="text-[10px] font-medium text-foreground">
+                                  <span className="text-xs font-medium text-foreground">
                                     {format(new Date(rx.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                                   </span>
-                                  <Badge variant="outline" className="text-[9px]">v{rx.version}</Badge>
+                                  <Badge variant="outline" className="text-xs">v{rx.version}</Badge>
                                 </div>
                                 <Badge
                                   variant="outline"
-                                  className={cn("text-[9px]",
-                                    rx.status === "active" ? "text-emerald-600 border-emerald-300" :
-                                    rx.status === "draft" ? "text-amber-600 border-amber-300" :
-                                    rx.status === "suspended" ? "text-red-600 border-red-300" :
+                                  className={cn("text-xs",
+                                    rx.status === "active" ? "text-released-on-soft border-released-border" :
+                                    rx.status === "draft" ? "text-warning-on-soft border-warning-border" :
+                                    rx.status === "suspended" ? "text-critical-on-soft border-critical-border" :
                                     "text-muted-foreground"
                                   )}
                                 >
@@ -1166,8 +1166,8 @@ const CcihDashboardPage = () => {
                               </div>
                               <div className="space-y-1">
                                 {abxItems.map((item: any, idx: number) => (
-                                  <div key={idx} className="flex items-center gap-2 text-[10px] p-1.5 rounded bg-amber-50/50 dark:bg-amber-500/5 border border-amber-200/50 dark:border-amber-500/10">
-                                    <Pill className="h-3 w-3 text-amber-600 shrink-0" />
+                                  <div key={idx} className="flex items-center gap-2 text-xs p-2 rounded-md bg-warning-soft/50 border border-warning-border/50">
+                                    <Pill className="h-3 w-3 text-warning-on-soft shrink-0" />
                                     <span className="font-medium text-foreground flex-1">
                                       {item.name || item.medication}
                                     </span>
@@ -1186,8 +1186,8 @@ const CcihDashboardPage = () => {
 
                   {/* Lab exams */}
                   <div>
-                    <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                      <TestTubes className="h-3.5 w-3.5 text-blue-500" />
+                    <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-2 uppercase tracking-wider">
+                      <TestTubes className="h-3.5 w-3.5 text-muted-foreground" />
                       Exames laboratoriais
                     </p>
                     {detailLabExams.length === 0 ? (
@@ -1195,24 +1195,24 @@ const CcihDashboardPage = () => {
                         Nenhuma requisição laboratorial encontrada
                       </p>
                     ) : (
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         {detailLabExams.map(req => {
                           const items = Array.isArray(req.items) ? req.items : [];
                           return (
-                            <div key={req.id} className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
+                            <div key={req.id} className="p-3 rounded-lg border bg-muted/20 space-y-1">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                   <CalendarDays className="h-3 w-3 text-muted-foreground" />
-                                  <span className="text-[10px] font-medium text-foreground">
+                                  <span className="text-xs font-medium text-foreground">
                                     {format(new Date(req.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                                   </span>
                                 </div>
                                 <Badge
                                   variant="outline"
-                                  className={cn("text-[9px]",
-                                    req.status === "completed" ? "text-emerald-600 border-emerald-300" :
-                                    req.status === "pending" ? "text-amber-600 border-amber-300" :
-                                    "text-blue-600 border-blue-300"
+                                  className={cn("text-xs",
+                                    req.status === "completed" ? "text-released-on-soft border-released-border" :
+                                    req.status === "pending" ? "text-warning-on-soft border-warning-border" :
+                                    "text-foreground border-border"
                                   )}
                                 >
                                   {req.status === "completed" ? "Concluído" :
@@ -1223,14 +1223,14 @@ const CcihDashboardPage = () => {
                               </div>
                               <div className="flex flex-wrap gap-1">
                                 {items.map((item: any, idx: number) => (
-                                  <Badge key={idx} variant="secondary" className="text-[9px]">
+                                  <Badge key={idx} variant="secondary" className="text-xs">
                                     {item.name || item}
                                   </Badge>
                                 ))}
                               </div>
                               {req.results && (
-                                <p className="text-[10px] text-foreground bg-emerald-50/50 dark:bg-emerald-500/5 p-1.5 rounded border border-emerald-200 dark:border-emerald-500/20">
-                                  <strong className="text-emerald-700 dark:text-emerald-400">Resultado:</strong> {req.results}
+                                <p className="text-xs text-foreground bg-released-soft/50 p-2 rounded-md border border-released-border">
+                                  <strong className="text-released-on-soft">Resultado:</strong> {req.results}
                                 </p>
                               )}
                             </div>
@@ -1242,8 +1242,8 @@ const CcihDashboardPage = () => {
 
                   {/* Imaging exams */}
                   <div>
-                    <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                      <ImageIcon className="h-3.5 w-3.5 text-indigo-500" />
+                    <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-2 uppercase tracking-wider">
+                      <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
                       Exames de imagem
                     </p>
                     {detailImagingExams.length === 0 ? (
@@ -1251,24 +1251,24 @@ const CcihDashboardPage = () => {
                         Nenhuma requisição de imagem encontrada
                       </p>
                     ) : (
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         {detailImagingExams.map(req => {
                           const items = Array.isArray(req.items) ? req.items : [];
                           return (
-                            <div key={req.id} className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
+                            <div key={req.id} className="p-3 rounded-lg border bg-muted/20 space-y-1">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                   <CalendarDays className="h-3 w-3 text-muted-foreground" />
-                                  <span className="text-[10px] font-medium text-foreground">
+                                  <span className="text-xs font-medium text-foreground">
                                     {format(new Date(req.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                                   </span>
                                 </div>
                                 <Badge
                                   variant="outline"
-                                  className={cn("text-[9px]",
-                                    req.status === "completed" ? "text-emerald-600 border-emerald-300" :
-                                    req.status === "pending" ? "text-amber-600 border-amber-300" :
-                                    "text-blue-600 border-blue-300"
+                                  className={cn("text-xs",
+                                    req.status === "completed" ? "text-released-on-soft border-released-border" :
+                                    req.status === "pending" ? "text-warning-on-soft border-warning-border" :
+                                    "text-foreground border-border"
                                   )}
                                 >
                                   {req.status === "completed" ? "Concluído" :
@@ -1279,14 +1279,14 @@ const CcihDashboardPage = () => {
                               </div>
                               <div className="flex flex-wrap gap-1">
                                 {items.map((item: any, idx: number) => (
-                                  <Badge key={idx} variant="secondary" className="text-[9px]">
+                                  <Badge key={idx} variant="secondary" className="text-xs">
                                     {item.name || item}
                                   </Badge>
                                 ))}
                               </div>
                               {req.results && (
-                                <p className="text-[10px] text-foreground bg-emerald-50/50 dark:bg-emerald-500/5 p-1.5 rounded border border-emerald-200 dark:border-emerald-500/20">
-                                  <strong className="text-emerald-700 dark:text-emerald-400">Resultado:</strong> {req.results}
+                                <p className="text-xs text-foreground bg-released-soft/50 p-2 rounded-md border border-released-border">
+                                  <strong className="text-released-on-soft">Resultado:</strong> {req.results}
                                 </p>
                               )}
                             </div>
@@ -1303,7 +1303,7 @@ const CcihDashboardPage = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1 gap-1.5 text-xs border-violet-200 text-violet-700 hover:bg-violet-50 dark:hover:bg-violet-500/10"
+                  className="flex-1 gap-2 text-xs border-border text-foreground hover:bg-muted"
                   onClick={() => {
                     setShowPatientDetail(false);
                     setTimeout(() => openNewCulture(detailPatient), 200);

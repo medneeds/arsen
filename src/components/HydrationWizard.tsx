@@ -85,7 +85,7 @@ function ivSnapshotToEntry(s: IvSnapshot): MedicationEntry {
   const isCustom = s.solution === "custom";
   const baseName = isCustom ? `${s.base} ${vol}mL + ${s.additives}` : `${sel.label} ${vol}mL`;
   const flags = [s.prn && "Se necessário", s.criterio && "A critério médico"].filter(Boolean).join(" · ");
-  const instr = `${s.phases} fase(s) de ${vol}mL · ${interval} · ${s.phaseTimeValue}${s.phaseTimeUnit}/fase · ${dripStr} · Acesso: ${s.access} · Total ${volumeTotal}mL/24h`;
+  const instr = `${s.phases} ${(s.phases) === 1 ? 'fase' : 'fases'} de ${vol}mL · ${interval} · ${s.phaseTimeValue}${s.phaseTimeUnit}/fase · ${dripStr} · Acesso: ${s.access} · Total ${volumeTotal}mL/24h`;
   return {
     id: `hyd-iv-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     name: baseName,
@@ -94,7 +94,10 @@ function ivSnapshotToEntry(s: IvSnapshot): MedicationEntry {
     defaultRoute: "Intravenosa",
     defaultPosology: interval,
     defaultSchedule: interval,
-    instructions: [instr, flags, s.notes].filter(Boolean).join(" · "),
+    // Orientação derivada (do sistema) separada da nota do médico — ver o
+    // comentário equivalente no ReplacementWizard.
+    guidance: [instr, flags].filter(Boolean).join(" · ") || undefined,
+    instructions: s.notes || "",
     category: "hydration" as const,
   };
 }
@@ -125,7 +128,8 @@ function enteralSnapshotToEntry(s: EnteralSnapshot): MedicationEntry {
     defaultRoute: route,
     defaultPosology: s.water.fraction,
     defaultSchedule: s.water.fraction,
-    instructions: buildWaterInstruction(s.water),
+    guidance: buildWaterInstruction(s.water),
+    instructions: "",
     category: "hydration" as const,
   };
 }
@@ -249,7 +253,7 @@ export function HydrationWizard({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl w-[min(40rem,calc(100vw-2rem))] max-h-[calc(100svh-6rem)] top-4 translate-y-0 z-[80] overflow-y-auto p-4">
         <DialogHeader className="pb-2">
-          <DialogTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+          <DialogTitle className="flex items-center gap-2 text-foreground">
             <Droplets className="h-5 w-5" /> Assistente de Hidratação
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -263,8 +267,8 @@ export function HydrationWizard({
             type="button"
             onClick={() => setMode("iv")}
             className={cn(
-              "flex-1 text-xs font-semibold py-1.5 rounded transition-all",
-              mode === "iv" ? "bg-background shadow-sm text-blue-700 dark:text-blue-300" : "text-muted-foreground hover:text-foreground"
+              "flex-1 text-xs font-medium py-2 rounded-md transition-all",
+              mode === "iv" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
             Hidratação IV (cristaloides / preparada)
@@ -273,8 +277,8 @@ export function HydrationWizard({
             type="button"
             onClick={() => setMode("enteral")}
             className={cn(
-              "flex-1 text-xs font-semibold py-1.5 rounded transition-all",
-              mode === "enteral" ? "bg-background shadow-sm text-cyan-700 dark:text-cyan-300" : "text-muted-foreground hover:text-foreground"
+              "flex-1 text-xs font-medium py-2 rounded-md transition-all",
+              mode === "enteral" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
             Oferta hídrica VO / sonda
@@ -286,8 +290,8 @@ export function HydrationWizard({
             <>
               {/* Solução */}
               <div>
-                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Solução</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-1.5">
+                <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Solução</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
                   {SOLUTIONS.map(s => (
                     <button
                       key={s.key}
@@ -296,12 +300,12 @@ export function HydrationWizard({
                       className={cn(
                         "text-left p-2 rounded-md border transition-all",
                         solution === s.key
-                          ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
-                          : "border-border bg-background hover:border-blue-300"
+                          ? "border-border bg-muted"
+                          : "border-border bg-background hover:border-border"
                       )}
                     >
-                      <p className="text-xs font-semibold">{s.label}</p>
-                      <p className="text-[10px] text-muted-foreground leading-tight">{s.detail}</p>
+                      <p className="text-xs font-medium">{s.label}</p>
+                      <p className="text-xs text-muted-foreground leading-tight">{s.detail}</p>
                     </button>
                   ))}
                 </div>
@@ -310,11 +314,11 @@ export function HydrationWizard({
               {solution === "custom" && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 rounded-md bg-muted/30 border border-border">
                   <div>
-                    <Label className="text-[10px]">Base</Label>
+                    <Label className="text-xs">Base</Label>
                     <Input value={base} onChange={(e) => setBase(e.target.value)} className="h-7 text-xs" />
                   </div>
                   <div>
-                    <Label className="text-[10px]">Aditivos</Label>
+                    <Label className="text-xs">Aditivos</Label>
                     <Input value={additives} onChange={(e) => setAdditives(e.target.value)} className="h-7 text-xs" />
                   </div>
                 </div>
@@ -322,11 +326,11 @@ export function HydrationWizard({
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div>
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Volume / fase (mL)</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Volume / fase (mL)</Label>
                   <Input type="number" value={volumePhase} onChange={(e) => setVolumePhase(e.target.value)} className="h-7 text-xs" />
                 </div>
                 <div>
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Fases / intervalo</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Fases / intervalo</Label>
                   <Select value={String(phases)} onValueChange={(v) => setPhases(Number(v))}>
                     <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent className="z-[90]">
@@ -339,7 +343,7 @@ export function HydrationWizard({
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Tempo / fase</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Tempo / fase</Label>
                   <div className="flex gap-1">
                     <Input type="number" value={phaseTimeValue} onChange={(e) => setPhaseTimeValue(e.target.value)} className="h-7 text-xs" />
                     <Select value={phaseTimeUnit} onValueChange={(v) => setPhaseTimeUnit(v as "h" | "min")}>
@@ -352,9 +356,9 @@ export function HydrationWizard({
                   </div>
                 </div>
                 <div>
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Gotejamento</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Gotejamento</Label>
                   <div className="flex gap-1 items-center">
-                    <div className="h-7 px-2 flex items-center rounded-md border border-border bg-muted/30 text-xs font-semibold flex-1">
+                    <div className="h-7 px-2 flex items-center rounded-md border border-border bg-muted/30 text-xs font-medium flex-1">
                       {isFinite(dripValue) && dripValue > 0 ? dripValue.toFixed(0) : "—"}
                     </div>
                     <Select value={dripUnit} onValueChange={(v) => setDripUnit(v as "gtt/min" | "mL/h")}>
@@ -370,7 +374,7 @@ export function HydrationWizard({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
                 <div>
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Acesso</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Acesso</Label>
                   <Select value={access} onValueChange={setAccess}>
                     <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent className="z-[90]">
@@ -381,11 +385,11 @@ export function HydrationWizard({
                   </Select>
                 </div>
                 <div className="flex items-center gap-3 sm:col-span-2 mt-1">
-                  <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
                     <Checkbox checked={prn} onCheckedChange={(v) => setPrn(!!v)} />
                     Se necessário
                   </label>
-                  <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
                     <Checkbox checked={criterio} onCheckedChange={(v) => setCriterio(!!v)} />
                     A critério médico
                   </label>
@@ -393,13 +397,13 @@ export function HydrationWizard({
               </div>
 
               <div>
-                <Label className="text-[10px]">Observações (opcional)</Label>
+                <Label className="text-xs">Observações (opcional)</Label>
                 <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="min-h-[40px] text-xs" placeholder="Ex: manter acesso pérvio, cuidado em IC descompensada..." />
               </div>
 
               {/* Pré-visualização IV */}
-              <div className="rounded-md border border-blue-200 dark:border-blue-900 bg-blue-50/40 dark:bg-blue-950/20 p-2 space-y-1">
-                <p className="text-[10px] uppercase tracking-wider text-blue-700 dark:text-blue-300 font-semibold flex items-center gap-1">
+              <div className="rounded-md border border-border bg-muted/40 p-2 space-y-1">
+                <p className="text-xs uppercase tracking-wider text-foreground font-medium flex items-center gap-1">
                   <Sparkles className="h-3 w-3" /> Pré-visualização
                 </p>
                 <div className="grid grid-cols-2 gap-2 text-xs">
@@ -407,7 +411,7 @@ export function HydrationWizard({
                   <div><span className="text-muted-foreground">Volume total (24h):</span> <strong>{volumeTotal}mL</strong></div>
                 </div>
                 <p className="text-xs font-medium pt-1">{previewEntry.name}</p>
-                <p className="text-[11px] text-muted-foreground">{previewEntry.instructions}</p>
+                <p className="text-xs text-muted-foreground">{previewEntry.instructions}</p>
               </div>
             </>
           ) : (
@@ -415,15 +419,15 @@ export function HydrationWizard({
               <WaterOfferingFields
                 value={water}
                 onChange={setWater}
-                accentClassName="border-cyan-500 bg-cyan-50 dark:bg-cyan-950/30"
-                accentTextClassName="text-cyan-700 dark:text-cyan-300"
+                accentClassName="border-border bg-muted"
+                accentTextClassName="text-foreground"
               />
-              <div className="rounded-md border border-cyan-200 dark:border-cyan-900 bg-cyan-50/40 dark:bg-cyan-950/20 p-2 space-y-1">
-                <p className="text-[10px] uppercase tracking-wider text-cyan-700 dark:text-cyan-300 font-semibold flex items-center gap-1">
+              <div className="rounded-md border border-border bg-muted/40 p-2 space-y-1">
+                <p className="text-xs uppercase tracking-wider text-foreground font-medium flex items-center gap-1">
                   <Sparkles className="h-3 w-3" /> Pré-visualização
                 </p>
                 <p className="text-xs font-medium">{previewEntry.name}</p>
-                <p className="text-[11px] text-muted-foreground">{previewEntry.instructions}</p>
+                <p className="text-xs text-muted-foreground">{previewEntry.instructions}</p>
               </div>
             </>
           )}
@@ -437,14 +441,14 @@ export function HydrationWizard({
             onAddCurrent={handleAddToQueue}
             onSaveCurrent={handleSaveEditing}
             addLabel="Acrescentar este item"
-            accentClassName="border-blue-300 bg-blue-50/40 text-blue-700 dark:border-blue-900 dark:bg-blue-950/20 dark:text-blue-300"
+            accentClassName="border-border bg-muted/40 text-foreground"
             hint="Conjugue várias hidratações (ex: SF + RL + oferta de água VO) em uma única prescrição."
           />
         </div>
 
         <DialogFooter className="pt-2 gap-2">
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button size="sm" onClick={handleConfirmAll} className="gap-1.5">
+          <Button size="sm" onClick={handleConfirmAll} className="gap-2">
             <Sparkles className="h-3.5 w-3.5" />
             Adicionar {totalToSend > 1 ? `${totalToSend} itens` : "à prescrição"}
           </Button>

@@ -61,7 +61,9 @@ export async function logReconstitutionFeedback(p: ReconAuditPayload): Promise<v
     if (!user) return;
     const changed = fieldsChanged(p);
     const accepted = p.suggested ? changed.length === 0 : false;
-    await supabase.from('logs_auditoria').insert({
+    // Idem: auxiliar, nao propaga — mas o resultado era descartado por
+    // completo, inclusive no console. Agora a falha fica visivel.
+    const { error: erroAuditoria } = await supabase.from('logs_auditoria').insert({
       tipo_evento: 'feedback_reconstituicao',
       acao: 'INSERT',
       nome_tabela: 'reconstitution_suggestion_feedback',
@@ -79,6 +81,9 @@ export async function logReconstitutionFeedback(p: ReconAuditPayload): Promise<v
       },
       campos_alterados: changed,
     });
+    if (erroAuditoria) {
+      console.warn("auditReconstitution: feedback NAO gravado:", erroAuditoria);
+    }
   } catch {
     // não propaga — feedback é auxiliar
   }

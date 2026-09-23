@@ -161,13 +161,13 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
       {/* === Dispositivos === */}
       <section>
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5">
-            <Activity className="h-3.5 w-3.5 text-rose-500" />
-            <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Activity className="h-3.5 w-3.5 text-critical" />
+            <Label className="text-xs font-medium tracking-wider text-muted-foreground">
               DISPOSITIVOS INVASIVOS
             </Label>
           </div>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             D{`{n}`} calculado a partir da inserção
           </span>
         </div>
@@ -179,7 +179,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
               const insts = instancesOf(item.id);
               const on = insts.length > 0;
               return (
-                <div key={item.id} className="px-2 py-1.5">
+                <div key={item.id} className="px-2 py-2">
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id={`dev-${item.id}`}
@@ -193,21 +193,21 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                       {item.label}
                     </Label>
                     {on && (
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {insts.length} {insts.length === 1 ? "unidade" : "unidades"}
                       </span>
                     )}
                   </div>
 
                   {on && (
-                    <div className="mt-1.5 space-y-1.5 pl-6">
+                    <div className="mt-2 space-y-2 pl-6">
                       {insts.map((d, i) => {
                         const days = d.insertedAt ? calcDIH(d.insertedAt) : null;
                         const tone = deviceAlertTone(days);
                         const livre = isFreeDetail(d);
                         return (
-                          <div key={d.id} className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-[10px] font-semibold text-muted-foreground w-4 shrink-0 text-right">
+                          <div key={d.id} className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-medium text-muted-foreground w-4 shrink-0 text-right">
                               {i + 1}.
                             </span>
 
@@ -223,7 +223,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => { markFree(d.id, false); patchInstance(d.id, { detail: "" }); }}
-                                  className="shrink-0 h-7 px-2 rounded border border-border bg-muted/40 text-muted-foreground text-[9px] font-semibold hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap"
+                                  className="shrink-0 h-7 px-2 rounded-md border border-border bg-muted/40 text-muted-foreground text-xs font-medium hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap"
                                   title="Voltar para a lista de tipos"
                                 >
                                   Lista
@@ -247,7 +247,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                               </Select>
                             )}
 
-                            <div className="flex items-center gap-1.5 flex-1 min-w-[180px] max-w-[300px]">
+                            <div className="flex items-center gap-2 flex-1 min-w-[180px] max-w-[300px]">
                               <DateBRPicker
                                 value={d.insertedAt}
                                 onChange={(v) => patchInstance(d.id, { insertedAt: v })}
@@ -263,7 +263,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => patchInstance(d.id, { insertedAt: admissionDateBR })}
-                                  className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[9px] font-semibold hover:bg-emerald-500/20 transition-colors whitespace-nowrap"
+                                  className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-md border border-released/40 bg-released/10 text-released-on-soft text-xs font-medium hover:bg-released/20 transition-colors whitespace-nowrap"
                                   title={`Usar data de admissão: ${admissionDateBR}`}
                                 >
                                   <CalendarCheck className="h-3 w-3" />
@@ -276,10 +276,10 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                               <Badge
                                 variant="outline"
                                 className={cn(
-                                  "h-5 px-1.5 text-[10px] font-semibold border",
-                                  tone === "ok" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
-                                  tone === "amber" && "bg-amber-500/10 text-amber-700 border-amber-500/40 dark:text-amber-400",
-                                  tone === "red" && "bg-red-500/10 text-red-700 border-red-500/40 dark:text-red-400",
+                                  "h-5 px-2 text-xs font-medium border",
+                                  tone === "ok" && "bg-released/10 text-released-on-soft border-released/30",
+                                  tone === "amber" && "bg-warning/10 text-warning-on-soft border-warning/40",
+                                  tone === "red" && "bg-critical/10 text-critical-on-soft border-critical/40",
                                 )}
                                 title={tone === "red"
                                   ? "≥ 14 dias — reavaliar necessidade (alto risco IRAS)"
@@ -307,7 +307,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                       <button
                         type="button"
                         onClick={() => addInstance(item)}
-                        className="inline-flex items-center gap-1 h-7 px-2 rounded border border-dashed border-border text-[10px] font-semibold text-muted-foreground hover:text-foreground hover:border-solid transition-colors"
+                        className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-dashed border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-solid transition-colors"
                       >
                         <Plus className="h-3 w-3" />
                         Adicionar {item.label.toLowerCase()}
@@ -327,7 +327,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
   return (
               <div
                 key={item.id}
-                className="flex flex-wrap items-center gap-2 px-2 py-1.5"
+                className="flex flex-wrap items-center gap-2 px-2 py-2"
               >
                 <Checkbox
                   id={`dev-${item.id}`}
@@ -340,14 +340,14 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                 >
                   {item.label}
                   {item.hint && (
-                    <span className="ml-1 text-[10px] text-muted-foreground font-normal">
+                    <span className="ml-1 text-xs text-muted-foreground font-normal">
                       ({item.hint})
                     </span>
                   )}
                 </Label>
                 {checked && (
                   <>
-                    <div className="flex items-center gap-1.5 flex-1 min-w-[180px] max-w-[320px]">
+                    <div className="flex items-center gap-2 flex-1 min-w-[180px] max-w-[320px]">
                       <DateBRPicker
                         value={active!.insertedAt}
                         onChange={(v) => setInsertedAt(item.id, false, v)}
@@ -363,7 +363,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                         <button
                           type="button"
                           onClick={() => setInsertedAt(item.id, false, admissionDateBR)}
-                          className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[9px] font-semibold hover:bg-emerald-500/20 transition-colors whitespace-nowrap"
+                          className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-md border border-released/40 bg-released/10 text-released-on-soft text-xs font-medium hover:bg-released/20 transition-colors whitespace-nowrap"
                           title={`Usar data de admissão: ${admissionDateBR}`}
                         >
                           <CalendarCheck className="h-3 w-3" />
@@ -375,10 +375,10 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                       <Badge
                         variant="outline"
                         className={cn(
-                          "h-5 px-1.5 text-[10px] font-semibold border",
-                          tone === "ok" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
-                          tone === "amber" && "bg-amber-500/10 text-amber-700 border-amber-500/40 dark:text-amber-400",
-                          tone === "red" && "bg-red-500/10 text-red-700 border-red-500/40 dark:text-red-400",
+                          "h-5 px-2 text-xs font-medium border",
+                          tone === "ok" && "bg-released/10 text-released-on-soft border-released/30",
+                          tone === "amber" && "bg-warning/10 text-warning-on-soft border-warning/40",
+                          tone === "red" && "bg-critical/10 text-critical-on-soft border-critical/40",
                         )}
                         title={tone === "red"
                           ? "≥ 14 dias — reavaliar necessidade (alto risco IRAS)"
@@ -394,7 +394,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                       <button
                         type="button"
                         onClick={() => setCvcChecklistOpen(true)}
-                        className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded border border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-400 text-[9px] font-semibold hover:bg-blue-500/20 transition-colors whitespace-nowrap"
+                        className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border/40 bg-primary/10 text-foreground text-xs font-medium hover:bg-primary/20 transition-colors whitespace-nowrap"
                         title="Preencher checklist de inserção CVC (bundle CCIH)"
                       >
                         <ShieldCheck className="h-3 w-3" />
@@ -416,16 +416,16 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
   return (
               <div
                 key={d.id}
-                className="flex flex-wrap items-center gap-2 px-2 py-1.5 bg-muted/20"
+                className="flex flex-wrap items-center gap-2 px-2 py-2 bg-muted/20"
               >
-                <span className="text-[10px] text-muted-foreground w-[18px] text-center">+</span>
+                <span className="text-xs text-muted-foreground w-[18px] text-center">+</span>
                 <Input
                   value={d.label}
                   onChange={(e) => updateCustomLabel(d.id, e.target.value)}
                   placeholder="Nome do dispositivo"
                   className="h-7 text-xs flex-1 min-w-[160px] max-w-[220px]"
                 />
-                <div className="flex items-center gap-1.5 flex-1 min-w-[180px] max-w-[320px]">
+                <div className="flex items-center gap-2 flex-1 min-w-[180px] max-w-[320px]">
                   <DateBRPicker
                     value={d.insertedAt}
                     onChange={(v) => setInsertedAt(d.id, true, v)}
@@ -441,7 +441,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                     <button
                       type="button"
                       onClick={() => setInsertedAt(d.id, true, admissionDateBR)}
-                      className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[9px] font-semibold hover:bg-emerald-500/20 transition-colors whitespace-nowrap"
+                      className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-md border border-released/40 bg-released/10 text-released-on-soft text-xs font-medium hover:bg-released/20 transition-colors whitespace-nowrap"
                       title={`Usar data de admissão: ${admissionDateBR}`}
                     >
                       <CalendarCheck className="h-3 w-3" />
@@ -453,10 +453,10 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
                   <Badge
                     variant="outline"
                     className={cn(
-                      "h-5 px-1.5 text-[10px] font-semibold border",
-                      tone === "ok" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
-                      tone === "amber" && "bg-amber-500/10 text-amber-700 border-amber-500/40 dark:text-amber-400",
-                      tone === "red" && "bg-red-500/10 text-red-700 border-red-500/40 dark:text-red-400",
+                      "h-5 px-2 text-xs font-medium border",
+                      tone === "ok" && "bg-released/10 text-released-on-soft border-released/30",
+                      tone === "amber" && "bg-warning/10 text-warning-on-soft border-warning/40",
+                      tone === "red" && "bg-critical/10 text-critical-on-soft border-critical/40",
                     )}
                   >
                     D{days}
@@ -481,7 +481,7 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
             type="button"
             variant="outline"
             size="sm"
-            className="h-7 gap-1.5 text-[11px]"
+            className="h-7 gap-2 text-xs"
             onClick={() => addCustom()}
           >
             <Plus className="h-3 w-3" /> Adicionar outro
@@ -491,9 +491,9 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
 
       {/* === Culturas === */}
       <section>
-        <div className="flex items-center gap-1.5 mb-2">
-          <FlaskConical className="h-3.5 w-3.5 text-cyan-500" />
-          <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">
+        <div className="flex items-center gap-2 mb-2">
+          <FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />
+          <Label className="text-xs font-medium tracking-wider text-muted-foreground">
             RESULTADO DE CULTURAS
           </Label>
         </div>

@@ -40,12 +40,12 @@ interface PreAdmission {
 }
 
 const RISK_COLORS: Record<string, string> = {
-  vermelho: "bg-red-600 text-white",
-  laranja: "bg-orange-500 text-white",
-  amarelo: "bg-yellow-500 text-black",
-  verde: "bg-green-600 text-white",
-  azul: "bg-blue-600 text-white",
-  branca: "bg-white text-slate-900 border border-slate-400",
+  vermelho: "bg-critical text-white",
+  laranja: "bg-warning text-white",
+  amarelo: "bg-warning text-black",
+  verde: "bg-released text-white",
+  azul: "bg-primary text-white",
+  branca: "bg-white text-foreground border border-border",
 };
 
 const RISK_LABELS: Record<string, string> = {
@@ -323,7 +323,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
         <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
           <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            <h2 className="text-sm font-bold flex items-center gap-2">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
               <Clock className="h-4 w-4 text-primary" />
               Aguardando Alocação em Leito
               <Badge variant="secondary" className="text-xs">
@@ -343,7 +343,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar por nome, CPF ou prontuário"
-                className="h-7 text-xs pl-7 pr-7 w-96 bg-background border-primary/30 focus-visible:ring-primary/40 shadow-sm"
+                className="h-7 text-xs pl-6 pr-6 w-96 bg-background border-primary/30 focus-visible:ring-primary/40 shadow-sm"
               />
               {searchTerm && (
                 <button
@@ -366,7 +366,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
               <History className="h-3.5 w-3.5" />
               Canceladas
               {cancelledList.length > 0 && (
-                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">{cancelledList.length}</Badge>
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">{cancelledList.length}</Badge>
               )}
             </Button>
             <Button size="sm" onClick={() => setShowRegistration(true)} className="gap-1 text-xs h-7">
@@ -406,22 +406,22 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                     <CardContent className="p-3 space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="font-bold text-xs truncate">{pa.patient_name}</p>
-                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
+                          <p className="font-semibold text-xs truncate">{pa.patient_name}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                             {age !== null && <span>{age}a</span>}
                             {pa.sex && <span>• {pa.sex}</span>}
                             {pa.medical_record && <span>• Pront: {pa.medical_record}</span>}
                           </div>
                         </div>
                         {pa.risk_classification && (
-                          <Badge className={cn("text-[9px] shrink-0 px-1.5 py-0.5", RISK_COLORS[pa.risk_classification])}>
+                          <Badge className={cn("text-xs shrink-0 px-2 py-1", RISK_COLORS[pa.risk_classification])}>
                             {RISK_LABELS[pa.risk_classification]}
                           </Badge>
                         )}
                       </div>
 
                       {pa.destination_sector && (
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           Pedido: {pa.destination_sector}
                         </p>
                       )}
@@ -431,7 +431,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                           <Button
                             size="sm"
                             variant="outline"
-                            className="flex-1 h-6 text-[10px] gap-1 text-orange-600 border-orange-300 hover:bg-orange-50"
+                            className="flex-1 h-6 text-xs gap-1 text-warning-on-soft border-warning-border hover:bg-warning-soft"
                             onClick={() => setClassifyTarget(pa)}
                           >
                             <Shield className="h-3 w-3" />
@@ -441,7 +441,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                         {(!requiresRiskClassification || pa.risk_classification) && (
                           <Button
                             size="sm"
-                            className="flex-1 h-6 text-[10px] gap-1"
+                            className="flex-1 h-6 text-xs gap-1"
                             onClick={() => setAdmitTarget(pa)}
                           >
                             <BedDouble className="h-3 w-3" />
@@ -470,10 +470,10 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
             const extras = registryResults.filter(r => !fila.has(r.id));
             return (
               <div className="mt-4 space-y-2">
-                <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">
                   <User className="h-3 w-3" />
                   Pacientes do hospital
-                  <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                  <Badge variant="outline" className="text-xs py-0 px-2">
                     {isSearchingRegistry ? "..." : extras.length}
                   </Badge>
                 </div>
@@ -497,24 +497,24 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                           className="text-left"
                         >
                           <Card className="transition-all hover:shadow-md hover:border-primary/50 border-l-4 border-l-primary/30">
-                            <CardContent className="p-3 space-y-1.5">
+                            <CardContent className="p-3 space-y-2">
                               <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0 flex-1">
-                                  <p className="font-bold text-xs truncate">{r.full_name}</p>
-                                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5 flex-wrap">
+                                  <p className="font-semibold text-xs truncate">{r.full_name}</p>
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1 flex-wrap">
                                     {age !== null && <span>{age}a</span>}
                                     {r.sex && <span>• {r.sex}</span>}
                                     {r.medical_record && <span>• Pront: {r.medical_record}</span>}
                                   </div>
                                   {r.cpf && (
-                                    <p className="text-[10px] text-muted-foreground mt-0.5">CPF: {r.cpf}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">CPF: {r.cpf}</p>
                                   )}
                                 </div>
-                                <Badge variant="secondary" className="text-[9px] shrink-0 px-1.5 py-0.5">
+                                <Badge variant="secondary" className="text-xs shrink-0 px-2 py-1">
                                   Prontuário
                                 </Badge>
                               </div>
-                              <p className="text-[10px] text-primary font-medium pt-1 border-t">
+                              <p className="text-xs text-primary font-medium pt-1 border-t">
                                 Clique para abrir ações →
                               </p>
                             </CardContent>
@@ -531,13 +531,13 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
           {/* Pré-admissões canceladas — bloco recolhível para resgate */}
           {showCancelled && (
             <div className="mt-4 space-y-2">
-              <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">
                 <History className="h-3 w-3" />
                 Pré-admissões canceladas
-                <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                <Badge variant="outline" className="text-xs py-0 px-2">
                   {cancelledList.length}
                 </Badge>
-                <span className="text-[10px] normal-case font-normal text-muted-foreground/80">
+                <span className="text-xs normal-case font-normal text-muted-foreground/80">
                   (últimos 30 registros — reabra para devolver à fila)
                 </span>
               </div>
@@ -556,26 +556,26 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                         <CardContent className="p-3 space-y-2">
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <p className="font-bold text-xs truncate">{pa.patient_name}</p>
-                              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
+                              <p className="font-semibold text-xs truncate">{pa.patient_name}</p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                                 {age !== null && <span>{age}a</span>}
                                 {pa.sex && <span>• {pa.sex}</span>}
                                 {pa.medical_record && <span>• Pront: {pa.medical_record}</span>}
                               </div>
                             </div>
-                            <Badge variant="outline" className="text-[9px] shrink-0 px-1.5 py-0.5">
+                            <Badge variant="outline" className="text-xs shrink-0 px-2 py-1">
                               CANCELADA
                             </Badge>
                           </div>
                           {pa.destination_sector && (
-                            <p className="text-[10px] text-muted-foreground">
+                            <p className="text-xs text-muted-foreground">
                               Destino original: {pa.destination_sector}
                             </p>
                           )}
                           <Button
                             size="sm"
                             variant="outline"
-                            className="w-full h-6 text-[10px] gap-1 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+                            className="w-full h-6 text-xs gap-1 border-released/40 text-released-on-soft hover:bg-released/10"
                             onClick={() => setReopenTarget(pa)}
                           >
                             <RotateCcw className="h-3 w-3" />
@@ -639,16 +639,16 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                 <p className="text-foreground">
                   Esta ação <strong>retira o paciente de todas as filas de alocação</strong> (NIR, UTI, UCI, enfermaria).
                 </p>
-                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-[12px] space-y-1">
-                  <p className="font-semibold text-amber-700 dark:text-amber-400">O que acontece:</p>
-                  <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                <div className="rounded-md border border-warning/30 bg-warning/10 p-2 text-xs space-y-1">
+                  <p className="font-medium text-warning-on-soft">O que acontece:</p>
+                  <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
                     <li>O card some do painel "Aguardando Alocação".</li>
                     <li>Nenhum leito será marcado como ocupado por este paciente.</li>
                     <li>O prontuário e o cadastro do paciente <strong>permanecem intactos</strong>.</li>
                     <li>Para readmitir, você poderá <strong>reabrir</strong> esta pré-admissão na aba <em>Canceladas</em> (sem precisar recadastrar).</li>
                   </ul>
                 </div>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Use o cancelamento apenas se a chegada não se confirmou, houve duplicidade, ou o paciente foi para outro fluxo.
                 </p>
               </div>
@@ -668,17 +668,17 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <RotateCcw className="h-5 w-5 text-emerald-600" />
-              Reabrir pré-admissão de <span className="text-emerald-700 dark:text-emerald-400">{reopenTarget?.patient_name}</span>?
+              <RotateCcw className="h-5 w-5 text-released-on-soft" />
+              Reabrir pré-admissão de <span className="text-released-on-soft">{reopenTarget?.patient_name}</span>?
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
                 <p className="text-foreground">
-                  O paciente voltará para a fila <strong>"Aguardando Alocação em Leito"</strong> com status <code className="text-[11px] px-1 py-0.5 rounded bg-muted">aguardando_leito</code>.
+                  O paciente voltará para a fila <strong>"Aguardando Alocação em Leito"</strong> com status <code className="text-xs px-1 py-1 rounded-md bg-muted">aguardando_leito</code>.
                 </p>
-                <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-2 text-[12px] space-y-1">
-                  <p className="font-semibold text-emerald-700 dark:text-emerald-400">O que acontece:</p>
-                  <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                <div className="rounded-md border border-released/30 bg-released/10 p-2 text-xs space-y-1">
+                  <p className="font-medium text-released-on-soft">O que acontece:</p>
+                  <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
                     <li>O cadastro e o prontuário <strong>são preservados</strong> (mesmo registry e mesmo número de prontuário).</li>
                     <li>Destino original: <strong>{reopenTarget?.destination_sector || "—"}</strong>. Você poderá trocar o setor ao admitir.</li>
                     <li>O leito de destino é limpo — escolha no diálogo de admissão (incluindo Maca Extra, se aplicável).</li>
@@ -693,7 +693,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
             <AlertDialogAction
               onClick={(e) => { e.preventDefault(); handleReopen(); }}
               disabled={isReopening}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-released hover:bg-released text-white"
             >
               {isReopening ? "Reabrindo..." : "Sim, reabrir e enviar para a fila"}
             </AlertDialogAction>

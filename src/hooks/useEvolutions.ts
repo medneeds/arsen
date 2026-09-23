@@ -303,6 +303,7 @@ export function useEvolutions(
       const evoType = (soapData as any)?.type as string | undefined;
       const isComplementary =
         evoType === "intercurrence" || evoType === "vespertina" || evoType === "noturna";
+      const isComplementaryShift = evoType === "vespertina" || evoType === "noturna";
 
       if (!isComplementary) {
         const interUpdates: Record<string, unknown> = {};
@@ -337,11 +338,55 @@ export function useEvolutions(
         }
       }
 
+      // ── Vespertina / Noturna: só faz append de pendências novas ────────
+      // Plano terapêutico não é sobrescrito — o plano do dia é da evolução
+      // principal da manhã. Pendências novas são acrescentadas sem duplicar.
+      // MIGRAÇÃO: patients.pendencies → internacoes.pendencias.
+      if (isComplementaryShift && pendenciasItems && pendenciasItems.length > 0) {
+        try {
+          const { data: current } = await supabase
+            .from("internacoes")
+            .select("pendencias")
+            .eq("id", safePatientId)
+            .single();
+
+          const existing = (current as any)?.pendencias
+            ? ((current as any).pendencias as string).split("\n").filter(Boolean)
+            : [];
+
+          const newItems = pendenciasItems.filter(Boolean);
+          // Append sem duplicar (comparação case-insensitive)
+          const merged = [...existing];
+          for (const item of newItems) {
+            const alreadyExists = existing.some(
+              (e) => e.trim().toLowerCase() === item.trim().toLowerCase()
+            );
+            if (!alreadyExists) merged.push(item);
+          }
+
+          if (merged.length > existing.length) {
+            // Sincronizacao complementar de pendencias: e best-effort de
+            // proposito, entao NAO lanca — mas tambem nao pode sumir. Antes o
+            // resultado era descartado e uma negativa de RLS aqui era
+            // absolutamente invisivel, inclusive no console.
+            const { error: erroSync } = await supabase
+              .from("internacoes")
+              .update({ pendencias: merged.join("\n") } as any)
+              .eq("id", safePatientId);
+            if (erroSync) {
+              console.warn("[useEvolutions] sync complementar nao gravou pendencias:", erroSync);
+            }
+          }
+        } catch (syncErr) {
+          console.warn("[useEvolutions] sync complementar error", syncErr);
+        }
+      }
+
       toast.success("Evolução criada com sucesso");
       await refreshSilently();
       return mapEvolution(data);
     } catch (err: any) {
-      toast.error("Erro ao criar evolução: " + err.message);
+      toast.error("Não foi possível criar evolução");
       return null;
     }
   };
@@ -381,7 +426,7 @@ export function useEvolutions(
       await refreshSilently();
       return true;
     } catch (err: any) {
-      toast.error("Erro ao salvar: " + err.message);
+      toast.error("Não foi possível salvar");
       return false;
     }
   };
@@ -411,7 +456,7 @@ export function useEvolutions(
       await refreshSilently();
       return true;
     } catch (err: any) {
-      toast.error("Erro ao validar: " + err.message);
+      toast.error("Não foi possível validar");
       return false;
     }
   };
@@ -442,7 +487,7 @@ export function useEvolutions(
       await refreshSilently();
       return true;
     } catch (err: any) {
-      toast.error("Erro ao suspender: " + err.message);
+      toast.error("Não foi possível suspender");
       return false;
     }
   };
@@ -458,7 +503,7 @@ export function useEvolutions(
       await refreshSilently();
       return true;
     } catch (err: any) {
-      toast.error("Erro ao excluir: " + err.message);
+      toast.error("Não foi possível excluir");
       return false;
     }
   };

@@ -8,18 +8,22 @@
  * confirmação de ciência do médico para prosseguir.
  */
 
+import { viaProibidaPara } from "./ivMedicationFlags";
+
 export interface MinimalRxItem {
   id: string;
   name: string;
   category: string;
   status: 'active' | 'suspended';
   highAlert?: boolean;
+  /** Via de administracao — usada pela checagem de via proibida. */
+  route?: string;
 }
 
 export type AlertSeverity = 'high' | 'medium';
 
 export interface ClinicalAlert {
-  type: 'duplicate' | 'allergy' | 'interaction';
+  type: 'duplicate' | 'allergy' | 'interaction' | 'route';
   severity: AlertSeverity;
   title: string;
   detail: string;
@@ -261,6 +265,28 @@ function detectSevereInteractions(items: MinimalRxItem[]): ClinicalAlert[] {
 /* -----------------------------------------------------------
  * Public API
  * ----------------------------------------------------------- */
+/* -----------------------------------------------------------
+ * Via proibida — barra combinacoes farmaco x via que nao podem
+ * existir, mesmo que o catalogo do banco diga o contrario.
+ * --------------------------------------------------------- */
+function detectForbiddenRoutes(items: MinimalRxItem[]): ClinicalAlert[] {
+  const out: ClinicalAlert[] = [];
+  for (const it of items) {
+    if (it.status !== 'active') continue;
+    const motivo = viaProibidaPara(it.name, it.route);
+    if (motivo) {
+      out.push({
+        type: 'route',
+        severity: 'high',
+        title: `Via incompativel: ${it.name}`,
+        detail: `${motivo} Via prescrita: ${it.route}.`,
+        itemIds: [it.id],
+      });
+    }
+  }
+  return out;
+}
+
 export function runClinicalAlertChecks(
   items: MinimalRxItem[],
   patientAllergies: string,
@@ -270,21 +296,24 @@ export function runClinicalAlertChecks(
   let dup: ClinicalAlert[] = [];
   let aller: ClinicalAlert[] = [];
   let inter: ClinicalAlert[] = [];
+  let via: ClinicalAlert[] = [];
 
   if (scope?.onlyItemId) {
     // For single-item validation, still run global checks but filter alerts that involve the target item
     dup = detectDuplicates(items).filter(a => a.itemIds.includes(scope.onlyItemId!));
     aller = detectAllergies(items, patientAllergies).filter(a => a.itemIds.includes(scope.onlyItemId!));
     inter = detectSevereInteractions(items).filter(a => a.itemIds.includes(scope.onlyItemId!));
+    via = detectForbiddenRoutes(items).filter(a => a.itemIds.includes(scope.onlyItemId!));
   } else {
     dup = detectDuplicates(working);
     aller = detectAllergies(working, patientAllergies);
     inter = detectSevereInteractions(working);
+    via = detectForbiddenRoutes(working);
   }
 
   // Order: high severity first, then by type priority (allergy > interaction > duplicate)
-  const typePriority: Record<ClinicalAlert['type'], number> = { allergy: 0, interaction: 1, duplicate: 2 };
-  return [...aller, ...inter, ...dup].sort((a, b) => {
+  const typePriority: Record<ClinicalAlert['type'], number> = { route: 0, allergy: 1, interaction: 2, duplicate: 3 };
+  return [...via, ...aller, ...inter, ...dup].sort((a, b) => {
     if (a.severity !== b.severity) return a.severity === 'high' ? -1 : 1;
     return typePriority[a.type] - typePriority[b.type];
   });

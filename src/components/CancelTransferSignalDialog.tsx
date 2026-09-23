@@ -98,11 +98,11 @@ export function CancelTransferSignalDialog({
             // ═══════ TELA DE CONFIRMAÇÃO ═══════
             <div className="py-2">
               <div className="flex flex-col items-center text-center gap-3 py-4">
-                <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center">
-                  <CheckCircle2 className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+                <div className="h-12 w-12 rounded-full bg-released-soft flex items-center justify-center">
+                  <CheckCircle2 className="h-7 w-7 text-released-on-soft" />
                 </div>
                 <div>
-                  <p className="font-semibold text-base">Sinalização suspensa</p>
+                  <p className="font-medium text-base">Sinalização suspensa</p>
                   <p className="text-sm text-muted-foreground mt-1 max-w-sm">
                     {patientName} permanece internado(a) no leito atual. A sinalização de
                     transferência {transferKind} foi suspensa e o motivo ficou registrado na
@@ -125,7 +125,7 @@ export function CancelTransferSignalDialog({
           ) : (
             <>
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                <DialogTitle className="flex items-center gap-2 text-warning-on-soft">
                   <AlertTriangle className="h-5 w-5" />
                   Suspender transferência {transferKind} sinalizada — {patientName}
                 </DialogTitle>
@@ -136,9 +136,9 @@ export function CancelTransferSignalDialog({
               </DialogHeader>
 
               <div className="space-y-3 text-sm">
-                <div className="rounded-md border border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/30 p-3 space-y-1.5 text-[12.5px] text-amber-900 dark:text-amber-200">
-                  <p className="font-semibold">O que vai acontecer:</p>
-                  <ul className="list-disc pl-5 space-y-0.5">
+                <div className="rounded-md border border-warning-border/60 bg-warning-soft/60 p-3 space-y-2 text-xs text-warning-on-soft">
+                  <p className="font-medium">O que vai acontecer:</p>
+                  <ul className="list-disc pl-4 space-y-1">
                     <li>O paciente volta ao status <strong>internado</strong> no leito atual.</li>
                     {transferKind === "interna" ? (
                       <li>O registro na fila do setor destino é <strong>cancelado</strong> — o setor deixa de ver este paciente como aguardando alocação.</li>
@@ -150,8 +150,8 @@ export function CancelTransferSignalDialog({
                   </ul>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="cancel-transfer-reason" className="text-xs font-semibold">
+                <div className="space-y-2">
+                  <Label htmlFor="cancel-transfer-reason" className="text-xs font-medium">
                     Motivo da suspensão <span className="text-destructive">*</span>
                   </Label>
                   <Textarea
@@ -163,7 +163,7 @@ export function CancelTransferSignalDialog({
                     disabled={submitting}
                     className="text-sm"
                   />
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {reason.trim().length}/10 caracteres mínimos
                   </p>
                 </div>

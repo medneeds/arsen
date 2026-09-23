@@ -82,7 +82,7 @@ function AnimatedCheck() {
       `}</style>
       <svg
         viewBox="0 0 52 52"
-        className="pvd-svg h-10 w-10 shrink-0 text-emerald-600 dark:text-emerald-400"
+        className="pvd-svg h-10 w-10 shrink-0 text-released-on-soft"
         fill="none"
         stroke="currentColor"
         strokeWidth="3"

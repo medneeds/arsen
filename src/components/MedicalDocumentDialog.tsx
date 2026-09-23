@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -49,11 +51,11 @@ const TEMPLATES: Array<{
   bg: string;
   prefix: string;
 }> = [
-  { kind: "atestado",            label: "Atestado médico",                  desc: "Afastamento, comparecimento, repouso",     icon: FileSignature, tone: "text-blue-600",    bg: "bg-blue-500/10",    prefix: "ATEST" },
-  { kind: "relatorio",           label: "Relatório médico",                 desc: "Quadro clínico, evolução, conclusão",       icon: ClipboardList, tone: "text-violet-600",  bg: "bg-violet-500/10",  prefix: "RELAT" },
-  { kind: "termo",               label: "Termo / declaração",               desc: "Consentimento, responsabilidade, recusa",   icon: FileCheck2,    tone: "text-amber-600",   bg: "bg-amber-500/10",   prefix: "TERMO" },
-  { kind: "receituario",         label: "Receituário simples",              desc: "Prescrição ambulatorial / pós-alta",         icon: Pill,          tone: "text-emerald-600", bg: "bg-emerald-500/10", prefix: "RECEIT" },
-  { kind: "receituario_especial",label: "Receituário de controle especial", desc: "Portaria 344/98 — listas C1, C2, C5 (2 vias)", icon: PillBottle,    tone: "text-rose-600",    bg: "bg-rose-500/10",    prefix: "RECCE" },
+  { kind: "atestado",            label: "Atestado médico",                  desc: "Afastamento, comparecimento, repouso",     icon: FileSignature, tone: "text-foreground",    bg: "bg-primary/10",    prefix: "ATEST" },
+  { kind: "relatorio",           label: "Relatório médico",                 desc: "Quadro clínico, evolução, conclusão",       icon: ClipboardList, tone: "text-foreground",  bg: "bg-primary/10",  prefix: "RELAT" },
+  { kind: "termo",               label: "Termo / declaração",               desc: "Consentimento, responsabilidade, recusa",   icon: FileCheck2,    tone: "text-warning-on-soft",   bg: "bg-warning/10",   prefix: "TERMO" },
+  { kind: "receituario",         label: "Receituário simples",              desc: "Prescrição ambulatorial / pós-alta",         icon: Pill,          tone: "text-released-on-soft", bg: "bg-released/10", prefix: "RECEIT" },
+  { kind: "receituario_especial",label: "Receituário de controle especial", desc: "Portaria 344/98 — listas C1, C2, C5 (2 vias)", icon: PillBottle,    tone: "text-critical-on-soft",    bg: "bg-critical/10",    prefix: "RECCE" },
 ];
 
 interface Props {
@@ -80,18 +82,42 @@ export function MedicalDocumentDialog({
   const { receituarios, save: saveReceituario } = useReceituario(patientId, patientName);
   const { documentos, save: saveDocumentoMedico } = useDocumentoMedico(patientId, patientName);
 
+  // Busca dados cadastrais complementares (data de nascimento e prontuário)
+  const [patientRegistry, setPatientRegistry] = useState<{ birth_date?: string | null; medical_record?: string | null } | null>(null);
+  useEffect(() => {
+    if (!patientId) return;
+    supabase
+      .from("patients")
+      .select("patient_registry_id")
+      .eq("id", patientId)
+      .maybeSingle()
+      .then(({ data: p }) => {
+        if (!p?.patient_registry_id) return;
+        supabase
+          .from("patient_registry")
+          .select("birth_date, medical_record")
+          .eq("id", p.patient_registry_id)
+          .maybeSingle()
+          .then(({ data: r }) => { if (r) setPatientRegistry(r); });
+      });
+  }, [patientId]);
+
   const [kind, setKind] = useState<DocKind | null>(null);
 
   // shared
   const [body, setBody] = useState("");
   // atestado
   const [days, setDays] = useState("");
-  const [includeCid, setIncludeCid] = useState(true);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  
   // receituario
   const [rx, setRx] = useState<RxItem[]>([{ name: "", dose: "", route: "VO", freq: "", duration: "" }]);
 
   const reset = () => {
-    setKind(null); setBody(""); setDays(""); setIncludeCid(true);
+    // setIncludeCid saiu daqui: o estado includeCid foi removido em aa62d9bb e a
+    // chamada ficou orfa. reset() e invocada ao FECHAR o dialogo, entao toda vez
+    // que o medico fechava "Emitir documento" estourava ReferenceError.
+    setKind(null); setBody(""); setDays("");
     setRx([{ name: "", dose: "", route: "VO", freq: "", duration: "" }]);
   };
 
@@ -127,13 +153,37 @@ export function MedicalDocumentDialog({
     const esc = (s: string) =>
       (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>");
 
+    const birthFmt = patientRegistry?.birth_date
+      ? (() => { try { return new Date(patientRegistry.birth_date + "T12:00:00").toLocaleDateString("pt-BR"); } catch { return patientRegistry.birth_date; } })()
+      : null;
+
+    const leitoStr = [patientBed, displaySector].filter(Boolean).join(" · ");
+    const cidStr = cidPrimary ? cidPrimary.split(" - ").slice(0, 2).join(" — ") : null;
+
+    // Cabeçalho padrão Arsen — mesmo layout de tabela da Guia ATM e Evolução
     const patientLine = `
-      <div style="border:1px solid #cbd5e1;border-radius:4pt;padding:6pt 10pt;margin-bottom:10pt;font-size:9pt;background:#f8fafc">
-        <div><b>PACIENTE:</b> ${esc((patientName || "").toUpperCase())}</div>
-        ${patient?.age ? `<div><b>IDADE:</b> ${esc(String(patient.age))}</div>` : ""}
-        ${patientBed ? `<div><b>LEITO:</b> ${esc(patientBed)} ${displaySector ? `• ${esc(displaySector)}` : ""}</div>` : ""}
-        ${includeCid && cidPrimary ? `<div><b>CID-10:</b> ${esc(cidPrimary)}</div>` : ""}
-      </div>`;
+      <table class="nz" style="margin-bottom:10pt">
+        <tbody>
+          <tr>
+            <th style="width:14%">Paciente</th>
+            <td style="width:36%"><strong>${esc((patientName || "").toUpperCase())}</strong></td>
+            <th style="width:10%">Leito</th>
+            <td colspan="3"><strong>${esc(leitoStr || "—")}</strong></td>
+          </tr>
+          <tr>
+            <th>Idade</th>
+            <td>${esc(patient?.age ? String(patient.age) : "—")}</td>
+            <th>Prontuário</th>
+            <td colspan="3">${esc(patientRegistry?.medical_record || "—")}</td>
+          </tr>
+          <tr>
+            <th>Data de nascimento</th>
+            <td>${esc(birthFmt || "—")}</td>
+            <th>CID-10</th>
+            <td colspan="3">${esc(cidStr || "—")}</td>
+          </tr>
+        </tbody>
+      </table>`;
 
     if (isRx) {
       const rows = rx.filter((r) => r.name.trim()).map((r, i) => `
@@ -215,9 +265,12 @@ export function MedicalDocumentDialog({
         patient_name: patientName,
         patient_bed: patientBed,
         patient_sector: patientSector,
+        patient_birth_date: patientRegistry?.birth_date || null,
+        patient_medical_record: patientRegistry?.medical_record || null,
+        patient_age: patient?.age ? String(patient.age) : null,
         body,
         days: kind === "atestado" && days ? Number(days) : null,
-        cid: kind === "relatorio" && includeCid ? (cidPrimary || null) : null,
+        cid: cidPrimary || null,
         signed_by_name: doctor.fullName || undefined,
         signed_by_crm: doctor.crm || undefined,
       });
@@ -226,7 +279,7 @@ export function MedicalDocumentDialog({
 
     const logo = await prepareLogo();
     const subtitle =
-      kind === "atestado" && days ? `Afastamento de ${days} dia(s)` :
+      kind === "atestado" && days ? `Afastamento de ${days} ${Number(days) === 1 ? 'dia' : 'dias'}` :
       kind === "receituario_especial" ? "Portaria SVS/MS nº 344/1998 — 2 vias" : undefined;
 
     const baseBody = buildBodyHtml();
@@ -256,7 +309,7 @@ export function MedicalDocumentDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => (v ? onOpenChange(v) : close())}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl" onInteractOutside={(e) => { e.preventDefault(); close(); }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 normal-case">
             {kind && (
@@ -282,14 +335,14 @@ export function MedicalDocumentDialog({
                   key={t.kind}
                   type="button"
                   onClick={() => startEdit(t.kind)}
-                  className="group flex items-start gap-3 p-4 rounded-xl border border-border/60 bg-card/50 hover:bg-muted/40 hover:border-primary/40 transition-all text-left"
+                  className="group flex items-start gap-3 p-4 rounded-lg border border-border/60 bg-card/50 hover:bg-muted/40 hover:border-primary/40 transition-all text-left"
                 >
                   <div className={`p-2 rounded-lg ${t.bg}`}>
                     <Icon className={`h-5 w-5 ${t.tone}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground normal-case">{t.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 normal-case">{t.desc}</p>
+                    <p className="text-sm font-medium text-foreground normal-case">{t.label}</p>
+                    <p className="text-xs text-muted-foreground mt-1 normal-case">{t.desc}</p>
                   </div>
                 </button>
               );
@@ -299,14 +352,14 @@ export function MedicalDocumentDialog({
               <button
                 type="button"
                 onClick={() => { onOpenChange(false); onOpenCvc(); }}
-                className="group flex items-start gap-3 p-4 rounded-xl border border-border/60 bg-card/50 hover:bg-muted/40 hover:border-primary/40 transition-all text-left"
+                className="group flex items-start gap-3 p-4 rounded-lg border border-border/60 bg-card/50 hover:bg-muted/40 hover:border-primary/40 transition-all text-left"
               >
-                <div className="p-2 rounded-lg bg-sky-500/10">
-                  <ShieldCheck className="h-5 w-5 text-sky-600" />
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <ShieldCheck className="h-5 w-5 text-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground normal-case">Checklist de CVC</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 normal-case">Bundle de inserção · prevenção de IPCS (CCIH)</p>
+                  <p className="text-sm font-medium text-foreground normal-case">Checklist de CVC</p>
+                  <p className="text-xs text-muted-foreground mt-1 normal-case">Bundle de inserção · prevenção de IPCS (CCIH)</p>
                 </div>
               </button>
             )}
@@ -318,8 +371,8 @@ export function MedicalDocumentDialog({
             só na tela de seleção de tipo (mesmo componente usado no Cockpit
             e em Documentos do Paciente — cobre os 2 lugares de uma vez). */}
         {!kind && (receituarios.length > 0 || documentos.length > 0) && (
-          <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5 space-y-1.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
+          <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground px-1">
               Histórico ({receituarios.length + documentos.length})
             </p>
             <div className="max-h-40 overflow-y-auto space-y-1">
@@ -352,14 +405,14 @@ export function MedicalDocumentDialog({
                 .map((item) => (
                   <div
                     key={item.key}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-background/80 border border-border/40 text-xs"
+                    className="flex items-center gap-2 px-2 py-2 rounded-md bg-background/80 border border-border/40 text-xs"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-foreground/90 truncate normal-case">
                         {item.label}
                         {item.detail && <span className="text-muted-foreground font-normal"> · {item.detail}</span>}
                       </p>
-                      <p className="text-[10px] text-muted-foreground normal-case">
+                      <p className="text-xs text-muted-foreground normal-case">
                         {item.createdAt ? format(new Date(item.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : ""}
                         {item.authorName ? ` · ${item.authorName}` : ""}
                       </p>
@@ -382,21 +435,7 @@ export function MedicalDocumentDialog({
         {kind && (
           <ScrollArea className="max-h-[60vh] pr-3">
             <div className="space-y-4">
-              {/* Patient summary */}
-              <div className="rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground space-y-0.5">
-                <div><b className="text-foreground">PACIENTE:</b> {(patientName || "").toUpperCase()}</div>
-                {patient?.age && <div><b className="text-foreground">IDADE:</b> {patient.age}</div>}
-                {patientBed && <div><b className="text-foreground">LEITO:</b> {patientBed} {displaySector && `• ${displaySector}`}</div>}
-                {cidPrimary && (
-                  <div className="flex items-center gap-2">
-                    <b className="text-foreground">CID-10:</b> {cidPrimary}
-                    <label className="flex items-center gap-1 ml-auto cursor-pointer">
-                      <input type="checkbox" checked={includeCid} onChange={(e) => setIncludeCid(e.target.checked)} />
-                      <span>incluir no documento</span>
-                    </label>
-                  </div>
-                )}
-              </div>
+              {/* Patient summary removido — info já visível no subtítulo do dialog */}
 
               {kind === "atestado" && (
                 <div className="grid grid-cols-2 gap-3">
@@ -419,7 +458,7 @@ export function MedicalDocumentDialog({
                     </Button>
                   </div>
                   {rx.map((r, i) => (
-                    <div key={i} className="rounded-lg border border-border/60 p-2.5 space-y-2 bg-card/40">
+                    <div key={i} className="rounded-lg border border-border/60 p-3 space-y-2 bg-card/40">
                       <div className="flex gap-2">
                         <Input
                           value={r.name}
@@ -470,19 +509,19 @@ export function MedicalDocumentDialog({
                     rows={kind === "relatorio" ? 12 : 7}
                     className="mt-1 font-mono text-sm leading-relaxed"
                   />
-                  <p className="text-[10px] text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     O texto será renderizado no padrão Norma Zero, com cabeçalho institucional e assinatura do médico logado.
                   </p>
                 </div>
               )}
 
               {/* Signing doctor */}
-              <div className="rounded-lg border border-dashed border-border bg-muted/20 p-2.5 text-xs flex items-center justify-between">
+              <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 text-xs flex items-center justify-between">
                 <div>
                   <b className="text-foreground">Assinatura: </b>
                   {doctor.fullName ? doctor.fullName.toUpperCase() : <span className="text-destructive">médico não identificado</span>}
                 </div>
-                {doctor.crm && <Badge variant="outline" className="text-[10px]">CRM {doctor.crm}</Badge>}
+                {doctor.crm && <Badge variant="outline" className="text-xs">CRM {doctor.crm}</Badge>}
               </div>
             </div>
           </ScrollArea>
@@ -491,9 +530,21 @@ export function MedicalDocumentDialog({
         {kind && (
           <DialogFooter>
             <Button variant="ghost" onClick={close}>Cancelar</Button>
-            <Button onClick={handlePrint}>
+            <Button onClick={() => setPasswordOpen(true)}>
               <Printer className="h-4 w-4 mr-2" /> Gerar e imprimir
             </Button>
+
+            <PasswordConfirmDialog
+              open={passwordOpen}
+              onOpenChange={setPasswordOpen}
+              title="Confirmar emissão do documento"
+              description="Confirme sua identidade para gerar e assinar o documento."
+              actionLabel="Confirmar e gerar"
+              onConfirmed={async () => {
+                setPasswordOpen(false);
+                await handlePrint();
+              }}
+            />
           </DialogFooter>
         )}
       </DialogContent>

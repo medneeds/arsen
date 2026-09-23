@@ -69,9 +69,9 @@ export function SlaBadge({
   else if (elapsedMin >= yellow) level = "yellow";
 
   const styles: Record<typeof level, string> = {
-    green: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
-    yellow: "bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-400",
-    orange: "bg-orange-500/20 text-orange-700 border-orange-500/40 dark:text-orange-400",
+    green: "bg-released/15 text-released-on-soft border-released/30",
+    yellow: "bg-warning/15 text-warning-on-soft border-warning/30",
+    orange: "bg-warning/20 text-warning-on-soft border-warning/40",
     red: "bg-destructive/15 text-destructive border-destructive/40 animate-pulse",
   };
 
@@ -86,7 +86,7 @@ export function SlaBadge({
           variant="outline"
           className={cn(
             "gap-1 border font-mono tabular-nums",
-            compact ? "h-5 px-1.5 text-[10px]" : "h-6 px-2 text-xs",
+            compact ? "h-5 px-2 text-xs" : "h-6 px-2 text-xs",
             styles[level],
             className,
           )}

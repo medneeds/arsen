@@ -159,7 +159,7 @@ export function useBedAllocationRequests() {
           table: "solicitacoes_leito",
         },
         (payload) => {
-          console.log("Realtime update:", payload);
+          console.log("Realtime update"); // auditoria 18/09: payload continha dados do paciente
           fetchRequestsRef.current();
         }
       )

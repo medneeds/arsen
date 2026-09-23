@@ -20,12 +20,12 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const PROTOCOL_COLORS: Record<string, string> = {
-  "SEPSE": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-  "AVC": "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
-  "DOR TORÁCICA": "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  "IAM": "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
-  "TEP": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  "CETOACIDOSE": "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
+  "SEPSE": "bg-critical-soft text-critical-on-soft",
+  "AVC": "bg-muted text-foreground",
+  "DOR TORÁCICA": "bg-warning-soft text-warning-on-soft",
+  "IAM": "bg-warning-soft text-warning-on-soft",
+  "TEP": "bg-muted text-foreground",
+  "CETOACIDOSE": "bg-released-soft text-released-on-soft",
 };
 
 export default function TherapeuticTemplatesPage() {
@@ -62,7 +62,7 @@ export default function TherapeuticTemplatesPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-wide">
+            <h1 className="text-xl sm:text-2xl font-semibold uppercase tracking-wide">
               Templates Terapêuticos
             </h1>
             <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">
@@ -70,7 +70,7 @@ export default function TherapeuticTemplatesPage() {
             </p>
           </div>
           {isAdmin && (
-            <Button onClick={() => setIsCreateOpen(true)} className="gap-2 uppercase text-xs font-bold tracking-wider">
+            <Button onClick={() => setIsCreateOpen(true)} className="gap-2 uppercase text-xs font-semibold tracking-wider">
               <Plus className="h-4 w-4" />
               Novo Template
             </Button>
@@ -84,21 +84,21 @@ export default function TherapeuticTemplatesPage() {
             placeholder="Pesquisar templates..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 uppercase"
+            className="pl-8 uppercase tracking-wider"
           />
         </div>
 
         {/* Templates List */}
         {isLoading ? (
-          <div className="text-center py-12 text-muted-foreground text-sm uppercase">Carregando...</div>
+          <div className="text-center py-8 text-muted-foreground text-sm uppercase tracking-wider">Carregando...</div>
         ) : Object.keys(grouped).length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-8">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
-            <p className="text-muted-foreground text-sm uppercase">
+            <p className="text-muted-foreground text-sm uppercase tracking-wider">
               {search ? "Nenhum template encontrado" : "Nenhum template cadastrado"}
             </p>
             {isAdmin && !search && (
-              <Button variant="outline" className="mt-4 uppercase text-xs" onClick={() => setIsCreateOpen(true)}>
+              <Button variant="outline" className="mt-4 uppercase tracking-wider text-xs" onClick={() => setIsCreateOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Criar primeiro template
               </Button>
@@ -111,7 +111,7 @@ export default function TherapeuticTemplatesPage() {
                 <Badge className={PROTOCOL_COLORS[protocolType] || "bg-muted text-foreground"}>
                   {protocolType}
                 </Badge>
-                <span className="text-xs text-muted-foreground">{items.length} template(s)</span>
+                <span className="text-xs text-muted-foreground">{items.length} {items.length === 1 ? "template" : "templates"}</span>
               </div>
 
               {items.map((template) => (
@@ -123,7 +123,7 @@ export default function TherapeuticTemplatesPage() {
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <CardTitle className="text-sm font-bold uppercase tracking-wide flex items-center gap-2">
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wide flex items-center gap-2">
                           {template.name}
                           {expandedId === template.id ? (
                             <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -159,16 +159,16 @@ export default function TherapeuticTemplatesPage() {
                   </CardHeader>
                   {expandedId === template.id && (
                     <CardContent className="pt-0">
-                      <div className="border-t pt-3 space-y-1.5">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-2">
+                      <div className="border-t pt-3 space-y-2">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">
                           Itens do Protocolo ({template.items.length})
                         </p>
                         {template.items.map((item, idx) => (
                           <div key={idx} className="flex items-start gap-2 text-xs">
-                            <span className="text-muted-foreground font-mono text-[10px] mt-0.5">
+                            <span className="text-muted-foreground font-mono text-xs mt-1">
                               {String(idx + 1).padStart(2, "0")}
                             </span>
-                            <span className="uppercase">{item}</span>
+                            <span className="uppercase tracking-wider">{item}</span>
                           </div>
                         ))}
                       </div>
@@ -201,15 +201,15 @@ export default function TherapeuticTemplatesPage() {
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="uppercase">Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogTitle className="uppercase tracking-wider">Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza que deseja excluir este template? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="uppercase">Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="uppercase tracking-wider">Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground uppercase"
+              className="bg-destructive text-destructive-foreground uppercase tracking-wider"
               onClick={() => {
                 if (deleteId) deleteTemplate.mutate(deleteId);
                 setDeleteId(null);

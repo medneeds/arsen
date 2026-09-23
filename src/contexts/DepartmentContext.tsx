@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from "react";
+import { safeSetItem } from "@/lib/safeStorage";
 
 export type Department = 
   | "URGÊNCIA E EMERGÊNCIA ADULTO"
@@ -162,20 +163,33 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
   const currentSectorLabel =
     SECTOR_DISPLAY[DEPARTMENT_TO_SECTOR[currentDepartment]] || currentDepartment;
 
-  const setCurrentDepartment = (department: Department) => {
+  const setCurrentDepartment = useCallback((department: Department) => {
     setCurrentDepartmentState(department);
-    localStorage.setItem(STORAGE_KEY, department);
-    // Sync sector code: código legado quando existir, senão o próprio nome do setor.
-    localStorage.setItem("selected_sector", DEPARTMENT_TO_SECTOR[department] || department);
-  };
+    safeSetItem(STORAGE_KEY, department);
+    // Sync sector code for legacy consumers
+    const sectorCode = DEPARTMENT_TO_SECTOR[department];
+    if (sectorCode) {
+      safeSetItem("selected_sector", sectorCode);
+    }
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, currentDepartment);
-    localStorage.setItem("selected_sector", DEPARTMENT_TO_SECTOR[currentDepartment] || currentDepartment);
+    safeSetItem(STORAGE_KEY, currentDepartment);
+    const sectorCode = DEPARTMENT_TO_SECTOR[currentDepartment];
+    if (sectorCode) {
+      safeSetItem("selected_sector", sectorCode);
+    }
   }, [currentDepartment]);
 
+  // Memoizado: criado inline, o objeto era novo a cada render e os 38
+  // consumidores de useDepartment re-renderizavam junto sem motivo.
+  const valor = useMemo(
+    () => ({ currentDepartment, setCurrentDepartment, currentSectorCode, currentSectorLabel }),
+    [currentDepartment, setCurrentDepartment, currentSectorCode, currentSectorLabel],
+  );
+
   return (
-    <DepartmentContext.Provider value={{ currentDepartment, setCurrentDepartment, currentSectorCode, currentSectorLabel }}>
+    <DepartmentContext.Provider value={valor}>
       {children}
     </DepartmentContext.Provider>
   );

@@ -80,7 +80,7 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
       type="button"
       onClick={() => onUpdate(item.id, 'inhalationMode', value)}
       className={
-        'h-7 px-2.5 text-[11px] rounded-md border transition-colors ' +
+        'h-7 px-3 text-xs rounded-md border transition-colors ' +
         (mode === value
           ? 'bg-primary text-primary-foreground border-primary'
           : 'bg-muted/20 border-border/30 hover:bg-muted/40 text-muted-foreground')
@@ -94,17 +94,17 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
     <div className={
       "relative rounded-md p-2 border space-y-2 [&_input.bg-white]:border-[hsl(217,55%,82%)]/70 [&_input.bg-white]:focus-visible:ring-[hsl(217,60%,60%)]/60 [&_button.bg-white]:border-[hsl(217,55%,82%)]/70 [&_button.bg-white]:focus-visible:ring-[hsl(217,60%,60%)]/60 " +
       (isConjugated
-        ? "ml-4 bg-[hsl(217,55%,96%)]/30 dark:bg-[hsl(217,75%,12%)]/10 border-[hsl(217,55%,72%)]/70 border-l-[3px] border-l-[hsl(217,70%,40%)]/80 dark:border-l-[hsl(217,60%,60%)]/80"
-        : "bg-[hsl(217,55%,96%)]/50 dark:bg-[hsl(217,75%,12%)]/20 border-[hsl(217,55%,82%)]/60 dark:border-[hsl(217,72%,22%)]/50 border-l-[3px] border-l-[hsl(217,65%,45%)]/70 dark:border-l-[hsl(217,60%,60%)]/70")
+        ? "ml-4 bg-[hsl(217,55%,96%)]/30 border-[hsl(217,55%,72%)]/70 border-l-[3px] border-l-[hsl(217,70%,40%)]/80"
+        : "bg-[hsl(217,55%,96%)]/50 border-[hsl(217,55%,82%)]/60 border-l-[3px] border-l-[hsl(217,65%,45%)]/70")
     }>
       {/* Conjugação com nebulização anterior */}
       {(canConjugate || isConjugated) && (
         <div className={
-          "flex items-center justify-between gap-2 px-2 py-1 rounded text-[10px] " +
-          (isConjugated ? "bg-[hsl(217,55%,90%)]/70 dark:bg-[hsl(217,72%,22%)]/30 border border-[hsl(217,55%,72%)]/60 dark:border-[hsl(217,72%,36%)]/40" : "")
+          "flex items-center justify-between gap-2 px-2 py-1 rounded-md text-xs " +
+          (isConjugated ? "bg-[hsl(217,55%,90%)]/70 border border-[hsl(217,55%,72%)]/60" : "")
         }>
           {isConjugated ? (
-            <span className="flex items-center gap-1 text-[hsl(217,70%,28%)] dark:text-[hsl(217,55%,82%)] font-semibold min-w-0">
+            <span className="flex items-center gap-1 text-[hsl(217,70%,28%)] font-medium min-w-0">
               <Link2 className="h-3 w-3 shrink-0" />
               <span className="truncate">↳ Mesma nebulização de <b>{previousInhalationItemName ?? 'item anterior'}</b></span>
             </span>
@@ -117,7 +117,7 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
             variant="ghost"
             onClick={toggleConjugate}
             className={
-              "h-5 px-2 text-[10px] gap-1 shrink-0 " +
+              "h-5 px-2 text-xs gap-1 shrink-0 " +
               (isConjugated
                 ? "text-[hsl(217,72%,36%)] hover:text-[hsl(217,70%,28%)] hover:bg-[hsl(217,55%,82%)]/40"
                 : "text-muted-foreground hover:text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,90%)]/40")
@@ -128,9 +128,9 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
         </div>
       )}
       {/* Modo de administração */}
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap">
         <Wind className="h-3 w-3 text-primary shrink-0" />
-        <span className="text-[10px] text-muted-foreground font-medium mr-1">Modo:</span>
+        <span className="text-xs text-muted-foreground font-medium mr-1">Modo:</span>
         <ModeBtn value="nebulization" label="Nebulização" />
         <ModeBtn value="nebulization_continuous" label="Neb. contínua" />
         <ModeBtn value="pmdi" label="Spray (pMDI)" />
@@ -143,14 +143,14 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
                 size="sm"
                 variant="outline"
                 onClick={() => applyPreset(preset)}
-                className="h-6 px-2 text-[10px] ml-auto border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                className="h-6 px-2 text-xs ml-auto border-released-border text-released-on-soft hover:bg-released-soft"
               >
                 <Sparkles className="h-3 w-3 mr-1" />
                 Aplicar padrão
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-xs text-xs">
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 <div><b>Modo sugerido:</b> {INHALATION_MODE_LABEL[preset.mode]}</div>
                 {preset.nebDose && <div><b>Dose:</b> {preset.nebDose} {preset.nebDoseUnit}</div>}
                 {preset.diluent && preset.diluent !== 'puro' && <div><b>Diluente:</b> {preset.diluent} {preset.diluentVolume}mL</div>}
@@ -166,16 +166,16 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
       {/* Campos NEBULIZAÇÃO ou CONTÍNUA */}
       {(mode === 'nebulization' || mode === 'nebulization_continuous') && (
         <>
-          <div className="flex items-center gap-1.5 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
-            <span className="text-[10px] text-muted-foreground font-medium">Dose:</span>
+          <div className="flex items-center gap-2 flex-wrap px-2 py-2 rounded-md bg-accent/30 border border-border/30">
+            <span className="text-xs text-muted-foreground font-medium">Dose:</span>
             <Input
               value={item.nebDose || ''}
               onChange={(e) => onUpdate(item.id, 'nebDose', e.target.value)}
-              className="h-6 text-[11px] bg-background border-border/40 w-14 text-center"
+              className="h-6 text-xs bg-background border-border/40 w-14 text-center"
               placeholder="—"
             />
             <Select value={item.nebDoseUnit || 'gts'} onValueChange={(v) => onUpdate(item.id, 'nebDoseUnit', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-16"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-6 text-xs bg-background border-border/40 w-16"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="gts" className="text-xs">gts</SelectItem>
                 <SelectItem value="mg" className="text-xs">mg</SelectItem>
@@ -184,9 +184,9 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
               </SelectContent>
             </Select>
             <span className="text-muted-foreground/40">│</span>
-            <span className="text-[10px] text-muted-foreground font-medium">Diluente:</span>
+            <span className="text-xs text-muted-foreground font-medium">Diluente:</span>
             <Select value={item.diluent || ''} onValueChange={(v) => onUpdate(item.id, 'diluent', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-28"><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectTrigger className="h-6 text-xs bg-background border-border/40 w-28"><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="puro" className="text-xs">Puro (s/ diluir)</SelectItem>
                 <SelectItem value="SF0,9%" className="text-xs">SF 0,9%</SelectItem>
@@ -199,52 +199,52 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
                 <Input
                   value={item.diluentVolume || ''}
                   onChange={(e) => onUpdate(item.id, 'diluentVolume', e.target.value)}
-                  className="h-6 text-[11px] bg-background border-border/40 w-12 text-center"
+                  className="h-6 text-xs bg-background border-border/40 w-12 text-center"
                   placeholder="3"
                 />
-                <span className="text-[10px] text-muted-foreground">mL</span>
+                <span className="text-xs text-muted-foreground">mL</span>
               </>
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
-            <span className="text-[10px] text-muted-foreground font-medium">Fluxo O₂/Ar:</span>
+          <div className="flex items-center gap-2 flex-wrap px-2 py-2 rounded-md bg-accent/30 border border-border/30">
+            <span className="text-xs text-muted-foreground font-medium">Fluxo O₂/Ar:</span>
             <Input
               value={item.oxygenFlow || ''}
               onChange={(e) => onUpdate(item.id, 'oxygenFlow', e.target.value)}
-              className="h-6 text-[11px] bg-background border-border/40 w-12 text-center"
+              className="h-6 text-xs bg-background border-border/40 w-12 text-center"
               placeholder="6"
             />
-            <span className="text-[10px] text-muted-foreground">L/min</span>
+            <span className="text-xs text-muted-foreground">L/min</span>
             <span className="text-muted-foreground/40">│</span>
             {mode === 'nebulization' && (
               <>
-                <span className="text-[10px] text-muted-foreground font-medium">Tempo/etapa:</span>
+                <span className="text-xs text-muted-foreground font-medium">Tempo/etapa:</span>
                 <Input
                   value={item.stageDuration || ''}
                   onChange={(e) => onUpdate(item.id, 'stageDuration', e.target.value)}
-                  className="h-6 text-[11px] bg-background border-border/40 w-12 text-center"
+                  className="h-6 text-xs bg-background border-border/40 w-12 text-center"
                   placeholder="10"
                 />
-                <span className="text-[10px] text-muted-foreground">min</span>
+                <span className="text-xs text-muted-foreground">min</span>
               </>
             )}
             {mode === 'nebulization_continuous' && (
               <>
-                <span className="text-[10px] text-muted-foreground font-medium">Duração total:</span>
+                <span className="text-xs text-muted-foreground font-medium">Duração total:</span>
                 <Input
                   value={item.continuousDuration || ''}
                   onChange={(e) => onUpdate(item.id, 'continuousDuration', e.target.value)}
-                  className="h-6 text-[11px] bg-background border-border/40 w-12 text-center"
+                  className="h-6 text-xs bg-background border-border/40 w-12 text-center"
                   placeholder="4"
                 />
-                <span className="text-[10px] text-muted-foreground">h</span>
+                <span className="text-xs text-muted-foreground">h</span>
               </>
             )}
             <span className="text-muted-foreground/40">│</span>
-            <span className="text-[10px] text-muted-foreground font-medium">Interface:</span>
+            <span className="text-xs text-muted-foreground font-medium">Interface:</span>
             <Select value={item.inhalationInterface || ''} onValueChange={(v) => onUpdate(item.id, 'inhalationInterface', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-32"><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectTrigger className="h-6 text-xs bg-background border-border/40 w-32"><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
                 {INTERFACES.map(i => (
                   <SelectItem key={i} value={i} className="text-xs">{INHALATION_INTERFACE_LABEL[i]}</SelectItem>
@@ -254,9 +254,9 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
             {mode === 'nebulization' && (
               <>
                 <span className="text-muted-foreground/40">│</span>
-                <span className="text-[10px] text-muted-foreground font-medium">Frequência:</span>
+                <span className="text-xs text-muted-foreground font-medium">Frequência:</span>
                 <Select value={item.posology || ''} onValueChange={(v) => onUpdate(item.id, 'posology', v)}>
-                  <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-24"><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectTrigger className="h-6 text-xs bg-background border-border/40 w-24"><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
                     {POSOLOGY_OPTIONS.map(p => (
                       <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>
@@ -271,20 +271,20 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
 
       {/* Campos pMDI / DPI */}
       {(mode === 'pmdi' || mode === 'dpi') && (
-        <div className="flex items-center gap-1.5 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
-          <span className="text-[10px] text-muted-foreground font-medium">
+        <div className="flex items-center gap-2 flex-wrap px-2 py-2 rounded-md bg-accent/30 border border-border/30">
+          <span className="text-xs text-muted-foreground font-medium">
             {mode === 'pmdi' ? 'Nº de puffs:' : 'Nº de inalações:'}
           </span>
           <Input
             value={item.puffs || ''}
             onChange={(e) => onUpdate(item.id, 'puffs', e.target.value)}
-            className="h-6 text-[11px] bg-background border-border/40 w-12 text-center"
+            className="h-6 text-xs bg-background border-border/40 w-12 text-center"
             placeholder={mode === 'pmdi' ? '2' : '1'}
           />
           <span className="text-muted-foreground/40">│</span>
-          <span className="text-[10px] text-muted-foreground font-medium">Frequência:</span>
+          <span className="text-xs text-muted-foreground font-medium">Frequência:</span>
           <Select value={item.posology || ''} onValueChange={(v) => onUpdate(item.id, 'posology', v)}>
-            <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-24"><SelectValue placeholder="—" /></SelectTrigger>
+            <SelectTrigger className="h-6 text-xs bg-background border-border/40 w-24"><SelectValue placeholder="—" /></SelectTrigger>
             <SelectContent>
               {POSOLOGY_OPTIONS.map(p => (
                 <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>
@@ -294,7 +294,7 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
           {mode === 'pmdi' && (
             <>
               <span className="text-muted-foreground/40">│</span>
-              <label className="flex items-center gap-1 text-[10px] text-muted-foreground cursor-pointer">
+              <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer">
                 <Checkbox
                   checked={!!item.spacer}
                   onCheckedChange={(v) => onUpdate(item.id, 'spacer', !!v)}
@@ -304,7 +304,7 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
               </label>
             </>
           )}
-          <label className="flex items-center gap-1 text-[10px] text-muted-foreground cursor-pointer">
+          <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer">
             <Checkbox
               checked={!!item.gargle}
               onCheckedChange={(v) => onUpdate(item.id, 'gargle', !!v)}
@@ -316,12 +316,12 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
       )}
 
       {/* Orientação livre (todas as modalidades) */}
-      <div className="flex items-center gap-1.5">
-        <span className="text-[10px] text-muted-foreground font-medium shrink-0">Orientação:</span>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground font-medium shrink-0">Orientação:</span>
         <Input
           value={item.inhalationOrientation || ''}
           onChange={(e) => onUpdate(item.id, 'inhalationOrientation', e.target.value)}
-          className="h-6 text-[11px] bg-muted/10 border-border/30 flex-1"
+          className="h-6 text-xs bg-muted/10 border-border/30 flex-1"
           placeholder="técnica adicional, observações…"
         />
       </div>

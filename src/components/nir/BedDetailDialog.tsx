@@ -50,14 +50,14 @@ interface Props {
 }
 
 const STATUS_META: Record<string, { label: string; color: string; icon: any }> = {
-  vago: { label: "Vago — disponível", color: "bg-emerald-500", icon: CheckCircle2 },
-  ocupado: { label: "Ocupado", color: "bg-blue-500", icon: UserRound },
-  bloqueado: { label: "Bloqueado", color: "bg-red-500", icon: Lock },
-  higienizacao: { label: "Em higienização", color: "bg-amber-500", icon: Sparkles },
-  reservado: { label: "Reservado", color: "bg-purple-500", icon: FileCheck2 },
-  manutencao: { label: "Manutenção", color: "bg-orange-500", icon: Wrench },
-  interditado: { label: "Interditado", color: "bg-red-700", icon: ShieldAlert },
-  alta_medica_dada: { label: "Alta médica dada", color: "bg-cyan-500", icon: LogOut },
+  vago: { label: "Vago — disponível", color: "bg-released", icon: CheckCircle2 },
+  ocupado: { label: "Ocupado", color: "bg-primary", icon: UserRound },
+  bloqueado: { label: "Bloqueado", color: "bg-critical", icon: Lock },
+  higienizacao: { label: "Em higienização", color: "bg-warning", icon: Sparkles },
+  reservado: { label: "Reservado", color: "bg-primary", icon: FileCheck2 },
+  manutencao: { label: "Manutenção", color: "bg-warning", icon: Wrench },
+  interditado: { label: "Interditado", color: "bg-critical", icon: ShieldAlert },
+  alta_medica_dada: { label: "Alta médica dada", color: "bg-primary", icon: LogOut },
 };
 
 function fmt(ts?: string | null) {
@@ -83,15 +83,15 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
   const timeline = useMemo(() => {
     if (!bed) return [] as Array<{ key: string; label: string; ts?: string | null; icon: any; tone: string }>;
     return [
-      { key: "admission_at", label: "Admissão do paciente", ts: bed.admission_at || bed.occupied_at, icon: UserRound, tone: "text-blue-500" },
-      { key: "medical_discharge_at", label: "Alta médica", ts: bed.medical_discharge_at, icon: Stethoscope, tone: "text-cyan-500" },
-      { key: "administrative_discharge_at", label: "Alta administrativa", ts: bed.administrative_discharge_at, icon: FileCheck2, tone: "text-rose-500" },
-      { key: "destination_released_at", label: "Liberação do destino", ts: bed.destination_released_at, icon: ArrowRightCircle, tone: "text-indigo-500" },
-      { key: "deallocated_at", label: "Desalocação do paciente", ts: bed.deallocated_at, icon: LogOut, tone: "text-orange-500" },
-      { key: "cleaning_started_at", label: "Início do preparo (higienização)", ts: bed.cleaning_started_at, icon: Sparkles, tone: "text-amber-500" },
-      { key: "cleaning_finished_at", label: "Finalização do preparo", ts: bed.cleaning_finished_at, icon: Wand2, tone: "text-amber-600" },
-      { key: "ready_for_admission_at", label: "Liberação para nova admissão", ts: bed.ready_for_admission_at, icon: CheckCircle2, tone: "text-emerald-500" },
-      { key: "occupied_at", label: "Ocupação efetiva", ts: bed.occupied_at, icon: BedDouble, tone: "text-blue-600" },
+      { key: "admission_at", label: "Admissão do paciente", ts: bed.admission_at || bed.occupied_at, icon: UserRound, tone: "text-muted-foreground" },
+      { key: "medical_discharge_at", label: "Alta médica", ts: bed.medical_discharge_at, icon: Stethoscope, tone: "text-muted-foreground" },
+      { key: "administrative_discharge_at", label: "Alta administrativa", ts: bed.administrative_discharge_at, icon: FileCheck2, tone: "text-critical" },
+      { key: "destination_released_at", label: "Liberação do destino", ts: bed.destination_released_at, icon: ArrowRightCircle, tone: "text-muted-foreground" },
+      { key: "deallocated_at", label: "Desalocação do paciente", ts: bed.deallocated_at, icon: LogOut, tone: "text-warning" },
+      { key: "cleaning_started_at", label: "Início do preparo (higienização)", ts: bed.cleaning_started_at, icon: Sparkles, tone: "text-warning" },
+      { key: "cleaning_finished_at", label: "Finalização do preparo", ts: bed.cleaning_finished_at, icon: Wand2, tone: "text-warning-on-soft" },
+      { key: "ready_for_admission_at", label: "Liberação para nova admissão", ts: bed.ready_for_admission_at, icon: CheckCircle2, tone: "text-released" },
+      { key: "occupied_at", label: "Ocupação efetiva", ts: bed.occupied_at, icon: BedDouble, tone: "text-foreground" },
     ];
   }, [bed]);
 
@@ -151,8 +151,8 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
         <div className="rounded-lg border border-border bg-muted/30 p-3">
           {bed.patient_name ? (
             <div className="flex items-center gap-2 text-sm">
-              <UserRound className="h-4 w-4 text-blue-500" />
-              <span className="font-semibold">{bed.patient_name}</span>
+              <UserRound className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">{bed.patient_name}</span>
             </div>
           ) : bed.last_patient_name ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -169,7 +169,7 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
             </p>
           )}
           {bed.reserved_for && (
-            <p className="text-xs text-purple-600 mt-2 flex items-center gap-1">
+            <p className="text-xs text-foreground mt-2 flex items-center gap-1">
               <FileCheck2 className="h-3 w-3" /> Reservado para {bed.reserved_for}
               {bed.reserved_until && ` · até ${fmt(bed.reserved_until)}`}
             </p>
@@ -180,9 +180,9 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
         {kpis.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {kpis.map((k) => (
-              <div key={k.label} className="rounded-lg border border-border bg-card p-2.5">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{k.label}</p>
-                <p className="text-sm font-bold mt-0.5">{k.value}</p>
+              <div key={k.label} className="rounded-lg border border-border bg-card p-3">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">{k.label}</p>
+                <p className="text-sm font-semibold mt-1">{k.value}</p>
               </div>
             ))}
           </div>
@@ -190,8 +190,8 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
 
         <Tabs defaultValue="actions" className="mt-2">
           <TabsList className="w-full grid grid-cols-2">
-            <TabsTrigger value="actions"><Activity className="h-3.5 w-3.5 mr-1.5" /> Ações NIR</TabsTrigger>
-            <TabsTrigger value="timeline"><Clock className="h-3.5 w-3.5 mr-1.5" /> Linha do tempo</TabsTrigger>
+            <TabsTrigger value="actions"><Activity className="h-3.5 w-3.5 mr-2" /> Ações NIR</TabsTrigger>
+            <TabsTrigger value="timeline"><Clock className="h-3.5 w-3.5 mr-2" /> Linha do tempo</TabsTrigger>
           </TabsList>
 
           {/* PAINEL DE AÇÕES */}
@@ -199,7 +199,7 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
             {/* Ocupar (vago) */}
             {bed.status === "vago" && (
               <div className="rounded-lg border p-3 space-y-2">
-                <Label className="text-xs font-semibold">Admitir paciente neste leito</Label>
+                <Label className="text-xs font-medium">Admitir paciente neste leito</Label>
                 <div className="flex gap-2">
                   <Input
                     placeholder="Nome do paciente (ex.: JOSÉ DA SILVA)"
@@ -230,13 +230,13 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
                   variant="outline" size="sm" disabled={busy}
                   onClick={() => run(() => actions.giveMedicalDischarge(bed.id).then(ok => { if (ok) onOpenChange(false); return ok; }))}
                 >
-                  <Stethoscope className="h-3.5 w-3.5 mr-1.5 text-cyan-600" /> Alta médica
+                  <Stethoscope className="h-3.5 w-3.5 mr-2 text-foreground" /> Alta médica
                 </Button>
                 <Button
                   variant="outline" size="sm" disabled={busy}
                   onClick={() => run(() => actions.giveAdministrativeDischarge(bed.id).then(ok => { if (ok) onOpenChange(false); return ok; }))}
                 >
-                  <FileCheck2 className="h-3.5 w-3.5 mr-1.5 text-rose-600" /> Alta administrativa
+                  <FileCheck2 className="h-3.5 w-3.5 mr-2 text-critical-on-soft" /> Alta administrativa
                 </Button>
               </div>
             )}
@@ -244,12 +244,12 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
             {/* Alta médica → administrativa ou higienização */}
             {bed.status === "alta_medica_dada" && (
               <div className="rounded-lg border p-3">
-                <p className="text-[11px] text-muted-foreground mb-2">Paciente liberado pela equipe médica. NIR libera o destino:</p>
+                <p className="text-xs text-muted-foreground mb-2">Paciente liberado pela equipe médica. NIR libera o destino:</p>
                 <Button
                   size="sm" disabled={busy} className="w-full"
                   onClick={() => run(() => actions.giveAdministrativeDischarge(bed.id).then(ok => { if (ok) onOpenChange(false); return ok; }))}
                 >
-                  <FileCheck2 className="h-3.5 w-3.5 mr-1.5" /> Liberar destino · iniciar higienização
+                  <FileCheck2 className="h-3.5 w-3.5 mr-2" /> Liberar destino · iniciar higienização
                 </Button>
               </div>
             )}
@@ -261,7 +261,7 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
                   size="sm" disabled={busy} className="w-full"
                   onClick={() => run(() => actions.finishCleaning(bed.id).then(ok => { if (ok) onOpenChange(false); return ok; }))}
                 >
-                  <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Concluir higienização · liberar leito
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-2" /> Concluir higienização · liberar leito
                 </Button>
               </div>
             )}
@@ -269,7 +269,7 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
             {/* Reserva (vago) */}
             {bed.status === "vago" && (
               <div className="rounded-lg border p-3 space-y-2">
-                <Label className="text-xs font-semibold">Reservar leito</Label>
+                <Label className="text-xs font-medium">Reservar leito</Label>
                 <Input
                   placeholder="Reservado para… (ex.: pré-admissão UTI, transferência)"
                   value={reserveFor}
@@ -286,7 +286,7 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
                     size="sm" variant="outline" disabled={busy || !reserveFor.trim()}
                     onClick={() => run(() => actions.reserveBed(bed.id, reserveFor.trim(), Number(reserveHours) || 4).then(ok => { if (ok) { setReserveFor(""); onOpenChange(false); } return ok; }))}
                   >
-                    <Calendar className="h-3.5 w-3.5 mr-1.5" /> Reservar
+                    <Calendar className="h-3.5 w-3.5 mr-2" /> Reservar
                   </Button>
                 </div>
               </div>
@@ -304,7 +304,7 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
             {/* Bloqueio / manutenção / interdição */}
             {!["bloqueado", "manutencao", "interditado", "ocupado"].includes(bed.status) && (
               <div className="rounded-lg border p-3 space-y-2">
-                <Label className="text-xs font-semibold">Bloquear leito</Label>
+                <Label className="text-xs font-medium">Bloquear leito</Label>
                 <Textarea
                   placeholder="Motivo do bloqueio (obrigatório)"
                   value={blockReason}
@@ -314,15 +314,15 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
                 <div className="grid grid-cols-3 gap-2">
                   <Button variant="outline" size="sm" disabled={busy || !blockReason.trim()}
                     onClick={() => run(() => actions.blockBed(bed.id, blockReason.trim(), "bloqueado").then(ok => { if (ok) { setBlockReason(""); onOpenChange(false); } return ok; }))}>
-                    <Lock className="h-3.5 w-3.5 mr-1 text-red-600" /> Bloquear
+                    <Lock className="h-3.5 w-3.5 mr-1 text-critical-on-soft" /> Bloquear
                   </Button>
                   <Button variant="outline" size="sm" disabled={busy || !blockReason.trim()}
                     onClick={() => run(() => actions.blockBed(bed.id, blockReason.trim(), "manutencao").then(ok => { if (ok) { setBlockReason(""); onOpenChange(false); } return ok; }))}>
-                    <Wrench className="h-3.5 w-3.5 mr-1 text-orange-600" /> Manutenção
+                    <Wrench className="h-3.5 w-3.5 mr-1 text-warning-on-soft" /> Manutenção
                   </Button>
                   <Button variant="outline" size="sm" disabled={busy || !blockReason.trim()}
                     onClick={() => run(() => actions.blockBed(bed.id, blockReason.trim(), "interditado").then(ok => { if (ok) { setBlockReason(""); onOpenChange(false); } return ok; }))}>
-                    <ShieldAlert className="h-3.5 w-3.5 mr-1 text-red-700" /> Interditar
+                    <ShieldAlert className="h-3.5 w-3.5 mr-1 text-critical-on-soft" /> Interditar
                   </Button>
                 </div>
               </div>
@@ -333,7 +333,7 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
                 variant="outline" size="sm" className="w-full" disabled={busy}
                 onClick={() => run(() => actions.unblockBed(bed.id).then(ok => { if (ok) onOpenChange(false); return ok; }))}
               >
-                <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 text-emerald-600" /> Desbloquear leito
+                <CheckCircle2 className="h-3.5 w-3.5 mr-2 text-released-on-soft" /> Desbloquear leito
               </Button>
             )}
           </TabsContent>
@@ -352,15 +352,15 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
                       has ? "border-border bg-card" : "border-dashed border-border/50 bg-muted/20",
                     )}
                   >
-                    <Icon className={cn("h-4 w-4 mt-0.5 shrink-0", has ? step.tone : "text-muted-foreground/50")} />
+                    <Icon className={cn("h-4 w-4 mt-1 shrink-0", has ? step.tone : "text-muted-foreground/50")} />
                     <div className="min-w-0 flex-1">
                       <p className={cn("text-xs font-medium", !has && "text-muted-foreground")}>{step.label}</p>
                       {has ? (
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           {fmt(step.ts)} <span className="text-muted-foreground/60">· {elapsed(step.ts)}</span>
                         </p>
                       ) : (
-                        <p className="text-[11px] text-muted-foreground/60">— ainda não registrado</p>
+                        <p className="text-xs text-muted-foreground/60">— ainda não registrado</p>
                       )}
                     </div>
                   </li>
@@ -373,7 +373,7 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
         <Separator />
 
         {bed.updated_by_name && (
-          <p className="text-[10px] text-muted-foreground text-right">
+          <p className="text-xs text-muted-foreground text-right">
             Última atualização por <span className="font-medium">{bed.updated_by_name}</span>
             {bed.updated_at ? ` · ${fmt(bed.updated_at)}` : ""}
           </p>

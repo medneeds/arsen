@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { safeGetJSON, safeSetJSON } from "@/lib/safeStorage";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,14 +40,14 @@ const NotesTab = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const stored = localStorage.getItem("customTemplates");
-    if (stored) {
-      setSavedTemplates(JSON.parse(stored));
-    }
+    // safeGetJSON em vez de JSON.parse direto: um conteudo corrompido aqui
+    // derrubava a aba inteira de anotacoes (o erro sobe do efeito e, sem
+    // ErrorBoundary, o React desmonta a arvore — tela branca).
+    setSavedTemplates(safeGetJSON<SavedTemplate[]>("customTemplates", []));
   }, []);
 
   const saveTemplatesToStorage = (templates: SavedTemplate[]) => {
-    localStorage.setItem("customTemplates", JSON.stringify(templates));
+    safeSetJSON("customTemplates", templates);
     setSavedTemplates(templates);
   };
 
@@ -177,7 +178,7 @@ const NotesTab = () => {
             variant="outline"
             size="sm"
             onClick={handleImportTemplate}
-            className="gap-2 hover:bg-emerald-500/10 hover:text-emerald-600 hover:border-emerald-500/50 transition-all uppercase"
+            className="gap-2 hover:bg-released/10 hover:text-released-on-soft hover:border-released/50 transition-all uppercase tracking-wider"
           >
             <FileInput className="h-4 w-4" />
             IMPORTAR MODELO PADRÃO
@@ -188,7 +189,7 @@ const NotesTab = () => {
             size="sm"
             onClick={handleOpenSaveDialog}
             disabled={!notes}
-            className="gap-2 hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-all uppercase"
+            className="gap-2 hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-all uppercase tracking-wider"
           >
             <Save className="h-4 w-4" />
             SALVAR COMO MODELO
@@ -199,7 +200,7 @@ const NotesTab = () => {
             size="sm"
             onClick={handlePrint}
             disabled={!notes}
-            className="gap-2 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/50 transition-all uppercase"
+            className="gap-2 hover:bg-primary/10 hover:text-foreground hover:border-border/50 transition-all uppercase tracking-wider"
           >
             <Printer className="h-4 w-4" />
             IMPRIMIR
@@ -211,23 +212,23 @@ const NotesTab = () => {
                 variant="outline"
                 size="sm"
                 disabled={savedTemplates.length === 0}
-                className="gap-2 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/50 transition-all uppercase"
+                className="gap-2 hover:bg-primary/10 hover:text-foreground hover:border-border/50 transition-all uppercase tracking-wider"
               >
                 <FolderOpen className="h-4 w-4" />
                 MEUS MODELOS ({savedTemplates.length})
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuLabel className="uppercase">MODELOS SALVOS</DropdownMenuLabel>
+              <DropdownMenuLabel className="uppercase tracking-wider">MODELOS SALVOS</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {savedTemplates.map((template) => (
                 <DropdownMenuItem
                   key={template.id}
-                  className="flex items-center justify-between group uppercase"
+                  className="flex items-center justify-between group uppercase tracking-wider"
                 >
                   <button
                     onClick={() => handleLoadTemplate(template)}
-                    className="flex-1 text-left uppercase"
+                    className="flex-1 text-left uppercase tracking-wider"
                   >
                     {template.name}
                   </button>
@@ -251,24 +252,24 @@ const NotesTab = () => {
 
       {/* Print Title - Only visible when printing */}
       <div className="hidden print:block mb-6">
-        <h1 className="text-2xl font-bold uppercase text-center">ANOTAÇÕES MÉDICAS</h1>
+        <h1 className="text-2xl font-semibold uppercase tracking-wider text-center">ANOTAÇÕES MÉDICAS</h1>
         <p className="text-sm text-center mt-2">
           Data: {new Date().toLocaleDateString('pt-BR')} - {new Date().toLocaleTimeString('pt-BR')}
         </p>
-        <hr className="my-4 border-t-2 border-gray-300" />
+        <hr className="my-4 border-t-2 border-border" />
       </div>
 
-      <Card className="p-6 shadow-xl border-2 print:border-0 print:shadow-none print:p-0">
+      <Card className="p-6 shadow-md border-2 print:border-0 print:shadow-none print:p-0">
         <div className="space-y-4 print:space-y-0">
           <Textarea
             value={notes}
             onChange={handleChange}
             placeholder="DIGITE SUA ANAMNESE AQUI OU IMPORTE O MODELO PADRÃO..."
-            className="min-h-[600px] font-mono text-sm resize-none focus:ring-2 focus:ring-emerald-500 transition-all uppercase print:min-h-0 print:border-0 print:focus:ring-0 print:p-0"
+            className="min-h-[600px] font-mono text-sm resize-none focus:ring-2 focus:ring-released transition-all uppercase tracking-wider print:min-h-0 print:border-0 print:focus:ring-0 print:p-0"
           />
           
           <div className="flex items-center justify-between print:hidden">
-            <div className="text-xs text-muted-foreground uppercase">
+            <div className="text-xs text-muted-foreground uppercase tracking-wider">
               {notes.length} CARACTERES
             </div>
             
@@ -278,7 +279,7 @@ const NotesTab = () => {
                 size="sm"
                 onClick={handleCopy}
                 disabled={!notes}
-                className="gap-2 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/50 transition-all uppercase"
+                className="gap-2 hover:bg-primary/10 hover:text-foreground hover:border-border/50 transition-all uppercase tracking-wider"
               >
                 <Copy className="h-4 w-4" />
                 COPIAR TEXTO
@@ -289,7 +290,7 @@ const NotesTab = () => {
                 size="sm"
                 onClick={handleDownload}
                 disabled={!notes}
-                className="gap-2 hover:bg-green-500/10 hover:text-green-600 hover:border-green-500/50 transition-all uppercase"
+                className="gap-2 hover:bg-released/10 hover:text-released-on-soft hover:border-released/50 transition-all uppercase tracking-wider"
               >
                 <Download className="h-4 w-4" />
                 BAIXAR
@@ -300,7 +301,7 @@ const NotesTab = () => {
                 size="sm"
                 onClick={handleClear}
                 disabled={!notes}
-                className="gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 transition-all uppercase"
+                className="gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 transition-all uppercase tracking-wider"
               >
                 <Trash2 className="h-4 w-4" />
                 LIMPAR TUDO
@@ -314,14 +315,14 @@ const NotesTab = () => {
       <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="uppercase">SALVAR MODELO</DialogTitle>
-            <DialogDescription className="uppercase">
+            <DialogTitle className="uppercase tracking-wider">SALVAR MODELO</DialogTitle>
+            <DialogDescription className="uppercase tracking-wider">
               DIGITE UM NOME PARA ESTE MODELO
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="template-name" className="uppercase">
+              <Label htmlFor="template-name" className="uppercase tracking-wider">
                 NOME DO MODELO
               </Label>
               <Input
@@ -329,7 +330,7 @@ const NotesTab = () => {
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value.toUpperCase())}
                 placeholder="EX: MODELO CARDIOLOGIA"
-                className="uppercase"
+                className="uppercase tracking-wider"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     handleSaveTemplate();
@@ -346,14 +347,14 @@ const NotesTab = () => {
                 setIsSaveDialogOpen(false);
                 setTemplateName("");
               }}
-              className="uppercase"
+              className="uppercase tracking-wider"
             >
               CANCELAR
             </Button>
             <Button
               type="button"
               onClick={handleSaveTemplate}
-              className="uppercase"
+              className="uppercase tracking-wider"
             >
               SALVAR MODELO
             </Button>

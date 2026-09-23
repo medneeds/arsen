@@ -214,11 +214,11 @@ const MovimentacoesPage = () => {
             <ArrowLeftRight className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Movimentações do Paciente</h1>
+            <h1 className="text-2xl font-semibold text-foreground">Movimentações do Paciente</h1>
             <p className="text-sm text-muted-foreground">Selecione um paciente pelo mapa ou painel clínico</p>
           </div>
         </div>
-        <div className="rounded-xl border border-dashed border-border bg-muted/20 p-12 text-center">
+        <div className="rounded-lg border border-dashed border-border bg-muted/20 p-8 text-center">
           <ArrowLeftRight className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
           <p className="text-lg font-medium text-muted-foreground">Nenhum paciente selecionado</p>
         </div>
@@ -239,12 +239,12 @@ const MovimentacoesPage = () => {
               <ArrowLeftRight className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground">Movimentações do Paciente</h1>
+              <h1 className="text-lg font-semibold text-foreground">Movimentações do Paciente</h1>
               <p className="text-xs text-muted-foreground">Sinalize transferências e saídas — a liberação efetiva do leito é feita pelo setor administrativo</p>
             </div>
           </div>
           {step !== "category" && (
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={resetWizard}>
+            <Button variant="outline" size="sm" className="gap-2 text-xs" onClick={resetWizard}>
               <ArrowLeft className="h-3.5 w-3.5" /> Reiniciar
             </Button>
           )}
@@ -254,19 +254,19 @@ const MovimentacoesPage = () => {
             (Prontuário, Atendimento e botão "Ver dados do prontuário"). */}
 
         {/* Wizard Card */}
-        <div className="rounded-xl border-2 border-primary/20 bg-card p-4 space-y-4">
+        <div className="rounded-lg border-2 border-primary/20 bg-card p-4 space-y-4">
           {/* Stepper */}
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            <span className={cn("font-semibold", step === "category" && "text-primary")}>1. Tipo</span>
+          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            <span className={cn("font-medium", step === "category" && "text-primary")}>1. Tipo</span>
             <ArrowRight className="h-3 w-3" />
-            <span className={cn("font-semibold", step === "subtype" && "text-primary")}>2. Subtipo</span>
+            <span className={cn("font-medium", step === "subtype" && "text-primary")}>2. Subtipo</span>
             <ArrowRight className="h-3 w-3" />
-            <span className={cn("font-semibold", step === "form" && "text-primary")}>3. Confirmar</span>
+            <span className={cn("font-medium", step === "form" && "text-primary")}>3. Confirmar</span>
           </div>
 
           {/* Step 1: Category */}
           {step === "category" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {MOVEMENT_CATEGORIES.map((cat) => {
                 const t = TONE_CLASSES[cat.tone];
                 const Icon = cat.icon;
@@ -276,7 +276,7 @@ const MovimentacoesPage = () => {
                     key={cat.id}
                     onClick={() => { setCategory(cat.id); setStep("subtype"); }}
                     className={cn(
-                      "group flex flex-col items-start gap-2 p-4 rounded-xl border bg-card text-left transition-all",
+                      "group flex flex-col items-start gap-2 p-4 rounded-lg border bg-card text-left transition-all",
                       t.border, t.hoverBorder, "hover:shadow-md hover:-translate-y-0.5"
                     )}
                   >
@@ -284,10 +284,10 @@ const MovimentacoesPage = () => {
                       <Icon className={cn("h-5 w-5", t.icon)} />
                     </div>
                     <div>
-                      <p className="font-semibold text-sm uppercase tracking-wide">{cat.label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{cat.description}</p>
+                      <p className="font-medium text-sm uppercase tracking-wide">{cat.label}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{cat.description}</p>
                     </div>
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">{count} opções</span>
+                    <span className="text-xs uppercase tracking-wider text-muted-foreground/70">{count} opções</span>
                   </button>
                 );
               })}
@@ -302,7 +302,7 @@ const MovimentacoesPage = () => {
               <div className="space-y-2">
                 <button
                   onClick={() => setStep("category")}
-                  className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                  className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground"
                 >
                   <ArrowLeft className="h-3 w-3" /> Voltar
                 </button>
@@ -323,10 +323,10 @@ const MovimentacoesPage = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm">{s.label}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{s.description}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{s.description}</p>
                         </div>
                         {s.linksToDischargeSummary && (
-                          <span className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-muted text-muted-foreground">+ Sumário</span>
+                          <span className="text-xs uppercase tracking-wider px-2 py-1 rounded-full bg-muted text-muted-foreground">+ Sumário</span>
                         )}
                       </button>
                     );
@@ -346,19 +346,19 @@ const MovimentacoesPage = () => {
                 <div className={cn("flex items-center gap-3 p-3 rounded-lg border", t.bg, t.border)}>
                   <Icon className={cn("h-5 w-5", t.icon)} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{cat.label}</p>
-                    <p className="font-semibold text-sm">{subtypeDef.label}</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{cat.label}</p>
+                    <p className="font-medium text-sm">{subtypeDef.label}</p>
                   </div>
                   <button
                     onClick={() => setStep("subtype")}
-                    className="text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                    className="text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground"
                   >
                     Alterar
                   </button>
                 </div>
 
                 {subtypeDef.needsDestination && (
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <Label className="text-xs uppercase tracking-wider">Destino *</Label>
                     <Select value={destination} onValueChange={setDestination}>
                       <SelectTrigger><SelectValue placeholder="Selecione o destino" /></SelectTrigger>
@@ -374,39 +374,39 @@ const MovimentacoesPage = () => {
                         placeholder="Especifique o destino"
                         value={customDestination}
                         onChange={(e) => setCustomDestination(e.target.value.toUpperCase())}
-                        className="mt-2 uppercase"
+                        className="mt-2 uppercase tracking-wider"
                       />
                     )}
                   </div>
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <Label className="text-xs uppercase tracking-wider">Médico Responsável</Label>
                     <Input
                       placeholder="Nome do médico (opcional)"
                       value={responsibleDoctor}
                       onChange={(e) => setResponsibleDoctor(e.target.value.toUpperCase())}
-                      className="uppercase"
+                      className="uppercase tracking-wider"
                     />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <Label className="text-xs uppercase tracking-wider">Observações</Label>
                     <Input
                       placeholder="Resumo (opcional)"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value.toUpperCase())}
-                      className="uppercase"
+                      className="uppercase tracking-wider"
                     />
                   </div>
                 </div>
 
                 {/* Aviso: leito permanece ocupado até liberação administrativa */}
-                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-warning/10 border border-warning/30">
-                  <BedDouble className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-warning/10 border border-warning/30">
+                  <BedDouble className="h-4 w-4 text-warning mt-1 shrink-0" />
                   <div className="text-xs leading-relaxed">
-                    <p className="font-semibold text-foreground">O leito permanece ocupado após a confirmação</p>
-                    <p className="text-muted-foreground mt-0.5">
+                    <p className="font-medium text-foreground">O leito permanece ocupado após a confirmação</p>
+                    <p className="text-muted-foreground mt-1">
                       Esta ação <span className="font-medium text-foreground">sinaliza</span> a movimentação no sistema. A liberação efetiva do leito é realizada pelo <span className="font-medium text-foreground">setor administrativo</span>.
                       {subtypeDef.linksToDischargeSummary && (
                         <> Você poderá complementar com o <span className="font-medium text-foreground">Sumário de Alta</span> em seguida.</>
@@ -417,7 +417,7 @@ const MovimentacoesPage = () => {
 
                 <div className="flex justify-end gap-2 pt-2">
                   <Button variant="outline" size="sm" onClick={resetWizard} disabled={submitting}>Cancelar</Button>
-                  <Button size="sm" onClick={handleSubmit} disabled={submitting} className="gap-1.5">
+                  <Button size="sm" onClick={handleSubmit} disabled={submitting} className="gap-2">
                     {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                     {submitting ? "Registrando..." : "Confirmar Movimentação"}
                   </Button>
@@ -428,11 +428,11 @@ const MovimentacoesPage = () => {
         </div>
 
         {/* History */}
-        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
           <div className="flex items-center gap-2">
             <History className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold text-foreground">Histórico recente</h2>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">({history.length})</span>
+            <h2 className="text-sm font-medium text-foreground">Histórico recente</h2>
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">({history.length})</span>
           </div>
           {loadingHistory ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground py-3">
@@ -450,7 +450,7 @@ const MovimentacoesPage = () => {
                 const isPending = (m.release_status ?? "pending_release") === "pending_release";
                 const isReleased = m.release_status === "released";
                 return (
-                  <li key={m.id} className="patient-id py-2.5 flex items-start gap-3">
+                  <li key={m.id} className="patient-id py-3 flex items-start gap-3">
                     <div className={cn("h-8 w-8 rounded-md flex items-center justify-center shrink-0", tone.bg)}>
                       <Icon className={cn("h-4 w-4", tone.icon)} />
                     </div>
@@ -458,26 +458,26 @@ const MovimentacoesPage = () => {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-medium">{def?.label ?? m.movement_type}</p>
                         {cat && (
-                          <Badge variant="outline" className={cn("text-[9px] uppercase tracking-wider", tone.badge, "border-transparent")}>
+                          <Badge variant="outline" className={cn("text-xs uppercase tracking-wider", tone.badge, "border-transparent")}>
                             {cat.label}
                           </Badge>
                         )}
                         {m.destination && (
-                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">→ {m.destination}</span>
+                          <span className="text-xs uppercase tracking-wider text-muted-foreground">→ {m.destination}</span>
                         )}
                         {isPending && (
-                          <Badge variant="outline" className="text-[9px] uppercase tracking-wider gap-1 bg-warning/10 text-warning border-warning/30">
+                          <Badge variant="outline" className="text-xs uppercase tracking-wider gap-1 bg-warning/10 text-warning border-warning/30">
                             <Clock className="h-2.5 w-2.5" /> Aguardando liberação do leito
                           </Badge>
                         )}
                         {isReleased && (
-                          <Badge variant="outline" className="text-[9px] uppercase tracking-wider bg-accent/10 text-accent border-accent/30">
+                          <Badge variant="outline" className="text-xs uppercase tracking-wider bg-accent/10 text-accent border-accent/30">
                             Leito liberado
                           </Badge>
                         )}
                       </div>
-                      {m.notes && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{m.notes}</p>}
-                      <p className="text-[10px] text-muted-foreground/70 mt-1">
+                      {m.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{m.notes}</p>}
+                      <p className="text-xs text-muted-foreground/70 mt-1">
                         {format(new Date(m.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                         {m.responsible_doctor ? ` • ${m.responsible_doctor}` : ""}
                         {isReleased && m.released_at ? ` • Liberado ${format(new Date(m.released_at), "dd/MM HH:mm", { locale: ptBR })}${m.released_by_name ? ` por ${m.released_by_name}` : ""}` : ""}

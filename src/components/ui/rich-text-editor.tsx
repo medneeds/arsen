@@ -160,7 +160,7 @@ export function RichTextEditor({
       title={label}
       aria-label={label}
       disabled={disabled}
-      className="h-7 w-7 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
+      className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
     >
       <Icon className="h-3.5 w-3.5" />
     </button>
@@ -168,7 +168,7 @@ export function RichTextEditor({
 
   return (
     <div className={cn("rounded-md border border-input bg-background overflow-hidden focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-0", className)}>
-      <div className="flex items-center gap-0.5 border-b border-border/60 bg-muted/30 px-1.5 py-1">
+      <div className="flex items-center gap-1 border-b border-border/60 bg-muted/30 px-2 py-1">
         <BtnIcon cmd="bold" Icon={Bold} label="Negrito (Ctrl+B)" />
         <BtnIcon cmd="italic" Icon={Italic} label="Itálico (Ctrl+I)" />
         <BtnIcon cmd="underline" Icon={UnderlineIcon} label="Sublinhado (Ctrl+U)" />
@@ -197,8 +197,8 @@ export function RichTextEditor({
           className={cn(
             "prose prose-sm max-w-none px-3 py-2 text-sm outline-none",
             "[&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0",
-            "[&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5",
-            "[&_strong]:font-semibold [&_em]:italic [&_u]:underline",
+            "[&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4",
+            "[&_strong]:font-medium [&_em]:italic [&_u]:underline",
             disabled && "opacity-60 cursor-not-allowed"
           )}
           style={{ minHeight }}

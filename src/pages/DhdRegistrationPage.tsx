@@ -65,11 +65,11 @@ export default function DhdRegistrationPage() {
 
       if (error) throw error;
 
-      toast.success("Paciente DHD cadastrado com sucesso!");
+      toast.success("Paciente DHD cadastrado com sucesso");
       navigate("/dhd");
     } catch (error) {
       console.error("Erro ao cadastrar paciente DHD:", error);
-      toast.error("Erro ao cadastrar paciente DHD");
+      toast.error("Não foi possível cadastrar paciente DHD");
     } finally {
       setSaving(false);
     }
@@ -86,7 +86,7 @@ export default function DhdRegistrationPage() {
           <ArrowLeft className="h-4 w-4" />
           Voltar para Dashboard
         </Button>
-        <h1 className="text-3xl font-bold text-foreground">
+        <h1 className="text-3xl font-semibold text-foreground">
           Cadastrar Novo Paciente DHD
         </h1>
         <p className="text-muted-foreground mt-1">

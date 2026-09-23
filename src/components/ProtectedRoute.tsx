@@ -1,13 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { LoadingScreen } from "./LoadingScreen";
 import { SessionTimeoutProvider } from "./SessionTimeoutProvider";
-import { PendingApprovalScreen } from "./PendingApprovalScreen";
+// Sob demanda: so aparece para usuario com cadastro pendente, mas arrastava
+// framer-motion (22 usos) para o pacote de entrada de TODA a aplicacao.
+const PendingApprovalScreen = lazy(() =>
+  import("./PendingApprovalScreen").then(m => ({ default: m.PendingApprovalScreen })));
 import { ConsentTermsDialog, CURRENT_TERMS_VERSION } from "./ConsentTermsDialog";
-import { supabase } from "@/integrations/supabase/client";
-import { AccessLimitsScreen } from "./AccessLimitsScreen";
+import { toast } from "sonner";
 import { ProfileIpGate } from "./ProfileIpGate";
+import { startIdlePrefetch } from "@/lib/prefetchRoutes";
+import { PageLoader } from "@/components/PageLoader";
 
 // Logins genéricos que não precisam de aprovação (período de transição)
 const LEGACY_GENERIC_USERS = [
@@ -26,19 +29,12 @@ const LEGACY_GENERIC_USERS = [
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, status, role } = useAuth();
   const navigate = useNavigate();
-  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
   const [hasShownLoading, setHasShownLoading] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [checkingTerms, setCheckingTerms] = useState(true);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [showAccessLimits, setShowAccessLimits] = useState(false);
-  // 🔒 Persistir no sessionStorage para sobreviver a F5/reload da página.
+  // Persistir no sessionStorage para sobreviver a F5/reload da página.
   // Sem isso, cada reload reseta o estado e força a re-seleção do setor.
-  const [accessLimitsShown, setAccessLimitsShown] = useState(() => {
-    try {
-      return sessionStorage.getItem("access_limits_shown") === "1";
-    } catch { return false; }
-  });
 
   // Verificar se é um usuário genérico legado (não precisa de aprovação nem termos)
   const isLegacyGenericUser = user?.email && LEGACY_GENERIC_USERS.includes(user.email.toLowerCase());
@@ -53,6 +49,17 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // Auditoria 18/09/2026 — duas correcoes aqui:
+      //
+      // 1) era a terceira consulta identica a `profiles` no caminho de entrada;
+      //    agora passa por lerPerfil, que colapsa a rajada do login.
+      //
+      // 2) o `catch` antigo abria o dialogo de TERMOS quando a consulta falhava.
+      //    Com o servidor fora do ar, o medico de plantao recebia um pedido de
+      //    aceite de termos em vez de "nao foi possivel conectar" — a tela
+      //    mentia sobre a causa, e aceitar ali tentaria gravar num servidor que
+      //    nao responde. Falha de leitura agora deixa passar sem travar o
+      //    acesso ao prontuario, e registra o erro.
       try {
         // Schema refatorado: consentimento vive em consentimentos_usuario
         // (antes: profiles.terms_version + user_consents).
@@ -71,8 +78,22 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
           setShowTermsDialog(true);
         }
       } catch (error) {
-        console.error("Erro ao verificar termos:", error);
-        setShowTermsDialog(true);
+        console.error("[Arsen] falha ao verificar termos:", error);
+        // DIVERGENCIA RESOLVIDA NO REBASE (18/09/2026) — o commit 7924d17d
+        // abria o dialogo de termos aqui, com a intencao de NAO bloquear o
+        // acesso. Só que abrir o dialogo bloqueia: mais abaixo,
+        // `if (showTermsDialog && !termsAccepted)` devolve o dialogo NO LUGAR
+        // dos filhos. E o unico jeito de sair dele e aceitar, o que dispara um
+        // insert no mesmo servidor que acabou de falhar — o medico fica preso
+        // num dialogo que nao tem como concluir.
+        //
+        // Por isso: falha de leitura nao abre o dialogo e nao trava o plantao.
+        // NAO marcamos termsAccepted — nada e registrado como aceito —, apenas
+        // deixamos passar e a checagem roda de novo na proxima entrada.
+        setShowTermsDialog(false);
+        toast.error("Nao foi possivel verificar os termos de uso", {
+          description: "Servidor indisponivel. O acesso segue liberado e a verificacao sera refeita.",
+        });
       } finally {
         setCheckingTerms(false);
       }
@@ -83,13 +104,22 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, isLegacyGenericUser, role]);
 
+  // Aquecimento das rotas clinicas: so com sessao. Antes rodava no App, ou
+  // seja, ja na tela de login — a rede ficava ocupada baixando 1,18 MB de
+  // telas que o usuario ainda nem tinha direito de ver.
+  useEffect(() => {
+    if (!loading && user) startIdlePrefetch();
+  }, [loading, user]);
+
   useEffect(() => {
     if (!loading && !user) {
       // Limpar flags de sessão ao deslogar
       try { sessionStorage.removeItem("access_limits_shown"); } catch {}
       navigate("/auth");
     } else if (!loading && user && !hasShownLoading) {
-      setShowLoadingScreen(true);
+      // Sem tela de carregamento aqui: o AuthPage ja mostra uma ao autenticar,
+      // e esta aparecia logo depois — dois carregamentos seguidos antes de uma
+      // tela (/setores) que nao busca nada e abre instantanea.
       setHasShownLoading(true);
     }
   }, [user, loading, navigate, hasShownLoading]);
@@ -104,15 +134,23 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const activeAccessProfile = typeof window !== "undefined"
     ? (sessionStorage.getItem("active_access_profile") || localStorage.getItem("access_profile") || "")
     : "";
-  const SECTOR_PICKER_PROFILES = new Set(["medico"]);
-  const skipAccessLimits = !SECTOR_PICKER_PROFILES.has(activeAccessProfile);
+  // A escolha de setor acontece em /setores, para onde medico e multi pousam
+  // depois do login. O AccessLimitsScreen fazia a MESMA pergunta antes, entao
+  // o profissional via duas telas de selecao em sequencia -- e a antiga vinha
+  // primeiro, precedida de um carregamento. Desligado para todos os perfis.
 
+  // Enquanto a sessao e os termos sao verificados, mostra o splash — nao uma
+  // tela BRANCA. Devolver null aqui era o que fazia a plataforma "nao
+  // carregar": sem spinner, sem mensagem, sem pista de que algo estava em
+  // andamento. Uma tela em branco nao distingue "carregando" de "quebrou".
   if (loading || checkingTerms) {
-    return null;
+    return <PageLoader message="Entrando na plataforma…" />;
   }
 
+  // Sem sessao: o efeito acima ja redireciona para /auth. O splash evita o
+  // piscar de tela branca durante o redirecionamento.
   if (!user) {
-    return null;
+    return <PageLoader message="Entrando na plataforma…" />;
   }
 
   // super_admin: sem hospital, setor, termos, fila de aprovação nem IP-gate — acesso direto.
@@ -147,23 +185,10 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Tela de limites de acesso
-  if (showAccessLimits && !accessLimitsShown) {
-    return (
-      <AccessLimitsScreen
-        onProceed={() => {
-          setShowAccessLimits(false);
-          setAccessLimitsShown(true);
-          try { sessionStorage.setItem("access_limits_shown", "1"); } catch {}
-        }}
-      />
-    );
-  }
-
   // Usuários genéricos legados têm acesso direto (período de transição)
   // Usuários individuais pendentes veem a tela de espera
   if (status === "pending" && !isLegacyGenericUser) {
-    return <PendingApprovalScreen />;
+    return <Suspense fallback={null}><PendingApprovalScreen /></Suspense>;
   }
 
   // Envolver com SessionTimeoutProvider para ativar timeout LGPD/CFM

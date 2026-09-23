@@ -1,8 +1,11 @@
-import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode, useCallback, useMemo } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
+import { comTempoLimite } from "@/lib/tempoLimite";
+import { ehChaveSensivel } from "@/lib/chavesSensiveis";
+import { limparPerfilEmCache } from "@/lib/perfilSupabase";
 
 // Papel agora vem do enum papel_profissional (schema refatorado → tabela `profissionais`).
 type UserRole = Database["public"]["Enums"]["papel_profissional"] | null;
@@ -22,6 +25,13 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+/**
+ * Marcador da auto-recuperacao de sessao presa. Vive no sessionStorage, entao
+ * morre com a aba, e e limpo assim que uma sessao carrega normalmente — garante
+ * no maximo UMA recarga por aba, sem risco de laco.
+ */
+const MARCADOR_RECARGA = "arsen:recarga_sessao_presa";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -57,10 +67,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Marcador de recarga unica: some quando a aba fecha, e e zerado assim que
+    // uma sessao carrega normalmente — para que a auto-recuperacao volte a
+    // valer numa proxima vez, sem nunca virar laco de recarga.
+    // O tempo limite aqui NAO e decoracao: comprovado em navegador que
+    // getSession() NAO REJEITA quando a renovacao do token falha — ele fica
+    // PENDENTE indefinidamente, porque o supabase-js segura a promessa
+    // enquanto tenta renovar em laco. Sem o relogio, nenhum catch ajuda.
+    comTempoLimite(supabase.auth.getSession(), "recuperar sessão", 10_000).then(({ data: { session } }) => {
+      // Recuperou normalmente: libera o marcador, para que a auto-recuperacao
+      // volte a valer se a sessao travar mais adiante nesta mesma aba.
+      try { sessionStorage.removeItem(MARCADOR_RECARGA); } catch { /* ignore */ }
+
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         setTimeout(() => {
           fetchUserRoleAndDepartments(session.user.id);
@@ -68,6 +89,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setLoading(false);
       }
+    }).catch((erro) => {
+      // INCIDENTE 18/09/2026 — a plataforma travava em "Entrando na
+      // plataforma…" e nao chegava nem no formulario de login.
+      //
+      // getSession() nao le so o armazenamento: com o token expirado, ele vai a
+      // rede renovar. Quando essa renovacao falha, o supabase-js NAO rejeita —
+      // ele segura a promessa e tenta renovar em laco. Sem relogio, ela nunca
+      // se resolve, setLoading(false) nunca roda, `loading` fica true para
+      // sempre e o ProtectedRoute exibe o splash indefinidamente.
+      //
+      // Reproduzido em navegador (Playwright): sessao expirada no
+      // localStorage + falha de rede em /auth/v1/token = tela presa em "/",
+      // com este catch no bundle e NUNCA acionado — a prova de que a promessa
+      // ficava pendente, nao rejeitada.
+      //
+      // Foi o que aconteceu depois da queda do servidor: as sessoes do plantao
+      // expiraram durante as horas fora do ar e, na volta, ninguem entrava.
+      //
+      // Falhar aqui precisa levar ao LOGIN, nunca a uma espera infinita.
+      console.error("[AuthContext] falha ao recuperar sessao — indo para o login:", erro);
+      setSession(null);
+      setUser(null);
+      setRole(null);
+      setStatus(null);
+      setAllowedDepartments([]);
+      setLoading(false);
+
+      // NAO BASTA cair no login: o cliente inteiro fica envenenado.
+      //
+      // Em @supabase/supabase-js, SupabaseClient.fetch e embrulhado por
+      // fetchWithAuth(_getAccessToken), e _getAccessToken faz
+      // `await this.auth.getSession()`. Ou seja, TODA requisicao — REST, RPC,
+      // storage — espera getSession() antes de sair. Com a renovacao travada,
+      // tudo fica na fila atras dela.
+      //
+      // Foi o que apareceu no console do plantao: a tela chegava no login
+      // (este catch funcionou), mas ao tentar entrar o RPC resolve_login
+      // estourava 10s — enquanto o mesmo RPC respondia em 0,7s por curl, fora
+      // do cliente. Nao era o servidor: era a trava interna.
+      //
+      // A renovacao travada vive na INSTANCIA em memoria, entao limpar o
+      // armazenamento nao a solta. Unica saida confiavel: apagar a sessao
+      // envenenada e comecar com um cliente novo. A recarga e UNICA por aba,
+      // protegida por marcador, para nao virar laco.
+      try {
+        Object.keys(localStorage)
+          .filter((k) => /^sb-.*-auth-token$/.test(k))
+          .forEach((k) => localStorage.removeItem(k));
+      } catch { /* armazenamento indisponivel */ }
+
+      try {
+        if (!sessionStorage.getItem(MARCADOR_RECARGA)) {
+          sessionStorage.setItem(MARCADOR_RECARGA, "1");
+          console.warn("[AuthContext] sessao presa descartada — recarregando com cliente limpo");
+          window.location.reload();
+        }
+      } catch { /* armazenamento indisponivel */ }
     });
 
     return () => subscription.unsubscribe();
@@ -96,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAllowedDepartments([]);
         return;
       }
+      setRole(roleData?.role as UserRole);
 
       if (!prof) {
         // Autenticado sem linha em profissionais: sem papel → bloqueado.
@@ -125,16 +204,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const refreshUserStatus = async () => {
+  const refreshUserStatus = useCallback(async () => {
     if (user) {
+      // O perfil em cache precisa cair aqui: o proposito desta funcao e
+      // justamente refletir mudanca feita por um admin agora (ex.: promocao de
+      // visitante para medico). Sem isto, a janela de reuso de 15s do lerPerfil
+      // devolveria o perfil antigo e a promocao pareceria nao ter acontecido.
+      limparPerfilEmCache();
       // Rebusca role + status + departamentos completos para garantir que mudanças
       // feitas por um admin (ex: promoção de visitante → médico) reflitam
       // imediatamente sem que o usuário precise fazer logout.
       await fetchUserRoleAndDepartments(user.id);
     }
-  };
+  }, [user]);
 
-  const signIn = async (identifier: string, password: string) => {
+  const signIn = useCallback(async (identifier: string, password: string) => {
     // Aceita email, CPF (somente dígitos) ou usuário interno.
     const raw = identifier.trim();
     const digits = raw.replace(/\D+/g, "");
@@ -146,10 +230,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isEmail) {
       // Login por CPF/usuário dependia da RPC resolve_login, que NÃO existe no
       // schema refatorado. Até uma equivalente ser deployada, só e-mail funciona.
+      // Com tempo limite: sem ele, uma RPC que nao responde deixa o botao
+      // "Entrando..." preso para sempre, sem erro e sem mensagem.
       try {
-        const { data: resolveData, error: resolveError } = await (supabase.rpc as any)(
-          "resolve_login",
-          { p_identifier: isCpf ? digits : raw },
+        const { data: resolveData, error: resolveError } = await comTempoLimite(
+          (supabase.rpc as any)("resolve_login", { p_identifier: isCpf ? digits : raw }),
+          "identificar usuário",
+          10_000,
         );
         if (resolveError || !(resolveData as any)?.email) {
           return { error: resolveError ?? new Error("Login por CPF/usuário indisponível — use o e-mail.") };
@@ -160,15 +247,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: emailToUse,
-      password,
-    });
+    try {
+      const { error } = await comTempoLimite(
+        supabase.auth.signInWithPassword({ email: emailToUse, password }),
+        "autenticar",
+        15_000,
+      );
+      return { error };
+    } catch (e) {
+      return { error: e };
+    }
+  }, []);
 
-    return { error };
-  };
-
-  const signUp = async (username: string, password: string, fullName: string, role: "admin" | "medico" | "porta" | "visitante" | "farmacia" = "medico") => {
+  const signUp = useCallback(async (username: string, password: string, fullName: string, role: "admin" | "medico" | "porta" | "visitante" | "farmacia" = "medico") => {
     const redirectUrl = `${window.location.origin}/`;
     const internalEmail = `${username.toLowerCase()}@sistema.local`;
     
@@ -190,15 +281,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     return { error };
-  };
+  }, [navigate]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setRole(null);
     setStatus(null);
     setAllowedDepartments([]);
+    // O perfil em memoria tambem sai: sem isto, o proximo usuario a entrar no
+    // mesmo terminal dentro da janela de reuso poderia enxergar o perfil do
+    // anterior.
+    limparPerfilEmCache();
     // Clear all PHI/access-control data from local storage to prevent leakage after logout (LGPD)
     try {
       const SENSITIVE_KEYS = [
@@ -213,20 +308,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ];
       SENSITIVE_KEYS.forEach((k) => localStorage.removeItem(k));
       ["active_access_profile", "available_access_profiles"].forEach((k) => sessionStorage.removeItem(k));
-      // Defensive sweep: any cached patient/clinical keys
+      // Defensive sweep: any cached patient/clinical/draft keys.
+      // A regra vive em @/lib/chavesSensiveis, testada em
+      // src/tests/logout-limpa-rascunhos.test.ts — a varredura antiga nao
+      // alcancava nenhuma das chaves de rascunho realmente gravadas.
       Object.keys(localStorage).forEach((k) => {
-        if (/^(patient|clinical|prescription|evolution|exam|culture|note|checklist)/i.test(k)) {
-          localStorage.removeItem(k);
-        }
+        if (ehChaveSensivel(k)) localStorage.removeItem(k);
       });
     } catch {
       // ignore storage errors
     }
     navigate("/auth");
-  };
+  }, [navigate]);
+
+  /**
+   * O objeto de valor precisa ser memoizado: criado inline, ele era NOVO a cada
+   * render do provider, e os 71 componentes que consomem useAuth
+   * re-renderizavam junto — mesmo sem nada ter mudado de fato. Com telas de
+   * milhares de linhas, isso e a causa de transicao lenta em todo o app.
+   */
+  const valor = useMemo(
+    () => ({ user, session, role, status, allowedDepartments, loading, signIn, signUp, signOut, refreshUserStatus }),
+    [user, session, role, status, allowedDepartments, loading, signIn, signUp, signOut, refreshUserStatus],
+  );
 
   return (
-    <AuthContext.Provider value={{ user, session, role, status, allowedDepartments, loading, signIn, signUp, signOut, refreshUserStatus }}>
+    <AuthContext.Provider value={valor}>
       {children}
     </AuthContext.Provider>
   );

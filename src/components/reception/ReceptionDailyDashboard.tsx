@@ -39,9 +39,9 @@ interface KpiCardProps {
 
 const toneMap = {
   default: "bg-primary/10 text-primary",
-  warn: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-  success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-  info: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
+  warn: "bg-warning/10 text-warning-on-soft",
+  success: "bg-released/10 text-released-on-soft",
+  info: "bg-primary/10 text-foreground",
 };
 
 function KpiCard({ icon: Icon, label, value, hint, tone = "default" }: KpiCardProps) {
@@ -53,9 +53,9 @@ function KpiCard({ icon: Icon, label, value, hint, tone = "default" }: KpiCardPr
             <Icon className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</p>
-            <p className="text-xl font-bold leading-tight">{value}</p>
-            {hint && <p className="text-[10px] text-muted-foreground mt-0.5">{hint}</p>}
+            <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">{label}</p>
+            <p className="text-xl font-semibold leading-tight">{value}</p>
+            {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
           </div>
         </div>
       </CardContent>
@@ -312,7 +312,7 @@ export function ReceptionDailyDashboard({
       );
     } catch (err: any) {
       console.error("Erro ao carregar painel diário:", err);
-      toast.error("Erro ao carregar painel da recepção", { description: err?.message });
+      toast.error("Não foi possível carregar painel da recepção", { description: err?.message });
     } finally {
       setLoading(false);
     }
@@ -390,7 +390,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
         encounterCode,
       });
     } catch (err: any) {
-      toast.error("Erro ao imprimir", { description: err?.message });
+      toast.error("Não foi possível imprimir", { description: err?.message });
     }
   };
 
@@ -502,7 +502,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
     <div className="space-y-4">
       {/* Filtro de período */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 p-1 rounded-lg bg-muted/40 w-fit">
+        <div className="flex items-center gap-2 p-1 rounded-lg bg-muted/40 w-fit">
           <CalendarRange className="h-3.5 w-3.5 text-muted-foreground ml-2 mr-1" />
           {([
             { v: "today", label: "Hoje" },
@@ -513,7 +513,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
               key={opt.v}
               onClick={() => setPeriodFilter(opt.v)}
               className={cn(
-                "px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors",
+                "px-3 py-1 rounded-md text-xs font-medium transition-colors",
                 periodFilter === opt.v
                   ? "bg-background shadow-sm text-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -576,7 +576,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
         <div className="flex flex-wrap items-center gap-2">
           <Button
             onClick={onTriageExpress}
-            className="bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
+            className="bg-critical hover:bg-critical text-white shadow-sm"
             size="sm"
           >
             <AlertTriangle className="h-4 w-4 mr-2" />
@@ -587,7 +587,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
             Novo cadastro completo
           </Button>
           <Button onClick={fetchAll} variant="ghost" size="sm" disabled={loading} className="ml-auto">
-            <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")} />
+            <RefreshCw className={cn("h-3.5 w-3.5 mr-2", loading && "animate-spin")} />
             Atualizar
           </Button>
         </div>
@@ -601,25 +601,25 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
       */}
       <Tabs key={defaultSubTab} defaultValue={defaultSubTab} className="w-full">
         <TabsList>
-          <TabsTrigger value="dia" className="gap-1.5">
+          <TabsTrigger value="dia" className="gap-2">
             <Activity className="h-3.5 w-3.5" />
             Entradas do Dia
-            <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{kpis.totalToday}</Badge>
+            <Badge variant="secondary" className="ml-1 text-xs h-4 px-2">{kpis.totalToday}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="aguardando" className="gap-1.5">
+          <TabsTrigger value="aguardando" className="gap-2">
             <BedDouble className="h-3.5 w-3.5" />
             Aguardando Admissão
-            <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{kpis.waitingAdmission}</Badge>
+            <Badge variant="secondary" className="ml-1 text-xs h-4 px-2">{kpis.waitingAdmission}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="equipe" className="gap-1.5">
+          <TabsTrigger value="equipe" className="gap-2">
             <Trophy className="h-3.5 w-3.5" />
             Equipe
-            <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{userStats.length}</Badge>
+            <Badge variant="secondary" className="ml-1 text-xs h-4 px-2">{userStats.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="minhas" className="gap-1.5">
+          <TabsTrigger value="minhas" className="gap-2">
             <History className="h-3.5 w-3.5" />
             Minhas Ações (24h)
-            <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{myActions.length}</Badge>
+            <Badge variant="secondary" className="ml-1 text-xs h-4 px-2">{myActions.length}</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -633,7 +633,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
             </CardHeader>
             <CardContent className="p-0">
               {filteredEncounters.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground">
+                <div className="text-center py-8 text-muted-foreground">
                   <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
                   <p className="text-sm">Nenhuma entrada registrada no período</p>
                 </div>
@@ -652,35 +652,35 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
                           key={e.id}
                           className={cn(
                             "p-3 hover:bg-accent/40 transition-colors",
-                            isRedRoom && "bg-red-500/5 border-l-2 border-l-red-600",
-                            slaTone === "danger" && "bg-rose-500/5",
+                            isRedRoom && "bg-critical/5 border-l-2 border-l-red-600",
+                            slaTone === "danger" && "bg-critical/5",
                           )}
                         >
                           <div className="flex items-center justify-between gap-2">
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
-                                {isRedRoom && <Siren className="h-3.5 w-3.5 text-red-600 animate-pulse shrink-0" />}
+                                {isRedRoom && <Siren className="h-3.5 w-3.5 text-critical-on-soft animate-pulse shrink-0" />}
                                 <span className="font-medium text-sm truncate">{e.patient_name}</span>
-                                <Badge variant="outline" className="text-[10px] font-mono h-4">{e.encounter_code}</Badge>
+                                <Badge variant="outline" className="text-xs font-mono h-4">{e.encounter_code}</Badge>
                                 {e.status === "active" ? (
-                                  <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-[9px] h-4">
+                                  <Badge className="bg-released/15 text-released-on-soft border border-released/30 text-xs h-4">
                                     ativo
                                   </Badge>
                                 ) : (
-                                  <Badge variant="outline" className="text-[9px] h-4">{e.status}</Badge>
+                                  <Badge variant="outline" className="text-xs h-4">{e.status}</Badge>
                                 )}
                                 {e.is_unidentified && (
-                                  <Badge className="bg-slate-500/15 text-slate-700 dark:text-slate-300 border border-slate-500/30 text-[9px] h-4 gap-1">
+                                  <Badge className="bg-primary/15 text-foreground border border-border/30 text-xs h-4 gap-1">
                                     <UserX className="h-2.5 w-2.5" /> NI
                                   </Badge>
                                 )}
                                 {e.documents_pending && (
-                                  <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[9px] h-4 gap-1" title="Documentação pendente">
+                                  <Badge className="bg-warning/15 text-warning-on-soft border border-warning/30 text-xs h-4 gap-1" title="Documentação pendente">
                                     <FileWarning className="h-2.5 w-2.5" /> docs pendentes
                                   </Badge>
                                 )}
                                 {e.partial_identification && !e.is_unidentified && (
-                                  <Badge className="bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/30 text-[9px] h-4">
+                                  <Badge className="bg-warning/15 text-warning-on-soft border border-warning/30 text-xs h-4">
                                     identificação parcial
                                   </Badge>
                                 )}
@@ -694,7 +694,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
                                   />
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-1">
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                                 <span>{format(new Date(e.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
                                 <span>•</span>
                                 <span className="capitalize">→ {e.destination_sector?.replace(/_/g, " ") || "—"}</span>
@@ -711,7 +711,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-7 text-[10px]"
+                                  className="h-7 text-xs"
                                   onClick={() => onPickRegistry(e.registry_id!, e.patient_name)}
                                 >
                                   <Play className="h-3 w-3 mr-1" />
@@ -726,7 +726,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="w-56">
-                                    <DropdownMenuLabel className="text-[10px]">Ações rápidas</DropdownMenuLabel>
+                                    <DropdownMenuLabel className="text-xs">Ações rápidas</DropdownMenuLabel>
                                     <DropdownMenuItem onClick={() => handlePrintWristband(e.registry_id, e.encounter_code)}>
                                       <Printer className="h-3.5 w-3.5 mr-2" />
                                       Reimprimir pulseira
@@ -735,7 +735,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
                                       <DropdownMenuItem
                                         onClick={() => setCompleteTarget({ registryId: e.registry_id!, name: e.patient_name })}
                                       >
-                                        <FileWarning className="h-3.5 w-3.5 mr-2 text-amber-600" />
+                                        <FileWarning className="h-3.5 w-3.5 mr-2 text-warning-on-soft" />
                                         Completar pendências
                                       </DropdownMenuItem>
                                     )}
@@ -749,7 +749,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
                                           })
                                         }
                                       >
-                                        <UserCheck className="h-3.5 w-3.5 mr-2 text-emerald-600" />
+                                        <UserCheck className="h-3.5 w-3.5 mr-2 text-released-on-soft" />
                                         Identificar paciente (NI → real)
                                       </DropdownMenuItem>
                                     )}
@@ -788,10 +788,10 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
             </CardHeader>
             <CardContent className="p-0">
               {pendingAdmissions.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground">
+                <div className="text-center py-8 text-muted-foreground">
                   <CheckCircle2 className="h-8 w-8 mx-auto mb-2 opacity-30" />
                   <p className="text-sm">Nenhum paciente aguardando admissão</p>
-                  <p className="text-[11px] mt-1">Todos os direcionamentos foram processados pelos setores</p>
+                  <p className="text-xs mt-1">Todos os direcionamentos foram processados pelos setores</p>
                 </div>
               ) : (
                 <ScrollArea className="max-h-[360px]">
@@ -800,24 +800,24 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
                       const waitMin = Math.round((Date.now() - new Date(p.created_at).getTime()) / 60000);
                       const slow = waitMin > 60;
                       return (
-                        <div key={p.id} className={cn("p-3 hover:bg-accent/40", slow && "bg-amber-500/5")}>
+                        <div key={p.id} className={cn("p-3 hover:bg-accent/40", slow && "bg-warning/5")}>
                           <div className="flex items-center justify-between gap-2">
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-medium text-sm truncate">{p.patient_name}</span>
-                                <Badge variant="outline" className="text-[10px] h-4">{p.destination_sector}</Badge>
+                                <Badge variant="outline" className="text-xs h-4">{p.destination_sector}</Badge>
                                 {slow && (
-                                  <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[9px] h-4">
+                                  <Badge className="bg-warning/15 text-warning-on-soft border border-warning/30 text-xs h-4">
                                     {waitMin}min
                                   </Badge>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-1">
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                                 <Clock className="h-3 w-3" />
                                 <span>aguardando há {formatDistanceToNow(new Date(p.created_at), { locale: ptBR })}</span>
                               </div>
                               {p.notes && (
-                                <p className="text-[10px] text-muted-foreground mt-1 italic truncate">{p.notes}</p>
+                                <p className="text-xs text-muted-foreground mt-1 italic truncate">{p.notes}</p>
                               )}
                             </div>
                             <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -842,7 +842,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
             </CardHeader>
             <CardContent className="p-0">
               {myActions.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground">
+                <div className="text-center py-8 text-muted-foreground">
                   <History className="h-8 w-8 mx-auto mb-2 opacity-30" />
                   <p className="text-sm">Nenhuma ação registrada nas últimas 24h</p>
                 </div>
@@ -854,17 +854,17 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0">
                             <p className="truncate">{actionLabel(a)}</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                            <p className="text-xs text-muted-foreground mt-1">
                               {format(new Date(a.created_at), "dd/MM HH:mm:ss", { locale: ptBR })}
                             </p>
                           </div>
                           <Badge
                             variant="outline"
                             className={cn(
-                              "text-[9px] h-4 shrink-0",
-                              a.action === "INSERT" && "border-emerald-500/40 text-emerald-700 dark:text-emerald-400",
-                              a.action === "UPDATE" && "border-sky-500/40 text-sky-700 dark:text-sky-400",
-                              a.action === "DELETE" && "border-rose-500/40 text-rose-700 dark:text-rose-400",
+                              "text-xs h-4 shrink-0",
+                              a.action === "INSERT" && "border-released/40 text-released-on-soft",
+                              a.action === "UPDATE" && "border-border/40 text-foreground",
+                              a.action === "DELETE" && "border-critical/40 text-critical-on-soft",
                             )}
                           >
                             {a.action}

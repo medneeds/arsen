@@ -16,10 +16,11 @@ interface UsePageReadyOptions {
  *   const ready = usePageReady({ loading: authLoading || patientsLoading });
  *   if (!ready) return <PageLoader message="PREPARANDO UTI 2…" />;
  */
-export function usePageReady({ loading, minDisplayMs = 250 }: UsePageReadyOptions): boolean {
-  const [minElapsed, setMinElapsed] = useState(false);
+export function usePageReady({ loading, minDisplayMs = 0 }: UsePageReadyOptions): boolean {
+  const [minElapsed, setMinElapsed] = useState(minDisplayMs === 0);
 
   useEffect(() => {
+    if (minDisplayMs === 0) return;
     const t = setTimeout(() => setMinElapsed(true), minDisplayMs);
     return () => clearTimeout(t);
   }, [minDisplayMs]);

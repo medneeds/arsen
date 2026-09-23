@@ -68,11 +68,11 @@ const MAV_ITEMS: MavItem[] = [
 ];
 
 const SUBGROUPS = [
-  { id: 'opioid' as const,    label: 'Opioides Fortes',         icon: Syringe,   color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-950/20', border: 'border-purple-200 dark:border-purple-900', desc: 'Morfina, fentanil SOS, metadona, tramadol' },
-  { id: 'vasoactive' as const, label: 'Drogas Vasoativas',       icon: Activity,  color: 'text-rose-600',   bg: 'bg-rose-50 dark:bg-rose-950/20',     border: 'border-rose-200 dark:border-rose-900',     desc: 'Noradrenalina, adrenalina, dobutamina, vasopressina, NPS' },
-  { id: 'rsi_bolus' as const,  label: 'Bolus de Intubação (SRI)', icon: Zap,       color: 'text-amber-600',  bg: 'bg-amber-50 dark:bg-amber-950/20',   border: 'border-amber-200 dark:border-amber-900',   desc: 'Fentanil, etomidato, cetamina, midazolam, propofol, succinilcolina, rocurônio' },
-  { id: 'continuous' as const, label: 'Sedoanalgesia Contínua',   icon: Waves,     color: 'text-sky-600',    bg: 'bg-sky-50 dark:bg-sky-950/20',       border: 'border-sky-200 dark:border-sky-900',       desc: 'Midazolam, propofol, fentanil, cetamina, dexmedetomidina (BIC)' },
-  { id: 'insulin' as const,    label: 'Insulinas',                icon: Droplet,   color: 'text-emerald-700', bg: 'bg-emerald-50 dark:bg-emerald-950/20', border: 'border-emerald-200 dark:border-emerald-900', desc: 'Regular, NPH, Glargina, Detemir, Degludeca, Lispro, Aspart, Glulisina — assistente de insulinoterapia' },
+  { id: 'opioid' as const,    label: 'Opioides Fortes',         icon: Syringe,   color: 'text-foreground', bg: 'bg-muted', border: 'border-border', desc: 'Morfina, fentanil SOS, metadona, tramadol' },
+  { id: 'vasoactive' as const, label: 'Drogas Vasoativas',       icon: Activity,  color: 'text-critical-on-soft',   bg: 'bg-critical-soft',     border: 'border-critical-border',     desc: 'Noradrenalina, adrenalina, dobutamina, vasopressina, NPS' },
+  { id: 'rsi_bolus' as const,  label: 'Bolus de Intubação (SRI)', icon: Zap,       color: 'text-warning-on-soft',  bg: 'bg-warning-soft',   border: 'border-warning-border',   desc: 'Fentanil, etomidato, cetamina, midazolam, propofol, succinilcolina, rocurônio' },
+  { id: 'continuous' as const, label: 'Sedoanalgesia Contínua',   icon: Waves,     color: 'text-foreground',    bg: 'bg-muted',       border: 'border-border',       desc: 'Midazolam, propofol, fentanil, cetamina, dexmedetomidina (BIC)' },
+  { id: 'insulin' as const,    label: 'Insulinas',                icon: Droplet,   color: 'text-released-on-soft', bg: 'bg-released-soft', border: 'border-released-border', desc: 'Regular, NPH, Glargina, Detemir, Degludeca, Lispro, Aspart, Glulisina — assistente de insulinoterapia' },
 ];
 
 interface Props {
@@ -112,9 +112,9 @@ export function HighAlertGuideDialog({ open, onOpenChange, onAddItem }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="px-5 py-3 border-b border-border bg-gradient-to-r from-red-50 to-amber-50 dark:from-red-950/30 dark:to-amber-950/30">
+        <DialogHeader className="px-4 py-3 border-b border-border bg-critical-soft">
           <DialogTitle className="flex items-center gap-2 text-base">
-            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <AlertTriangle className="h-5 w-5 text-critical-on-soft" />
             Guia MAV — Medicamentos de Alta Vigilância
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -123,13 +123,13 @@ export function HighAlertGuideDialog({ open, onOpenChange, onAddItem }: Props) {
         </DialogHeader>
 
         {/* Subgroup tabs + search */}
-        <div className="px-5 py-3 border-b border-border space-y-2.5 bg-muted/20">
-          <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="px-4 py-3 border-b border-border space-y-3 bg-muted/20">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
               onClick={() => setActiveSubgroup('all')}
               className={cn(
-                "text-[11px] font-medium px-2.5 py-1 rounded-full border transition-all",
+                "text-xs font-medium px-3 py-1 rounded-full border transition-all",
                 activeSubgroup === 'all'
                   ? "bg-foreground text-background border-foreground"
                   : "bg-background text-muted-foreground border-border hover:bg-muted"
@@ -147,7 +147,7 @@ export function HighAlertGuideDialog({ open, onOpenChange, onAddItem }: Props) {
                   type="button"
                   onClick={() => setActiveSubgroup(g.id)}
                   className={cn(
-                    "text-[11px] font-medium px-2.5 py-1 rounded-full border transition-all flex items-center gap-1.5",
+                    "text-xs font-medium px-3 py-1 rounded-full border transition-all flex items-center gap-2",
                     active
                       ? cn(g.bg, g.color, g.border, "border-current")
                       : "bg-background text-muted-foreground border-border hover:bg-muted"
@@ -165,16 +165,16 @@ export function HighAlertGuideDialog({ open, onOpenChange, onAddItem }: Props) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar droga MAV (ex: fentanil, noradrenalina, rocurônio)..."
-              className="pl-9 h-9 text-sm bg-background"
+              className="pl-8 h-9 text-sm bg-background"
               autoFocus
             />
           </div>
         </div>
 
         {/* List */}
-        <ScrollArea className="flex-1 px-5 py-3">
+        <ScrollArea className="flex-1 px-4 py-3">
           {filtered.length === 0 ? (
-            <div className="text-center text-sm text-muted-foreground py-12">
+            <div className="text-center text-sm text-muted-foreground py-8">
               Nenhuma droga MAV encontrada para "{query}".
             </div>
           ) : (
@@ -187,8 +187,8 @@ export function HighAlertGuideDialog({ open, onOpenChange, onAddItem }: Props) {
                   <section key={g.id}>
                     <div className={cn("flex items-center gap-2 mb-2 px-2 py-1 rounded-md", g.bg)}>
                       <Icon className={cn("h-4 w-4", g.color)} />
-                      <h3 className={cn("text-xs font-bold tracking-wide uppercase", g.color)}>{g.label}</h3>
-                      <span className="text-[10px] text-muted-foreground ml-auto">{g.desc}</span>
+                      <h3 className={cn("text-xs font-semibold tracking-wide uppercase", g.color)}>{g.label}</h3>
+                      <span className="text-xs text-muted-foreground ml-auto">{g.desc}</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {items.map(item => (
@@ -197,7 +197,7 @@ export function HighAlertGuideDialog({ open, onOpenChange, onAddItem }: Props) {
                           type="button"
                           onClick={() => handleAdd(item)}
                           className={cn(
-                            "group text-left p-2.5 rounded-lg border bg-card hover:shadow-md transition-all",
+                            "group text-left p-3 rounded-lg border bg-card hover:shadow-md transition-all",
                             g.border,
                             "hover:border-current",
                             g.color,
@@ -205,18 +205,18 @@ export function HighAlertGuideDialog({ open, onOpenChange, onAddItem }: Props) {
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5">
-                                <AlertTriangle className="h-3 w-3 text-red-500 shrink-0" />
-                                <span className="text-sm font-semibold text-foreground truncate">{item.name}</span>
+                              <div className="flex items-center gap-2">
+                                <AlertTriangle className="h-3 w-3 text-critical shrink-0" />
+                                <span className="text-sm font-medium text-foreground truncate">{item.name}</span>
                               </div>
-                              <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{item.presentation}</div>
+                              <div className="text-xs text-muted-foreground mt-1 truncate">{item.presentation}</div>
                               {item.doseHint && (
-                                <Badge variant="outline" className={cn("mt-1.5 text-[10px] px-1.5 py-0 font-mono", g.color, g.border)}>
+                                <Badge variant="outline" className={cn("mt-2 text-xs px-2 py-0 font-mono", g.color, g.border)}>
                                   {item.doseHint}
                                 </Badge>
                               )}
                               {item.instructions && (
-                                <p className="text-[10px] text-muted-foreground mt-1.5 line-clamp-2 leading-snug">{item.instructions}</p>
+                                <p className="text-xs text-muted-foreground mt-2 line-clamp-2 leading-snug">{item.instructions}</p>
                               )}
                             </div>
                             <Plus className={cn("h-4 w-4 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity", g.color)} />
@@ -231,9 +231,9 @@ export function HighAlertGuideDialog({ open, onOpenChange, onAddItem }: Props) {
           )}
         </ScrollArea>
 
-        <div className="px-5 py-2.5 border-t border-border bg-muted/30 flex items-center justify-between">
-          <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
-            <AlertTriangle className="h-3 w-3 text-red-500" />
+        <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between">
+          <p className="text-xs text-muted-foreground flex items-center gap-2">
+            <AlertTriangle className="h-3 w-3 text-critical" />
             Doses são sugestões baseadas em boas práticas — sempre titular conforme paciente.
           </p>
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="h-7 text-xs">

@@ -114,11 +114,11 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
     <div className="space-y-3 border rounded-lg p-3 bg-muted/30">
       <div className="flex items-center gap-2 pb-2 border-b">
         <Icon className={cn("h-4 w-4", isDeath ? "text-destructive" : "text-primary")} />
-        <span className="text-xs uppercase tracking-wider font-semibold">
+        <span className="text-xs uppercase tracking-wider font-medium">
           {DISCHARGE_DOC_LABELS[type]} <span className="text-destructive">*</span>
         </span>
-        <span className={cn("ml-auto text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full",
-          isComplete ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-warning/10 text-warning")}>
+        <span className={cn("ml-auto text-xs uppercase tracking-wider px-2 py-1 rounded-full",
+          isComplete ? "bg-released/10 text-released-on-soft" : "bg-warning/10 text-warning")}>
           {isComplete ? "Pronto" : "Preencher campos *"}
         </span>
       </div>
@@ -147,7 +147,7 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
         {isDeath ? (
           <Field label="Local do óbito">
             <Input
-              className="h-8 text-xs uppercase"
+              className="h-8 text-xs uppercase tracking-wider"
               value={form.death_place || ""}
               onChange={(e) => setField("death_place", upper(e.target.value))}
               placeholder="LEITO / SETOR / CC"
@@ -182,14 +182,14 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
 
       <div className="space-y-1">
         <div className="flex items-center justify-between gap-2">
-          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
             {isDeath ? "Resumo da evolução até o óbito *" : "Resumo da evolução / quadro clínico *"}
           </Label>
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="h-6 px-2 text-[10px] gap-1 text-primary hover:text-primary"
+            className="h-6 px-2 text-xs gap-1 text-primary hover:text-primary"
             onClick={handleFillFromEvolution}
             disabled={evolutionLoading}
             title="Preencher com a última evolução clínica registrada"
@@ -248,7 +248,7 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
             </Field>
           </div>
           <Field label="Família notificada por">
-            <Input className="h-8 text-xs uppercase" value={form.notified_family || ""}
+            <Input className="h-8 text-xs uppercase tracking-wider" value={form.notified_family || ""}
               onChange={(e) => setField("notified_family", upper(e.target.value))}
               placeholder="NOME DO PROFISSIONAL E HORÁRIO" />
           </Field>
@@ -285,7 +285,7 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
                 onChange={(e) => setField("return_date", e.target.value)} />
             </Field>
             <Field label="Especialidade do retorno">
-              <Input className="h-8 text-xs uppercase" value={form.return_specialty || ""}
+              <Input className="h-8 text-xs uppercase tracking-wider" value={form.return_specialty || ""}
                 onChange={(e) => setField("return_specialty", upper(e.target.value))} />
             </Field>
           </div>
@@ -300,14 +300,14 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
       <div className="space-y-2 pt-2 border-t">
         <div className="flex items-center gap-2">
           <FileSignature className="h-3.5 w-3.5 text-primary" />
-          <span className="text-[11px] uppercase tracking-wider font-semibold">
+          <span className="text-xs uppercase tracking-wider font-medium">
             Comunicação à família
           </span>
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground">(opcional)</span>
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">(opcional)</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <Field label="Familiar comunicado">
-            <Input className="h-8 text-xs uppercase" value={form.family_contact_name || ""}
+            <Input className="h-8 text-xs uppercase tracking-wider" value={form.family_contact_name || ""}
               onChange={(e) => setField("family_contact_name", upper(e.target.value))}
               placeholder="NOME COMPLETO" />
           </Field>
@@ -344,7 +344,7 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
             </Select>
           </Field>
           <Field label="Comunicado por">
-            <Input className="h-8 text-xs uppercase" value={form.family_communication_by || ""}
+            <Input className="h-8 text-xs uppercase tracking-wider" value={form.family_communication_by || ""}
               onChange={(e) => setField("family_communication_by", upper(e.target.value))}
               placeholder="PROFISSIONAL" />
           </Field>
@@ -364,7 +364,7 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
                   type="button"
                   onClick={() => setField("family_satisfaction", String(n))}
                   className={cn(
-                    "flex-1 h-8 text-xs rounded-md border font-semibold transition-colors",
+                    "flex-1 h-8 text-xs rounded-md border font-medium transition-colors",
                     selected
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-background hover:bg-muted border-border text-muted-foreground"
@@ -376,7 +376,7 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
               );
             })}
           </div>
-          <div className="flex justify-between text-[9px] uppercase tracking-wider text-muted-foreground mt-0.5">
+          <div className="flex justify-between text-xs uppercase tracking-wider text-muted-foreground mt-1">
             <span>Muito insatisfeito</span>
             <span>Muito satisfeito</span>
           </div>
@@ -391,7 +391,7 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
       {/* Sign */}
       <div className="grid grid-cols-2 gap-2 pt-2 border-t">
         <Field label="Médico responsável *">
-          <Input className="h-8 text-xs uppercase" value={form.signed_by_name || ""}
+          <Input className="h-8 text-xs uppercase tracking-wider" value={form.signed_by_name || ""}
             onChange={(e) => setField("signed_by_name", upper(e.target.value))} />
         </Field>
         <Field label="CRM *">
@@ -404,7 +404,7 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
         type="button"
         variant="outline"
         size="sm"
-        className="w-full h-8 text-xs gap-1.5"
+        className="w-full h-8 text-xs gap-2"
         onClick={() => printDischargeDocument(type, { ...form, signed_at: form.signed_at || new Date().toISOString() })}
       >
         <Printer className="h-3.5 w-3.5" /> Pré-visualizar / imprimir Norma Zero
@@ -416,7 +416,7 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">
-      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Label>
+      <Label className="text-xs uppercase tracking-wider text-muted-foreground">{label}</Label>
       {children}
     </div>
   );

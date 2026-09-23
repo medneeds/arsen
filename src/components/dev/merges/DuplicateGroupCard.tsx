@@ -42,14 +42,14 @@ export type ScanGroup = {
 };
 
 const RULE_LABEL: Record<ScanGroup["rule"], { text: string; tone: string }> = {
-  R1: { text: "CPF idêntico (normalizado)", tone: "bg-emerald-600 text-white" },
-  R2: { text: "CNS idêntico (normalizado)", tone: "bg-emerald-600 text-white" },
-  R3: { text: "Nome + DOB + Mãe", tone: "bg-blue-600 text-white" },
-  R4: { text: "Nome + DOB", tone: "bg-amber-600 text-white" },
-  R5: { text: "Prontuário legado igual", tone: "bg-violet-600 text-white" },
-  R6: { text: "Similaridade fonética", tone: "bg-slate-600 text-white" },
-  R7: { text: "Prontuário (só dígitos) igual", tone: "bg-teal-600 text-white" },
-  R8: { text: "Homônimo/familiar (sem DOB)", tone: "bg-orange-600 text-white" },
+  R1: { text: "CPF idêntico (normalizado)", tone: "bg-released text-white" },
+  R2: { text: "CNS idêntico (normalizado)", tone: "bg-released text-white" },
+  R3: { text: "Nome + DOB + Mãe", tone: "bg-primary text-white" },
+  R4: { text: "Nome + DOB", tone: "bg-warning text-white" },
+  R5: { text: "Prontuário legado igual", tone: "bg-primary text-white" },
+  R6: { text: "Similaridade fonética", tone: "bg-primary text-white" },
+  R7: { text: "Prontuário (só dígitos) igual", tone: "bg-released text-white" },
+  R8: { text: "Homônimo/familiar (sem DOB)", tone: "bg-warning text-white" },
 };
 
 const COMPARE_FIELDS: { key: keyof ScanMember; label: string }[] = [
@@ -111,16 +111,16 @@ export function DuplicateGroupCard({ group, selectedPair, onSelectPair, onMergeN
         className="w-full flex items-center gap-2 p-3 hover:bg-muted/40 text-left"
       >
         {open ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
-        <Badge className={`${ruleInfo.tone} text-[10px]`}>{group.rule} · {ruleInfo.text}</Badge>
-        <span className="font-medium uppercase truncate">{firstName}</span>
-        <Badge variant="outline" className="text-[10px]">{group.member_count} registros</Badge>
+        <Badge className={`${ruleInfo.tone} text-xs`}>{group.rule} · {ruleInfo.text}</Badge>
+        <span className="font-medium uppercase tracking-wider truncate">{firstName}</span>
+        <Badge variant="outline" className="text-xs">{group.member_count} registros</Badge>
         {group.sectors && group.sectors.length > 0 && (
-          <Badge variant="secondary" className="text-[10px]">
+          <Badge variant="secondary" className="text-xs">
             {group.sectors.map((s) => sectorLabelFromCode(s)).filter(Boolean).join(" · ") || "Sem leito"}
           </Badge>
         )}
         {group.both_with_bed && (
-          <Badge variant="destructive" className="text-[10px] gap-1">
+          <Badge variant="destructive" className="text-xs gap-1">
             <AlertTriangle className="h-3 w-3" /> Ambos com leito
           </Badge>
         )}
@@ -129,8 +129,8 @@ export function DuplicateGroupCard({ group, selectedPair, onSelectPair, onMergeN
       {open && (
         <div className="border-t border-border p-3 space-y-3 bg-muted/10">
           {group.requires_human_review && (
-            <div className="text-xs bg-orange-50 dark:bg-orange-950/20 border border-orange-400/40 rounded p-2 flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-orange-600 shrink-0 mt-0.5" />
+            <div className="text-xs bg-warning-soft border border-warning/40 rounded-md p-2 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-warning-on-soft shrink-0 mt-1" />
               <div>
                 <b>Revisão humana obrigatória.</b>{" "}
                 {group.rule === "R8"
@@ -144,16 +144,16 @@ export function DuplicateGroupCard({ group, selectedPair, onSelectPair, onMergeN
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-muted-foreground border-b border-border">
-                  <th className="text-left p-1.5 w-32">Campo</th>
+                  <th className="text-left p-2 w-32">Campo</th>
                   {group.members.map((m) => (
-                    <th key={m.id} className="text-left p-1.5">
+                    <th key={m.id} className="text-left p-2">
                       <div className="flex items-center gap-1 flex-wrap">
                         <span className="font-mono">{m.id.slice(0, 8)}</span>
                         {m.id === suggestedWinnerId && (
-                          <Badge className="bg-primary text-primary-foreground text-[9px]">SUG. VENCEDOR</Badge>
+                          <Badge className="bg-primary text-primary-foreground text-xs">SUG. VENCEDOR</Badge>
                         )}
                         {m.bed_number && (
-                          <Badge variant="default" className="text-[9px] gap-0.5">
+                          <Badge variant="default" className="text-xs gap-1">
                             <Bed className="h-2.5 w-2.5" />
                             {m.bed_number}
                           </Badge>
@@ -168,26 +168,26 @@ export function DuplicateGroupCard({ group, selectedPair, onSelectPair, onMergeN
                   const vals = group.members.map((m) => (m as any)[f.key] || "—");
                   const allSame = vals.every((v) => v === vals[0]);
                   return (
-                    <tr key={f.key as string} className={`border-b border-border/40 ${!allSame ? "bg-amber-50/40 dark:bg-amber-950/10" : ""}`}>
-                      <td className="p-1.5 text-muted-foreground">{f.label}</td>
+                    <tr key={f.key as string} className={`border-b border-border/40 ${!allSame ? "bg-warning-soft/40" : ""}`}>
+                      <td className="p-2 text-muted-foreground">{f.label}</td>
                       {group.members.map((m) => (
-                        <td key={m.id} className="p-1.5 font-mono">{(m as any)[f.key] || "—"}</td>
+                        <td key={m.id} className="p-2 font-mono">{(m as any)[f.key] || "—"}</td>
                       ))}
                     </tr>
                   );
                 })}
                 <tr className="border-b border-border/40">
-                  <td className="p-1.5 text-muted-foreground">Histórico</td>
+                  <td className="p-2 text-muted-foreground">Histórico</td>
                   {group.members.map((m) => (
-                    <td key={m.id} className="p-1.5 text-[11px]">
+                    <td key={m.id} className="p-2 text-xs">
                       Evo: {m.counts.evolutions} · Exa: {m.counts.exams} · Atd: {m.counts.encounters} · MR: {m.counts.medical_records}
                     </td>
                   ))}
                 </tr>
                 <tr>
-                  <td className="p-1.5 text-muted-foreground">Setor</td>
+                  <td className="p-2 text-muted-foreground">Setor</td>
                   {group.members.map((m) => (
-                    <td key={m.id} className="p-1.5">
+                    <td key={m.id} className="p-2">
                       {m.sector_code ? sectorLabelFromCode(m.sector_code) : <span className="text-muted-foreground">sem leito</span>}
                     </td>
                   ))}
@@ -197,8 +197,8 @@ export function DuplicateGroupCard({ group, selectedPair, onSelectPair, onMergeN
           </div>
 
           {/* Sugestão didática */}
-          <div className="text-xs bg-primary/5 border border-primary/20 rounded p-2 flex items-start gap-2">
-            <BadgeCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+          <div className="text-xs bg-primary/5 border border-primary/20 rounded-md p-2 flex items-start gap-2">
+            <BadgeCheck className="h-4 w-4 text-primary shrink-0 mt-1" />
             <div>
               <b>Sugestão:</b> manter <span className="font-mono">{winner.id.slice(0, 8)}</span>
               {winner.bed_number ? ` (em leito ${winner.bed_number})` : ""} · arquivar{" "}
@@ -207,7 +207,7 @@ export function DuplicateGroupCard({ group, selectedPair, onSelectPair, onMergeN
           </div>
 
           {needsPairPick && (
-            <div className="text-xs bg-amber-50 dark:bg-amber-950/20 border border-amber-300/40 rounded p-2">
+            <div className="text-xs bg-warning-soft border border-warning-border/40 rounded-md p-2">
               Este grupo tem {group.member_count} registros. A mesclagem é feita 2 a 2 — escolha o par no botão abaixo ou abra um par específico.
             </div>
           )}
@@ -225,7 +225,7 @@ export function DuplicateGroupCard({ group, selectedPair, onSelectPair, onMergeN
               </label>
             </div>
             <Button size="sm" onClick={handleMerge} disabled={needsPairPick}>
-              <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Mesclar este par no wizard
+              <ExternalLink className="h-3.5 w-3.5 mr-2" /> Mesclar este par no wizard
             </Button>
           </div>
         </div>

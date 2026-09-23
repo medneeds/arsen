@@ -148,7 +148,7 @@ export default function AdminCoordinatorsPage() {
       setAvailableUsers((adminProfiles || []).map(profToProfile));
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
-      toast.error("Erro ao carregar dados");
+      toast.error("Não foi possível carregar dados");
     } finally {
       setLoading(false);
     }
@@ -206,12 +206,12 @@ export default function AdminCoordinatorsPage() {
       // fixos de DEPARTMENTS não mapeiam para setores → seleção NÃO é persistida
       // (degradado; ver MIGRACAO_DEGRADACOES.md).
 
-      toast.success("Coordenador atribuído com sucesso!");
+      toast.success("Coordenador atribuído com sucesso");
       setIsDialogOpen(false);
       fetchData();
     } catch (error: any) {
       console.error("Erro ao salvar:", error);
-      toast.error("Erro ao atribuir coordenador");
+      toast.error("Não foi possível atribuir coordenador");
     } finally {
       setIsSaving(false);
     }
@@ -225,11 +225,11 @@ export default function AdminCoordinatorsPage() {
         .eq("id", assignmentId);
 
       if (error) throw error;
-      toast.success("Atribuição removida com sucesso!");
+      toast.success("Atribuição removida com sucesso");
       fetchData();
     } catch (error) {
       console.error("Erro ao remover:", error);
-      toast.error("Erro ao remover atribuição");
+      toast.error("Não foi possível remover atribuição");
     }
   };
 
@@ -246,7 +246,7 @@ export default function AdminCoordinatorsPage() {
       <div className="container mx-auto py-6 px-4 max-w-5xl">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
+            <h1 className="text-2xl font-semibold flex items-center gap-2">
               <UserCog className="h-6 w-6" />
               Gerenciar Coordenadores
             </h1>
@@ -358,10 +358,10 @@ export default function AdminCoordinatorsPage() {
         </div>
 
         {(availableUsers.length === 0 || units.length === 0) && !loading && (
-          <Card className="mb-6 border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+          <Card className="mb-6 border-warning-border bg-warning-soft">
             <CardContent className="pt-6">
-              <p className="text-amber-800 dark:text-amber-200">
-                ⚠️ {availableUsers.length === 0
+              <p className="text-warning-on-soft">
+                {availableUsers.length === 0
                   ? "Não há usuários admin aprovados para atribuir como coordenadores."
                   : "Cadastre unidades hospitalares antes de atribuir coordenadores."}
               </p>

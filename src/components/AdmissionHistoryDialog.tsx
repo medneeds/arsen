@@ -75,7 +75,7 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
       }
     } catch (err) {
       console.error("Error fetching admission history:", err);
-      toast.error("Erro ao carregar história admissional");
+      toast.error("Não foi possível carregar história admissional");
     } finally {
       setLoading(false);
     }
@@ -99,7 +99,7 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
       await fetchAdmissionHistory();
     } catch (err) {
       console.error("Error saving admission history:", err);
-      toast.error("Erro ao salvar história admissional");
+      toast.error("Não foi possível salvar história admissional");
     } finally {
       setSaving(false);
     }
@@ -125,14 +125,14 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
         </DialogHeader>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="space-y-5 mt-2">
+          <div className="space-y-4 mt-2">
             {/* Queixa Principal */}
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-foreground">
+              <Label className="text-sm font-medium text-foreground">
                 Queixa Principal
               </Label>
               <Textarea
@@ -145,7 +145,7 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
 
             {/* História Clínica */}
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-foreground">
+              <Label className="text-sm font-medium text-foreground">
                 História Clínica
               </Label>
               <Textarea
@@ -158,7 +158,7 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
 
             {/* Hipótese Diagnóstica */}
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-foreground">
+              <Label className="text-sm font-medium text-foreground">
                 Hipótese Diagnóstica
               </Label>
               <Textarea
@@ -174,7 +174,7 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
 
             {/* Conduta Inicial */}
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-foreground">
+              <Label className="text-sm font-medium text-foreground">
                 Conduta Inicial
               </Label>
               <Textarea

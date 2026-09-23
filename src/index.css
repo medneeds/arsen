@@ -34,7 +34,52 @@
     @apply bg-background text-foreground;
   }
   
+  /* ──────────────────────────────────────────────────────────────────────
+   * SISTEMA DE COR DO ARSEN
+   *
+   * Duas camadas, e so duas.
+   *
+   * ESTRUTURA (95% da interface): navy e cinza frio. Fundo, superficie,
+   * borda, texto e acao. Nao carrega significado clinico nenhum.
+   *
+   * SINAL CLINICO: tres cores, tres significados, e nada alem disso.
+   *   vermelho  critico   risco ao paciente, bloqueio, suspensao
+   *   ambar     atencao   pendencia que espera acao humana, prazo vencendo
+   *   verde     liberado  ato concluido e confirmado (validado, assinado, alta)
+   *
+   * POR QUE ISTO EXISTE (16/09/2026)
+   * A interface usava 19 familias de cor do Tailwind, cada uma com as 11
+   * tonalidades, em mais de 6.000 ocorrencias. O ambar sozinho aparecia 1.404
+   * vezes -- mais que o navy institucional e o cinza estrutural somados.
+   *
+   * O problema nao era estetico. Era SEMANTICO: quando ambar e a cor mais
+   * comum da tela, ele deixa de significar atencao. Num sistema clinico, cor
+   * e linguagem, e um alerta real passou a competir com o fundo de um card
+   * qualquer.
+   *
+   * O sistema semantico ja existia aqui e foi CONTORNADO 6.000 vezes com
+   * cores cruas. Este bloco nao inventa um sistema novo: faz valer o que ja
+   * havia, com tres correcoes.
+   *
+   * CORRECAO 1 -- o accent deixa de ser teal.
+   * Teal fica visualmente ao lado do verde. Num sistema onde verde significa
+   * "liberado, seguro", um teal de selecao e foco e lido como estado clinico.
+   * O accent passa a derivar do navy, liberando o verde por inteiro.
+   *
+   * CORRECAO 2 -- "estavel" deixa de ser cor.
+   * --stable usava o mesmo navy da marca. Navy e estrutura e identidade; nao
+   * pode tambem significar um estado do paciente. Estavel passa a ser
+   * AUSENCIA DE SINAL: o leito sem cor e o leito sem pendencia.
+   *
+   * CORRECAO 3 -- o ambar escurece.
+   * Os tons 400/500 do Tailwind sao quase amarelos e vibram sobre branco.
+   * O tom daqui tem contraste para texto e parece serio, nao festivo.
+   * ────────────────────────────────────────────────────────────────────── */
+
   :root {
+    color-scheme: light;
+
+    /* ── Estrutura ── */
     --background: 210 25% 97%;
     --foreground: 215 25% 12%;
     --card: 0 0% 100%;
@@ -46,39 +91,66 @@
     --secondary: 210 18% 93%;
     --secondary-foreground: 215 25% 12%;
     --muted: 210 18% 95%;
-    --muted-foreground: 215 12% 50%;
-    --accent: 174 60% 42%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 68% 50%;
-    --destructive-foreground: 0 0% 100%;
-    --critical: 0 68% 50%;
-    --critical-foreground: 0 0% 100%;
-    --warning: 45 90% 48%;
-    --warning-foreground: 0 0% 100%;
-    --stable: 210 65% 28%;
-    --stable-foreground: 0 0% 100%;
+    --muted-foreground: 215 12% 45%;
     --border: 215 20% 90%;
     --input: 215 20% 90%;
-    --ring: 174 60% 42%;
+
+    /* Accent derivado do navy — selecao, foco e destaque de navegacao.
+       Nunca significa estado clinico. */
+    --accent: 210 55% 92%;
+    --accent-foreground: 210 65% 24%;
+    --ring: 210 65% 40%;
+
+    /* ── Sinal clinico ──
+       Cada sinal tem tres usos: `solid` para ponto e barra, `soft` para fundo
+       de etiqueta, e `on-soft` para o texto sobre esse fundo. */
+    --critical: 0 63% 47%;
+    --critical-foreground: 0 0% 100%;
+    --critical-soft: 0 60% 96%;
+    --critical-on-soft: 0 60% 34%;
+    --critical-border: 0 45% 86%;
+
+    --warning: 33 83% 42%;
+    --warning-foreground: 0 0% 100%;
+    --warning-soft: 38 78% 95%;
+    --warning-on-soft: 30 88% 28%;
+    --warning-border: 36 55% 84%;
+
+    --released: 157 60% 30%;
+    --released-foreground: 0 0% 100%;
+    --released-soft: 152 45% 94%;
+    --released-on-soft: 158 62% 20%;
+    --released-border: 152 32% 80%;
+
+    /* destructive = acao destrutiva na interface (excluir, descartar).
+       Usa o mesmo vermelho do critico: destruir dado e sempre grave. */
+    --destructive: 0 63% 47%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Compatibilidade: --stable foi aposentado como cor (ver CORRECAO 2).
+       Aponta para o cinza ameno para que o codigo antigo degrade sem quebrar,
+       ate a migracao terminar. */
+    --stable: 215 12% 45%;
+    --stable-foreground: 0 0% 100%;
+
     --radius: 0.625rem;
-    
-    --gradient-primary: linear-gradient(135deg, hsl(210 65% 28%) 0%, hsl(210 55% 22%) 100%);
-    --gradient-card: linear-gradient(to bottom, hsl(0 0% 100% / 0.98) 0%, hsl(0 0% 100% / 0.94) 100%);
-    --gradient-critical: linear-gradient(to right, hsl(0 68% 50% / 0.12) 0%, hsl(0 68% 50% / 0.03) 100%);
-    --gradient-warning: linear-gradient(to right, hsl(45 90% 48% / 0.12) 0%, hsl(45 90% 48% / 0.03) 100%);
-    --gradient-stable: linear-gradient(to right, hsl(210 65% 28% / 0.12) 0%, hsl(210 65% 28% / 0.03) 100%);
-    
+
+    /* Serifa da marca — nome Arsen e momentos institucionais. */
+    --font-brand: 'Newsreader', Georgia, 'Times New Roman', serif;
+
+    --gradient-primary: linear-gradient(135deg, hsl(210 65% 28%) 0%, hsl(210 70% 22%) 100%);
+    --gradient-card: linear-gradient(to bottom, hsl(0 0% 100% / 0.98) 0%, hsl(210 25% 99%) 100%);
+
     --shadow-sm: 0 1px 2px 0 hsl(215 25% 12% / 0.04);
     --shadow-md: 0 4px 8px -2px hsl(215 25% 12% / 0.08);
     --shadow-lg: 0 12px 24px -4px hsl(215 25% 12% / 0.1);
-    --shadow-glow: 0 0 40px hsl(174 60% 42% / 0.1);
-    
+
     --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-    --status-pending: 45 90% 48%;
-    --status-discussing: 199 80% 48%;
-    --status-rejected: 0 68% 50%;
+    --status-pending: 33 83% 42%;
+    --status-discussing: 210 65% 40%;
+    --status-rejected: 0 63% 47%;
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 215 25% 20%;
@@ -87,56 +159,9 @@
     --sidebar-accent: 210 18% 96%;
     --sidebar-accent-foreground: 215 25% 20%;
     --sidebar-border: 215 20% 92%;
-    --sidebar-ring: 174 60% 42%;
+    --sidebar-ring: 210 65% 40%;
   }
 
-  .dark {
-    --background: 215 30% 7%;
-    --foreground: 210 20% 96%;
-    --card: 215 28% 11%;
-    --card-foreground: 210 20% 96%;
-    --popover: 215 28% 11%;
-    --popover-foreground: 210 20% 96%;
-    --primary: 174 55% 45%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 215 22% 16%;
-    --secondary-foreground: 210 20% 96%;
-    --muted: 215 22% 16%;
-    --muted-foreground: 215 15% 60%;
-    --accent: 174 50% 35%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 60% 45%;
-    --destructive-foreground: 0 0% 100%;
-    --critical: 0 60% 45%;
-    --critical-foreground: 0 0% 100%;
-    --warning: 45 80% 45%;
-    --warning-foreground: 0 0% 100%;
-    --stable: 174 55% 45%;
-    --stable-foreground: 0 0% 100%;
-    --border: 215 22% 20%;
-    --input: 215 22% 20%;
-    --ring: 174 50% 45%;
-    
-    --gradient-primary: linear-gradient(135deg, hsl(174 55% 45%) 0%, hsl(174 45% 35%) 100%);
-    --gradient-card: linear-gradient(to bottom, hsl(215 28% 11% / 0.95) 0%, hsl(215 28% 11% / 0.9) 100%);
-    --gradient-critical: linear-gradient(to right, hsl(0 60% 45% / 0.15) 0%, hsl(0 60% 45% / 0.03) 100%);
-    --gradient-warning: linear-gradient(to right, hsl(45 80% 45% / 0.15) 0%, hsl(45 80% 45% / 0.03) 100%);
-    --gradient-stable: linear-gradient(to right, hsl(174 55% 45% / 0.15) 0%, hsl(174 55% 45% / 0.03) 100%);
-    
-    --shadow-sm: 0 1px 2px 0 hsl(210 20% 96% / 0.04);
-    --shadow-md: 0 4px 8px -2px hsl(210 20% 96% / 0.08);
-    --shadow-lg: 0 12px 24px -4px hsl(210 20% 96% / 0.1);
-    --shadow-glow: 0 0 40px hsl(174 50% 45% / 0.15);
-
-    --sidebar-background: 215 28% 9%;
-    --sidebar-foreground: 210 20% 94%;
-    --sidebar-primary: 174 55% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 25% 14%;
-    --sidebar-accent-foreground: 210 20% 94%;
-    --sidebar-border: 215 22% 16%;
-    --sidebar-ring: 174 50% 45%;
-  }
 
   * {
     @apply border-border;
@@ -474,9 +499,8 @@
     position: relative;
     overflow: hidden;
     border-radius: 0.5rem 0.5rem 0 0;
-    box-shadow: 
-      inset 0 1px 0 rgba(255, 255, 255, 0.3),
-      0 2px 8px rgba(0, 0, 0, 0.12);
+    border-left: 3px solid transparent;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   }
 
   .allocation-status-bar::before {
@@ -489,9 +513,9 @@
     background: linear-gradient(
       110deg,
       transparent 20%,
-      rgba(255, 255, 255, 0.4) 40%,
-      rgba(255, 255, 255, 0.6) 50%,
-      rgba(255, 255, 255, 0.4) 60%,
+      rgba(255, 255, 255, 0.15) 40%,
+      rgba(255, 255, 255, 0.25) 50%,
+      rgba(255, 255, 255, 0.15) 60%,
       transparent 80%
     );
     animation: shimmer 2.5s ease-in-out infinite;
@@ -499,40 +523,43 @@
   }
 
   .allocation-status-bar.sector-red {
-    background: linear-gradient(to right, hsl(0 68% 50% / 0.2) 0%, hsl(0 68% 50% / 0.05) 100%);
+    background: linear-gradient(to right, hsl(0 68% 50% / 0.12) 0%, hsl(0 68% 50% / 0.06) 100%);
+    border-left-color: hsl(0 68% 50% / 0.7);
   }
 
   .allocation-status-bar.sector-yellow {
-    background: linear-gradient(to right, hsl(45 90% 48% / 0.2) 0%, hsl(45 90% 48% / 0.05) 100%);
+    background: linear-gradient(to right, hsl(45 90% 48% / 0.12) 0%, hsl(45 90% 48% / 0.06) 100%);
+    border-left-color: hsl(45 90% 42% / 0.7);
   }
 
   .allocation-status-bar.sector-blue {
-    background: linear-gradient(to right, hsl(210 65% 28% / 0.2) 0%, hsl(210 65% 28% / 0.05) 100%);
+    background: linear-gradient(to right, hsl(210 65% 28% / 0.12) 0%, hsl(210 65% 28% / 0.06) 100%);
+    border-left-color: hsl(210 65% 28% / 0.7);
   }
 
   .allocation-status-bar .status-pending,
   .allocation-status-bar .icon-pending {
-    color: hsl(25 100% 35%);
+    color: hsl(25 100% 30%);
   }
 
   .allocation-status-bar .status-discussing,
   .allocation-status-bar .icon-discussing {
-    color: hsl(199 100% 30%);
+    color: hsl(199 100% 25%);
   }
 
   .allocation-status-bar .status-rejected,
   .allocation-status-bar .icon-rejected {
-    color: hsl(0 80% 30%);
+    color: hsl(0 80% 28%);
   }
 
   .allocation-status-bar .status-destination,
   .allocation-status-bar .status-time {
-    color: hsl(220 20% 25%);
-    font-weight: 600;
+    color: hsl(220 30% 20%);
+    font-weight: 700;
   }
 
   .allocation-status-bar .separator {
-    color: rgba(255, 255, 255, 0.8);
+    color: hsl(220 20% 45%);
     font-weight: bold;
   }
 }
@@ -667,12 +694,9 @@ body.gestor-readonly main::before {
    ============================================================ */
 
 /* Bordas dos inputs/selects — tom azul bem suave */
-.atb-themed input.border-slate-300,
-.atb-themed button.border-slate-300,
-.atb-themed [role="combobox"].border-slate-300 { border-color: hsl(217 45% 84%); }
-.dark .atb-themed input.dark\:border-slate-600,
-.dark .atb-themed button.dark\:border-slate-600,
-.dark .atb-themed [role="combobox"].dark\:border-slate-600 { border-color: hsl(217 25% 38%); }
+/* A Guia ATM nao usa mais border-slate-300 nem as variantes dark: as regras que
+   as sobrescreviam ficaram sem alvo e foram removidas. Bordas seguem o token
+   --border como o resto do sistema. */
 
 /* Foco em azul institucional — substitui o ring primary padrão */
 .atb-themed input:focus-visible,
@@ -720,4 +744,40 @@ body.gestor-readonly main::before {
 .institutional-actions svg {
   color: rgba(255, 255, 255, 0.92) !important;
   opacity: 1 !important;
+}
+
+/* Transição de página — substitui o fade que vinha do framer-motion.
+   Ver o comentário em src/components/PageTransition.tsx. */
+@keyframes arsen-page-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-page-in {
+  animation: arsen-page-in 120ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-in { animation: none; }
+}
+
+/* Entradas simples em CSS — substituem o framer-motion na tela de
+   carregamento e no seletor de perfil, que estao no caminho do login.
+   Ver o comentario em src/components/LoadingScreen.tsx. */
+@keyframes arsen-surge {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes arsen-surge-escala {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: none; }
+}
+.arsen-surge {
+  opacity: 0;
+  animation: arsen-surge 400ms cubic-bezier(0, 0, 0.2, 1) forwards;
+}
+.arsen-surge-escala {
+  opacity: 0;
+  animation: arsen-surge-escala 450ms cubic-bezier(0, 0, 0.2, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arsen-surge, .arsen-surge-escala { animation: none; opacity: 1; transform: none; }
 }

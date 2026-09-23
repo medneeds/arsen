@@ -38,9 +38,9 @@ export function RequestBedAllocationDialog({
   const { createRequest } = useBedAllocationRequests();
 
   const sectors = [
-    { value: "UTI 1", label: "UTI 1", color: "text-red-500" },
-    { value: "UTI 2", label: "UTI 2", color: "text-yellow-500" },
-    { value: "UCI 1", label: "UCI 1", color: "text-blue-500" },
+    { value: "UTI 1", label: "UTI 1", color: "text-critical" },
+    { value: "UTI 2", label: "UTI 2", color: "text-warning" },
+    { value: "UCI 1", label: "UCI 1", color: "text-muted-foreground" },
     { value: "UCI 2", label: "UCI 2", color: "text-muted-foreground" },
   ];
 
@@ -78,8 +78,8 @@ export function RequestBedAllocationDialog({
 
         {hasAllocationPending ? (
           <div className="py-4">
-            <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
-              <p className="text-sm text-amber-500 font-medium">
+            <div className="p-4 rounded-lg bg-warning/10 border border-warning/30">
+              <p className="text-sm text-warning font-medium">
                 {patient.allocationStatus === "pending" 
                   ? "Já existe uma solicitação pendente para este paciente."
                   : "Solicitação aguardando discussão do caso."}
@@ -91,7 +91,7 @@ export function RequestBedAllocationDialog({
             <div className="space-y-4 py-4">
               <div className="p-3 rounded-lg bg-muted/50">
                 <p className="text-sm font-medium">Paciente:</p>
-                <p className="text-lg font-semibold">{patient.name}</p>
+                <p className="text-lg font-medium">{patient.name}</p>
                 {patient.age && (
                   <p className="text-sm text-muted-foreground">Idade: {patient.age}</p>
                 )}
@@ -114,9 +114,9 @@ export function RequestBedAllocationDialog({
               </div>
 
               {!patient.admissionHistory && (
-                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                  <p className="text-sm text-amber-500">
-                    ⚠️ Recomendado: Preencha a História Admissional na Edição Avançada antes de solicitar a alocação.
+                <div className="p-3 rounded-lg bg-warning/10 border border-warning/30">
+                  <p className="text-sm text-warning">
+                    Recomendado: Preencha a História Admissional na Edição Avançada antes de solicitar a alocação.
                   </p>
                 </div>
               )}

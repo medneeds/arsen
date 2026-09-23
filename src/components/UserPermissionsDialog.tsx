@@ -128,7 +128,7 @@ export function UserPermissionsDialog({
         };
       } catch (err) {
         console.error("[UserPermissionsDialog] load error", err);
-        toast.error("Erro ao carregar permissões");
+        toast.error("Não foi possível carregar permissões");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -229,7 +229,7 @@ export function UserPermissionsDialog({
             Permissões e Acessos
           </DialogTitle>
           <DialogDescription className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-foreground">{userName}</span>
+            <span className="font-medium text-foreground">{userName}</span>
             <span className="text-muted-foreground">
               · {userEmail.replace("@sistema.local", "")}
             </span>
@@ -237,7 +237,7 @@ export function UserPermissionsDialog({
         </DialogHeader>
 
         {loading ? (
-          <div className="py-16 flex flex-col items-center gap-3 text-muted-foreground">
+          <div className="py-8 flex flex-col items-center gap-3 text-muted-foreground">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-sm">Carregando permissões…</p>
           </div>

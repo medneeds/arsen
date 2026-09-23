@@ -23,16 +23,38 @@ const esc = (s: string | null | undefined) =>
   (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>");
 
 function buildDocumentoMedicoBody(data: DocumentoMedicoData): string {
-  const sector = data.patient_bed || data.patient_sector
-    ? `${data.patient_bed || ""}${data.patient_bed && data.patient_sector ? " • " : ""}${data.patient_sector || ""}`
-    : "";
+  const leitoStr = [data.patient_bed, data.patient_sector].filter(Boolean).join(" · ");
 
+  const birthFmt = data.patient_birth_date
+    ? (() => { try { return new Date(data.patient_birth_date + "T12:00:00").toLocaleDateString("pt-BR"); } catch { return data.patient_birth_date; } })()
+    : null;
+
+  const cidStr = data.cid ? data.cid.split(" - ").slice(0, 2).join(" — ") : null;
+
+  // Cabeçalho padrão Arsen — mesmo layout de tabela da Guia ATM e Evolução
   const patientLine = `
-    <div style="border:1px solid #cbd5e1;border-radius:4pt;padding:6pt 10pt;margin-bottom:10pt;font-size:9pt;background:#f8fafc">
-      <div><b>PACIENTE:</b> ${esc((data.patient_name || "").toUpperCase())}</div>
-      ${sector ? `<div><b>LEITO:</b> ${esc(sector)}</div>` : ""}
-      ${data.cid ? `<div><b>CID-10:</b> ${esc(data.cid)}</div>` : ""}
-    </div>`;
+    <table class="nz" style="margin-bottom:10pt">
+      <tbody>
+        <tr>
+          <th style="width:14%">Paciente</th>
+          <td style="width:36%"><strong>${esc((data.patient_name || "").toUpperCase())}</strong></td>
+          <th style="width:10%">Leito</th>
+          <td colspan="3"><strong>${esc(leitoStr || "—")}</strong></td>
+        </tr>
+        <tr>
+          <th>Idade</th>
+          <td>${esc(data.patient_age || "—")}</td>
+          <th>Prontuário</th>
+          <td colspan="3">${esc(data.patient_medical_record || "—")}</td>
+        </tr>
+        <tr>
+          <th>Data de nascimento</th>
+          <td>${esc(birthFmt || "—")}</td>
+          <th>CID-10</th>
+          <td colspan="3">${esc(cidStr || "—")}</td>
+        </tr>
+      </tbody>
+    </table>`;
 
   return `${patientLine}
     <div style="font-size:10pt;line-height:1.55;text-align:justify;white-space:pre-wrap;padding:4pt 2pt">${esc(data.body)}</div>
@@ -51,7 +73,7 @@ export async function printDocumentoMedico(
   const logoDataUrl = await prepareLogo();
   const bodyHtml = buildDocumentoMedicoBody(data);
   const { title, prefix } = TYPE_META[data.type];
-  const subtitle = data.type === "atestado" && data.days ? `Afastamento de ${data.days} dia(s)` : undefined;
+  const subtitle = data.type === "atestado" && data.days ? `Afastamento de ${data.days} ${(data.days) === 1 ? 'dia' : 'dias'}` : undefined;
 
   const html = buildNormaZeroDocument({
     title,

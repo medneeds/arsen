@@ -35,10 +35,10 @@ const PRIORITY_LABEL: Record<Priority, string> = {
   baixa: "Baixa", media: "Média", alta: "Alta", critica: "Crítica",
 };
 const PRIORITY_COLOR: Record<Priority, string> = {
-  baixa: "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/30",
-  media: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30",
-  alta: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30",
-  critica: "bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/30",
+  baixa: "bg-primary/10 text-foreground border-border/30",
+  media: "bg-primary/10 text-foreground border-border/30",
+  alta: "bg-warning/10 text-warning-on-soft border-warning/30",
+  critica: "bg-critical/10 text-critical-on-soft border-critical/30",
 };
 const STATUS_LABEL: Record<Status, string> = {
   aberta: "Aberta", em_andamento: "Em andamento", bloqueada: "Bloqueada",
@@ -86,7 +86,7 @@ export function PendenciesTab() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* KPIs com cartões dark gradiente */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <KpiBox label="Abertas" value={counts.abertas} tone="blue" icon={<ListChecks className="h-4 w-4" />} />
@@ -110,14 +110,14 @@ export function PendenciesTab() {
             </SelectContent>
           </Select>
           <Button size="sm" variant="outline" onClick={refresh} disabled={loading}>
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`} /> Atualizar
+            <RefreshCw className={`h-3.5 w-3.5 mr-2 ${loading ? "animate-spin" : ""}`} /> Atualizar
           </Button>
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="bg-gradient-to-br from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white shadow-md">
-              <Plus className="h-4 w-4 mr-1.5" /> Nova pendência
+            <Button size="sm" className="bg-muted hover:from-muted hover:to-muted text-white shadow-md">
+              <Plus className="h-4 w-4 mr-2" /> Nova pendência
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
@@ -155,16 +155,16 @@ export function PendenciesTab() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button onClick={create} className="bg-gradient-to-br from-blue-600 to-blue-800 text-white">Criar</Button>
+              <Button onClick={create} className="bg-muted text-white">Criar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
-        <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/60 dark:bg-slate-900/30">
+      <Card className="border-border shadow-sm">
+        <CardHeader className="pb-3 border-b border-border bg-muted/60">
           <CardTitle className="text-sm flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
             Radar de pendências <span className="text-muted-foreground font-normal">({filtered.length})</span>
           </CardTitle>
         </CardHeader>
@@ -174,32 +174,32 @@ export function PendenciesTab() {
           ) : filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">Nenhuma pendência neste filtro.</p>
           ) : (
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {filtered.map(p => (
                 <div
                   key={p.id}
-                  className="group relative border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 bg-white dark:bg-slate-900/50 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700/60 transition-all"
+                  className="group relative border border-border rounded-lg p-4 bg-white hover:shadow-md hover:border-border transition-all"
                 >
-                  <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r ${
-                    p.priority === "critica" ? "bg-red-500" :
-                    p.priority === "alta" ? "bg-amber-500" :
-                    p.priority === "media" ? "bg-blue-500" : "bg-slate-400"
+                  <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-md ${
+                    p.priority === "critica" ? "bg-critical" :
+                    p.priority === "alta" ? "bg-warning" :
+                    p.priority === "media" ? "bg-primary" : "bg-primary"
                   }`} />
                   <div className="flex items-start justify-between gap-3 pl-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-sm">{p.title}</h3>
-                        <Badge variant="outline" className={`text-[10px] uppercase ${PRIORITY_COLOR[p.priority]}`}>{PRIORITY_LABEL[p.priority]}</Badge>
-                        {p.category && <Badge variant="secondary" className="text-[10px]">{p.category}</Badge>}
-                        {p.tags?.map(t => <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>)}
+                        <h3 className="font-medium text-sm">{p.title}</h3>
+                        <Badge variant="outline" className={`text-xs uppercase ${PRIORITY_COLOR[p.priority]}`}>{PRIORITY_LABEL[p.priority]}</Badge>
+                        {p.category && <Badge variant="secondary" className="text-xs">{p.category}</Badge>}
+                        {p.tags?.map(t => <Badge key={t} variant="outline" className="text-xs">{t}</Badge>)}
                       </div>
-                      {p.description && <p className="text-xs text-muted-foreground mt-1.5 whitespace-pre-wrap leading-relaxed">{p.description}</p>}
-                      <p className="text-[10px] text-muted-foreground mt-2 normal-case">
+                      {p.description && <p className="text-xs text-muted-foreground mt-2 whitespace-pre-wrap leading-relaxed">{p.description}</p>}
+                      <p className="text-xs text-muted-foreground mt-2 normal-case">
                         Criada em {new Date(p.created_at).toLocaleString("pt-BR")}
                         {p.resolved_at && ` • Resolvida em ${new Date(p.resolved_at).toLocaleString("pt-BR")}`}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       <Select value={p.priority} onValueChange={(v) => updatePriority(p.id, v as Priority)}>
                         <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -232,20 +232,20 @@ export function PendenciesTab() {
 }
 
 const TONE_STYLES = {
-  blue: "from-blue-600 to-blue-800 ring-blue-500/30",
-  indigo: "from-indigo-600 to-indigo-800 ring-indigo-500/30",
-  amber: "from-amber-600 to-amber-800 ring-amber-500/30",
-  emerald: "from-emerald-600 to-emerald-800 ring-emerald-500/30",
-  red: "from-red-600 to-red-800 ring-red-500/30",
+  blue: "from-muted to-muted ring-ring/30",
+  indigo: "from-muted to-muted ring-ring/30",
+  amber: "from-warning-soft to-warning-soft ring-warning/30",
+  emerald: "from-released-soft to-released-soft ring-released/30",
+  red: "from-critical-soft to-critical-soft ring-critical/30",
 } as const;
 
 function KpiBox({ label, value, icon, tone = "blue" }: { label: string; value: number; icon?: React.ReactNode; tone?: keyof typeof TONE_STYLES }) {
   return (
-    <div className={`relative overflow-hidden rounded-xl p-4 bg-gradient-to-br ${TONE_STYLES[tone]} text-white shadow-md ring-1`}>
+    <div className={`relative overflow-hidden rounded-lg p-4 bg-gradient-to-br ${TONE_STYLES[tone]} text-white shadow-md ring-1`}>
       <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-white/10 blur-xl" />
       <div className="relative">
-        <div className="text-[10px] uppercase tracking-wider text-white/80 flex items-center gap-1.5 font-medium">{icon}{label}</div>
-        <div className="text-3xl font-bold tabular-nums mt-1.5 drop-shadow-sm">{value}</div>
+        <div className="text-xs uppercase tracking-wider text-white/80 flex items-center gap-2 font-medium">{icon}{label}</div>
+        <div className="text-3xl font-semibold tabular-nums mt-2 drop-shadow-sm">{value}</div>
       </div>
     </div>
   );

@@ -165,7 +165,7 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
         }
       } catch (err) {
         console.error("[AdmissionDateEditor] history insert failed", err);
-        toast.error("Erro ao registrar histórico");
+        toast.error("Não foi possível registrar histórico");
         return;
       }
     }
@@ -187,7 +187,7 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
       .eq("internacao_id", patientId)
       .order("criado_em", { ascending: false });
     if (error) {
-      toast.error("Erro ao carregar histórico");
+      toast.error("Não foi possível carregar histórico");
     } else {
       const rows: HistoryRow[] = ((data as any[]) || []).map((r) => ({
         id: r.id,
@@ -209,13 +209,13 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
 
   return (
     <>
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold flex items-center gap-1.5">
+      <div className="space-y-2">
+        <Label className="text-xs font-medium flex items-center gap-2">
           <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
           Data de admissão no setor
         </Label>
         <div className="flex items-center gap-2">
-          <div className="flex-1 h-9 px-3 rounded-md border bg-muted/40 flex items-center text-xs font-medium uppercase">
+          <div className="flex-1 h-9 px-3 rounded-md border bg-muted/40 flex items-center text-xs font-medium uppercase tracking-wider">
             {display}
           </div>
           <Button
@@ -240,7 +240,7 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
             <History className="h-3.5 w-3.5" />
           </Button>
         </div>
-        <p className="text-[10px] text-muted-foreground italic">
+        <p className="text-xs text-muted-foreground italic">
           Sincronizada automaticamente no momento da alocação. Edição manual requer confirmação.
         </p>
       </div>
@@ -250,7 +250,7 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <AlertTriangle className="h-4 w-4 text-warning" />
               Editar data de admissão?
             </DialogTitle>
             <DialogDescription className="text-xs">
@@ -284,14 +284,14 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-[11px] text-amber-900 dark:text-amber-200">
+            <div className="rounded-md border border-warning-border bg-warning-soft px-3 py-2 text-xs text-warning-on-soft">
               <strong>Padrão Brasileiro:</strong> Dia / Mês / Ano. Ex.: <strong>14/05/2026</strong> = 14 de MAIO de 2026.
               Os campos só aceitam números — as barras são inseridas automaticamente.
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Data (DD/MM/AAAA)</Label>
-                <div className="flex items-center gap-1.5">
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">Data (DD/MM/AAAA)</Label>
+                <div className="flex items-center gap-2">
                   <Input
                     value={editDate}
                     onChange={(e) => {
@@ -334,10 +334,10 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
                     </PopoverContent>
                   </Popover>
                 </div>
-                <p className="text-[10px] text-muted-foreground">Dia · Mês · Ano (não permite data futura)</p>
+                <p className="text-xs text-muted-foreground">Dia · Mês · Ano (não permite data futura)</p>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Hora (HH:MM 24h)</Label>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">Hora (HH:MM 24h)</Label>
                 <Input
                   value={editTime}
                   onChange={(e) => {
@@ -352,11 +352,11 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
                   pattern="\d{2}:\d{2}"
                   className="h-9 text-xs uppercase tabular-nums tracking-wider"
                 />
-                <p className="text-[10px] text-muted-foreground">Hora · Minuto (24h)</p>
+                <p className="text-xs text-muted-foreground">Hora · Minuto (24h)</p>
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Motivo (opcional)</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Motivo (opcional)</Label>
               <Input
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
@@ -400,11 +400,11 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
             {!loadingHistory &&
               history.map((h) => (
                 <div key={h.id} className="text-xs border rounded-md p-2 bg-muted/30 space-y-1">
-                  <div className="flex justify-between items-center font-semibold">
-                    <span className="uppercase">{h.changed_by_name || "—"}</span>
+                  <div className="flex justify-between items-center font-medium">
+                    <span className="uppercase tracking-wider">{h.changed_by_name || "—"}</span>
                     <span className="text-muted-foreground">{formatBR(h.changed_at)}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[11px]">
+                  <div className="flex items-center gap-2 text-xs">
                     <span className="text-muted-foreground line-through">
                       {h.old_value ? formatBR(h.old_value) : "—"}
                     </span>
@@ -412,7 +412,7 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
                     <span className="font-medium">{formatBR(h.new_value)}</span>
                   </div>
                   {h.reason && (
-                    <p className="text-[10px] italic text-muted-foreground">Motivo: {h.reason}</p>
+                    <p className="text-xs italic text-muted-foreground">Motivo: {h.reason}</p>
                   )}
                 </div>
               ))}

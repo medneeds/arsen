@@ -158,35 +158,35 @@ export function SaveTemplateDialog({
             </select>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-xs">Visibilidade</Label>
             <RadioGroup value={scope} onValueChange={(v) => setScope(v as any)} className="grid grid-cols-2 gap-2">
               <label
-                className={`flex items-start gap-2 p-2.5 rounded-md border cursor-pointer transition-colors ${
+                className={`flex items-start gap-2 p-3 rounded-md border cursor-pointer transition-colors ${
                   scope === "personal" ? "border-primary bg-primary/5" : "border-border hover:bg-accent/30"
                 }`}
               >
-                <RadioGroupItem value="personal" id="scope-personal" className="mt-0.5" />
+                <RadioGroupItem value="personal" id="scope-personal" className="mt-1" />
                 <div className="flex-1">
                   <div className="flex items-center gap-1 text-xs font-medium">
                     <UserIcon className="h-3 w-3" /> Pessoal
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Só você vê e usa.
                   </p>
                 </div>
               </label>
               <label
-                className={`flex items-start gap-2 p-2.5 rounded-md border cursor-pointer transition-colors ${
+                className={`flex items-start gap-2 p-3 rounded-md border cursor-pointer transition-colors ${
                   scope === "shared" ? "border-primary bg-primary/5" : "border-border hover:bg-accent/30"
                 }`}
               >
-                <RadioGroupItem value="shared" id="scope-shared" className="mt-0.5" />
+                <RadioGroupItem value="shared" id="scope-shared" className="mt-1" />
                 <div className="flex-1">
                   <div className="flex items-center gap-1 text-xs font-medium">
                     <Users className="h-3 w-3" /> Compartilhado
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Todo o hospital pode aplicar.
                   </p>
                 </div>

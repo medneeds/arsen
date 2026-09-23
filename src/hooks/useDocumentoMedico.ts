@@ -12,6 +12,9 @@ export interface DocumentoMedicoData {
   patient_name: string;
   patient_bed?: string;
   patient_sector?: string;
+  patient_birth_date?: string | null;
+  patient_medical_record?: string | null;
+  patient_age?: string | null;
   body: string;
   /** Só atestado: dias de afastamento. */
   days?: number | null;
@@ -102,7 +105,7 @@ export function useDocumentoMedico(
       if (error) throw error;
       setDocumentos((data ?? []).map((r) => mapRow(r, patientName)));
     } catch (err: any) {
-      toast.error("Erro ao carregar documentos médicos", { description: err.message });
+      toast.error("Não foi possível carregar documentos médicos", { description: err.message });
     } finally {
       setLoading(false);
     }
@@ -149,7 +152,7 @@ export function useDocumentoMedico(
       await fetch();
       return row?.id ?? null;
     } catch (err: any) {
-      toast.error("Erro ao salvar documento", { description: err.message });
+      toast.error("Não foi possível salvar documento", { description: err.message });
       return null;
     }
   }, [user, patientId, fetch]);

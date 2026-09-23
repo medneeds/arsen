@@ -184,7 +184,7 @@ export function UserApprovalsPanel() {
             placeholder="Buscar por nome ou email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            className="pl-8"
           />
         </div>
         <Button variant="outline" onClick={fetchProfissionais} disabled={loading}>

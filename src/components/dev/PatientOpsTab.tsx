@@ -168,13 +168,13 @@ export function PatientOpsTab() {
 
   return (
     <div className="space-y-4">
-      <Card className="border-sky-200 bg-sky-50/40 dark:bg-sky-950/20 dark:border-sky-900/40">
+      <Card className="border-border bg-muted/40">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2 text-sky-900 dark:text-sky-200">
+          <CardTitle className="text-sm flex items-center gap-2 text-foreground">
             <ShieldAlert className="h-4 w-4" /> Correção de pacientes com transferência travada
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-xs text-sky-900/80 dark:text-sky-100/80 space-y-1.5">
+        <CardContent className="text-xs text-foreground/80 space-y-2">
           <p>
             Use esta aba <strong>apenas</strong> para destravar casos onde a transferência interna deixou o paciente em estado inconsistente
             (ex.: leito de origem vazio + fila virtual pendente sem alocação, encounter fechado por engano, leito órfão com dados clínicos).
@@ -194,7 +194,7 @@ export function PatientOpsTab() {
               <CardTitle className="text-sm flex-1">Pacientes</CardTitle>
               <Badge variant="outline" className="text-xs">{filtered.length}</Badge>
             </div>
-            <div className="flex gap-1.5 pt-2">
+            <div className="flex gap-2 pt-2">
               <Input
                 placeholder="Nome / leito / setor / prontuário…"
                 value={query}
@@ -222,19 +222,19 @@ export function PatientOpsTab() {
                     <div className="flex items-center gap-2">
                       <span className="font-medium truncate flex-1">{p.name || <em className="text-muted-foreground">(leito vago)</em>}</span>
                       {p.hasPendingTransfer && (
-                        <Badge variant="outline" className="text-[9px] gap-1 border-amber-400 text-amber-700 bg-amber-50 dark:bg-amber-950/40">
+                        <Badge variant="outline" className="text-xs gap-1 border-warning text-warning-on-soft bg-warning-soft">
                           <ArrowRightLeft className="h-2.5 w-2.5" /> TRANSF. PENDENTE
                         </Badge>
                       )}
                     </div>
-                    <div className="flex gap-2 mt-1 text-muted-foreground text-[11px]">
+                    <div className="flex gap-2 mt-1 text-muted-foreground text-xs">
                       <span className="font-mono">{p.bed_number ?? "—"}</span>
                       <span>·</span>
                       <span className="truncate">{p.sector ?? "—"}</span>
                     </div>
-                    <div className="flex gap-1.5 mt-1">
-                      <Badge variant="secondary" className="text-[9px] font-mono">{p.admission_status ?? "sem status"}</Badge>
-                      {p.is_vacant && <Badge variant="outline" className="text-[9px]">vago</Badge>}
+                    <div className="flex gap-2 mt-1">
+                      <Badge variant="secondary" className="text-xs font-mono">{p.admission_status ?? "sem status"}</Badge>
+                      {p.is_vacant && <Badge variant="outline" className="text-xs">vago</Badge>}
                     </div>
                   </button>
                 ))}
@@ -270,39 +270,39 @@ export function PatientOpsTab() {
                 <div className="space-y-4">
                   {/* Identidade */}
                   <section>
-                    <h4 className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">Identidade & leito</h4>
+                    <h4 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Identidade & leito</h4>
                     <div className="rounded-md border border-border bg-muted/20 p-2 space-y-1">
                       <div><span className="text-muted-foreground">Leito:</span> <span className="font-mono">{inspection.patient?.bed_number ?? "—"}</span> · <span className="font-mono">{inspection.patient?.sector ?? "—"}</span></div>
                       <div><span className="text-muted-foreground">Prontuário:</span> <span className="font-mono">{inspection.patient?.medical_record ?? "—"}</span></div>
-                      <div><span className="text-muted-foreground">Status:</span> <Badge variant="secondary" className="text-[10px] font-mono ml-1">{inspection.patient?.admission_status ?? "—"}</Badge> {inspection.patient?.is_vacant && <Badge variant="outline" className="text-[10px] ml-1">vago</Badge>}</div>
-                      <div><span className="text-muted-foreground">Registry ID:</span> <span className="font-mono text-[10px]">{inspection.patient?.patient_registry_id ?? "—"}</span></div>
+                      <div><span className="text-muted-foreground">Status:</span> <Badge variant="secondary" className="text-xs font-mono ml-1">{inspection.patient?.admission_status ?? "—"}</Badge> {inspection.patient?.is_vacant && <Badge variant="outline" className="text-xs ml-1">vago</Badge>}</div>
+                      <div><span className="text-muted-foreground">Registry ID:</span> <span className="font-mono text-xs">{inspection.patient?.patient_registry_id ?? "—"}</span></div>
                     </div>
                   </section>
 
                   {/* Transferências pendentes */}
                   <section>
-                    <h4 className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                    <h4 className="text-xs uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-2">
                       <ArrowRightLeft className="h-3 w-3" /> Transferências internas
                     </h4>
                     {inspection.transfers.length === 0 ? (
-                      <p className="text-muted-foreground text-[11px] italic">Nenhuma.</p>
+                      <p className="text-muted-foreground text-xs italic">Nenhuma.</p>
                     ) : (
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         {inspection.transfers.map((t) => (
                           <div key={t.id} className="rounded-md border border-border p-2 space-y-1">
                             <div className="flex items-center gap-2">
-                              <Badge variant={t.status === "pending" ? "default" : t.status === "cancelled" ? "outline" : "secondary"} className="text-[9px]">
+                              <Badge variant={t.status === "pending" ? "default" : t.status === "cancelled" ? "outline" : "secondary"} className="text-xs">
                                 {t.status}
                               </Badge>
-                              <span className="text-[11px]">{t.source_sector} <ArrowRightLeft className="h-2.5 w-2.5 inline mx-1" /> {t.target_sector_label ?? t.target_sector_code}</span>
-                              <span className="ml-auto text-[10px] text-muted-foreground">{fmt(t.signaled_at)}</span>
+                              <span className="text-xs">{t.source_sector} <ArrowRightLeft className="h-2.5 w-2.5 inline mx-1" /> {t.target_sector_label ?? t.target_sector_code}</span>
+                              <span className="ml-auto text-xs text-muted-foreground">{fmt(t.signaled_at)}</span>
                             </div>
                             {t.status === "pending" && (
                               <div className="pt-1">
                                 <Button
                                   size="sm"
                                   variant="destructive"
-                                  className="h-6 text-[10px] gap-1"
+                                  className="h-6 text-xs gap-1"
                                   onClick={() => preview({
                                     kind: "cancel_transfer",
                                     action: "fix_transfer_cancel_pending",
@@ -323,9 +323,9 @@ export function PatientOpsTab() {
 
                   {/* Encounters */}
                   <section>
-                    <h4 className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">Atendimentos (encounter)</h4>
+                    <h4 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Atendimentos (encounter)</h4>
                     {inspection.encounters.length === 0 ? (
-                      <p className="text-muted-foreground text-[11px] italic">Nenhum.</p>
+                      <p className="text-muted-foreground text-xs italic">Nenhum.</p>
                     ) : (
                       <div className="space-y-1">
                         {inspection.encounters.map((e) => {
@@ -335,18 +335,18 @@ export function PatientOpsTab() {
                           return (
                             <div key={e.id} className="rounded-md border border-border p-2">
                               <div className="flex items-center gap-2">
-                                <span className="font-mono text-[10px]">{e.encounter_code ?? e.id.slice(0, 8)}</span>
-                                <Badge variant={closed ? "outline" : "default"} className="text-[9px]">
+                                <span className="font-mono text-xs">{e.encounter_code ?? e.id.slice(0, 8)}</span>
+                                <Badge variant={closed ? "outline" : "default"} className="text-xs">
                                   {closed ? "encerrado" : "aberto"}
                                 </Badge>
-                                <span className="ml-auto text-[10px] text-muted-foreground">{fmt(e.started_at)}{closed && ` → ${fmt(e.ended_at)}`}</span>
+                                <span className="ml-auto text-xs text-muted-foreground">{fmt(e.started_at)}{closed && ` → ${fmt(e.ended_at)}`}</span>
                               </div>
                               {canReopen && (
-                                <div className="pt-1.5">
+                                <div className="pt-2">
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    className="h-6 text-[10px] gap-1"
+                                    className="h-6 text-xs gap-1"
                                     onClick={() => preview({
                                       kind: "reopen_encounter",
                                       action: "fix_transfer_reopen_encounter",
@@ -368,46 +368,46 @@ export function PatientOpsTab() {
 
                   {/* Colocar paciente em leito (paciente perdido / sem leito) */}
                   <section>
-                    <h4 className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                    <h4 className="text-xs uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-2">
                       <BedDouble className="h-3 w-3" /> Colocar paciente em leito
                     </h4>
-                    <p className="text-[11px] text-muted-foreground mb-1.5">
+                    <p className="text-xs text-muted-foreground mb-2">
                       Use quando o paciente ficou "perdido" (ex.: leito de origem foi zerado após transferência com erro). Copia os dados clínicos desta linha para um leito VAGO escolhido e migra o histórico (evoluções, prescrições, exames) via <code className="font-mono">repoint_patient_history</code>. O leito atual é arquivado e limpo.
                     </p>
-                    <div className="flex gap-1.5 mb-1.5">
+                    <div className="flex gap-2 mb-2">
                       <Input
                         placeholder="Filtrar leitos vagos (setor / número)…"
                         value={vacantQuery}
                         onChange={(e) => setVacantQuery(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && loadVacantBeds()}
-                        className="h-7 text-[11px]"
+                        className="h-7 text-xs"
                       />
                       <Button size="sm" variant="outline" className="h-7" onClick={() => loadVacantBeds()} disabled={loadingVacant}>
                         {loadingVacant ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
                       </Button>
                     </div>
                     {vacantBeds.length > 0 && (
-                      <div className="rounded-md border border-border max-h-[140px] overflow-auto mb-1.5 divide-y divide-border">
+                      <div className="rounded-md border border-border max-h-[140px] overflow-auto mb-2 divide-y divide-border">
                         {vacantBeds.map((b) => (
                           <button
                             key={b.id}
                             onClick={() => setSelectedBedId(b.id)}
-                            className={`w-full text-left px-2 py-1 text-[11px] hover:bg-muted/40 flex items-center gap-2 ${selectedBedId === b.id ? "bg-emerald-50 dark:bg-emerald-950/30" : ""}`}
+                            className={`w-full text-left px-2 py-1 text-xs hover:bg-muted/40 flex items-center gap-2 ${selectedBedId === b.id ? "bg-released-soft" : ""}`}
                           >
                             <span className="font-mono w-14">{b.bed_number ?? "—"}</span>
                             <span className="text-muted-foreground truncate flex-1">{b.sector ?? "—"}</span>
-                            {selectedBedId === b.id && <Badge variant="outline" className="text-[9px] border-emerald-500 text-emerald-700">selecionado</Badge>}
+                            {selectedBedId === b.id && <Badge variant="outline" className="text-xs border-released text-released-on-soft">selecionado</Badge>}
                           </button>
                         ))}
                       </div>
                     )}
                     {vacantBeds.length === 0 && !loadingVacant && (
-                      <p className="text-[10px] text-muted-foreground italic mb-1.5">Clique na lupa para listar leitos vagos.</p>
+                      <p className="text-xs text-muted-foreground italic mb-2">Clique na lupa para listar leitos vagos.</p>
                     )}
                     <Button
                       size="sm"
                       variant="default"
-                      className="h-7 text-[11px] gap-1 bg-emerald-600 hover:bg-emerald-700"
+                      className="h-7 text-xs gap-1 bg-released hover:bg-released"
                       disabled={!inspection.patient || !inspection.patient.name || !selectedBedId}
                       onClick={() => {
                         const bed = vacantBeds.find((b) => b.id === selectedBedId);
@@ -427,14 +427,14 @@ export function PatientOpsTab() {
 
                   {/* Ação órfã */}
                   <section>
-                    <h4 className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">Leito órfão</h4>
-                    <p className="text-[11px] text-muted-foreground mb-1.5">
+                    <h4 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Leito órfão</h4>
+                    <p className="text-xs text-muted-foreground mb-2">
                       Use quando o paciente já teve desfecho mas o leito continua ocupado no mapa (arquiva dados clínicos e libera o leito).
                     </p>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-7 text-[11px] gap-1"
+                      className="h-7 text-xs gap-1"
                       disabled={!inspection.patient || inspection.patient.is_vacant}
                       onClick={() => preview({
                         kind: "release_orphan_bed",
@@ -450,16 +450,16 @@ export function PatientOpsTab() {
 
                   {/* Movimentações */}
                   <section>
-                    <h4 className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">Últimas movimentações</h4>
+                    <h4 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Últimas movimentações</h4>
                     {inspection.movements.length === 0 ? (
-                      <p className="text-muted-foreground text-[11px] italic">Nenhuma.</p>
+                      <p className="text-muted-foreground text-xs italic">Nenhuma.</p>
                     ) : (
-                      <div className="space-y-0.5">
+                      <div className="space-y-1">
                         {inspection.movements.map((m) => (
-                          <div key={m.id} className="flex items-center gap-2 text-[10px] border-b border-border/40 py-0.5">
+                          <div key={m.id} className="flex items-center gap-2 text-xs border-b border-border/40 py-1">
                             <span className="font-mono">{m.movement_type}</span>
                             <span className="text-muted-foreground truncate flex-1">{m.destination ?? m.patient_sector ?? "—"}</span>
-                            <Badge variant="outline" className="text-[9px]">{m.release_status}</Badge>
+                            <Badge variant="outline" className="text-xs">{m.release_status}</Badge>
                             <span className="text-muted-foreground">{fmt(m.created_at)}</span>
                           </div>
                         ))}
@@ -478,43 +478,43 @@ export function PatientOpsTab() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <ShieldAlert className="h-4 w-4 text-amber-600" /> {pending?.title}
+              <ShieldAlert className="h-4 w-4 text-warning-on-soft" /> {pending?.title}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3 text-xs">
                 <p className="text-muted-foreground">{pending?.description}</p>
-                <pre className="rounded-md bg-muted p-2 text-[10px] max-h-[280px] overflow-auto whitespace-pre-wrap">
+                <pre className="rounded-md bg-muted p-2 text-xs max-h-[280px] overflow-auto whitespace-pre-wrap">
                   {JSON.stringify(pending?.plan ?? {}, null, 2)}
                 </pre>
                 {pending?.requiresReason && (
                   <div>
-                    <label className="text-[11px] font-medium block mb-1">Motivo / justificativa (mínimo 10 caracteres) *</label>
+                    <label className="text-xs font-medium block mb-1">Motivo / justificativa (mínimo 10 caracteres) *</label>
                     <Textarea
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
                       placeholder="Ex.: Paciente perdido após transferência com erro no dia XX/XX — realocando manualmente conforme solicitação da coordenação…"
-                      className="text-[11px] min-h-[70px]"
+                      className="text-xs min-h-[70px]"
                     />
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{reason.trim().length}/10</p>
+                    <p className="text-xs text-muted-foreground mt-1">{reason.trim().length}/10</p>
                   </div>
                 )}
                 {requiresPassword && (
                   <div>
-                    <label className="text-[11px] font-medium block mb-1">Confirme sua senha para realocar *</label>
+                    <label className="text-xs font-medium block mb-1">Confirme sua senha para realocar *</label>
                     <Input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Sua senha de acesso"
-                      className="h-8 text-[11px]"
+                      className="h-8 text-xs"
                       autoComplete="current-password"
                     />
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-1">
                       A senha é validada no servidor (não é armazenada) e o evento fica registrado em <code className="font-mono">audit_logs</code>.
                     </p>
                   </div>
                 )}
-                <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                <p className="text-xs text-warning-on-soft">
                   A execução é auditada em <code className="font-mono">audit_logs</code> (action <code className="font-mono">DEV_FIX_TRANSFER</code>).
                 </p>
               </div>

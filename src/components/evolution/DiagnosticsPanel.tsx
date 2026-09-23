@@ -166,17 +166,17 @@ export function DiagnosticsPanel({
     <section className={cn("space-y-3", className)}>
       {/* Replicated banner */}
       {replicated && onClearAll && (
-        <div className="flex items-center justify-between gap-2 rounded-md border border-blue-500/30 bg-blue-500/5 px-2.5 py-1.5">
-          <div className="flex items-center gap-1.5 text-[10px] text-blue-700 dark:text-blue-300">
+        <div className="flex items-center justify-between gap-2 rounded-md border border-border/30 bg-primary/5 px-3 py-2">
+          <div className="flex items-center gap-2 text-xs text-foreground">
             <RotateCcw className="h-3 w-3" />
             <span className="font-medium">Diagnósticos replicados da evolução anterior</span>
-            <span className="text-blue-600/70 dark:text-blue-400/70">— revise e ajuste</span>
+            <span className="text-foreground/70">— revise e ajuste</span>
           </div>
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="h-6 text-[10px] gap-1 text-blue-700 hover:text-blue-800 hover:bg-blue-500/10 dark:text-blue-300"
+            className="h-6 text-xs gap-1 text-foreground hover:text-foreground hover:bg-primary/10"
             onClick={onClearAll}
           >
             <X className="h-3 w-3" /> Limpar
@@ -186,15 +186,15 @@ export function DiagnosticsPanel({
 
       {/* Status badges */}
       {(isPalliative || hasIsolation) && (
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           {isPalliative && (
-            <Badge className="h-5 text-[9px] gap-1 bg-purple-500/15 text-purple-600 border border-purple-500/30 dark:text-purple-300">
+            <Badge className="h-5 text-xs gap-1 bg-primary/15 text-foreground border border-border/30">
               <HeartHandshake className="h-3 w-3" />
               Paliativo
             </Badge>
           )}
           {hasIsolation && (
-            <Badge className="h-5 text-[9px] gap-1 bg-amber-500/15 text-amber-700 border border-amber-500/30 dark:text-amber-300">
+            <Badge className="h-5 text-xs gap-1 bg-warning/15 text-warning-on-soft border border-warning/30">
               <ShieldAlert className="h-3 w-3" />
               {isolationPrecautions}
             </Badge>
@@ -204,10 +204,10 @@ export function DiagnosticsPanel({
 
       {/* CID chips line */}
       <div className="space-y-1">
-        <Label className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+        <Label className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
           CID-10
         </Label>
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <CidChip
             label="P"
             value={cidPrimary}
@@ -249,14 +249,14 @@ export function DiagnosticsPanel({
           ? diagnosticHypotheses as string[]
           : (diagnosticHypotheses as string).split("\n").filter(Boolean);
         return (
-          <div className="rounded-md border border-border/60 bg-background/40 p-2.5 space-y-2">
+          <div className="rounded-md border border-border/60 bg-background/40 p-3 space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <Label className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-1.5">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-2">
                 <Stethoscope className="h-3 w-3" />
                 Hipóteses / Diagnósticos
-                <span className="text-[9px] normal-case tracking-normal text-muted-foreground/60">(prioridade = ordem)</span>
+                <span className="text-xs normal-case tracking-normal text-muted-foreground/60">(prioridade = ordem)</span>
               </Label>
-              <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 text-[9px] font-medium">
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-foreground px-2 py-1 text-xs font-medium">
                 <Lock className="h-2.5 w-2.5" />
                 Sincroniza com o mapa
               </span>
@@ -270,7 +270,7 @@ export function DiagnosticsPanel({
               numberColor="text-primary"
               showReorder
             />
-            <p className="text-[9px] text-muted-foreground leading-tight">
+            <p className="text-xs text-muted-foreground leading-tight">
               O item no topo é a hipótese principal. A ordem define prioridade no mapa de leitos.
             </p>
           </div>
@@ -279,13 +279,13 @@ export function DiagnosticsPanel({
 
       {/* Antecedentes Clínicos — novo campo por item, sincroniza com mapa de leitos */}
       {onAntecedentesChange && (
-        <div className="rounded-md border border-border/60 bg-background/40 p-2.5 space-y-2">
+        <div className="rounded-md border border-border/60 bg-background/40 p-3 space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-1.5">
-              <Stethoscope className="h-3 w-3 text-blue-500" />
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-2">
+              <Stethoscope className="h-3 w-3 text-muted-foreground" />
               Antecedentes Clínicos
             </Label>
-            <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 text-[9px] font-medium">
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-foreground px-2 py-1 text-xs font-medium">
               <Lock className="h-2.5 w-2.5" />
               Sincroniza com o mapa
             </span>
@@ -296,18 +296,18 @@ export function DiagnosticsPanel({
             placeholder="Ex: HAS, DM2, Tabagismo..."
             addLabel="+ Antecedente"
             showReorder={false}
-            numberColor="text-blue-600"
+            numberColor="text-foreground"
           />
         </div>
       )}
 
-      <div className="rounded-md border border-border/60 bg-background/40 p-2.5 space-y-2">
+      <div className="rounded-md border border-border/60 bg-background/40 p-3 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CalendarClock className={cn("h-3.5 w-3.5", predictionEnabled ? "text-primary" : "text-muted-foreground")} />
             <div className="leading-tight">
-              <p className="text-[11px] font-medium text-foreground">Tem previsão de alta?</p>
-              <p className="text-[9px] text-muted-foreground">
+              <p className="text-xs font-medium text-foreground">Tem previsão de alta?</p>
+              <p className="text-xs text-muted-foreground">
                 {showUtiPrediction ? "Registra alta da UTI/UCI e/ou alta hospitalar" : "Registra previsão de alta hospitalar"}
               </p>
             </div>
@@ -349,13 +349,13 @@ export function DiagnosticsPanel({
               if (!alertDate) return null;
               const sectorLabel = showUtiPrediction ? "UTI/UCI" : "hospitalar";
               return (
-                <div className="flex items-start gap-2.5 rounded-md border border-amber-400/50 border-l-[3px] border-l-amber-500 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-500/40 px-3 py-2">
-                  <CalendarClock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 rounded-md border border-warning/50 border-l-[3px] border-l-amber-500 bg-warning-soft px-3 py-2">
+                  <CalendarClock className="h-4 w-4 text-warning-on-soft shrink-0 mt-1" />
                   <div className="leading-tight">
-                    <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+                    <p className="text-xs font-medium text-warning-on-soft">
                       Alta {sectorLabel} programada nas próximas 24h
                     </p>
-                    <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">
+                    <p className="text-xs text-warning-on-soft mt-1">
                       Prevista para <strong>{formatDisplay(alertDate)}</strong> — verifique pendências antes de finalizar a evolução.
                     </p>
                   </div>
@@ -369,25 +369,25 @@ export function DiagnosticsPanel({
       {/* Paliativo + Precaução grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {/* Paliativo */}
-        <div className="flex items-center justify-between rounded-md border border-border/60 bg-background/40 px-2.5 py-1.5">
+        <div className="flex items-center justify-between rounded-md border border-border/60 bg-background/40 px-3 py-2">
           <div className="flex items-center gap-2 min-w-0">
-            <HeartHandshake className={cn("h-3.5 w-3.5 shrink-0", isPalliative ? "text-purple-500" : "text-muted-foreground")} />
+            <HeartHandshake className={cn("h-3.5 w-3.5 shrink-0", isPalliative ? "text-muted-foreground" : "text-muted-foreground")} />
             <div className="leading-tight">
-              <p className="text-[11px] font-medium text-foreground">Cuidados Paliativos</p>
-              <p className="text-[9px] text-muted-foreground">Manejo focado em conforto</p>
+              <p className="text-xs font-medium text-foreground">Cuidados Paliativos</p>
+              <p className="text-xs text-muted-foreground">Manejo focado em conforto</p>
             </div>
           </div>
           <Switch
             checked={isPalliative}
             onCheckedChange={onPalliativeChange}
-            className="data-[state=checked]:bg-purple-500"
+            className="data-[state=checked]:bg-primary"
           />
         </div>
 
         {/* Precaução / Isolamento */}
-        <div className="rounded-md border border-border/60 bg-background/40 px-2.5 py-1.5 space-y-1">
+        <div className="rounded-md border border-border/60 bg-background/40 px-3 py-2 space-y-1">
           <div className="flex items-center justify-between">
-            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-1">
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-1">
               <ShieldAlert className="h-3 w-3" /> Precaução / Isolamento
             </Label>
             <PrecautionPicker value={localIsolation} onSelect={handleIsolationChange} />
@@ -398,7 +398,7 @@ export function DiagnosticsPanel({
             placeholder="Ex: Contato, Gotículas, Reverso… ou nenhuma"
             className={cn(
               "h-7 text-xs",
-              hasIsolation && "border-amber-500/40 bg-amber-500/5",
+              hasIsolation && "border-warning/40 bg-warning/5",
             )}
           />
         </div>
@@ -420,11 +420,11 @@ function DatePredictionField({ icon, label, value, onChange, accent = "primary" 
   const [open, setOpen] = useState(false);
   const date = toDateOrNull(value);
   const displayValue = date ? format(date, "dd/MM/yyyy", { locale: ptBR }) : "";
-  const accentClass = accent === "emerald" ? "text-emerald-600 dark:text-emerald-400" : "text-primary";
+  const accentClass = accent === "emerald" ? "text-released-on-soft" : "text-primary";
 
   return (
     <div className="space-y-1">
-      <Label className={cn("text-[10px] uppercase tracking-wide font-medium flex items-center gap-1", accentClass)}>
+      <Label className={cn("text-xs uppercase tracking-wide font-medium flex items-center gap-1", accentClass)}>
         {icon} {label}
       </Label>
       <div className="flex items-center gap-1">
@@ -434,7 +434,7 @@ function DatePredictionField({ icon, label, value, onChange, accent = "primary" 
               type="button"
               variant="outline"
               className={cn(
-                "h-7 px-2 flex-1 justify-start text-xs font-normal gap-1.5",
+                "h-7 px-2 flex-1 justify-start text-xs font-normal gap-2",
                 !displayValue && "text-muted-foreground",
               )}
             >
@@ -446,7 +446,7 @@ function DatePredictionField({ icon, label, value, onChange, accent = "primary" 
                   tabIndex={0}
                   onClick={(e) => { e.stopPropagation(); onChange(""); }}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); onChange(""); } }}
-                  className="ml-auto -mr-1 h-4 w-4 inline-flex items-center justify-center rounded hover:bg-muted text-muted-foreground hover:text-destructive cursor-pointer"
+                  className="ml-auto -mr-1 h-4 w-4 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-destructive cursor-pointer"
                   title="Limpar"
                 >
                   <X className="h-3 w-3" />
@@ -466,7 +466,7 @@ function DatePredictionField({ icon, label, value, onChange, accent = "primary" 
           </PopoverContent>
         </Popover>
       </div>
-      <div className="flex items-center gap-0.5 flex-wrap">
+      <div className="flex items-center gap-1 flex-wrap">
         {QUICK_DATE_OFFSETS.map(q => (
           <button
             key={q.label}
@@ -476,8 +476,8 @@ function DatePredictionField({ icon, label, value, onChange, accent = "primary" 
               d.setDate(d.getDate() + q.offset);
               onChange(toIso(d));
             }}
-            className="text-[9px] px-1.5 h-5 rounded border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            title={`Em ${q.offset} dia(s)`}
+            className="text-xs px-2 h-5 rounded-md border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            title={`Em ${q.offset} ${(q.offset) === 1 ? 'dia' : 'dias'}`}
           >
             {q.label}
           </button>
@@ -519,17 +519,17 @@ function CidChip({ value, onChange, label, tone = "muted", placeholder, icon }: 
           <button
             type="button"
             className={cn(
-              "inline-flex items-center gap-1 px-2 h-6 rounded-md border text-[10px] font-medium transition-colors",
+              "inline-flex items-center gap-1 px-2 h-6 rounded-md border text-xs font-medium transition-colors",
               toneClass,
             )}
           >
             {icon}
-            {label && <span className="text-[9px] opacity-70 font-bold">{label}</span>}
+            {label && <span className="text-xs opacity-70 font-semibold">{label}</span>}
             <span>{placeholder ?? "Adicionar"}</span>
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-80 p-3" align="start">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-2">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">
             Selecionar CID-10
           </p>
           <CidSearchInput
@@ -555,13 +555,13 @@ function CidChip({ value, onChange, label, tone = "muted", placeholder, icon }: 
           type="button"
           title={value}
           className={cn(
-            "inline-flex items-center gap-1 px-2 h-6 rounded-md border text-[10px] font-mono transition-colors max-w-[200px]",
+            "inline-flex items-center gap-1 px-2 h-6 rounded-md border text-xs font-mono transition-colors max-w-[200px]",
             toneClass,
             isReadOnly && "cursor-default hover:bg-muted",
           )}
         >
-          {label && <span className="text-[9px] opacity-70 font-bold font-sans">{label}</span>}
-          <span className="font-semibold">{code}</span>
+          {label && <span className="text-xs opacity-70 font-semibold font-sans">{label}</span>}
+          <span className="font-medium">{code}</span>
           {desc && (
             <span className="font-sans truncate opacity-80 max-w-[140px]">· {desc}</span>
           )}
@@ -569,7 +569,7 @@ function CidChip({ value, onChange, label, tone = "muted", placeholder, icon }: 
       </PopoverTrigger>
       {!isReadOnly && (
         <PopoverContent className="w-80 p-3" align="start">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-2">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">
             Alterar CID-10
           </p>
           <CidSearchInput
@@ -586,7 +586,7 @@ function CidChip({ value, onChange, label, tone = "muted", placeholder, icon }: 
           <button
             type="button"
             onClick={() => { onChange?.(""); setOpen(false); }}
-            className="w-full mt-2 inline-flex items-center justify-center gap-1.5 text-[11px] text-destructive hover:bg-destructive/10 rounded-md py-1.5 transition-colors"
+            className="w-full mt-2 inline-flex items-center justify-center gap-2 text-xs text-destructive hover:bg-destructive/10 rounded-md py-2 transition-colors"
           >
             <X className="h-3 w-3" /> Remover CID
           </button>
@@ -606,21 +606,21 @@ function PrecautionPicker({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="text-[9px] px-1.5 h-5 rounded border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          className="text-xs px-2 h-5 rounded-md border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
         >
           Sugestões
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-56 p-1.5" align="end">
-        <div className="space-y-0.5">
+      <PopoverContent className="w-56 p-2" align="end">
+        <div className="space-y-1">
           {PRECAUTION_PRESETS.map(p => (
             <button
               key={p}
               type="button"
               onClick={() => { onSelect(p); setOpen(false); }}
               className={cn(
-                "w-full text-left text-[11px] px-2 py-1.5 rounded hover:bg-muted/70 flex items-center justify-between",
-                value === p && "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                "w-full text-left text-xs px-2 py-2 rounded-md hover:bg-muted/70 flex items-center justify-between",
+                value === p && "bg-warning/10 text-warning-on-soft",
               )}
             >
               <span>{p}</span>
@@ -632,9 +632,9 @@ function PrecautionPicker({
             type="button"
             onClick={() => { onSelect("Sem precaução"); setOpen(false); }}
             className={cn(
-              "w-full text-left text-[11px] px-2 py-1.5 rounded flex items-center justify-between gap-1",
+              "w-full text-left text-xs px-2 py-2 rounded-md flex items-center justify-between gap-1",
               value === "Sem precaução"
-                ? "bg-red-500/10 text-red-700 dark:text-red-300"
+                ? "bg-critical/10 text-critical-on-soft"
                 : "hover:bg-destructive/10 text-destructive"
             )}
           >

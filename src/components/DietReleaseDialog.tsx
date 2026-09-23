@@ -132,12 +132,12 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pb-4 border-b">
           <DialogTitle className="flex items-center gap-3 text-xl">
-            <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-              <Utensils className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="p-2 rounded-lg bg-released-soft">
+              <Utensils className="h-5 w-5 text-released-on-soft" />
             </div>
             <div>
               <span>Autorização de Dieta</span>
-              <p className="patient-id text-sm font-normal text-muted-foreground mt-0.5">
+              <p className="patient-id text-sm font-normal text-muted-foreground mt-1">
                 {patient.name} • Leito {patient.bedNumber}
               </p>
             </div>
@@ -149,9 +149,9 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
 
         <div className="space-y-6 py-4">
           {/* Seção 1: Via da Dieta */}
-          <div className="space-y-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-            <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">1</span>
+          <div className="space-y-3 p-4 rounded-lg bg-muted border border-border">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-released text-white flex items-center justify-center text-xs font-semibold">1</span>
               Via da Dieta
             </Label>
             <RadioGroup
@@ -163,13 +163,13 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg border-2 cursor-pointer transition-all flex-1",
                   dietRoute === "oral" 
-                    ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" 
-                    : "border-slate-200 dark:border-slate-600 hover:border-slate-300"
+                    ? "border-released bg-released-soft" 
+                    : "border-border hover:border-border"
                 )}
               >
                 <RadioGroupItem value="oral" id="oral" className="sr-only" />
-                <Apple className={cn("h-5 w-5", dietRoute === "oral" ? "text-emerald-600" : "text-slate-400")} />
-                <span className={cn("font-medium", dietRoute === "oral" ? "text-emerald-700 dark:text-emerald-400" : "text-slate-600 dark:text-slate-300")}>
+                <Apple className={cn("h-5 w-5", dietRoute === "oral" ? "text-released-on-soft" : "text-muted-foreground")} />
+                <span className={cn("font-medium", dietRoute === "oral" ? "text-released-on-soft" : "text-foreground")}>
                   Oral
                 </span>
               </label>
@@ -177,13 +177,13 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg border-2 cursor-pointer transition-all flex-1",
                   dietRoute === "enteral" 
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" 
-                    : "border-slate-200 dark:border-slate-600 hover:border-slate-300"
+                    ? "border-border bg-muted" 
+                    : "border-border hover:border-border"
                 )}
               >
                 <RadioGroupItem value="enteral" id="enteral" className="sr-only" />
-                <Heart className={cn("h-5 w-5", dietRoute === "enteral" ? "text-blue-600" : "text-slate-400")} />
-                <span className={cn("font-medium", dietRoute === "enteral" ? "text-blue-700 dark:text-blue-400" : "text-slate-600 dark:text-slate-300")}>
+                <Heart className={cn("h-5 w-5", dietRoute === "enteral" ? "text-foreground" : "text-muted-foreground")} />
+                <span className={cn("font-medium", dietRoute === "enteral" ? "text-foreground" : "text-foreground")}>
                   Enteral
                 </span>
               </label>
@@ -191,9 +191,9 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
           </div>
 
           {/* Seção 2: Tipo de Dieta */}
-          <div className="space-y-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-            <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">2</span>
+          <div className="space-y-3 p-4 rounded-lg bg-muted border border-border">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-released text-white flex items-center justify-center text-xs font-semibold">2</span>
               Tipo de Dieta
             </Label>
             <div className="flex flex-wrap gap-2 pt-1">
@@ -206,8 +206,8 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
                   className={cn(
                     "h-10 px-4 text-sm font-medium transition-all",
                     selectedDietType === type 
-                      ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md" 
-                      : "hover:border-emerald-300 hover:text-emerald-700"
+                      ? "bg-released hover:bg-released text-white shadow-md" 
+                      : "hover:border-released-border hover:text-released-on-soft"
                   )}
                   onClick={() => setSelectedDietType(selectedDietType === type ? "" : type)}
                 >
@@ -224,9 +224,9 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
           </div>
 
           {/* Seção 3: Restrições/Comorbidades */}
-          <div className="space-y-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-            <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">3</span>
+          <div className="space-y-3 p-4 rounded-lg bg-muted border border-border">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-released text-white flex items-center justify-center text-xs font-semibold">3</span>
               Restrições / Comorbidades
             </Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
@@ -236,8 +236,8 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
                   className={cn(
                     "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all",
                     selectedRestrictions.includes(restriction.id)
-                      ? "border-amber-500 bg-amber-50 dark:bg-amber-900/20"
-                      : "border-slate-200 dark:border-slate-600 hover:border-slate-300"
+                      ? "border-warning bg-warning-soft"
+                      : "border-border hover:border-border"
                   )}
                 >
                   <Checkbox
@@ -247,10 +247,10 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
                     className="sr-only"
                   />
                   <div className={cn(
-                    "w-4 h-4 rounded border-2 flex items-center justify-center",
+                    "w-4 h-4 rounded-md border-2 flex items-center justify-center",
                     selectedRestrictions.includes(restriction.id)
-                      ? "bg-amber-500 border-amber-500"
-                      : "border-slate-300 dark:border-slate-500"
+                      ? "bg-warning border-warning"
+                      : "border-border"
                   )}>
                     {selectedRestrictions.includes(restriction.id) && (
                       <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -261,7 +261,7 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
                   <div className="flex flex-col">
                     <span className={cn(
                       "text-sm font-medium",
-                      selectedRestrictions.includes(restriction.id) ? "text-amber-700 dark:text-amber-400" : "text-slate-700 dark:text-slate-300"
+                      selectedRestrictions.includes(restriction.id) ? "text-warning-on-soft" : "text-foreground"
                     )}>
                       {restriction.label}
                     </span>
@@ -281,9 +281,9 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
           </div>
 
           {/* Seção 4: Dados do Paciente */}
-          <div className="space-y-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-            <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">4</span>
+          <div className="space-y-3 p-4 rounded-lg bg-muted border border-border">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-released text-white flex items-center justify-center text-xs font-semibold">4</span>
               Data de Nascimento
             </Label>
             <Input
@@ -296,13 +296,13 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
           </div>
 
           {/* Seção 5: Médico Responsável */}
-          <div className="space-y-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-            <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">5</span>
+          <div className="space-y-3 p-4 rounded-lg bg-muted border border-border">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-released text-white flex items-center justify-center text-xs font-semibold">5</span>
               Médico Responsável
             </Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Nome Completo</Label>
                 <Input
                   placeholder="Dr(a). Nome Completo"
@@ -311,7 +311,7 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
                   className="text-sm"
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">CRM</Label>
                 <Input
                   placeholder="CRM-MA 00000"
@@ -326,7 +326,7 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
 
         {/* Footer Actions */}
         <div className="flex items-center justify-between pt-4 border-t">
-          <Button variant="ghost" onClick={handleClose} className="text-slate-600">
+          <Button variant="ghost" onClick={handleClose} className="text-foreground">
             Cancelar
           </Button>
           <div className="flex gap-2">
@@ -342,7 +342,7 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
             <Button
               onClick={handlePrint}
               disabled={!isFormValid}
-              className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+              className="gap-2 bg-released hover:bg-released"
             >
               <Printer className="h-4 w-4" />
               Gerar Documento

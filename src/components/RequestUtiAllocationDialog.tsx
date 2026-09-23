@@ -87,8 +87,8 @@ function EditableListItem({
   };
 
   return (
-    <div className="flex items-start gap-1.5 group/item">
-      <span className="text-[10px] font-semibold text-muted-foreground pt-2 w-4 flex-shrink-0">{index + 1}.</span>
+    <div className="flex items-start gap-2 group/item">
+      <span className="text-xs font-medium text-muted-foreground pt-2 w-4 flex-shrink-0">{index + 1}.</span>
       <Input
         ref={inputRef}
         value={value}
@@ -322,7 +322,7 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
         <div className="space-y-4 py-4">
           {/* UTI Selection */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold">UTI de Destino</Label>
+            <Label className="text-xs font-medium">UTI de Destino</Label>
             <Select value={targetUti} onValueChange={(v) => setTargetUti(v as "UTI 1" | "UTI 2")}>
               <SelectTrigger className="h-10">
                 <SelectValue />
@@ -330,13 +330,13 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
               <SelectContent>
                 <SelectItem value="UTI 1">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-primary border border-primary/40 bg-primary/10 px-1.5 py-0.5 rounded">1</span>
+                    <span className="text-xs font-semibold text-primary border border-primary/40 bg-primary/10 px-2 py-1 rounded-md">1</span>
                     <span>UTI 1</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="UTI 2">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 border border-amber-400/40 bg-amber-500/10 px-1.5 py-0.5 rounded">2</span>
+                    <span className="text-xs font-semibold text-warning-on-soft border border-warning/40 bg-warning/10 px-2 py-1 rounded-md">2</span>
                     <span>UTI 2</span>
                   </div>
                 </SelectItem>
@@ -347,7 +347,7 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
           {/* Requesting Doctor Info */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-xs font-semibold">Médico Solicitante</Label>
+              <Label className="text-xs font-medium">Médico Solicitante</Label>
               <Input
                 ref={doctorNameRef}
                 value={requestingDoctorName}
@@ -357,7 +357,7 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-semibold">Setor de Origem</Label>
+              <Label className="text-xs font-medium">Setor de Origem</Label>
               <Input
                 value={originSector}
                 onChange={(e) => setOriginSector(e.target.value)}
@@ -369,13 +369,13 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
 
           {/* Patient Basic Info */}
           <div className="space-y-3 p-3 rounded-lg bg-muted/50 border">
-            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
               <User className="h-4 w-4 text-primary" />
               Dados do Paciente
             </div>
             <div className="grid grid-cols-4 gap-2">
               <div className="col-span-2 space-y-1">
-                <Label className="text-[10px] text-muted-foreground">Nome *</Label>
+                <Label className="text-xs text-muted-foreground">Nome *</Label>
                 <Input
                   value={patientName}
                   onChange={(e) => setPatientName(e.target.value)}
@@ -384,7 +384,7 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground">Idade</Label>
+                <Label className="text-xs text-muted-foreground">Idade</Label>
                 <Input
                   value={patientAge}
                   onChange={(e) => setPatientAge(e.target.value)}
@@ -393,7 +393,7 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground">Sexo</Label>
+                <Label className="text-xs text-muted-foreground">Sexo</Label>
                 <Select value={patientSex} onValueChange={setPatientSex}>
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue placeholder="—" />
@@ -410,11 +410,11 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
           {/* Clinical Data Grid */}
           <div className="grid grid-cols-2 gap-3">
             {/* Diagnoses */}
-            <div className="space-y-2 p-2 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/30">
+            <div className="space-y-2 p-2 rounded-lg bg-muted/50 border border-border/50">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Stethoscope className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                  <span className="text-[10px] font-semibold text-muted-foreground">Hipóteses / Diagnósticos</span>
+                <div className="flex items-center gap-2">
+                  <Stethoscope className="h-3 w-3 text-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground">Hipóteses / Diagnósticos</span>
                 </div>
                 <Button
                   type="button"
@@ -444,11 +444,11 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
             </div>
 
             {/* Antecedentes */}
-            <div className="space-y-2 p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30">
+            <div className="space-y-2 p-2 rounded-lg bg-warning-soft/50 border border-warning-border/50">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <FileText className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-                  <span className="text-[10px] font-semibold text-muted-foreground">Antecedentes / Comorbidades</span>
+                <div className="flex items-center gap-2">
+                  <FileText className="h-3 w-3 text-warning-on-soft" />
+                  <span className="text-xs font-medium text-muted-foreground">Antecedentes / Comorbidades</span>
                 </div>
                 <Button
                   type="button"
@@ -478,11 +478,11 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
             </div>
 
             {/* Exams */}
-            <div className="space-y-2 p-2 rounded-lg bg-green-50/50 dark:bg-green-950/20 border border-green-200/50 dark:border-green-800/30">
+            <div className="space-y-2 p-2 rounded-lg bg-released-soft/50 border border-released-border/50">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <FileText className="h-3 w-3 text-green-600 dark:text-green-400" />
-                  <span className="text-[10px] font-semibold text-muted-foreground">Exames Relevantes</span>
+                <div className="flex items-center gap-2">
+                  <FileText className="h-3 w-3 text-released-on-soft" />
+                  <span className="text-xs font-medium text-muted-foreground">Exames Relevantes</span>
                 </div>
                 <Button
                   type="button"
@@ -512,11 +512,11 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
             </div>
 
             {/* Pendencies */}
-            <div className="space-y-2 p-2 rounded-lg bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-800/30">
+            <div className="space-y-2 p-2 rounded-lg bg-muted/50 border border-border/50">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <FileText className="h-3 w-3 text-purple-600 dark:text-purple-400" />
-                  <span className="text-[10px] font-semibold text-muted-foreground">Programações / Pendências</span>
+                <div className="flex items-center gap-2">
+                  <FileText className="h-3 w-3 text-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground">Programações / Pendências</span>
                 </div>
                 <Button
                   type="button"

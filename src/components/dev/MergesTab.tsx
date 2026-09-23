@@ -100,10 +100,10 @@ export function MergesTab() {
   return (
     <Tabs defaultValue="diagnostic" className="space-y-3">
       <TabsList>
-        <TabsTrigger value="diagnostic" className="gap-1.5">
+        <TabsTrigger value="diagnostic" className="gap-2">
           <ScanSearch className="h-3.5 w-3.5" /> Diagnóstico
         </TabsTrigger>
-        <TabsTrigger value="history" className="gap-1.5">
+        <TabsTrigger value="history" className="gap-2">
           <History className="h-3.5 w-3.5" /> Histórico
         </TabsTrigger>
       </TabsList>
@@ -119,7 +119,7 @@ export function MergesTab() {
             <span>Histórico de mesclagens. Snapshots arquivados (CPF/CNS originais) ficam disponíveis aqui para sempre.</span>
           </div>
           <Button size="sm" variant="outline" onClick={refresh} disabled={loading}>
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`} /> Atualizar
+            <RefreshCw className={`h-3.5 w-3.5 mr-2 ${loading ? "animate-spin" : ""}`} /> Atualizar
           </Button>
         </div>
 
@@ -160,7 +160,7 @@ export function MergesTab() {
                           {new Date(r.created_at).toLocaleString("pt-BR")}
                         </td>
                         <td>
-                          <Badge variant="secondary" className="text-[10px]">{r.action}</Badge>
+                          <Badge variant="secondary" className="text-xs">{r.action}</Badge>
                         </td>
                         <td className="font-mono truncate max-w-[260px]">
                           {/* MIGRAÇÃO: snapshot novo pode usar nome_completo/nome_social */}
@@ -182,18 +182,18 @@ export function MergesTab() {
                           <td colSpan={5} className="p-3">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div>
-                                <div className="text-[10px] font-semibold uppercase text-muted-foreground mb-1">
+                                <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">
                                   Motivo / payload
                                 </div>
-                                <pre className="text-[11px] bg-background border border-border rounded p-2 overflow-x-auto max-h-64">
+                                <pre className="text-xs bg-background border border-border rounded-md p-2 overflow-x-auto max-h-64">
 {JSON.stringify(r.payload ?? {}, null, 2)}
                                 </pre>
                               </div>
                               <div>
-                                <div className="text-[10px] font-semibold uppercase text-muted-foreground mb-1">
+                                <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">
                                   Snapshot do registro perdedor (arquivado)
                                 </div>
-                                <pre className="text-[11px] bg-background border border-border rounded p-2 overflow-x-auto max-h-64">
+                                <pre className="text-xs bg-background border border-border rounded-md p-2 overflow-x-auto max-h-64">
 {JSON.stringify(r.source_snapshot ?? {}, null, 2)}
                                 </pre>
                               </div>

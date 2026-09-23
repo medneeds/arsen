@@ -49,7 +49,7 @@ export function PosologySuggestionsBar({
           <span className="font-medium text-primary truncate">
             Protocolos sugeridos para {medicationName}
           </span>
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
+          <Badge variant="outline" className="text-xs px-2 py-0 h-4">
             {protocols.length}
           </Badge>
         </div>
@@ -83,7 +83,7 @@ export function PosologySuggestionsBar({
       </div>
 
       {expanded && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="mt-2 flex flex-wrap gap-2">
           <TooltipProvider delayDuration={200}>
             {protocols.map((p, idx) => (
               <Tooltip key={idx}>
@@ -92,9 +92,9 @@ export function PosologySuggestionsBar({
                     type="button"
                     onClick={() => onApply(p)}
                     className={cn(
-                      "inline-flex items-center gap-1.5 rounded-full border border-primary/40",
+                      "inline-flex items-center gap-2 rounded-full border border-primary/40",
                       "bg-background hover:bg-primary hover:text-primary-foreground",
-                      "px-2.5 py-1 text-xs font-medium transition-colors",
+                      "px-3 py-1 text-xs font-medium transition-colors",
                       "focus:outline-none focus:ring-2 focus:ring-primary/40",
                     )}
                   >
@@ -105,7 +105,7 @@ export function PosologySuggestionsBar({
                     {p.evidence && (
                       <Badge
                         variant="secondary"
-                        className="text-[9px] px-1 py-0 h-3.5 leading-none"
+                        className="text-xs px-1 py-0 h-3.5 leading-none"
                       >
                         {p.evidence}
                       </Badge>

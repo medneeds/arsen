@@ -292,7 +292,7 @@ const NotesTabOptimized = () => {
                 size="sm"
                 onClick={handleSaveFreeText}
                 disabled={!notes}
-                className="gap-2 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/50 transition-all"
+                className="gap-2 hover:bg-primary/10 hover:text-foreground hover:border-border/50 transition-all"
               >
                 <Save className="h-4 w-4" />
                 Salvar na central
@@ -302,7 +302,7 @@ const NotesTabOptimized = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setIsScheduleDialogOpen(true)}
-                className="gap-2 hover:bg-amber-500/10 hover:text-amber-600 hover:border-amber-500/50 transition-all"
+                className="gap-2 hover:bg-warning/10 hover:text-warning-on-soft hover:border-warning/50 transition-all"
               >
                 <Clock className="h-4 w-4" />
                 Programar lembrete
@@ -311,21 +311,21 @@ const NotesTabOptimized = () => {
           </div>
 
           <div className="hidden print:block mb-6">
-            <h1 className="text-2xl font-bold uppercase text-center">ANOTAÇÕES MÉDICAS</h1>
+            <h1 className="text-2xl font-semibold uppercase tracking-wider text-center">ANOTAÇÕES MÉDICAS</h1>
             <p className="text-sm text-center mt-2">
               Data: {new Date().toLocaleDateString("pt-BR")} -{" "}
               {new Date().toLocaleTimeString("pt-BR")}
             </p>
-            <hr className="my-4 border-t-2 border-gray-300" />
+            <hr className="my-4 border-t-2 border-border" />
           </div>
 
-          <Card className="p-6 shadow-xl border-2 print:border-0 print:shadow-none print:p-0">
+          <Card className="p-6 shadow-md border-2 print:border-0 print:shadow-none print:p-0">
             <div className="space-y-4 print:space-y-0">
               <Textarea
                 value={notes}
                 onChange={handleChange}
                 placeholder="Digite sua anotação aqui..."
-                className="min-h-[600px] font-mono text-sm resize-none focus:ring-2 focus:ring-emerald-500 transition-all print:min-h-0 print:border-0 print:focus:ring-0 print:p-0"
+                className="min-h-[600px] font-mono text-sm resize-none focus:ring-2 focus:ring-released transition-all print:min-h-0 print:border-0 print:focus:ring-0 print:p-0"
               />
 
               <div className="flex items-center justify-between print:hidden">
@@ -339,7 +339,7 @@ const NotesTabOptimized = () => {
                     size="sm"
                     onClick={handleCopy}
                     disabled={!notes}
-                    className="gap-2 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/50 transition-all"
+                    className="gap-2 hover:bg-primary/10 hover:text-foreground hover:border-border/50 transition-all"
                   >
                     <Copy className="h-4 w-4" />
                     Copiar
@@ -350,7 +350,7 @@ const NotesTabOptimized = () => {
                     size="sm"
                     onClick={handleDownload}
                     disabled={!notes}
-                    className="gap-2 hover:bg-green-500/10 hover:text-green-600 hover:border-green-500/50 transition-all"
+                    className="gap-2 hover:bg-released/10 hover:text-released-on-soft hover:border-released/50 transition-all"
                   >
                     <Download className="h-4 w-4" />
                     Baixar
@@ -361,7 +361,7 @@ const NotesTabOptimized = () => {
                     size="sm"
                     onClick={handlePrint}
                     disabled={!notes}
-                    className="gap-2 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/50 transition-all"
+                    className="gap-2 hover:bg-primary/10 hover:text-foreground hover:border-border/50 transition-all"
                   >
                     <Printer className="h-4 w-4" />
                     Imprimir
@@ -399,7 +399,7 @@ const NotesTabOptimized = () => {
             <Button
               onClick={handleAddChecklistItem}
               disabled={!newChecklistItem.trim()}
-              className="gap-2 uppercase"
+              className="gap-2 uppercase tracking-wider"
             >
               <Plus className="h-4 w-4" />
               ADICIONAR

@@ -205,7 +205,7 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
       if (data.hipotese_diagnostica) setDiagnosisInitial(data.hipotese_diagnostica);
       if (data.conduta_inicial) setConditions(prev => prev ? prev + "\n" + data.conduta_inicial : data.conduta_inicial);
       toast.success("Dados da admissão importados");
-    } catch { toast.error("Erro ao importar admissão"); }
+    } catch { toast.error("Não foi possível importar admissão"); }
     finally { setImportingAdmission(false); }
   };
 
@@ -224,7 +224,7 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
       if (enc.exames_relevantes) setExamResults(prev => prev ? prev + "\n" + enc.exames_relevantes : enc.exames_relevantes);
       if (enc.historia_clinica) setConditions(prev => prev ? prev + "\n" + enc.historia_clinica : enc.historia_clinica);
       toast.success("Dados da evolução importados");
-    } catch { toast.error("Erro ao importar evolução"); }
+    } catch { toast.error("Não foi possível importar evolução"); }
     finally { setImportingEvolution(false); }
   };
 
@@ -312,7 +312,7 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
       });
       return true;
     } catch (err) {
-      toast.error("Falha ao registrar a solicitação", {
+      toast.error("Não foi possível registrar a solicitação", {
         description: err instanceof Error ? err.message : "Erro desconhecido. A AIH não foi impressa.",
       });
       return false;
@@ -379,44 +379,44 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
             <div className="space-y-4">
               {/* Estabelecimento */}
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estabelecimento de Saúde</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Estabelecimento de Saúde</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex gap-3">
-                    <div className="flex-1"><Label className="text-[10px] text-muted-foreground">Solicitante</Label><Input value={AIH_INSTITUTION.solicitante} readOnly className="bg-muted/50 font-medium text-xs" /></div>
-                    <div className="w-24"><Label className="text-[10px] text-muted-foreground">CNES</Label><Input value={AIH_INSTITUTION.cnesSolicitante} readOnly className="bg-muted/50 font-mono font-bold text-xs text-center" /></div>
+                    <div className="flex-1"><Label className="text-xs text-muted-foreground">Solicitante</Label><Input value={AIH_INSTITUTION.solicitante} readOnly className="bg-muted/50 font-medium text-xs" /></div>
+                    <div className="w-24"><Label className="text-xs text-muted-foreground">CNES</Label><Input value={AIH_INSTITUTION.cnesSolicitante} readOnly className="bg-muted/50 font-mono font-semibold text-xs text-center" /></div>
                   </div>
                   <div className="flex gap-3">
-                    <div className="flex-1"><Label className="text-[10px] text-muted-foreground">Executante</Label><Input value={AIH_INSTITUTION.executante} readOnly className="bg-muted/50 font-medium text-xs" /></div>
-                    <div className="w-24"><Label className="text-[10px] text-muted-foreground">CNES</Label><Input value={AIH_INSTITUTION.cnesExecutante} readOnly className="bg-muted/50 font-mono font-bold text-xs text-center" /></div>
+                    <div className="flex-1"><Label className="text-xs text-muted-foreground">Executante</Label><Input value={AIH_INSTITUTION.executante} readOnly className="bg-muted/50 font-medium text-xs" /></div>
+                    <div className="w-24"><Label className="text-xs text-muted-foreground">CNES</Label><Input value={AIH_INSTITUTION.cnesExecutante} readOnly className="bg-muted/50 font-mono font-semibold text-xs text-center" /></div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Paciente */}
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Identificação do Paciente</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Identificação do Paciente</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="col-span-2"><Label className="text-[10px] text-muted-foreground">Nome do Paciente *</Label><Input value={aihPatientName} onChange={(e) => setAihPatientName(e.target.value)} className="text-xs" /></div>
-                    <div><Label className="text-[10px] text-muted-foreground">Nº Prontuário</Label><Input value={patientRecord} onChange={(e) => setPatientRecord(e.target.value)} className="text-xs" /></div>
+                    <div className="col-span-2"><Label className="text-xs text-muted-foreground">Nome do Paciente *</Label><Input value={aihPatientName} onChange={(e) => setAihPatientName(e.target.value)} className="text-xs" /></div>
+                    <div><Label className="text-xs text-muted-foreground">Nº Prontuário</Label><Input value={patientRecord} onChange={(e) => setPatientRecord(e.target.value)} className="text-xs" /></div>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <div><Label className="text-[10px] text-muted-foreground">CNS</Label><Input value={patientCNS} onChange={(e) => setPatientCNS(e.target.value)} className="text-xs" /></div>
-                    <div><Label className="text-[10px] text-muted-foreground">Data Nasc.</Label><Input type="date" value={patientDOB} onChange={(e) => setPatientDOB(e.target.value)} className="text-xs" /></div>
-                    <div><Label className="text-[10px] text-muted-foreground">Sexo</Label>
+                    <div><Label className="text-xs text-muted-foreground">CNS</Label><Input value={patientCNS} onChange={(e) => setPatientCNS(e.target.value)} className="text-xs" /></div>
+                    <div><Label className="text-xs text-muted-foreground">Data Nasc.</Label><Input type="date" value={patientDOB} onChange={(e) => setPatientDOB(e.target.value)} className="text-xs" /></div>
+                    <div><Label className="text-xs text-muted-foreground">Sexo</Label>
                       <Select value={patientSex} onValueChange={setPatientSex}><SelectTrigger className="text-xs"><SelectValue placeholder="—" /></SelectTrigger><SelectContent><SelectItem value="M">Masculino</SelectItem><SelectItem value="F">Feminino</SelectItem></SelectContent></Select>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div><Label className="text-[10px] text-muted-foreground">Nome da Mãe</Label><Input value={patientMotherName} onChange={(e) => setPatientMotherName(e.target.value)} className="text-xs" /></div>
-                    <div><Label className="text-[10px] text-muted-foreground">Telefone</Label><Input value={patientPhone} onChange={(e) => setPatientPhone(e.target.value)} className="text-xs" /></div>
+                    <div><Label className="text-xs text-muted-foreground">Nome da Mãe</Label><Input value={patientMotherName} onChange={(e) => setPatientMotherName(e.target.value)} className="text-xs" /></div>
+                    <div><Label className="text-xs text-muted-foreground">Telefone</Label><Input value={patientPhone} onChange={(e) => setPatientPhone(e.target.value)} className="text-xs" /></div>
                   </div>
                   <div className="grid grid-cols-4 gap-2">
-                    <div className="col-span-2"><Label className="text-[10px] text-muted-foreground">Endereço</Label><Input value={patientAddress} onChange={(e) => setPatientAddress(e.target.value)} className="text-xs" /></div>
-                    <div><Label className="text-[10px] text-muted-foreground">Município</Label><Input value={patientCity} onChange={(e) => setPatientCity(e.target.value)} className="text-xs" /></div>
+                    <div className="col-span-2"><Label className="text-xs text-muted-foreground">Endereço</Label><Input value={patientAddress} onChange={(e) => setPatientAddress(e.target.value)} className="text-xs" /></div>
+                    <div><Label className="text-xs text-muted-foreground">Município</Label><Input value={patientCity} onChange={(e) => setPatientCity(e.target.value)} className="text-xs" /></div>
                     <div className="grid grid-cols-2 gap-1">
-                      <div><Label className="text-[10px] text-muted-foreground">UF</Label><Input value={patientUF} onChange={(e) => setPatientUF(e.target.value)} maxLength={2} className="text-xs" /></div>
-                      <div><Label className="text-[10px] text-muted-foreground">CEP</Label><Input value={patientCEP} onChange={(e) => setPatientCEP(e.target.value)} className="text-xs" /></div>
+                      <div><Label className="text-xs text-muted-foreground">UF</Label><Input value={patientUF} onChange={(e) => setPatientUF(e.target.value)} maxLength={2} className="text-xs" /></div>
+                      <div><Label className="text-xs text-muted-foreground">CEP</Label><Input value={patientCEP} onChange={(e) => setPatientCEP(e.target.value)} className="text-xs" /></div>
                     </div>
                   </div>
                 </CardContent>
@@ -426,26 +426,26 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
               <Card>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Justificativa da Internação</CardTitle>
-                    <div className="flex gap-1.5">
-                      <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={importAdmission} disabled={importingAdmission}>
+                    <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Justificativa da Internação</CardTitle>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="h-6 text-xs px-2 gap-1" onClick={importAdmission} disabled={importingAdmission}>
                         <FileText className="h-3 w-3" /> {importingAdmission ? "..." : "Importar Admissão"}
                       </Button>
-                      <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={importEvolution} disabled={importingEvolution}>
+                      <Button variant="outline" size="sm" className="h-6 text-xs px-2 gap-1" onClick={importEvolution} disabled={importingEvolution}>
                         <ClipboardList className="h-3 w-3" /> {importingEvolution ? "..." : "Importar Evolução"}
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <div><Label className="text-[10px] text-muted-foreground">17 — Principais Sinais e Sintomas Clínicos</Label><Textarea value={signsSymptoms} onChange={(e) => setSignsSymptoms(e.target.value)} rows={3} className="text-xs" placeholder="Descreva sinais e sintomas..." /></div>
-                  <div><Label className="text-[10px] text-muted-foreground">18 — Condições que Justificam a Internação</Label><Textarea value={conditions} onChange={(e) => setConditions(e.target.value)} rows={3} className="text-xs" placeholder="Justifique a necessidade de internação..." /></div>
-                  <div><Label className="text-[10px] text-muted-foreground">19 — Principais Resultados de Provas Diagnósticas</Label><Textarea value={examResults} onChange={(e) => setExamResults(e.target.value)} rows={3} className="text-xs" placeholder="Resultados de exames realizados..." /></div>
-                  <div><Label className="text-[10px] text-muted-foreground">20 — Diagnóstico Inicial</Label><Input value={diagnosisInitial} onChange={(e) => setDiagnosisInitial(e.target.value)} className="text-xs" /></div>
+                  <div><Label className="text-xs text-muted-foreground">17 — Principais Sinais e Sintomas Clínicos</Label><Textarea value={signsSymptoms} onChange={(e) => setSignsSymptoms(e.target.value)} rows={3} className="text-xs" placeholder="Descreva sinais e sintomas..." /></div>
+                  <div><Label className="text-xs text-muted-foreground">18 — Condições que Justificam a Internação</Label><Textarea value={conditions} onChange={(e) => setConditions(e.target.value)} rows={3} className="text-xs" placeholder="Justifique a necessidade de internação..." /></div>
+                  <div><Label className="text-xs text-muted-foreground">19 — Principais Resultados de Provas Diagnósticas</Label><Textarea value={examResults} onChange={(e) => setExamResults(e.target.value)} rows={3} className="text-xs" placeholder="Resultados de exames realizados..." /></div>
+                  <div><Label className="text-xs text-muted-foreground">20 — Diagnóstico Inicial</Label><Input value={diagnosisInitial} onChange={(e) => setDiagnosisInitial(e.target.value)} className="text-xs" /></div>
                   <div className="grid grid-cols-3 gap-2">
-                    <div><Label className="text-[10px] text-muted-foreground">21 — CID-10 Principal</Label><Input value={cidPrimary} onChange={(e) => setCidPrimary(e.target.value)} className="font-mono text-xs" placeholder="Ex: J18.9" /></div>
-                    <div><Label className="text-[10px] text-muted-foreground">22 — CID-10 Secundário</Label><Input value={cidSecondary} onChange={(e) => setCidSecondary(e.target.value)} className="font-mono text-xs" /></div>
-                    <div><Label className="text-[10px] text-muted-foreground">23 — CID-10 Causas Assoc.</Label><Input value={cidAssociated} onChange={(e) => setCidAssociated(e.target.value)} className="font-mono text-xs" /></div>
+                    <div><Label className="text-xs text-muted-foreground">21 — CID-10 Principal</Label><Input value={cidPrimary} onChange={(e) => setCidPrimary(e.target.value)} className="font-mono text-xs" placeholder="Ex: J18.9" /></div>
+                    <div><Label className="text-xs text-muted-foreground">22 — CID-10 Secundário</Label><Input value={cidSecondary} onChange={(e) => setCidSecondary(e.target.value)} className="font-mono text-xs" /></div>
+                    <div><Label className="text-xs text-muted-foreground">23 — CID-10 Causas Assoc.</Label><Input value={cidAssociated} onChange={(e) => setCidAssociated(e.target.value)} className="font-mono text-xs" /></div>
                   </div>
                 </CardContent>
               </Card>
@@ -455,7 +455,7 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
             <div className="space-y-4">
               {/* Procedimento */}
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Procedimento Solicitado</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Procedimento Solicitado</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
@@ -464,18 +464,18 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
                   {filteredProcedures.length > 0 && (
                     <div className="max-h-40 overflow-y-auto border rounded-lg divide-y">
                       {filteredProcedures.map((proc) => (
-                        <button key={proc.code} className="w-full text-left px-3 py-1.5 text-xs hover:bg-accent/50 transition-colors" onClick={() => selectProcedure(proc)}>
+                        <button key={proc.code} className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors" onClick={() => selectProcedure(proc)}>
                           <span className="font-mono text-muted-foreground mr-2">{proc.code}</span>
                           <span>{proc.name}</span>
                         </button>
                       ))}
                     </div>
                   )}
-                  <div><Label className="text-[10px] text-muted-foreground">24 — Descrição do Procedimento</Label><Input value={procedureDescription} onChange={(e) => setProcedureDescription(e.target.value)} className="text-xs font-medium" /></div>
-                  <div><Label className="text-[10px] text-muted-foreground">25 — Código do Procedimento</Label><Input value={procedureCode} onChange={(e) => setProcedureCode(e.target.value)} className="font-mono text-xs" /></div>
+                  <div><Label className="text-xs text-muted-foreground">24 — Descrição do Procedimento</Label><Input value={procedureDescription} onChange={(e) => setProcedureDescription(e.target.value)} className="text-xs font-medium" /></div>
+                  <div><Label className="text-xs text-muted-foreground">25 — Código do Procedimento</Label><Input value={procedureCode} onChange={(e) => setProcedureCode(e.target.value)} className="font-mono text-xs" /></div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div><Label className="text-[10px] text-muted-foreground">26 — Clínica</Label><Input value={clinica} onChange={(e) => setClinica(e.target.value)} placeholder="Ex: Clínica Médica" className="text-xs" /></div>
-                    <div><Label className="text-[10px] text-muted-foreground">27 — Caráter da Internação</Label>
+                    <div><Label className="text-xs text-muted-foreground">26 — Clínica</Label><Input value={clinica} onChange={(e) => setClinica(e.target.value)} placeholder="Ex: Clínica Médica" className="text-xs" /></div>
+                    <div><Label className="text-xs text-muted-foreground">27 — Caráter da Internação</Label>
                       <Select value={caraterInternacao} onValueChange={(v) => setCaraterInternacao(v as any)}>
                         <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -490,14 +490,14 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
 
               {/* Profissional */}
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Profissional Solicitante</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Profissional Solicitante</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
-                  <div><Label className="text-[10px] text-muted-foreground">30 — Nome do Profissional</Label><Input value={doctorName} onChange={(e) => setDoctorName(e.target.value)} className="bg-muted/30 font-medium text-xs" /></div>
+                  <div><Label className="text-xs text-muted-foreground">30 — Nome do Profissional</Label><Input value={doctorName} onChange={(e) => setDoctorName(e.target.value)} className="bg-muted/30 font-medium text-xs" /></div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div><Label className="text-[10px] text-muted-foreground">CRM</Label><Input value={doctorCRM} onChange={(e) => setDoctorCRM(e.target.value)} className="bg-muted/30 font-mono text-xs" /></div>
-                    <div><Label className="text-[10px] text-muted-foreground">CPF</Label><Input value={doctorCPF} onChange={(e) => setDoctorCPF(e.target.value)} placeholder="000.000.000-00" className="font-mono text-xs" /></div>
+                    <div><Label className="text-xs text-muted-foreground">CRM</Label><Input value={doctorCRM} onChange={(e) => setDoctorCRM(e.target.value)} className="bg-muted/30 font-mono text-xs" /></div>
+                    <div><Label className="text-xs text-muted-foreground">CPF</Label><Input value={doctorCPF} onChange={(e) => setDoctorCPF(e.target.value)} placeholder="000.000.000-00" className="font-mono text-xs" /></div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">Data da solicitação: <strong>{todayFormatted}</strong></p>
+                  <p className="text-xs text-muted-foreground">Data da solicitação: <strong>{todayFormatted}</strong></p>
                 </CardContent>
               </Card>
 
@@ -506,21 +506,21 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2">
                     <Checkbox checked={showExternalCauses} onCheckedChange={(c) => setShowExternalCauses(!!c)} id="show-ext" />
-                    <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer" onClick={() => setShowExternalCauses(!showExternalCauses)}>
+                    <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer" onClick={() => setShowExternalCauses(!showExternalCauses)}>
                       Causas Externas (Acidentes ou Violências)
                     </CardTitle>
                   </div>
                 </CardHeader>
                 {showExternalCauses && (
                   <CardContent className="space-y-2">
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-2">
                       <label className="flex items-center gap-2 text-xs"><Checkbox checked={acidenteTransito} onCheckedChange={(c) => setAcidenteTransito(!!c)} /> Acidente de Trânsito</label>
                       <label className="flex items-center gap-2 text-xs"><Checkbox checked={acidenteTrabalhoTipico} onCheckedChange={(c) => setAcidenteTrabalhoTipico(!!c)} /> Acidente Trabalho Típico</label>
                       <label className="flex items-center gap-2 text-xs"><Checkbox checked={acidenteTrabalhoTrajeto} onCheckedChange={(c) => setAcidenteTrabalhoTrajeto(!!c)} /> Acidente Trabalho Trajeto</label>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <div><Label className="text-[10px] text-muted-foreground">CNPJ Seguradora</Label><Input value={cnpjSeguradora} onChange={(e) => setCnpjSeguradora(e.target.value)} className="text-xs" /></div>
-                      <div><Label className="text-[10px] text-muted-foreground">CNPJ Empresa</Label><Input value={cnpjEmpresa} onChange={(e) => setCnpjEmpresa(e.target.value)} className="text-xs" /></div>
+                      <div><Label className="text-xs text-muted-foreground">CNPJ Seguradora</Label><Input value={cnpjSeguradora} onChange={(e) => setCnpjSeguradora(e.target.value)} className="text-xs" /></div>
+                      <div><Label className="text-xs text-muted-foreground">CNPJ Empresa</Label><Input value={cnpjEmpresa} onChange={(e) => setCnpjEmpresa(e.target.value)} className="text-xs" /></div>
                     </div>
                   </CardContent>
                 )}
@@ -528,11 +528,11 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
 
               {/* Vínculo Previdência */}
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">42 — Vínculo com a Previdência</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">42 — Vínculo com a Previdência</CardTitle></CardHeader>
                 <CardContent>
                   <RadioGroup value={vinculoPrevidencia} onValueChange={setVinculoPrevidencia} className="flex flex-wrap gap-3">
                     {["Empregado", "Empregador", "Autônomo", "Desempregado", "Aposentado", "Não Segurado"].map(v => (
-                      <label key={v} className="flex items-center gap-1.5 text-xs cursor-pointer">
+                      <label key={v} className="flex items-center gap-2 text-xs cursor-pointer">
                         <RadioGroupItem value={v} className="h-3.5 w-3.5" />{v}
                       </label>
                     ))}

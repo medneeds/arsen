@@ -36,8 +36,8 @@ export function NewPrescriptionChoiceDialog({
         </DialogHeader>
 
         {hasCurrentItems && (
-          <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 border border-amber-200 text-amber-900 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-200">
-            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+          <div className="flex items-start gap-2 p-3 rounded-md bg-warning-soft border border-warning-border text-warning-on-soft">
+            <AlertTriangle className="h-4 w-4 mt-1 shrink-0" />
             <p className="text-xs">
               Há itens não salvos no formulário atual. Eles serão descartados ao iniciar uma nova prescrição.
             </p>
@@ -52,7 +52,7 @@ export function NewPrescriptionChoiceDialog({
           >
             <Copy className="h-5 w-5 text-primary shrink-0" />
             <div className="text-left flex-1 min-w-0">
-              <div className="text-sm font-semibold text-foreground">Copiar do dia anterior</div>
+              <div className="text-sm font-medium text-foreground">Copiar do dia anterior</div>
               <div className="text-xs text-muted-foreground font-normal whitespace-normal">
                 Recomendado — duplica a última prescrição assinada e permite ajustes.
               </div>
@@ -66,7 +66,7 @@ export function NewPrescriptionChoiceDialog({
           >
             <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
             <div className="text-left flex-1 min-w-0">
-              <div className="text-sm font-semibold text-foreground">Começar do zero</div>
+              <div className="text-sm font-medium text-foreground">Começar do zero</div>
               <div className="text-xs text-muted-foreground font-normal whitespace-normal">
                 Limpa todo o formulário e inicia uma prescrição em branco.
               </div>

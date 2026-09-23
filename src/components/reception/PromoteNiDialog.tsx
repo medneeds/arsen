@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toSexoDb } from "@/lib/sexo";
 import { useAuth } from "@/contexts/AuthContext";
+import { normalizePatientName, normalizePatientNameInput } from "@/utils/normalizePatientName";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -113,11 +114,11 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
       const { error: updErr } = await supabase
         .from("pacientes")
         .update({
-          nome_completo: fullName.trim().toUpperCase(),
+          nome_completo: normalizePatientName(fullName),
           cpf: cpf.trim() || null,
           cns: cns.trim() || null,
           data_nascimento: birthDate || null,
-          nome_mae: motherName.trim().toUpperCase() || null,
+          nome_mae: normalizePatientName(motherName) || null,
           telefone: phone.trim() || null,
           sexo: toSexoDb(sex),
         })
@@ -136,7 +137,7 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
         paciente_id: niRegistryId,
         dados_antigos: snapshot as any,
         dados_novos: {
-          nome_completo: fullName.trim().toUpperCase(),
+          nome_completo: normalizePatientName(fullName),
           cpf: cpf.trim() || null,
           cns: cns.trim() || null,
           data_nascimento: birthDate || null,
@@ -146,14 +147,14 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
         email_ator: user?.email ?? null,
       });
 
-      toast.success("Paciente identificado com sucesso!", {
+      toast.success("Paciente identificado com sucesso", {
         description: `${fullName.trim().toUpperCase()} — vínculos com atendimentos preservados.`,
       });
       onPromoted?.();
       onOpenChange(false);
     } catch (err: any) {
       console.error(err);
-      toast.error("Erro ao identificar paciente", { description: err?.message });
+      toast.error("Não foi possível identificar paciente", { description: err?.message });
     } finally {
       setSaving(false);
     }
@@ -164,7 +165,7 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserCheck className="h-5 w-5 text-emerald-600" />
+            <UserCheck className="h-5 w-5 text-released-on-soft" />
             Identificar paciente NI
           </DialogTitle>
           <DialogDescription>
@@ -179,46 +180,46 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
         ) : (
           <div className="space-y-3">
             {/* Cabeçalho do NI atual */}
-            <div className="rounded-lg border border-slate-500/30 bg-slate-500/5 p-3 flex items-center gap-3">
-              <UserX className="h-4 w-4 text-slate-600 shrink-0" />
+            <div className="rounded-lg border border-border/30 bg-primary/5 p-3 flex items-center gap-3">
+              <UserX className="h-4 w-4 text-foreground shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold">{niName}</p>
-                {niCode && <p className="text-[10px] text-muted-foreground font-mono">{niCode}</p>}
+                <p className="text-xs font-medium">{niName}</p>
+                {niCode && <p className="text-xs text-muted-foreground font-mono">{niCode}</p>}
               </div>
-              <ArrowRight className="h-4 w-4 text-emerald-600" />
-              <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">
+              <ArrowRight className="h-4 w-4 text-released-on-soft" />
+              <div className="text-xs text-released-on-soft font-medium">
                 identificado
               </div>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="pn-name" className="text-xs">
-                Nome completo <span className="text-rose-600">*</span>
+                Nome completo <span className="text-critical-on-soft">*</span>
               </Label>
               <Input
                 id="pn-name"
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value.toUpperCase())}
+                onChange={(e) => setFullName(normalizePatientNameInput(e.target.value))}
                 className="font-medium"
                 autoFocus
               />
               {fullName.trim() && !fullNameOk && (
-                <Badge variant="outline" className="text-[9px] h-4 border-amber-500/40 text-amber-700">
+                <Badge variant="outline" className="text-xs h-4 border-warning/40 text-warning-on-soft">
                   Informe nome e sobrenome
                 </Badge>
               )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="pn-cpf" className="text-xs">CPF</Label>
                 <Input id="pn-cpf" placeholder="000.000.000-00" value={cpf} onChange={(e) => setCpf(e.target.value)} />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="pn-cns" className="text-xs">CNS</Label>
                 <Input id="pn-cns" placeholder="000 0000 0000 0000" value={cns} onChange={(e) => setCns(e.target.value)} />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="pn-dn" className="text-xs">Data de nascimento</Label>
                 <Input
                   id="pn-dn"
@@ -228,7 +229,7 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
                   max={new Date().toISOString().slice(0, 10)}
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-xs">Sexo</Label>
                 <select
                   value={sex}
@@ -240,17 +241,17 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
                   <option value="F">Feminino</option>
                 </select>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="pn-mom" className="text-xs">Nome da mãe</Label>
-                <Input id="pn-mom" value={motherName} onChange={(e) => setMotherName(e.target.value.toUpperCase())} />
+                <Input id="pn-mom" value={motherName} onChange={(e) => setMotherName(normalizePatientNameInput(e.target.value))} />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="pn-phone" className="text-xs">Telefone</Label>
                 <Input id="pn-phone" placeholder="(99) 99999-9999" value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="pn-notes" className="text-xs">Observações da identificação</Label>
               <Textarea
                 id="pn-notes"
@@ -261,9 +262,9 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
               />
             </div>
 
-            <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2.5 flex items-start gap-2">
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
-              <p className="text-[11px] text-muted-foreground">
+            <div className="rounded-md border border-warning/30 bg-warning/5 p-3 flex items-start gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 text-warning-on-soft mt-1 shrink-0" />
+              <p className="text-xs text-muted-foreground">
                 Esta ação é registrada no histórico de auditoria. Caso o paciente já possua outro prontuário com este CPF, use o fluxo de merge no painel administrativo.
               </p>
             </div>
@@ -277,7 +278,7 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
           <Button
             onClick={handlePromote}
             disabled={saving || loading || !fullNameOk}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="bg-released hover:bg-released"
           >
             {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserCheck className="h-4 w-4 mr-2" />}
             Confirmar identificação

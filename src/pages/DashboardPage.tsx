@@ -24,7 +24,6 @@ import { useDepartment } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 import { PrintableDashboard } from "@/components/PrintableDashboard";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { SECTOR_DISPLAY_LABELS, SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 
 interface PriorityAlert {
@@ -431,10 +430,10 @@ const DashboardPage = () => {
     const isPositive = change >= 0;
 
     return (
-      <Card className="relative overflow-hidden border-border/50 shadow-lg backdrop-blur-sm bg-gradient-card hover:shadow-glow transition-all duration-500 hover:scale-105 group">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <Card className="relative overflow-hidden border-border/50 shadow-md backdrop-blur-sm bg-gradient-card hover:shadow-md transition-all duration-500 hover:scale-105 group">
+        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative">
-          <CardTitle className="text-xs font-semibold uppercase tracking-wider text-foreground/70 group-hover:text-foreground transition-colors">
+          <CardTitle className="text-xs font-medium uppercase tracking-wider text-foreground/70 group-hover:text-foreground transition-colors">
             {title}
           </CardTitle>
           <div className="rounded-lg bg-primary/10 p-2 group-hover:bg-primary/20 transition-colors duration-300">
@@ -442,14 +441,14 @@ const DashboardPage = () => {
           </div>
         </CardHeader>
         <CardContent className="relative">
-          <div className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
+          <div className="text-4xl font-semibold bg-gradient-primary bg-clip-text text-transparent mb-2">
             {value}
           </div>
           <div className={cn(
-            "text-xs flex items-center gap-1.5 font-medium px-2 py-1 rounded-full w-fit",
+            "text-xs flex items-center gap-2 font-medium px-2 py-1 rounded-full w-fit",
             isPositive 
-              ? "bg-green-500/10 text-green-700 dark:text-green-400" 
-              : "bg-red-500/10 text-red-700 dark:text-red-400"
+              ? "bg-released/10 text-released-on-soft" 
+              : "bg-critical/10 text-critical-on-soft"
           )}>
             <TrendingUp className={cn("h-3.5 w-3.5", !isPositive && "rotate-180")} />
             <span>{Math.abs(change)}%</span>
@@ -461,14 +460,14 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 animate-fade-in relative">
+    <div className="min-h-screen bg-background animate-fade-in relative">
       {/* Loading Overlay */}
       {isLoading && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in">
-          <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-card shadow-glow animate-scale-in">
+          <div className="flex flex-col items-center gap-4 p-8 rounded-lg bg-card shadow-md animate-scale-in">
             <Loader2 className="h-12 w-12 text-primary animate-spin" />
             <div className="text-center space-y-2">
-              <p className="text-lg font-semibold text-foreground">ATUALIZANDO DASHBOARD</p>
+              <p className="text-lg font-medium text-foreground">ATUALIZANDO DASHBOARD</p>
               <p className="text-sm text-muted-foreground">Carregando dados — {activeSectorLabel}</p>
             </div>
           </div>
@@ -477,15 +476,16 @@ const DashboardPage = () => {
       
       <div className="container mx-auto p-6 space-y-8 dashboard-screen-content">
         {/* Header com gradiente */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-primary p-8 shadow-glow animate-scale-in">
+        <div className="relative overflow-hidden rounded-lg bg-gradient-primary p-8 shadow-md animate-scale-in">
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,white)]" />
           <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
+                <SidebarTrigger className="text-white hover:bg-white/20 transition-colors" />
                 <div className="rounded-xl bg-white/20 p-3 backdrop-blur-sm">
                   <BarChart3 className="h-6 w-6 text-white" />
                 </div>
-                <h1 className="text-3xl font-bold tracking-tight uppercase text-white">
+                <h1 className="text-3xl font-semibold tracking-tight uppercase text-white">
                   Visão Geral — {activeSectorLabel}
                 </h1>
               </div>
@@ -503,29 +503,28 @@ const DashboardPage = () => {
                 <Download className="h-4 w-4 mr-2" />
                 Exportar PDF
               </Button>
-              <ThemeToggle />
             </div>
           </div>
         </div>
 
         {/* Filters com estilo aprimorado */}
-        <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-card/95 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+        <Card className="border-border/50 shadow-md backdrop-blur-sm bg-card/95 animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <CardContent className="pt-6">
             <div className="space-y-4">
               <div className="grid gap-6 md:grid-cols-3">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold uppercase tracking-wide text-foreground/80 flex items-center gap-2">
+                  <label className="text-sm font-medium uppercase tracking-wide text-foreground/80 flex items-center gap-2">
                     <Activity className="h-3.5 w-3.5 text-primary" />
                     Setor Ativo
                   </label>
                   <div className="h-10 flex items-center px-3 rounded-md border border-border/50 bg-muted/30 text-sm font-medium text-foreground">
                     {activeSectorLabel}
                   </div>
-                  <p className="text-[10px] text-muted-foreground">Altere o setor no seletor do cabeçalho</p>
+                  <p className="text-xs text-muted-foreground">Altere o setor no seletor do cabeçalho</p>
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold uppercase tracking-wide text-foreground/80 flex items-center gap-2">
+                  <label className="text-sm font-medium uppercase tracking-wide text-foreground/80 flex items-center gap-2">
                     <CalendarIcon className="h-3.5 w-3.5 text-primary" />
                     Data Inicial
                   </label>
@@ -551,7 +550,7 @@ const DashboardPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold uppercase tracking-wide text-foreground/80 flex items-center gap-2">
+                  <label className="text-sm font-medium uppercase tracking-wide text-foreground/80 flex items-center gap-2">
                     <CalendarIcon className="h-3.5 w-3.5 text-primary" />
                     Data Final
                   </label>
@@ -582,14 +581,14 @@ const DashboardPage = () => {
                 <Button
                   variant="outline"
                   onClick={handleClearFilters}
-                  className="uppercase gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 transition-all duration-300"
+                  className="uppercase tracking-wider gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 transition-all duration-300"
                 >
                   <X className="h-4 w-4" />
                   Limpar Filtro
                 </Button>
                 <Button
                   onClick={handleApplyFilters}
-                  className="uppercase gap-2 bg-gradient-primary hover:opacity-90 transition-all duration-300 shadow-md hover:shadow-lg"
+                  className="uppercase tracking-wider gap-2 bg-gradient-primary hover:opacity-90 transition-all duration-300 shadow-md hover:shadow-md"
                 >
                   <Filter className="h-4 w-4" />
                   Aplicar Filtro
@@ -634,14 +633,14 @@ const DashboardPage = () => {
         {/* Priority Alerts + Recent Activities */}
         <div className="grid gap-6 md:grid-cols-2">
           {/* Priority Alerts Panel */}
-          <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-gradient-card animate-fade-in" style={{ animationDelay: '0.6s' }}>
+          <Card className="border-border/50 shadow-md backdrop-blur-sm bg-gradient-card animate-fade-in" style={{ animationDelay: '0.6s' }}>
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-destructive/10 p-2">
                   <AlertTriangle className="h-5 w-5 text-destructive" />
                 </div>
                 <div>
-                  <CardTitle className="uppercase text-lg font-bold">Alertas Prioritários</CardTitle>
+                  <CardTitle className="uppercase tracking-wider text-lg font-semibold">Alertas Prioritários</CardTitle>
                   <CardDescription className="text-sm">Situações que requerem atenção</CardDescription>
                 </div>
                 {priorityAlerts.length > 0 && (
@@ -655,7 +654,7 @@ const DashboardPage = () => {
                   <div className="flex flex-col items-center justify-center h-full py-8 text-muted-foreground">
                     <ClipboardCheck className="h-10 w-10 mb-3 opacity-40" />
                     <p className="text-sm font-medium">Nenhum alerta no momento</p>
-                    <p className="text-xs">Tudo sob controle ✓</p>
+                    <p className="text-xs">Tudo sob controle </p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -665,31 +664,31 @@ const DashboardPage = () => {
                         className={cn(
                           "flex items-start gap-3 p-3 rounded-lg border transition-colors",
                           alert.level === 'critical' && "bg-destructive/5 border-destructive/20",
-                          alert.level === 'warning' && "bg-amber-500/5 border-amber-500/20",
+                          alert.level === 'warning' && "bg-warning/5 border-warning/20",
                           alert.level === 'info' && "bg-primary/5 border-primary/20",
                         )}
                       >
                         <div className={cn(
-                          "mt-0.5 rounded-full p-1",
+                          "mt-1 rounded-full p-1",
                           alert.level === 'critical' && "bg-destructive/10",
-                          alert.level === 'warning' && "bg-amber-500/10",
+                          alert.level === 'warning' && "bg-warning/10",
                           alert.level === 'info' && "bg-primary/10",
                         )}>
                           {alert.level === 'critical' && <AlertTriangle className="h-3.5 w-3.5 text-destructive" />}
-                          {alert.level === 'warning' && <Clock className="h-3.5 w-3.5 text-amber-500" />}
+                          {alert.level === 'warning' && <Clock className="h-3.5 w-3.5 text-warning" />}
                           {alert.level === 'info' && <Bell className="h-3.5 w-3.5 text-primary" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">
-                            {alert.patientName && <span className="font-semibold">{alert.patientName}</span>}
+                            {alert.patientName && <span className="font-medium">{alert.patientName}</span>}
                             {alert.bedNumber && <span className="text-muted-foreground ml-1">({alert.bedNumber})</span>}
                           </p>
                           <p className="text-xs text-muted-foreground">{alert.message}</p>
                         </div>
                         <Badge variant="outline" className={cn(
-                          "text-[10px] shrink-0",
+                          "text-xs shrink-0",
                           alert.level === 'critical' && "border-destructive/30 text-destructive",
-                          alert.level === 'warning' && "border-amber-500/30 text-amber-600",
+                          alert.level === 'warning' && "border-warning/30 text-warning-on-soft",
                           alert.level === 'info' && "border-primary/30 text-primary",
                         )}>
                           {alert.level === 'critical' ? 'CRÍTICO' : alert.level === 'warning' ? 'ATENÇÃO' : 'PENDÊNCIA'}
@@ -703,14 +702,14 @@ const DashboardPage = () => {
           </Card>
 
           {/* Recent Activities Timeline */}
-          <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-gradient-card animate-fade-in" style={{ animationDelay: '0.65s' }}>
+          <Card className="border-border/50 shadow-md backdrop-blur-sm bg-gradient-card animate-fade-in" style={{ animationDelay: '0.65s' }}>
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-primary/10 p-2">
                   <Activity className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="uppercase text-lg font-bold">Atividades Recentes</CardTitle>
+                  <CardTitle className="uppercase tracking-wider text-lg font-semibold">Atividades Recentes</CardTitle>
                   <CardDescription className="text-sm">Últimas 48 horas</CardDescription>
                 </div>
               </div>
@@ -731,20 +730,20 @@ const DashboardPage = () => {
                           <div className="absolute left-[13px] top-7 bottom-0 w-px bg-border" />
                         )}
                         <div className={cn(
-                          "shrink-0 rounded-full p-1.5 z-10",
-                          activity.type === 'discharge' ? "bg-green-500/10" :
+                          "shrink-0 rounded-full p-2 z-10",
+                          activity.type === 'discharge' ? "bg-released/10" :
                           activity.type === 'prescription' ? "bg-primary/10" :
-                          activity.type === 'admission' ? "bg-amber-500/10" :
+                          activity.type === 'admission' ? "bg-warning/10" :
                           "bg-muted"
                         )}>
-                          {activity.type === 'discharge' && <LogOut className="h-3 w-3 text-green-600" />}
+                          {activity.type === 'discharge' && <LogOut className="h-3 w-3 text-released-on-soft" />}
                           {activity.type === 'prescription' && <Pill className="h-3 w-3 text-primary" />}
-                          {activity.type === 'admission' && <UserPlus className="h-3 w-3 text-amber-600" />}
+                          {activity.type === 'admission' && <UserPlus className="h-3 w-3 text-warning-on-soft" />}
                           {activity.type === 'movement' && <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm truncate">{activity.description}</p>
-                          <p className="text-[11px] text-muted-foreground">
+                          <p className="text-xs text-muted-foreground">
                             {format(new Date(activity.timestamp), "dd/MM HH:mm", { locale: ptBR })}
                           </p>
                         </div>
@@ -760,13 +759,13 @@ const DashboardPage = () => {
         {/* Charts Grid com estilo premium */}
         <div className="grid gap-6 md:grid-cols-2">
           {/* Movements Over Time */}
-          <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-gradient-card hover:shadow-glow transition-all duration-500 animate-fade-in" style={{ animationDelay: '0.7s' }}>
+          <Card className="border-border/50 shadow-md backdrop-blur-sm bg-gradient-card hover:shadow-md transition-all duration-500 animate-fade-in" style={{ animationDelay: '0.7s' }}>
             <CardHeader className="pb-4">
               <div className="flex items-center gap-3 mb-2">
                 <div className="rounded-lg bg-primary/10 p-2">
                   <Activity className="h-5 w-5 text-primary" />
                 </div>
-                <CardTitle className="uppercase text-lg font-bold">Movimentações ao Longo do Tempo</CardTitle>
+                <CardTitle className="uppercase tracking-wider text-lg font-semibold">Movimentações ao Longo do Tempo</CardTitle>
               </div>
               <CardDescription className="text-sm">Altas, Óbitos e Transferências por período</CardDescription>
             </CardHeader>
@@ -827,13 +826,13 @@ const DashboardPage = () => {
           </Card>
 
           {/* Sector Distribution */}
-          <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-gradient-card hover:shadow-glow transition-all duration-500 animate-fade-in" style={{ animationDelay: '0.8s' }}>
+          <Card className="border-border/50 shadow-md backdrop-blur-sm bg-gradient-card hover:shadow-md transition-all duration-500 animate-fade-in" style={{ animationDelay: '0.8s' }}>
             <CardHeader className="pb-4">
               <div className="flex items-center gap-3 mb-2">
                 <div className="rounded-lg bg-primary/10 p-2">
                   <Users className="h-5 w-5 text-primary" />
                 </div>
-                <CardTitle className="uppercase text-lg font-bold">Ocupação — {activeSectorLabel}</CardTitle>
+                <CardTitle className="uppercase tracking-wider text-lg font-semibold">Ocupação — {activeSectorLabel}</CardTitle>
               </div>
               <CardDescription className="text-sm">Leitos ocupados vs vagos neste setor</CardDescription>
             </CardHeader>
@@ -877,13 +876,13 @@ const DashboardPage = () => {
           </Card>
 
           {/* Movements by Type */}
-          <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-gradient-card hover:shadow-glow transition-all duration-500 animate-fade-in" style={{ animationDelay: '0.9s' }}>
+          <Card className="border-border/50 shadow-md backdrop-blur-sm bg-gradient-card hover:shadow-md transition-all duration-500 animate-fade-in" style={{ animationDelay: '0.9s' }}>
             <CardHeader className="pb-4">
               <div className="flex items-center gap-3 mb-2">
                 <div className="rounded-lg bg-primary/10 p-2">
                   <ArrowRightLeft className="h-5 w-5 text-primary" />
                 </div>
-                <CardTitle className="uppercase text-lg font-bold">Movimentações por Tipo</CardTitle>
+                <CardTitle className="uppercase tracking-wider text-lg font-semibold">Movimentações por Tipo</CardTitle>
               </div>
               <CardDescription className="text-sm">Comparação de volumes entre categorias</CardDescription>
             </CardHeader>
@@ -923,13 +922,13 @@ const DashboardPage = () => {
           </Card>
 
           {/* Bed Occupancy */}
-          <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-gradient-card hover:shadow-glow transition-all duration-500 animate-fade-in" style={{ animationDelay: '1s' }}>
+          <Card className="border-border/50 shadow-md backdrop-blur-sm bg-gradient-card hover:shadow-md transition-all duration-500 animate-fade-in" style={{ animationDelay: '1s' }}>
             <CardHeader className="pb-4">
               <div className="flex items-center gap-3 mb-2">
                 <div className="rounded-lg bg-primary/10 p-2">
                   <Activity className="h-5 w-5 text-primary" />
                 </div>
-                <CardTitle className="uppercase text-lg font-bold">Ocupação de Leitos</CardTitle>
+                <CardTitle className="uppercase tracking-wider text-lg font-semibold">Ocupação de Leitos</CardTitle>
               </div>
               <CardDescription className="text-sm">Evolução temporal da ocupação</CardDescription>
             </CardHeader>
@@ -976,13 +975,13 @@ const DashboardPage = () => {
         </div>
 
         {/* Requests by Destination - Full width */}
-        <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-gradient-card hover:shadow-glow transition-all duration-500 animate-fade-in" style={{ animationDelay: '1.1s' }}>
+        <Card className="border-border/50 shadow-md backdrop-blur-sm bg-gradient-card hover:shadow-md transition-all duration-500 animate-fade-in" style={{ animationDelay: '1.1s' }}>
           <CardHeader className="pb-4">
             <div className="flex items-center gap-3 mb-2">
               <div className="rounded-lg bg-primary/10 p-2">
                 <ArrowRightLeft className="h-5 w-5 text-primary" />
               </div>
-              <CardTitle className="uppercase text-lg font-bold">Transferências por Destino</CardTitle>
+              <CardTitle className="uppercase tracking-wider text-lg font-semibold">Transferências por Destino</CardTitle>
             </div>
             <CardDescription className="text-sm">Principais destinos de transferência de pacientes</CardDescription>
           </CardHeader>

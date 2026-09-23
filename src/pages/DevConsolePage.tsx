@@ -63,31 +63,32 @@ export default function DevConsolePage() {
   if (!isDev) return <Navigate to="/" replace />;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-muted">
       {/* Cabeçalho gradiente azul escuro — padrão dev */}
-      <header className="relative overflow-hidden border-b border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 text-slate-100 shadow-lg">
+      <header className="relative overflow-hidden border-b border-border bg-muted text-muted-foreground shadow-md">
         <div className="absolute inset-0 opacity-40 pointer-events-none"
              style={{ backgroundImage: "radial-gradient(circle at 20% 30%, hsl(217 91% 60% / 0.15), transparent 50%), radial-gradient(circle at 80% 70%, hsl(217 91% 50% / 0.12), transparent 55%)" }} />
-        <div className="relative max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+        <div className="relative max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <SidebarTrigger className="h-9 w-9 text-muted-foreground hover:text-white hover:bg-white/10" />
             <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 grid place-items-center shadow-md ring-1 ring-white/10">
               <Terminal className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold tracking-tight text-white">DEV CONSOLE</h1>
-              <p className="text-xs text-slate-400">Painel de operação técnica · acesso restrito</p>
+              <h1 className="text-lg font-medium tracking-tight text-white">DEV CONSOLE</h1>
+              <p className="text-xs text-muted-foreground">Painel de operação técnica · acesso restrito</p>
             </div>
           </div>
-          <Badge variant="outline" className="gap-1.5 border-blue-500/40 bg-blue-500/10 text-blue-300 backdrop-blur">
+          <Badge variant="outline" className="gap-2 border-border/40 bg-primary/10 text-muted-foreground backdrop-blur">
             <ShieldAlert className="h-3 w-3" /> ACESSO DEV
           </Badge>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-6">
-        <Tabs defaultValue="pendencies" className="space-y-5">
+        <Tabs defaultValue="pendencies" className="space-y-4">
           {/* Faixa de navegação dark elevada */}
-          <div className="rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 p-1.5 shadow-md ring-1 ring-slate-700/50">
+          <div className="rounded-lg bg-muted p-2 shadow-md ring-1 ring-ring/50">
             <TabsList className="bg-transparent gap-1 h-auto p-0 w-full justify-start flex-wrap">
               {[
                 { v: "pendencies", icon: ListChecks, label: "Pendências" },
@@ -106,7 +107,7 @@ export default function DevConsolePage() {
                 <TabsTrigger
                   key={v}
                   value={v}
-                  className="gap-1.5 px-4 py-2 text-slate-300 hover:text-white data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-blue-700 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                  className="gap-2 px-4 py-2 text-muted-foreground hover:text-white data-[state=active]:bg-gradient-to-br data-[state=active]:from-muted data-[state=active]:to-muted data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
                 >
                   <Icon className="h-4 w-4" /> {label}
                 </TabsTrigger>
@@ -166,7 +167,7 @@ function HealthTab() {
     <div className="space-y-4">
       <div className="flex justify-end">
         <Button size="sm" variant="outline" onClick={refresh} disabled={loading}>
-          <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`} /> Atualizar
+          <RefreshCw className={`h-3.5 w-3.5 mr-2 ${loading ? "animate-spin" : ""}`} /> Atualizar
         </Button>
       </div>
 
@@ -183,7 +184,7 @@ function HealthTab() {
           <CardHeader className="pb-3"><CardTitle className="text-sm">Tamanho das tabelas</CardTitle></CardHeader>
           <CardContent className="text-sm">
             {!tables ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {Object.entries(tables).map(([name, count]) => (
                   <div key={name} className="flex justify-between border-b border-border/50 pb-1">
                     <span className="font-mono text-xs">{name}</span>
@@ -199,7 +200,7 @@ function HealthTab() {
           <CardHeader className="pb-3"><CardTitle className="text-sm">Top usuários (7 dias)</CardTitle></CardHeader>
           <CardContent className="text-sm">
             {topUsers.length === 0 ? <p className="text-muted-foreground text-xs">Sem atividade.</p> : (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {topUsers.slice(0, 10).map((u) => (
                   <div key={u.email} className="flex justify-between border-b border-border/50 pb-1">
                     <span className="truncate max-w-[200px] text-xs">{u.email}</span>
@@ -219,7 +220,7 @@ function HealthTab() {
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead><tr className="text-muted-foreground border-b border-border">
-                  <th className="text-left py-1.5">Data</th>
+                  <th className="text-left py-2">Data</th>
                   <th className="text-right">Atendimentos</th>
                   <th className="text-right">Prescrições</th>
                   <th className="text-right">Evoluções</th>
@@ -227,7 +228,7 @@ function HealthTab() {
                 <tbody>
                   {series.map((s) => (
                     <tr key={s.date} className="border-b border-border/50">
-                      <td className="py-1.5 font-mono">{s.date}</td>
+                      <td className="py-2 font-mono">{s.date}</td>
                       <td className="text-right tabular-nums">{s.encounters}</td>
                       <td className="text-right tabular-nums">{s.prescriptions}</td>
                       <td className="text-right tabular-nums">{s.evolutions}</td>
@@ -250,7 +251,7 @@ function KpiCard({ label, value, icon }: { label: string; value: number | string
         <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
           <span>{label}</span>{icon}
         </div>
-        <div className="text-2xl font-semibold tabular-nums">{value}</div>
+        <div className="text-2xl font-medium tabular-nums">{value}</div>
       </CardContent>
     </Card>
   );
@@ -286,7 +287,7 @@ function LogsTab() {
       <div className="flex gap-2">
         <Input placeholder="Filtrar por tabela, email ou ação..." value={filter} onChange={(e) => setFilter(e.target.value)} className="max-w-sm" />
         <Button size="sm" variant="outline" onClick={refresh} disabled={loading}>
-          <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`} /> Atualizar
+          <RefreshCw className={`h-3.5 w-3.5 mr-2 ${loading ? "animate-spin" : ""}`} /> Atualizar
         </Button>
       </div>
       <Card>
@@ -307,7 +308,7 @@ function LogsTab() {
                 {filtered.map((l) => (
                   <tr key={l.id} className="border-b border-border/50 hover:bg-muted/30">
                     <td className="p-2 font-mono whitespace-nowrap">{new Date(l.created_at).toLocaleString("pt-BR")}</td>
-                    <td><Badge variant={l.action === "DELETE" ? "destructive" : l.action === "INSERT" ? "default" : "secondary"} className="text-[10px]">{l.action}</Badge></td>
+                    <td><Badge variant={l.action === "DELETE" ? "destructive" : l.action === "INSERT" ? "default" : "secondary"} className="text-xs">{l.action}</Badge></td>
                     <td className="font-mono">{l.table_name}</td>
                     <td className="truncate max-w-[200px]">{l.user_email ?? "—"}</td>
                     <td>{l.user_role ?? "—"}</td>
@@ -405,7 +406,7 @@ function AiTab() {
         }
       }
     } catch (e) {
-      setMessages((prev) => [...prev, { role: "assistant", content: `❌ Erro: ${e instanceof Error ? e.message : "desconhecido"}` }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: `Erro: ${e instanceof Error ? e.message : "desconhecido"}` }]);
     } finally {
       setBusy(false);
     }
@@ -534,7 +535,7 @@ function ActionsTab() {
                     <td className="p-2">{u.full_name ?? "—"}</td>
                     <td>{u.email}</td>
                     <td className="space-x-1">{u.roles.map((r) => (
-                      <Badge key={r} variant={r === "dev" ? "default" : "secondary"} className="text-[10px]">{r}</Badge>
+                      <Badge key={r} variant={r === "dev" ? "default" : "secondary"} className="text-xs">{r}</Badge>
                     ))}</td>
                     <td className="text-right p-2">
                       {u.roles.includes("dev") && (

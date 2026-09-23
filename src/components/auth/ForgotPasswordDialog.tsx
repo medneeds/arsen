@@ -101,11 +101,11 @@ export function ForgotPasswordDialog({
 
         {submitted ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+            <div className="flex items-center gap-3 rounded-lg border border-released/20 bg-released/5 p-3">
+              <CheckCircle2 className="h-5 w-5 text-released-on-soft shrink-0" />
               <div className="text-sm">
-                <p className="font-medium text-emerald-700 preserve-case">E-mail enviado</p>
-                <p className="text-xs text-emerald-700/80 preserve-case">
+                <p className="font-medium text-released-on-soft preserve-case">E-mail enviado</p>
+                <p className="text-xs text-released-on-soft/80 preserve-case">
                   Não esqueça de checar a caixa de spam.
                 </p>
               </div>
@@ -121,7 +121,7 @@ export function ForgotPasswordDialog({
             <div>
               <Label
                 htmlFor="forgot-email"
-                className="text-[10px] font-medium text-muted-foreground mb-1.5 block tracking-[0.15em]"
+                className="text-xs font-medium text-muted-foreground mb-2 block tracking-[0.15em]"
               >
                 E-MAIL DE CADASTRO
               </Label>
@@ -133,7 +133,7 @@ export function ForgotPasswordDialog({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu.email@hospital.com.br"
-                  className="pl-10 h-12 text-base sm:h-11 sm:text-sm"
+                  className="pl-8 h-12 text-base sm:h-11 sm:text-sm"
                   disabled={loading}
                   autoFocus
                   autoCapitalize="none"
@@ -142,14 +142,14 @@ export function ForgotPasswordDialog({
                   inputMode="email"
                 />
               </div>
-              <p className="mt-1.5 text-[10px] text-muted-foreground preserve-case">
+              <p className="mt-2 text-xs text-muted-foreground preserve-case">
                 Use o e-mail informado no cadastro pela coordenação.
               </p>
             </div>
 
             <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/30 p-3">
-              <ShieldCheck className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-              <p className="text-[11px] text-muted-foreground preserve-case leading-relaxed">
+              <ShieldCheck className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+              <p className="text-xs text-muted-foreground preserve-case leading-relaxed">
                 Por segurança, o link é único e expira após o uso. Se você não cadastrou e-mail,
                 procure a coordenação para validação manual.
               </p>

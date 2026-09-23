@@ -168,7 +168,7 @@ export function ItemListEditor({
       ref={dragProps?.setNodeRef}
       style={dragProps?.style}
       className={cn(
-        "flex items-center gap-1.5 group rounded-sm",
+        "flex items-center gap-2 group rounded-md",
         dragProps?.isDragging && "bg-muted/60 shadow-sm ring-1 ring-border z-10 relative"
       )}
     >
@@ -178,7 +178,7 @@ export function ItemListEditor({
           type="button"
           aria-label="Arrastar para reordenar"
           className={cn(
-            "shrink-0 p-0.5 rounded text-muted-foreground/60 hover:text-foreground hover:bg-muted touch-none",
+            "shrink-0 p-1 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-muted touch-none",
             "cursor-grab active:cursor-grabbing opacity-40 group-hover:opacity-100 transition-opacity"
           )}
           tabIndex={-1}
@@ -191,7 +191,7 @@ export function ItemListEditor({
 
       {/* Número ordinal */}
       {numbered && (
-        <span className={cn("text-[10px] font-bold w-4 text-right shrink-0 select-none", numberColor)}>
+        <span className={cn("text-xs font-semibold w-4 text-right shrink-0 select-none", numberColor)}>
           {i + 1}.
         </span>
       )}
@@ -203,7 +203,7 @@ export function ItemListEditor({
             type="button"
             onClick={() => moveUp(i)}
             disabled={i === 0}
-            className="p-0.5 rounded hover:bg-muted disabled:opacity-20 disabled:cursor-not-allowed"
+            className="p-1 rounded-md hover:bg-muted disabled:opacity-20 disabled:cursor-not-allowed"
             tabIndex={-1}
           >
             <ChevronUp className="h-2.5 w-2.5 text-muted-foreground" />
@@ -212,7 +212,7 @@ export function ItemListEditor({
             type="button"
             onClick={() => moveDown(i)}
             disabled={i === list.length - 1}
-            className="p-0.5 rounded hover:bg-muted disabled:opacity-20 disabled:cursor-not-allowed"
+            className="p-1 rounded-md hover:bg-muted disabled:opacity-20 disabled:cursor-not-allowed"
             tabIndex={-1}
           >
             <ChevronDown className="h-2.5 w-2.5 text-muted-foreground" />
@@ -253,7 +253,7 @@ export function ItemListEditor({
       {/* Checkbox de conclusão (à direita do descritivo) */}
       {checkable && !readOnly && (
         <label
-          className="flex items-center gap-1 shrink-0 text-[10px] text-muted-foreground cursor-pointer select-none px-1"
+          className="flex items-center gap-1 shrink-0 text-xs text-muted-foreground cursor-pointer select-none px-1"
           title="Marcar como concluído"
         >
           <Checkbox
@@ -270,7 +270,7 @@ export function ItemListEditor({
         <button
           type="button"
           onClick={() => remove(i)}
-          className="p-1 rounded hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+          className="p-1 rounded-md hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
           tabIndex={-1}
           aria-label="Remover item"
         >
@@ -292,7 +292,7 @@ export function ItemListEditor({
   );
 
   return (
-    <div className={cn("space-y-1.5", className)}>
+    <div className={cn("space-y-2", className)}>
       {showDragHandle ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={ids} strategy={verticalListSortingStrategy}>
@@ -308,7 +308,7 @@ export function ItemListEditor({
         <button
           type="button"
           onClick={add}
-          className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors mt-1 pl-1"
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors mt-1 pl-1"
         >
           <Plus className="h-3 w-3" />
           {addLabel}

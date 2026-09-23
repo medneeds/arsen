@@ -190,7 +190,7 @@ export function CVCChecklistDialog({
   const handleSave = async () => {
     if (!resolvedName.trim()) { toast.error("Nome do paciente não identificado"); return; }
     if (answered.length < BUNDLE_STEPS.length) {
-      toast.warning(`${BUNDLE_STEPS.length - answered.length} etapa(s) do bundle sem resposta`);
+      toast.warning(`${BUNDLE_STEPS.length - answered.length} ${(BUNDLE_STEPS.length - answered.length) === 1 ? 'etapa' : 'etapas'} do bundle sem resposta`);
     }
     if (!currentHospital?.id) { toast.error("Contexto hospitalar não disponível"); return; }
     // MIGRAÇÃO: altas.internacao_id é NOT NULL — sem internação vinculada não há
@@ -230,7 +230,7 @@ export function CVCChecklistDialog({
       toast.success("Checklist CVC salvo");
       await handlePrint();
     } catch (err: any) {
-      toast.error(`Erro ao salvar: ${err.message}`);
+      toast.error(`Não foi possível salvar`);
     } finally {
       setSaving(false);
     }
@@ -366,7 +366,7 @@ ${justificativa ? `<div class="cvc-section">Justificativa de Não Cumprimento</d
       type="button"
       onClick={() => setAnswer(stepId, value)}
       className={cn(
-        "px-2.5 py-1 rounded text-[11px] font-bold border transition-all",
+        "px-3 py-1 rounded-md text-xs font-semibold border transition-all",
         answers[stepId] === value
           ? `${color} text-white border-transparent`
           : "bg-background border-border text-muted-foreground hover:border-primary/50"
@@ -379,9 +379,9 @@ ${justificativa ? `<div class="cvc-section">Justificativa de Não Cumprimento</d
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl h-[90vh] flex flex-col p-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-5 pb-3 border-b">
+        <DialogHeader className="px-6 pt-4 pb-3 border-b">
           <DialogTitle className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-blue-600" />
+            <ShieldCheck className="h-5 w-5 text-foreground" />
             Checklist CVC — Bundle de Inserção
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -391,11 +391,11 @@ ${justificativa ? `<div class="cvc-section">Justificativa de Não Cumprimento</d
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0 px-6">
-          <div className="space-y-5 py-4">
+          <div className="space-y-4 py-4">
 
             {/* ── Cabeçalho ── */}
             <div className="space-y-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Identificação</h3>
+              <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Identificação</h3>
               {/* Data de Nascimento NÃO aparece na UI — é resolvida automaticamente
                   pelo patientId e só é exibida no PDF (pré-visualização / impressão). */}
               <div className="grid grid-cols-2 gap-3">
@@ -414,8 +414,8 @@ ${justificativa ? `<div class="cvc-section">Justificativa de Não Cumprimento</d
                   { key: "iniciadoCVC",         label: "Iniciado CVC",           val: iniciadoCVC,        set: setIniciadoCVC },
                 ].map((f) => (
                   <button key={f.key} type="button" onClick={() => f.set(!f.val)}
-                    className={cn("px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all",
-                      f.val ? "bg-blue-600 text-white border-transparent" : "border-border text-muted-foreground bg-background hover:border-primary/50")}>
+                    className={cn("px-3 py-1 rounded-full text-xs font-medium border transition-all",
+                      f.val ? "bg-primary text-white border-transparent" : "border-border text-muted-foreground bg-background hover:border-primary/50")}>
                     {f.label}
                   </button>
                 ))}
@@ -430,15 +430,15 @@ ${justificativa ? `<div class="cvc-section">Justificativa de Não Cumprimento</d
 
             {/* ── Indicação ── */}
             <div className="space-y-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Indicação</h3>
-              <div className="space-y-1.5">
+              <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Indicação</h3>
+              <div className="space-y-2">
                 {INDICACOES.map((i) => (
                   <button key={i.id} type="button" onClick={() => toggleIndicacao(i.id)}
                     className={cn("w-full text-left px-3 py-2 rounded-lg text-xs border transition-all flex items-center gap-2",
-                      indicacoes.has(i.id) ? "bg-blue-600/10 border-blue-400 text-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/40")}>
-                    <span className={cn("h-4 w-4 rounded border flex items-center justify-center shrink-0 text-[10px] font-bold",
-                      indicacoes.has(i.id) ? "bg-blue-600 border-blue-600 text-white" : "border-border")}>
-                      {indicacoes.has(i.id) ? "✓" : ""}
+                      indicacoes.has(i.id) ? "bg-primary/10 border-border text-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/40")}>
+                    <span className={cn("h-4 w-4 rounded-md border flex items-center justify-center shrink-0 text-xs font-semibold",
+                      indicacoes.has(i.id) ? "bg-primary border-border text-white" : "border-border")}>
+                      {indicacoes.has(i.id) ? "" : ""}
                     </span>
                     {i.label}
                   </button>
@@ -446,24 +446,24 @@ ${justificativa ? `<div class="cvc-section">Justificativa de Não Cumprimento</d
               </div>
               <div className="grid grid-cols-2 gap-2 mt-2">
                 <div>
-                  <Label className="text-[11px] text-muted-foreground mb-1 block">Condição de Realização</Label>
+                  <Label className="text-xs text-muted-foreground mb-1 block">Condição de Realização</Label>
                   <div className="flex gap-2">
                     {(["emergencia", "rotina"] as Condicao[]).map((c) => (
                       <button key={c} type="button" onClick={() => setCondicao(condicao === c ? null : c)}
-                        className={cn("flex-1 py-1.5 rounded text-xs font-medium border transition-all",
-                          condicao === c ? "bg-blue-600 text-white border-transparent" : "border-border text-muted-foreground hover:border-primary/50")}>
+                        className={cn("flex-1 py-2 rounded-md text-xs font-medium border transition-all",
+                          condicao === c ? "bg-primary text-white border-transparent" : "border-border text-muted-foreground hover:border-primary/50")}>
                         {c === "emergencia" ? "Emergência" : "Rotina"}
                       </button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <Label className="text-[11px] text-muted-foreground mb-1 block">Via Escolhida</Label>
-                  <div className="flex gap-1.5">
+                  <Label className="text-xs text-muted-foreground mb-1 block">Via Escolhida</Label>
+                  <div className="flex gap-2">
                     {([["subclavia","1ª Subclávia"],["jugular","2ª Jugular"],["femoral","3ª Femoral"]] as [Via, string][]).map(([v, l]) => (
                       <button key={v} type="button" onClick={() => setVia(via === v ? null : v)}
-                        className={cn("flex-1 py-1.5 rounded text-[10px] font-medium border transition-all",
-                          via === v ? "bg-blue-600 text-white border-transparent" : "border-border text-muted-foreground hover:border-primary/50")}>
+                        className={cn("flex-1 py-2 rounded-md text-xs font-medium border transition-all",
+                          via === v ? "bg-primary text-white border-transparent" : "border-border text-muted-foreground hover:border-primary/50")}>
                         {l}
                       </button>
                     ))}
@@ -477,28 +477,28 @@ ${justificativa ? `<div class="cvc-section">Justificativa de Não Cumprimento</d
             {/* ── Bundle (15 passos) ── */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Etapas do Bundle</h3>
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="outline" className="text-[10px] border-green-400 text-green-700 bg-green-50 dark:bg-green-500/10">SIM {simCount}</Badge>
-                  <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700 bg-amber-50 dark:bg-amber-500/10">SIM* {lembradoCount}</Badge>
-                  <Badge variant="outline" className="text-[10px] border-red-400 text-red-700 bg-red-50 dark:bg-red-500/10">NÃO {naoCount}</Badge>
+                <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Etapas do Bundle</h3>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs border-released text-released-on-soft bg-released-soft">SIM {simCount}</Badge>
+                  <Badge variant="outline" className="text-xs border-warning text-warning-on-soft bg-warning-soft">SIM* {lembradoCount}</Badge>
+                  <Badge variant="outline" className="text-xs border-critical text-critical-on-soft bg-critical-soft">NÃO {naoCount}</Badge>
                 </div>
               </div>
-              <p className="text-[10px] text-muted-foreground">
-                <span className="font-semibold">SIM*</span> = realizado somente após lembrado pelo auditor — captura adesão real ao protocolo
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium">SIM*</span> = realizado somente após lembrado pelo auditor — captura adesão real ao protocolo
               </p>
               <div className="divide-y border rounded-lg overflow-hidden">
                 {BUNDLE_STEPS.map((step) => (
                   <div key={step.id} className={cn("flex items-center gap-3 px-3 py-2 text-xs transition-colors",
-                    answers[step.id] === "sim" ? "bg-green-50 dark:bg-green-500/5" :
-                    answers[step.id] === "sim_lembrado" ? "bg-amber-50 dark:bg-amber-500/5" :
-                    answers[step.id] === "nao" ? "bg-red-50 dark:bg-red-500/5" : "bg-background")}>
+                    answers[step.id] === "sim" ? "bg-released-soft" :
+                    answers[step.id] === "sim_lembrado" ? "bg-warning-soft" :
+                    answers[step.id] === "nao" ? "bg-critical-soft" : "bg-background")}>
                     <span className="text-muted-foreground font-mono w-5 shrink-0">{step.id}.</span>
                     <span className="flex-1 text-foreground">{step.text}</span>
                     <div className="flex gap-1 shrink-0">
-                      <AnswerBtn stepId={step.id} value="sim" label="SIM" color="bg-green-600" />
-                      <AnswerBtn stepId={step.id} value="sim_lembrado" label="SIM*" color="bg-amber-500" />
-                      <AnswerBtn stepId={step.id} value="nao" label="NÃO" color="bg-red-600" />
+                      <AnswerBtn stepId={step.id} value="sim" label="SIM" color="bg-released" />
+                      <AnswerBtn stepId={step.id} value="sim_lembrado" label="SIM*" color="bg-warning" />
+                      <AnswerBtn stepId={step.id} value="nao" label="NÃO" color="bg-critical" />
                     </div>
                   </div>
                 ))}
@@ -507,9 +507,9 @@ ${justificativa ? `<div class="cvc-section">Justificativa de Não Cumprimento</d
 
             {/* Justificativa de NÃO */}
             {naoCount > 0 && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-red-700">Justificativa de Não Cumprimento</Label>
-                <Textarea value={justificativa} onChange={(e) => setJustificativa(e.target.value)} placeholder="Citar item e justificativa para cada etapa não cumprida..." className="text-xs min-h-[64px] resize-none border-red-200" />
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-critical-on-soft">Justificativa de Não Cumprimento</Label>
+                <Textarea value={justificativa} onChange={(e) => setJustificativa(e.target.value)} placeholder="Citar item e justificativa para cada etapa não cumprida..." className="text-xs min-h-[64px] resize-none border-critical-border" />
               </div>
             )}
 
@@ -517,7 +517,7 @@ ${justificativa ? `<div class="cvc-section">Justificativa de Não Cumprimento</d
 
             {/* ── Auditoria ── */}
             <div className="space-y-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Auditoria</h3>
+              <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Auditoria</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">Executante</Label>
@@ -546,10 +546,10 @@ ${justificativa ? `<div class="cvc-section">Justificativa de Não Cumprimento</d
             {answered.length}/{BUNDLE_STEPS.length} etapas respondidas · Adesão espontânea: <strong>{pctAdesao}%</strong>
           </div>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button variant="outline" onClick={handlePrint} className="gap-1.5">
+          <Button variant="outline" onClick={handlePrint} className="gap-2">
             <Printer className="h-4 w-4" /> Pré-visualizar
           </Button>
-          <Button onClick={handleSave} disabled={saving} className="gap-1.5">
+          <Button onClick={handleSave} disabled={saving} className="gap-2">
             <Save className="h-4 w-4" /> {saving ? "Salvando..." : "Salvar e Imprimir"}
           </Button>
         </DialogFooter>

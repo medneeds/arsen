@@ -219,7 +219,7 @@ export default function Apresentacao1Page() {
         <CoverHeader />
         <div className="ap-cover-content">
           <span className="ap-wordmark-hero" data-step="1">Arsen</span>
-          <div className="ap-kicker light" data-step="2">Plataforma Clínica Inteligente · Em parceria com o HMDM Socorrão I</div>
+          <div className="ap-kicker light" data-step="2">Plataforma Hospitalar Inteligente · Em parceria com o HMDM Socorrão I</div>
           <h1 className="ap-cover-title" data-step="3">Relatório de Implantação<br /><span>Semana 1 · Trabalhando em conjunto</span></h1>
           <p className="ap-cover-sub" data-step="4">{PERIODO}</p>
           <div className="ap-cover-meta">

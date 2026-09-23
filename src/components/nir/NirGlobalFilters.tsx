@@ -45,20 +45,20 @@ export function NirGlobalFilters({ filters, onChange, onRefresh, isLoading, acti
       parecerem sem dono.
     */
     <div className="flex flex-wrap items-center gap-2 px-3 py-2 rounded-b-lg border border-t-0 bg-card -mt-2">
-      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden sm:inline">
+      <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium hidden sm:inline">
         Recortar indicadores:
       </span>
       {/* Período */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
         <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Período:</span>
+        <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Período:</span>
         <div className="flex rounded-md border overflow-hidden">
           {PERIODS.map((p) => (
             <button
               key={p.key}
               onClick={() => onChange({ ...filters, period: p.key })}
               className={cn(
-                "px-2.5 py-1 text-[11px] font-medium transition-colors",
+                "px-3 py-1 text-xs font-medium transition-colors",
                 filters.period === p.key ? "bg-primary text-primary-foreground" : "bg-background hover:bg-accent",
               )}
             >
@@ -89,16 +89,16 @@ export function NirGlobalFilters({ filters, onChange, onRefresh, isLoading, acti
         tornava o cabeçalho confuso — são granularidades diferentes e agora
         dizem isso no rótulo.
       */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
         <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Escopo:</span>
+        <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Escopo:</span>
         <div className="flex rounded-md border overflow-hidden">
           {SCOPES.map((s) => (
             <button
               key={s.key}
               onClick={() => onChange({ ...filters, sectorScope: s.key })}
               className={cn(
-                "px-2.5 py-1 text-[11px] font-medium transition-colors",
+                "px-3 py-1 text-xs font-medium transition-colors",
                 filters.sectorScope === s.key ? "bg-primary text-primary-foreground" : "bg-background hover:bg-accent",
               )}
             >
@@ -111,8 +111,8 @@ export function NirGlobalFilters({ filters, onChange, onRefresh, isLoading, acti
 
       <div className="flex-1" />
 
-      <Badge variant="outline" className="text-[10px] gap-1">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+      <Badge variant="outline" className="text-xs gap-1">
+        <span className="h-1.5 w-1.5 rounded-full bg-released animate-pulse" />
         Atualização automática 60s
       </Badge>
       <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading} className="h-7">

@@ -286,8 +286,8 @@ export function CreateUserForm({ onCreated }: Props) {
 
       {/* Identificação */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label className="text-xs font-bold uppercase">Nome completo *</Label>
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold uppercase tracking-wider">Nome completo *</Label>
           <Input
             ref={nomeRef}
             value={nome}
@@ -296,8 +296,8 @@ export function CreateUserForm({ onCreated }: Props) {
             autoComplete="name"
           />
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs font-bold uppercase">E-mail *</Label>
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold uppercase tracking-wider">E-mail *</Label>
           <Input
             ref={emailRef}
             type="email"
@@ -331,7 +331,7 @@ export function CreateUserForm({ onCreated }: Props) {
           <p className="text-[11px] text-muted-foreground -mt-0.5">
             Selecione um ou mais. O <strong>primeiro (★)</strong> é o principal — define a tela de pouso. Com mais de um, o usuário escolhe no login.
           </p>
-          <div className="flex flex-wrap gap-1.5 pt-1">
+          <div className="flex flex-wrap gap-2 pt-1">
             {ACCESS_PROFILES.map((p) => {
               const checked = accessProfiles.includes(p.value);
               const isPrimary = checked && accessProfiles[0] === p.value;

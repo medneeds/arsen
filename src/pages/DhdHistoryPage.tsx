@@ -95,7 +95,7 @@ export default function DhdHistoryPage() {
       setPatients((data as any[] | null)?.map(mapDhdRow) ?? []);
     } catch (error) {
       console.error("Erro ao buscar histórico DHD:", error);
-      toast.error("Erro ao carregar histórico DHD");
+      toast.error("Não foi possível carregar histórico DHD");
     } finally {
       setLoading(false);
     }
@@ -122,7 +122,7 @@ export default function DhdHistoryPage() {
           <ArrowLeft className="h-4 w-4" />
           Voltar para Dashboard
         </Button>
-        <h1 className="text-3xl font-bold text-foreground">
+        <h1 className="text-3xl font-semibold text-foreground">
           Histórico de Desospitalizações
         </h1>
         <p className="text-muted-foreground mt-1">
@@ -137,19 +137,19 @@ export default function DhdHistoryPage() {
           placeholder="Buscar por nome do paciente..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
+          className="pl-8"
         />
       </div>
 
       {/* Patients List */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : filteredPatients.length === 0 ? (
-        <div className="text-center py-12 bg-muted/30 rounded-lg border-2 border-dashed">
+        <div className="text-center py-8 bg-muted/30 rounded-lg border-2 border-dashed">
           <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">
+          <h3 className="text-lg font-medium text-foreground mb-2">
             Nenhum registro no histórico
           </h3>
           <p className="text-muted-foreground">
@@ -161,7 +161,7 @@ export default function DhdHistoryPage() {
       ) : (
         <div className="space-y-4">
           {filteredPatients.map((patient) => (
-            <Card key={patient.id} className="hover:shadow-md transition-shadow">
+            <Card key={patient.id} className="hover:shadow-md transition-shadow-sm">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
@@ -172,7 +172,7 @@ export default function DhdHistoryPage() {
                       {format(parseISO(patient.end_date), "dd/MM/yyyy", { locale: ptBR })}
                     </CardDescription>
                   </div>
-                  <Badge variant="secondary" className="bg-green-500/10 text-green-700 border-green-200">
+                  <Badge variant="secondary" className="bg-released/10 text-released-on-soft border-released-border">
                     Finalizado
                   </Badge>
                 </div>

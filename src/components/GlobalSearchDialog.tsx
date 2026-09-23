@@ -47,24 +47,24 @@ const movementTypeLabel: Record<string, string> = {
 
 const SearchSkeleton = () => (
   <div className="p-2 space-y-1">
-    <div className="px-2 py-1.5">
-      <Skeleton className="h-3 w-28 rounded-sm" />
+    <div className="px-2 py-2">
+      <Skeleton className="h-3 w-28 rounded-md" />
     </div>
     {[1, 2, 3].map((i) => (
       <div
         key={i}
-        className="flex items-center gap-3 px-2 py-2.5"
+        className="flex items-center gap-3 px-2 py-3"
         style={{ animationDelay: `${i * 100}ms` }}
       >
-        <Skeleton className="h-4 w-4 rounded flex-shrink-0" />
-        <div className="flex-1 space-y-1.5">
+        <Skeleton className="h-4 w-4 rounded-md flex-shrink-0" />
+        <div className="flex-1 space-y-2">
           <div className="flex items-center gap-2">
-            <Skeleton className="h-3.5 w-[50%] rounded-sm" />
+            <Skeleton className="h-3.5 w-[50%] rounded-md" />
             <Skeleton className="h-4 w-12 rounded-full" />
           </div>
-          <Skeleton className="h-2.5 w-[35%] rounded-sm" />
+          <Skeleton className="h-2.5 w-[35%] rounded-md" />
         </div>
-        <Skeleton className="h-3 w-3 rounded-sm flex-shrink-0" />
+        <Skeleton className="h-3 w-3 rounded-md flex-shrink-0" />
       </div>
     ))}
   </div>
@@ -288,13 +288,13 @@ export const GlobalSearchDialog = forwardRef<GlobalSearchHandle, GlobalSearchDia
               <div className="text-center py-2 text-muted-foreground">
                 <Search className="h-8 w-8 mx-auto mb-2 opacity-40" />
                 <p className="text-sm">Digite o nome e clique em <strong>Buscar</strong> ou pressione <strong>Enter</strong></p>
-                <p className="text-xs mt-1.5 opacity-70">
-                  ✨ Busca inteligente: ignora acentos, ç e ~
+                <p className="text-xs mt-2 opacity-70">
+                  Busca inteligente: ignora acentos, ç e ~
                 </p>
                 <p className="text-xs mt-2 opacity-50">
-                  <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted text-[10px] font-mono">Ctrl</kbd>
+                  <kbd className="px-2 py-1 rounded-md border border-border bg-muted text-xs font-mono">Ctrl</kbd>
                   {" + "}
-                  <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted text-[10px] font-mono">K</kbd>
+                  <kbd className="px-2 py-1 rounded-md border border-border bg-muted text-xs font-mono">K</kbd>
                   {" para abrir a qualquer momento"}
                 </p>
               </div>
@@ -313,7 +313,7 @@ export const GlobalSearchDialog = forwardRef<GlobalSearchHandle, GlobalSearchDia
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm truncate">{p.name}</span>
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 flex-shrink-0">
+                      <Badge variant="outline" className="text-xs px-2 py-0 h-4 flex-shrink-0">
                         {p.bed_number}
                       </Badge>
                     </div>
@@ -331,7 +331,7 @@ export const GlobalSearchDialog = forwardRef<GlobalSearchHandle, GlobalSearchDia
                       navigate(`/historico-paciente?patientId=${p.id}`);
                     }}
                     title="Abrir histórico do prontuário"
-                    className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-1 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0"
+                    className="flex items-center gap-1 text-xs font-medium uppercase tracking-wide px-2 py-1 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0"
                   >
                     <FileSearch className="h-3 w-3" />
                     Histórico
@@ -356,7 +356,7 @@ export const GlobalSearchDialog = forwardRef<GlobalSearchHandle, GlobalSearchDia
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm truncate">{m.patient_name}</span>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 flex-shrink-0">
+                      <Badge variant="secondary" className="text-xs px-2 py-0 h-4 flex-shrink-0">
                         {movementTypeLabel[m.movement_type] || m.movement_type}
                       </Badge>
                     </div>

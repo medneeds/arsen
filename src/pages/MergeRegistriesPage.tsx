@@ -385,12 +385,12 @@ export default function MergeRegistriesPage() {
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4 mr-2" />Voltar</Button>
         <div className="flex items-center gap-2">
           <GitMerge className="h-5 w-5 text-primary" />
-          <h1 className="text-xl font-semibold uppercase">Mesclar prontuários duplicados</h1>
+          <h1 className="text-xl font-medium uppercase tracking-wider">Mesclar prontuários duplicados</h1>
         </div>
       </div>
 
       {/* Etapa 1 — Buscar */}
-      <Card className="p-5 space-y-3">
+      <Card className="p-4 space-y-3">
         <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Etapa 1 — Buscar candidatos</div>
         <div className="flex gap-2">
           <Input
@@ -421,7 +421,7 @@ export default function MergeRegistriesPage() {
                     }`}
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium truncate uppercase">{r.full_name || "—"}</div>
+                      <div className="font-medium truncate uppercase tracking-wider">{r.full_name || "—"}</div>
                       <div className="text-xs text-muted-foreground">
                         Prontuário: <span className="font-mono">{r.medical_record || "—"}</span> · CPF:{" "}
                         <span className="font-mono">{r.cpf || "—"}</span> · CNS:{" "}
@@ -448,7 +448,7 @@ export default function MergeRegistriesPage() {
             </Alert>
           )}
 
-          <Card className="p-5 space-y-4">
+          <Card className="p-4 space-y-4">
             <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Etapa 2 — Escolher o vencedor</div>
             <RadioGroup value={winner || ""} onValueChange={(v) => setWinner(v as "a" | "b")} className="grid grid-cols-2 gap-3">
               {(["a", "b"] as const).map((side) => {
@@ -465,7 +465,7 @@ export default function MergeRegistriesPage() {
                     <RadioGroupItem value={side} className="mt-1" />
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium uppercase truncate">{row.full_name || "—"}</span>
+                        <span className="font-medium uppercase tracking-wider truncate">{row.full_name || "—"}</span>
                         {counts?.active_bed && <Badge variant="default">Leito {counts.active_bed}</Badge>}
                         {isWin && <Badge variant="secondary">VENCEDOR</Badge>}
                       </div>
@@ -484,7 +484,7 @@ export default function MergeRegistriesPage() {
           </Card>
 
           {/* Prontuário predominante */}
-          <Card className="p-5 space-y-3">
+          <Card className="p-4 space-y-3">
             <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
               Etapa 3a — Prontuário predominante
             </div>
@@ -511,14 +511,14 @@ export default function MergeRegistriesPage() {
           </Card>
 
           {/* Campos divergentes */}
-          <Card className="p-5 space-y-3">
+          <Card className="p-4 space-y-3">
             <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
               Etapa 3b — Resolver campos divergentes
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-left text-xs uppercase text-muted-foreground">
+                  <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
                     <th className="py-2 pr-3 w-40">Campo</th>
                     <th className="py-2 pr-3">Vencedor</th>
                     <th className="py-2 pr-3">Perdedor</th>
@@ -532,7 +532,7 @@ export default function MergeRegistriesPage() {
                     const divergent = (wv || "") !== (lv || "");
                     const choice = fieldChoices[f.key as string] || "winner";
                     return (
-                      <tr key={f.key as string} className={`border-b ${divergent ? "bg-amber-50/40 dark:bg-amber-900/10" : ""}`}>
+                      <tr key={f.key as string} className={`border-b ${divergent ? "bg-warning-soft/40" : ""}`}>
                         <td className="py-2 pr-3 text-muted-foreground">{f.label}</td>
                         <td className="py-2 pr-3 font-mono text-xs">{fmtVal(wv)}</td>
                         <td className="py-2 pr-3 font-mono text-xs">{fmtVal(lv)}</td>
@@ -568,7 +568,7 @@ export default function MergeRegistriesPage() {
           </Card>
 
           {/* Motivo */}
-          <Card className="p-5 space-y-2">
+          <Card className="p-4 space-y-2">
             <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Etapa 3c — Motivo (obrigatório)</div>
             <Textarea
               placeholder="Ex.: Duplicidade identificada pela recepção após reabertura de atendimento. CPF idêntico, mesma data de nascimento."

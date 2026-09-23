@@ -94,12 +94,12 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
       type="button"
       onClick={onClick}
       className={cn(
-        "text-left px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all",
-        active ? "bg-sky-600 text-white border-sky-600" : "bg-background text-foreground border-border hover:border-sky-400 hover:bg-sky-50/40 dark:hover:bg-sky-950/20"
+        "text-left px-3 py-2 rounded-md border text-xs font-medium transition-all",
+        active ? "bg-primary text-white border-border" : "bg-background text-foreground border-border hover:border-border hover:bg-muted/40"
       )}
     >
       <div>{children}</div>
-      {hint && <div className={cn("text-[10px] mt-0.5 font-normal", active ? "text-sky-50" : "text-muted-foreground")}>{hint}</div>}
+      {hint && <div className={cn("text-xs mt-1 font-normal", active ? "text-muted-foreground" : "text-muted-foreground")}>{hint}</div>}
     </button>
   );
 
@@ -110,16 +110,16 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
       return (
         <div className="space-y-3">
           <div>
-            <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Diluente</Label>
-            <div className="grid grid-cols-2 gap-1.5 mt-1.5">
+            <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Diluente</Label>
+            <div className="grid grid-cols-2 gap-2 mt-2">
               {DILUENTS.map(d => (
                 <Chip key={d.v} active={cur.diluent === d.v} onClick={() => set({ diluent: d.v })} hint={d.hint}>{d.label}</Chip>
               ))}
             </div>
           </div>
           <div>
-            <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Volume total (mL)</Label>
-            <div className="flex gap-1.5 mt-1.5 flex-wrap">
+            <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Volume total (mL)</Label>
+            <div className="flex gap-2 mt-2 flex-wrap">
               {VOLUMES.map(v => (
                 <Chip key={v} active={cur.volumeTotal === v || cur.diluentVolume === v} onClick={() => set({ volumeTotal: v, diluentVolume: v })}>{v} mL</Chip>
               ))}
@@ -139,8 +139,8 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
       return (
         <div className="space-y-3">
           <div>
-            <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Via de administração</Label>
-            <div className="flex gap-1.5 mt-1.5 flex-wrap">
+            <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Via de administração</Label>
+            <div className="flex gap-2 mt-2 flex-wrap">
               {['Intravenosa', 'Oral', 'Subcutânea', 'Intramuscular'].map(r => (
                 <Chip key={r} active={cur.route === r} onClick={() => set({ route: r })}>{r}</Chip>
               ))}
@@ -148,8 +148,8 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
           </div>
           {(cur.route || '').toLowerCase().includes('intraven') && (
             <div>
-              <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tipo de acesso</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 mt-1.5">
+              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Tipo de acesso</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
                 {ACCESS.map(a => (
                   <Chip key={a.v} active={cur.accessType === a.v} onClick={() => set({ accessType: a.v })} hint={a.hint}>{a.label}</Chip>
                 ))}
@@ -163,8 +163,8 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
     return (
       <div className="space-y-3">
         <div>
-          <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Modo de infusão</Label>
-          <div className="flex gap-1.5 mt-1.5">
+          <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Modo de infusão</Label>
+          <div className="flex gap-2 mt-2">
             <Chip active={cur.infusionMode === 'BIC'} onClick={() => set({ infusionMode: 'BIC' })} hint="mL/h em bomba">BIC</Chip>
             <Chip active={cur.infusionMode === 'gts'} onClick={() => set({ infusionMode: 'gts' })} hint="gotas/min em gravitacional">Gravitacional</Chip>
             <Chip active={cur.posology?.toLowerCase().includes('bolus')} onClick={() => set({ posology: 'Bolus', infusionTime: '10', infusionTimeUnit: 'min' })} hint="Push direto">Bolus</Chip>
@@ -172,11 +172,11 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <Label className="text-[10px]">Vazão</Label>
+            <Label className="text-xs">Vazão</Label>
             <Input value={cur.infusionRate || ''} onChange={(e) => set({ infusionRate: e.target.value })} className="h-8 text-xs" placeholder={cur.infusionMode === 'gts' ? 'gts/min' : 'mL/h'} />
           </div>
           <div>
-            <Label className="text-[10px]">Correr em</Label>
+            <Label className="text-xs">Correr em</Label>
             <div className="flex gap-1">
               <Input value={cur.infusionTime || ''} onChange={(e) => set({ infusionTime: e.target.value })} className="h-8 text-xs" placeholder="tempo" />
               <Chip active={cur.infusionTimeUnit === 'min'} onClick={() => set({ infusionTimeUnit: 'min' })}>min</Chip>
@@ -185,7 +185,7 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
           </div>
         </div>
         <div>
-          <Label className="text-[10px]">Observações adicionais (opcional)</Label>
+          <Label className="text-xs">Observações adicionais (opcional)</Label>
           <Textarea
             value={cur.instructions || ''}
             onChange={(e) => set({ instructions: e.target.value })}
@@ -194,7 +194,7 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
           />
         </div>
         {isReplacement && cur.diluent && cur.volumeTotal && (
-          <div className="rounded-md border border-sky-200 dark:border-sky-900 bg-sky-50/40 dark:bg-sky-950/20 p-2 text-[11px] text-sky-700 dark:text-sky-300">
+          <div className="rounded-md border border-border bg-muted/40 p-2 text-xs text-foreground">
             <Sparkles className="h-3 w-3 inline mr-1" />
             Receita: <strong>{cur.name}</strong> diluído em <strong>{cur.volumeTotal} mL de {cur.diluent}</strong>
             {cur.route && <> · via <strong>{cur.route}</strong>{cur.accessType && ` (${cur.accessType})`}</>}
@@ -211,16 +211,16 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
       return (
         <div className="space-y-3">
           <div>
-            <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Via</Label>
-            <div className="flex gap-1.5 mt-1.5 flex-wrap">
+            <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Via</Label>
+            <div className="flex gap-2 mt-2 flex-wrap">
               {ROUTES_NUT.map(r => (
                 <Chip key={r} active={cur.route === r} onClick={() => set({ route: r })}>{r}</Chip>
               ))}
             </div>
           </div>
           <div>
-            <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Modo</Label>
-            <div className="flex gap-1.5 mt-1.5 flex-wrap">
+            <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Modo</Label>
+            <div className="flex gap-2 mt-2 flex-wrap">
               {['Contínua BIC', 'Gravitacional intermitente', 'Bolus', 'Bomba ciclada', 'VO fracionada'].map(m => (
                 <Chip key={m} active={cur.nutMode === m} onClick={() => set({ nutMode: m })}>{m}</Chip>
               ))}
@@ -234,25 +234,25 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-[10px]">Volume / dia (mL)</Label>
+              <Label className="text-xs">Volume / dia (mL)</Label>
               <Input value={cur.nutVolDay || ''} onChange={(e) => set({ nutVolDay: e.target.value })} className="h-8 text-xs" placeholder="1500" />
             </div>
             <div>
-              <Label className="text-[10px]">Vazão (mL/h)</Label>
+              <Label className="text-xs">Vazão (mL/h)</Label>
               <Input value={cur.infusionRate || ''} onChange={(e) => set({ infusionRate: e.target.value })} className="h-8 text-xs" placeholder="80" />
             </div>
           </div>
           <div>
-            <Label className="text-[10px]">Fracionamento</Label>
-            <div className="flex gap-1.5 mt-1 flex-wrap">
+            <Label className="text-xs">Fracionamento</Label>
+            <div className="flex gap-2 mt-1 flex-wrap">
               {['6x/dia', '4/4h', '3/3h', '2/2h'].map(f => (
                 <Chip key={f} active={cur.nutFraction === f} onClick={() => set({ nutFraction: f })}>{f}</Chip>
               ))}
             </div>
           </div>
           <div>
-            <Label className="text-[10px]">Pausa noturna</Label>
-            <div className="flex gap-1.5 mt-1 flex-wrap">
+            <Label className="text-xs">Pausa noturna</Label>
+            <div className="flex gap-2 mt-1 flex-wrap">
               {['Sem pausa', '23h-6h', '22h-5h'].map(p => (
                 <Chip key={p} active={cur.nutNightPause === p} onClick={() => set({ nutNightPause: p })}>{p}</Chip>
               ))}
@@ -264,19 +264,19 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
     return (
       <div className="space-y-3">
         <div>
-          <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Cabeceira</Label>
-          <div className="flex gap-1.5 mt-1.5">
+          <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Cabeceira</Label>
+          <div className="flex gap-2 mt-2">
             {['30°', '45°', '≥30°'].map(b => (
               <Chip key={b} active={cur.nutBedHead === b} onClick={() => set({ nutBedHead: b })}>{b}</Chip>
             ))}
           </div>
         </div>
         <div>
-          <Label className="text-[10px]">Checagem de resíduo</Label>
+          <Label className="text-xs">Checagem de resíduo</Label>
           <Input value={cur.nutResidualCheck || ''} onChange={(e) => set({ nutResidualCheck: e.target.value })} className="h-8 text-xs" placeholder="aspirar 6/6h, suspender se >250mL" />
         </div>
         <div>
-          <Label className="text-[10px]">Observações</Label>
+          <Label className="text-xs">Observações</Label>
           <Textarea value={cur.instructions || ''} onChange={(e) => set({ instructions: e.target.value })} className="min-h-[40px] text-xs" />
         </div>
       </div>
@@ -291,7 +291,7 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl w-[min(36rem,calc(100vw-2rem))] max-h-[calc(100svh-6rem)] top-4 translate-y-0 z-[80] overflow-y-auto p-4">
         <DialogHeader className="pb-1">
-          <DialogTitle className="flex items-center gap-2 text-sky-700 dark:text-sky-300 text-base">
+          <DialogTitle className="flex items-center gap-2 text-foreground text-base">
             <Wand2 className="h-4 w-4" /> Configurar com assistente
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -300,15 +300,15 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
         </DialogHeader>
 
         {/* Stepper */}
-        <div className="flex items-center gap-1.5 pb-1">
+        <div className="flex items-center gap-2 pb-1">
           {stepLabels.map((lbl, i) => (
             <button
               key={i}
               type="button"
               onClick={() => setStep(i)}
               className={cn(
-                "flex-1 text-[10px] py-1 rounded border transition-all",
-                step === i ? "bg-sky-600 text-white border-sky-600 font-semibold" : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/60"
+                "flex-1 text-xs py-1 rounded-md border transition-all",
+                step === i ? "bg-primary text-white border-border font-medium" : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/60"
               )}
             >
               {i + 1}. {lbl}
@@ -320,18 +320,18 @@ export function ItemAssistantWizard({ open, onOpenChange, item, onApply }: Props
           {isNutrition ? renderNutritionStep() : renderInfusionStep()}
         </div>
 
-        <DialogFooter className="pt-2 gap-1.5 sm:gap-1.5">
+        <DialogFooter className="pt-2 gap-2 sm:gap-2">
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <div className="flex-1" />
           <Button variant="outline" size="sm" disabled={step === 0} onClick={() => setStep(s => Math.max(0, s - 1))}>
             <ChevronLeft className="h-3.5 w-3.5" /> Voltar
           </Button>
           {step < totalSteps - 1 ? (
-            <Button size="sm" onClick={() => setStep(s => Math.min(totalSteps - 1, s + 1))} className="bg-sky-600 hover:bg-sky-700 text-white">
+            <Button size="sm" onClick={() => setStep(s => Math.min(totalSteps - 1, s + 1))} className="bg-primary hover:bg-primary text-white">
               Avançar <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           ) : (
-            <Button size="sm" onClick={apply} className="bg-sky-600 hover:bg-sky-700 text-white gap-1.5">
+            <Button size="sm" onClick={apply} className="bg-primary hover:bg-primary text-white gap-2">
               <Sparkles className="h-3.5 w-3.5" /> Aplicar
             </Button>
           )}

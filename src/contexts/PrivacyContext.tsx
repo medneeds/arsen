@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from "react";
 
 interface PrivacyContextType {
   namesHidden: boolean;
@@ -13,10 +13,13 @@ const PrivacyContext = createContext<PrivacyContextType>({
 export function PrivacyProvider({ children }: { children: ReactNode }) {
   const [namesHidden, setNamesHidden] = useState(false);
 
-  const toggleNamesHidden = () => setNamesHidden((prev) => !prev);
+  const toggleNamesHidden = useCallback(() => setNamesHidden((prev) => !prev), []);
+
+  // Memoizado — ver o comentario equivalente no AuthContext.
+  const valor = useMemo(() => ({ namesHidden, toggleNamesHidden }), [namesHidden, toggleNamesHidden]);
 
   return (
-    <PrivacyContext.Provider value={{ namesHidden, toggleNamesHidden }}>
+    <PrivacyContext.Provider value={valor}>
       {children}
     </PrivacyContext.Provider>
   );

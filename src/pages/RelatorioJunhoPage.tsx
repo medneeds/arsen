@@ -200,7 +200,7 @@ export default function RelatorioJunhoPage() {
           </header>
           <div className="cover-content">
             <span className="cover-wordmark cover-wordmark-hero">Arsen</span>
-            <div className="kicker light">Plataforma Clínica · em parceria com o HMDM Socorrão I</div>
+            <div className="kicker light">Plataforma Hospitalar Inteligente · em parceria com o HMDM Socorrão I</div>
             <h1 className="cover-title">Relatório Mensal<br /><span>Junho de 2026 · produtividade, ajustes e resultados</span></h1>
             <p className="cover-sub">{PERIODO}</p>
             <div className="cover-meta">

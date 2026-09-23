@@ -121,9 +121,9 @@ const UTI_COMBOS: UtiCombo[] = [
     description: "Painel completo de admissão — inclui sorologias e coagulograma",
     icon: Clock,
     scope: "uti",
-    color: "text-red-600",
-    bg: "bg-red-500/10",
-    border: "border-red-300",
+    color: "text-critical-on-soft",
+    bg: "bg-critical/10",
+    border: "border-critical-border",
     categories: {
       laboratorio: [
         "Hemograma Completo",
@@ -141,9 +141,9 @@ const UTI_COMBOS: UtiCombo[] = [
     description: "Rotina diária — paciente crítico sem ventilação mecânica",
     icon: Clock,
     scope: "uti",
-    color: "text-blue-600",
-    bg: "bg-blue-500/10",
-    border: "border-blue-300",
+    color: "text-foreground",
+    bg: "bg-primary/10",
+    border: "border-border",
     categories: {
       laboratorio: [
         "Hemograma Completo",
@@ -158,9 +158,9 @@ const UTI_COMBOS: UtiCombo[] = [
     description: "Rotina diária — paciente em ventilação mecânica (+gasometria)",
     icon: Clock,
     scope: "uti",
-    color: "text-indigo-600",
-    bg: "bg-indigo-500/10",
-    border: "border-indigo-300",
+    color: "text-foreground",
+    bg: "bg-primary/10",
+    border: "border-border",
     categories: {
       laboratorio: [
         "Hemograma Completo",
@@ -176,9 +176,9 @@ const UTI_COMBOS: UtiCombo[] = [
     description: "Controle laboratorial diário — hemograma, função renal, eletrólitos, PCR",
     icon: Clock,
     scope: "enfermaria",
-    color: "text-emerald-600",
-    bg: "bg-emerald-500/10",
-    border: "border-emerald-300",
+    color: "text-released-on-soft",
+    bg: "bg-released/10",
+    border: "border-released-border",
     categories: {
       laboratorio: [
         "Hemograma Completo", "Ureia", "Creatinina", "Sódio", "Potássio", "PCR",
@@ -197,8 +197,8 @@ const CATEGORIES = {
     label: "Exames Laboratoriais",
     shortLabel: "Laboratório",
     icon: TestTubes,
-    color: "text-blue-600",
-    bg: "bg-blue-500/10",
+    color: "text-foreground",
+    bg: "bg-primary/10",
     presets: [
       { group: "Hemograma", items: ["Hemograma Completo", "Hemoglobina", "Hematócrito", "Plaquetas", "Leucograma", "Reticulócitos", "VHS", "Ferritina", "Ferro Sérico", "Transferrina", "Saturação de Transferrina", "Vitamina B12", "Ácido Fólico", "Eletroforese de Hemoglobina", "Coombs Direto", "Coombs Indireto"] },
       { group: "Bioquímica", items: ["Glicemia", "Glicemia Pós-prandial", "Hemoglobina Glicada (HbA1c)", "Ureia", "Creatinina", "Sódio", "Potássio", "Cloro", "Cálcio", "Cálcio Iônico", "Magnésio", "Fósforo", "TGO", "TGP", "Gama-GT", "Fosfatase Alcalina", "Bilirrubina Total e Frações", "Albumina", "Proteínas Totais e Frações", "PCR", "Amilase", "Lipase", "DHL", "CPK", "CK-MB", "Ácido Úrico", "Colesterol Total", "HDL", "LDL", "Triglicerídeos", "Osmolaridade Sérica"] },
@@ -216,8 +216,8 @@ const CATEGORIES = {
     label: "Exames de Imagem",
     shortLabel: "Imagem",
     icon: ScanLine,
-    color: "text-violet-600",
-    bg: "bg-violet-500/10",
+    color: "text-foreground",
+    bg: "bg-primary/10",
     presets: [
       { group: "Radiografia", items: ["RX Tórax PA", "RX Tórax AP (leito)", "RX Abdome", "RX Coluna Cervical", "RX Seios da Face"] },
       { group: "Tomografia", items: ["TC Crânio s/ contraste", "TC Crânio c/ contraste", "TC Tórax", "TC Abdome Total", "TC Coluna", "Angio-TC Tórax (TEP)", "Angio-TC Crânio (AVC)"] },
@@ -231,8 +231,8 @@ const CATEGORIES = {
     label: "Pareceres",
     shortLabel: "Pareceres",
     icon: UserCheck,
-    color: "text-emerald-600",
-    bg: "bg-emerald-500/10",
+    color: "text-released-on-soft",
+    bg: "bg-released/10",
     presets: [
       { group: "Especialidades Médicas", items: ["Anestesiologia", "Cabeça e Pescoço", "Cardiologia", "Cirurgia Bucomaxilofacial", "Cirurgia Geral", "Cirurgia Plástica", "Cirurgia Torácica", "Cirurgia Vascular", "Clínica Médica", "Coloproctologia", "Endocrinologia", "Hematologia", "Infectologia", "Medicina Intensiva", "Nefrologia", "Neurocirurgia", "Neurologia", "Ortopedia", "Otorrinolaringologia", "Urologia"] },
       { group: "Apoio", items: ["Fisioterapia", "Fonoaudiologia", "Nutrição", "Psicologia", "Assistência Social", "Farmácia Clínica", "Cuidados Paliativos"] },
@@ -242,24 +242,24 @@ const CATEGORIES = {
     label: "Procedimentos",
     shortLabel: "Procedimento",
     icon: FileCheck,
-    color: "text-orange-600",
-    bg: "bg-orange-500/10",
+    color: "text-warning-on-soft",
+    bg: "bg-warning/10",
     presets: [],
   },
   terapeutico: {
     label: "Terapêutico",
     shortLabel: "Terapêutico",
     icon: Heart,
-    color: "text-rose-600",
-    bg: "bg-rose-500/10",
+    color: "text-critical-on-soft",
+    bg: "bg-critical/10",
     presets: [],
   },
   regulacao: {
     label: "Regulação",
     shortLabel: "Regulação",
     icon: Navigation2,
-    color: "text-amber-600",
-    bg: "bg-amber-500/10",
+    color: "text-warning-on-soft",
+    bg: "bg-warning/10",
     presets: [],
   },
 } as const;
@@ -359,16 +359,16 @@ const APAC_OVERRIDE_REASONS = [
 ];
 
 const PRIORITY_OPTIONS = [
-  { value: "programado", label: "Programado", color: "text-blue-600" },
-  { value: "rotina", label: "Rotina", color: "text-cyan-600" },
-  { value: "urgente", label: "Urgente", color: "text-red-600" },
+  { value: "programado", label: "Programado", color: "text-foreground" },
+  { value: "rotina", label: "Rotina", color: "text-foreground" },
+  { value: "urgente", label: "Urgente", color: "text-critical-on-soft" },
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock; dotColor: string; pulsing: boolean }> = {
-  pending: { label: "Pendente", color: "bg-amber-500/15 text-amber-700 border-amber-300", icon: Clock, dotColor: "bg-amber-500", pulsing: true },
-  acknowledged: { label: "Ciência", color: "bg-indigo-500/15 text-indigo-700 border-indigo-300", icon: Eye, dotColor: "bg-indigo-500", pulsing: true },
-  in_progress: { label: "Em Andamento", color: "bg-blue-500/15 text-blue-700 border-blue-300", icon: Loader2, dotColor: "bg-blue-500", pulsing: true },
-  completed: { label: "Concluído", color: "bg-emerald-500/15 text-emerald-700 border-emerald-300", icon: CheckCircle2, dotColor: "bg-emerald-500", pulsing: false },
+  pending: { label: "Pendente", color: "bg-warning/15 text-warning-on-soft border-warning-border", icon: Clock, dotColor: "bg-warning", pulsing: true },
+  acknowledged: { label: "Ciência", color: "bg-primary/15 text-foreground border-border", icon: Eye, dotColor: "bg-primary", pulsing: true },
+  in_progress: { label: "Em Andamento", color: "bg-primary/15 text-foreground border-border", icon: Loader2, dotColor: "bg-primary", pulsing: true },
+  completed: { label: "Concluído", color: "bg-released/15 text-released-on-soft border-released-border", icon: CheckCircle2, dotColor: "bg-released", pulsing: false },
   cancelled: { label: "Cancelado", color: "bg-muted text-muted-foreground border-border", icon: XCircle, dotColor: "bg-muted-foreground", pulsing: false },
 };
 
@@ -443,6 +443,9 @@ const RequisicaoUnificadaPage = () => {
   const TC_PATTERN = /\b(tc|tomografia|angio-?tc)\b/i;
   const isTcSelected = formSelectedItems.some(item => TC_PATTERN.test(item));
   const [tcValidationOpen, setTcValidationOpen] = useState(false);
+  const [reqValidationOpen, setReqValidationOpen] = useState(false);
+  const [lastSubmittedReqId, setLastSubmittedReqId] = useState<string | null>(null);
+  const [printReqOpen, setPrintReqOpen] = useState(false);
   const [formCustomItem, setFormCustomItem] = useState("");
   // Etapa 2 — busca de exame dentro da categoria (Imagem e demais)
   const [examSearch, setExamSearch] = useState("");
@@ -541,7 +544,7 @@ const RequisicaoUnificadaPage = () => {
       const ctx = { patientName: formPatientName, patientBed: formPatientBed, patientSector: formPatientSector };
       setRequests((data || []).map((r) => normalizeSolicitacao(r, ctx)));
     } catch {
-      toast.error("Erro ao carregar requisições");
+      toast.error("Não foi possível carregar requisições");
     } finally {
       setLoading(false);
     }
@@ -702,6 +705,11 @@ const RequisicaoUnificadaPage = () => {
 
   const requiresExtraJustification = offQuickLabItems.length > 0;
 
+  // Justificativa principal: sempre exigida exceto quando é laboratório
+  // com apenas exames dos pacotes de rotina (nesse caso só o bloco extra aparece se necessário)
+  const requiresMainJustification =
+    activeCategory !== "laboratorio" || requiresExtraJustification || formSelectedItems.length === 0;
+
   // Limpa SOMENTE os campos da requisição — preserva paciente selecionado para encadear
   // múltiplas solicitações sem perder identificação. (Bug: após submit a identificação sumia.)
   const resetRequestFields = () => {
@@ -728,7 +736,7 @@ const RequisicaoUnificadaPage = () => {
   const handleSubmitRequest = async () => {
     if (!formPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
     if (formSelectedItems.length === 0) { toast.error("Selecione ao menos um item"); return; }
-    if (!richHtmlToPlainText(formIndication).trim()) { toast.error("Informe a justificativa clínica"); return; }
+    if (requiresMainJustification && !richHtmlToPlainText(formIndication).trim()) { toast.error("Informe a justificativa clínica"); return; }
     if (requiresExtraJustification && formExtraJustification.trim().length < 10) {
       toast.error("Itens fora dos pacotes de rotina exigem justificativa específica (mín. 10 caracteres) para liberação da guia");
       return;
@@ -764,7 +772,7 @@ const RequisicaoUnificadaPage = () => {
       // nome/leito/setor do paciente, unidade/estado, requested_by_name e
       // document_payload. O solicitante vira FK profissional (solicitado_por).
       const solicitadoPor = await resolveProfissionalId(user.id);
-      const { error: insertError } = await supabase
+      const { data: createdRow, error: insertError } = await supabase
         .from("solicitacoes_exame")
         .insert({
           internacao_id: internacaoId,
@@ -775,9 +783,17 @@ const RequisicaoUnificadaPage = () => {
           indicacao_clinica: activeCategory === "parecer" ? sanitizeRichHtml(formIndication) : formIndication,
           observacoes: notesContent || null,
           solicitado_por: solicitadoPor,
-        });
+        })
+        .select("id")
+        .single();
       if (insertError) throw insertError;
       toast.success(`${CATEGORIES[activeCategory].shortLabel}: ${formSelectedItems.length} item(ns) solicitado(s)`);
+      // Abre popup de impressão da guia recém-criada
+      const createdId = (createdRow as any)?.id ?? null;
+      if (createdId) {
+        setLastSubmittedReqId(createdId);
+        setPrintReqOpen(true);
+      }
       // Preserva paciente selecionado para encadear novas solicitações sem reabrir o picker.
       resetRequestFields();
       setActiveSubTab("solicitados");
@@ -785,7 +801,7 @@ const RequisicaoUnificadaPage = () => {
     } catch (err: any) {
       console.error("[Requisicoes] handleSubmitRequest falhou:", err);
       const msg = err?.message || err?.error_description || err?.details || "Erro desconhecido";
-      toast.error(`Erro ao criar requisição: ${msg}`);
+      toast.error(`Não foi possível criar requisição: ${msg}`);
     } finally {
       setSubmitting(false);
     }
@@ -819,7 +835,7 @@ const RequisicaoUnificadaPage = () => {
       setResultFiles([]);
       fetchRequests();
     } catch {
-      toast.error("Erro ao salvar resultado");
+      toast.error("Não foi possível salvar resultado");
     } finally {
       setSavingResult(false);
     }
@@ -836,7 +852,7 @@ const RequisicaoUnificadaPage = () => {
       fetchRequests();
       if (activeCategory === "procedimento") fetchAllProcedures();
     } catch {
-      toast.error("Erro ao cancelar");
+      toast.error("Não foi possível cancelar");
     }
   };
 
@@ -864,21 +880,21 @@ const RequisicaoUnificadaPage = () => {
     const sectionHeader   = opts?.header     ?? "Histórico de solicitações";
     return (
     <div className="mt-2 pt-3 border-t border-border/60">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">
         {sectionHeader}
       </p>
       <Tabs value={trackTab} onValueChange={setTrackTab}>
       <TabsList className="bg-muted/50">
-        <TabsTrigger value="solicitados" className="gap-1.5 text-xs">
+        <TabsTrigger value="solicitados" className="gap-2 text-xs">
           <Clock className="h-3.5 w-3.5" /> Solicitados
           {activePending.length > 0 && (
-            <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{activePending.length}</Badge>
+            <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-2 text-xs">{activePending.length}</Badge>
           )}
         </TabsTrigger>
-        <TabsTrigger value="resultados" className="gap-1.5 text-xs">
+        <TabsTrigger value="resultados" className="gap-2 text-xs">
           <CheckCircle2 className="h-3.5 w-3.5" /> {thirdLabel}
           {activeCompleted.length > 0 && (
-            <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{activeCompleted.length}</Badge>
+            <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-2 text-xs">{activeCompleted.length}</Badge>
           )}
         </TabsTrigger>
       </TabsList>
@@ -932,23 +948,23 @@ const RequisicaoUnificadaPage = () => {
           <div className="flex items-center gap-3 min-w-0 flex-1">
             {formPatientBed && (
               <div className="flex flex-col items-center justify-center h-12 w-12 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
-                <span className="text-[7px] font-bold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
-                <span className="text-base font-extrabold text-primary leading-tight mt-0.5">{formPatientBed}</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
+                <span className="text-base font-semibold text-primary leading-tight mt-1">{formPatientBed}</span>
               </div>
             )}
             <div className="min-w-0">
-              <p className="text-base font-extrabold text-foreground uppercase tracking-wide leading-tight truncate">
+              <p className="text-base font-semibold text-foreground uppercase tracking-wide leading-tight truncate">
                 {formPatientName || "—"}
               </p>
-              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                {formPatientSector && <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold uppercase tracking-wide">{formPatientSector}</span>}
+              <div className="flex items-center gap-2 flex-wrap mt-1">
+                {formPatientSector && <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium uppercase tracking-wide">{formPatientSector}</span>}
               </div>
             </div>
           </div>
           {/* DIREITA */}
           <div className="text-right shrink-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground leading-tight">REQUISIÇÕES</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Exames e pareceres</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">REQUISIÇÕES</p>
+            <p className="text-xs text-muted-foreground mt-1">Exames e pareceres</p>
           </div>
         </div>
       </div>
@@ -967,28 +983,28 @@ const RequisicaoUnificadaPage = () => {
             <React.Fragment key={key}>
               {/* Divisória visual antes de Regulação */}
               {isRegulacao && (
-                <div className="flex items-center gap-1.5 shrink-0 mx-1">
+                <div className="flex items-center gap-2 shrink-0 mx-1">
                   <div className="w-px h-8 bg-border" />
-                  <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider rotate-0 whitespace-nowrap">externo</span>
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider rotate-0 whitespace-nowrap">externo</span>
                   <div className="w-px h-8 bg-border" />
                 </div>
               )}
               <button
                 onClick={() => { setActiveCategory(key); setActiveSubTab("solicitar"); setSearch(""); setRegulacaoType(null); }}
                 className={cn(
-                  "flex items-center gap-2.5 px-4 py-3 rounded-xl border transition-all duration-200 min-w-fit",
+                  "flex items-center gap-3 px-4 py-3 rounded-lg border transition-all duration-200 min-w-fit",
                   isActive
                     ? isRegulacao
-                      ? "border-amber-500 bg-amber-50/60 dark:bg-amber-500/10 shadow-sm ring-1 ring-amber-500/30"
+                      ? "border-warning bg-warning-soft/60 shadow-sm ring-1 ring-warning/30"
                       : "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
                     : "border-border hover:bg-muted/50 hover:border-border"
                 )}
               >
-                <div className={cn("p-1.5 rounded-lg", isActive ? cat.bg : "bg-muted")}>
+                <div className={cn("p-2 rounded-lg", isActive ? cat.bg : "bg-muted")}>
                   <Icon className={cn("h-4 w-4", isActive ? cat.color : "text-muted-foreground")} />
                 </div>
                 <div className="text-left">
-                  <p className={cn("text-xs font-semibold", isActive ? "text-foreground" : "text-muted-foreground")}>
+                  <p className={cn("text-xs font-medium", isActive ? "text-foreground" : "text-muted-foreground")}>
                     {cat.shortLabel}
                   </p>
                 </div>
@@ -1006,19 +1022,19 @@ const RequisicaoUnificadaPage = () => {
         >
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <TabsList className="bg-muted/50">
-              <TabsTrigger value="solicitar" className="gap-1.5 text-xs">
+              <TabsTrigger value="solicitar" className="gap-2 text-xs">
                 <Plus className="h-3.5 w-3.5" /> Solicitar
               </TabsTrigger>
-              <TabsTrigger value="solicitados" className="gap-1.5 text-xs">
+              <TabsTrigger value="solicitados" className="gap-2 text-xs">
                 <Clock className="h-3.5 w-3.5" /> Solicitados
                 {allPendingProcedures.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{allPendingProcedures.length}</Badge>
+                  <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-2 text-xs">{allPendingProcedures.length}</Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="resultados" className="gap-1.5 text-xs">
+              <TabsTrigger value="resultados" className="gap-2 text-xs">
                 <FileText className="h-3.5 w-3.5" /> Laudos
                 {allCompletedProcedures.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{allCompletedProcedures.length}</Badge>
+                  <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-2 text-xs">{allCompletedProcedures.length}</Badge>
                 )}
               </TabsTrigger>
             </TabsList>
@@ -1045,13 +1061,13 @@ const RequisicaoUnificadaPage = () => {
             <div className="border rounded-lg p-3 bg-muted/20">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Package className="h-4 w-4 text-orange-500" />
+                  <Package className="h-4 w-4 text-warning" />
                   <div>
                     <p className="text-sm font-medium">Registro de OPME</p>
-                    <p className="text-[11px] text-muted-foreground">Órtese, Prótese e Material Especial — complementar ao laudo</p>
+                    <p className="text-xs text-muted-foreground">Órtese, Prótese e Material Especial — complementar ao laudo</p>
                   </div>
                 </div>
-                <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setOpmeOpen(true)}>
+                <Button size="sm" variant="outline" className="gap-2 text-xs" onClick={() => setOpmeOpen(true)}>
                   <Package className="h-3.5 w-3.5" /> Registrar OPME
                 </Button>
               </div>
@@ -1093,34 +1109,34 @@ const RequisicaoUnificadaPage = () => {
         <div className="space-y-3">
           {/* Rastreabilidade — terapêuticos solicitados (logo abaixo, antes das guias) */}
           {renderTrackingTabs("Executados", Droplet, "Nenhum terapêutico solicitado")}
-          <p className="text-[11px] text-muted-foreground font-medium px-1">
+          <p className="text-xs text-muted-foreground font-medium px-1">
             Selecione o formulário terapêutico para o paciente:
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => setHemoDialogOpen(true)}
-              className="flex items-center gap-4 p-4 rounded-xl border-2 border-sky-200 bg-sky-50/60 dark:bg-sky-500/5 dark:border-sky-500/20 hover:border-sky-400 hover:bg-sky-100/60 transition-all text-left"
+              className="flex items-center gap-4 p-4 rounded-lg border-2 border-border bg-muted/60 hover:border-border hover:bg-muted/60 transition-all text-left"
             >
-              <div className="p-3 rounded-xl bg-sky-500/15 shrink-0">
-                <Droplet className="h-6 w-6 text-sky-600 dark:text-sky-400" />
+              <div className="p-3 rounded-lg bg-primary/15 shrink-0">
+                <Droplet className="h-6 w-6 text-foreground" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-foreground">Hemocomponentes</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Solicitação de sangue e derivados — Socorrão I</p>
+                <p className="text-sm font-medium text-foreground">Hemocomponentes</p>
+                <p className="text-xs text-muted-foreground mt-1">Solicitação de sangue e derivados — Socorrão I</p>
               </div>
             </button>
             <button
               type="button"
               onClick={() => setSatDialogOpen(true)}
-              className="flex items-center gap-4 p-4 rounded-xl border-2 border-indigo-200 bg-indigo-50/60 dark:bg-indigo-500/5 dark:border-indigo-500/20 hover:border-indigo-400 hover:bg-indigo-100/60 transition-all text-left"
+              className="flex items-center gap-4 p-4 rounded-lg border-2 border-border bg-muted/60 hover:border-border hover:bg-muted/60 transition-all text-left"
             >
-              <div className="p-3 rounded-xl bg-indigo-500/15 shrink-0">
-                <Syringe className="h-6 w-6 text-indigo-700 dark:text-indigo-300" />
+              <div className="p-3 rounded-lg bg-primary/15 shrink-0">
+                <Syringe className="h-6 w-6 text-foreground" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-foreground">SAT / IGHAT</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Soro antitetânico e imunoglobulina</p>
+                <p className="text-sm font-medium text-foreground">SAT / IGHAT</p>
+                <p className="text-xs text-muted-foreground mt-1">Soro antitetânico e imunoglobulina</p>
               </div>
             </button>
           </div>
@@ -1130,7 +1146,7 @@ const RequisicaoUnificadaPage = () => {
         <div className="space-y-4">
           {/* Seletor de tipo */}
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 px-1">
               Tipo de solicitação
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1147,20 +1163,20 @@ const RequisicaoUnificadaPage = () => {
                     setAihRegulacaoOpen(true);
                   }}
                   className={cn(
-                    "flex flex-col gap-3 p-4 rounded-xl border-2 text-left transition-all",
+                    "flex flex-col gap-3 p-4 rounded-lg border-2 text-left transition-all",
                     regulacaoType === key
-                      ? `border-${color}-400 bg-${color}-50/60 dark:bg-${color}-500/10 ring-1 ring-${color}-400/40`
-                      : "border-border hover:border-amber-300 hover:bg-amber-50/30 dark:hover:bg-amber-500/5"
+                      ? `border-${color}-400 bg-${color}-50/60${color}-500/10 ring-1 ring-${color}-400/40`
+                      : "border-border hover:border-warning-border hover:bg-warning-soft/30"
                   )}
                 >
-                  <div className={`p-2.5 rounded-lg bg-${color}-500/15 w-fit`}>
-                    <Icon className={`h-5 w-5 text-${color}-600 dark:text-${color}-400`} />
+                  <div className={`p-3 rounded-lg bg-${color}-500/15 w-fit`}>
+                    <Icon className={`h-5 w-5 text-${color}-600${color}-400`} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-foreground">{label}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{desc}</p>
+                    <p className="text-sm font-medium text-foreground">{label}</p>
+                    <p className="text-xs text-muted-foreground mt-1 leading-snug">{desc}</p>
                   </div>
-                  <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 mt-auto">
+                  <span className="text-xs font-medium text-warning-on-soft mt-auto">
                     Abre formulário AIH →
                   </span>
                 </button>
@@ -1176,25 +1192,25 @@ const RequisicaoUnificadaPage = () => {
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <TabsList className="bg-muted/50">
-            <TabsTrigger value="solicitar" className="gap-1.5 text-xs">
+            <TabsTrigger value="solicitar" className="gap-2 text-xs">
               <Plus className="h-3.5 w-3.5" /> Solicitar
             </TabsTrigger>
-            <TabsTrigger value="solicitados" className="gap-1.5 text-xs">
+            <TabsTrigger value="solicitados" className="gap-2 text-xs">
               <Clock className="h-3.5 w-3.5" /> Solicitados
               {pendingRequests.length > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{pendingRequests.length}</Badge>
+                <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-2 text-xs">{pendingRequests.length}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="resultados" className="gap-1.5 text-xs">
+            <TabsTrigger value="resultados" className="gap-2 text-xs">
               <CheckCircle2 className="h-3.5 w-3.5" />
               {/* Terapêutico/Regulação não geram laudo: o desfecho é "Executados". */}
               {(activeCategory as string) === "terapeutico" || (activeCategory as string) === "regulacao" ? "Executados" : "Resultados"}
               {completedRequests.length > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{completedRequests.length}</Badge>
+                <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-2 text-xs">{completedRequests.length}</Badge>
               )}
             </TabsTrigger>
             {activeCategory === "laboratorio" && (
-              <TabsTrigger value="comparativo" className="gap-1.5 text-xs">
+              <TabsTrigger value="comparativo" className="gap-2 text-xs">
                 <TrendingUp className="h-3.5 w-3.5" /> Comparativo
               </TabsTrigger>
             )}
@@ -1202,7 +1218,7 @@ const RequisicaoUnificadaPage = () => {
           {activeSubTab !== "solicitar" && (
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar paciente..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
+              <Input placeholder="Buscar paciente..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-9" />
             </div>
           )}
         </div>
@@ -1214,16 +1230,16 @@ const RequisicaoUnificadaPage = () => {
 
           {/* Priority Selection */}
           <div className="space-y-3">
-            <Label className="text-xs font-semibold">Classificação da Requisição</Label>
+            <Label className="text-xs font-medium">Classificação da Requisição</Label>
             <div className="flex gap-3">
               <Button
                 type="button"
                 variant={formPriority === "urgente" ? "default" : "outline"}
                 className={cn(
-                  "flex-1 gap-2 h-12 text-sm font-semibold transition-all",
+                  "flex-1 gap-2 h-12 text-sm font-medium transition-all",
                   formPriority === "urgente"
-                    ? "bg-red-600 hover:bg-red-700 text-white border-red-600 shadow-lg shadow-red-500/20"
-                    : "border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
+                    ? "bg-critical hover:bg-critical text-white border-critical shadow-md shadow-md"
+                    : "border-critical-border text-critical-on-soft hover:bg-critical-soft"
                 )}
                 onClick={() => setFormPriority("urgente")}
               >
@@ -1234,10 +1250,10 @@ const RequisicaoUnificadaPage = () => {
                 type="button"
                 variant={formPriority === "rotina" ? "default" : "outline"}
                 className={cn(
-                  "flex-1 gap-2 h-12 text-sm font-semibold transition-all",
+                  "flex-1 gap-2 h-12 text-sm font-medium transition-all",
                   formPriority === "rotina"
-                    ? "bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-600 shadow-lg shadow-cyan-500/20"
-                    : "border-cyan-300 text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-500/10"
+                    ? "bg-primary hover:bg-primary text-white border-border shadow-md shadow-cyan-500/20"
+                    : "border-border text-foreground hover:bg-muted"
                 )}
                 onClick={() => setFormPriority("rotina")}
               >
@@ -1248,10 +1264,10 @@ const RequisicaoUnificadaPage = () => {
                 type="button"
                 variant={formPriority === "programado" ? "default" : "outline"}
                 className={cn(
-                  "flex-1 gap-2 h-12 text-sm font-semibold transition-all",
+                  "flex-1 gap-2 h-12 text-sm font-medium transition-all",
                   formPriority === "programado"
-                    ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600 shadow-lg shadow-blue-500/20"
-                    : "border-blue-300 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10"
+                    ? "bg-primary hover:bg-primary text-white border-border shadow-md shadow-md"
+                    : "border-border text-foreground hover:bg-muted"
                 )}
                 onClick={() => setFormPriority("programado")}
               >
@@ -1262,9 +1278,9 @@ const RequisicaoUnificadaPage = () => {
 
             {/* Scheduled date/time for programado */}
             {formPriority === "programado" && (
-              <div className="grid grid-cols-2 gap-3 p-3 rounded-lg border border-blue-200 bg-blue-50/50 dark:bg-blue-500/5 dark:border-blue-500/20">
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-blue-700 dark:text-blue-400">Data Programada *</Label>
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-lg border border-border bg-muted/50">
+                <div className="space-y-2">
+                  <Label className="text-xs text-foreground">Data Programada *</Label>
                   <Input
                     type="date"
                     value={formScheduledDate}
@@ -1273,8 +1289,8 @@ const RequisicaoUnificadaPage = () => {
                     min={format(new Date(), "yyyy-MM-dd")}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-blue-700 dark:text-blue-400">Horário (opcional)</Label>
+                <div className="space-y-2">
+                  <Label className="text-xs text-foreground">Horário (opcional)</Label>
                   <Input
                     type="time"
                     value={formScheduledTime}
@@ -1297,15 +1313,15 @@ const RequisicaoUnificadaPage = () => {
               return (
                 <Card className="border-l-[4px] border-l-primary border-primary/20 bg-card shadow-sm">
                   <CardHeader className="pb-2 pt-3">
-                    <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground">
                       <ClipboardList className="h-4 w-4 text-primary" />
                       Justificativa Clínica para o Parecerista
                       <span className="text-destructive">*</span>
-                      <Badge variant="outline" className="ml-auto text-[10px] font-normal border-primary/30 text-primary">
+                      <Badge variant="outline" className="ml-auto text-xs font-normal border-primary/30 text-primary">
                         Imprime no laudo
                       </Badge>
                     </CardTitle>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
+                    <p className="text-xs text-muted-foreground mt-1 leading-snug">
                       Descreva história resumida, hipótese diagnóstica, exames relevantes e a pergunta objetiva ao especialista. Use <strong>negrito</strong>, <em>itálico</em>, <u>sublinhado</u> e listas para organizar tópicos. <strong>Enter</strong> cria parágrafo · <strong>Shift+Enter</strong> quebra de linha.
                     </p>
                   </CardHeader>
@@ -1324,26 +1340,26 @@ const RequisicaoUnificadaPage = () => {
                       <div
                         className={cn(
                           "h-full transition-all duration-200",
-                          overHard ? "bg-destructive" : nearLimit ? "bg-amber-500" : "bg-primary"
+                          overHard ? "bg-destructive" : nearLimit ? "bg-warning" : "bg-primary"
                         )}
                         style={{ width: `${Math.min(100, (used / PARECER_HARD) * 100)}%` }}
                       />
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-[10px]">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                       <span className="text-muted-foreground">
                         Limite fixo para garantir resposta do parecerista em <strong>1 página A4</strong>.
                       </span>
                       <span className={cn(
                         "font-mono tabular-nums",
-                        overHard ? "text-destructive font-bold" : nearLimit ? "text-amber-700 font-semibold" : "text-muted-foreground"
+                        overHard ? "text-destructive font-semibold" : nearLimit ? "text-warning-on-soft font-medium" : "text-muted-foreground"
                       )}>
                         {PARECER_HARD - used} restantes
                       </span>
                     </div>
 
                     {overHard && (
-                      <p className="text-[10.5px] leading-snug text-destructive bg-destructive/10 border border-destructive/30 rounded-md px-2 py-1.5">
+                      <p className="text-xs leading-snug text-destructive bg-destructive/10 border border-destructive/30 rounded-md px-2 py-2">
                         <strong>Limite máximo atingido ({PARECER_HARD}).</strong> Conteúdo adicional bloqueado para preservar o bloco-resposta do parecerista. Anexe detalhes na evolução clínica.
                       </p>
                     )}
@@ -1351,10 +1367,10 @@ const RequisicaoUnificadaPage = () => {
                 </Card>
               );
             })()
-          ) : (
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">
-                Justificativa Clínica <span className="text-red-500">*</span>
+          ) : requiresMainJustification ? (
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">
+                Justificativa Clínica <span className="text-critical">*</span>
               </Label>
               <Textarea
                 placeholder="Descreva a justificativa clínica para esta requisição..."
@@ -1364,23 +1380,23 @@ const RequisicaoUnificadaPage = () => {
                 className="resize-none text-sm"
               />
             </div>
-          )}
+          ) : null}
 
           {/* ── Cultura: atalho rápido dentro de Laboratório ── */}
           {activeCategory === "laboratorio" && (
             <button
               type="button"
               onClick={() => setCultureDialogOpen(true)}
-              className="w-full flex items-center gap-4 p-3 rounded-xl border-2 border-blue-200 bg-blue-50/50 dark:bg-blue-500/5 dark:border-blue-500/20 hover:border-blue-400 hover:bg-blue-100/50 transition-all text-left"
+              className="w-full flex items-center gap-4 p-3 rounded-lg border-2 border-border bg-muted/50 hover:border-border hover:bg-muted/50 transition-all text-left"
             >
-              <div className="p-2.5 rounded-xl bg-blue-500/15 shrink-0">
-                <Microscope className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-3 rounded-lg bg-primary/15 shrink-0">
+                <Microscope className="h-5 w-5 text-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground">Cultura Microbiológica</p>
-                <p className="text-[11px] text-muted-foreground">Hemocultura · Urinocultura · Secreção · LCR — formulário próprio</p>
+                <p className="text-sm font-medium text-foreground">Cultura Microbiológica</p>
+                <p className="text-xs text-muted-foreground">Hemocultura · Urinocultura · Secreção · LCR — formulário próprio</p>
               </div>
-              <Badge variant="outline" className="text-[10px] shrink-0 border-blue-300 text-blue-700 dark:text-blue-300">Formulário específico</Badge>
+              <Badge variant="outline" className="text-xs shrink-0 border-border text-foreground">Formulário específico</Badge>
             </button>
           )}
 
@@ -1388,12 +1404,12 @@ const RequisicaoUnificadaPage = () => {
           {activeCategory === "laboratorio" && (
             <Card className="border-border/50 bg-muted/30">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2 flex-wrap">
+                <CardTitle className="text-sm font-medium flex items-center gap-2 flex-wrap">
                   <Package className="h-4 w-4 text-primary" />
                   Pacotes de Rotina
-                  <Badge variant="outline" className="text-[10px] font-normal">Clique para aplicar</Badge>
+                  <Badge variant="outline" className="text-xs font-normal">Clique para aplicar</Badge>
                 </CardTitle>
-                <p className="text-[10px] text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Combos filtrados pelo setor do paciente. Culturas e exames de imagem devem ser solicitados pelo fluxo próprio (aba <em>Imagem</em> e <em>Cultura</em>).
                 </p>
               </CardHeader>
@@ -1413,31 +1429,31 @@ const RequisicaoUnificadaPage = () => {
                       fullySelected ? `${combo.border} ${combo.bg}` : "border-border bg-background",
                     )}>
                       <div className="flex items-center gap-3 p-3">
-                        <div className={cn("p-1.5 rounded-lg", combo.bg)}>
+                        <div className={cn("p-2 rounded-lg", combo.bg)}>
                           <ComboIcon className={cn("h-4 w-4", combo.color)} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-foreground">{combo.label}</p>
-                          <p className="text-[10px] text-muted-foreground truncate">{combo.description}</p>
+                          <p className="text-xs font-medium text-foreground">{combo.label}</p>
+                          <p className="text-xs text-muted-foreground truncate">{combo.description}</p>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           {partiallySelected && (
-                            <Badge variant="outline" className="text-[9px] h-5 border-amber-300 text-amber-600">Parcial</Badge>
+                            <Badge variant="outline" className="text-xs h-5 border-warning-border text-warning-on-soft">Parcial</Badge>
                           )}
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-7 px-2 text-[10px]"
+                            className="h-7 px-2 text-xs"
                             onClick={() => setExpandedCombo(isExpanded ? null : combo.id)}
                           >
                             <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isExpanded && "rotate-180")} />
                           </Button>
                           {fullySelected ? (
-                            <Button size="sm" variant="outline" className="h-7 px-2.5 text-[10px] border-destructive/30 text-destructive hover:bg-destructive/10" onClick={() => removeCombo(combo)}>
+                            <Button size="sm" variant="outline" className="h-7 px-3 text-xs border-destructive/30 text-destructive hover:bg-destructive/10" onClick={() => removeCombo(combo)}>
                               Remover
                             </Button>
                           ) : (
-                            <Button size="sm" className="h-7 px-2.5 text-[10px]" onClick={() => applyCombo(combo)}>
+                            <Button size="sm" className="h-7 px-3 text-xs" onClick={() => applyCombo(combo)}>
                               Aplicar
                             </Button>
                           )}
@@ -1449,10 +1465,10 @@ const RequisicaoUnificadaPage = () => {
                         <div className="px-3 pb-3 border-t border-border/50 pt-2 space-y-2">
                           {Object.entries(combo.categories).map(([cat, items]) => (
                             <div key={cat}>
-                              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
                                 {CATEGORIES[cat as CategoryKey]?.shortLabel || cat}
                                 {cat !== activeCategory && (
-                                  <span className="ml-1 text-[9px] normal-case font-normal">(outra categoria)</span>
+                                  <span className="ml-1 text-xs normal-case font-normal">(outra categoria)</span>
                                 )}
                               </p>
                               <div className="flex flex-wrap gap-1">
@@ -1464,14 +1480,14 @@ const RequisicaoUnificadaPage = () => {
                                       key={item}
                                       onClick={() => toggleItem(item)}
                                       className={cn(
-                                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] border transition-all duration-150",
+                                        "inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs border transition-all duration-150",
                                         selected
                                           ? "border-primary bg-primary/10 text-primary font-medium"
                                           : "border-border/60 bg-background text-muted-foreground hover:bg-muted/50"
                                       )}
                                     >
                                       {selected && (
-                                        <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded bg-primary text-primary-foreground text-[9px] font-bold tabular-nums">
+                                        <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-md bg-primary text-primary-foreground text-xs font-semibold tabular-nums">
                                           {idx + 1}
                                         </span>
                                       )}
@@ -1494,11 +1510,11 @@ const RequisicaoUnificadaPage = () => {
           {/* Item selection */}
           <Card className="border-border/50">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <CatIcon className={cn("h-4 w-4", catConfig.color)} />
                 Selecionar {catConfig.label}
                 {formSelectedItems.length > 0 && (
-                  <Badge variant="default" className="text-[10px]">{formSelectedItems.length} selecionado(s)</Badge>
+                  <Badge variant="default" className="text-xs">{formSelectedItems.length} {formSelectedItems.length === 1 ? "selecionado" : "selecionados"}</Badge>
                 )}
               </CardTitle>
             </CardHeader>
@@ -1510,7 +1526,7 @@ const RequisicaoUnificadaPage = () => {
                   placeholder={`Buscar ${activeCategory === "parecer" ? "especialidade" : "exame"}...`}
                   value={examSearch}
                   onChange={e => setExamSearch(e.target.value)}
-                  className="pl-9 h-9"
+                  className="pl-8 h-9"
                 />
               </div>
               {catConfig.presets.map(group => {
@@ -1521,8 +1537,8 @@ const RequisicaoUnificadaPage = () => {
                 if (visibleItems.length === 0) return null;
                 return (
                 <div key={group.group}>
-                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.group}</p>
-                  <div className="flex flex-wrap gap-1.5">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">{group.group}</p>
+                  <div className="flex flex-wrap gap-2">
                     {visibleItems.map(item => {
                       const idx = formSelectedItems.indexOf(item);
                       const selected = idx >= 0;
@@ -1533,22 +1549,22 @@ const RequisicaoUnificadaPage = () => {
                           key={item}
                           onClick={() => toggleItem(item)}
                           className={cn(
-                            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-all duration-150",
+                            "inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs border transition-all duration-150",
                             selected
                               ? "border-primary bg-primary/10 text-primary font-medium shadow-sm"
                               : isApac
-                                ? "border-amber-300/70 bg-amber-50/60 text-foreground hover:bg-amber-100/60 dark:bg-amber-500/10 dark:border-amber-500/30"
+                                ? "border-warning-border/70 bg-warning-soft/60 text-foreground hover:bg-warning-soft/60"
                                 : "border-border bg-background text-foreground hover:bg-muted/50"
                           )}
                         >
                           {selected && (
-                            <span className="inline-flex items-center justify-center min-w-[18px] h-4 px-1 rounded bg-primary text-primary-foreground text-[10px] font-bold tabular-nums">
+                            <span className="inline-flex items-center justify-center min-w-[18px] h-4 px-1 rounded-md bg-primary text-primary-foreground text-xs font-semibold tabular-nums">
                               {idx + 1}
                             </span>
                           )}
                           {item}
                           {isApac && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-500 text-white text-[9px] font-bold tracking-wide">
+                            <span className="inline-flex items-center px-2 py-1 rounded-md bg-warning text-white text-xs font-semibold tracking-wide">
                               APAC
                             </span>
                           )}
@@ -1577,19 +1593,19 @@ const RequisicaoUnificadaPage = () => {
               {/* Selected items summary */}
               {formSelectedItems.length > 0 && (
                 <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
-                  <p className="text-[11px] font-semibold text-primary mb-2">
+                  <p className="text-xs font-medium text-primary mb-2">
                     Itens solicitados ({formSelectedItems.length}) — a numeração reflete a ordem que sairá impressa
                   </p>
-                  <ol className="flex flex-wrap gap-1.5 list-none">
+                  <ol className="flex flex-wrap gap-2 list-none">
                     {formSelectedItems.map((item, idx) => (
                       <li key={item}>
                         <Badge
                           variant="outline"
-                          className="text-xs cursor-pointer hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive transition-colors gap-1.5 pl-1"
+                          className="text-xs cursor-pointer hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive transition-colors gap-2 pl-1"
                           onClick={() => toggleItem(item)}
                           title="Clique para remover"
                         >
-                          <span className="inline-flex items-center justify-center min-w-[18px] h-4 px-1 rounded bg-primary text-primary-foreground text-[10px] font-bold tabular-nums">
+                          <span className="inline-flex items-center justify-center min-w-[18px] h-4 px-1 rounded-md bg-primary text-primary-foreground text-xs font-semibold tabular-nums">
                             {idx + 1}
                           </span>
                           {item} ×
@@ -1604,27 +1620,27 @@ const RequisicaoUnificadaPage = () => {
 
           {/* Justificativa extra para exames laboratoriais fora dos pacotes rápidos */}
           {requiresExtraJustification && (
-            <Card className="border-amber-300 bg-amber-50/60 dark:bg-amber-950/20">
+            <Card className="border-warning-border bg-warning-soft/60">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-amber-800 dark:text-amber-300">
+                <CardTitle className="text-sm font-medium flex items-center gap-2 text-warning-on-soft">
                   <AlertTriangle className="h-4 w-4" />
                   Liberação condicionada — exame fora da rotina
                 </CardTitle>
-                <p className="text-[11px] text-amber-700/90 dark:text-amber-400/80 mt-1">
+                <p className="text-xs text-warning-on-soft/90 mt-1">
                   Os itens abaixo não fazem parte dos pacotes rápidos (Rotina UTI / Enfermaria) e exigem
                   justificativa clínica específica para liberação da guia pelo laboratório.
                 </p>
               </CardHeader>
               <CardContent className="space-y-2">
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {offQuickLabItems.map(it => (
-                    <Badge key={it} variant="outline" className="text-[11px] border-amber-400 text-amber-800 dark:text-amber-300 bg-amber-100/60">
+                    <Badge key={it} variant="outline" className="text-xs border-warning text-warning-on-soft bg-warning-soft/60">
                       {it}
                     </Badge>
                   ))}
                 </div>
-                <Label className="text-xs font-semibold text-amber-900 dark:text-amber-200">
-                  Justificativa específica <span className="text-red-600">*</span>
+                <Label className="text-xs font-medium text-warning-on-soft">
+                  Justificativa específica <span className="text-critical-on-soft">*</span>
                 </Label>
                 <Textarea
                   placeholder="Ex.: suspeita de hipotireoidismo subclínico — solicito TSH e T4 livre..."
@@ -1633,7 +1649,7 @@ const RequisicaoUnificadaPage = () => {
                   rows={3}
                   className="resize-none text-sm bg-background"
                 />
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Mínimo 10 caracteres. Esta justificativa fica registrada na guia para auditoria.
                 </p>
               </CardContent>
@@ -1649,14 +1665,14 @@ const RequisicaoUnificadaPage = () => {
             const missing: string[] = [];
             if (!formPatientName.trim()) missing.push("identificar o paciente");
             if (formSelectedItems.length === 0) missing.push(`selecionar pelo menos 1 ${activeCategory === "parecer" ? "especialidade" : "exame"}`);
-            if (!richHtmlToPlainText(formIndication).trim()) missing.push("preencher a justificativa clínica");
+            if (requiresMainJustification && !richHtmlToPlainText(formIndication).trim()) missing.push("preencher a justificativa clínica");
             if (requiresExtraJustification && formExtraJustification.trim().length < 10) missing.push("justificar exames fora da rotina (mín. 10 caracteres)");
             const blocked = missing.length > 0;
             return (
               <div className="flex flex-col items-end gap-2 pt-2">
                 {blocked && (
-                  <div className="w-full rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/30 px-3 py-2 text-[11px] text-amber-800 dark:text-amber-300 flex items-start gap-2">
-                    <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <div className="w-full rounded-md border border-warning-border bg-warning-soft px-3 py-2 text-xs text-warning-on-soft flex items-start gap-2">
+                    <AlertTriangle className="h-3.5 w-3.5 mt-1 shrink-0" />
                     <span>
                       Para enviar, falta: <strong>{missing.join(" · ")}</strong>.
                     </span>
@@ -1665,13 +1681,13 @@ const RequisicaoUnificadaPage = () => {
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={resetForm} disabled={submitting}>Limpar</Button>
                   <Button
-                    onClick={() => isTcSelected ? setTcValidationOpen(true) : handleSubmitRequest()}
+                    onClick={() => setReqValidationOpen(true)}
                     disabled={submitting || blocked}
                     className="gap-2"
                     title={blocked ? `Falta: ${missing.join(" · ")}` : undefined}
                   >
                     {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    {isTcSelected ? "Validar e Solicitar" : "Solicitar"}
+                    Solicitar
                   </Button>
                 </div>
               </div>
@@ -1788,12 +1804,12 @@ const RequisicaoUnificadaPage = () => {
                 <div className="p-4 rounded-lg border border-border/50 bg-muted/20 text-center">
                   <Clock className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
                   <p className="text-sm text-muted-foreground">Aguardando resultado do setor responsável</p>
-                  <p className="text-[10px] text-muted-foreground/60 mt-1">O resultado será importado pelo setor de {activeCategory === "laboratorio" ? "laboratório" : activeCategory === "imagem" ? "imagem" : "parecer"}</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">O resultado será importado pelo setor de {activeCategory === "laboratorio" ? "laboratório" : activeCategory === "imagem" ? "imagem" : "parecer"}</p>
                 </div>
               )}
 
               {viewingRequest.completed_at && (
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Concluído em {format(new Date(viewingRequest.completed_at), "dd/MM/yyyy HH:mm", { locale: ptBR })} por {viewingRequest.completed_by || "—"}
                 </p>
               )}
@@ -1803,7 +1819,7 @@ const RequisicaoUnificadaPage = () => {
             <Button
               size="sm"
               variant="outline"
-              className="gap-1.5 text-xs mr-auto"
+              className="gap-2 text-xs mr-auto"
               onClick={() => printRequisitionGuideWithGasometriaPrompt(viewingRequest, (s) => getSectorLabel(s))}
             >
               <Printer className="h-3.5 w-3.5" /> Imprimir Guia
@@ -1866,38 +1882,38 @@ const RequisicaoUnificadaPage = () => {
       <Dialog open={apacBlock.open} onOpenChange={(o) => !o && setApacBlock({ open: false, examName: "", label: "" })}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/15">
-              <ShieldAlert className="h-6 w-6 text-amber-600" />
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-warning-soft">
+              <ShieldAlert className="h-6 w-6 text-warning-on-soft" />
             </div>
             <DialogTitle className="text-center text-base">
               Exame de alta complexidade
             </DialogTitle>
             <DialogDescription className="text-center">
-              <span className="font-semibold text-foreground">{apacBlock.examName}</span>
-              {" "}é um exame de <span className="font-semibold text-amber-700 dark:text-amber-500">{apacBlock.label}</span> e deve ser solicitado pelo <span className="font-semibold text-foreground">fluxo de Procedimento (APAC)</span>, não como requisição comum.
+              <span className="font-medium text-foreground">{apacBlock.examName}</span>
+              {" "}é um exame de <span className="font-medium text-warning-on-soft">{apacBlock.label}</span> e deve ser solicitado pelo <span className="font-medium text-foreground">fluxo de Procedimento (APAC)</span>, não como requisição comum.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="rounded-lg bg-muted/50 border border-border/60 p-3 text-[12px] text-muted-foreground leading-relaxed">
+          <div className="rounded-lg bg-muted/50 border border-border/60 p-3 text-xs text-muted-foreground leading-relaxed">
             O preenchimento correto garante o faturamento adequado pelo SUS. Recomendamos seguir pelo fluxo APAC, onde este exame já estará pré-selecionado para você.
           </div>
 
           {/* Saída de exceção — exige justificativa */}
           <details className="group">
-            <summary className="cursor-pointer text-[12px] text-muted-foreground hover:text-foreground transition-colors list-none flex items-center gap-1.5">
+            <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors list-none flex items-center gap-2">
               <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
               Preciso continuar como requisição comum (exceção)
             </summary>
-            <div className="mt-3 space-y-2.5 pl-1">
+            <div className="mt-3 space-y-3 pl-1">
               <div>
-                <Label className="text-[11px] text-muted-foreground">Motivo da exceção</Label>
+                <Label className="text-xs text-muted-foreground">Motivo da exceção</Label>
                 <Select value={apacOverrideReason} onValueChange={setApacOverrideReason}>
-                  <SelectTrigger className="h-9 mt-1 text-[12px]">
+                  <SelectTrigger className="h-9 mt-1 text-xs">
                     <SelectValue placeholder="Selecione um motivo..." />
                   </SelectTrigger>
                   <SelectContent>
                     {APAC_OVERRIDE_REASONS.map(r => (
-                      <SelectItem key={r} value={r} className="text-[12px]">{r}</SelectItem>
+                      <SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -1906,13 +1922,13 @@ const RequisicaoUnificadaPage = () => {
                 placeholder="Complemento (opcional, mas recomendado para análise da gestão)..."
                 value={apacOverrideNote}
                 onChange={e => setApacOverrideNote(e.target.value)}
-                className="text-[12px] min-h-[60px]"
+                className="text-xs min-h-[60px]"
               />
               <Button
                 variant="outline"
                 size="sm"
                 onClick={confirmApacOverride}
-                className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-500/40 dark:text-amber-500"
+                className="w-full border-warning-border text-warning-on-soft hover:bg-warning-soft"
               >
                 Continuar como comum (registrar exceção)
               </Button>
@@ -1931,6 +1947,45 @@ const RequisicaoUnificadaPage = () => {
         {/* Patient Cockpit — fixed right sidebar */}
         <PatientCockpit patient={cockpitPatient} className="print:hidden" />
       </div>
+
+      {/* Validacao obrigatoria para TC. Precisa ficar DENTRO deste componente:
+          tcValidationOpen, setTcValidationOpen e handleSubmitRequest sao
+          declarados aqui. Ja esteve no ApacEmbeddedForm e depois no
+          LabComparativeView — em ambos os nomes nao resolviam, o que deixava
+          o botao "Validar e Solicitar" sem efeito e quebrava a aba Comparativo. */}
+      <PasswordConfirmDialog
+        open={tcValidationOpen}
+        onOpenChange={setTcValidationOpen}
+        title="Validar e Solicitar — TC"
+        description="Solicitações de TC requerem confirmação de identidade. Após confirmar, a solicitação será enviada automaticamente."
+        actionLabel="Confirmar e Solicitar"
+        onConfirmed={async () => {
+          setTcValidationOpen(false);
+          await handleSubmitRequest();
+        }}
+      />
+
+      {/* Assinatura digital para todas as requisições */}
+      <PasswordConfirmDialog
+        open={reqValidationOpen}
+        onOpenChange={setReqValidationOpen}
+        title="Confirmar Solicitação"
+        description="Confirme sua identidade para enviar a requisição."
+        actionLabel="Confirmar e Solicitar"
+        onConfirmed={async () => {
+          setReqValidationOpen(false);
+          await handleSubmitRequest();
+        }}
+      />
+
+      {/* Popup de impressão após submit bem-sucedido */}
+      {printReqOpen && lastSubmittedReqId && (
+        <PrintAfterSubmitReqDialog
+          reqId={lastSubmittedReqId}
+          open={printReqOpen}
+          onClose={() => { setPrintReqOpen(false); setLastSubmittedReqId(null); }}
+        />
+      )}
     </div>
   );
 };
@@ -2504,10 +2559,10 @@ function CollapsibleInfoCard({ title, summary, badge, children }: { title: strin
         className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-muted/30 transition-colors rounded-t-lg"
       >
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
           <p className="text-xs text-foreground truncate">{summary}</p>
         </div>
-        {badge && <Badge variant="outline" className="shrink-0 text-[10px]">{badge}</Badge>}
+        {badge && <Badge variant="outline" className="shrink-0 text-xs">{badge}</Badge>}
         {open ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
       </button>
       {open && <CardContent className="pt-3 border-t">{children}</CardContent>}
@@ -2736,7 +2791,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       onProcedureRegistered?.();
       return true;
     } catch (err) {
-      toast.error("Falha ao registrar a solicitação", {
+      toast.error("Não foi possível registrar a solicitação", {
         description: err instanceof Error ? err.message : "Erro desconhecido. O laudo não foi impresso.",
       });
       return false;
@@ -2839,7 +2894,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       if (parts.length === 0) { toast.info("Admissão sem dados preenchidos"); return; }
       setObservations(prev => prev ? prev + "\n\n" + parts.join("\n") : parts.join("\n"));
       toast.success("Dados da admissão importados");
-    } catch { toast.error("Erro ao importar admissão"); }
+    } catch { toast.error("Não foi possível importar admissão"); }
     finally { setImportingAdmission(false); }
   };
 
@@ -2909,7 +2964,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       }
     } catch (err) {
       console.error("[APAC] importEvolution error:", err);
-      toast.error("Erro ao importar evolução");
+      toast.error("Não foi possível importar evolução");
     } finally { setImportingEvolution(false); }
   };
 
@@ -2928,10 +2983,10 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         {/* Quick access — neutral, soft styling */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acesso rápido — Tomografias</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Acesso rápido — Tomografias</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {APAC_QUICK_ACCESS.map((qa) => {
                 const proc = APAC_PROCEDURES.find((p) => p.code === qa.code);
                 const isSelected = selectedProcedures.some((p) => p.code === qa.code);
@@ -2956,7 +3011,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card className="border-primary/40 ring-1 ring-primary/10">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+              <CardTitle className="text-sm font-medium text-primary uppercase tracking-wider flex items-center gap-2">
                 <ScanLine className="h-4 w-4" /> Procedimento
               </CardTitle>
             </CardHeader>
@@ -2964,7 +3019,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input value={searchProcedure} onChange={(e) => setSearchProcedure(e.target.value)} placeholder="Buscar por nome ou código SIGTAP..." className="pl-9" />
+                  <Input value={searchProcedure} onChange={(e) => setSearchProcedure(e.target.value)} placeholder="Buscar por nome ou código SIGTAP..." className="pl-8" />
                 </div>
                 <Select value={instrumentoFilter} onValueChange={setInstrumentoFilter}>
                   <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
@@ -3001,15 +3056,15 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                     <button key={proc.code} className={`w-full text-left px-3 py-2 text-sm hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 ${isSelected ? "bg-primary/5 opacity-60" : ""}`} onClick={() => addProcedure(proc)} disabled={isSelected}>
                       <div className="min-w-0 flex-1"><span className="font-mono text-xs text-muted-foreground mr-2">{proc.code}</span><span className="text-foreground">{proc.name}</span></div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <Badge variant="outline" className={`text-[10px] font-bold ${proc.instrumento === "AIH" ? "border-purple-400 text-purple-700 bg-purple-50 dark:bg-purple-500/10" : "border-orange-400 text-orange-700 bg-orange-50 dark:bg-orange-500/10"}`}>{proc.instrumento}</Badge>
-                        <Badge variant="outline" className="text-[10px]">{proc.category}</Badge>
+                        <Badge variant="outline" className={`text-xs font-semibold ${proc.instrumento === "AIH" ? "border-border text-foreground bg-muted" : "border-warning text-warning-on-soft bg-warning-soft"}`}>{proc.instrumento}</Badge>
+                        <Badge variant="outline" className="text-xs">{proc.category}</Badge>
                       </div>
                     </button>
                   );
                 })}
               </div>
               <div className="border-t pt-3 space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Procedimento não listado no SIGTAP
                 </p>
                 <div className="flex gap-2">
@@ -3054,24 +3109,24 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                 </div>
               </div>
               <div className="border-t pt-3">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
                   Selecionados ({selectedProcedures.length}/6)
                 </div>
                 {selectedProcedures.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-3">Use o acesso rápido ou busque acima</p>
                 ) : (
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {selectedProcedures.map((proc, idx) => (
-                      <div key={proc.code} className="flex items-center gap-2 p-1.5 rounded border bg-card">
-                        <Badge variant="secondary" className="shrink-0 font-mono text-[10px]">{idx === 0 ? "Princ." : `Sec.${idx}`}</Badge>
+                      <div key={proc.code} className="flex items-center gap-2 p-2 rounded-md border bg-card">
+                        <Badge variant="secondary" className="shrink-0 font-mono text-xs">{idx === 0 ? "Princ." : `Sec.${idx}`}</Badge>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1 mb-0.5">
-                            {proc.instrumento === "AIH" && <Badge className="text-[9px] h-4 px-1.5 bg-purple-600 hover:bg-purple-600">AIH</Badge>}
-                            {proc.instrumento === "APAC" && <Badge className="text-[9px] h-4 px-1.5 bg-orange-500 hover:bg-orange-500">APAC</Badge>}
-                            {proc.instrumento === null && <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-amber-400 text-amber-700">SEM CÓDIGO</Badge>}
+                          <div className="flex items-center gap-1 mb-1">
+                            {proc.instrumento === "AIH" && <Badge className="text-xs h-4 px-2 bg-primary hover:bg-primary">AIH</Badge>}
+                            {proc.instrumento === "APAC" && <Badge className="text-xs h-4 px-2 bg-warning hover:bg-warning">APAC</Badge>}
+                            {proc.instrumento === null && <Badge variant="outline" className="text-xs h-4 px-2 border-warning text-warning-on-soft">SEM CÓDIGO</Badge>}
                           </div>
                           <p className="text-xs font-medium text-foreground truncate">{proc.name}</p>
-                          <p className="text-[10px] font-mono text-muted-foreground">{proc.code}</p>
+                          <p className="text-xs font-mono text-muted-foreground">{proc.code}</p>
                         </div>
                         <Input type="number" min={1} max={99} value={proc.qty} onChange={(e) => { const qty = parseInt(e.target.value) || 1; setSelectedProcedures((prev) => prev.map((p) => (p.code === proc.code ? { ...p, qty } : p))); }} className="w-12 h-7 text-center text-xs" />
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeProcedure(proc.code)}><Trash2 className="h-3.5 w-3.5" /></Button>
@@ -3085,7 +3140,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
 
           <Card className="border-primary/40 ring-1 ring-primary/10">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+              <CardTitle className="text-sm font-medium text-primary uppercase tracking-wider flex items-center gap-2">
                 <ClipboardList className="h-4 w-4" /> Justificativa Clínica
               </CardTitle>
             </CardHeader>
@@ -3098,19 +3153,19 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <Label className="text-xs text-muted-foreground">Observações / Justificativa</Label>
                     {observationsAutoFilled && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/30">
-                        ✦ Preenchido automaticamente · Editável
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-muted text-foreground border border-border">
+                        Preenchido automaticamente · Editável
                       </span>
                     )}
                   </div>
-                  <div className="flex gap-1.5">
-                    <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={importAdmission} disabled={!patientId || importingAdmission}>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="h-6 text-xs px-2 gap-1" onClick={importAdmission} disabled={!patientId || importingAdmission}>
                       <FileText className="h-3 w-3" /> {importingAdmission ? "..." : "Admissão"}
                     </Button>
-                    <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={importEvolution} disabled={!patientId || importingEvolution}>
+                    <Button variant="outline" size="sm" className="h-6 text-xs px-2 gap-1" onClick={importEvolution} disabled={!patientId || importingEvolution}>
                       <ClipboardList className="h-3 w-3" /> {importingEvolution ? "..." : "Evolução"}
                     </Button>
                   </div>
@@ -3131,7 +3186,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
               </div>
               <div className="w-28">
                 <Label className="text-xs text-muted-foreground">CNES</Label>
-                <Input value={APAC_INSTITUTION.cnes} readOnly className="bg-muted/50 font-mono font-bold text-sm text-center" />
+                <Input value={APAC_INSTITUTION.cnes} readOnly className="bg-muted/50 font-mono font-semibold text-sm text-center" />
               </div>
             </div>
           </CollapsibleInfoCard>
@@ -3143,10 +3198,10 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           >
             <div className="space-y-3">
               {needsPicker && (
-                <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 space-y-2">
+                <div className="rounded-md border border-warning-border bg-warning-soft p-3 space-y-2">
                   <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-600" />
-                    <Label className="text-xs font-semibold text-amber-800 dark:text-amber-300">Selecione o paciente para sincronizar prontuário, CPF, CNS, mãe e endereço</Label>
+                    <AlertTriangle className="h-4 w-4 text-warning-on-soft" />
+                    <Label className="text-xs font-medium text-warning-on-soft">Selecione o paciente para sincronizar prontuário, CPF, CNS, mãe e endereço</Label>
                   </div>
                   <Input
                     value={pickerSearch}
@@ -3154,7 +3209,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                     placeholder="Buscar por nome, leito ou prontuário..."
                     className="h-8 text-xs"
                   />
-                  <div className="max-h-48 overflow-y-auto rounded border border-border bg-background divide-y divide-border">
+                  <div className="max-h-48 overflow-y-auto rounded-md border border-border bg-background divide-y divide-border">
                     {filteredPickerPatients.length === 0 ? (
                       <div className="px-3 py-2 text-xs text-muted-foreground">Nenhum paciente encontrado nesta unidade.</div>
                     ) : (
@@ -3163,10 +3218,10 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                           key={p.id}
                           type="button"
                           onClick={() => { onSelectPatient?.({ id: p.id, name: p.name, bed_number: p.bed_number, sector: p.sector }); setPickerSearch(""); }}
-                          className="w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:bg-muted/60 transition"
+                          className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-muted/60 transition"
                         >
                           <span className="text-xs font-medium truncate">{p.name}</span>
-                          <span className="text-[10px] text-muted-foreground shrink-0 font-mono">
+                          <span className="text-xs text-muted-foreground shrink-0 font-mono">
                             {p.bed_number || "—"}{p.medical_record ? ` · ${p.medical_record}` : ""}
                           </span>
                         </button>
@@ -3487,7 +3542,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
 // ── Sub-components ──
 function EmptyState({ icon: Icon, message }: { icon: any; message: string }) {
   return (
-    <div className="text-center py-12">
+    <div className="text-center py-8">
       <Icon className="h-10 w-10 mx-auto mb-3 opacity-20" />
       <p className="text-sm text-muted-foreground">{message}</p>
     </div>
@@ -3507,39 +3562,39 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
   const priorityCfg = PRIORITY_OPTIONS.find(p => p.value === request.priority);
 
   return (
-    <Card className="border-border/50 hover:shadow-sm transition-shadow">
+    <Card className="border-border/50 hover:shadow-sm transition-shadow-sm">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h3 className="font-semibold text-sm text-foreground">{request.patient_name}</h3>
-              <div className="flex items-center gap-1.5">
+              <h3 className="font-medium text-sm text-foreground">{request.patient_name}</h3>
+              <div className="flex items-center gap-2">
                 <span className={cn(
                   "inline-block h-2 w-2 rounded-full",
                   statusCfg.dotColor,
                   statusCfg.pulsing && "animate-pulse-soft"
                 )} />
-                <Badge variant="outline" className={cn("text-[10px] border", statusCfg.color)}>
+                <Badge variant="outline" className={cn("text-xs border", statusCfg.color)}>
                   <StatusIcon className="h-3 w-3 mr-1" />{statusCfg.label}
                 </Badge>
               </div>
               <Badge 
                 variant={request.priority === "urgente" ? "destructive" : "secondary"} 
-                className={cn("text-[10px]", request.priority === "urgente" && "animate-pulse")}
+                className={cn("text-xs", request.priority === "urgente" && "animate-pulse")}
               >
-                {request.priority === "urgente" ? "⚡ Urgente" : request.priority === "rotina" ? "🔵 Rotina" : "📅 Programado"}
+                {request.priority === "urgente" ? "Urgente" : request.priority === "rotina" ? "Rotina" : "Programado"}
               </Badge>
             </div>
-            <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-2">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
               {request.patient_bed && <span>{getSectorLabel(request.patient_sector)} · L{request.patient_bed}</span>}
               <span>{format(new Date(request.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
               <span>por {request.requested_by_name}</span>
             </div>
             <div className="flex flex-wrap gap-1">
               {items.slice(0, 6).map((item: any, i: number) => (
-                <Badge key={i} variant="outline" className="text-[10px] bg-background">{item.name || item}</Badge>
+                <Badge key={i} variant="outline" className="text-xs bg-background">{item.name || item}</Badge>
               ))}
-              {items.length > 6 && <Badge variant="secondary" className="text-[10px]">+{items.length - 6}</Badge>}
+              {items.length > 6 && <Badge variant="secondary" className="text-xs">+{items.length - 6}</Badge>}
             </div>
             {showResult && request.results && (
               <div className="mt-2 p-2 bg-muted/30 rounded-lg text-xs text-foreground whitespace-pre-wrap line-clamp-3">
@@ -3547,7 +3602,7 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
               </div>
             )}
           </div>
-          <div className="flex gap-1.5 shrink-0">
+          <div className="flex gap-2 shrink-0">
             {category === "procedimento" || category === "terapeutico" ? (
               <Button
                 size="sm"
@@ -3642,7 +3697,7 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
                 </DropdownMenu>
               );
             })()}
-            <Button size="sm" variant="outline" className="h-8 px-2.5 text-xs gap-1" onClick={onViewResult}>
+            <Button size="sm" variant="outline" className="h-8 px-3 text-xs gap-1" onClick={onViewResult}>
               <Eye className="h-3.5 w-3.5" />
               {showResult ? "Ver Resultado" : "Ver Detalhes"}
             </Button>
@@ -3757,7 +3812,7 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
 
   if (!patientId && !patientName) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-8">
         <TrendingUp className="h-10 w-10 mx-auto mb-3 opacity-20" />
         <p className="text-sm text-muted-foreground">Selecione um paciente para visualizar o comparativo de exames</p>
       </div>
@@ -3766,7 +3821,7 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
 
   if (patientRequests.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-8">
         <TrendingUp className="h-10 w-10 mx-auto mb-3 opacity-20" />
         <p className="text-sm text-muted-foreground">Nenhum resultado laboratorial encontrado para {patientName || "este paciente"}</p>
       </div>
@@ -3783,7 +3838,7 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
               <TrendingUp className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-sm text-foreground">{patientName || "Paciente"}</h3>
+              <h3 className="font-medium text-sm text-foreground">{patientName || "Paciente"}</h3>
               <p className="text-xs text-muted-foreground">
                 {patientRequests.length} coleta{patientRequests.length !== 1 ? "s" : ""} registrada{patientRequests.length !== 1 ? "s" : ""} · 
                 {" "}{availableExams.length} tipo{availableExams.length !== 1 ? "s" : ""} de exame
@@ -3798,25 +3853,25 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
           {/* Exam selector */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Selecione os exames para comparar
               </CardTitle>
             </CardHeader>
             <CardContent className="pb-4">
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {examsWithData.map((exam, i) => (
                   <button
                     key={exam}
                     onClick={() => toggleExam(exam)}
                     className={cn(
-                      "px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all",
+                      "px-3 py-1 rounded-full text-xs font-medium border transition-all",
                       selectedExams.includes(exam)
                         ? "bg-primary/15 border-primary/40 text-primary"
                         : "bg-muted/30 border-border/50 text-muted-foreground hover:bg-muted/60"
                     )}
                   >
                     <span
-                      className="inline-block h-2 w-2 rounded-full mr-1.5"
+                      className="inline-block h-2 w-2 rounded-full mr-2"
                       style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
                     />
                     {exam}
@@ -3824,7 +3879,7 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
                 ))}
               </div>
               {selectedExams.length === 0 && (
-                <p className="text-[10px] text-muted-foreground mt-2">Clique nos exames acima para visualizar a tendência</p>
+                <p className="text-xs text-muted-foreground mt-2">Clique nos exames acima para visualizar a tendência</p>
               )}
             </CardContent>
           </Card>
@@ -3874,11 +3929,11 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
         <Card>
           <CardContent className="p-6">
             <div className="text-center space-y-2">
-              <AlertTriangle className="h-8 w-8 mx-auto text-amber-500/60" />
+              <AlertTriangle className="h-8 w-8 mx-auto text-warning/60" />
               <p className="text-sm font-medium text-foreground">Dados numéricos não encontrados</p>
               <p className="text-xs text-muted-foreground max-w-md mx-auto">
                 Para gerar gráficos comparativos, os resultados devem conter valores numéricos no formato: 
-                <span className="font-mono bg-muted/50 px-1.5 py-0.5 rounded mx-1">Nome do Exame: valor</span>
+                <span className="font-mono bg-muted/50 px-2 py-1 rounded-md mx-1">Nome do Exame: valor</span>
               </p>
             </div>
           </CardContent>
@@ -3888,7 +3943,7 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
       {/* Raw results timeline */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             Histórico de Resultados
           </CardTitle>
         </CardHeader>
@@ -3897,22 +3952,22 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
             <div key={req.id} className="border border-border/50 rounded-lg p-3">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-[10px]">
+                  <Badge variant="outline" className="text-xs">
                     {format(new Date(req.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                   </Badge>
-                  <span className="text-[10px] text-muted-foreground">por {req.requested_by_name || "—"}</span>
+                  <span className="text-xs text-muted-foreground">por {req.requested_by_name || "—"}</span>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {(req.items as any[]).slice(0, 4).map((item: any, i: number) => (
-                    <Badge key={i} variant="secondary" className="text-[9px]">{typeof item === "string" ? item : item.name}</Badge>
+                    <Badge key={i} variant="secondary" className="text-xs">{typeof item === "string" ? item : item.name}</Badge>
                   ))}
                   {(req.items as any[]).length > 4 && (
-                    <Badge variant="secondary" className="text-[9px]">+{(req.items as any[]).length - 4}</Badge>
+                    <Badge variant="secondary" className="text-xs">+{(req.items as any[]).length - 4}</Badge>
                   )}
                 </div>
               </div>
               {req.results && (
-                <pre className="text-[11px] text-foreground/80 whitespace-pre-wrap bg-muted/20 rounded p-2 max-h-32 overflow-y-auto font-sans">
+                <pre className="text-xs text-foreground/80 whitespace-pre-wrap bg-muted/20 rounded-md p-2 max-h-32 overflow-y-auto font-sans">
                   {req.results}
                 </pre>
               )}
@@ -3921,6 +3976,60 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// ── PrintAfterSubmitReqDialog ────────────────────────────────────────────────
+// Popup de impressão que aparece logo após uma requisição ser submetida.
+// Busca o registro recém-criado pelo ID e oferece impressão da guia.
+function PrintAfterSubmitReqDialog({
+  reqId, open, onClose,
+}: { reqId: string; open: boolean; onClose: () => void }) {
+  const { currentHospital } = useHospital();
+  const [req, setReq] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    if (!open || !reqId) return;
+    supabase.from("exam_requests").select("*").eq("id", reqId).maybeSingle()
+      .then(({ data }) => { if (data) setReq(data); });
+  }, [open, reqId]);
+
+  const handlePrint = async () => {
+    if (!req) return;
+    const getSectorLabel = (s: string) => s || "";
+    const { buildRequisitionGuideHtml } = await import("@/components/PrintableRequisitionGuide");
+    const html = await buildRequisitionGuideHtml(req, getSectorLabel);
+    const w = window.open("", "_blank", "width=900,height=700");
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); }, 400);
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-sm">
+            <CheckCircle2 className="h-4 w-4 text-released-on-soft" />
+            Requisição enviada
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            A requisição foi registrada com sucesso. Deseja imprimir a guia agora?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2 mt-2">
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Fechar
+          </Button>
+          <Button size="sm" onClick={handlePrint} className="gap-2" disabled={!req}>
+            <Printer className="h-3.5 w-3.5" /> Imprimir guia
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -24,10 +24,10 @@ export function HospitalUnitPicker({ units, selected, onChange }: HospitalUnitPi
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
           <Building2 className="h-3.5 w-3.5" /> Unidades Hospitalares
         </label>
-        <Badge variant="outline" className="text-[10px]">
+        <Badge variant="outline" className="text-xs">
           {selected.size} de {units.length}
         </Badge>
       </div>
@@ -40,7 +40,7 @@ export function HospitalUnitPicker({ units, selected, onChange }: HospitalUnitPi
             return (
               <label
                 key={unit.id}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-background cursor-pointer transition-colors"
+                className="flex items-center gap-2 px-2 py-2 rounded-md hover:bg-background cursor-pointer transition-colors"
               >
                 <Checkbox checked={checked} onCheckedChange={() => toggle(unit.id)} />
                 <span className="text-sm flex-1 truncate">{unit.name}</span>

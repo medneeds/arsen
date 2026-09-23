@@ -63,8 +63,11 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { safeSetItem, safeSetJSON, safeGetItem, safeGetJSON, safeRemoveItem } from '@/lib/safeStorage';
 
-const STORAGE_KEY = "hospital_patients_data";
+// "hospital_patients_data" foi removida em 15/09/2026 — ver o comentario no
+// efeito de persistencia mais abaixo. A chave pode sobrar no navegador de quem
+// ja usou o sistema; a limpeza esta no efeito de migracao logo apos os estados.
 const HISTORY_KEY = "hospital_patients_history";
 const REDO_HISTORY_KEY = "hospital_patients_redo_history";
 const NOTES_KEY = "hospital_notes";
@@ -88,7 +91,6 @@ interface SortableOutsidePatientCardProps {
   onTransfer?: (patientId: string, newSector: Patient['sector']) => void;
   onPrintPatient?: (patientId: string) => void;
   onRefetch?: () => void;
-  onQuickView?: (patient: Patient) => void;
 }
 
 function SortableOutsidePatientCard(props: SortableOutsidePatientCardProps) {
@@ -110,7 +112,7 @@ function SortableOutsidePatientCard(props: SortableOutsidePatientCardProps) {
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-2">
       <button
-        className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded flex-shrink-0 print:hidden"
+        className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded-md flex-shrink-0 print:hidden"
         {...attributes}
         {...listeners}
       >
@@ -130,7 +132,7 @@ function DynamicHeader({ children }: { children: React.ReactNode }) {
   
   return (
     <header 
-      className="border-b border-white/10 bg-gradient-to-r from-[#0a1628] via-[#0f2847] to-[#1a3a5c] backdrop-blur-xl fixed top-0 right-0 z-50 shadow-lg print:static print:border-b print:shadow-none print:mb-1 print:pb-0.5 transition-[left] duration-200 ease-linear"
+      className="border-b border-white/10 bg-gradient-to-r from-[#0a1628] via-[#0f2847] to-[#1a3a5c] backdrop-blur-xl fixed top-0 right-0 z-50 shadow-md print:static print:border-b print:shadow-none print:mb-1 print:pb-1 transition-[left] duration-200 ease-linear"
       style={{
         left: isMobile ? 0 : (state === 'collapsed' ? 'var(--sidebar-width-icon)' : 'var(--sidebar-width)')
       }}
@@ -236,27 +238,31 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
   const { patients: dbPatients, isLoading: patientsLoading, updatePatient: dbUpdatePatient, createPatient: dbCreatePatient, deletePatient: dbDeletePatient, releaseBedPreAdmission: dbReleaseBedPreAdmission, reorderPatients: dbReorderPatients, refetch } = usePatients(undefined, activeSector);
   const [patients, setPatients] = useState<Patient[]>(dbPatients);
 
-  // 🔒 Alerta de alta iminente — notifica uma vez por sessão quando alta < 24h
+  // Alerta de alta iminente — notifica uma vez por sessão quando alta < 24h
   useDischargeAlert(patients);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const preAdmissionRef = useRef<PreAdmissionSectionHandle>(null);
-  const [history, setHistory] = useState<Patient[][]>(() => {
-    const saved = localStorage.getItem(HISTORY_KEY);
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [redoHistory, setRedoHistory] = useState<Patient[][]>(() => {
-    const saved = localStorage.getItem(REDO_HISTORY_KEY);
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [notes, setNotes] = useState<string>(() => {
-    const saved = localStorage.getItem(NOTES_KEY);
-    return saved || "";
-  });
-  const [checklist, setChecklist] = useState<ChecklistItem[]>(() => {
-    const saved = localStorage.getItem(CHECKLIST_KEY);
-    return saved ? JSON.parse(saved) : [];
-  });
+  // Inicializadores rodam DURANTE o render: um JSON.parse que estoura aqui
+  // derruba o componente inteiro (tela branca). safeGetJSON devolve o padrao
+  // e limpa a chave corrompida em vez de lancar.
+  const [history, setHistory] = useState<Patient[][]>(
+    () => safeGetJSON<Patient[][]>(HISTORY_KEY, []),
+  );
+  const [redoHistory, setRedoHistory] = useState<Patient[][]>(
+    () => safeGetJSON<Patient[][]>(REDO_HISTORY_KEY, []),
+  );
+  const [notes, setNotes] = useState<string>(() => safeGetItem(NOTES_KEY, ""));
+  const [checklist, setChecklist] = useState<ChecklistItem[]>(
+    () => safeGetJSON<ChecklistItem[]>(CHECKLIST_KEY, []),
+  );
   const [newChecklistItem, setNewChecklistItem] = useState("");
+
+  // Limpeza unica: remove do navegador a chave morta que estourava a cota.
+  // Sem isso, quem ja a tem gravada continua com vários MB ocupados e volta a
+  // esbarrar no limite ao gravar anotacoes ou checklist.
+  useEffect(() => {
+    safeRemoveItem("hospital_patients_data");
+  }, []);
   const [isOutsideSectionOpen, setIsOutsideSectionOpen] = useState(false);
   const [printingSector, setPrintingSector] = useState<string | null>(null);
   const [printMode, setPrintMode] = useState<'compact' | 'detailed' | null>(null);
@@ -274,8 +280,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
   const [utiAllocationDialogOpen, setUtiAllocationDialogOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [quickViewPatient, setQuickViewPatient] = useState<Patient | null>(null);
-  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  // QuickView removido — PatientSidebar retirado do mapa de leitos
   const { toast } = useToast();
   const { signOut, user, role, allowedDepartments, loading: authLoading } = useAuth();
   const { saveVersion, fetchVersions } = usePatientVersions();
@@ -306,10 +311,14 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
     }
   };
 
-  // Persist patients data to localStorage
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(patients));
-  }, [patients]);
+  // A lista de pacientes NAO e mais espelhada em localStorage.
+  //
+  // Essa gravacao existia desde o inicio e nunca teve leitura correspondente:
+  // STORAGE_KEY so aparecia aqui em todo o projeto. Era o maior volume gravado
+  // (a lista inteira, a cada mudanca) e foi o que estourou a cota em 15/09,
+  // derrubando o mapa de leitos e a troca de setor com tela branca.
+  //
+  // A fonte de verdade e o banco, via usePatients.
 
   // Sync database patients to local state
   useEffect(() => {
@@ -318,22 +327,22 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
 
   // Persist history to localStorage
   useEffect(() => {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    safeSetJSON(HISTORY_KEY, history);
   }, [history]);
 
   // Persist redo history to localStorage
   useEffect(() => {
-    localStorage.setItem(REDO_HISTORY_KEY, JSON.stringify(redoHistory));
+    safeSetJSON(REDO_HISTORY_KEY, redoHistory);
   }, [redoHistory]);
 
   // Persist notes to localStorage
   useEffect(() => {
-    localStorage.setItem(NOTES_KEY, notes);
+    safeSetItem(NOTES_KEY, notes);
   }, [notes]);
 
   // Persist checklist to localStorage
   useEffect(() => {
-    localStorage.setItem(CHECKLIST_KEY, JSON.stringify(checklist));
+    safeSetJSON(CHECKLIST_KEY, checklist);
   }, [checklist]);
 
   // Fullscreen API handler
@@ -629,7 +638,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
       
       toast({
         title: "Pacientes excluídos",
-        description: `${selectedCount} leito(s) removido(s) com sucesso.`,
+        description: `${selectedCount} ${(selectedCount) === 1 ? 'leito' : 'leitos'} ${(selectedCount) === 1 ? 'removido' : 'removidos'} com sucesso.`,
       });
       
       setSelectedPatients(new Set());
@@ -723,7 +732,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
     }
 
     const previousState = history[history.length - 1];
-    setRedoHistory(prev => [...prev, patients]); // Save current state to redo history
+    setRedoHistory(prev => [...prev.slice(-9), patients]); // mantem os 10 ultimos
     setPatients(previousState);
     setHistory(prev => prev.slice(0, -1));
     toast({
@@ -743,7 +752,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
     }
 
     const nextState = redoHistory[redoHistory.length - 1];
-    setHistory(prev => [...prev, patients]); // Save current state to undo history
+    setHistory(prev => [...prev.slice(-9), patients]); // mantem os 10 ultimos
     setPatients(nextState);
     setRedoHistory(prev => prev.slice(0, -1));
     toast({
@@ -867,10 +876,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
     }
   };
 
-  const handleQuickView = (patient: Patient) => {
-    setQuickViewPatient(patient);
-    setQuickViewOpen(true);
-  };
+  // handleQuickView removido
 
   const pageReady = usePageReady({ loading: authLoading || patientsLoading });
   if (!pageReady) {
@@ -968,7 +974,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
         
         <div className={printMode ? 'print-hide' : ''}>
           {/* Main Content — sem cabeçalho duplicado; ações ficam no BreadcrumbBar */}
-          <main className="w-full max-w-full px-1.5 sm:px-4 py-2 sm:py-6 print:py-0 print:px-1 print:pt-3 overflow-x-hidden">
+          <main className="w-full max-w-full px-2 sm:px-4 py-2 sm:py-6 print:py-0 print:px-1 print:pt-3 overflow-x-hidden">
             <div className="space-y-2 sm:space-y-4 print:space-y-1">
               {/* Unified breadcrumb bar com ações integradas.
                   Embutido no NIR, o hospedeiro ja tem o proprio cabecalho —
@@ -1026,20 +1032,20 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button variant="outline" size="icon" onClick={handlePrintSelected}
-                                className="h-8 w-8 bg-gradient-to-br from-critical via-warning to-stable text-white border-0 hover:shadow-lg hover:scale-105 transition-all">
+                                className="h-8 w-8 bg-critical text-white border-0 hover:shadow-md hover:scale-105 transition-all">
                                 <Printer className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent><p>Imprimir {selectedPatients.size} selecionado(s)</p></TooltipContent>
+                            <TooltipContent><p>Imprimir {selectedPatients.size} {selectedPatients.size === 1 ? "selecionado" : "selecionados"}</p></TooltipContent>
                           </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button variant="destructive" size="icon" onClick={handleDeleteSelected}
-                                className="h-8 w-8 bg-red-600 text-white hover:bg-red-700 border-0">
+                                className="h-8 w-8 bg-critical text-white hover:bg-critical border-0">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent><p>Deletar {selectedPatients.size} selecionado(s)</p></TooltipContent>
+                            <TooltipContent><p>Excluir {selectedPatients.size} {selectedPatients.size === 1 ? "selecionado" : "selecionados"}</p></TooltipContent>
                           </Tooltip>
                         </>
                       )}
@@ -1084,11 +1090,11 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                 return (
                   <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border bg-muted/30 px-3 py-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium shrink-0">
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium shrink-0">
                         Setor exibido
                       </span>
                       <SectorSelector variant="light" navigateOnSelect={false} />
-                      <span className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap">
+                      <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
                         {ocupados}/{doSetor.length} leitos ocupados
                       </span>
                     </div>
@@ -1204,7 +1210,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
           </main>
 
           {/* Floating bottom controls — Tela cheia + Ocultar nomes (LGPD) */}
-          <div className="fixed bottom-5 right-5 z-40 flex items-center gap-1.5 rounded-full border border-border/60 bg-card/95 backdrop-blur-md shadow-lg p-1 print:hidden">
+          <div className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border border-border/60 bg-card/95 backdrop-blur-md shadow-md p-1 print:hidden">
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1263,7 +1269,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão Múltipla</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir <strong>{selectedPatients.size} leito(s)</strong> selecionado(s)?
+              Tem certeza que deseja excluir <strong>{selectedPatients.size} {selectedPatients.size === 1 ? "leito" : "leitos"}</strong> {selectedPatients.size === 1 ? "selecionado" : "selecionados"}?
               Esta ação não poderá ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1280,12 +1286,6 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
       </AlertDialog>
 
       <GlobalSearchDialog externalOpen={searchOpen} onExternalOpenChange={setSearchOpen} />
-
-      <PatientSidebar
-        patient={quickViewPatient}
-        open={quickViewOpen}
-        onOpenChange={setQuickViewOpen}
-      />
     </Moldura>
   );
 };

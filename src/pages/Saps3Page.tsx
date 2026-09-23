@@ -1022,7 +1022,7 @@ export default function Saps3Page() {
     }
     if (!asPending && missingFields.length > 0) {
       const first = missingFields[0];
-      toast.error(`Faltam ${missingFields.length} item(s) para validar: ${missingFields.map(f => f.label).join(" · ")}`, { duration: 6000 });
+      toast.error(`Faltam ${missingFields.length} ${(missingFields.length) === 1 ? 'item' : 'items'} para validar: ${missingFields.map(f => f.label).join(" · ")}`, { duration: 6000 });
       focusAnchor(first.anchor);
       return;
     }
@@ -1160,7 +1160,13 @@ export default function Saps3Page() {
       loadOccupiedBeds();
     } catch (err: any) {
       if (createdSapsId) {
-        await supabase.from("avaliacoes_saps3").delete().eq("id", createdSapsId);
+        // Compensacao: apaga a avaliacao ja criada. O resultado era descartado,
+        // entao um rollback que falha deixava avaliacao SAPS orfa no banco sem
+        // nenhum registro de que isso aconteceu.
+        const { error: erroRollback } = await supabase.from("avaliacoes_saps3").delete().eq("id", createdSapsId);
+        if (erroRollback) {
+          console.error("[Saps3Page] ROLLBACK FALHOU — avaliacao SAPS orfa:", createdSapsId, erroRollback);
+        }
       }
       toast.error(humanizeSaveError(err), { duration: 7000 });
     } finally {
@@ -1178,17 +1184,17 @@ export default function Saps3Page() {
 
   const getMortalityColor = (m: number | null) => {
     if (!m) return "text-muted-foreground";
-    if (m < 10) return "text-emerald-600 dark:text-emerald-400";
-    if (m < 25) return "text-yellow-600 dark:text-yellow-400";
-    if (m < 50) return "text-orange-600 dark:text-orange-400";
-    return "text-red-600 dark:text-red-400";
+    if (m < 10) return "text-released-on-soft";
+    if (m < 25) return "text-warning-on-soft";
+    if (m < 50) return "text-warning-on-soft";
+    return "text-critical-on-soft";
   };
 
   const getMortalityBadge = (m: number) => {
-    if (m < 10) return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300";
-    if (m < 25) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300";
-    if (m < 50) return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300";
-    return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
+    if (m < 10) return "bg-released-soft text-released-on-soft";
+    if (m < 25) return "bg-warning-soft text-warning-on-soft";
+    if (m < 50) return "bg-warning-soft text-warning-on-soft";
+    return "bg-critical-soft text-critical-on-soft";
   };
 
   const isFormMode = !!selectedRequest;
@@ -1197,7 +1203,7 @@ export default function Saps3Page() {
   const headerSectorLabel = currentSectorLabel || selectedRequest?.destination_sector || "UTI";
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 md:px-8 lg:px-10 py-6 space-y-6">
+    <div className="mx-auto w-full max-w-6xl px-4 md:px-8 lg:px-8 py-6 space-y-6">
       {confirmationData && (
         <SapsConfirmationScreen
           patientName={confirmationData.patientName}
@@ -1214,7 +1220,7 @@ export default function Saps3Page() {
       )}
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+        <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
           <Calculator className="h-6 w-6 text-primary" />
           Admissão {headerSectorLabel} — SAPS 3
         </h1>
@@ -1229,7 +1235,7 @@ export default function Saps3Page() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between text-base">
               <span className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-amber-500" />
+                <Clock className="h-5 w-5 text-warning" />
                 Solicitações de Leito UTI Pendentes
                 {pendingRequests.length > 0 && (
                   <Badge variant="destructive" className="ml-1">{pendingRequests.length}</Badge>
@@ -1248,7 +1254,7 @@ export default function Saps3Page() {
                   <div key={req.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="patient-id font-semibold text-foreground truncate">{req.patient_name}</p>
+                        <p className="patient-id font-medium text-foreground truncate">{req.patient_name}</p>
                         <Badge variant="outline" className="shrink-0 text-xs">
                           {req.destination_sector}
                         </Badge>
@@ -1265,7 +1271,7 @@ export default function Saps3Page() {
                         <p className="text-xs text-muted-foreground mt-1 truncate">Obs: {req.notes}</p>
                       )}
                     </div>
-                    <Button size="sm" onClick={() => startAdmission(req)} className="gap-1.5 ml-3 shrink-0">
+                    <Button size="sm" onClick={() => startAdmission(req)} className="gap-2 ml-3 shrink-0">
                       <UserCheck className="h-4 w-4" /> Pré-admitir
                     </Button>
                   </div>
@@ -1282,36 +1288,36 @@ export default function Saps3Page() {
           {/* Patient info banner */}
           {/* ── Guia "Como preencher" — recolhido por padrão, zero impacto no layout ── */}
           <Collapsible open={helpOpen} onOpenChange={setHelpOpen}>
-            <Card className="border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-950/20">
+            <Card className="border-border bg-muted/50">
               <CollapsibleTrigger asChild>
-                <button type="button" className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left hover:bg-sky-100/60 dark:hover:bg-sky-900/30 transition-colors rounded-lg">
-                  <span className="flex items-center gap-2 text-sm font-semibold text-sky-900 dark:text-sky-200">
+                <button type="button" className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-muted/60 transition-colors rounded-lg">
+                  <span className="flex items-center gap-2 text-sm font-medium text-foreground">
                     <HelpCircle className="h-4 w-4" />
                     Como preencher a ficha SAPS 3 sem travar a validação
                   </span>
-                  {helpOpen ? <ChevronUp className="h-4 w-4 text-sky-700 dark:text-sky-300" /> : <ChevronDown className="h-4 w-4 text-sky-700 dark:text-sky-300" />}
+                  {helpOpen ? <ChevronUp className="h-4 w-4 text-foreground" /> : <ChevronDown className="h-4 w-4 text-foreground" />}
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <CardContent className="pt-0 pb-4 text-xs text-sky-900 dark:text-sky-200 space-y-3">
+                <CardContent className="pt-0 pb-4 text-xs text-foreground space-y-3">
                   <div>
-                    <p className="font-semibold mb-1">Mínimo obrigatório para <u>validar</u> (status “concluído”)</p>
-                    <ul className="list-disc pl-5 space-y-0.5">
+                    <p className="font-medium mb-1">Mínimo obrigatório para <u>validar</u> (status “concluído”)</p>
+                    <ul className="list-disc pl-4 space-y-1">
                       <li><b>Nome do paciente</b>, <b>Hospital/Estado</b> e <b>Leito</b> (este último só quando ainda não houver alocação).</li>
                       <li><b>Avaliação de consciência</b>: escolha um dos 3 caminhos e preencha as componentes correspondentes.</li>
                     </ul>
                   </div>
                   <div>
-                    <p className="font-semibold mb-1">Quando usar cada caminho de consciência</p>
-                    <ul className="list-disc pl-5 space-y-0.5">
+                    <p className="font-medium mb-1">Quando usar cada caminho de consciência</p>
+                    <ul className="list-disc pl-4 space-y-1">
                       <li><b>Não (GCS completo)</b> — paciente acordado/colaborativo. Faixas: Ocular 1-4, Verbal 1-5, Motor 1-6.</li>
                       <li><b>Sedoanalgesia ± VM (RASS)</b> — paciente sedado. Selecione o RASS atual (-5 a +4). O GCS pré-sedação é opcional, mas ajuda no cálculo.</li>
                       <li><b>Intubado sem sedação (GCS-T)</b> — IOT sem sedação contínua. Preencha apenas Ocular e Motor; Verbal vira <b>1T</b> automaticamente.</li>
                     </ul>
                   </div>
                   <div>
-                    <p className="font-semibold mb-1">Os 5 erros que mais bloqueiam a finalização</p>
-                    <ul className="list-disc pl-5 space-y-0.5">
+                    <p className="font-medium mb-1">Os 5 erros que mais bloqueiam a finalização</p>
+                    <ul className="list-disc pl-4 space-y-1">
                       <li>Esquecer de marcar o caminho de consciência (botão cinza no topo da Box III).</li>
                       <li>Reabrir uma ficha pendente e clicar “Validar” antes de revisar — o sistema agora rehidrata os campos automaticamente, mas confira a checklist abaixo.</li>
                       <li>Tentar validar com hospital/estado vazio no seletor superior (toca a sessão).</li>
@@ -1319,8 +1325,8 @@ export default function Saps3Page() {
                       <li>Valores fora da faixa (RASS &gt; +4, GCS &gt; 15, idade negativa). O banco bloqueia e a mensagem agora aparece traduzida.</li>
                     </ul>
                   </div>
-                  <div className="rounded-md bg-white/70 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 p-2.5">
-                    <p className="font-semibold flex items-center gap-1.5 mb-0.5"><Info className="h-3.5 w-3.5" /> Pré-admitir com SAPS pendente</p>
+                  <div className="rounded-md bg-white/70 border border-border p-3">
+                    <p className="font-medium flex items-center gap-2 mb-1"><Info className="h-3.5 w-3.5" /> Pré-admitir com SAPS pendente</p>
                     <p>Use quando os exames laboratoriais (gasometria, hemograma, creatinina, bilirrubina) ainda não chegaram. O paciente é alocado e um cronômetro fica ativo até a validação. Para essa via, basta nome + leito.</p>
                   </div>
                 </CardContent>
@@ -1329,14 +1335,14 @@ export default function Saps3Page() {
           </Collapsible>
 
           {/* Patient info banner */}
-          <Card data-saps-anchor="saps-banner" className={completingSapsId ? "border-emerald-300 bg-emerald-50/60 dark:border-emerald-700 dark:bg-emerald-900/15" : "border-primary/30 bg-primary/5"}>
+          <Card data-saps-anchor="saps-banner" className={completingSapsId ? "border-released-border bg-released-soft/60" : "border-primary/30 bg-primary/5"}>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">
                     {completingSapsId ? "Validando ficha SAPS — paciente já alocado" : "Admitindo paciente"}
                   </p>
-                  <p className="patient-id text-lg font-bold text-foreground">{patientName}</p>
+                  <p className="patient-id text-lg font-semibold text-foreground">{patientName}</p>
                   {completingSapsId ? (
                     <p className="text-xs text-muted-foreground">
                       Leito {selectedBed || "—"} · {currentSectorLabel || "Setor —"} · aguardando validação dos exames
@@ -1355,14 +1361,14 @@ export default function Saps3Page() {
               </div>
               <div className="mt-3 min-h-[40px]">
                 {draftSavedAt && (
-                  <div className="flex items-center justify-between gap-2 rounded-md border border-amber-300/60 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700/50 px-3 py-2">
-                    <span className="text-xs text-amber-900 dark:text-amber-200">
+                  <div className="flex items-center justify-between gap-2 rounded-md border border-warning-border/60 bg-warning-soft px-3 py-2">
+                    <span className="text-xs text-warning-on-soft">
                       Rascunho salvo às {format(draftSavedAt, "HH:mm", { locale: ptBR })} — será restaurado automaticamente
                     </span>
                     <button
                       type="button"
                       onClick={discardDraft}
-                      className="text-xs font-semibold text-amber-900 dark:text-amber-200 underline underline-offset-2 hover:text-amber-700"
+                      className="text-xs font-medium text-warning-on-soft underline underline-offset-2 hover:text-warning-on-soft"
                     >
                       Descartar
                     </button>
@@ -1389,11 +1395,11 @@ export default function Saps3Page() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">Setor (auto)</Label>
-                  <div className="mt-1.5 flex items-center justify-between gap-2 h-10 px-3 rounded-md border border-dashed border-primary/40 bg-primary/5">
-                    <span className="text-sm font-semibold text-foreground">
+                  <div className="mt-2 flex items-center justify-between gap-2 h-10 px-3 rounded-md border border-dashed border-primary/40 bg-primary/5">
+                    <span className="text-sm font-medium text-foreground">
                       {currentSectorLabel || "—"}
                     </span>
-                    <Badge variant="outline" className="text-[10px] uppercase">
+                    <Badge variant="outline" className="text-xs uppercase tracking-wider">
                       {completingSapsId ? "Atual" : "Sincronizado"}
                     </Badge>
                   </div>
@@ -1401,11 +1407,11 @@ export default function Saps3Page() {
                 <div>
                   <Label>{completingSapsId ? "Leito atual" : "Leito de destino"}</Label>
                   {completingSapsId ? (
-                    <div className="mt-1.5 flex items-center justify-between gap-2 h-10 px-3 rounded-md border border-dashed border-emerald-400/60 bg-emerald-50 dark:bg-emerald-900/20">
-                      <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                    <div className="mt-2 flex items-center justify-between gap-2 h-10 px-3 rounded-md border border-dashed border-released/60 bg-released-soft">
+                      <span className="text-sm font-medium text-released-on-soft">
                         {selectedBed || "—"}
                       </span>
-                      <Badge variant="outline" className="text-[10px] uppercase border-emerald-300 text-emerald-700 dark:text-emerald-300">Ocupado</Badge>
+                      <Badge variant="outline" className="text-xs uppercase tracking-wider border-released-border text-released-on-soft">Ocupado</Badge>
                     </div>
                   ) : (
                     <Select value={selectedBed} onValueChange={setSelectedBed} disabled={!selectedSector}>
@@ -1413,7 +1419,7 @@ export default function Saps3Page() {
                       <SelectContent>
                         {availableBeds.map(b => (
                           <SelectItem key={b.value} value={b.value} disabled={b.occupied}>
-                            {b.label} {b.occupied ? " (ocupado)" : " ✓ livre"}
+                            {b.label} {b.occupied ? " (ocupado)" : " livre"}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1422,9 +1428,9 @@ export default function Saps3Page() {
                 </div>
               </div>
               {selectedBed && !completingSapsId && (
-                <div className="flex items-center gap-2 p-2 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
-                  <Bed className="h-4 w-4 text-emerald-600" />
-                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                <div className="flex items-center gap-2 p-2 rounded-md bg-released-soft border border-released-border">
+                  <Bed className="h-4 w-4 text-released-on-soft" />
+                  <span className="text-sm font-medium text-released-on-soft">
                     Leito selecionado: {selectedBed} — {currentSectorLabel}
                   </span>
                 </div>
@@ -1438,27 +1444,27 @@ export default function Saps3Page() {
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Box I</p>
-                  <p className="text-2xl font-bold text-foreground">{scores.box1}</p>
+                  <p className="text-2xl font-semibold text-foreground">{scores.box1}</p>
                   <p className="text-xs text-muted-foreground">Pré-admissão</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Box II</p>
-                  <p className="text-2xl font-bold text-foreground">{scores.box2}</p>
+                  <p className="text-2xl font-semibold text-foreground">{scores.box2}</p>
                   <p className="text-xs text-muted-foreground">Circunstâncias</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Box III</p>
-                  <p className="text-2xl font-bold text-foreground">{scores.box3}</p>
+                  <p className="text-2xl font-semibold text-foreground">{scores.box3}</p>
                   <p className="text-xs text-muted-foreground">Fisiológicas</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Total</p>
-                  <p className="text-3xl font-extrabold text-primary">{scores.total}</p>
+                  <p className="text-3xl font-semibold text-primary">{scores.total}</p>
                   <p className="text-xs text-muted-foreground">Score total</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Mortalidade</p>
-                  <p className={`text-3xl font-extrabold ${getMortalityColor(scores.mortality)}`}>
+                  <p className={`text-3xl font-semibold ${getMortalityColor(scores.mortality)}`}>
                     {scores.mortality}%
                   </p>
                   <p className="text-xs text-muted-foreground">Predita</p>
@@ -1474,7 +1480,7 @@ export default function Saps3Page() {
                 <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
                   <CardTitle className="flex items-center justify-between text-base">
                     <span className="flex items-center gap-2">
-                      <ClipboardList className="h-5 w-5 text-blue-500" />
+                      <ClipboardList className="h-5 w-5 text-muted-foreground" />
                       Box I — Características Pré-Admissão UTI
                       <Badge variant="outline" className="ml-2">{scores.box1} pts</Badge>
                     </span>
@@ -1515,13 +1521,13 @@ export default function Saps3Page() {
                   <div>
                     <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                       <Label className="text-sm font-medium block">Comorbidades SAPS 3</Label>
-                      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-100 text-[10px]">
+                      <Badge className="bg-released-soft text-released-on-soft border-released-border hover:bg-released-soft text-xs">
                         Pontuam no escore — marque todas que se aplicam
                       </Badge>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                       {COMORBIDITY_OPTIONS.map(c => (
-                        <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer rounded-md border border-emerald-100 bg-emerald-50/40 px-2 py-1.5 hover:bg-emerald-50">
+                        <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer rounded-md border border-released-border bg-released-soft/40 px-2 py-2 hover:bg-released-soft">
                           <Checkbox
                             checked={comorbidities.includes(c.id)}
                             onCheckedChange={(checked) => {
@@ -1529,21 +1535,21 @@ export default function Saps3Page() {
                             }}
                           />
                           <span className="flex-1 normal-case">{c.label}</span>
-                          <span className="text-[10px] font-mono font-semibold text-emerald-700">+{c.points}</span>
+                          <span className="text-xs font-mono font-medium text-released-on-soft">+{c.points}</span>
                         </label>
                       ))}
                     </div>
                   </div>
 
                   {/* ─── Antecedentes clínicos (NÃO pontuam) ─── */}
-                  <div className="rounded-lg border border-amber-300 bg-amber-50/60 p-3 space-y-3">
+                  <div className="rounded-lg border border-warning-border bg-warning-soft/60 p-3 space-y-3">
                     <div className="flex items-start gap-2 flex-wrap">
-                      <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                      <AlertTriangle className="h-4 w-4 text-warning-on-soft mt-1 shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-amber-900 normal-case">
+                        <p className="text-xs font-medium text-warning-on-soft normal-case">
                           Antecedentes clínicos — opcional
                         </p>
-                        <p className="text-[11px] text-amber-800 normal-case">
+                        <p className="text-xs text-warning-on-soft normal-case">
                           Não obrigatório · Não pontua no escore SAPS 3 · Útil para perfil epidemiológico do paciente.
                         </p>
                       </div>
@@ -1567,7 +1573,7 @@ export default function Saps3Page() {
                       ))}
                     </div>
                     <div>
-                      <Label className="text-xs text-amber-900 normal-case">Outros antecedentes (texto livre)</Label>
+                      <Label className="text-xs text-warning-on-soft normal-case">Outros antecedentes (texto livre)</Label>
                       <Input
                         value={clinicalHistory.livre || ""}
                         onChange={(e) => setClinicalHistory(prev => ({ ...prev, livre: e.target.value }))}
@@ -1578,14 +1584,14 @@ export default function Saps3Page() {
                   </div>
 
                   {/* ─── Hábitos de vida (NÃO pontuam) ─── */}
-                  <div className="rounded-lg border border-amber-300 bg-amber-50/60 p-3 space-y-3">
+                  <div className="rounded-lg border border-warning-border bg-warning-soft/60 p-3 space-y-3">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                      <AlertTriangle className="h-4 w-4 text-warning-on-soft mt-1 shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-amber-900 normal-case">
+                        <p className="text-xs font-medium text-warning-on-soft normal-case">
                           Hábitos de vida — opcional
                         </p>
-                        <p className="text-[11px] text-amber-800 normal-case">
+                        <p className="text-xs text-warning-on-soft normal-case">
                           Não obrigatório · Não pontua no escore SAPS 3.
                         </p>
                       </div>
@@ -1664,7 +1670,7 @@ export default function Saps3Page() {
                 <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
                   <CardTitle className="flex items-center justify-between text-base">
                     <span className="flex items-center gap-2">
-                      <Activity className="h-5 w-5 text-amber-500" />
+                      <Activity className="h-5 w-5 text-warning" />
                       Box II — Circunstâncias da Admissão
                       <Badge variant="outline" className="ml-2">{scores.box2} pts</Badge>
                     </span>
@@ -1740,22 +1746,22 @@ export default function Saps3Page() {
           </Collapsible>
 
           {/* ─── Suporte hemodinâmico (NÃO pontua SAPS — perfil hemodinâmico) ─── */}
-          <Card className="border-amber-300">
+          <Card className="border-warning-border">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center justify-between text-base flex-wrap gap-2">
                 <span className="flex items-center gap-2">
-                  <Heart className="h-5 w-5 text-rose-500" />
+                  <Heart className="h-5 w-5 text-critical" />
                   Suporte hemodinâmico na admissão
                 </span>
-                <Badge variant="outline" className="border-amber-400 bg-amber-50 text-amber-800 text-[10px]">
+                <Badge variant="outline" className="border-warning bg-warning-soft text-warning-on-soft text-xs">
                   Opcional · Não pontua SAPS
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">
-              <div className="rounded-md bg-amber-50/60 border border-amber-200 p-2 flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-                <p className="text-[11px] text-amber-900 normal-case">
+              <div className="rounded-md bg-warning-soft/60 border border-warning-border p-2 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-warning-on-soft mt-1 shrink-0" />
+                <p className="text-xs text-warning-on-soft normal-case">
                   Não obrigatório · Não entra no escore SAPS 3. Registre para qualificar o perfil hemodinâmico do paciente que está entrando na UTI.
                 </p>
               </div>
@@ -1788,8 +1794,8 @@ export default function Saps3Page() {
                           className={cn(
                             "px-3 py-1 rounded-full text-xs font-medium border transition-colors normal-case",
                             checked
-                              ? "bg-rose-100 border-rose-400 text-rose-800"
-                              : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50",
+                              ? "bg-critical-soft border-critical text-critical-on-soft"
+                              : "bg-white border-border text-foreground hover:bg-muted",
                           )}
                         >
                           {opt.label}
@@ -1802,7 +1808,7 @@ export default function Saps3Page() {
                       {vasoactiveDrugs.map((d, idx) => {
                         const meta = VASOACTIVE_OPTIONS.find(o => o.id === d.id);
                         return (
-                          <div key={d.id} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_140px] gap-2 items-center bg-rose-50/40 border border-rose-200 rounded-md p-2">
+                          <div key={d.id} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_140px] gap-2 items-center bg-critical-soft/40 border border-critical-border rounded-md p-2">
                             <span className="text-sm font-medium normal-case">{meta?.label || d.id}</span>
                             <Input
                               placeholder="Dose (mcg/kg/min)"
@@ -1833,7 +1839,7 @@ export default function Saps3Page() {
                 <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
                   <CardTitle className="flex items-center justify-between text-base">
                     <span className="flex items-center gap-2">
-                      <Heart className="h-5 w-5 text-red-500" />
+                      <Heart className="h-5 w-5 text-critical" />
                       Box III — Variáveis Fisiológicas (±1h da admissão)
                       <Badge variant="outline" className="ml-2">{scores.box3} pts</Badge>
                     </span>
@@ -1846,10 +1852,10 @@ export default function Saps3Page() {
                   {/* ── Avaliação de consciência guiada (GCS / GCS-T / RASS) ── */}
                   <div data-saps-anchor="saps-conscious" className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-4">
                     <div className="flex items-start gap-2">
-                      <Brain className="h-4 w-4 text-primary mt-0.5" />
+                      <Brain className="h-4 w-4 text-primary mt-1" />
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-foreground">Avaliação de consciência</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                        <p className="text-sm font-medium text-foreground">Avaliação de consciência</p>
+                        <p className="text-xs text-muted-foreground mt-1">
                           O paciente está sob sedoanalgesia contínua e/ou ventilação mecânica?
                         </p>
                       </div>
@@ -1871,7 +1877,7 @@ export default function Saps3Page() {
                           }`}
                         >
                           <p className="text-sm font-medium text-foreground">{opt.label}</p>
-                          <p className="text-[11px] text-muted-foreground mt-0.5">{opt.hint}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{opt.hint}</p>
                         </button>
                       ))}
                     </div>
@@ -1893,7 +1899,7 @@ export default function Saps3Page() {
                         </div>
                         <div>
                           <Label className="text-xs">GCS total</Label>
-                          <div className="h-10 px-3 rounded-md border bg-background flex items-center justify-center text-lg font-bold text-primary">
+                          <div className="h-10 px-3 rounded-md border bg-background flex items-center justify-center text-lg font-semibold text-primary">
                             {gcsTotal || "—"}
                           </div>
                         </div>
@@ -1924,7 +1930,7 @@ export default function Saps3Page() {
                           <Label className="text-xs">Motivo</Label>
                           <Input value={consciousnessReason} onChange={e => setConsciousnessReason(e.target.value)} placeholder="Não aplicável – Sedoanalgesia contínua" />
                         </div>
-                        <p className="sm:col-span-3 text-[11px] text-muted-foreground">
+                        <p className="sm:col-span-3 text-xs text-muted-foreground">
                           GCS não será aplicado. Pontuação SAPS usa o GCS pré-sedação se informado; caso contrário assume 15.
                         </p>
                       </div>
@@ -1939,7 +1945,7 @@ export default function Saps3Page() {
                         </div>
                         <div>
                           <Label className="text-xs">Verbal</Label>
-                          <div className="h-10 px-3 rounded-md border border-dashed border-amber-400 bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-sm font-bold text-amber-700 dark:text-amber-300">
+                          <div className="h-10 px-3 rounded-md border border-dashed border-warning bg-warning-soft flex items-center justify-center text-sm font-semibold text-warning-on-soft">
                             1T
                           </div>
                         </div>
@@ -1949,11 +1955,11 @@ export default function Saps3Page() {
                         </div>
                         <div>
                           <Label className="text-xs">GCS total</Label>
-                          <div className="h-10 px-3 rounded-md border bg-background flex items-center justify-center text-lg font-bold text-primary">
+                          <div className="h-10 px-3 rounded-md border bg-background flex items-center justify-center text-lg font-semibold text-primary">
                             {gcsTotal || "—"}
                           </div>
                         </div>
-                        <p className="col-span-3 sm:col-span-4 text-[11px] text-muted-foreground">
+                        <p className="col-span-3 sm:col-span-4 text-xs text-muted-foreground">
                           Verbal travado em 1T (via aérea artificial). Score exibido com sufixo T.
                         </p>
                       </div>
@@ -2009,34 +2015,34 @@ export default function Saps3Page() {
 
           {/* ── Checklist de validação em tempo real ── */}
           <Card className={missingFields.length === 0
-            ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-950/20"
-            : "border-amber-300 dark:border-amber-700 bg-amber-50/60 dark:bg-amber-950/20"}>
+            ? "border-released-border bg-released-soft/60"
+            : "border-warning-border bg-warning-soft/60"}>
             <CardContent className="py-3 px-4">
               <div className="flex items-center justify-between gap-2 mb-2">
-                <p className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                <p className="text-xs font-medium uppercase tracking-wider flex items-center gap-2">
                   {missingFields.length === 0 ? (
-                    <><CheckCircle2 className="h-4 w-4 text-emerald-600" /><span className="text-emerald-800 dark:text-emerald-300">Pronto para validar — todos os itens preenchidos</span></>
+                    <><CheckCircle2 className="h-4 w-4 text-released-on-soft" /><span className="text-released-on-soft">Pronto para validar — todos os itens preenchidos</span></>
                   ) : (
-                    <><AlertTriangle className="h-4 w-4 text-amber-600" /><span className="text-amber-800 dark:text-amber-300">Faltam {missingFields.length} item(s) para validar</span></>
+                    <><AlertTriangle className="h-4 w-4 text-warning-on-soft" /><span className="text-warning-on-soft">Faltam {missingFields.length} item(s) para validar</span></>
                   )}
                 </p>
-                <span className="text-[10px] text-muted-foreground">A "Pré-admitir com SAPS pendente" exige apenas nome + leito.</span>
+                <span className="text-xs text-muted-foreground">A "Pré-admitir com SAPS pendente" exige apenas nome + leito.</span>
               </div>
               {missingFields.length > 0 && (
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {missingFields.map(f => (
                     <li key={f.id}>
                       <button
                         type="button"
                         onClick={() => focusAnchor(f.anchor)}
-                        className="w-full text-left flex items-start gap-2 rounded-md border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-amber-950/30 px-2.5 py-1.5 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                        className="w-full text-left flex items-start gap-2 rounded-md border border-warning-border bg-white/70 px-3 py-2 hover:bg-warning-soft transition-colors"
                       >
-                        <XCircle className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400 mt-0.5 shrink-0" />
+                        <XCircle className="h-3.5 w-3.5 text-warning-on-soft mt-1 shrink-0" />
                         <span className="flex-1 min-w-0">
-                          <span className="block text-xs font-medium text-amber-900 dark:text-amber-200">{f.label}</span>
-                          {f.hint && <span className="block text-[10px] text-amber-700 dark:text-amber-400">{f.hint}</span>}
+                          <span className="block text-xs font-medium text-warning-on-soft">{f.label}</span>
+                          {f.hint && <span className="block text-xs text-warning-on-soft">{f.hint}</span>}
                         </span>
-                        <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 shrink-0">Ir →</span>
+                        <span className="text-xs font-medium text-warning-on-soft shrink-0">Ir →</span>
                       </button>
                     </li>
                   ))}
@@ -2052,7 +2058,7 @@ export default function Saps3Page() {
               variant="outline"
               onClick={() => handleSave(true)}
               disabled={saving || (!completingSapsId && !selectedBed)}
-              className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-400 dark:hover:bg-amber-900/20"
+              className="gap-2 border-warning-border text-warning-on-soft hover:bg-warning-soft"
             >
               <Clock className="h-4 w-4" />
               {saving
@@ -2066,12 +2072,12 @@ export default function Saps3Page() {
                 : (completingSapsId ? "Validar ficha SAPS" : `Pré-admitir no ${selectedBed || "leito"}`)}
             </Button>
           </div>
-          <div className={`${completingSapsId ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300" : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300"} border rounded-lg p-3 text-sm`}>
-            <p className="font-medium flex items-center gap-1.5">
+          <div className={`${completingSapsId ? "bg-released-soft border-released-border text-released-on-soft" : "bg-warning-soft border-warning-border text-warning-on-soft"} border rounded-lg p-3 text-sm`}>
+            <p className="font-medium flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
               {completingSapsId ? "Validação atualiza a ficha e libera o gate clínico" : "Exames laboratoriais ainda pendentes?"}
             </p>
-            <p className={`text-xs mt-1 ${completingSapsId ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"}`}>
+            <p className={`text-xs mt-1 ${completingSapsId ? "text-released-on-soft" : "text-warning-on-soft"}`}>
               {completingSapsId
                 ? "Ao validar, o cálculo SAPS 3 é recalculado com os valores atuais, a flag de pendência é removida do paciente e você é redirecionado para o painel clínico do leito correspondente para seguir com HDA, exame físico e plano."
                 : "Utilize \"Pré-admitir com SAPS pendente\" para alocar o paciente no leito agora e completar a ficha SAPS 3 quando os resultados de gasometria, hemograma, função renal e demais exames admissionais estiverem disponíveis. Um cronômetro será ativado para rastrear o tempo de pendência."}
@@ -2082,9 +2088,9 @@ export default function Saps3Page() {
 
       {/* ─── Pending SAPS ─── */}
       {!isFormMode && records.some(r => r.status === 'pending') && (
-        <Card className="border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10">
+        <Card className="border-warning-border bg-warning-soft/50">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base text-amber-800 dark:text-amber-300">
+            <CardTitle className="flex items-center gap-2 text-base text-warning-on-soft">
               <Clock className="h-5 w-5 animate-pulse" />
               SAPS 3 Pendentes — Aguardando Exames Laboratoriais
               <Badge variant="destructive" className="ml-1">
@@ -2095,7 +2101,7 @@ export default function Saps3Page() {
           <CardContent>
             <div className="space-y-2">
               {records.filter(r => r.status === 'pending').map(r => (
-                <div key={r.id} className="flex items-center justify-between p-3 rounded-lg border border-amber-200 dark:border-amber-700 bg-card hover:bg-muted/50 transition-colors">
+                <div key={r.id} className="flex items-center justify-between p-3 rounded-lg border border-warning-border bg-card hover:bg-muted/50 transition-colors">
                   <div className="flex-1">
                     <p className="font-medium text-foreground">{r.patient_name}</p>
                     <p className="text-xs text-muted-foreground">
@@ -2106,7 +2112,7 @@ export default function Saps3Page() {
                     <SapsPendingTimer pendingSince={r.pending_since} />
                     <Button 
                       size="sm" 
-                      className="gap-1.5"
+                      className="gap-2"
                       onClick={() => navigate(`/saps3?completeSapsId=${r.id}&patientName=${encodeURIComponent(r.patient_name)}`)}
                     >
                       <ClipboardList className="h-3.5 w-3.5" /> Completar SAPS
@@ -2147,7 +2153,7 @@ export default function Saps3Page() {
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <p className="text-lg font-bold text-primary">{r.total_score ?? "—"}</p>
+                        <p className="text-lg font-semibold text-primary">{r.total_score ?? "—"}</p>
                         <p className="text-xs text-muted-foreground">Score</p>
                       </div>
                       <div className="text-right">
@@ -2210,9 +2216,9 @@ function SapsPendingTimer({ pendingSince }: { pendingSince: string | null }) {
   if (!pendingSince) return null;
 
   return (
-    <div className="flex items-center gap-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-700">
+    <div className="flex items-center gap-2 bg-warning-soft text-warning-on-soft px-3 py-1 rounded-md border border-warning-border">
       <Clock className="h-3.5 w-3.5 animate-pulse" />
-      <span className="font-mono font-bold text-sm">{elapsed}</span>
+      <span className="font-mono font-semibold text-sm">{elapsed}</span>
     </div>
   );
 }

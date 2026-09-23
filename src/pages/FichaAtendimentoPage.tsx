@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { formatAge } from "@/lib/patientAge";
+import { getNormaZeroMissingFields, NormaZeroBlockedDocument } from "@/components/NormaZeroPrintHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
 import { whitelabel, getInstitutionalHeaderLines } from "@/config/whitelabel";
@@ -354,7 +355,7 @@ const FichaAtendimentoPage = () => {
         setEncounters(allEncounters);
       } catch (err) {
         console.error("Error fetching ficha data:", err);
-        toast.error("Erro ao carregar dados do atendimento");
+        toast.error("Não foi possível carregar dados do atendimento");
       } finally {
         setLoading(false);
       }
@@ -398,7 +399,7 @@ const FichaAtendimentoPage = () => {
       {/* Preview */}
       <div className="border border-border rounded-lg p-4 bg-card space-y-3 print:hidden">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-sm">
+          <h3 className="font-medium text-sm">
             {patientData?.name || patientName}
           </h3>
           <Badge variant="outline" className="text-xs gap-1">
@@ -414,7 +415,7 @@ const FichaAtendimentoPage = () => {
                 <Badge variant={enc.type === "classificacao_risco" ? "destructive" : enc.type === "prescricao" ? "default" : "secondary"} className="text-xs">
                   {idx + 1}/{encounters.length}
                 </Badge>
-                <span className="text-xs font-semibold">{sectorLabelFromCode(enc.sector) || enc.sector}</span>
+                <span className="text-xs font-medium">{sectorLabelFromCode(enc.sector) || enc.sector}</span>
                 {enc.professionalName && (
                   <span className="text-xs text-muted-foreground">
                     {enc.professionalName}{enc.professionalCRM ? ` — CRM ${enc.professionalCRM}` : ""}
@@ -543,6 +544,18 @@ function PrintableFicha({
       <div style={{ flex: 1, backgroundColor: colors.blue }} />
     </div>
   );
+
+  // Norma Zero — bloqueia a geração da Ficha de Atendimento se a
+  // identificação do paciente estiver incompleta.
+  const missingFields = getNormaZeroMissingFields({
+    name: patient.name,
+    birthDate: patient.birthDate,
+    sex: patient.sex,
+    record: patient.record,
+  });
+  if (missingFields.length > 0) {
+    return <NormaZeroBlockedDocument missingFields={missingFields} />;
+  }
 
   return (
     <div

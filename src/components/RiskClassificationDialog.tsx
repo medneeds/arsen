@@ -30,8 +30,8 @@ const RISK_LEVELS = [
     value: "vermelho",
     label: "EMERGÊNCIA",
     description: "Risco de morte imediato. Atendimento imediato.",
-    color: "bg-red-600 hover:bg-red-700 text-white border-red-700",
-    selectedColor: "ring-4 ring-red-400 bg-red-600 text-white",
+    color: "bg-critical hover:bg-critical text-white border-critical",
+    selectedColor: "ring-4 ring-critical bg-critical text-white",
     icon: AlertTriangle,
     time: "0 min",
   },
@@ -39,8 +39,8 @@ const RISK_LEVELS = [
     value: "laranja",
     label: "MUITO URGENTE",
     description: "Risco de deterioração rápida. Até 10 minutos.",
-    color: "bg-orange-500 hover:bg-orange-600 text-white border-orange-600",
-    selectedColor: "ring-4 ring-orange-300 bg-orange-500 text-white",
+    color: "bg-warning hover:bg-warning text-white border-warning",
+    selectedColor: "ring-4 ring-warning bg-warning text-white",
     icon: AlertTriangle,
     time: "10 min",
   },
@@ -48,8 +48,8 @@ const RISK_LEVELS = [
     value: "amarelo",
     label: "URGENTE",
     description: "Condição grave, sem risco imediato. Até 60 minutos.",
-    color: "bg-yellow-500 hover:bg-yellow-600 text-black border-yellow-600",
-    selectedColor: "ring-4 ring-yellow-300 bg-yellow-500 text-black",
+    color: "bg-warning hover:bg-warning text-black border-warning",
+    selectedColor: "ring-4 ring-warning bg-warning text-black",
     icon: Clock,
     time: "60 min",
   },
@@ -57,8 +57,8 @@ const RISK_LEVELS = [
     value: "verde",
     label: "POUCO URGENTE",
     description: "Condição estável. Até 120 minutos.",
-    color: "bg-green-600 hover:bg-green-700 text-white border-green-700",
-    selectedColor: "ring-4 ring-green-300 bg-green-600 text-white",
+    color: "bg-released hover:bg-released text-white border-released",
+    selectedColor: "ring-4 ring-released bg-released text-white",
     icon: CheckCircle,
     time: "120 min",
   },
@@ -66,8 +66,8 @@ const RISK_LEVELS = [
     value: "azul",
     label: "NÃO URGENTE",
     description: "Sem risco. Até 240 minutos.",
-    color: "bg-blue-600 hover:bg-blue-700 text-white border-blue-700",
-    selectedColor: "ring-4 ring-blue-300 bg-blue-600 text-white",
+    color: "bg-primary hover:bg-primary text-white border-border",
+    selectedColor: "ring-4 ring-ring bg-primary text-white",
     icon: Info,
     time: "240 min",
   },
@@ -75,8 +75,8 @@ const RISK_LEVELS = [
     value: "branca",
     label: "FICHA BRANCA",
     description: "Eletivo — sem critério de risco imediato. Fluxo Socorrão I (atendimento por ordem de chegada, sem temporalidade Manchester).",
-    color: "bg-white hover:bg-slate-50 text-slate-900 border-slate-400",
-    selectedColor: "ring-4 ring-slate-400 bg-white text-slate-900 border-slate-500",
+    color: "bg-white hover:bg-muted text-foreground border-border",
+    selectedColor: "ring-4 ring-ring bg-white text-foreground border-border",
     icon: Info,
     time: "ELETIVO",
   },
@@ -234,7 +234,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
       const level = RISK_LEVELS.find(r => r.value === selected);
       toast({
-        title: `✅ Classificação: ${level?.label}`,
+        title: `Classificação: ${level?.label}`,
         description: `${preAdmission.patient_name} classificado com sucesso`,
       });
 
@@ -265,7 +265,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
     ? Math.floor((Date.now() - new Date(preAdmission.birth_date + "T12:00:00").getTime()) / (365.25 * 24 * 60 * 60 * 1000))
     : null;
 
-  const painColor = form.pain_scale <= 3 ? "text-green-600" : form.pain_scale <= 6 ? "text-yellow-600" : "text-red-600";
+  const painColor = form.pain_scale <= 3 ? "text-released-on-soft" : form.pain_scale <= 6 ? "text-warning-on-soft" : "text-critical-on-soft";
 
   return (
     <Dialog open={open} onOpenChange={resetAndClose}>
@@ -308,10 +308,10 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
         <ScrollArea className="max-h-[60vh] px-6">
           {step === 0 ? (
-            <div className="space-y-5 pb-4">
+            <div className="space-y-4 pb-4">
               {/* Chief Complaint */}
               <div>
-                <Label className="text-xs font-semibold">Motivo da Entrada / Queixa Principal *</Label>
+                <Label className="text-xs font-medium">Motivo da Entrada / Queixa Principal *</Label>
                 <Textarea
                   value={form.chief_complaint}
                   onChange={e => setForm(prev => ({ ...prev, chief_complaint: e.target.value }))}
@@ -322,10 +322,10 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
               {/* Vital Signs */}
               <div>
-                <Label className="text-xs font-semibold mb-2 block">Sinais Vitais</Label>
+                <Label className="text-xs font-medium mb-2 block">Sinais Vitais</Label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">PA (mmHg)</Label>
+                    <Label className="text-xs text-muted-foreground">PA (mmHg)</Label>
                     <div className="flex items-center gap-1">
                       <Input
                         type="number"
@@ -345,7 +345,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                     </div>
                   </div>
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">FC (bpm)</Label>
+                    <Label className="text-xs text-muted-foreground">FC (bpm)</Label>
                     <Input
                       type="number"
                       placeholder="FC"
@@ -355,7 +355,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                     />
                   </div>
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">FR (irpm)</Label>
+                    <Label className="text-xs text-muted-foreground">FR (irpm)</Label>
                     <Input
                       type="number"
                       placeholder="FR"
@@ -365,7 +365,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                     />
                   </div>
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">Tax (°C)</Label>
+                    <Label className="text-xs text-muted-foreground">Tax (°C)</Label>
                     <Input
                       type="number"
                       step="0.1"
@@ -376,7 +376,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                     />
                   </div>
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">SpO₂ (%)</Label>
+                    <Label className="text-xs text-muted-foreground">SpO₂ (%)</Label>
                     <Input
                       type="number"
                       placeholder="SpO₂"
@@ -386,7 +386,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                     />
                   </div>
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">HGT (mg/dL)</Label>
+                    <Label className="text-xs text-muted-foreground">HGT (mg/dL)</Label>
                     <Input
                       type="number"
                       placeholder="HGT"
@@ -400,7 +400,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
               {/* Airway Assessment */}
               <div>
-                <Label className="text-xs font-semibold mb-2 block">Avaliação das Vias Aéreas</Label>
+                <Label className="text-xs font-medium mb-2 block">Avaliação das Vias Aéreas</Label>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="flex items-center gap-2">
                     <Checkbox
@@ -438,7 +438,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
               {/* Perfusion & Pulse */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs font-semibold">Perfusão Periférica</Label>
+                  <Label className="text-xs font-medium">Perfusão Periférica</Label>
                   <Select
                     value={form.peripheral_perfusion}
                     onValueChange={v => setForm(prev => ({ ...prev, peripheral_perfusion: v }))}
@@ -454,7 +454,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold">Pulso</Label>
+                  <Label className="text-xs font-medium">Pulso</Label>
                   <Select
                     value={form.pulse_quality}
                     onValueChange={v => setForm(prev => ({ ...prev, pulse_quality: v }))}
@@ -474,12 +474,12 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
               {/* Glasgow */}
               <div>
-                <Label className="text-xs font-semibold mb-2 block">
-                  Escala de Glasgow (ECG) — Total: <span className={cn("font-bold", glasgowTotal <= 8 ? "text-red-600" : glasgowTotal <= 12 ? "text-yellow-600" : "text-green-600")}>{glasgowTotal}</span>
+                <Label className="text-xs font-medium mb-2 block">
+                  Escala de Glasgow (ECG) — Total: <span className={cn("font-semibold", glasgowTotal <= 8 ? "text-critical-on-soft" : glasgowTotal <= 12 ? "text-warning-on-soft" : "text-released-on-soft")}>{glasgowTotal}</span>
                 </Label>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">Ocular (1-4)</Label>
+                    <Label className="text-xs text-muted-foreground">Ocular (1-4)</Label>
                     <Select
                       value={String(form.glasgow_eye)}
                       onValueChange={v => setForm(prev => ({ ...prev, glasgow_eye: Number(v) }))}
@@ -496,7 +496,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">Verbal (1-5)</Label>
+                    <Label className="text-xs text-muted-foreground">Verbal (1-5)</Label>
                     <Select
                       value={String(form.glasgow_verbal)}
                       onValueChange={v => setForm(prev => ({ ...prev, glasgow_verbal: Number(v) }))}
@@ -514,7 +514,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">Motora (1-6)</Label>
+                    <Label className="text-xs text-muted-foreground">Motora (1-6)</Label>
                     <Select
                       value={String(form.glasgow_motor)}
                       onValueChange={v => setForm(prev => ({ ...prev, glasgow_motor: Number(v) }))}
@@ -537,8 +537,8 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
               {/* Pain Scale */}
               <div>
-                <Label className="text-xs font-semibold mb-1 block">
-                  Escala de Dor: <span className={cn("font-bold", painColor)}>{form.pain_scale}/10</span>
+                <Label className="text-xs font-medium mb-1 block">
+                  Escala de Dor: <span className={cn("font-semibold", painColor)}>{form.pain_scale}/10</span>
                 </Label>
                 <Slider
                   value={[form.pain_scale]}
@@ -547,7 +547,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                   step={1}
                   className="py-2"
                 />
-                <div className="flex justify-between text-[10px] text-muted-foreground">
+                <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Sem dor</span>
                   <span>Dor máxima</span>
                 </div>
@@ -555,7 +555,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
               {/* Allergies */}
               <div>
-                <Label className="text-xs font-semibold">Alergias</Label>
+                <Label className="text-xs font-medium">Alergias</Label>
                 <Input
                   value={form.allergies}
                   onChange={e => setForm(prev => ({ ...prev, allergies: e.target.value }))}
@@ -572,7 +572,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                   onCheckedChange={v => setForm(prev => ({ ...prev, flu_symptoms: !!v }))}
                 />
                 <div className="flex-1 space-y-1">
-                  <Label htmlFor="flu-symptoms" className="text-xs font-semibold cursor-pointer">Sintomas Gripais / Síndrome Respiratória</Label>
+                  <Label htmlFor="flu-symptoms" className="text-xs font-medium cursor-pointer">Sintomas Gripais / Síndrome Respiratória</Label>
                   {form.flu_symptoms && (
                     <Input
                       className="h-8 text-xs mt-1"
@@ -592,7 +592,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                   onCheckedChange={v => setForm(prev => ({ ...prev, oxygen_therapy: !!v }))}
                 />
                 <div className="flex-1 space-y-1">
-                  <Label htmlFor="oxygen-therapy" className="text-xs font-semibold cursor-pointer">Em uso de O₂ / Oxigenoterapia</Label>
+                  <Label htmlFor="oxygen-therapy" className="text-xs font-medium cursor-pointer">Em uso de O₂ / Oxigenoterapia</Label>
                   {form.oxygen_therapy && (
                     <Input
                       className="h-8 text-xs mt-1"
@@ -606,7 +606,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
               {/* Triage Notes */}
               <div>
-                <Label className="text-xs font-semibold">Observações da Triagem</Label>
+                <Label className="text-xs font-medium">Observações da Triagem</Label>
                 <Textarea
                   value={form.triage_notes}
                   onChange={e => setForm(prev => ({ ...prev, triage_notes: e.target.value }))}
@@ -624,10 +624,10 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Info className="h-4 w-4 text-primary" />
-                        <span className="text-xs font-semibold uppercase tracking-wide text-primary">
+                        <span className="text-xs font-medium uppercase tracking-wide text-primary">
                           Sugestão do sistema
                         </span>
-                        <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded", sug.color.split(" ").filter(c => c.startsWith("bg-") || c.startsWith("text-")).join(" "))}>
+                        <span className={cn("text-xs font-semibold px-2 py-1 rounded-md", sug.color.split(" ").filter(c => c.startsWith("bg-") || c.startsWith("text-")).join(" "))}>
                           {sug.label}
                         </span>
                       </div>
@@ -642,15 +642,15 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                       </Button>
                     </div>
                     {suggestion.reasons.length > 0 ? (
-                      <ul className="text-[11px] text-muted-foreground space-y-0.5 pl-5 list-disc">
+                      <ul className="text-xs text-muted-foreground space-y-1 pl-4 list-disc">
                         {suggestion.reasons.slice(0, 5).map((r, i) => <li key={i}>{r}</li>)}
                       </ul>
                     ) : (
-                      <p className="text-[11px] text-muted-foreground pl-1">
+                      <p className="text-xs text-muted-foreground pl-1">
                         Sem critérios de gravidade detectados nos sinais avaliados.
                       </p>
                     )}
-                    <p className="text-[10px] text-muted-foreground italic pl-1">
+                    <p className="text-xs text-muted-foreground italic pl-1">
                       Sugestão não-vinculante. A decisão final é do profissional triador.
                     </p>
                   </div>
@@ -671,10 +671,10 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
                   >
                     <Icon className="h-5 w-5 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-sm">{level.label}</div>
+                      <div className="font-semibold text-sm">{level.label}</div>
                       <div className="text-xs opacity-90">{level.description}</div>
                     </div>
-                    <div className="text-xs font-mono font-bold shrink-0">{level.time}</div>
+                    <div className="text-xs font-mono font-semibold shrink-0">{level.time}</div>
                   </button>
                 );
               })}

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { useUnsavedClinical } from "@/contexts/UnsavedPrescriptionContext";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { SectionLoader } from "@/components/SectionLoader";
@@ -8,7 +9,7 @@ import { SectionLoader } from "@/components/SectionLoader";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { NormaZeroPrintHeader, generatePrintDocCode } from "@/components/NormaZeroPrintHeader";
+import { NormaZeroPrintHeader, generatePrintDocCode, getNormaZeroMissingFields, NormaZeroBlockedDocument } from "@/components/NormaZeroPrintHeader";
 import {
   NotebookPen, Plus, Loader2, AlertTriangle, ChevronDown, Sun, Moon, Zap,
 } from "lucide-react";
@@ -77,7 +78,7 @@ const EvolucaoPage = () => {
   // DEPOIS: useMemo reavalia toda vez que qualquer searchParam muda, mantendo
   //   cabeçalho superior e corpo SEMPRE sincronizados com o paciente ativo.
   //
-  // ⚠️  CRÍTICO: nunca usar dados-demo (L09/L10/L11 = "Maria das Graças")
+  //  CRÍTICO: nunca usar dados-demo (L09/L10/L11 = "Maria das Graças")
   //   quando há patientId real na URL — esse override era a causa do PDF de
   //   evolução vir com cabeçalho de outro paciente em UTI 2 leito 10.
   const patient = useMemo<PatientHeader>(() => {
@@ -128,20 +129,22 @@ const EvolucaoPage = () => {
     intercurrence: {
       label: 'Intercorrência', shortLabel: 'Intercorrência', Icon: AlertTriangle,
       placeholder: 'Descreva a intercorrência (ex.: queda da própria altura às 14h, sem perda de consciência; novo episódio de hipotensão, PA 80x40 às 03h; dessaturação após mobilização...)',
-      badgeClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/40',
-      borderClass: 'border-amber-500/40', bgClass: 'bg-amber-500/5', iconColor: 'text-amber-600',
+      // Unica complementar que mantem cor: sinaliza algo fora do previsto.
+      badgeClass: 'bg-warning-soft text-warning-on-soft border-warning-border',
+      borderClass: 'border-warning-border', bgClass: 'bg-warning-soft/40', iconColor: 'text-warning',
     },
     vespertina: {
       label: 'Evolução Vespertina', shortLabel: 'Vespertina', Icon: Sun,
       placeholder: 'Evolução vespertina — registre o que mudou desde a manhã (sinais vitais, condutas, exames recebidos, intercorrências leves, plano para a noite...)',
-      badgeClass: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/40',
-      borderClass: 'border-orange-500/40', bgClass: 'bg-orange-500/5', iconColor: 'text-orange-600',
+      // Turno, nao estado clinico: o icone e o rotulo ja dizem tudo.
+      badgeClass: 'bg-muted text-muted-foreground border-border',
+      borderClass: 'border-border', bgClass: '', iconColor: 'text-muted-foreground',
     },
     noturna: {
       label: 'Evolução Noturna', shortLabel: 'Noturna', Icon: Moon,
       placeholder: 'Evolução noturna — descreva o estado clínico do plantão noturno (sono, dor, sinais vitais, intercorrências, condutas executadas, transmissão para a manhã...)',
-      badgeClass: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/40',
-      borderClass: 'border-indigo-500/40', bgClass: 'bg-indigo-500/5', iconColor: 'text-indigo-600',
+      badgeClass: 'bg-muted text-muted-foreground border-border',
+      borderClass: 'border-border', bgClass: '', iconColor: 'text-muted-foreground',
     },
   };
   const currentComplementary = complementaryKind ? COMPLEMENTARY_META[complementaryKind] : null;
@@ -242,7 +245,7 @@ const EvolucaoPage = () => {
   // Live patient row (realtime sync with Painel Clínico)
   const { patient: livePatient, loading: livePatientLoading } = usePatientLive(initialPatientId || null);
 
-  // ⚠️  BUGFIX (07/08/2026): `usePatientLive` não mapeia peso (`uti_weight_kg`),
+  //  BUGFIX (07/08/2026): `usePatientLive` não mapeia peso (`uti_weight_kg`),
   // e o `patient` (useMemo acima) só popula sexo/nascimento/idade/admissão/
   // alergias/peso/prontuário para os pacientes DEMO (L09/L10/L11) — para
   // paciente real, esses campos ficavam SEMPRE vazios no cabeçalho impresso,
@@ -270,7 +273,7 @@ const EvolucaoPage = () => {
     setNewCulturesHtml("");
     setDiagnosticsReplicated(false);
     setDiagnosticHypotheses([]);
-    // 🔒 Resetar campos por item — sem isso persistem entre evoluções
+    // Resetar campos por item — sem isso persistem entre evoluções
     setPlanItems([]);
     setPendenciasItems([]);
     setAntecedentes([]);
@@ -339,7 +342,7 @@ const EvolucaoPage = () => {
     const hypoStr = Array.isArray(diagnosticHypotheses)
       ? diagnosticHypotheses.filter(Boolean).join("\n")
       : diagnosticHypotheses;
-    // 🔒 Se planItems tem itens, limpar soap.plan para não mostrar legado
+    // Se planItems tem itens, limpar soap.plan para não mostrar legado
     if (planItems.filter(Boolean).length > 0) {
       soapWithExtras.plan = "";
     }
@@ -410,7 +413,7 @@ const EvolucaoPage = () => {
     setPlanItems(Array.isArray(srcPlanItems) ? srcPlanItems : []);
     setPendenciasItems(Array.isArray(srcPendencias) ? srcPendencias : []);
 
-    // 🔒 Hipóteses diagnósticas — buscar em múltiplas fontes:
+    // Hipóteses diagnósticas — buscar em múltiplas fontes:
     // 1. soap_data.diagnosticHypotheses (array — formato novo)
     // 2. diagnostic_hypotheses (campo raiz — string legada)
     const rootHypo = (source as any).diagnostic_hypotheses;
@@ -421,7 +424,7 @@ const EvolucaoPage = () => {
         : [];
     setDiagnosticHypotheses(resolvedHypo as any);
 
-    // 🔒 Antecedentes — buscar em múltiplas fontes:
+    // Antecedentes — buscar em múltiplas fontes:
     // 1. soap_data.antecedentes (array — formato novo)
     // 2. campo raiz antecedentes (legado)
     const rootAntec = (source as any).antecedentes;
@@ -433,7 +436,7 @@ const EvolucaoPage = () => {
           ? rootAntec.split("\n").filter(Boolean)
           : [];
     setAntecedentes(resolvedAntec);
-    // 🔒 Pré-carregar previsão de alta da origem — já está no hook via realtime,
+    // Pré-carregar previsão de alta da origem — já está no hook via realtime,
     // mas garantir que o campo reflita o valor salvo no banco ao duplicar
     // (o hook usePatientDiagnosticContext já faz isso automaticamente via fetch)
     setShowNewForm(true);
@@ -485,11 +488,11 @@ const EvolucaoPage = () => {
             <NotebookPen className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Evolução Clínica</h1>
+            <h1 className="text-2xl font-semibold text-foreground">Evolução Clínica</h1>
             <p className="text-sm text-muted-foreground">Selecione um paciente pelo mapa de leitos ou painel clínico</p>
           </div>
         </div>
-        <div className="rounded-xl border border-dashed border-border bg-muted/20 p-12 text-center">
+        <div className="rounded-lg border border-dashed border-border bg-muted/20 p-8 text-center">
           <NotebookPen className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
           <p className="text-lg font-medium text-muted-foreground">Nenhum paciente selecionado</p>
           <p className="text-sm text-muted-foreground/70 mt-1">Acesse pela sidebar do paciente ou painel clínico</p>
@@ -525,13 +528,13 @@ const EvolucaoPage = () => {
 
   // Banner de alerta quando alta prevista está nas próximas 24h
   const dischargeAlert = isWithin24h(utiDischargePrediction) && (
-    <div className="mx-4 mt-3 mb-0 flex items-start gap-3 rounded-lg border-2 border-amber-400/50 bg-amber-50 dark:bg-amber-950/20 p-3 print:hidden">
-      <span className="text-lg">⚠</span>
+    <div className="mx-4 mt-3 mb-0 flex items-start gap-3 rounded-lg border-2 border-warning/50 bg-warning-soft p-3 print:hidden">
+      <span className="text-lg"></span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+        <p className="text-sm font-semibold text-warning-on-soft">
           Alta prevista para as próximas 24h
         </p>
-        <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+        <p className="text-xs text-warning-on-soft mt-1">
           Previsão atual: <strong>{utiDischargePrediction}</strong>.
           Confirme no campo de Diagnósticos se a alta continua programada ou atualize a data.
         </p>
@@ -539,7 +542,7 @@ const EvolucaoPage = () => {
     </div>
   );
 
-  // ⚠️  Aviso visível SÓ EM TELA (print:hidden) enquanto os dados do
+  //  Aviso visível SÓ EM TELA (print:hidden) enquanto os dados do
   // cabeçalho impresso ainda carregam. Diferente da Prescrição, esta tela
   // não tem botão "Imprimir" próprio — a impressão depende do Ctrl+P nativo
   // do navegador, que o código não intercepta. Não é possível bloquear o
@@ -548,9 +551,9 @@ const EvolucaoPage = () => {
   // alergias ainda não chegaram do banco.
   const headerDataLoading = hasPatient && (ids.loading || livePatientLoading || !weightLoaded);
   const headerLoadingWarning = headerDataLoading && (
-    <div className="mx-4 mt-2 mb-0 flex items-center gap-2 rounded-md border border-blue-300/60 bg-blue-50 dark:bg-blue-950/20 px-3 py-1.5 print:hidden">
-      <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600 shrink-0" />
-      <p className="text-xs text-blue-700 dark:text-blue-400">
+    <div className="mx-4 mt-2 mb-0 flex items-center gap-2 rounded-md border border-border/60 bg-muted px-3 py-2 print:hidden">
+      <Loader2 className="h-3.5 w-3.5 animate-spin text-foreground shrink-0" />
+      <p className="text-xs text-foreground">
         Carregando dados do paciente (sexo, nascimento, peso, alergias) — aguarde antes de imprimir.
       </p>
     </div>
@@ -572,29 +575,29 @@ const EvolucaoPage = () => {
             <div className="flex items-center gap-3 min-w-0 flex-1">
               {patient.bed && (
                 <div className="flex flex-col items-center justify-center h-12 w-12 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
-                  <span className="text-[7px] font-bold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
-                  <span className="text-base font-extrabold text-primary leading-tight mt-0.5">{patient.bed}</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
+                  <span className="text-base font-semibold text-primary leading-tight mt-1">{patient.bed}</span>
                 </div>
               )}
               <div className="min-w-0">
-                <p className="text-base font-extrabold text-foreground uppercase tracking-wide leading-tight truncate">
+                <p className="text-base font-semibold text-foreground uppercase tracking-wide leading-tight truncate">
                   {patient.name || "—"}
                 </p>
-                <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                  {patient.unit && <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold uppercase tracking-wide">{patient.unit}</span>}
-                  {(ids.registry?.age || livePatient?.age) && <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-semibold">{ids.registry?.age || livePatient?.age}</span>}
+                <div className="flex items-center gap-2 flex-wrap mt-1">
+                  {patient.unit && <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium uppercase tracking-wide">{patient.unit}</span>}
+                  {(ids.registry?.age || livePatient?.age) && <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium">{ids.registry?.age || livePatient?.age}</span>}
                   {patient.birthDate && (
                     <>
-                      <span className="text-muted-foreground/40 text-[10px]">·</span>
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-muted-foreground/40 text-xs">·</span>
+                      <span className="text-xs text-muted-foreground">
                         {(() => { try { const d = new Date(patient.birthDate + 'T12:00:00'); return isNaN(d.getTime()) ? patient.birthDate : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch { return patient.birthDate; } })()}
                       </span>
                     </>
                   )}
                   {prontuarioReal && (
                     <>
-                      <span className="text-muted-foreground/40 text-[10px]">·</span>
-                      <span className="text-[10px] text-muted-foreground font-mono">Pront. {prontuarioReal}</span>
+                      <span className="text-muted-foreground/40 text-xs">·</span>
+                      <span className="text-xs text-muted-foreground font-mono">Pront. {prontuarioReal}</span>
                     </>
                   )}
                 </div>
@@ -602,8 +605,8 @@ const EvolucaoPage = () => {
             </div>
             {/* DIREITA: título do módulo */}
             <div className="text-right shrink-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground leading-tight">EVOLUÇÃO CLÍNICA</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Timeline de evoluções do paciente</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">EVOLUÇÃO CLÍNICA</p>
+              <p className="text-xs text-muted-foreground mt-1">Timeline de evoluções do paciente</p>
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -612,7 +615,7 @@ const EvolucaoPage = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5 text-xs border-amber-500/40 text-amber-700 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400 flex-1 sm:flex-none min-h-9"
+                  className="gap-2 text-xs border-warning/40 text-warning-on-soft hover:bg-warning/10 hover:text-warning-on-soft flex-1 sm:flex-none min-h-9"
                   disabled={showIntercurrenceForm || showNewForm}
                 >
                   <Zap className="h-3.5 w-3.5" /> Evolução complementar
@@ -620,7 +623,7 @@ const EvolucaoPage = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                <DropdownMenuLabel className="text-xs uppercase tracking-wider text-muted-foreground">
                   Registro rápido — campo único
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -642,7 +645,7 @@ const EvolucaoPage = () => {
             </DropdownMenu>
             <Button
               size="sm"
-              className="gap-1.5 text-xs flex-1 sm:flex-none min-h-9"
+              className="gap-2 text-xs flex-1 sm:flex-none min-h-9"
               onClick={handleOpenNewEvolution}
               disabled={showNewForm || showIntercurrenceForm}
             >
@@ -653,12 +656,12 @@ const EvolucaoPage = () => {
 
         {/* Complementary evolution form (compact, single field) — Intercorrência | Vespertina | Noturna */}
         {showIntercurrenceForm && currentComplementary && (
-          <div className={cn("rounded-xl border-2 p-3 sm:p-4 space-y-3", currentComplementary.borderClass, currentComplementary.bgClass)}>
+          <div className={cn("rounded-lg border-2 p-3 sm:p-4 space-y-3", currentComplementary.borderClass, currentComplementary.bgClass)}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CompIcon className={cn("h-4 w-4", currentComplementary.iconColor)} />
-                <span className="text-sm font-semibold text-foreground">{currentComplementary.label}</span>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-sm font-medium text-foreground">{currentComplementary.label}</span>
+                <span className="text-xs text-muted-foreground">
                   {format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                 </span>
               </div>
@@ -679,12 +682,12 @@ const EvolucaoPage = () => {
               autoFocus
             />
             <div className="flex items-center justify-between">
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Registro rápido — fica no prontuário como rascunho até validação.
               </p>
               <Button
                 size="sm"
-                className="gap-1.5 text-xs"
+                className="gap-2 text-xs"
                 onClick={handleCreateIntercurrence}
                 disabled={savingIntercurrence || !richHtmlToPlainText(intercurrenceText)}
               >
@@ -700,12 +703,12 @@ const EvolucaoPage = () => {
 
         {/* New Evolution Form (with Diagnósticos as 1st collapsible section) */}
         {showNewForm && (
-          <div className="rounded-xl border-2 border-primary/30 bg-card p-3 sm:p-4 space-y-3">
+          <div className="rounded-lg border-2 border-primary/30 bg-card p-3 sm:p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Plus className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-foreground">Nova Evolução</span>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-sm font-medium text-foreground">Nova Evolução</span>
+                <span className="text-xs text-muted-foreground">
                   {format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                 </span>
               </div>
@@ -795,7 +798,7 @@ const EvolucaoPage = () => {
 
         {/* Empty state */}
         {!loading && evolutions.length === 0 && !showNewForm && (
-          <div className="rounded-xl border border-dashed border-border bg-muted/20 p-8 text-center">
+          <div className="rounded-lg border border-dashed border-border bg-muted/20 p-8 text-center">
             <NotebookPen className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
             <p className="text-sm font-medium text-muted-foreground">Nenhuma evolução registrada</p>
             <p className="text-xs text-muted-foreground/70 mt-1">Clique em "Nova Evolução" para criar a primeira</p>
@@ -836,7 +839,7 @@ const EvolucaoPage = () => {
             try { return format(new Date(d + 'T12:00:00'), 'dd/MM/yyyy'); } catch { return d; }
           };
 
-          // ⚠️  BUGFIX (07/08/2026): `patient` (useMemo no topo do componente)
+          //  BUGFIX (07/08/2026): `patient` (useMemo no topo do componente)
           // só popula sexo/nascimento/idade/admissão/alergias/peso/prontuário
           // para os pacientes DEMO (L09/L10/L11) — para paciente real, esses
           // campos vinham SEMPRE vazios do objeto `patient`, não só às vezes.
@@ -855,6 +858,20 @@ const EvolucaoPage = () => {
             '';
           const headerRecord = patient.record || ids.prontuario || '';
           const headerWeight = patient.weight || utiWeightKg || '';
+
+          // Norma Zero — bloqueia a geração do layout impresso se a
+          // identificação do paciente estiver incompleta. Usa os mesmos
+          // valores já mesclados (registry + dados vivos) que a tabela
+          // abaixo realmente exibe, não os campos brutos de `patient`.
+          const missingFields = getNormaZeroMissingFields({
+            name: patient.name,
+            birthDate: headerBirthDate,
+            sex: headerSex,
+            record: headerRecord,
+          });
+          if (missingFields.length > 0) {
+            return <NormaZeroBlockedDocument missingFields={missingFields} width="186mm" />;
+          }
 
           return (
             <>
@@ -896,7 +913,7 @@ const EvolucaoPage = () => {
                     <td style={cellSt}>{fmt(headerBirthDate)}</td>
                     <td style={labelSt}>Admissão</td>
                     <td style={cellSt}>{fmt(headerAdmissionDate)}</td>
-                    <td style={{ ...labelSt, color: '#dc2626', fontSize: '6pt' }}>⚠ ALERGIAS</td>
+                    <td style={{ ...labelSt, color: '#dc2626', fontSize: '6pt' }}>ALERGIAS</td>
                     <td style={{ ...cellSt, fontWeight: 700, color: '#991b1b', backgroundColor: '#fef2f2', fontSize: '7.5pt' }}>
                       {headerAllergies || 'NDAM'}
                     </td>

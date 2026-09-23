@@ -226,14 +226,14 @@ export function CareCatalogDialog({
   // rápidos" quanto nos resultados de busca unificada, pra ficar disponível
   // em qualquer lugar onde itens individuais aparecem.
   const modeToggleNode = (
-    <div className="px-5 py-2 border-b bg-muted/20 shrink-0 flex items-center justify-between gap-2">
-      <div className="inline-flex items-center rounded-md border border-border/60 bg-background p-0.5">
+    <div className="px-4 py-2 border-b bg-muted/20 shrink-0 flex items-center justify-between gap-2">
+      <div className="inline-flex items-center rounded-md border border-border/60 bg-background p-1">
         <button
           type="button"
           onClick={() => { setMultiMode(false); setQuickSelected(new Set()); }}
           className={cn(
-            "px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-sm flex items-center gap-1.5 transition-colors",
-            !multiMode ? "bg-amber-500 text-white" : "text-muted-foreground hover:text-foreground",
+            "px-3 py-1 text-xs font-medium uppercase tracking-wider rounded-md flex items-center gap-2 transition-colors",
+            !multiMode ? "bg-warning text-white" : "text-muted-foreground hover:text-foreground",
           )}
         >
           <MousePointerClick className="h-3 w-3" /> 1 clique
@@ -242,14 +242,14 @@ export function CareCatalogDialog({
           type="button"
           onClick={() => setMultiMode(true)}
           className={cn(
-            "px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-sm flex items-center gap-1.5 transition-colors",
-            multiMode ? "bg-amber-500 text-white" : "text-muted-foreground hover:text-foreground",
+            "px-3 py-1 text-xs font-medium uppercase tracking-wider rounded-md flex items-center gap-2 transition-colors",
+            multiMode ? "bg-warning text-white" : "text-muted-foreground hover:text-foreground",
           )}
         >
           <ListChecks className="h-3 w-3" /> Multi-seleção
         </button>
       </div>
-      <p className="text-[10px] text-muted-foreground tracking-wide">
+      <p className="text-xs text-muted-foreground tracking-wide">
         {multiMode ? "Marque vários e adicione todos juntos." : "Clique no item para adicionar imediatamente."}
       </p>
     </div>
@@ -258,17 +258,17 @@ export function CareCatalogDialog({
   // Grade de itens individuais (agrupada por subcategoria) — mesma lista
   // usada na aba "Cuidados rápidos" e nos resultados de busca unificada.
   const quickItemsGridNode = groupedOptions.length === 0 ? (
-    <div className="text-center py-10 text-sm text-muted-foreground">Nenhum cuidado encontrado</div>
+    <div className="text-center py-8 text-sm text-muted-foreground">Nenhum cuidado encontrado</div>
   ) : (
     <div className="space-y-4">
       {groupedOptions.map((g) => (
         <section key={g.name}>
-          <div className="flex items-center gap-2 mb-1.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">{g.name}</p>
+          <div className="flex items-center gap-2 mb-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">{g.name}</p>
             <span className="h-px flex-1 bg-border/60" />
-            <Badge variant="secondary" className="text-[9px] h-4 px-1.5">{g.items.length}</Badge>
+            <Badge variant="secondary" className="text-xs h-4 px-2">{g.items.length}</Badge>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {g.items.map((care) => {
               const selected = quickSelected.has(care.id);
               const flashed = justAdded.has(care.id);
@@ -278,12 +278,12 @@ export function CareCatalogDialog({
                   type="button"
                   onClick={() => handleQuickClick(care)}
                   className={cn(
-                    "group flex items-center gap-2 px-2.5 py-2 rounded-md border text-left transition-all",
+                    "group flex items-center gap-2 px-3 py-2 rounded-md border text-left transition-all",
                     multiMode && selected
-                      ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30"
+                      ? "border-warning bg-warning-soft"
                       : flashed
-                        ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30"
-                        : "border-border/40 bg-card/50 hover:border-amber-300/60 hover:bg-amber-50/40 dark:hover:bg-amber-950/15",
+                        ? "border-released bg-released-soft"
+                        : "border-border/40 bg-card/50 hover:border-warning-border/60 hover:bg-warning-soft/40",
                   )}
                 >
                   {multiMode ? (
@@ -294,14 +294,14 @@ export function CareCatalogDialog({
                       className="shrink-0"
                     />
                   ) : flashed ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                    <Check className="h-3.5 w-3.5 text-released-on-soft shrink-0" />
                   ) : (
-                    <Plus className="h-3.5 w-3.5 text-amber-500 shrink-0 opacity-60 group-hover:opacity-100" />
+                    <Plus className="h-3.5 w-3.5 text-warning shrink-0 opacity-60 group-hover:opacity-100" />
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-medium uppercase tracking-wide leading-tight truncate">{care.name}</p>
+                    <p className="text-xs font-medium uppercase tracking-wide leading-tight truncate">{care.name}</p>
                     {care.defaultPosology && care.defaultPosology !== "-" && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{care.defaultPosology}</p>
+                      <p className="text-xs text-muted-foreground mt-1 truncate">{care.defaultPosology}</p>
                     )}
                   </div>
                 </button>
@@ -317,17 +317,17 @@ export function CareCatalogDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[1100px] w-[calc(100vw-0.5rem)] sm:w-[96vw] h-[100dvh] sm:h-[82vh] max-h-[100dvh] sm:max-h-[82vh] flex flex-col p-0 overflow-hidden rounded-none sm:rounded-lg">
         {/* HEADER */}
-        <DialogHeader className="space-y-1.5 px-3 sm:px-5 pt-3 sm:pt-5 pb-2 sm:pb-3 border-b shrink-0">
+        <DialogHeader className="space-y-2 px-3 sm:px-4 pt-3 sm:pt-4 pb-2 sm:pb-3 border-b shrink-0">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
-              <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
+            <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-warning/10 flex items-center justify-center">
+              <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5 text-warning" />
             </div>
             <div className="flex-1 min-w-0">
-              <DialogTitle className="text-sm sm:text-lg font-bold tracking-wide uppercase truncate">
+              <DialogTitle className="text-sm sm:text-lg font-semibold tracking-wide uppercase truncate">
                 Assistente de Cuidados
               </DialogTitle>
               {patientName && (
-                <p className="text-xs sm:text-sm font-semibold text-foreground mt-0.5 tracking-wide uppercase truncate">
+                <p className="text-xs sm:text-sm font-medium text-foreground mt-1 tracking-wide uppercase truncate">
                   {patientName}
                 </p>
               )}
@@ -342,7 +342,7 @@ export function CareCatalogDialog({
         {/* BUSCA — sempre visível, funciona em qualquer modo (perfis, dentro
             de um perfil, ou cuidados rápidos). Sem escolher aba nenhuma:
             digitar aqui já busca perfis clínicos E itens individuais juntos. */}
-        <div className="px-3 sm:px-5 py-2 border-b shrink-0 relative">
+        <div className="px-3 sm:px-4 py-2 border-b shrink-0 relative">
           <Search className="absolute left-6 sm:left-8 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
             placeholder={
@@ -352,26 +352,26 @@ export function CareCatalogDialog({
             }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9 text-sm"
+            className="pl-8 h-9 text-sm"
           />
         </div>
 
         {/* TABS — só quando não há busca ativa nem perfil aberto; buscar
             já mostra perfis + itens juntos, sem precisar escolher aba. */}
         {!activeProfile && !isSearching && (
-          <div className="flex gap-1 border-b px-2 sm:px-5 shrink-0 overflow-x-auto">
+          <div className="flex gap-1 border-b px-2 sm:px-4 shrink-0 overflow-x-auto">
             <button
               type="button"
               onClick={() => setTab("perfis")}
               className={cn(
-                "px-3 py-2 text-xs font-semibold tracking-wide border-b-2 transition-colors uppercase",
+                "px-3 py-2 text-xs font-medium tracking-wide border-b-2 transition-colors uppercase",
                 tab === "perfis"
-                  ? "border-amber-500 text-amber-600 dark:text-amber-400"
+                  ? "border-warning text-warning-on-soft"
                   : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
               Perfis de Cuidados
-              <Badge variant="secondary" className="ml-2 h-4 text-[9px] px-1.5">
+              <Badge variant="secondary" className="ml-2 h-4 text-xs px-2">
                 {CARE_PROFILES.length}
               </Badge>
             </button>
@@ -379,14 +379,14 @@ export function CareCatalogDialog({
               type="button"
               onClick={() => setTab("rapido")}
               className={cn(
-                "px-3 py-2 text-xs font-semibold tracking-wide border-b-2 transition-colors uppercase",
+                "px-3 py-2 text-xs font-medium tracking-wide border-b-2 transition-colors uppercase",
                 tab === "rapido"
-                  ? "border-amber-500 text-amber-600 dark:text-amber-400"
+                  ? "border-warning text-warning-on-soft"
                   : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
               Cuidados rápidos
-              <Badge variant="secondary" className="ml-2 h-4 text-[9px] px-1.5">
+              <Badge variant="secondary" className="ml-2 h-4 text-xs px-2">
                 {CARE_OPTIONS.length}
               </Badge>
             </button>
@@ -397,38 +397,38 @@ export function CareCatalogDialog({
         <div className="flex-1 min-h-0 flex flex-col">
           {activeProfile ? (
             <>
-              <div className="flex items-center justify-between gap-2 px-5 py-2 border-b bg-muted/30 shrink-0">
+              <div className="flex items-center justify-between gap-2 px-4 py-2 border-b bg-muted/30 shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 text-[11px]"
+                  className="h-7 text-xs"
                   onClick={() => setActiveProfileId(null)}
                 >
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Trocar perfil
                 </Button>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-[10px] h-5 border-amber-300 text-amber-700">
+                  <Badge variant="outline" className="text-xs h-5 border-warning-border text-warning-on-soft">
                     {activeProfile.label}
                   </Badge>
-                  <Button variant="ghost" size="sm" className="h-7 text-[11px]" onClick={toggleAllProfile}>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={toggleAllProfile}>
                     {allProfileChecked ? "Desmarcar todos" : "Marcar todos"}
                   </Button>
                 </div>
               </div>
 
               <ScrollArea className="flex-1 min-h-0">
-                <div className="px-5 py-3 space-y-4">
+                <div className="px-4 py-3 space-y-4">
                   {activeProfileItemsFiltered.length === 0 && activeProfileExtrasFiltered.length === 0 && (
-                    <div className="text-center py-10 text-sm text-muted-foreground">
+                    <div className="text-center py-8 text-sm text-muted-foreground">
                       Nenhum item deste perfil bate com "{search.trim()}"
                     </div>
                   )}
                   {activeProfileItemsFiltered.length > 0 && (
                     <section>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                         Cuidados padronizados
                       </p>
-                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
                         {activeProfileItemsFiltered.map((id) => {
                           const care = CARE_OPTIONS.find((c) => c.id === id);
                           if (!care) return null;
@@ -437,21 +437,21 @@ export function CareCatalogDialog({
                             <label
                               key={id}
                               className={cn(
-                                "flex items-start gap-2.5 px-2.5 py-2 rounded-md border cursor-pointer transition-all text-left",
+                                "flex items-start gap-3 px-3 py-2 rounded-md border cursor-pointer transition-all text-left",
                                 checked
-                                  ? "border-amber-300 bg-amber-50/40 dark:bg-amber-950/15"
+                                  ? "border-warning-border bg-warning-soft/40"
                                   : "border-border/40 hover:bg-muted/30",
                               )}
                             >
                               <Checkbox
                                 checked={checked}
                                 onCheckedChange={() => toggleStructured(id)}
-                                className="mt-0.5"
+                                className="mt-1"
                               />
                               <div className="flex-1 min-w-0">
-                                <p className="text-[12px] font-medium uppercase tracking-wide">{care.name}</p>
+                                <p className="text-xs font-medium uppercase tracking-wide">{care.name}</p>
                                 {care.defaultPosology && care.defaultPosology !== "-" && (
-                                  <p className="text-[10px] text-muted-foreground mt-0.5">{care.defaultPosology}</p>
+                                  <p className="text-xs text-muted-foreground mt-1">{care.defaultPosology}</p>
                                 )}
                               </div>
                             </label>
@@ -463,28 +463,28 @@ export function CareCatalogDialog({
 
                   {activeProfileExtrasFiltered.length > 0 && (
                     <section>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                         Recomendações específicas
                       </p>
-                      <div className="grid sm:grid-cols-2 gap-1.5">
+                      <div className="grid sm:grid-cols-2 gap-2">
                         {activeProfileExtrasFiltered.map((txt) => {
                           const checked = selectedExtras.has(txt);
                           return (
                             <label
                               key={txt}
                               className={cn(
-                                "flex items-start gap-2.5 px-2.5 py-2 rounded-md border cursor-pointer transition-all text-left",
+                                "flex items-start gap-3 px-3 py-2 rounded-md border cursor-pointer transition-all text-left",
                                 checked
-                                  ? "border-amber-300 bg-amber-50/40 dark:bg-amber-950/15"
+                                  ? "border-warning-border bg-warning-soft/40"
                                   : "border-border/40 hover:bg-muted/30",
                               )}
                             >
                               <Checkbox
                                 checked={checked}
                                 onCheckedChange={() => toggleExtra(txt)}
-                                className="mt-0.5"
+                                className="mt-1"
                               />
-                              <p className="flex-1 text-[12px] leading-snug">{txt}</p>
+                              <p className="flex-1 text-xs leading-snug">{txt}</p>
                             </label>
                           );
                         })}
@@ -501,11 +501,11 @@ export function CareCatalogDialog({
               {groupedOptions.length > 0 && modeToggleNode}
               <ScrollArea className="flex-1 min-h-0">
                 {filteredProfiles.length > 0 && (
-                  <div className="px-5 pt-3 pb-1">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-1.5">
+                  <div className="px-4 pt-3 pb-1">
+                    <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-2">
                       Perfis clínicos
                     </p>
-                    <div className="grid sm:grid-cols-2 gap-1.5">
+                    <div className="grid sm:grid-cols-2 gap-2">
                       {filteredProfiles.map((profile) => {
                         const Icon = PROFILE_ICONS[profile.icon] ?? ClipboardList;
                         const applied = appliedProfileIds.has(profile.id);
@@ -515,16 +515,16 @@ export function CareCatalogDialog({
                             type="button"
                             onClick={() => setActiveProfileId(profile.id)}
                             className={cn(
-                              "w-full text-left p-2.5 rounded-lg border bg-card/50 transition-all hover:border-amber-300/60 hover:shadow-sm flex items-center gap-2.5",
-                              applied ? "border-amber-300 bg-amber-50/30 dark:bg-amber-950/10" : "border-border/40",
+                              "w-full text-left p-3 rounded-lg border bg-card/50 transition-all hover:border-warning-border/60 hover:shadow-sm flex items-center gap-3",
+                              applied ? "border-warning-border bg-warning-soft/30" : "border-border/40",
                             )}
                           >
-                            <div className="w-7 h-7 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0">
-                              <Icon className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                            <div className="w-7 h-7 rounded-md bg-warning/10 flex items-center justify-center shrink-0">
+                              <Icon className="h-3.5 w-3.5 text-warning-on-soft" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-[12px] font-semibold tracking-wide uppercase truncate">{profile.label}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">{profile.description}</p>
+                              <p className="text-xs font-medium tracking-wide uppercase truncate">{profile.label}</p>
+                              <p className="text-xs text-muted-foreground truncate">{profile.description}</p>
                             </div>
                           </button>
                         );
@@ -532,9 +532,9 @@ export function CareCatalogDialog({
                     </div>
                   </div>
                 )}
-                <div className="px-5 pt-2 pb-3">
+                <div className="px-4 pt-2 pb-3">
                   {(filteredProfiles.length > 0 && groupedOptions.length > 0) && (
-                    <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-1.5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-2">
                       Cuidados individuais
                     </p>
                   )}
@@ -544,7 +544,7 @@ export function CareCatalogDialog({
             </>
           ) : tab === "perfis" ? (
             <ScrollArea className="flex-1 min-h-0">
-              <div className="px-5 py-3 grid sm:grid-cols-2 gap-2">
+              <div className="px-4 py-3 grid sm:grid-cols-2 gap-2">
                 {CARE_PROFILES.map((profile) => {
                   const Icon = PROFILE_ICONS[profile.icon] ?? ClipboardList;
                   const applied = appliedProfileIds.has(profile.id);
@@ -555,32 +555,32 @@ export function CareCatalogDialog({
                       type="button"
                       onClick={() => setActiveProfileId(profile.id)}
                       className={cn(
-                        "w-full text-left p-3 rounded-xl border bg-card/50 transition-all hover:border-amber-300/60 hover:shadow-sm",
+                        "w-full text-left p-3 rounded-lg border bg-card/50 transition-all hover:border-warning-border/60 hover:shadow-sm",
                         applied
-                          ? "border-amber-300 bg-amber-50/30 dark:bg-amber-950/10"
+                          ? "border-warning-border bg-warning-soft/30"
                           : "border-border/40",
                       )}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-                          <Icon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        <div className="w-9 h-9 rounded-lg bg-warning/10 flex items-center justify-center shrink-0">
+                          <Icon className="h-4 w-4 text-warning-on-soft" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-semibold tracking-wide uppercase">{profile.label}</p>
-                            <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
+                            <p className="text-sm font-medium tracking-wide uppercase">{profile.label}</p>
+                            <Badge variant="secondary" className="text-xs h-4 px-2">
                               {totalItems} itens
                             </Badge>
                             {applied && (
                               <Badge
                                 variant="outline"
-                                className="text-[9px] h-4 px-1.5 border-amber-400 text-amber-600"
+                                className="text-xs h-4 px-2 border-warning text-warning-on-soft"
                               >
-                                <Check className="h-2.5 w-2.5 mr-0.5" /> Aplicado
+                                <Check className="h-2.5 w-2.5 mr-1" /> Aplicado
                               </Badge>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">{profile.description}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{profile.description}</p>
                         </div>
                       </div>
                     </button>
@@ -592,7 +592,7 @@ export function CareCatalogDialog({
             <>
               {modeToggleNode}
               <ScrollArea className="flex-1 min-h-0">
-                <div className="px-5 py-3">
+                <div className="px-4 py-3">
                   {quickItemsGridNode}
                 </div>
               </ScrollArea>
@@ -601,30 +601,30 @@ export function CareCatalogDialog({
         </div>
 
         {/* FOOTER */}
-        <DialogFooter className="px-5 py-3 border-t flex-row sm:justify-between items-center gap-2 shrink-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="uppercase text-xs">
+        <DialogFooter className="px-4 py-3 border-t flex-row sm:justify-between items-center gap-2 shrink-0">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="uppercase tracking-wider text-xs">
             Fechar
           </Button>
           {activeProfile ? (
             <Button
               onClick={handleAddProfileSelection}
               disabled={totalProfileSelected === 0}
-              className="uppercase text-xs bg-amber-500 hover:bg-amber-600 text-white"
+              className="uppercase tracking-wider text-xs bg-warning hover:bg-warning text-white"
             >
-              <Check className="h-3.5 w-3.5 mr-1.5" />
+              <Check className="h-3.5 w-3.5 mr-2" />
               Adicionar {totalProfileSelected} {totalProfileSelected === 1 ? "cuidado" : "cuidados"}
             </Button>
           ) : (isSearching || tab === "rapido") && multiMode ? (
             <Button
               onClick={handleAddQuickSelection}
               disabled={quickSelected.size === 0}
-              className="uppercase text-xs bg-amber-500 hover:bg-amber-600 text-white"
+              className="uppercase tracking-wider text-xs bg-warning hover:bg-warning text-white"
             >
-              <Check className="h-3.5 w-3.5 mr-1.5" />
+              <Check className="h-3.5 w-3.5 mr-2" />
               Adicionar {quickSelected.size} {quickSelected.size === 1 ? "cuidado" : "cuidados"}
             </Button>
           ) : (
-            <span className="text-[10px] text-muted-foreground tracking-wide">
+            <span className="text-xs text-muted-foreground tracking-wide">
               {isSearching
                 ? "Clique num item pra adicionar direto, ou num perfil pra abrir o checklist."
                 : tab === "rapido"

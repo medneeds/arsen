@@ -110,8 +110,8 @@ export function DateBRPicker({
   const hasBase = !!parseBase(baseDate);
 
   return (
-    <div className={cn("flex flex-col gap-1.5", className)}>
-      <div className="flex items-center gap-1.5">
+    <div className={cn("flex flex-col gap-2", className)}>
+      <div className="flex items-center gap-2">
         <Input
           value={internal}
           onChange={(e) => {
@@ -145,7 +145,7 @@ export function DateBRPicker({
           <PopoverContent className="w-auto p-0 pointer-events-auto" align="end">
             {presetsPlacement === "popover" && presets.length > 0 && (
               <div className="flex flex-wrap gap-1 p-2 border-b bg-muted/30">
-                <span className="text-[10px] text-muted-foreground self-center mr-1 uppercase">
+                <span className="text-xs text-muted-foreground self-center mr-1 uppercase tracking-wider">
                   {presetsLabel}
                 </span>
                 {presets.map((d) => (
@@ -154,7 +154,7 @@ export function DateBRPicker({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-7 px-2 text-[11px]"
+                    className="h-7 px-2 text-xs"
                     onClick={() => applyPreset(d)}
                   >
                     +{d}d
@@ -196,8 +196,8 @@ export function DateBRPicker({
       </div>
 
       {presetsPlacement === "below" && presets.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1 pl-0.5">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide mr-1">
+        <div className="flex flex-wrap items-center gap-1 pl-1">
+          <span className="text-xs text-muted-foreground uppercase tracking-wide mr-1">
             {presetsLabel}{hasBase ? ` ${baseBR}` : ""}
           </span>
           {presets.map((d) => (
@@ -206,7 +206,7 @@ export function DateBRPicker({
               type="button"
               variant="outline"
               size="sm"
-              className="h-6 px-2 text-[11px] tabular-nums"
+              className="h-6 px-2 text-xs tabular-nums"
               onClick={() => applyPreset(d)}
               disabled={!hasBase}
               title={hasBase ? `Soma ${d} dias a ${baseBR}` : "Sem data base"}

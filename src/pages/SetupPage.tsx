@@ -132,8 +132,8 @@ export default function SetupPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <Card className="w-full max-w-md p-8">
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="h-16 w-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
-            <Shield className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+          <div className="h-16 w-16 rounded-full bg-released-soft flex items-center justify-center mb-4">
+            <Shield className="h-8 w-8 text-released-on-soft" />
           </div>
           <h1 className="text-2xl font-bold">CONFIGURAÇÃO INICIAL</h1>
           <p className="text-sm text-muted-foreground mt-1">CRIE O DONO DO SISTEMA (SUPER ADMIN)</p>
