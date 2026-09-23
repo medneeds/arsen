@@ -158,19 +158,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <SessionTimeoutProvider>{children}</SessionTimeoutProvider>;
   }
 
-  if (showLoadingScreen) {
-    return <LoadingScreen onComplete={() => {
-      setShowLoadingScreen(false);
-      // Perfis globais (gestor/admin/painéis dedicados) pulam a tela de seleção de setor.
-      if (!isLegacyGenericUser && !accessLimitsShown && !skipAccessLimits) {
-        setShowAccessLimits(true);
-      } else if (skipAccessLimits) {
-        setAccessLimitsShown(true);
-        try { sessionStorage.setItem("access_limits_shown", "1"); } catch {}
-      }
-    }} />;
-  }
-
   // Mostrar diálogo de termos se ainda não aceitou
   if (showTermsDialog && !termsAccepted) {
     return (
