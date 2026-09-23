@@ -174,7 +174,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAllowedDepartments([]);
         return;
       }
-      setRole(roleData?.role as UserRole);
 
       if (!prof) {
         // Autenticado sem linha em profissionais: sem papel → bloqueado.
