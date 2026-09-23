@@ -77,19 +77,18 @@ export default function MovementsPage() {
     fetchMovements();
     import("@/lib/lockedSectorCleanup").then((m) => m.maybeRunLockedSectorCleanup());
 
-    // Realtime subscription filtered by department
+    // MIGRAÇÃO: realtime patient_movements → logs_auditoria. Sem coluna `department`
+    // no schema novo → filtro por departamento REMOVIDO (escopo por RLS).
     const channel = supabase
       .channel('patient_movements_changes')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'patient_movements',
-          filter: `department=eq.${currentDepartment}`
-        },
-        () => {
-          fetchMovements();
+        { event: '*', schema: 'public', table: 'logs_auditoria' },
+        (payload: any) => {
+          const tipo = (payload.new || payload.old)?.tipo_evento as string | undefined;
+          if (tipo && (tipo.startsWith('movimentacao_') || tipo.startsWith('sinalizacao_transferencia_'))) {
+            fetchMovements();
+          }
         }
       )
       .subscribe();
@@ -105,14 +104,39 @@ export default function MovementsPage() {
 
   const fetchMovements = async () => {
     try {
+      // MIGRAÇÃO: patient_movements (morta) → logs_auditoria. Filtra os eventos de
+      // movimentação/sinalização; sem coluna `department` → filtro removido (RLS).
+      // Campos ricos (paciente/leito/setor/destino/médico/snapshot) reconstruídos de
+      // `dados_novos`; `patient_snapshot` sem fonte no evento → null (botões que dele
+      // dependem ficam ocultos). Ver MIGRACAO_DEGRADACOES.md.
       const { data, error } = await supabase
-        .from('patient_movements')
+        .from('logs_auditoria')
         .select('*')
-        .eq('department', currentDepartment)
-        .order('created_at', { ascending: false });
+        .order('criado_em', { ascending: false })
+        .limit(500);
 
       if (error) throw error;
-      setMovements((data as PatientMovement[]) || []);
+      const rows = ((data || []) as any[])
+        .filter((r) => {
+          const t = r.tipo_evento as string | undefined;
+          return !!t && (t.startsWith('movimentacao_') || t.startsWith('sinalizacao_transferencia_'));
+        })
+        .map((r: any) => {
+          const dn = (r.dados_novos ?? {}) as Record<string, any>;
+          return {
+            id: r.id,
+            patient_name: dn.patient_name ?? "—",
+            patient_bed: dn.patient_bed ?? null,
+            patient_sector: dn.patient_sector ?? null,
+            movement_type: dn.movement_type ?? String(r.tipo_evento).replace(/^movimentacao_/, "").toUpperCase(),
+            destination: dn.destination ?? null,
+            notes: dn.notes ?? r.motivo ?? null,
+            responsible_doctor: dn.responsible_doctor ?? null,
+            created_at: r.criado_em,
+            patient_snapshot: dn.patient_snapshot ?? null,
+          } as PatientMovement;
+        });
+      setMovements(rows);
     } catch (error) {
       console.error('Error fetching movements:', error);
       toast({
@@ -256,60 +280,18 @@ export default function MovementsPage() {
 
   const counts = getMovementCounts();
 
-  const handleReallocatePatient = async (movement: PatientMovement) => {
-    if (!movement.patient_snapshot) {
-      toast({
-        title: "Erro ao realocar",
-        description: "Dados do paciente não encontrados.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      if (!currentHospital || !currentState) {
-        throw new Error('Hospital unit and state must be selected');
-      }
-
-      const snapshot = movement.patient_snapshot;
-      
-      // Recreate patient in patients table with original data
-      const { error: insertError } = await supabase
-        .from('patients')
-        .insert({
-          name: snapshot.name,
-          age: snapshot.age,
-          bed_number: snapshot.bedNumber,
-          sector: snapshot.sector,
-          diagnoses: snapshot.diagnoses?.join('\n') || null,
-          medical_history: snapshot.medicalHistory?.join('\n') || null,
-          relevant_exams: snapshot.relevantExams?.join('\n') || null,
-          pendencies: snapshot.pendencies?.join('\n') || null,
-          highlighted_pendencies: snapshot.highlightedPendencies || [],
-          schedule: snapshot.schedule?.join('\n') || null,
-          admission_history: snapshot.admissionHistory || null,
-          admission_date: snapshot.admissionDate || new Date().toISOString(),
-          department: currentDepartment,
-          state_id: currentState.id,
-          hospital_unit_id: currentHospital.id,
-        });
-
-      if (insertError) throw insertError;
-
-      toast({
-        title: "Paciente realocado com sucesso",
-        description: `${snapshot.name} foi realocado de volta ao setor ${sectorLabelFromCode(snapshot.sector)}.`,
-      });
-
-      fetchMovements();
-    } catch (error) {
-      console.error('Error reallocating patient:', error);
-      toast({
-        title: "Erro ao realocar paciente",
-        description: "Não foi possível realocar o paciente. Tente novamente.",
-        variant: "destructive",
-      });
-    }
+  // MIGRAÇÃO: a "realocação a partir do histórico" recriava uma linha na mega-tabela
+  // `patients` a partir do snapshot. `patients` não existe mais e recriar um paciente
+  // exige uma admissão completa (paciente + internação + leito, com prontuário
+  // obrigatório) — não derivável de um snapshot de auditoria. Ação DEGRADADA: informa
+  // que a realocação deve ser feita pelo Mapa de Leitos. Ver MIGRACAO_DEGRADACOES.md.
+  const handleReallocatePatient = async (_movement: PatientMovement) => {
+    toast({
+      title: "Realocação indisponível pelo histórico",
+      description:
+        "No schema novo, realoque o paciente pelo Mapa de Leitos (a recriação a partir do histórico não é mais suportada).",
+      variant: "destructive",
+    });
   };
 
   return (

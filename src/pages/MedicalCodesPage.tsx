@@ -41,6 +41,18 @@ const categoryLabels = {
   MEDICAÇÕES: "Medicações",
 };
 
+// MIGRAÇÃO: medical_codes → codigos_referencia. A antiga coluna `category`
+// (EXAMES/PROCEDIMENTOS/...) vira o discriminador `tipo` da tabela unificada.
+const CATEGORY_TO_TIPO: Record<string, string> = {
+  EXAMES: "exame",
+  PROCEDIMENTOS: "procedimento",
+  MATERIAIS: "material",
+  MEDICAÇÕES: "medicacao",
+};
+
+// Papéis que podem editar a tabela de referência.
+const EDIT_ROLES = ["admin", "super_admin", "dev"];
+
 export default function MedicalCodesPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -76,11 +88,13 @@ export default function MedicalCodesPage() {
   }, [searchTerm, codes]);
 
   const fetchCodes = async () => {
+    // MIGRAÇÃO: medical_codes → codigos_referencia (codigo/nome/descricao/tipo).
+    const tipo = CATEGORY_TO_TIPO[category] ?? "exame";
     const { data, error } = await supabase
-      .from("medical_codes")
-      .select("*")
-      .eq("category", category)
-      .order("code", { ascending: true });
+      .from("codigos_referencia")
+      .select("id, codigo, nome, descricao, tipo")
+      .eq("tipo", tipo)
+      .order("codigo", { ascending: true });
 
     if (error) {
       toast.error("Não foi possível carregar códigos");
@@ -90,8 +104,15 @@ export default function MedicalCodesPage() {
       return;
     }
 
-    setCodes(data || []);
-    setFilteredCodes(data || []);
+    const mapped: MedicalCode[] = (data || []).map((r: any) => ({
+      id: r.id,
+      code: r.codigo,
+      name: r.nome ?? "",
+      system_description: r.descricao ?? "",
+      category,
+    }));
+    setCodes(mapped);
+    setFilteredCodes(mapped);
   };
 
   const handleSave = async () => {
@@ -100,17 +121,17 @@ export default function MedicalCodesPage() {
       return;
     }
 
+    // MIGRAÇÃO: colunas em português + discriminador `tipo`.
     const dataToSave = {
-      ...formData,
-      code: formData.code,
-      name: formData.name,
-      system_description: formData.system_description,
-      category,
+      codigo: formData.code,
+      nome: formData.name,
+      descricao: formData.system_description,
+      tipo: CATEGORY_TO_TIPO[category] ?? "exame",
     };
 
     if (editingCode) {
       const { error } = await supabase
-        .from("medical_codes")
+        .from("codigos_referencia")
         .update(dataToSave)
         .eq("id", editingCode.id);
 
@@ -124,7 +145,7 @@ export default function MedicalCodesPage() {
 
       toast.success("Código atualizado com sucesso");
     } else {
-      const { error } = await supabase.from("medical_codes").insert(dataToSave);
+      const { error } = await supabase.from("codigos_referencia").insert(dataToSave);
 
       if (error) {
         toast.error("Não foi possível criar código");
@@ -146,7 +167,7 @@ export default function MedicalCodesPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Tem certeza que deseja deletar este código?")) return;
 
-    const { error } = await supabase.from("medical_codes").delete().eq("id", id);
+    const { error } = await supabase.from("codigos_referencia").delete().eq("id", id);
 
     if (error) {
       toast.error("Não foi possível deletar código");
@@ -169,8 +190,12 @@ export default function MedicalCodesPage() {
     }
   };
 
+  // MIGRAÇÃO: role vem de profissionais.papel (AuthContext). Permissão de edição
+  // ampliada para admin/super_admin/dev (antes só 'admin' via user_roles).
+  const canEdit = EDIT_ROLES.includes((role as string) ?? "");
+
   const openDialog = (code?: MedicalCode) => {
-    if (role !== 'admin') {
+    if (!canEdit) {
       toast.error("Apenas administradores podem criar ou editar códigos médicos");
       return;
     }
@@ -303,8 +328,8 @@ export default function MedicalCodesPage() {
                           size="icon"
                           onClick={() => openDialog(code)}
                           className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
-                          disabled={role !== 'admin'}
-                          title={role !== 'admin' ? 'Apenas administradores' : 'Editar'}
+                          disabled={!canEdit}
+                          title={!canEdit ? 'Apenas administradores' : 'Editar'}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -313,8 +338,8 @@ export default function MedicalCodesPage() {
                           size="icon"
                           onClick={() => handleDelete(code.id)}
                           className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          disabled={role !== 'admin'}
-                          title={role !== 'admin' ? 'Apenas administradores' : 'Deletar'}
+                          disabled={!canEdit}
+                          title={!canEdit ? 'Apenas administradores' : 'Deletar'}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

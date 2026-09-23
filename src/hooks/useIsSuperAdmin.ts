@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Returns whether the current user has the `super_admin` role.
- * Server-side only (user_roles table) — never localStorage.
+ * Server-side only (`profissionais.papel`) — never localStorage.
+ *
+ * MIGRAÇÃO: `user_roles` (morta) → `profissionais.papel` por `user_id`.
  */
 export function useIsSuperAdmin(): { isSuperAdmin: boolean; loading: boolean } {
   const { user } = useAuth();
@@ -20,13 +22,14 @@ export function useIsSuperAdmin(): { isSuperAdmin: boolean; loading: boolean } {
     }
     setLoading(true);
     supabase
-      .from("user_roles")
-      .select("role")
+      .from("profissionais")
+      .select("papel")
       .eq("user_id", user.id)
-      .eq("role", "super_admin" as any)
+      .eq("papel", "super_admin")
+      .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return;
-        setIsSuperAdmin((data ?? []).length > 0);
+        setIsSuperAdmin(!!data);
         setLoading(false);
       });
     return () => { cancelled = true; };

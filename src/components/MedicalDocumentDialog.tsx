@@ -83,22 +83,20 @@ export function MedicalDocumentDialog({
   const { documentos, save: saveDocumentoMedico } = useDocumentoMedico(patientId, patientName);
 
   // Busca dados cadastrais complementares (data de nascimento e prontuário)
+  // MIGRAÇÃO: patients/patient_registry (mortas) → internacoes → pacientes.
+  // `patientId` aqui é internacoes.id.
   const [patientRegistry, setPatientRegistry] = useState<{ birth_date?: string | null; medical_record?: string | null } | null>(null);
   useEffect(() => {
     if (!patientId) return;
     supabase
-      .from("patients")
-      .select("patient_registry_id")
+      .from("internacoes")
+      .select("paciente:pacientes(data_nascimento, prontuario)")
       .eq("id", patientId)
       .maybeSingle()
-      .then(({ data: p }) => {
-        if (!p?.patient_registry_id) return;
-        supabase
-          .from("patient_registry")
-          .select("birth_date, medical_record")
-          .eq("id", p.patient_registry_id)
-          .maybeSingle()
-          .then(({ data: r }) => { if (r) setPatientRegistry(r); });
+      .then(({ data }) => {
+        const pac = (data as any)?.paciente;
+        if (!pac) return;
+        setPatientRegistry({ birth_date: pac.data_nascimento, medical_record: pac.prontuario });
       });
   }, [patientId]);
 

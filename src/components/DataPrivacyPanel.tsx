@@ -31,27 +31,29 @@ import {
   Trash2,
 } from "lucide-react";
 
+// MIGRAÇÃO: nomes de campo espelham as colunas do schema novo
+// (consentimentos_usuario / solicitacoes_dados_lgpd / politicas_retencao_dados).
 interface Consent {
   id: string;
-  consent_type: string;
-  consent_version: string;
-  accepted_at: string;
+  tipo_consentimento: string;
+  versao_consentimento: string;
+  aceito_em: string;
 }
 
 interface DataRequest {
   id: string;
-  request_type: string;
+  tipo_solicitacao: string;
   status: string;
-  requested_at: string;
-  processed_at: string | null;
-  notes: string | null;
+  solicitado_em: string;
+  processado_em: string | null;
+  observacoes: string | null;
 }
 
 interface RetentionPolicy {
-  table_name: string;
-  retention_years: number;
-  description: string;
-  legal_basis: string;
+  nome_tabela: string;
+  anos_retencao: number;
+  descricao: string | null;
+  base_legal: string | null;
 }
 
 export function DataPrivacyPanel() {
@@ -61,7 +63,6 @@ export function DataPrivacyPanel() {
   const [retentionPolicies, setRetentionPolicies] = useState<RetentionPolicy[]>([]);
   const [loading, setLoading] = useState(true);
   const [requestingExport, setRequestingExport] = useState(false);
-  const [downloadingExport, setDownloadingExport] = useState(false);
   const [requestingDeletion, setRequestingDeletion] = useState(false);
 
   useEffect(() => {
@@ -72,31 +73,31 @@ export function DataPrivacyPanel() {
 
   const fetchPrivacyData = async () => {
     try {
-      // Buscar consentimentos
+      // Buscar consentimentos (MIGRAÇÃO: user_consents → consentimentos_usuario)
       const { data: consentsData } = await supabase
-        .from("user_consents")
-        .select("*")
-        .eq("user_id", user?.id)
-        .order("accepted_at", { ascending: false });
+        .from("consentimentos_usuario")
+        .select("id, tipo_consentimento, versao_consentimento, aceito_em")
+        .eq("usuario_id", user?.id)
+        .order("aceito_em", { ascending: false });
 
-      setConsents(consentsData || []);
+      setConsents((consentsData as Consent[]) || []);
 
-      // Buscar solicitações de dados
+      // Buscar solicitações de dados (MIGRAÇÃO: data_requests → solicitacoes_dados_lgpd)
       const { data: requestsData } = await supabase
-        .from("data_requests")
-        .select("*")
-        .eq("user_id", user?.id)
-        .order("requested_at", { ascending: false });
+        .from("solicitacoes_dados_lgpd")
+        .select("id, tipo_solicitacao, status, solicitado_em, processado_em, observacoes")
+        .eq("usuario_id", user?.id)
+        .order("solicitado_em", { ascending: false });
 
-      setDataRequests(requestsData || []);
+      setDataRequests((requestsData as DataRequest[]) || []);
 
-      // Buscar políticas de retenção
+      // Buscar políticas de retenção (MIGRAÇÃO: data_retention_policies → politicas_retencao_dados)
       const { data: policiesData } = await supabase
-        .from("data_retention_policies")
-        .select("*")
-        .order("retention_years", { ascending: false });
+        .from("politicas_retencao_dados")
+        .select("nome_tabela, anos_retencao, descricao, base_legal")
+        .order("anos_retencao", { ascending: false });
 
-      setRetentionPolicies(policiesData || []);
+      setRetentionPolicies((policiesData as RetentionPolicy[]) || []);
     } catch (error) {
       console.error("Erro ao buscar dados de privacidade:", error);
     } finally {
@@ -109,47 +110,27 @@ export function DataPrivacyPanel() {
 
     setRequestingExport(true);
     try {
-      // Create the request record first
-      const { data: requestData, error } = await supabase.from("data_requests").insert({
-        user_id: user.id,
-        request_type: "export",
-        status: "processing",
-      }).select().single();
+      // MIGRAÇÃO: data_requests → solicitacoes_dados_lgpd.
+      // DEGRADADO: a edge function "export-user-data" não existe no backend novo
+      // (não consta na lista de functions migradas). O fluxo de geração+download
+      // imediato foi degradado para apenas registrar a solicitação, que será
+      // processada pela equipe de conformidade (mesmo modelo da exclusão).
+      const { error } = await supabase.from("solicitacoes_dados_lgpd").insert({
+        usuario_id: user.id,
+        tipo_solicitacao: "export",
+        status: "pending",
+        observacoes: "Solicitação de portabilidade de dados conforme Art. 18 LGPD",
+      });
 
       if (error) throw error;
 
-      // Call the edge function to generate the export
-      setDownloadingExport(true);
-      const { data, error: exportError } = await supabase.functions.invoke("export-user-data", {
-        body: { request_id: requestData.id },
-      });
-
-      if (exportError) {
-        // Update request to failed
-        const { error: erroGrav1 } = await supabase.from("data_requests").update({ status: "pending", notes: "Falha ao gerar - tentando novamente" }).eq("id", requestData.id);
-        if (erroGrav1) throw erroGrav1;
-        throw exportError;
-      }
-
-      // Create a downloadable file
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `dados-lgpd-${user.id.slice(0, 8)}-${new Date().toISOString().split("T")[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      toast.success("Dados exportados com sucesso Arquivo baixado.");
+      toast.success("Solicitação de exportação registrada. Será processada pela equipe de conformidade.");
       fetchPrivacyData();
     } catch (error) {
-      console.error("Erro ao exportar dados:", error);
-      toast.error("Não foi possível exportar dados. Tente novamente.");
+      console.error("Erro ao solicitar exportação:", error);
+      toast.error("Erro ao registrar solicitação. Tente novamente.");
     } finally {
       setRequestingExport(false);
-      setDownloadingExport(false);
     }
   };
 
@@ -158,11 +139,12 @@ export function DataPrivacyPanel() {
 
     setRequestingDeletion(true);
     try {
-      const { error } = await supabase.from("data_requests").insert({
-        user_id: user.id,
-        request_type: "deletion",
+      // MIGRAÇÃO: data_requests → solicitacoes_dados_lgpd.
+      const { error } = await supabase.from("solicitacoes_dados_lgpd").insert({
+        usuario_id: user.id,
+        tipo_solicitacao: "deletion",
         status: "pending",
-        notes: "Solicitação de exclusão de dados conforme Art. 18, VI LGPD",
+        observacoes: "Solicitação de exclusão de dados conforme Art. 18, VI LGPD",
       });
 
       if (error) throw error;
@@ -265,18 +247,18 @@ export function DataPrivacyPanel() {
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="h-5 w-5 text-released-on-soft" />
                     <div>
-                      <p className="font-medium">{getConsentTypeLabel(consent.consent_type)}</p>
+                      <p className="font-medium">{getConsentTypeLabel(consent.tipo_consentimento)}</p>
                       <p className="text-xs text-muted-foreground">
-                        Versão {consent.consent_version}
+                        Versão {consent.versao_consentimento}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-sm">
-                      {format(new Date(consent.accepted_at), "dd/MM/yyyy", { locale: ptBR })}
+                      {format(new Date(consent.aceito_em), "dd/MM/yyyy", { locale: ptBR })}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(consent.accepted_at), "HH:mm", { locale: ptBR })}
+                      {format(new Date(consent.aceito_em), "HH:mm", { locale: ptBR })}
                     </p>
                   </div>
                 </div>
@@ -347,13 +329,13 @@ export function DataPrivacyPanel() {
                         className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
                       >
                         <div className="flex items-center gap-3">
-                          {getRequestTypeIcon(request.request_type)}
+                          {getRequestTypeIcon(request.tipo_solicitacao)}
                           <div>
                             <p className="text-sm font-medium">
-                              {getRequestTypeLabel(request.request_type)}
+                              {getRequestTypeLabel(request.tipo_solicitacao)}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {format(new Date(request.requested_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                              {format(new Date(request.solicitado_em), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                             </p>
                           </div>
                         </div>
@@ -451,16 +433,16 @@ export function DataPrivacyPanel() {
           <div className="space-y-3">
             {retentionPolicies.map((policy) => (
               <div
-                key={policy.table_name}
+                key={policy.nome_tabela}
                 className="flex items-start justify-between p-3 bg-muted/50 rounded-lg"
               >
                 <div className="space-y-1">
-                  <p className="font-medium">{getTableLabel(policy.table_name)}</p>
-                  <p className="text-xs text-muted-foreground">{policy.description}</p>
-                  <p className="text-xs text-foreground">{policy.legal_basis}</p>
+                  <p className="font-medium">{getTableLabel(policy.nome_tabela)}</p>
+                  <p className="text-xs text-muted-foreground">{policy.descricao}</p>
+                  <p className="text-xs text-blue-600">{policy.base_legal}</p>
                 </div>
                 <Badge variant="outline" className="shrink-0">
-                  {policy.retention_years} anos
+                  {policy.anos_retencao} anos
                 </Badge>
               </div>
             ))}

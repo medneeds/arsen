@@ -42,45 +42,34 @@ function fmtBirthDate(iso?: string | null): string {
   return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
-/** Busca data de nascimento, nº de prontuário e nº de atendimento (registry → patients → encounters). */
+/**
+ * Busca data de nascimento e nº de prontuário do paciente.
+ *
+ * MIGRAÇÃO (Wave3): patients/patient_registry/patient_encounters (mortos) →
+ * internacoes(+pacientes). O `patient_id` passado pelas telas agora é o
+ * `internacao_id` (a solicitação pendura na internação). Identidade resolvida
+ * via internacoes.id → pacientes. DEGRADADOS:
+ *   - encounter_code (nº de atendimento) → patient_encounters não existe → null.
+ *   - patient_registry_id → param mantido por compatibilidade, sem uso.
+ */
 async function fetchPatientIdentifiers(req: {
   patient_registry_id?: string | null;
   patient_id?: string | null;
 }): Promise<{ birth_date: string | null; medical_record: string | null; encounter_code: string | null }> {
   let birth_date: string | null = null;
   let medical_record: string | null = null;
-  let encounter_code: string | null = null;
+  const encounter_code: string | null = null; // MIGRAÇÃO: sem coluna de atendimento no schema novo
   try {
-    let regId = req.patient_registry_id || null;
-    if (req.patient_id) {
-      const { data: pat } = await supabase
-        .from("patients")
-        .select("patient_registry_id, medical_record")
-        .eq("id", req.patient_id)
+    const internacaoId = req.patient_id || null;
+    if (internacaoId) {
+      const { data } = await supabase
+        .from("internacoes")
+        .select("paciente:pacientes(data_nascimento, prontuario)")
+        .eq("id", internacaoId)
         .maybeSingle();
-      if (!regId && (pat as any)?.patient_registry_id) regId = (pat as any).patient_registry_id;
-      if (!medical_record && (pat as any)?.medical_record) medical_record = (pat as any).medical_record;
-    }
-    if (regId) {
-      const { data: reg } = await supabase
-        .from("patient_registry")
-        .select("birth_date, medical_record")
-        .eq("id", regId)
-        .maybeSingle();
-      if ((reg as any)?.birth_date) birth_date = (reg as any).birth_date;
-      if (!medical_record && (reg as any)?.medical_record) medical_record = (reg as any).medical_record;
-    }
-    // Atendimento — apenas via patient_id ou registry_id (nunca por nome)
-    if (req.patient_id || regId) {
-      let q = supabase
-        .from("patient_encounters")
-        .select("encounter_code, created_at")
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (req.patient_id) q = q.eq("patient_id", req.patient_id);
-      else if (regId) q = q.eq("registry_id", regId);
-      const { data: enc } = await q.maybeSingle();
-      encounter_code = (enc as any)?.encounter_code || null;
+      const pac = (data as any)?.paciente;
+      if (pac?.data_nascimento) birth_date = pac.data_nascimento;
+      if (pac?.prontuario) medical_record = pac.prontuario;
     }
   } catch {
     /* silencioso */

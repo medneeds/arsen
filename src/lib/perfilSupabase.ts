@@ -4,11 +4,15 @@
  * O modulo perfilDoUsuario.ts nao importa o cliente de proposito: assim ele
  * roda no tsx, sem DOM e sem import.meta.env, e a regra de reuso fica coberta
  * por src/tests/perfil-uma-consulta-so.test.ts.
+ *
+ * MIGRAÇÃO: `profiles` não existe no schema novo (ver AuthContext/ProtectedRoute/
+ * ProfileIpGate, todos já migrados para `profissionais`). Esta função não é mais
+ * chamada em nenhum caminho de produção — degradada para no-op de sucesso,
+ * preservando a assinatura para não quebrar `lerPerfil` nem os testes de
+ * `buscarPerfilDoUsuario` (que injetam seu próprio buscador).
  */
-import { supabase } from "@/integrations/supabase/client";
 import {
   buscarPerfilDoUsuario,
-  COLUNAS_PERFIL,
   type PerfilDoUsuario,
   type RespostaPerfil,
 } from "./perfilDoUsuario";
@@ -16,13 +20,8 @@ import {
 export { limparPerfilEmCache } from "./perfilDoUsuario";
 export type { PerfilDoUsuario } from "./perfilDoUsuario";
 
-async function consultar(userId: string): Promise<RespostaPerfil> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select(COLUNAS_PERFIL)
-    .eq("id", userId)
-    .maybeSingle();
-  return { data: (data as PerfilDoUsuario) ?? null, error };
+async function consultar(_userId: string): Promise<RespostaPerfil> {
+  return { data: null as PerfilDoUsuario | null, error: null };
 }
 
 /**

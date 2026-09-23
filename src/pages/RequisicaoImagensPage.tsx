@@ -145,38 +145,32 @@ const RequisicaoImagensPage = () => {
       if (meta.full_name && !doctorName) setDoctorName(String(meta.full_name));
       if (meta.crm && !doctorCRM) setDoctorCRM(String(meta.crm));
 
+      // MIGRAÇÃO: profiles → profissionais (full_name→nome, crm→numero_conselho).
+      // profissionais NÃO tem coluna cpf → CPF só vem de user_metadata (acima).
       const { data, error } = await supabase
-        .from("profiles")
-        .select("full_name, crm, cpf")
-        .eq("id", user.id)
+        .from("profissionais")
+        .select("nome, numero_conselho")
+        .eq("user_id", user.id)
         .maybeSingle();
       if (error) {
-        console.warn("[APAC] erro lendo profile:", error.message);
+        console.warn("[APAC] erro lendo profissional:", error.message);
         return;
       }
       if (data) {
-        const fn = (data as any).full_name || meta.full_name || "";
-        const cr = (data as any).crm || meta.crm || "";
-        const cp = (data as any).cpf || meta.cpf || "";
+        const fn = (data as any).nome || meta.full_name || "";
+        const cr = (data as any).numero_conselho || meta.crm || "";
         if (fn) setDoctorName(String(fn));
         if (cr) setDoctorCRM(String(cr));
-        if (cp) setDoctorCPF(String(cp));
       }
     };
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  // Persiste CPF de volta no profile quando o usuário digitar (auto-save no blur)
+  // MIGRAÇÃO: profissionais não tem coluna cpf — não há onde persistir o CPF do
+  // médico. Degradado para no-op (o valor digitado segue apenas no formulário).
   const handleSaveDoctorCPF = async () => {
-    if (!user?.id || !doctorCPF.trim()) return;
-    try {
-      const { error: erroNaoBloqueante1 } = await supabase.from("profiles").update({ cpf: doctorCPF.trim() } as any).eq("id", user.id);
-      // Nao bloqueia o fluxo, mas nao pode sumir: antes o resultado era descartado.
-      if (erroNaoBloqueante1) console.warn("[RequisicaoImagensPage] falha nao-bloqueante ao salvar CPF no profile:", erroNaoBloqueante1);
-    } catch (e) {
-      console.warn("[APAC] não foi possível salvar CPF no profile:", e);
-    }
+    /* sem coluna de destino no schema novo */
   };
 
   // Auto-hydrate patient data from URL params (patientId) + patient_registry (prontuário real)
@@ -193,173 +187,82 @@ const RequisicaoImagensPage = () => {
 
     const hydrate = async () => {
       try {
-        // 1) Fetch patient + linked registry in a single round trip
-        const { data: pat, error } = await supabase
-          .from("patients")
+        // MIGRAÇÃO: patientId é internacoes.id. Junta internacao → pacientes.
+        //   patients/patient_registry → pacientes; admission_histories → internacoes.
+        const { data: internacao, error } = await supabase
+          .from("internacoes")
           .select(`
-            id, name, bed_number, sector, medical_record, patient_registry_id,
-            patient_registry:patient_registry_id (
-              full_name, social_name, medical_record, cns, cpf,
-              birth_date, sex, mother_name, phone,
-              address, neighborhood, city, state
+            paciente_id, hipotese_diagnostica, queixa_principal,
+            paciente:pacientes (
+              nome_completo, nome_social, prontuario, cns, cpf,
+              data_nascimento, sexo, nome_mae, telefone, endereco
             )
           `)
           .eq("id", patientId)
           .maybeSingle();
 
-        if (error || !pat) {
+        if (error || !internacao) {
           // Silent fail — keep URL values
           if (urlBed) toast.info(`Leito ${urlBed}${urlSector ? ` · ${urlSector}` : ""}`);
           return;
         }
 
-        const reg: any = (pat as any).patient_registry || null;
+        const reg: any = (internacao as any).paciente || null;
 
-        // Name: prefer registry social_name → registry full_name → patient.name → URL
+        // Name: prefer nome_social → nome_completo → URL
         const fullName =
-          reg?.social_name?.trim() ||
-          reg?.full_name?.trim() ||
-          pat.name?.trim() ||
+          reg?.nome_social?.trim() ||
+          reg?.nome_completo?.trim() ||
           urlName ||
           "";
         if (fullName) setPatientName(fullName.toUpperCase());
 
-        // Medical record: prefer patient.medical_record (current encounter) → registry.medical_record
-        const mr = (pat.medical_record || reg?.medical_record || "").toString();
-        if (mr) setPatientRecord(mr);
+        // MIGRAÇÃO: prontuário vem de pacientes.prontuario
+        if (reg?.prontuario) setPatientRecord(String(reg.prontuario));
 
-        // Registry-only fields
         if (reg?.cns) setPatientCNS(reg.cns);
-        if (reg?.birth_date) setPatientDOB(reg.birth_date); // YYYY-MM-DD
-        if (reg?.sex) {
-          const s = String(reg.sex).toUpperCase().trim();
+        if (reg?.data_nascimento) setPatientDOB(String(reg.data_nascimento).slice(0, 10));
+        if (reg?.sexo) {
+          const s = String(reg.sexo).toUpperCase().trim();
           if (s.startsWith("M")) setPatientSex("M");
           else if (s.startsWith("F")) setPatientSex("F");
         }
-        if (reg?.mother_name) setPatientMotherName(reg.mother_name.toUpperCase());
-        if (reg?.phone) setPatientPhone(reg.phone);
+        if (reg?.nome_mae) setPatientMotherName(String(reg.nome_mae).toUpperCase());
+        if (reg?.telefone) setPatientPhone(reg.telefone);
 
-        // Address: concatenate street + neighborhood for printed field
-        const addrParts = [reg?.address, reg?.neighborhood].filter(Boolean);
-        if (addrParts.length) setPatientAddress(addrParts.join(", ").toUpperCase());
-        if (reg?.city) setPatientCity(String(reg.city));
-        if (reg?.state) setPatientUF(String(reg.state).toUpperCase().slice(0, 2));
+        // MIGRAÇÃO: pacientes.endereco é campo único (sem bairro/município/UF
+        // estruturados) → município/UF mantêm os defaults (São Luís / MA).
+        if (reg?.endereco) setPatientAddress(String(reg.endereco).toUpperCase());
 
         setHydratedFromRegistry(true);
 
-        // 2) Hidrata CID-10 + diagnóstico a partir da admissão validada do paciente
-        //    (não sobrescreve campos já preenchidos manualmente).
-        const fetchedRegistryId: string | null = (pat as any).patient_registry_id || null;
+        // Diagnóstico a partir da própria internação.
+        // MIGRAÇÃO: CID (cid_primary/cid_secondary) e cid10_codes não têm coluna/
+        // tabela de destino utilizável aqui → cidPrimary/cidSecondary degradados
+        // (permanecem em branco; o médico preenche). Diagnóstico vem de
+        // internacoes.hipotese_diagnostica (fallback: queixa_principal).
+        const diagFromInternacao =
+          (internacao as any).hipotese_diagnostica ||
+          (internacao as any).queixa_principal ||
+          "";
+        if (diagFromInternacao) setDiagnosis((prev) => prev || diagFromInternacao);
+
+        // Hidrata Observações a partir da última evolução (evolucoes).
+        // MIGRAÇÃO: clinical_evolutions → evolucoes (soap_data→soap); sem filtro de
+        // status (enum novo desconhecido) nem archived_at; diagnostic_hypotheses
+        // não tem coluna → omitido.
         try {
-          let ahQuery = supabase
-            .from("admission_histories")
-            .select("cid_primary, cid_secondary, diagnostic_hypothesis, macro_diagnosis, chief_complaint, created_at")
-            .is("archived_at", null)
-            .order("created_at", { ascending: false })
-            .limit(1);
-          if (fetchedRegistryId) {
-            ahQuery = ahQuery.or(`patient_id.eq.${patientId},patient_registry_id.eq.${fetchedRegistryId}`);
-          } else {
-            ahQuery = ahQuery.eq("patient_id", patientId);
-          }
-          const { data: ah } = await ahQuery.maybeSingle();
-          console.log("[APAC] admission_histories result:", ah);
-          console.log("[APAC] patientId:", patientId, "fetchedRegistryId:", fetchedRegistryId);
-          if (ah) {
-            // Extrai só o código CID válido (ex: "I63.9 - AVC" → "I63.9", "i64" → "I64")
-            // Ignora texto livre como "ACIDENTE", "CIRROS".
-            const extractCode = (raw: string) => {
-              const match = raw.match(/([A-Za-z]\d{2}\.?\d*)/);
-              return match ? match[1].toUpperCase() : "";
-            };
-            const extractDesc = (raw: string) =>
-              raw.replace(/^[A-Za-z]\d{2}\.?\d*\s*[-–—]\s*/, "").trim();
-
-            if (ah.cid_primary) {
-              const primaryStr = String(ah.cid_primary);
-              const cidCode = extractCode(primaryStr);
-              if (cidCode) setCidPrimary((prev) => prev || cidCode);
-
-              let desc = "";
-              if (cidCode) {
-                // Tenta descrição embutida primeiro
-                desc = extractDesc(primaryStr);
-                // Senão, busca em cid10_codes pelo código
-                if (!desc) {
-                  try {
-                    const { data: cidEntry } = await supabase
-                      .from("cid10_codes")
-                      .select("description")
-                      .ilike("code", cidCode)
-                      .limit(1)
-                      .maybeSingle();
-                    desc = (cidEntry as any)?.description || "";
-                  } catch {
-                    /* sem catálogo — fallback abaixo */
-                  }
-                }
-              }
-
-              setDiagnosis((prev) =>
-                prev ||
-                desc ||
-                ah.diagnostic_hypothesis ||
-                ah.macro_diagnosis ||
-                ah.chief_complaint ||
-                "",
-              );
-            } else {
-              setDiagnosis((prev) =>
-                prev ||
-                ah.diagnostic_hypothesis ||
-                ah.macro_diagnosis ||
-                ah.chief_complaint ||
-                "",
-              );
-            }
-            if (ah.cid_secondary) {
-              // cid_secondary é text — pode ser JSON string de array, ou código puro
-              let secValue: string = String(ah.cid_secondary);
-              try {
-                const parsed = JSON.parse(secValue);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                  secValue = String(parsed[0]);
-                } else if (typeof parsed === "string") {
-                  secValue = parsed;
-                }
-              } catch {
-                /* não é JSON — usa string crua */
-              }
-              const secCode = extractCode(secValue);
-              if (secCode) setCidSecondary((prev) => prev || secCode);
-            }
-          }
-        } catch (err) {
-          console.error("[APAC] admission hydrate error", err);
-        }
-
-        // 3) Hidrata Observações (campo 40) a partir da última evolução validada.
-        //    Concatena SOAP (S/A/P) + hipóteses, sem sobrescrever edição manual.
-        try {
-          let evQuery = supabase
-            .from("clinical_evolutions")
-            .select("soap_data, diagnostic_hypotheses, created_at, validated_at")
-            .eq("status", "validated")
-            .is("archived_at", null)
-            .order("created_at", { ascending: false })
-            .limit(1);
-          if (fetchedRegistryId) {
-            evQuery = evQuery.or(
-              `patient_id.eq.${patientId},patient_registry_id.eq.${fetchedRegistryId}`,
-            );
-          } else {
-            evQuery = evQuery.eq("patient_id", patientId);
-          }
-          const { data: latestEvol } = await evQuery.maybeSingle();
-          console.log("[APAC] latestEvol:", latestEvol?.soap_data ? "encontrado" : "não encontrado");
-          if (latestEvol?.soap_data) {
-            const soap = latestEvol.soap_data as any;
-            const evolDate = latestEvol.validated_at || latestEvol.created_at;
+          const { data: latestEvol } = await supabase
+            .from("evolucoes")
+            .select("soap, data_hora")
+            .eq("internacao_id", patientId)
+            .order("data_hora", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          const soapData = (latestEvol as any)?.soap;
+          if (soapData) {
+            const soap = soapData as any;
+            const evolDate = (latestEvol as any).data_hora;
             const dateStr = evolDate ? new Date(evolDate).toLocaleDateString("pt-BR") : "";
             const stripHtml = (html: string) =>
               (html || "").replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim();
@@ -372,34 +275,12 @@ const RequisicaoImagensPage = () => {
             if (avaliacao && avaliacao !== evolucao) parts.push(`Avaliação: ${avaliacao}`);
             const plano = stripHtml(soap.plan || "");
             if (plano) parts.push(`Conduta: ${plano}`);
-            if (latestEvol.diagnostic_hypotheses) {
-              let hypoText: any = latestEvol.diagnostic_hypotheses;
-              try {
-                const parsed = typeof hypoText === "string" ? JSON.parse(hypoText) : hypoText;
-                if (Array.isArray(parsed)) {
-                  hypoText = parsed
-                    .map((h: any) => String(h).trim())
-                    .filter(Boolean)
-                    .join("; ");
-                } else if (parsed && typeof parsed === "object") {
-                  hypoText = Object.values(parsed)
-                    .map((h: any) => String(h).trim())
-                    .filter(Boolean)
-                    .join("; ");
-                }
-              } catch {
-                /* mantém como texto se não for JSON */
-              }
-              const cleanHypo = stripHtml(String(hypoText || "").trim());
-              if (cleanHypo) parts.push(`Hipóteses diagnósticas: ${cleanHypo}`);
-            }
             const obsText = parts.join("\n").trim();
             if (obsText) setObservations((prev) => prev || obsText);
           }
         } catch (err) {
           console.error("[APAC] evolution hydrate error", err);
         }
-
 
         // Notify when key SUS field is missing — APAC requires CNS
         if (!reg?.cns) {
@@ -480,35 +361,17 @@ const RequisicaoImagensPage = () => {
       return;
     }
 
-    // ── Persistir APAC em exam_requests (rastreamento no histórico) ──
+    // ── Persistir APAC em solicitacoes_exame (rastreamento no histórico) ──
+    // MIGRAÇÃO: exam_requests → solicitacoes_exame. O id da URL (patientId) é a
+    // internacoes.id. Degradados por falta de coluna no schema novo: paciente_id
+    // avulso, snapshot de nome/leito/setor, hospital/estado, encounter_id
+    // (patient_encounters não existe — a internação já é o "encounter") e
+    // requested_by_name. Os metadados de CID/diagnóstico/médico vão para
+    // observacoes; o solicitante vira FK profissional (solicitado_por).
     const pid = searchParams.get("patientId");
-    const validPid = pid && pid.length > 10 ? pid : null;
-    const urlBed = searchParams.get("patientBed") || "";
-    const urlSector = searchParams.get("patientSector") || "";
-    if (validPid) {
+    const internacaoId = pid && pid.length > 10 ? pid : null;
+    if (internacaoId) {
       try {
-        const { data: patRow } = await supabase
-          .from("patients")
-          .select("patient_registry_id, hospital_unit_id, state_id")
-          .eq("id", validPid)
-          .maybeSingle();
-        const registryId = (patRow as any)?.patient_registry_id ?? null;
-        const hospitalUnitId = (patRow as any)?.hospital_unit_id ?? null;
-        const stateId = (patRow as any)?.state_id ?? null;
-
-        let encounterId: string | null = null;
-        if (registryId) {
-          const { data: encRow } = await supabase
-            .from("patient_encounters")
-            .select("id")
-            .eq("registry_id", registryId)
-            .eq("status", "active")
-            .order("admission_date", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          encounterId = (encRow as any)?.id ?? null;
-        }
-
         const apacItems = selectedProcedures
           .filter((p: any) => p.code || p.name)
           .map((p: any) => ({
@@ -524,28 +387,30 @@ const RequisicaoImagensPage = () => {
         if (diagnosis) notesMeta.push(`Diagnóstico: ${diagnosis}`);
         if (doctorName) notesMeta.push(`Médico: ${doctorName}${doctorCRM ? ` (CRM ${doctorCRM})` : ""}`);
 
-        const { error: erroNaoBloqueante2 } = await supabase.from("exam_requests").insert({
-          patient_id: validPid,
-          patient_registry_id: registryId,
-          encounter_id: encounterId,
-          patient_name: patientName || "",
-          patient_bed: urlBed,
-          patient_sector: urlSector,
-          category: "apac",
-          items: apacItems.length > 0 ? apacItems : [{ name: "APAC" }],
-          clinical_indication: observations || "",
-          priority: "eletivo",
-          status: "solicitado",
-          notes: notesMeta.join(" | ") || null,
-          requested_by: user?.id ?? null,
-          requested_by_name: doctorName || null,
-          hospital_unit_id: hospitalUnitId,
-          state_id: stateId,
-        } as any);
+        let solicitadoPor: string | null = null;
+        if (user?.id) {
+          const { data: prof } = await supabase
+            .from("profissionais")
+            .select("id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          solicitadoPor = (prof as any)?.id ?? null;
+        }
+
+        const { error: erroNaoBloqueante2 } = await supabase.from("solicitacoes_exame").insert({
+          internacao_id: internacaoId,
+          categoria: "apac",
+          itens: apacItems.length > 0 ? apacItems : [{ name: "APAC" }],
+          indicacao_clinica: observations || null,
+          prioridade: "eletivo",
+          status: "pendente",
+          observacoes: notesMeta.join(" | ") || null,
+          solicitado_por: solicitadoPor,
+        });
         // Nao bloqueia o fluxo, mas nao pode sumir: antes o resultado era descartado.
-        if (erroNaoBloqueante2) console.warn("[RequisicaoImagensPage] falha nao-bloqueante ao registrar em exam_requests:", erroNaoBloqueante2);
+        if (erroNaoBloqueante2) console.warn("[RequisicaoImagensPage] falha nao-bloqueante ao registrar em solicitacoes_exame:", erroNaoBloqueante2);
       } catch (err) {
-        console.warn("[APAC] falha ao registrar em exam_requests:", err);
+        console.warn("[APAC] falha ao registrar em solicitacoes_exame:", err);
       }
     }
 

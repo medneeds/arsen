@@ -1,8 +1,8 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2, ChevronRight, ArrowLeft } from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
 import { ClinicalModuleTabs } from "@/components/ClinicalModuleTabs";
 import { PatientSwitcher } from "@/components/PatientSwitcher";
@@ -71,7 +71,7 @@ export function BreadcrumbBar({
           : undefined
       }
     >
-      <div className="flex items-center flex-nowrap sm:flex-wrap gap-x-2 sm:gap-x-2 gap-y-2 text-xs sm:text-xs font-medium tracking-wide min-w-0">
+      <div className="flex items-center flex-nowrap sm:flex-wrap gap-x-1.5 sm:gap-x-2 gap-y-1.5 text-[11px] sm:text-xs font-medium tracking-wide min-w-0">
         <SidebarTrigger
           className={cn(
             "flex-shrink-0 h-9 w-9 sm:h-7 sm:w-7",

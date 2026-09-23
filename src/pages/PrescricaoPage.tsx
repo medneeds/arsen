@@ -4596,6 +4596,22 @@ function getDemoPrescriptionItems(bedNumber: string): PrescriptionItem[] {
 }
 
 
+// MIGRAÇÃO: prescricoes.criado_por / dispensacoes.dispensado_por referenciam
+// profissionais.id — não auth.users.id. Resolve o profissional pelo user_id logado.
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from('profissionais')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 const PrescricaoPage = () => {
   const { user, loading: authLoading } = useAuth();
   // Perfil do medico logado (tabela profiles). Usado como fallback de nome/CRM
@@ -4841,6 +4857,11 @@ const PrescricaoPage = () => {
   // Ver src/hooks/useResolvedRegistryId.ts para detalhes da garantia anti-vazamento.
   const { registryId: patientRegistryId } = useResolvedRegistryId(urlPatientId);
   const { encounterId: activeEncounterId } = useActiveEncounterId(urlPatientId);
+  // MIGRAÇÃO: no schema novo as prescrições penduram em `internacao_id`.
+  // O patientId da URL É o id da internação (ver MIGRACAO_SPEC). Ancoramos todas
+  // as queries de prescrição/dispensação/pré-admissão nesse id em vez de
+  // patient_registry_id + hospital_unit_id + state_id (colunas inexistentes).
+  const internacaoId = asUuidOrNull(urlPatientId);
   const lastSyncedPatientIdRef = useRef<string>(urlPatientId);
   useEffect(() => {
     if (!urlPatientId || urlPatientId === lastSyncedPatientIdRef.current) return;
@@ -5297,13 +5318,13 @@ const PrescricaoPage = () => {
       autoNewVersionIfSigned?: boolean;
     } = {}
   ) => {
-    if (!currentHospital || !currentState || !patient.name.trim()) {
+    if (!currentHospital || !currentState || !patient.name.trim() || !internacaoId) {
       if (!opts.silent) {
         toast.error("Não foi possível salvar a prescrição", {
-          description: "Falta paciente/hospital ativo. Recarregue a página com o paciente correto antes de prosseguir.",
+          description: "Falta internação/hospital ativo. Recarregue a página com o paciente correto antes de prosseguir.",
         });
       }
-      throw new Error('persistItems: missing patient/hospital context');
+      throw new Error('persistItems: missing internacao/hospital context');
     }
     let mode = opts.mode || 'update';
     const sig = opts.sigOverride !== undefined ? opts.sigOverride : digitalSignature;
@@ -5329,7 +5350,7 @@ const PrescricaoPage = () => {
         // Agora: sem resposta confiavel, aborta. O autosave e `silent` e tem
         // queda para localStorage, entao a edicao do medico nao se perde.
         const { data: existing, error: erroStatus } = await supabase
-          .from('prescriptions')
+          .from('prescricoes')
           .select('status')
           .eq('id', currentPrescriptionId)
           .maybeSingle();
@@ -5339,7 +5360,7 @@ const PrescricaoPage = () => {
             'Nada foi gravado, para nao sobrescrever um documento assinado.',
           );
         }
-        if (existing.status === 'signed' || existing.status === 'validated') {
+        if ((existing as any).status === 'signed' || (existing as any).status === 'validated') {
           mode = 'newVersion';
         }
       }
@@ -5349,17 +5370,18 @@ const PrescricaoPage = () => {
       const allValidated = activeNextItems.length > 0 && activeNextItems.every((i: any) => i.validated);
       const computedStatus = sig ? 'signed' : allValidated ? 'validated' : 'draft';
 
+      // MIGRAÇÃO: prescricoes só tem [internacao_id, itens, status, versao,
+      // prescricao_pai_id, observacoes, assinatura_digital, criado_por].
+      // DEGRADADOS (sem coluna nova): patient_name, patient_registry_id,
+      // patient_data, department, hospital_unit_id, state_id.
+      // `resolvedDepartment` acima fica sem destino de persistência.
+      const criadoPor = await resolveProfissionalId(user?.id);
       const basePayload = {
-        patient_name: patient.name.trim(),
-        patient_registry_id: patientRegistryId,
-        patient_data: patient as any,
-        items: nextItems as any,
-        digital_signature: sig as any,
+        internacao_id: internacaoId,
+        itens: nextItems as any,
+        assinatura_digital: sig as any,
         status: computedStatus,
-        department: resolvedDepartment,
-        hospital_unit_id: currentHospital.id,
-        state_id: currentState.id,
-        created_by: user?.id || null,
+        criado_por: criadoPor,
       };
 
       if (mode === 'newVersion' && currentPrescriptionId) {
@@ -5369,8 +5391,8 @@ const PrescricaoPage = () => {
         // ja existente e criar duas linhas com o mesmo numero no prontuario.
         // Sem leitura confiavel da versao atual, nao ha numero correto a gravar.
         const { data: parentData, error: erroVersao } = await supabase
-          .from('prescriptions')
-          .select('version')
+          .from('prescricoes')
+          .select('versao')
           .eq('id', currentPrescriptionId)
           .maybeSingle();
         if (erroVersao || !parentData) {
@@ -5379,13 +5401,13 @@ const PrescricaoPage = () => {
             'para nao criar duas versoes com o mesmo numero.',
           );
         }
-        const nextVersion = ((parentData as any)?.version || 1) + 1;
+        const nextVersion = ((parentData as any)?.versao || 1) + 1;
         const { data, error } = await supabase
-          .from('prescriptions')
+          .from('prescricoes')
           .insert({
             ...basePayload,
-            version: nextVersion,
-            parent_id: currentPrescriptionId,
+            versao: nextVersion,
+            prescricao_pai_id: currentPrescriptionId,
           } as any)
           .select('id')
           .single();
@@ -5406,7 +5428,7 @@ const PrescricaoPage = () => {
         // sem erro, `.single()` devolvendo linha invisivel (RLS/0 linhas) fazia
         // o `if` dar falso e o update acontecer sobre um registro assinado.
         const { data: existing, error: erroStatus } = await supabase
-          .from('prescriptions')
+          .from('prescricoes')
           .select('status')
           .eq('id', currentPrescriptionId)
           .maybeSingle();
@@ -5416,7 +5438,7 @@ const PrescricaoPage = () => {
             'Nada foi gravado, para nao sobrescrever um documento assinado.',
           );
         }
-        if (existing.status === 'signed' && !sig) {
+        if ((existing as any).status === 'signed' && !sig) {
           // Registro ja assinado e nao ha nova assinatura -> nao rebaixar.
           return;
         }
@@ -5426,7 +5448,7 @@ const PrescricaoPage = () => {
         // banco que um registro assinado seja rebaixado — a checagem de cima
         // sozinha nao e atomica.
         let consulta = supabase
-          .from('prescriptions')
+          .from('prescricoes')
           .update(basePayload)
           .eq('id', currentPrescriptionId);
         if (!sig) consulta = consulta.neq('status', 'signed');
@@ -5449,27 +5471,24 @@ const PrescricaoPage = () => {
         let existingDraftId: string | null = null;
         try {
           const dayStart = getClinicalDayWindowSP().start;
-          let q = supabase
-            .from('prescriptions')
+          // MIGRAÇÃO: rascunho-único-por-dia agora ancorado em internacao_id
+          // (antes: hospital_unit_id + state_id + patient_registry_id, colunas
+          // inexistentes; archived_at também não existe em prescricoes).
+          const { data: existing } = await supabase
+            .from('prescricoes')
             .select('id')
-            .eq('hospital_unit_id', currentHospital.id)
-            .eq('state_id', currentState.id)
+            .eq('internacao_id', internacaoId)
             .eq('status', 'draft')
-            .is('archived_at', null)
-            .gte('created_at', dayStart.toISOString())
-            .order('created_at', { ascending: false })
+            .gte('criado_em', dayStart.toISOString())
+            .order('criado_em', { ascending: false })
             .limit(1);
-          q = patientRegistryId
-            ? q.eq('patient_registry_id', patientRegistryId)
-            : q.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
-          const { data: existing } = await q;
           existingDraftId = (existing as any)?.[0]?.id ?? null;
         } catch { /* falha silenciosa — cai no INSERT normal */ }
 
         if (existingDraftId) {
           // Atualiza o rascunho existente — rascunho único por dia (Ponto 1 + 4)
           const { error: updErr } = await supabase
-            .from('prescriptions')
+            .from('prescricoes')
             .update(basePayload)
             .eq('id', existingDraftId);
           if (updErr) throw updErr;
@@ -5477,7 +5496,7 @@ const PrescricaoPage = () => {
         } else {
           // Não existe rascunho do dia — cria o primeiro
           const { data, error } = await supabase
-            .from('prescriptions')
+            .from('prescricoes')
             .insert(basePayload)
             .select('id')
             .single();
@@ -5876,52 +5895,13 @@ const PrescricaoPage = () => {
   const prescriptionDate = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
 
   // Auto-create encounter code for patient if not yet assigned
+  // MIGRAÇÃO: patient_encounters (com encounter_code auto-gerado) não existe no
+  // schema novo — a própria `internacoes` é o "encontro" e não tem código de
+  // atendimento. DEGRADADO para no-op: o nº de atendimento exibido no cabeçalho
+  // passa a vir apenas de usePatientIdentifiers (registryAtendimento).
   const ensureEncounterCode = useCallback(async () => {
-    if (!currentHospital || !currentState || !patient.name.trim() || patient.encounterCode) return;
-    try {
-      // Check if patient already has an active encounter
-      const patientId = searchParams.get('patientId');
-      const registryUuid = asUuidOrNull(patientId);
-      let existingQ = supabase
-        .from('patient_encounters')
-        .select('encounter_code')
-        .eq('hospital_unit_id', currentHospital.id)
-        .eq('state_id', currentState.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      existingQ = registryUuid
-        ? existingQ.eq('registry_id', registryUuid)
-        : existingQ.eq('patient_name', patient.name.trim()).is('registry_id', null);
-      const { data: existing } = await existingQ;
-      
-      if (existing && existing.length > 0) {
-        setPatient(prev => ({ ...prev, encounterCode: existing[0].encounter_code }));
-        return;
-      }
-
-      // Create new encounter
-      const { data: newEnc, error } = await supabase
-        .from('patient_encounters')
-        .insert({
-          patient_name: patient.name.trim(),
-          patient_id: registryUuid ?? undefined,
-          registry_id: registryUuid ?? undefined,
-          hospital_unit_id: currentHospital.id,
-          state_id: currentState.id,
-          created_by: user?.id || undefined,
-          encounter_code: '', // trigger will generate
-        })
-        .select('encounter_code')
-        .single();
-      
-      if (!error && newEnc) {
-        setPatient(prev => ({ ...prev, encounterCode: newEnc.encounter_code }));
-      }
-    } catch (err) {
-      console.error('Error ensuring encounter code:', err);
-    }
-  }, [currentHospital, currentState, patient.name, patient.encounterCode, user, searchParams]);
+    return;
+  }, []);
 
   useEffect(() => { ensureEncounterCode(); }, [ensureEncounterCode]);
 
@@ -6003,15 +5983,18 @@ const PrescricaoPage = () => {
     if (patient.name || !urlPatientIdForRecord) return;
     let cancelled = false;
     (async () => {
+      // MIGRAÇÃO: patients → internacoes + paciente:pacientes (nome vem do cadastro).
       const { data } = await supabase
-        .from('patients')
-        .select('name')
+        .from('internacoes')
+        .select('paciente:pacientes(nome_completo, nome_social)')
         .eq('id', urlPatientIdForRecord)
         .maybeSingle();
-      if (cancelled || !(data as any)?.name?.trim()) return;
+      const pac = (data as any)?.paciente;
+      const nm = (pac?.nome_social || pac?.nome_completo || '').trim();
+      if (cancelled || !nm) return;
       setPatient(prev => {
         if (prev.name) return prev;
-        return { ...prev, name: (data as any).name.trim() };
+        return { ...prev, name: nm };
       });
     })();
     return () => { cancelled = true; };
@@ -6043,21 +6026,29 @@ const PrescricaoPage = () => {
     let cancelled = false;
     setFallbackDataReady(false);
     (async () => {
+      // MIGRAÇÃO: patients → internacoes(data_entrada) + paciente:pacientes.
+      // DEGRADADOS: patients.age (sem coluna; idade só via birthDate) e
+      // uti_admission_date (sem coluna equivalente). alergias vem do cadastro.
       const { data } = await supabase
-        .from('patients')
-        .select('age, admission_date, uti_admission_date, uti_allergies')
+        .from('internacoes')
+        .select('data_entrada, paciente:pacientes(data_nascimento, alergias)')
         .eq('id', urlPatientIdForRecord)
         .maybeSingle();
       if (cancelled) return;
       if (data) {
+        const pac = (data as any)?.paciente;
+        const admissionDate = (data as any)?.data_entrada;
+        const pacAlergias = pac?.alergias;
+        const pacNascimento = pac?.data_nascimento;
         setPatient(prev => {
           const next = { ...prev };
           let changed = false;
-          // Idade: se ausente, calcula de birthDate ou usa patients.age.
+          // Idade: se ausente, calcula de birthDate (ou data_nascimento do cadastro).
           if (!prev.age || !prev.age.trim()) {
-            if (prev.birthDate) {
+            const bdSource = prev.birthDate || pacNascimento;
+            if (bdSource) {
               try {
-                const bd = new Date(prev.birthDate + 'T12:00:00');
+                const bd = new Date(bdSource + 'T12:00:00');
                 const now = new Date();
                 let years = now.getFullYear() - bd.getFullYear();
                 const m = now.getMonth() - bd.getMonth();
@@ -6068,21 +6059,13 @@ const PrescricaoPage = () => {
                 }
               } catch { /* ignore */ }
             }
-            if (!next.age && data.age) {
-              next.age = data.age;
-              changed = true;
-            }
           }
-          if ((!prev.admissionDate || !prev.admissionDate.trim()) && data.admission_date) {
-            next.admissionDate = String(data.admission_date).slice(0, 10);
+          if ((!prev.admissionDate || !prev.admissionDate.trim()) && admissionDate) {
+            next.admissionDate = String(admissionDate).slice(0, 10);
             changed = true;
           }
-          if ((!prev.utiAdmissionDate || !prev.utiAdmissionDate.trim()) && data.uti_admission_date) {
-            next.utiAdmissionDate = String(data.uti_admission_date).slice(0, 10);
-            changed = true;
-          }
-          if ((!prev.allergies || !prev.allergies.trim()) && data.uti_allergies) {
-            next.allergies = data.uti_allergies;
+          if ((!prev.allergies || !prev.allergies.trim()) && pacAlergias) {
+            next.allergies = pacAlergias;
             changed = true;
           }
           return changed ? next : prev;
@@ -6096,36 +6079,22 @@ const PrescricaoPage = () => {
   // Fetch pre-admission data for risk classification on print
   useEffect(() => {
     const fetchPreAdmission = async () => {
-      if (!currentHospital || !currentState || !patient.name.trim()) return;
+      if (!currentHospital || !currentState || !patient.name.trim() || !internacaoId) return;
       try {
-        let paQ = supabase
-          .from('pre_admissions')
-          .select('chief_complaint, vital_signs, risk_classification')
-          .eq('hospital_unit_id', currentHospital.id)
-          .eq('state_id', currentState.id)
-          .order('created_at', { ascending: false })
+        // MIGRAÇÃO: pre_admissions → pre_admissoes (ancorada em internacao_id).
+        // DEGRADADOS: chief_complaint e vital_signs (sem colunas em pre_admissoes) —
+        // riskClassification (classificacao_risco) é o único campo com destino.
+        const { data } = await supabase
+          .from('pre_admissoes')
+          .select('classificacao_risco, data_hora')
+          .eq('internacao_id', internacaoId)
+          .order('data_hora', { ascending: false })
           .limit(1);
-        paQ = patientRegistryId
-          ? paQ.eq('patient_registry_id', patientRegistryId)
-          : paQ.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
-        const { data } = await paQ;
         if (data && data.length > 0) {
           const pa = data[0];
-          const vs = pa.vital_signs as Record<string, string> | null;
-          const vitalsStr = vs ? [
-            vs.pa ? `PA: ${vs.pa} mmHg` : null,
-            vs.fc ? `FC: ${vs.fc} bpm` : null,
-            vs.fr ? `FR: ${vs.fr} irpm` : null,
-            vs.tax ? `Tax: ${vs.tax} °C` : null,
-            vs.sato2 ? `SatO2: ${vs.sato2}%` : null,
-            vs.peso ? `Peso: ${vs.peso} kg` : null,
-            vs.glicemia ? `Glicemia: ${vs.glicemia} mg/dL` : null,
-          ].filter(Boolean).join(' | ') : '';
           setPatient(prev => ({
             ...prev,
-            chiefComplaint: pa.chief_complaint || undefined,
-            vitalSigns: vitalsStr || undefined,
-            riskClassification: pa.risk_classification || undefined,
+            riskClassification: pa.classificacao_risco || undefined,
           }));
         }
       } catch (err) {
@@ -6139,12 +6108,20 @@ const PrescricaoPage = () => {
   const fetchDispensations = useCallback(async () => {
     if (!currentPrescriptionId) { setDispensations([]); return; }
     try {
+      // MIGRAÇÃO: dispensations → dispensacoes. dispensation_code→codigo,
+      // dispensed_at→dispensado_em, prescription_id→prescricao_id.
+      // DEGRADADO: dispensed_by_name (só há FK dispensado_por → profissionais).
       const { data } = await supabase
-        .from('dispensations')
-        .select('id, dispensation_code, dispensed_at, dispensed_by_name')
-        .eq('prescription_id', currentPrescriptionId)
-        .order('dispensed_at', { ascending: false });
-      setDispensations(data || []);
+        .from('dispensacoes')
+        .select('id, codigo, dispensado_em')
+        .eq('prescricao_id', currentPrescriptionId)
+        .order('dispensado_em', { ascending: false });
+      setDispensations((data || []).map((d: any) => ({
+        id: d.id,
+        dispensation_code: d.codigo,
+        dispensed_at: d.dispensado_em,
+        dispensed_by_name: null,
+      })));
     } catch (err) {
       console.error('Error fetching dispensations:', err);
     }
@@ -6162,13 +6139,18 @@ const PrescricaoPage = () => {
     if (activeItems.length === 0) { toast.error("Nenhum item ativo para dispensar"); return; }
 
     try {
+      // MIGRAÇÃO: dispensations → dispensacoes.
+      // dispensed_items→itens_dispensados, dispensed_by→dispensado_por (profissional).
+      // DEGRADADOS: patient_name, encounter_code, dispensed_by_name, hospital_unit_id,
+      // state_id (sem colunas). `codigo` é NOT NULL sem default no schema novo →
+      // gerado no cliente (um trigger de banco pode sobrescrever, se existir).
+      const dispensadoPor = await resolveProfissionalId(user?.id);
+      const codigoDispensacao = `DISP-${Date.now().toString(36).toUpperCase()}`;
       const { data, error } = await supabase
-        .from('dispensations')
+        .from('dispensacoes')
         .insert({
-          prescription_id: currentPrescriptionId,
-          patient_name: patient.name.trim(),
-          encounter_code: patient.encounterCode || null,
-          dispensed_items: activeItems.map(i => ({
+          prescricao_id: currentPrescriptionId,
+          itens_dispensados: activeItems.map(i => ({
             name: i.name,
             presentation: i.presentation,
             dose: i.dose,
@@ -6177,20 +6159,17 @@ const PrescricaoPage = () => {
             quantity: i.quantity || '1',
             quantityUnit: i.quantityUnit || '',
           })) as any,
-          dispensed_by: user?.id || null,
-          dispensed_by_name: user?.email?.split('@')[0] || 'Farmácia',
-          hospital_unit_id: currentHospital.id,
-          state_id: currentState.id,
-          dispensation_code: '', // trigger generates
+          dispensado_por: dispensadoPor,
+          codigo: codigoDispensacao,
         })
-        .select('dispensation_code')
+        .select('codigo')
         .single();
 
       if (error) throw error;
-      
-      toast.success(`Dispensação registrada: ${data.dispensation_code}`);
+
+      toast.success(`Dispensação registrada: ${data.codigo}`);
       setDispensationSlip({
-        code: data.dispensation_code,
+        code: data.codigo,
         items: activeItems,
         patientName: patient.name,
         bed: patient.bed,
@@ -7021,62 +7000,69 @@ const PrescricaoPage = () => {
 
   // Fetch saved prescriptions — filtered by current patient
   const fetchPrescriptions = useCallback(async () => {
-    if (!currentHospital || !currentState || !patient.name.trim()) return;
+    if (!currentHospital || !currentState || !patient.name.trim() || !internacaoId) return;
     setLoadingList(true);
     try {
+      // MIGRAÇÃO: prescriptions → prescricoes (ancorada em internacao_id).
+      // Colunas renomeadas: items→itens, version→versao, created_at→criado_em,
+      // updated_at→atualizado_em, digital_signature→assinatura_digital.
+      // DEGRADADOS: hospital_unit_id/state_id/patient_registry_id (filtro colapsa
+      // em internacao_id); patient_name é derivado do cabeçalho atual.
       let query = supabase
-        .from('prescriptions')
-        .select('id, patient_name, status, version, created_at, updated_at, digital_signature, items')
-        .eq('hospital_unit_id', currentHospital.id)
-        .eq('state_id', currentState.id)
-        .order('created_at', { ascending: false })
+        .from('prescricoes')
+        .select('id, status, versao, criado_em, atualizado_em, assinatura_digital, itens')
+        .eq('internacao_id', internacaoId)
+        .order('criado_em', { ascending: false })
         .limit(30);
-      query = patientRegistryId
-        ? query.eq('patient_registry_id', patientRegistryId)
-        : query.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
 
       if (historyDate) {
         const dayStart = startOfDay(historyDate).toISOString();
         const dayEnd = startOfDay(addDays(historyDate, 1)).toISOString();
-        query = query.gte('created_at', dayStart).lt('created_at', dayEnd);
+        query = query.gte('criado_em', dayStart).lt('criado_em', dayEnd);
       }
 
       const { data, error } = await query;
       if (error) throw error;
 
-      // Filtro: validadas sempre aparecem. Rascunhos: só o mais recente do plantão atual.
-      // Após as 05h, rascunhos de plantões anteriores somem — só ficam as validadas.
-      const clinicalDayStart = getClinicalDayWindowSP().start;
-      const clinicalDayStartMs = clinicalDayStart.getTime();
+      // Normaliza para o shape legado consumido pela UI.
+      const rows = (data || []).map((d: any) => ({
+        id: d.id,
+        patient_name: patient.name,
+        status: d.status,
+        version: d.versao,
+        created_at: d.criado_em,
+        updated_at: d.atualizado_em,
+        digital_signature: d.assinatura_digital,
+        items: d.itens,
+      }));
 
-      const allRows = (data || []).map((d: any) => {
+      // Filtro defensivo: oculta rascunhos órfãos (sem validação, sem assinatura,
+      // updated_at > 24h e fora do dia clínico corrente).
+      const clinicalDayStartMs = getClinicalDayWindowSP().start.getTime();
+      const cutoff24hMs = Date.now() - 24 * 60 * 60 * 1000;
+
+      setSavedPrescriptions(rows.filter((d: any) => {
+        const items = (Array.isArray(d.items) ? d.items : []) as unknown as PrescriptionItem[];
+        const hasValidatedItem = items.some((it: any) => it && it.validated === true);
+        const isOrphanDraft =
+          d.status === 'draft'
+          && !d.digital_signature
+          && !hasValidatedItem
+          && new Date(d.updated_at).getTime() < cutoff24hMs
+          && new Date(d.updated_at).getTime() < clinicalDayStartMs;
+        return !isOrphanDraft;
+      }).map(d => {
         const items = (Array.isArray(d.items) ? d.items : []) as unknown as PrescriptionItem[];
         const hasValidatedItem = items.some((it: any) => it && it.validated === true);
         const isValidated = d.status !== 'draft' || !!d.digital_signature || hasValidatedItem;
         return { ...d, items, digital_signature: d.digital_signature as unknown as DigitalSignature | null, isValidated };
-      });
-
-      // Separa validadas e rascunhos do plantão atual
-      const validated = allRows.filter((d: any) => d.isValidated);
-      const draftsThisShift = allRows.filter((d: any) =>
-        !d.isValidated &&
-        new Date(d.created_at).getTime() >= clinicalDayStartMs
-      );
-
-      // Só o rascunho mais recente do plantão atual (maior created_at)
-      const latestDraft = draftsThisShift.length > 0
-        ? [draftsThisShift.reduce((a: any, b: any) =>
-            new Date(a.created_at) > new Date(b.created_at) ? a : b
-          )]
-        : [];
-
-      setSavedPrescriptions([...validated, ...latestDraft]);
+      }));
     } catch (err) {
       console.error('Error fetching prescriptions:', err);
     } finally {
       setLoadingList(false);
     }
-  }, [currentHospital, currentState, patient.name, patientRegistryId, historyDate]);
+  }, [currentHospital, currentState, patient.name, internacaoId, historyDate]);
 
   useEffect(() => { fetchPrescriptions(); }, [fetchPrescriptions]);
 
@@ -7098,8 +7084,10 @@ const PrescricaoPage = () => {
     }
     setDraftDeleting(true);
     try {
+      // MIGRAÇÃO: prescriptions → prescricoes. digital_signature→assinatura_digital,
+      // items→itens, parent_id→prescricao_pai_id, version→versao, created_at→criado_em.
       const { data: snap, error: snapErr } = await supabase
-        .from('prescriptions')
+        .from('prescricoes')
         .select('*')
         .eq('id', draftToDelete.id)
         .single();
@@ -7107,34 +7095,33 @@ const PrescricaoPage = () => {
       if (!snap || snap.status !== 'draft') {
         throw new Error("Esta prescrição não está mais como rascunho.");
       }
-      // Blindagem 1: nunca apagar se tiver assinatura digital (mesmo que status==='draft' por bug)
-      if (snap.digital_signature) {
+      // 🔒 Blindagem 1: nunca apagar se tiver assinatura digital (mesmo que status==='draft' por bug)
+      if ((snap as any).assinatura_digital) {
         throw new Error("Esta prescrição possui ASSINATURA DIGITAL e não pode ser excluída — mesmo marcada como rascunho.");
       }
-      // Blindagem 1b: nunca apagar se houver QUALQUER item já validado pela farmácia (prescrição oficial do dia)
-      const snapItems = Array.isArray((snap as any).items) ? ((snap as any).items as any[]) : [];
+      // 🔒 Blindagem 1b: nunca apagar se houver QUALQUER item já validado pela farmácia (prescrição oficial do dia)
+      const snapItems = Array.isArray((snap as any).itens) ? ((snap as any).itens as any[]) : [];
       if (snapItems.some(it => it && it.validated === true)) {
         throw new Error("Esta prescrição possui itens VALIDADOS pela farmácia — é a prescrição oficial do dia e não pode ser excluída.");
       }
-      // Blindagem 2: nunca apagar se houver versões filhas (qualquer prescrição com parent_id apontando para esta)
+      // 🔒 Blindagem 2: nunca apagar se houver versões filhas (qualquer prescrição com prescricao_pai_id apontando para esta)
       const { data: children, error: childErr } = await supabase
-        .from('prescriptions')
-        .select('id, version, status')
-        .eq('parent_id', draftToDelete.id)
+        .from('prescricoes')
+        .select('id, versao, status')
+        .eq('prescricao_pai_id', draftToDelete.id)
         .limit(5);
       if (childErr) throw childErr;
       if (children && children.length > 0) {
-        const desc = children.map((c: any) => `v${c.version} (${c.status})`).join(', ');
-        throw new Error(`Esta prescrição tem ${children.length} ${(children.length) === 1 ? 'versão' : 'versões'} ${(children.length) === 1 ? 'derivada' : 'derivadas'}: ${desc}. Exclusão bloqueada para preservar o histórico clínico.`);
+        const desc = children.map((c: any) => `v${c.versao} (${c.status})`).join(', ');
+        throw new Error(`Esta prescrição tem ${children.length} versão(ões) derivada(s): ${desc}. Exclusão bloqueada para preservar o histórico clínico.`);
       }
-      // Blindagem 3: nunca apagar se houver, para o mesmo paciente/unidade, uma prescrição assinada mais recente
+      // 🔒 Blindagem 3: nunca apagar se houver, para a mesma internação, uma prescrição assinada mais recente
       const { data: signedAfter, error: signedErr } = await supabase
-        .from('prescriptions')
-        .select('id, version, status')
-        .eq('patient_name', snap.patient_name)
-        .eq('hospital_unit_id', snap.hospital_unit_id)
+        .from('prescricoes')
+        .select('id, versao, status')
+        .eq('internacao_id', (snap as any).internacao_id)
         .neq('status', 'draft')
-        .gte('created_at', snap.created_at)
+        .gte('criado_em', (snap as any).criado_em)
         .limit(1);
       if (signedErr) throw signedErr;
       if (signedAfter && signedAfter.length > 0) {
@@ -7144,22 +7131,24 @@ const PrescricaoPage = () => {
       const uid = auth.user?.id;
       if (!uid) throw new Error("Sessão expirada.");
 
+      // MIGRAÇÃO: prescription_draft_deletion_audit → logs_auditoria (tipo_evento).
+      // DEGRADADOS: patient_name/patient_id/deleted_by_name viram email_ator/snapshot.
       const { error: auditErr } = await supabase
-        .from('prescription_draft_deletion_audit')
+        .from('logs_auditoria')
         .insert([{
-          prescription_id: draftToDelete.id,
-          prescription_snapshot: snap as any,
-          patient_name: snap.patient_name,
-          patient_id: (snap as any).patient_id ?? null,
-          version: snap.version,
-          deleted_by: uid,
-          deleted_by_name: auth.user?.email ?? null,
-          reason,
+          tipo_evento: 'exclusao_rascunho_prescricao',
+          nome_tabela: 'prescricoes',
+          registro_id: draftToDelete.id,
+          ator_user_id: uid,
+          email_ator: auth.user?.email ?? null,
+          dados_antigos: snap as any,
+          motivo: reason,
+          hospital_id: currentHospital?.id ?? null,
         }]);
       if (auditErr) throw auditErr;
 
       const { error: delErr } = await supabase
-        .from('prescriptions')
+        .from('prescricoes')
         .delete()
         .eq('id', draftToDelete.id);
       if (delErr) throw delErr;
@@ -7246,19 +7235,18 @@ const PrescricaoPage = () => {
     if (currentPrescriptionId) return;
     if (!hasRealPatientUrl) return;
 
-    // Registry ainda não resolveu — aguardar (sem timeout, sem abortar)
-    if (!patientRegistryId) return;
+    // MIGRAÇÃO: âncora passa a ser internacao_id (não patient_registry_id).
+    if (!internacaoId) return;
 
-    // Registry chegou — marcar como pronto para disparar
     autoLoadReadyRef.current = true;
-  }, [currentHospital, currentState, patient.name, patientRegistryId, currentPrescriptionId, hasRealPatientUrl]);
+  }, [currentHospital, currentState, patient.name, internacaoId, currentPrescriptionId, hasRealPatientUrl]);
 
   useEffect(() => {
     if (autoLoadAttemptedRef.current) return;
     if (!autoLoadReadyRef.current) return;
     if (!currentHospital || !currentState || !patient.name.trim()) return;
     if (currentPrescriptionId) return;
-    if (!patientRegistryId) return;
+    if (!internacaoId) return;
 
     // Aguardar encounter por até 3s antes de prosseguir sem ele.
     // Se encounter chegar: usa como filtro (ideal).
@@ -7288,38 +7276,21 @@ const PrescricaoPage = () => {
     };
 
     tryLoad();
-  }, [patientRegistryId, activeEncounterId, currentHospital, currentState, patient.name, currentPrescriptionId]);
+  }, [internacaoId, activeEncounterId, currentHospital, currentState, patient.name, currentPrescriptionId]);
 
   useEffect(() => {
     // Este effect executa o corpo do auto-load após autoLoadTriggered ser setado
     // pelo effect de espera progressiva acima.
     if (!autoLoadTriggered) return;
     if (currentPrescriptionId) return;
-    if (!patientRegistryId) return;
+    if (!internacaoId) return;
     const capturedGeneration = loadGenerationRef.current; // captura geração atual
     (async () => {
       try {
-        // Guard extra: confere que o registry resolvido pelo hook bate com o
-        // registry atual do urlPatientId no banco (anti-stale entre trocas de leito).
-        if (!urlPatientId) { setAutoLoadDone(true); return; }
-        const { data: currentBedRow } = await supabase
-          .from('patients')
-          .select('patient_registry_id')
-          .eq('id', urlPatientId)
-          .maybeSingle();
-        if (capturedGeneration !== loadGenerationRef.current) return;
-        const freshRegistryId = (currentBedRow as any)?.patient_registry_id;
-        if (!freshRegistryId || freshRegistryId !== patientRegistryId) {
-          // Ainda stale — re-tenta quando patientRegistryId atualizar
-          autoLoadAttemptedRef.current = false;
-          return;
-        }
-
-        const clinicalStart = getClinicalDayWindowSP().start.toISOString();
-
-        // Guard reforçado: patientRegistryId precisa ser UUID válido (não null/curto).
-        // Sem isso a query pode degenerar e bater em prescrições avulsas (encounter_id NULL).
-        if (!patientRegistryId || patientRegistryId.length < 10) return;
+        // MIGRAÇÃO: prescrições agora penduram diretamente em internacao_id, então
+        // o guard anti-stale por patient_registry_id (lido de `patients`) foi
+        // removido — o próprio internacaoId já é a âncora estável da internação.
+        if (!internacaoId) { setAutoLoadDone(true); return; }
 
         // Helper: detecta se uma prescrição cruzou a janela das 05h SP do plantão atual.
         const hasCrossedShiftBoundary = (iso: string | null | undefined): boolean => {
@@ -7382,111 +7353,24 @@ const PrescricaoPage = () => {
           return true;
         };
 
-        // ── QUERY UNIFICADA com priorização por status após virada de plantão ──
-        // Regra:
-        //   - Draft do plantão ATUAL (criado após as 05h de hoje) → carrega o draft
-        //   - Draft do plantão ANTERIOR (criado antes das 05h de hoje) → ignora,
-        //     busca a última validada/signed
-        //   - Validada → sempre carrega
-        //
-        // Isso garante que o médico da tarde não vê rascunho do médico da manhã
-        // que esqueceu de salvar, e que após a virada do plantão a validada prevalece.
-
-        if (activeEncounterId && activeEncounterId.length > 10) {
-          const { data: rows, error: rowsErr } = await supabase
-            .from('prescriptions')
-            .select('id, items, created_at, version, patient_registry_id, status')
-            .eq('hospital_unit_id', currentHospital.id)
-            .eq('state_id', currentState.id)
-            .eq('patient_registry_id', patientRegistryId)
-            .eq('encounter_id', activeEncounterId)
-            .is('archived_at', null)
-            .order('created_at', { ascending: false })
-            .limit(5); // pega mais para poder filtrar por status
-          if (rowsErr) throw rowsErr;
-          if (capturedGeneration !== loadGenerationRef.current) return;
-
-          const allRows = rows || [];
-          const clinicalWindowStart = getClinicalDayWindowSP().start;
-
-          // Tenta encontrar o melhor registro:
-          // 1. Draft criado NO plantão atual (após 05h de hoje) → mais recente primeiro
-          // 2. Qualquer validada/signed → mais recente primeiro
-          // 3. Draft do plantão anterior → ignorado (não deve aparecer)
-          const draftThisShift = allRows.find(r =>
-            (r as any).status === 'draft' &&
-            new Date((r as any).created_at) >= clinicalWindowStart
-          );
-          const lastValidated = allRows.find(r =>
-            (r as any).status !== 'draft'
-          );
-
-          // Prefere draft do plantão atual; senão a última validada
-          const best = draftThisShift || lastValidated || null;
-
-          if (best?.id && (best as any).patient_registry_id === patientRegistryId) {
-            if (await loadValidatedPrescription(best as any)) return;
-          }
-        }
-
-        // 2b) Fallback: sem filtro de encounter_id (cobre prescrições legadas
-        // gravadas antes do sistema ter o campo encounter_id preenchido).
-        // NUNCA usa .eq('encounter_id', null) — só patient_registry_id (anti-avulsa).
-        //
-        // BUGFIX (07/08/2026): sem âncora de data, este fallback buscava a última
-        // prescrição não-arquivada do registry independente do internamento —
-        // carregando prescrições do internamento ANTERIOR na nova internação.
-        // O mecanismo: archive_patient_bed_data arquiva prescrições pelo patient_id
-        // (linha-leito). Prescrições legadas sem encounter_id ficam fora do escopo
-        // da RPC (vinculadas só por patient_registry_id) e sobrevivem ao arquivamento,
-        // depois sendo encontradas aqui sem restrição de data.
-        //
-        // Correção: buscar a admission_date do encounter ativo e aplicar como
-        // filtro de created_at. Assim:
-        //   - Prescrições do internamento anterior (created_at < admission_date
-        //     do encounter atual) NÃO sobem na nova internação.
-        //   - Prescrições legadas (sem encounter_id) do internamento ATUAL
-        //     (created_at >= admission_date) continuam cobertas — o fallback
-        //     cumpre sua função original.
-        //   - Histórico completo permanece preservado no banco — nada é apagado.
-        //   - Se não houver encounter ativo (sem admission_date disponível), o
-        //     filtro não é aplicado — comportamento anterior, seguro para
-        //     pacientes sem internação formal aberta (atendimento ambulatorial,
-        //     legado pré-encounter).
-        let legacyAdmissionFilter: string | null = null;
-        if (activeEncounterId && activeEncounterId.length > 10) {
-          const { data: encRow } = await supabase
-            .from('patient_encounters')
-            .select('admission_date, created_at')
-            .eq('id', activeEncounterId)
-            .maybeSingle();
-          // Usa admission_date se disponível, senão created_at do encounter
-          // (ambos são anteriores a qualquer prescrição da internação atual).
-          const anchor = encRow?.admission_date || encRow?.created_at || null;
-          if (anchor) legacyAdmissionFilter = anchor;
-        }
-        if (capturedGeneration !== loadGenerationRef.current) return;
-
-        let fallbackQuery = supabase
-          .from('prescriptions')
-          .select('id, items, created_at, version, patient_registry_id')
-          .eq('hospital_unit_id', currentHospital.id)
-          .eq('state_id', currentState.id)
-          .eq('patient_registry_id', patientRegistryId)
-          .neq('status', 'draft')
-          .is('archived_at', null)
-          .order('created_at', { ascending: false })
+        // ── QUERY UNIFICADA (MIGRAÇÃO) ───────────────────────────────────────
+        // Como prescricoes penduram em internacao_id, toda a lógica de encounter
+        // / registry / fallback legado colapsa numa única query: o registro mais
+        // recente da internação (criado_em DESC), independente do status.
+        // DEGRADADOS: filtro por encounter_id, hospital_unit_id, state_id,
+        // archived_at e a âncora legada por admission_date de patient_encounters.
+        const { data: rows, error: rowsErr } = await supabase
+          .from('prescricoes')
+          .select('id, itens, criado_em, versao, status')
+          .eq('internacao_id', internacaoId)
+          .order('criado_em', { ascending: false })
           .limit(1);
-        if (legacyAdmissionFilter) {
-          fallbackQuery = fallbackQuery.gte('created_at', legacyAdmissionFilter);
-        }
-        const { data: validatedRows, error: vErr } = await fallbackQuery;
-        if (vErr) throw vErr;
+        if (rowsErr) throw rowsErr;
         if (capturedGeneration !== loadGenerationRef.current) return;
-        const lastValidated = (validatedRows || [])[0];
-        // Dupla verificação anti-avulsa
-        if (!lastValidated?.id || (lastValidated as any).patient_registry_id !== patientRegistryId) return;
-        await loadValidatedPrescription(lastValidated as any);
+        const row = (rows || [])[0] as any;
+        if (row?.id) {
+          await loadValidatedPrescription({ id: row.id, items: row.itens, created_at: row.criado_em });
+        }
       } catch (err) {
         console.error('[autoLoadPrescription] failed', err);
       } finally {
@@ -7497,32 +7381,33 @@ const PrescricaoPage = () => {
         isLoadingRef.current = false;
       }
     })();
-  }, [autoLoadTriggered, currentHospital, currentState, patientRegistryId, activeEncounterId, currentPrescriptionId]);
+  }, [autoLoadTriggered, currentHospital, currentState, internacaoId, activeEncounterId, currentPrescriptionId]);
 
 
   // Fetch version history for a prescription (by patient_name in same hospital)
   const fetchVersionHistory = useCallback(async (prescriptionId: string) => {
     if (!currentHospital || !currentState) return;
     try {
+      // MIGRAÇÃO: histórico de versões agora agrupa por internacao_id (não
+      // patient_name/registry). version→versao, created_at→criado_em,
+      // digital_signature→assinatura_digital.
       const { data: current } = await supabase
-        .from('prescriptions')
-        .select('patient_name, patient_registry_id')
+        .from('prescricoes')
+        .select('internacao_id')
         .eq('id', prescriptionId)
         .single();
       if (!current) return;
-      let vhQ = supabase
-        .from('prescriptions')
-        .select('id, version, status, created_at, digital_signature')
-        .eq('hospital_unit_id', currentHospital.id)
-        .eq('state_id', currentState.id)
-        .order('version', { ascending: true });
-      vhQ = current.patient_registry_id
-        ? vhQ.eq('patient_registry_id', current.patient_registry_id)
-        : vhQ.eq('patient_name', current.patient_name).is('patient_registry_id', null);
-      const { data } = await vhQ;
-      setVersionHistory((data || []).map(v => ({
-        ...v,
-        digital_signature: v.digital_signature as unknown as DigitalSignature | null,
+      const { data } = await supabase
+        .from('prescricoes')
+        .select('id, versao, status, criado_em, assinatura_digital')
+        .eq('internacao_id', (current as any).internacao_id)
+        .order('versao', { ascending: true });
+      setVersionHistory((data || []).map((v: any) => ({
+        id: v.id,
+        version: v.versao,
+        status: v.status,
+        created_at: v.criado_em,
+        digital_signature: v.assinatura_digital as unknown as DigitalSignature | null,
       })));
     } catch (err) {
       console.error('Error fetching version history:', err);
@@ -7533,33 +7418,26 @@ const PrescricaoPage = () => {
   // Load a saved prescription
   const loadPrescription = useCallback(async (id: string) => {
     try {
+      // MIGRAÇÃO: prescriptions → prescricoes. items→itens,
+      // digital_signature→assinatura_digital.
       const { data, error } = await supabase
-        .from('prescriptions')
+        .from('prescricoes')
         .select('*')
         .eq('id', id)
         .single();
       if (error) throw error;
       if (data) {
-        //  Preserva LEITO + UNIDADE vivos (vindos do `patients` via
-        // usePatientLive) — nunca herda o snapshot histórico do `patient_data`,
-        // que pode estar desatualizado se o paciente foi relocado desde a
-        // gravação. Mesma blindagem usada para imprimir admissão/evolução.
-        const snapshot = data.patient_data as unknown as PatientHeader;
-        setPatient(prev => ({
-          ...snapshot,
-          bed: prev.bed || snapshot.bed,
-          unit: prev.unit || snapshot.unit,
-        }));
-        // Normaliza marcações legadas (flags sn/acm/ag → campo intervalo)
-        // ao abrir prescrições gravadas antes da unificação de 22/07/2026.
-        const loadedItems = (data.items as unknown as PrescriptionItem[]).map(normalizeLegacyIntervalFlags);
+        // MIGRAÇÃO: patient_data DEGRADADO (sem coluna em prescricoes). O
+        // cabeçalho do paciente já é mantido ao vivo (internacoes/pacientes/leito),
+        // então não há mais snapshot histórico para restaurar aqui.
+        const loadedItems = (((data as any).itens ?? []) as unknown as PrescriptionItem[]).map(normalizeLegacyIntervalFlags);
         setItems(loadedItems);
         // Atualiza a baseline ANTES de liberar isDirty (isLoadingRef=false).
         // Sem isso, o useEffect de isDirty via ao carregar e compara com ''→dirty=true.
         lastPersistedSerializedRef.current = JSON.stringify(loadedItems);
         // Libera o isDirty — a partir daqui somente edições reais do usuário marcam dirty.
         isLoadingRef.current = false;
-        setDigitalSignature(data.digital_signature as unknown as DigitalSignature | null);
+        setDigitalSignature((data as any).assinatura_digital as unknown as DigitalSignature | null);
         setCurrentPrescriptionId(data.id);
         setSelectedIds(new Set());
         fetchVersionHistory(id);
@@ -7573,7 +7451,7 @@ const PrescricaoPage = () => {
   useEffect(() => { loadPrescriptionRef.current = loadPrescription; }, [loadPrescription]);
 
   useEffect(() => {
-    if (!currentHospital || !currentState || !patient.name.trim()) {
+    if (!currentHospital || !currentState || !patient.name.trim() || !internacaoId) {
       setPrescriptionDateKeys(new Set());
       setDraftDateKeys(new Set());
       return;
@@ -7582,18 +7460,14 @@ const PrescricaoPage = () => {
     (async () => {
       try {
         const since = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
-        let dkQ = supabase
-          .from('prescriptions')
-          .select('created_at, status')
-          .eq('hospital_unit_id', currentHospital.id)
-          .eq('state_id', currentState.id)
-          .gte('created_at', since)
-          .order('created_at', { ascending: false })
+        // MIGRAÇÃO: prescriptions → prescricoes, ancorada em internacao_id.
+        const { data, error } = await supabase
+          .from('prescricoes')
+          .select('criado_em, status')
+          .eq('internacao_id', internacaoId)
+          .gte('criado_em', since)
+          .order('criado_em', { ascending: false })
           .limit(500);
-        dkQ = patientRegistryId
-          ? dkQ.eq('patient_registry_id', patientRegistryId)
-          : dkQ.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
-        const { data, error } = await dkQ;
         if (error) throw error;
         if (cancelled) return;
         // Janela do dia clínico atual SP (05h → 04h59 do dia seguinte).
@@ -7601,8 +7475,8 @@ const PrescricaoPage = () => {
         const clinicalWindow = getClinicalDayWindowSP();
         const validatedKeys = new Set<string>();
         const draftKeys = new Set<string>();
-        (data || []).forEach(d => {
-          const dt = new Date(d.created_at);
+        (data || []).forEach((d: any) => {
+          const dt = new Date(d.criado_em);
           const key = format(dt, 'yyyy-MM-dd');
           if (d.status === 'draft') {
             // Só inclui rascunho se estiver dentro do dia clínico atual
@@ -7620,34 +7494,31 @@ const PrescricaoPage = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [currentHospital, currentState, patient.name, patientRegistryId, currentPrescriptionId]);
+  }, [currentHospital, currentState, patient.name, internacaoId, currentPrescriptionId]);
 
   // ===== Repeat previous prescription =====
   const openRepeatDialog = useCallback(async () => {
-    if (!currentHospital || !currentState || !patient.name.trim()) {
+    if (!currentHospital || !currentState || !patient.name.trim() || !internacaoId) {
       toast.error("Preencha o nome do paciente para buscar prescrições anteriores");
       return;
     }
     setRepeatLoading(true);
     setRepeatDialogOpen(true);
     try {
-      // Buscar última prescrição do paciente, excluindo a atual
+      // MIGRAÇÃO: prescriptions → prescricoes (ancorada em internacao_id).
+      // items→itens, version→versao, created_at→criado_em.
       let query = supabase
-        .from('prescriptions')
-        .select('id, items, version, created_at')
-        .eq('hospital_unit_id', currentHospital.id)
-        .eq('state_id', currentState.id)
-        .order('created_at', { ascending: false })
+        .from('prescricoes')
+        .select('id, itens, versao, criado_em')
+        .eq('internacao_id', internacaoId)
+        .order('criado_em', { ascending: false })
         .limit(5);
-      query = patientRegistryId
-        ? query.eq('patient_registry_id', patientRegistryId)
-        : query.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
       if (currentPrescriptionId) {
         query = query.neq('id', currentPrescriptionId);
       }
       const { data, error } = await query;
       if (error) throw error;
-      const previous = (data || []).find(d => Array.isArray(d.items) && (d.items as unknown[]).length > 0);
+      const previous = (data || []).find((d: any) => Array.isArray(d.itens) && (d.itens as unknown[]).length > 0) as any;
       if (!previous) {
         setRepeatSourceItems([]);
         setRepeatSourceMeta(null);
@@ -7658,13 +7529,13 @@ const PrescricaoPage = () => {
       // um item antigo entraria com as flags sn/acm/ag, que a tela não exibe
       // mais (saíram do PRESCRIPTION_FLAGS) mas o impresso ainda imprimiria no
       // chip — o médico veria uma coisa na tela e outra no papel. (22/07/2026.)
-      const sourceItems = (previous.items as unknown as PrescriptionItem[])
+      const sourceItems = (previous.itens as unknown as PrescriptionItem[])
         .map(normalizeLegacyIntervalFlags)
         .filter(i => i.status === 'active' && !i.isExtra);
       setRepeatSourceItems(sourceItems);
       setRepeatSourceMeta({
-        date: format(new Date(previous.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR }),
-        version: previous.version,
+        date: format(new Date(previous.criado_em), "dd/MM/yyyy HH:mm", { locale: ptBR }),
+        version: previous.versao,
       });
       // Pré-seleciona todos
       setRepeatSelectedIds(new Set(sourceItems.map(i => i.id)));
@@ -7674,7 +7545,7 @@ const PrescricaoPage = () => {
     } finally {
       setRepeatLoading(false);
     }
-  }, [currentHospital, currentState, patient.name, currentPrescriptionId]);
+  }, [currentHospital, currentState, patient.name, internacaoId, currentPrescriptionId]);
 
   const applyRepeatedItems = useCallback(() => {
     if (repeatSelectedIds.size === 0) {
@@ -7822,33 +7693,32 @@ const PrescricaoPage = () => {
   const handleSave = async () => {
     if (!patient.name.trim()) { toast.error("Preencha o nome do paciente"); return; }
     if (!currentHospital || !currentState) { toast.error("Hospital/Estado não selecionado"); return; }
+    if (!internacaoId) { toast.error("Internação não identificada — abra o paciente a partir do leito"); return; }
     setSaving(true);
     try {
+      // MIGRAÇÃO: prescriptions → prescricoes. items→itens,
+      // digital_signature→assinatura_digital, created_by→criado_por (profissional).
+      // DEGRADADOS: patient_name, patient_registry_id, patient_data, department,
+      // hospital_unit_id, state_id (sem colunas em prescricoes).
+      const criadoPor = await resolveProfissionalId(user?.id);
       const payload = {
-        patient_name: patient.name.trim(),
-        patient_registry_id: patientRegistryId,
-        patient_data: patient as any,
-        items: items as any,
-        digital_signature: digitalSignature as any,
-        // Status baseado na validação dos itens, não na assinatura digital.
-        // A assinatura digital está sendo removida do fluxo — o indicador
-        // de prescrição concluída deve depender da validação.
+        internacao_id: internacaoId,
+        itens: items as any,
+        assinatura_digital: digitalSignature as any,
+        // 🔒 Status baseado na validação dos itens, não na assinatura digital.
         status: (() => {
           if (digitalSignature) return 'signed'; // legado — compatibilidade
           const activeItems = (items as any[]).filter(i => i.status === 'active');
           const allValidated = activeItems.length > 0 && activeItems.every(i => i.validated);
           return allValidated ? 'validated' : 'draft';
         })(),
-        department: 'URGÊNCIA E EMERGÊNCIA ADULTO',
-        hospital_unit_id: currentHospital.id,
-        state_id: currentState.id,
-        created_by: user?.id || null,
+        criado_por: criadoPor,
       };
 
       if (currentPrescriptionId) {
         // Update existing
         const { error } = await supabase
-          .from('prescriptions')
+          .from('prescricoes')
           .update(payload)
           .eq('id', currentPrescriptionId);
         if (error) throw error;
@@ -7856,7 +7726,7 @@ const PrescricaoPage = () => {
       } else {
         // Insert new
         const { data, error } = await supabase
-          .from('prescriptions')
+          .from('prescricoes')
           .insert(payload)
           .select('id')
           .single();
@@ -7961,7 +7831,9 @@ const PrescricaoPage = () => {
   const isPatientHeaderReady = () =>
     !identifiersLoading &&
     fallbackDataReady &&
-    (weightHydratedRef.current || !allergiesPatientId);
+    // MIGRAÇÃO: peso deixou de sincronizar com o banco (sem coluna). O sinal de
+    // "cadastro hidratado" passa a ser a leitura de alergias (pacientes.alergias).
+    (allergiesHydratedRef.current || !allergiesPatientId);
 
   const waitForPatientHeaderReady = async (timeoutMs = 1200): Promise<boolean> => {
     if (isPatientHeaderReady()) return true;
@@ -8195,17 +8067,22 @@ const PrescricaoPage = () => {
 
     const tomorrow = format(addDays(new Date(), 1), "dd/MM/yyyy", { locale: ptBR });
 
-    if (currentHospital && currentState && patient.name.trim()) {
+    if (currentHospital && currentState && patient.name.trim() && internacaoId) {
       setSaving(true);
       try {
+        // MIGRAÇÃO: prescriptions → prescricoes. items→itens,
+        // digital_signature→assinatura_digital, version→versao,
+        // parent_id→prescricao_pai_id, created_by→criado_por (profissional).
+        // DEGRADADOS: patient_name, patient_registry_id, patient_data, department,
+        // hospital_unit_id, state_id (sem colunas).
+        const criadoPor = await resolveProfissionalId(user?.id);
         // Save current prescription first if it exists
         if (currentPrescriptionId) {
           const { error: erroGrav1 } = await supabase
-            .from('prescriptions')
+            .from('prescricoes')
             .update({
-              patient_data: patient as any,
-              items: items as any,
-              digital_signature: digitalSignature as any,
+              itens: items as any,
+              assinatura_digital: digitalSignature as any,
               status: (() => {
                 if (digitalSignature) return 'signed';
                 const activeItems = (items as any[]).filter(i => i.status === 'active');
@@ -8221,32 +8098,24 @@ const PrescricaoPage = () => {
         let nextVersion = 1;
         if (currentPrescriptionId) {
           const { data: parentData } = await supabase
-            .from('prescriptions')
-            .select('version')
+            .from('prescricoes')
+            .select('versao')
             .eq('id', currentPrescriptionId)
             .single();
-          nextVersion = (parentData?.version || 1) + 1;
+          nextVersion = ((parentData as any)?.versao || 1) + 1;
         }
 
         // Create new version (auto-saved)
         const { data: newData, error } = await supabase
-          .from('prescriptions')
+          .from('prescricoes')
           .insert({
-            patient_name: patient.name.trim(),
-            patient_registry_id: patientRegistryId,
-            patient_data: patient as any,
-            items: renewedItems as any,
-            digital_signature: null,
+            internacao_id: internacaoId,
+            itens: renewedItems as any,
+            assinatura_digital: null,
             status: 'draft',
-            version: nextVersion,
-            parent_id: currentPrescriptionId || undefined,
-            department:
-              (patient.unit && patient.unit.trim()) ||
-              (initialPatientSector && (sectorMapInit[initialPatientSector] || initialPatientSector)) ||
-              'GERAL',
-            hospital_unit_id: currentHospital.id,
-            state_id: currentState.id,
-            created_by: user?.id || null,
+            versao: nextVersion,
+            prescricao_pai_id: currentPrescriptionId || undefined,
+            criado_por: criadoPor,
           })
           .select('id')
           .single();
@@ -8289,6 +8158,10 @@ const PrescricaoPage = () => {
   const { cidPrimary: admissionCidPrimary } = usePatientCid(allergiesPatientId);
   const lastSyncedAllergiesRef = useRef<string | null>(null); // formato canônico (\n)
   const allergiesHydratedRef = useRef(false);
+  // MIGRAÇÃO: alergias moram em pacientes.alergias (não patients.uti_allergies).
+  // allergiesPatientId é o id da INTERNAÇÃO; precisamos do paciente_id para
+  // ler/gravar/assinar realtime no cadastro. Resolvido uma vez na hidratação.
+  const allergiesPacienteIdRef = useRef<string | null>(null);
 
   // Conversões canônico (\n) ↔ display (", ")
   const canonicalToDisplay = (raw: string | null | undefined) =>
@@ -8322,23 +8195,32 @@ const PrescricaoPage = () => {
       setPatient(prev => (prev.allergies === display ? prev : { ...prev, allergies: display }));
     };
 
+    let channel: ReturnType<typeof supabase.channel> | null = null;
     (async () => {
+      // MIGRAÇÃO: patients.uti_allergies → pacientes.alergias, via internacao_id → paciente_id.
       const { data, error } = await supabase
-        .from('patients')
-        .select('uti_allergies')
+        .from('internacoes')
+        .select('paciente_id, paciente:pacientes(alergias)')
         .eq('id', allergiesPatientId)
         .maybeSingle();
-      if (!error) applyRemote(data?.uti_allergies as string | null);
-      else allergiesHydratedRef.current = true; // libera write mesmo sem registro inicial
+      if (cancelled) return;
+      if (!error && data) {
+        allergiesPacienteIdRef.current = (data as any).paciente_id ?? null;
+        applyRemote((data as any)?.paciente?.alergias as string | null);
+      } else {
+        allergiesHydratedRef.current = true; // libera write mesmo sem registro inicial
+      }
+      // Realtime na tabela de cadastro (pacientes), filtrada pelo paciente_id resolvido.
+      if (allergiesPacienteIdRef.current) {
+        channel = supabase
+          .channel(`prescricao-allergies-${allergiesPacienteIdRef.current}`)
+          .on('postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'pacientes', filter: `id=eq.${allergiesPacienteIdRef.current}` },
+            (payload) => applyRemote((payload.new as any)?.alergias))
+          .subscribe();
+      }
     })();
-
-    const channel = supabase
-      .channel(`prescricao-allergies-${allergiesPatientId}`)
-      .on('postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'patients', filter: `id=eq.${allergiesPatientId}` },
-        (payload) => applyRemote((payload.new as any)?.uti_allergies))
-      .subscribe();
-    return () => { cancelled = true; supabase.removeChannel(channel); };
+    return () => { cancelled = true; if (channel) supabase.removeChannel(channel); };
   }, [allergiesPatientId]);
 
   // 2) Persistência local → DB (debounced 500ms). Converte para formato canônico.
@@ -8347,78 +8229,29 @@ const PrescricaoPage = () => {
     const nextCanonical = displayToCanonical(patient.allergies ?? '');
     if (nextCanonical === (lastSyncedAllergiesRef.current ?? '')) return;
     const handle = setTimeout(async () => {
+      const pacienteId = allergiesPacienteIdRef.current;
+      if (!pacienteId) return; // sem paciente_id resolvido, nada a gravar
+      // MIGRAÇÃO: grava em pacientes.alergias (não patients.uti_allergies).
       const { error } = await supabase
-        .from('patients')
-        .update({ uti_allergies: nextCanonical || null })
-        .eq('id', allergiesPatientId);
+        .from('pacientes')
+        .update({ alergias: nextCanonical || null })
+        .eq('id', pacienteId);
       if (!error) {
         lastSyncedAllergiesRef.current = nextCanonical;
       } else {
-        console.error('Falha ao sincronizar alergias com Cockpit:', error);
-        toast.error('Não foi possível sincronizar alergias com a Cockpit', { description: error.message });
+        console.error('Falha ao sincronizar alergias com o cadastro:', error);
+        toast.error('Não foi possível sincronizar alergias', { description: error.message });
       }
     }, 500);
     return () => clearTimeout(handle);
   }, [patient.allergies, allergiesPatientId]);
 
-  // ===== Sincroniza PESO (kg) com a Cockpit (patients.uti_weight_kg) =====
-  // Mesmo padrão de alergias: hidratação inicial + realtime + write debounced.
-  // Fonte única: numeric no DB; UI mantém string para edição amigável.
-  const lastSyncedWeightRef = useRef<string | null>(null);
-  const weightHydratedRef = useRef(false);
-
-  useEffect(() => {
-    if (!allergiesPatientId) return;
-    let cancelled = false;
-    const applyRemote = (raw: number | string | null | undefined) => {
-      if (cancelled) return;
-      const remoteStr = raw === null || raw === undefined || raw === '' ? '' : String(raw).replace('.', ',');
-      if (weightHydratedRef.current && remoteStr === (lastSyncedWeightRef.current ?? '')) return;
-      lastSyncedWeightRef.current = remoteStr;
-      weightHydratedRef.current = true;
-      setPatient(prev => (prev.weight === remoteStr ? prev : { ...prev, weight: remoteStr }));
-    };
-
-    (async () => {
-      const { data, error } = await supabase
-        .from('patients')
-        .select('uti_weight_kg' as any)
-        .eq('id', allergiesPatientId)
-        .maybeSingle();
-      if (!error) applyRemote((data as any)?.uti_weight_kg as number | null);
-      else weightHydratedRef.current = true;
-    })();
-
-    const channel = supabase
-      .channel(`prescricao-weight-${allergiesPatientId}`)
-      .on('postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'patients', filter: `id=eq.${allergiesPatientId}` },
-        (payload) => applyRemote((payload.new as any)?.uti_weight_kg))
-      .subscribe();
-    return () => { cancelled = true; supabase.removeChannel(channel); };
-  }, [allergiesPatientId]);
-
-  useEffect(() => {
-    if (!allergiesPatientId || !weightHydratedRef.current) return;
-    const raw = (patient.weight ?? '').trim();
-    const nextStr = raw; // canonical UI string (with comma)
-    if (nextStr === (lastSyncedWeightRef.current ?? '')) return;
-    const parsed = raw === '' ? null : Number(raw.replace(',', '.'));
-    if (parsed !== null && (!isFinite(parsed) || parsed <= 0 || parsed > 500)) return; // ignora valor inválido
-    const handle = setTimeout(async () => {
-      const { error } = await supabase
-        .from('patients')
-        .update({ uti_weight_kg: parsed } as any)
-        .eq('id', allergiesPatientId);
-      if (!error) {
-        lastSyncedWeightRef.current = nextStr;
-      } else {
-        console.error('Falha ao sincronizar peso com Cockpit:', error);
-        toast.error('Não foi possível sincronizar peso com a Cockpit', { description: error.message });
-      }
-    }, 500);
-    return () => clearTimeout(handle);
-  }, [patient.weight, allergiesPatientId]);
+  // ===== PESO (kg) — DEGRADADO =====
+  // MIGRAÇÃO: patients.uti_weight_kg não tem coluna equivalente no schema novo
+  // (pacientes não guarda peso; sinais_vitais é por evento, não "peso atual").
+  // A sincronização bidirecional com a Cockpit foi removida — o peso permanece
+  // apenas em estado local (editável na UI, usado por canPrescribe e cálculos),
+  // sem persistência no banco. Ver supabase/MIGRACAO_DEGRADACOES.md.
 
 
   const isSimpleCategory = (cat: PrescriptionCategory) => ['care'].includes(cat);

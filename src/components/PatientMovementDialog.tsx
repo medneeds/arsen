@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ADMISSION_STATUS } from "@/lib/admissionStatus";
+import { ADMISSION_STATUS, toInternacaoStatusDb } from "@/lib/admissionStatus";
 import { useSignalingStatus, SignalingStatusPanel } from "@/components/SignalingStatusPanel";
 import type { TransferClassification } from "@/lib/sectorComplexity";
 import { useNavigate } from "react-router-dom";
@@ -49,9 +49,25 @@ import {
   type DischargeDocType,
   type DischargeDocPayload,
   printDischargeDocument,
+  toAltaTipoDb,
 } from "@/lib/dischargeDocuments";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 import { closeActiveEncounter } from "@/lib/resolveActiveEncounter";
+
+// MIGRAÇÃO: profissional_id (profissionais.id) ≠ auth.uid — resolvido via profissionais.user_id.
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from("profissionais")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // Mapeamento: texto do destino de transferência interna → código de setor do banco
 const DESTINATION_TO_SECTOR_CODE: Record<string, string> = {
@@ -183,14 +199,16 @@ export function PatientMovementDialog({
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      // MIGRAÇÃO: profiles → profissionais. full_name → nome, crm → numero_conselho.
+      // Filtro por user_id (profissionais.id ≠ auth.uid).
       const { data } = await supabase
-        .from("profiles")
-        .select("full_name, crm")
-        .eq("id", user.id)
+        .from("profissionais")
+        .select("nome, numero_conselho")
+        .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
-      const name = (data?.full_name || "").toUpperCase();
-      const crm = data?.crm || "";
+      const name = (data?.nome || "").toUpperCase();
+      const crm = data?.numero_conselho || "";
       setSignerProfile({ name, crm });
       setResponsibleDoctor((prev) => prev || name);
     })();
@@ -302,22 +320,33 @@ export function PatientMovementDialog({
       const { data: { user } } = await supabase.auth.getUser();
       const finalDestination = destination === "OUTRO" ? customDestination : destination;
       const patientDepartment = (patient as any).department || "URGÊNCIA E EMERGÊNCIA ADULTO";
+      const actorProfId = await resolveProfissionalId(user?.id);
 
-      const { data: movRow, error } = await supabase.from("patient_movements").insert({
-        patient_id: (patient as any).id || null,
-        patient_name: patient.name,
-        patient_bed: patient.bedNumber,
-        patient_sector: patient.sector,
-        movement_type: subtypeDef.id,
-        destination: finalDestination || null,
-        notes: notes || null,
-        responsible_doctor: responsibleDoctor || null,
-        created_by: user?.id,
-        patient_snapshot: patient as any,
-        department: patientDepartment,
-        state_id: currentState.id,
-        hospital_unit_id: currentHospital.id,
-      }).select("id").single();
+      // MIGRAÇÃO: patient_movements (morta) → logs_auditoria. A nova `transferencias`
+      // modela apenas transferência leito→leito (exige leito_destino_id NOT NULL) e não
+      // cabe em alta/óbito/evasão nem em sinalização sem leito destino. Os campos ricos
+      // (bed/sector/destination/snapshot/department) são preservados em dados_novos.
+      const { error } = await supabase.from("logs_auditoria").insert({
+        tipo_evento: `movimentacao_${subtypeDef.id.toLowerCase()}`,
+        acao: "UPDATE",
+        nome_tabela: "internacoes",
+        internacao_id: (patient as any).id || null,
+        registro_id: (patient as any).id || null,
+        ator_user_id: user?.id ?? null,
+        profissional_id: actorProfId,
+        motivo: notes || null,
+        dados_novos: {
+          movement_type: subtypeDef.id,
+          patient_name: patient.name,
+          patient_bed: patient.bedNumber,
+          patient_sector: patient.sector,
+          destination: finalDestination || null,
+          notes: notes || null,
+          responsible_doctor: responsibleDoctor || null,
+          department: patientDepartment,
+          patient_snapshot: patient,
+        } as any,
+      });
       if (error) throw error;
 
       // Persist discharge/death document linked to movement
@@ -326,24 +355,9 @@ export function PatientMovementDialog({
           throw new Error("Documento de alta/óbito não foi preenchido. Recarregue a página e tente novamente.");
         }
 
-        // Captura o encounter ativo ANTES de fechá-lo. usePatientDischargeDocs
-        // filtra por encounter_id quando há um ativo — se o documento nascer
-        // sem esse vínculo, a tarja de alta/óbito no cockpit nunca aparece
-        // (bug reportado: "saída não atualiza a cockpit"). A transferência não
-        // sofria disso porque a tarja dela lê admission_status direto, não uma
-        // query filtrada por encounter.
-        let activeEncounterId: string | null = null;
-        if ((patient as any).id) {
-          const { data: encRow } = await supabase
-            .from("patient_encounters")
-            .select("id")
-            .eq("patient_id", (patient as any).id)
-            .neq("status", "closed")
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          activeEncounterId = encRow?.id ?? null;
-        }
+        // MIGRAÇÃO: patient_encounters não existe — o "encounter ativo" passou a ser a
+        // própria internação (patient.id === internacoes.id). O vínculo do documento ao
+        // encounter (antes discharge_documents.encounter_id) é implícito via altas.internacao_id.
 
         const finalDoc: DischargeDocPayload = {
           ...docPayload,
@@ -354,32 +368,31 @@ export function PatientMovementDialog({
           signed_by_crm: docPayload.signed_by_crm || signerProfile.crm || null,
           signed_at: new Date().toISOString(),
         };
-        const { error: docErr } = await supabase.from("discharge_documents").insert({
-          document_type: requiredDocType,
-          patient_id: (patient as any).id || null,
-          patient_name: patient.name,
-          patient_bed: patient.bedNumber,
-          patient_sector: patient.sector,
-          movement_id: movRow?.id ?? null,
-          encounter_id: activeEncounterId, // vincula ao encounter p/ a tarja do cockpit aparecer
-          content: finalDoc as any,
-          signed_by: user?.id,
-          signed_by_name: finalDoc.signed_by_name || null,
-          signed_by_crm: finalDoc.signed_by_crm || null,
-          signed_at: finalDoc.signed_at,
-          hospital_unit_id: currentHospital.id,
-          state_id: currentState.id,
-          department: patientDepartment,
-          created_by: user?.id,
+        // MIGRAÇÃO: discharge_documents → altas. altas só tem: internacao_id, tipo,
+        // conteudo(Json), numero_documento, assinado_por(profissional_id), crm_assinatura,
+        // data_hora. Colunas ricas (patient_name/bed/sector, movement_id, encounter_id,
+        // signed_by/signed_by_name, hospital_unit_id, state_id, department, created_by)
+        // NÃO existem → preservadas dentro de `conteudo` (finalDoc já carrega patient/assinatura).
+        const assinadoPorProfId = await resolveProfissionalId(user?.id);
+        const { error: docErr } = await supabase.from("altas").insert({
+          internacao_id: (patient as any).id,
+          tipo: toAltaTipoDb(requiredDocType),
+          conteudo: finalDoc as any,
+          numero_documento: null,
+          assinado_por: assinadoPorProfId,
+          crm_assinatura: finalDoc.signed_by_crm || null,
+          data_hora: finalDoc.signed_at,
         });
         if (docErr) throw docErr;
 
-        // Marca o paciente como alta/óbito (mantém no leito até liberação física)
+        // Marca a internação como alta/óbito (mantém no leito até liberação física)
         const newAdmissionStatus = requiredDocType === "obito" ? ADMISSION_STATUS.DEATH : ADMISSION_STATUS.DISCHARGE_GIVEN;
         if ((patient as any).id) {
+          // MIGRAÇÃO: patients.admission_status → internacoes.status. Desfecho final grava
+          // também data_alta (substitui o fechamento do patient_encounter). Sem updated_at.
           const { error: statusErr } = await supabase
-            .from("patients")
-            .update({ admission_status: newAdmissionStatus, updated_at: new Date().toISOString() })
+            .from("internacoes")
+            .update({ status: toInternacaoStatusDb(newAdmissionStatus), data_alta: new Date().toISOString() })
             .eq("id", (patient as any).id);
           if (statusErr) throw statusErr;
 
@@ -414,130 +427,67 @@ export function PatientMovementDialog({
           subtypeDef.id === "TRANSFERENCIA_INTERNA"
             ? ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING
             : ADMISSION_STATUS.EXTERNAL_TRANSFER_PENDING;
+        // MIGRAÇÃO: patients.admission_status → internacoes.status. Transferência EXTERNA é
+        // desfecho final da internação → grava também data_alta (substitui o fechamento do
+        // patient_encounter). Interna mantém a internação aberta. Sem updated_at.
+        const trUpdate: Record<string, unknown> =
+          subtypeDef.id === "TRANSFERENCIA_EXTERNA"
+            ? { status: toInternacaoStatusDb(newAdmissionStatus), data_alta: new Date().toISOString() }
+            : { status: toInternacaoStatusDb(newAdmissionStatus) };
         const { error: trErr } = await supabase
-          .from("patients")
-          .update({ admission_status: newAdmissionStatus, updated_at: new Date().toISOString() })
+          .from("internacoes")
+          .update(trUpdate as any)
           .eq("id", (patient as any).id);
         if (trErr) throw trErr;
 
-        // Encerra encounter apenas para transferência EXTERNA — é desfecho final da internação.
-        // Transferência INTERNA: encounter segue aberto (1 internação = 1 atendimento).
+        // MIGRAÇÃO: closeActiveEncounter (lib já migrada) mantido para a transferência EXTERNA.
         if (subtypeDef.id === "TRANSFERENCIA_EXTERNA") {
-          // Fecha o encounter ativo via registry (não por leito) — mesma razão
-          // do fluxo de alta/óbito acima. (Auditoria 22/07/2026.)
           const closeExtRes = await closeActiveEncounter((patient as any).id);
           if (!closeExtRes.ok) {
-            // Não bloqueia — sinalização de transferência já registrada.
             console.error("[PatientMovementDialog] falha ao encerrar encounter (transf. externa):", closeExtRes.error);
           }
         }
 
-        // Para transferência INTERNA: criar registro na fila virtual do setor destino.
-        // IMPORTANTE: NÃO chamamos signalInternalTransfer aqui porque ele zera o leito
-        // de origem automaticamente (Etapa 1 do fluxo de 2 etapas). O médico deve
-        // desalocar manualmente pelo mapa de leitos — isso preserva a sinalização
-        // visual no card e mantém o paciente visível até o médico confirmar a saída.
-        // Aqui apenas criamos o registro em internal_transfer_requests para que o
-        // setor destino veja "Aguardando alocação por transferência interna".
-        if (subtypeDef.id === "TRANSFERENCIA_INTERNA" && currentHospital && currentState) {
+        // MIGRAÇÃO: a fila virtual de transferência interna vivia em internal_transfer_requests
+        // (tabela morta). A nova `transferencias` modela apenas leito→leito (leito_destino_id
+        // NOT NULL) e não comporta uma sinalização SEM leito destino definido (mesma degradação
+        // registrada em src/lib/internalTransfer.ts). Aqui a sinalização é apenas registrada em
+        // logs_auditoria; a alocação física no setor destino é feita depois pelo Mapa de Leitos.
+        if (subtypeDef.id === "TRANSFERENCIA_INTERNA") {
           const finalDest = destination === "OUTRO" ? customDestination : destination;
           const sectorCode = finalDest ? DESTINATION_TO_SECTOR_CODE[finalDest.trim().toUpperCase()] ?? null : null;
           if (sectorCode) {
-            const { data: { user: authUser } } = await supabase.auth.getUser();
-            // Buscar encounter_code ativo do paciente para preservar no registro da fila
-            const { data: encData } = await supabase
-              .from("patient_encounters")
-              .select("id, encounter_code")
-              .eq("patient_id", (patient as any).id)
-              .in("status", ["active", "pending"])
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-
-            // Classificar a transferência para informar o setor destino
-            let classification: string;
-            let needsSaps: boolean;
+            // Classifica a transferência (lógica pura — mantida) para registrar no log.
+            let classification: string | null = null;
+            let needsSaps: boolean | null = null;
             try {
               const { classifyTransfer, requiresSaps } = await import("@/lib/sectorComplexity");
               classification = classifyTransfer((patient as any).sector, sectorCode);
               needsSaps = requiresSaps(classification as TransferClassification);
             } catch (importErr) {
               console.error("[PatientMovementDialog] falha ao importar sectorComplexity:", importErr);
-              throw new Error("Erro ao classificar a transferência. Tente novamente.");
             }
-
-            // Idempotência: verifica se já existe QUALQUER request pendente
-            // para este paciente — antes só comparava com o MESMO destino
-            // (.eq("target_sector_code", sectorCode)), então re-sinalizar
-            // para um destino diferente criava uma SEGUNDA linha pendente
-            // em vez de substituir a primeira. Um paciente só pode ter uma
-            // sinalização de transferência interna pendente por vez —
-            // reforçado também por índice único no banco (migration
-            // 20260716230000).
-            const { data: existingReqs } = await (supabase as any)
-              .from("internal_transfer_requests")
-              .select("id, target_sector_code")
-              .eq("source_patient_id", (patient as any).id)
-              .eq("status", "pending")
-              .order("created_at", { ascending: false })
-              .limit(1);
-            const existingReq = existingReqs?.[0] ?? null;
-
-            const sameDestination = existingReq?.target_sector_code === sectorCode;
-
-            if (existingReq?.id && !sameDestination) {
-              // Destino mudou: substitui a sinalização anterior em vez de
-              // deixá-la órfã (a causa raiz do bug de duplicidade).
-              await (supabase as any)
-                .from("internal_transfer_requests")
-                .update({
-                  status: "cancelled",
-                  cancellation_reason: `Substituída por nova sinalização — destino alterado para ${sectorLabelFromCode(sectorCode) || sectorCode}.`,
-                  cancelled_at: new Date().toISOString(),
-                  cancelled_by: authUser?.id ?? null,
-                })
-                .eq("id", existingReq.id);
-            }
-
-            if (!existingReq?.id || !sameDestination) {
-              // Criar apenas o registro de fila — SEM zerar o leito de origem
-              const sourcePatientId = (patient as any).id;
-              console.log("[PatientMovementDialog] INSERT internal_transfer_requests — source_patient_id:", sourcePatientId, "target:", sectorCode);
-              const { error: reqErr } = await supabase.from("internal_transfer_requests").insert({
-                source_patient_id: sourcePatientId,
-                patient_name: patient?.name || '',
-                source_bed: patient?.bedNumber || null,
-                source_sector: patient?.sector || null,
+            const { error: logErr } = await supabase.from("logs_auditoria").insert({
+              tipo_evento: "sinalizacao_transferencia_interna",
+              acao: "UPDATE",
+              nome_tabela: "internacoes",
+              internacao_id: (patient as any).id,
+              registro_id: (patient as any).id,
+              ator_user_id: user?.id ?? null,
+              profissional_id: actorProfId,
+              motivo: notes?.trim() || finalDest || null,
+              dados_novos: {
                 target_sector_code: sectorCode,
                 target_sector_label: sectorLabelFromCode(sectorCode) || finalDest || null,
+                source_bed: patient?.bedNumber || null,
+                source_sector: patient?.sector || null,
                 classification,
                 requires_saps: needsSaps,
-                status: "pending",
-                signaled_by: authUser?.id ?? null,
-                hospital_unit_id: currentHospital.id,
-                state_id: currentState.id,
-                department: currentDepartment ?? null,
-                encounter_code: (encData as any)?.encounter_code ?? null,
-                reason: notes?.trim() || finalDest || null,
-                patient_snapshot: patient as any,
-              } as any);
-              if (reqErr) {
-                const detail = `[${reqErr.code}] ${reqErr.message}${reqErr.details ? ` — ${reqErr.details}` : ''}`;
-                console.error("[PatientMovementDialog] falha ao criar internal_transfer_requests:", detail, reqErr);
-                // Reverte o admission_status para 'admitido' — sem request na fila,
-                // o estado 'transferencia_interna_pendente' seria inconsistente.
-                try {
-                  const { error: erroNaoBloqueante1 } = await supabase
-                    .from("patients")
-                    .update({ admission_status: ADMISSION_STATUS.ADMITTED, updated_at: new Date().toISOString() })
-                    .eq("id", sourcePatientId);
-                  // Nao bloqueia o fluxo, mas nao pode sumir: antes o resultado era descartado.
-                  if (erroNaoBloqueante1) console.warn("[PatientMovementDialog] falha nao-bloqueante ao reverter status do paciente:", erroNaoBloqueante1);
-                } catch (revertErr) {
-                  console.error("[PatientMovementDialog] falha ao reverter status do paciente:", revertErr);
-                }
-                throw new Error(`Não foi possível criar a fila de transferência (${reqErr.code ?? 'erro'}): ${reqErr.message}. A sinalização foi cancelada — tente novamente.`);
-              }
+                patient_snapshot: patient,
+              } as any,
+            });
+            if (logErr) {
+              console.error("[PatientMovementDialog] falha ao registrar sinalização de transferência interna:", logErr);
             }
           }
         }
@@ -552,9 +502,10 @@ export function PatientMovementDialog({
         (subtypeDef.id === "EVASAO" || subtypeDef.id === "ALTA_PEDIDO")
         && (patient as any).id
       ) {
+        // MIGRAÇÃO: patients.admission_status → internacoes.status (+ data_alta: desfecho de saída).
         const { error: evErr } = await supabase
-          .from("patients")
-          .update({ admission_status: ADMISSION_STATUS.DISCHARGE_GIVEN, updated_at: new Date().toISOString() })
+          .from("internacoes")
+          .update({ status: toInternacaoStatusDb(ADMISSION_STATUS.DISCHARGE_GIVEN), data_alta: new Date().toISOString() })
           .eq("id", (patient as any).id);
         if (evErr) throw evErr;
       }

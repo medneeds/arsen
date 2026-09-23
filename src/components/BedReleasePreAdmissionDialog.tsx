@@ -107,18 +107,22 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
     if (!open || !patientId || !isTransferPending) return;
     let cancelled = false;
     (async () => {
-      const movementType = patient?.admissionStatus === "transferencia_interna_pendente"
-        ? "TRANSFERENCIA_INTERNA"
-        : "TRANSFERENCIA_EXTERNA";
+      // MIGRAÇÃO: patient_movements (morta) → logs_auditoria. A sinalização de
+      // transferência é gravada como tipo_evento='sinalizacao_transferencia_*' com o
+      // destino em dados_novos.destination (ver PatientMovementDialog/usePatientMovements).
+      const tipoEvento = patient?.admissionStatus === "transferencia_interna_pendente"
+        ? "sinalizacao_transferencia_interna"
+        : "sinalizacao_transferencia_externa";
       const { data } = await supabase
-        .from("patient_movements")
-        .select("destination")
-        .eq("patient_id", patientId)
-        .eq("movement_type", movementType)
-        .order("created_at", { ascending: false })
+        .from("logs_auditoria")
+        .select("dados_novos")
+        .eq("internacao_id", patientId)
+        .eq("tipo_evento", tipoEvento)
+        .order("criado_em", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (!cancelled && data?.destination) setSignaledDestination(data.destination);
+      const destino = (data as any)?.dados_novos?.destination as string | undefined;
+      if (!cancelled && destino) setSignaledDestination(destino);
     })();
     return () => { cancelled = true; };
   }, [open, patientId, patient?.admissionStatus]);

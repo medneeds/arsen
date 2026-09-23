@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
-import { useDepartment } from "@/contexts/DepartmentContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Search, Calendar, FileText } from "lucide-react";
@@ -20,6 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { DhdReportDialog } from "@/components/dhd/DhdReportDialog";
 
+// Shape de view-model consumido pelos cards/dialogs DHD (mantido estável).
 interface DhdPatient {
   id: string;
   patient_name: string;
@@ -34,12 +34,39 @@ interface DhdPatient {
   created_at: string;
 }
 
+// MIGRAÇÃO: pacientes_dhd não tem nome/idade/programação; identidade vem da
+// internação vinculada (internacao_id → internacoes → pacientes), vazia sem vínculo.
+function computeAge(dob: string | null | undefined): string | null {
+  if (!dob) return null;
+  const d = new Date(dob);
+  if (isNaN(d.getTime())) return null;
+  const years = Math.floor((Date.now() - d.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+  return years >= 0 ? `${years} anos` : null;
+}
+
+function mapDhdRow(r: any): DhdPatient {
+  const pac = r?.internacoes?.pacientes ?? null;
+  const nome = pac?.nome_social || pac?.nome_completo || "";
+  return {
+    id: r.id,
+    patient_name: nome, // MIGRAÇÃO: derivado de internacao→paciente
+    patient_age: computeAge(pac?.data_nascimento), // MIGRAÇÃO: idem
+    diagnosis: r.diagnostico ?? null,
+    start_date: r.data_inicio,
+    end_date: r.data_fim,
+    medication_schedule: null, // MIGRAÇÃO: sem coluna equivalente
+    medication_days: Array.isArray(r.dias_medicacao) ? r.dias_medicacao : [],
+    dhd_report: r.relatorio_dhd ?? null,
+    status: r.status,
+    created_at: r.criado_em,
+  };
+}
+
 export default function DhdHistoryPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { currentState, currentHospital } = useHospital();
-  const { currentDepartment } = useDepartment();
-  
+  const { currentHospital } = useHospital();
+
   const [patients, setPatients] = useState<DhdPatient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -48,25 +75,24 @@ export default function DhdHistoryPage() {
 
   useEffect(() => {
     fetchCompletedPatients();
-  }, [user, currentState, currentHospital, currentDepartment]);
+  }, [user, currentHospital]);
 
   const fetchCompletedPatients = async () => {
-    if (!user || !currentState || !currentHospital) return;
+    // MIGRAÇÃO: filtros por state_id/department removidos; escopo hospital_id + RLS.
+    if (!user || !currentHospital) return;
 
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from("dhd_patients")
-        .select("*")
-        .eq("state_id", currentState.id)
-        .eq("hospital_unit_id", currentHospital.id)
-        .eq("department", currentDepartment)
+        .from("pacientes_dhd")
+        .select("*, internacoes(pacientes(nome_completo, nome_social, data_nascimento))")
+        .eq("hospital_id", currentHospital.id)
         .eq("status", "completed")
-        .order("created_at", { ascending: false });
+        .order("criado_em", { ascending: false });
 
       if (error) throw error;
 
-      setPatients(data as any || []);
+      setPatients((data as any[] | null)?.map(mapDhdRow) ?? []);
     } catch (error) {
       console.error("Erro ao buscar histórico DHD:", error);
       toast.error("Não foi possível carregar histórico DHD");

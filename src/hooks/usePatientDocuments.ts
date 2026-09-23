@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { asUuidOrNull } from "@/lib/utils";
-import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
 
 /**
@@ -107,160 +106,129 @@ export function usePatientDocuments({
   const [error, setError] = useState<string | null>(null);
 
   const validId = asUuidOrNull(patientId);
-  // Fase B.2 — filtro por encounter ativo (evita vazamento do ocupante anterior do leito)
-  const { encounterId: activeEncounterId } = useActiveEncounterId(validId);
-  // 🔒 Registry resolvido para cobertura de evoluções legadas (patient_registry_id=NULL)
+  // MIGRAÇÃO: registryId = paciente_id (identidade permanente) resolvido da
+  // internação — usado para receituarios que seguem o paciente entre internações.
   const { registryId: resolvedRegistryId } = useResolvedRegistryId(validId);
 
   const fetchAll = useCallback(async () => {
-    if (!hospitalUnitId || !stateId) return;
-    if (!validId && !patientName) {
+    // MIGRAÇÃO: as tabelas novas são chaveadas por internacao_id (= validId).
+    // Sem internação não há como filtrar (colunas patient_name/hospital_unit_id/
+    // state_id/archived_at/encounter_id não existem no schema novo).
+    if (!validId) {
       setDocs([]);
       return;
     }
     setLoading(true);
     setError(null);
 
-    const encounterOr = validId && activeEncounterId
-      ? `encounter_id.eq.${activeEncounterId},encounter_id.is.null`
-      : null;
-
     try {
-      // ── exam_requests (lab / imagem / parecer / apac) ──
-      let examQuery = supabase
-        .from("exam_requests")
+      // ── solicitacoes_exame (lab / imagem / parecer / apac) ──
+      // MIGRAÇÃO: exam_requests → solicitacoes_exame (category→categoria,
+      // items→itens, created_at→criado_em). Filtro por internacao_id.
+      const examQuery = supabase
+        .from("solicitacoes_exame")
         .select("*")
-        .eq("hospital_unit_id", hospitalUnitId)
-        .eq("state_id", stateId)
-        // 🔒 Blindagem: nunca mostrar requisição arquivada (ocupante anterior do leito)
-        .is("archived_at", null)
-        .order("created_at", { ascending: false })
+        .eq("internacao_id", validId)
+        .order("criado_em", { ascending: false })
         .limit(200);
-      if (validId) examQuery = examQuery.eq("patient_id", validId);
-      else if (patientName) examQuery = examQuery.eq("patient_name", patientName);
-      if (encounterOr) examQuery = examQuery.or(encounterOr);
 
-      // ── culture_results ──
-      let cultureQuery = supabase
-        .from("culture_results")
+      // ── resultados_cultura ──
+      // MIGRAÇÃO: culture_results → resultados_cultura (culture_type→tipo_cultura,
+      // created_at→criado_em). Filtro por internacao_id.
+      const cultureQuery = supabase
+        .from("resultados_cultura")
         .select("*")
-        .eq("hospital_unit_id", hospitalUnitId)
-        .eq("state_id", stateId)
-        // 🔒 Blindagem: nunca mostrar cultura arquivada
-        .is("archived_at", null)
-        .order("created_at", { ascending: false })
+        .eq("internacao_id", validId)
+        .order("criado_em", { ascending: false })
         .limit(100);
-      if (validId) cultureQuery = cultureQuery.eq("patient_id", validId);
-      else if (patientName) cultureQuery = cultureQuery.eq("patient_name", patientName);
-      if (encounterOr) cultureQuery = cultureQuery.or(encounterOr);
 
-      // ── clinical_evolutions ──
-      // OR cobre evoluções legadas (patient_registry_id=NULL gravadas antes do registry)
-      let evolQuery = supabase
-        .from("clinical_evolutions")
-        .select("id, patient_name, patient_sector, patient_bed, status, created_at, created_by_name")
-        .eq("hospital_unit_id", hospitalUnitId)
-        .eq("state_id", stateId)
-        // ⚠️ ignora evoluções arquivadas (ocupante anterior do leito, reverts).
-        .is("archived_at", null)
-        .order("created_at", { ascending: false })
+      // ── evolucoes ──
+      // MIGRAÇÃO: clinical_evolutions → evolucoes. Filtro por internacao_id
+      // (registry/encounter/setor/arquivado descontinuados — sem coluna).
+      const evolQuery = supabase
+        .from("evolucoes")
+        .select("id, status, criado_em, data_hora")
+        .eq("internacao_id", validId)
+        .order("criado_em", { ascending: false })
         .limit(50);
-      if (resolvedRegistryId && validId) {
-        evolQuery = evolQuery.or(
-          `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${validId})`
-        );
-      } else if (validId) {
-        evolQuery = evolQuery.eq("patient_id", validId);
-      } else if (patientName) {
-        evolQuery = evolQuery.eq("patient_name", patientName);
-      }
-      if (encounterOr) evolQuery = evolQuery.or(encounterOr);
 
       // ── receituarios (alta / ambulatorial / simples / controle especial) ──
+      // MIGRAÇÃO: type→tipo, items→itens, signed_by_name→assinado_por_nome,
+      // created_at→criado_em. Vínculo por paciente_id quando resolvido (segue o
+      // paciente entre internações), senão pela própria internação.
       let receituarioQuery = supabase
         .from("receituarios")
         .select("*")
-        .eq("hospital_unit_id", hospitalUnitId)
-        .order("created_at", { ascending: false })
+        .order("criado_em", { ascending: false })
         .limit(100);
-      if (resolvedRegistryId && validId) {
-        receituarioQuery = receituarioQuery.or(
-          `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${validId})`
-        );
-      } else if (validId) {
-        receituarioQuery = receituarioQuery.eq("patient_id", validId);
-      } else if (patientName) {
-        receituarioQuery = receituarioQuery.eq("patient_name", patientName);
+      if (resolvedRegistryId) {
+        receituarioQuery = receituarioQuery.eq("paciente_id", resolvedRegistryId);
+      } else {
+        receituarioQuery = receituarioQuery.eq("internacao_id", validId);
       }
-      // Receituários não filtram por encounter — pertencem ao paciente, não ao atendimento
 
-      // ── documentos_medicos (atestado / relatório / termo) ──
-      let docMedicoQuery = supabase
-        .from("documentos_medicos")
+      // ── documentos médicos (atestado / relatório / termo) ──
+      // MIGRAÇÃO: documentos_medicos → altas (type→tipo). Filtra os três tipos
+      // deste fluxo; altas também guarda desfechos (alta/óbito).
+      const docMedicoQuery = supabase
+        .from("altas")
         .select("*")
-        .eq("hospital_unit_id", hospitalUnitId)
-        .order("created_at", { ascending: false })
+        .eq("internacao_id", validId)
+        .in("tipo", ["atestado", "relatorio", "termo"])
+        .order("criado_em", { ascending: false })
         .limit(100);
-      if (resolvedRegistryId && validId) {
-        docMedicoQuery = docMedicoQuery.or(
-          `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${validId})`
-        );
-      } else if (validId) {
-        docMedicoQuery = docMedicoQuery.eq("patient_id", validId);
-      } else if (patientName) {
-        docMedicoQuery = docMedicoQuery.eq("patient_name", patientName);
-      }
-      // Documentos médicos não filtram por encounter — pertencem ao paciente, não ao atendimento
 
       const [examRes, cultureRes, evolRes, receituarioRes, docMedicoRes] = await Promise.all([examQuery, cultureQuery, evolQuery, receituarioQuery, docMedicoQuery]);
 
       const list: PatientDocument[] = [];
 
-      // exam_requests → split entre comum (lab/imagem/parecer) e APAC (heurística)
+      // solicitacoes_exame → split entre comum (lab/imagem/parecer) e APAC (heurística)
+      // MIGRAÇÃO: source mantido "exam_requests" (shape exportado estável).
+      // DEGRADADO: authorName/patientSector/patientBed sem coluna → null/undefined.
       (examRes.data || []).forEach((r: any) => {
-        const isApac = r.category === "apac" || isApacItem(r.items);
+        const isApac = r.categoria === "apac" || isApacItem(r.itens);
         const type: DocumentType = isApac
           ? "apac"
-          : r.category === "imagem"
+          : r.categoria === "imagem"
           ? "imagem"
-          : r.category === "parecer"
+          : r.categoria === "parecer"
           ? "parecer"
           : "lab";
-        const firstItem = Array.isArray(r.items) && r.items[0]?.name ? r.items[0].name : "Requisição";
-        const extra = Array.isArray(r.items) && r.items.length > 1 ? ` (+${r.items.length - 1})` : "";
+        const firstItem = Array.isArray(r.itens) && r.itens[0]?.name ? r.itens[0].name : "Requisição";
+        const extra = Array.isArray(r.itens) && r.itens.length > 1 ? ` (+${r.itens.length - 1})` : "";
         list.push({
           id: r.id,
           type,
           label: `${firstItem}${extra}`,
           status: normalizeStatus(r.status),
           rawStatus: r.status,
-          createdAt: r.created_at,
-          authorName: r.requested_by_name,
-          patientSector: r.patient_sector,
-          patientBed: r.patient_bed,
+          createdAt: r.criado_em,
+          authorName: null, // MIGRAÇÃO: sem coluna requested_by_name
+          patientSector: null, // MIGRAÇÃO: sem coluna
+          patientBed: null, // MIGRAÇÃO: sem coluna
           source: "exam_requests",
           raw: r,
         });
       });
 
-      // culture_results → "cultura"
+      // resultados_cultura → "cultura" (MIGRAÇÃO: source mantido "culture_results")
       (cultureRes.data || []).forEach((r: any) => {
         list.push({
           id: r.id,
           type: "cultura",
-          label: r.culture_type || "Cultura",
+          label: r.tipo_cultura || "Cultura",
           status: normalizeStatus(r.status),
           rawStatus: r.status,
-          createdAt: r.created_at,
-          authorName: r.uploaded_by_name,
-          patientSector: r.patient_sector,
-          patientBed: r.patient_bed,
+          createdAt: r.criado_em,
+          authorName: null, // MIGRAÇÃO: sem coluna uploaded_by_name
+          patientSector: null, // MIGRAÇÃO: sem coluna
+          patientBed: null, // MIGRAÇÃO: sem coluna
           source: "culture_results",
           raw: r,
         });
       });
 
-      // clinical_evolutions → "evolucao"
+      // evolucoes → "evolucao" (MIGRAÇÃO: source mantido "clinical_evolutions")
       (evolRes.data || []).forEach((r: any) => {
         list.push({
           id: r.id,
@@ -268,10 +236,10 @@ export function usePatientDocuments({
           label: "Evolução clínica",
           status: normalizeStatus(r.status),
           rawStatus: r.status,
-          createdAt: r.created_at,
-          authorName: r.created_by_name,
-          patientSector: r.patient_sector,
-          patientBed: r.patient_bed,
+          createdAt: r.criado_em,
+          authorName: null, // MIGRAÇÃO: sem coluna created_by_name
+          patientSector: null, // MIGRAÇÃO: sem coluna
+          patientBed: null, // MIGRAÇÃO: sem coluna
           source: "clinical_evolutions",
           raw: r,
         });
@@ -285,44 +253,47 @@ export function usePatientDocuments({
         controle_especial: "Receituário de Controle Especial",
       };
       (receituarioRes.data || []).forEach((r: any) => {
-        const itemCount = Array.isArray(r.items) ? r.items.length : 0;
+        const itemCount = Array.isArray(r.itens) ? r.itens.length : 0;
         const itemsSuffix = itemCount > 0 ? ` (${itemCount} ${itemCount === 1 ? "item" : "itens"})` : "";
         list.push({
           id: r.id,
           type: "receituario",
-          label: `${RECEITUARIO_LABEL[r.type] || "Receituário"}${itemsSuffix}`,
+          label: `${RECEITUARIO_LABEL[r.tipo] || "Receituário"}${itemsSuffix}`,
           // receituário não tem workflow de status (pendente/concluído) — é
           // um documento emitido, por definição já "pronto".
           status: "concluido",
-          rawStatus: r.type,
-          createdAt: r.created_at,
-          authorName: r.signed_by_name,
-          patientSector: r.patient_sector,
-          patientBed: r.patient_bed,
+          rawStatus: r.tipo,
+          createdAt: r.criado_em,
+          authorName: r.assinado_por_nome, // MIGRAÇÃO: signed_by_name→assinado_por_nome
+          patientSector: null, // MIGRAÇÃO: sem coluna
+          patientBed: null, // MIGRAÇÃO: sem coluna
           source: "receituarios",
           raw: r,
         });
       });
 
-      // documentos_medicos → "documento_medico" (atestado / relatório / termo)
+      // altas (atestado / relatório / termo) → "documento_medico"
+      // MIGRAÇÃO: documentos_medicos → altas; source mantido "documentos_medicos"
+      // (shape exportado estável). body/patient_*/nome do assinante ficam no conteudo.
       const DOC_MEDICO_LABEL: Record<string, string> = {
         atestado: "Atestado Médico",
         relatorio: "Relatório Médico",
         termo: "Termo / Declaração",
       };
       (docMedicoRes.data || []).forEach((r: any) => {
+        const c = (r.conteudo ?? {}) as Record<string, any>;
         list.push({
           id: r.id,
           type: "documento_medico",
-          label: DOC_MEDICO_LABEL[r.type] || "Documento Médico",
+          label: DOC_MEDICO_LABEL[r.tipo] || "Documento Médico",
           // mesmo racional do receituário: documento emitido, sem workflow
           // de status.
           status: "concluido",
-          rawStatus: r.type,
-          createdAt: r.created_at,
-          authorName: r.signed_by_name,
-          patientSector: r.patient_sector,
-          patientBed: r.patient_bed,
+          rawStatus: r.tipo,
+          createdAt: r.criado_em ?? r.data_hora,
+          authorName: c.signed_by_name ?? null,
+          patientSector: c.patient_sector ?? null,
+          patientBed: c.patient_bed ?? null,
           source: "documentos_medicos",
           raw: r,
         });
@@ -336,27 +307,29 @@ export function usePatientDocuments({
     } finally {
       setLoading(false);
     }
-  }, [validId, patientName, hospitalUnitId, stateId, activeEncounterId, resolvedRegistryId]);
+  }, [validId, resolvedRegistryId]);
 
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
 
   // Realtime subscriptions (opcional)
+  // MIGRAÇÃO: tabelas repontadas para o schema novo (solicitacoes_exame,
+  // resultados_cultura, evolucoes, receituarios, altas).
   useEffect(() => {
-    if (!realtime || !hospitalUnitId || !stateId) return;
+    if (!realtime || !validId) return;
     const channel = supabase
-      .channel(`patient-docs-${validId || patientName || "anon"}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "exam_requests" }, fetchAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "culture_results" }, fetchAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "clinical_evolutions" }, fetchAll)
+      .channel(`patient-docs-${validId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "solicitacoes_exame" }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "resultados_cultura" }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "evolucoes" }, fetchAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "receituarios" }, fetchAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "documentos_medicos" }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "altas" }, fetchAll)
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [realtime, validId, patientName, hospitalUnitId, stateId, fetchAll]);
+  }, [realtime, validId, fetchAll]);
 
   // Agregações úteis
   const byType = useMemo(() => {

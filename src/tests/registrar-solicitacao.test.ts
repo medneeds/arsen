@@ -107,50 +107,50 @@ console.log("\n=== Prioridade: default é rotina ===");
   check("urgente é preservado", ({ ...base, priority: "urgente" }).priority === "urgente");
 }
 
-console.log("\n=== Montagem da linha: normalizações ===");
+console.log("\n=== Montagem da linha: normalizações (schema novo, Wave3) ===");
 {
   const row = buildSolicitacaoRow(base);
-  check("nome do paciente é trimado", row.patient_name === "Paciente Teste", String(row.patient_name));
-  check("status sempre pending", row.status === "pending");
-  check("prioridade default rotina", row.priority === "rotina");
-  check("leito ausente vira null", row.patient_bed === null);
-  check("setor ausente vira null", row.patient_sector === null);
-  check("indicação ausente vira null", row.clinical_indication === null);
-  check("registry ausente vira null", row.patient_registry_id === null);
+  // MIGRAÇÃO: patient_name/patient_bed/patient_sector/patient_registry_id não
+  // têm coluna em solicitacoes_exame — buildSolicitacaoRow não os emite mais.
+  check("status sempre pendente (pt-BR)", row.status === "pendente");
+  check("prioridade default rotina", row.prioridade === "rotina");
+  check("categoria preservada", row.categoria === base.category);
+  check("indicação ausente vira null", row.indicacao_clinica === null);
+  check("patient_name não é emitido (sem coluna)", !("patient_name" in row));
+  check("patient_bed não é emitido (sem coluna)", !("patient_bed" in row));
+  check("patient_sector não é emitido (sem coluna)", !("patient_sector" in row));
+  check("patient_registry_id não é emitido (sem coluna)", !("patient_registry_id" in row));
 
-  const vazios = buildSolicitacaoRow({ ...base, patientBed: "   ", patientSector: "", notes: "  " });
-  check("string só com espaços vira null (leito)", vazios.patient_bed === null);
-  check("string vazia vira null (setor)", vazios.patient_sector === null);
-  check("nota só com espaços vira null", vazios.notes === null);
+  const vazios = buildSolicitacaoRow({ ...base, notes: "  " });
+  check("nota só com espaços vira null", vazios.observacoes === null);
 }
 
-console.log("\n=== patient_id: só UUID real é persistido ===");
+console.log("\n=== internacao_id: só UUID real é persistido ===");
 {
   // Evita gravar mocks do mapa de leitos como se fossem FK válida.
   const mock = buildSolicitacaoRow({ ...base, patientId: "uti2-01" });
-  check("mock 'uti2-01' NÃO vira patient_id", mock.patient_id === null, String(mock.patient_id));
+  check("mock 'uti2-01' NÃO vira internacao_id", mock.internacao_id === null, String(mock.internacao_id));
 
   const real = buildSolicitacaoRow({ ...base, patientId: "3f2504e0-4f89-11d3-9a0c-0305e82c3301" });
-  check("UUID real é preservado", real.patient_id === "3f2504e0-4f89-11d3-9a0c-0305e82c3301");
+  check("UUID real é preservado", real.internacao_id === "3f2504e0-4f89-11d3-9a0c-0305e82c3301");
 }
 
-console.log("\n=== document_payload só entra quando informado ===");
+console.log("\n=== document_payload: degradado, nunca emitido (sem coluna) ===");
 {
-  // Crítico: a migration pode não estar aplicada. Mandar a chave à toa faria
-  // TODA solicitação falhar.
+  // MIGRAÇÃO: solicitacoes_exame não tem coluna document_payload — mesmo
+  // quando informado na entrada, o snapshot de reimpressão não é persistido.
   const sem = buildSolicitacaoRow(base);
   check("sem payload, a chave nem existe na linha", !("document_payload" in sem));
 
   const com = buildSolicitacaoRow({ ...base, documentPayload: { kind: "apac", version: 1, data: { cid: "I21" } } });
-  check("com payload, a chave existe", "document_payload" in com);
-  check("payload preservado", (com.document_payload as DocumentPayload).kind === "apac");
+  check("mesmo com payload informado, a chave não existe na linha", !("document_payload" in com));
 }
 
 console.log("\n=== Detecção da coluna ausente (fallback do git != banco) ===");
 {
   check(
     "erro do PostgREST sobre a coluna é reconhecido",
-    isMissingDocumentPayloadColumn({ message: "Could not find the 'document_payload' column of 'exam_requests' in the schema cache" }),
+    isMissingDocumentPayloadColumn({ message: "Could not find the 'document_payload' column of 'solicitacoes_exame' in the schema cache" }),
   );
   check("outro erro NÃO é confundido", !isMissingDocumentPayloadColumn({ message: "violates foreign key constraint" }));
   check("erro nulo não quebra", !isMissingDocumentPayloadColumn(null));

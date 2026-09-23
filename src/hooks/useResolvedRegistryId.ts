@@ -5,22 +5,16 @@ import { asUuidOrNull } from "@/lib/utils";
 /**
  * 🔒 FONTE ÚNICA DA VERDADE PARA RESOLUÇÃO DE PRONTUÁRIO
  *
- * Recebe `bedRowId` (= `patients.id`, vindo da URL `?patientId=`) e devolve
- * o `patient_registry_id` (= identidade clínica permanente) correspondente.
+ * Recebe `bedRowId` (= `internacoes.id`, vindo da URL `?patientId=`) e devolve
+ * o `paciente_id` (= identidade clínica permanente) correspondente.
  *
- * Por que este hook existe:
- * - A URL passa `patients.id` (linha do MAPA DE LEITOS, muda quando o paciente
- *   troca de leito).
- * - Prescrições/evoluções/exames/culturas são gravados com `patient_registry_id`
- *   (IDENTIDADE clínica, vive para sempre).
- * - Usar `urlPatientId` direto em `.eq('patient_registry_id', ...)` filtra por
- *   ID errado → query retorna 0 linhas → "sumiu" (mas o dado nunca sumiu).
+ * MIGRAÇÃO: `patients.id` → `internacoes.id`; `patient_registry_id` → `paciente_id`.
+ * `hospitalUnitId` não tem coluna equivalente em internacoes/pacientes — degradado
+ * para null (o campo permanece na interface por compatibilidade dos consumidores).
  *
- * Garantias:
+ * Garantias mantidas:
  * - Cancela respostas antigas quando o `bedRowId` muda (anti race-condition).
  * - Cache em memória com TTL curto (30s) para evitar round-trip extra.
- * - Devolve também `hospitalUnitId` para você validar afinidade de unidade
- *   antes de gravar (defesa em profundidade contra cross-unidade).
  * - Nunca esconde estado: mantém `isResolving` para a UI mostrar skeleton em
  *   vez de "vazio silencioso".
  */
@@ -109,9 +103,10 @@ export function useResolvedRegistryId(
     setState((prev) => ({ ...prev, isResolving: true, error: null }));
 
     (async () => {
+      // MIGRAÇÃO: internacoes(id) → paciente_id; nome vem do join pacientes.
       const { data, error } = await supabase
-        .from("patients")
-        .select("patient_registry_id, hospital_unit_id, name")
+        .from("internacoes")
+        .select("paciente_id, paciente:pacientes(nome_completo, nome_social)")
         .eq("id", normalized)
         .maybeSingle();
 
@@ -129,10 +124,12 @@ export function useResolvedRegistryId(
         return;
       }
 
+      const pac = (data as any)?.paciente || null;
       const entry: CacheEntry = {
-        registryId: (data?.patient_registry_id as string | null) || null,
-        hospitalUnitId: (data?.hospital_unit_id as string | null) || null,
-        patientName: (data?.name as string | null) || null,
+        registryId: ((data as any)?.paciente_id as string | null) || null,
+        // MIGRAÇÃO: sem coluna hospital_unit_id em internacoes/pacientes → null.
+        hospitalUnitId: null,
+        patientName: (pac?.nome_social || pac?.nome_completo || null) as string | null,
         ts: Date.now(),
       };
       cache.set(normalized, entry);

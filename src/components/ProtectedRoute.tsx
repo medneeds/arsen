@@ -1,17 +1,16 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { SessionTimeoutProvider } from "./SessionTimeoutProvider";
 // Sob demanda: so aparece para usuario com cadastro pendente, mas arrastava
 // framer-motion (22 usos) para o pacote de entrada de TODA a aplicacao.
 const PendingApprovalScreen = lazy(() =>
   import("./PendingApprovalScreen").then(m => ({ default: m.PendingApprovalScreen })));
 import { ConsentTermsDialog, CURRENT_TERMS_VERSION } from "./ConsentTermsDialog";
-import { lerPerfil } from "@/lib/perfilSupabase";
 import { toast } from "sonner";
 import { ProfileIpGate } from "./ProfileIpGate";
 import { startIdlePrefetch } from "@/lib/prefetchRoutes";
-import { comTempoLimite } from "@/lib/tempoLimite";
 import { PageLoader } from "@/components/PageLoader";
 
 // Logins genéricos que não precisam de aprovação (período de transição)
@@ -29,7 +28,7 @@ const LEGACY_GENERIC_USERS = [
 ];
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, status } = useAuth();
+  const { user, loading, status, role } = useAuth();
   const navigate = useNavigate();
   const [hasShownLoading, setHasShownLoading] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
@@ -44,7 +43,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   // Verificar se usuário já aceitou os termos
   useEffect(() => {
     const checkTermsAcceptance = async () => {
-      if (!user || isLegacyGenericUser) {
+      // super_admin não passa pelo fluxo de termos (tabela profiles não existe mais no schema novo).
+      if (!user || isLegacyGenericUser || role === "super_admin") {
         setCheckingTerms(false);
         setTermsAccepted(true);
         return;
@@ -62,28 +62,18 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       //    nao responde. Falha de leitura agora deixa passar sem travar o
       //    acesso ao prontuario, e registra o erro.
       try {
-        // QUINTA chamada de rede do caminho de login, e a mais perigosa: até
-        // ela responder, `checkingTerms` fica true e o ProtectedRoute bloqueia
-        // a tela.
-        //
-        // Ate 16/09/2026 duas telas amorteciam isso: a de carregamento (800ms)
-        // e a de selecao de setor, que esperava um clique. Ambas foram
-        // removidas ao unificar o fluxo de setor em /setores. A remocao nao
-        // criou a lentidao — tirou o colchao que a escondia, e foi por isso que
-        // o problema apareceu naquele momento.
-        //
-        // Agora ela nem sequer vai ao servidor na maioria das vezes: lerPerfil
-        // compartilha a leitura de `profiles` com AuthPage, AuthContext e
-        // ProfileIpGate, que faziam a MESMA consulta. O tempo limite de 10s
-        // continua valendo para o caso em que esta e a primeira a disparar.
-        const { data: profile, error } = await comTempoLimite(
-          lerPerfil(user.id),
-          "verificar termos de uso",
-          10_000,
-        );
+        // Schema refatorado: consentimento vive em consentimentos_usuario
+        // (antes: profiles.terms_version + user_consents).
+        const { data: consents, error } = await supabase
+          .from("consentimentos_usuario")
+          .select("tipo_consentimento")
+          .eq("usuario_id", user.id)
+          .eq("versao_consentimento", CURRENT_TERMS_VERSION)
+          .is("revogado_em", null);
         if (error) throw error;
-
-        if (profile?.terms_version === CURRENT_TERMS_VERSION && profile?.terms_accepted_at) {
+        const tipos = new Set((consents ?? []).map((c) => c.tipo_consentimento));
+        const aceitouTudo = ["terms_of_use", "privacy_policy", "data_processing"].every((t) => tipos.has(t));
+        if (aceitouTudo) {
           setTermsAccepted(true);
         } else {
           setShowTermsDialog(true);
@@ -113,7 +103,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     if (user && !loading) {
       checkTermsAcceptance();
     }
-  }, [user, loading, isLegacyGenericUser]);
+  }, [user, loading, isLegacyGenericUser, role]);
 
   // Aquecimento das rotas clinicas: so com sessao. Antes rodava no App, ou
   // seja, ja na tela de login — a rede ficava ocupada baixando 1,18 MB de
@@ -162,6 +152,11 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   // piscar de tela branca durante o redirecionamento.
   if (!user) {
     return <PageLoader message="Entrando na plataforma…" />;
+  }
+
+  // super_admin: sem hospital, setor, termos, fila de aprovação nem IP-gate — acesso direto.
+  if (role === "super_admin") {
+    return <SessionTimeoutProvider>{children}</SessionTimeoutProvider>;
   }
 
   // Mostrar diálogo de termos se ainda não aceitou

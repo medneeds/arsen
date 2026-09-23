@@ -96,8 +96,8 @@ function EmergencyHeader({ activeSector, onSectorChange, onRefresh, isRefreshing
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <SidebarTrigger className="flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 transition-all duration-200" />
-            <div className="flex items-center gap-2 sm:gap-2 min-w-0">
-              <span className="text-xs sm:text-sm font-medium text-white/90 whitespace-nowrap">Emergência</span>
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <span className="text-xs sm:text-sm font-semibold text-white/90 whitespace-nowrap">Emergência</span>
               <span className="text-white/30 text-xs">/</span>
               <Select value={activeSector} onValueChange={onSectorChange}>
                 <SelectTrigger className="h-7 w-auto gap-1 bg-white/10 border-white/20 text-xs text-white font-medium px-3 focus:ring-0 focus:ring-offset-0 hover:bg-white/20 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/60 rounded-md">
@@ -451,33 +451,57 @@ export default function EmergenciaSectorPage() {
   const fetchPatients = async () => {
     if (!currentHospital || !currentState) return;
     try {
+      // MIGRAÇÃO (Wave3): patients (mega-tabela leito+paciente) morta. A lista é
+      // montada de leitos do setor (setores.tipo == activeSector) + a internação
+      // ATIVA (data_alta IS NULL) de cada leito + pacientes. Escopo por hospital
+      // via setores→alas.hospital_id. DEGRADADOS (sem coluna no schema novo):
+      //   - filtro `department` (URGÊNCIA…) removido — setores.tipo já escopa o setor.
+      //   - `display_order` inexistente → ordenação por número do leito.
+      //   - admission_history / clinical_status → sem coluna (omitidos).
+      //   - idade ao vivo agora vem de pacientes.data_nascimento (registry morto).
       const { data, error } = await supabase
-        .from("patients")
-        .select("*")
-        .eq("hospital_unit_id", currentHospital.id)
-        .eq("state_id", currentState.id)
-        .eq("department", "URGÊNCIA E EMERGÊNCIA ADULTO")
-        .eq("sector", activeSector)
-        .order("display_order", { ascending: true });
+        .from("leitos")
+        .select(`
+          id, numero, status,
+          setor:setores!inner(tipo, nome, ala:alas!inner(hospital_id)),
+          internacoes(
+            id, status, data_entrada, data_alta,
+            hipotese_diagnostica, historia_clinica, exames_relevantes, pendencias, agenda,
+            paciente:pacientes(nome_completo, nome_social, data_nascimento, prontuario)
+          )
+        `)
+        .eq("setor.tipo", activeSector)
+        .eq("setor.ala.hospital_id", currentHospital.id);
 
       if (error) throw error;
 
-      // Idade ao vivo a partir de patient_registry.birth_date — patients.age
-      // é estático (congelado na admissão). Busca em lote (1 query), não N+1.
-      const rows = data || [];
-      const registryIds = Array.from(new Set(rows.map((p: any) => p.patient_registry_id).filter(Boolean)));
-      const birthDateByRegistryId = new Map<string, string | null>();
-      if (registryIds.length > 0) {
-        const { data: registryRows } = await supabase
-          .from("patient_registry")
-          .select("id, birth_date")
-          .in("id", registryIds);
-        for (const r of registryRows || []) birthDateByRegistryId.set(r.id, r.birth_date);
-      }
-      setPatients(rows.map((p: any) => ({
-        ...p,
-        age: (p.patient_registry_id && formatAge(birthDateByRegistryId.get(p.patient_registry_id))) || p.age,
-      })));
+      const rows = (data as any[]) || [];
+      const mapped: EmergencyPatient[] = rows.map((l: any) => {
+        const internacoes = Array.isArray(l.internacoes) ? l.internacoes : [];
+        const active = internacoes.find((i: any) => !i.data_alta) || null;
+        if (!active) {
+          return { id: l.id, name: "", bed_number: l.numero, sector: activeSector, is_vacant: true };
+        }
+        const pac = active.paciente || {};
+        return {
+          id: active.id,
+          name: pac.nome_social || pac.nome_completo || "",
+          bed_number: l.numero,
+          sector: activeSector,
+          age: formatAge(pac.data_nascimento) || undefined,
+          diagnoses: active.hipotese_diagnostica || "",
+          medical_history: active.historia_clinica || "",
+          relevant_exams: active.exames_relevantes || "",
+          pendencies: active.pendencias || "",
+          schedule: active.agenda || "",
+          admission_date: active.data_entrada || undefined,
+          medical_record: pac.prontuario || undefined,
+          is_vacant: false,
+        };
+      });
+      // MIGRAÇÃO: sem display_order no schema novo → ordena por número do leito.
+      mapped.sort((a, b) => a.bed_number.localeCompare(b.bed_number, undefined, { numeric: true }));
+      setPatients(mapped);
     } catch (err) {
       console.error("Error fetching emergency patients:", err);
     } finally {

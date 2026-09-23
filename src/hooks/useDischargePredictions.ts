@@ -54,18 +54,13 @@ export function useDischargePredictions(hospitalUnitId: string | undefined) {
   return useQuery({
     queryKey: ["nir-discharge-predictions", hospitalUnitId],
     queryFn: async (): Promise<DischargePrediction[]> => {
-      if (!hospitalUnitId) return [];
-      const { data, error } = await supabase
-        .from("patients")
-        .select("id,name,bed_number,sector,uti_discharge_prediction")
-        .eq("hospital_unit_id", hospitalUnitId)
-        .not("uti_discharge_prediction", "is", null)
-        .neq("uti_discharge_prediction", "");
-      if (error) throw error;
-      return (data || []).map((p: any) => {
-        const { date, bucket, daysAway } = parsePrediction(p.uti_discharge_prediction);
-        return { ...p, predictedDate: date, bucket, daysAway };
-      });
+      // MIGRAÇÃO: este hook lia `patients.uti_discharge_prediction`. No schema
+      // novo a tabela `patients` não existe e NÃO há coluna equivalente de
+      // "previsão de alta da UTI" (todo o bloco uti_* foi degradado — ver
+      // MIGRACAO_DEGRADACOES.md). Sem fonte de dados, o painel de previsões de
+      // alta fica vazio. `parsePrediction` é mantida para reuso futuro caso uma
+      // coluna de previsão seja adicionada.
+      return [];
     },
     enabled: !!hospitalUnitId,
     refetchInterval: 120_000,

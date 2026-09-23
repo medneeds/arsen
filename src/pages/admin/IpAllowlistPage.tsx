@@ -25,30 +25,32 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { ShieldCheck, Trash2, Plus, RefreshCw } from "lucide-react";
 
+// MIGRAÇÃO: module_ip_settings→config_ip_modulo, module_ip_allowlist→config_ip_permitido,
+// ip_access_log→log_acesso_ip. Colunas renomeadas para o schema novo (pt-BR).
 type Setting = {
-  module_key: string;
-  enforce: boolean;
-  bypass_for_admin: boolean;
-  description: string | null;
+  modulo: string;
+  exige_ip: boolean;
+  ignora_para_admin: boolean;
+  descricao: string | null;
 };
 
 type AllowEntry = {
   id: string;
-  module_key: string;
+  modulo: string;
   ip_cidr: string;
-  label: string | null;
-  enabled: boolean;
-  created_at: string;
+  rotulo: string | null;
+  habilitado: boolean;
+  criado_em: string;
 };
 
 type LogEntry = {
   id: string;
-  module_key: string;
+  modulo: string;
   ip: string | null;
-  user_email: string | null;
-  allowed: boolean;
-  reason: string | null;
-  created_at: string;
+  email: string | null;
+  permitido: boolean;
+  motivo: string | null;
+  criado_em: string;
 };
 
 export default function IpAllowlistPage() {
@@ -68,22 +70,24 @@ export default function IpAllowlistPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const [s, a, l] = await Promise.all([
-      supabase.from("module_ip_settings").select("*").order("module_key"),
-      supabase.from("module_ip_allowlist").select("*").order("created_at", { ascending: false }),
-      supabase.from("ip_access_log").select("*").order("created_at", { ascending: false }).limit(50),
+      supabase.from("config_ip_modulo").select("*").order("modulo"),
+      supabase.from("config_ip_permitido").select("*").order("criado_em", { ascending: false }),
+      supabase.from("log_acesso_ip").select("*").order("criado_em", { ascending: false }).limit(50),
     ]);
-    setSettings((s.data ?? []) as Setting[]);
-    setAllowlist((a.data ?? []) as AllowEntry[]);
-    setLogs((l.data ?? []) as LogEntry[]);
+    setSettings((s.data ?? []) as unknown as Setting[]);
+    setAllowlist((a.data ?? []) as unknown as AllowEntry[]);
+    setLogs((l.data ?? []) as unknown as LogEntry[]);
     setLoading(false);
   }, []);
 
   useEffect(() => {
     load();
-    // descobrir IP atual via edge function (módulo qualquer com enforce off retorna IP)
+    // MIGRAÇÃO: a edge function "check-ip-access" não consta nas functions do backend
+    // novo; se não existir, o invoke retorna erro e o "Seu IP" degrada para "—".
     supabase.functions
       .invoke("check-ip-access", { body: { module: "__probe__" } })
-      .then(({ data }) => setMyIp(data?.ip ?? null));
+      .then(({ data }) => setMyIp((data as any)?.ip ?? null))
+      .catch(() => setMyIp(null));
   }, [load]);
 
   if (!isAdmin) {
@@ -96,18 +100,18 @@ export default function IpAllowlistPage() {
 
   async function toggleEnforce(key: string, value: boolean) {
     const { error } = await supabase
-      .from("module_ip_settings")
-      .update({ enforce: value })
-      .eq("module_key", key);
+      .from("config_ip_modulo")
+      .update({ exige_ip: value })
+      .eq("modulo", key);
     if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
     else load();
   }
 
   async function toggleBypass(key: string, value: boolean) {
     const { error } = await supabase
-      .from("module_ip_settings")
-      .update({ bypass_for_admin: value })
-      .eq("module_key", key);
+      .from("config_ip_modulo")
+      .update({ ignora_para_admin: value })
+      .eq("modulo", key);
     if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
     else load();
   }
@@ -119,10 +123,10 @@ export default function IpAllowlistPage() {
     }
     let cidr = newIp.trim();
     if (!cidr.includes("/")) cidr = `${cidr}/32`;
-    const { error } = await supabase.from("module_ip_allowlist").insert({
-      module_key: newModule,
+    const { error } = await supabase.from("config_ip_permitido").insert({
+      modulo: newModule,
       ip_cidr: cidr,
-      label: newLabel.trim() || null,
+      rotulo: newLabel.trim() || null,
     });
     if (error) {
       toast({ title: "Erro ao adicionar", description: error.message, variant: "destructive" });
@@ -135,7 +139,7 @@ export default function IpAllowlistPage() {
 
   async function removeEntry(id: string) {
     if (!confirm("Remover este IP da allowlist?")) return;
-    const { error } = await supabase.from("module_ip_allowlist").delete().eq("id", id);
+    const { error } = await supabase.from("config_ip_permitido").delete().eq("id", id);
     if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
     else load();
   }
@@ -144,7 +148,7 @@ export default function IpAllowlistPage() {
     // A funcao de remover, logo acima, ja conferia o erro e avisava; esta nao.
     // Numa allowlist de IP, um toggle que falha em silencio faz o admin pensar
     // que liberou (ou bloqueou) um acesso que na verdade nao mudou.
-    const { error } = await supabase.from("module_ip_allowlist").update({ enabled: value }).eq("id", id);
+    const { error } = await supabase.from("config_ip_permitido").update({ habilitado: value }).eq("id", id);
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
       return;
@@ -190,21 +194,21 @@ export default function IpAllowlistPage() {
             </TableHeader>
             <TableBody>
               {settings.map((s) => (
-                <TableRow key={s.module_key}>
-                  <TableCell className="font-mono text-xs">{s.module_key}</TableCell>
+                <TableRow key={s.modulo}>
+                  <TableCell className="font-mono text-xs">{s.modulo}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {s.description ?? "—"}
+                    {s.descricao ?? "—"}
                   </TableCell>
                   <TableCell>
                     <Switch
-                      checked={s.enforce}
-                      onCheckedChange={(v) => toggleEnforce(s.module_key, v)}
+                      checked={s.exige_ip}
+                      onCheckedChange={(v) => toggleEnforce(s.modulo, v)}
                     />
                   </TableCell>
                   <TableCell>
                     <Switch
-                      checked={s.bypass_for_admin}
-                      onCheckedChange={(v) => toggleBypass(s.module_key, v)}
+                      checked={s.ignora_para_admin}
+                      onCheckedChange={(v) => toggleBypass(s.modulo, v)}
                     />
                   </TableCell>
                 </TableRow>
@@ -228,8 +232,8 @@ export default function IpAllowlistPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {settings.map((s) => (
-                    <SelectItem key={s.module_key} value={s.module_key}>
-                      {s.module_key}
+                    <SelectItem key={s.modulo} value={s.modulo}>
+                      {s.modulo}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -283,12 +287,12 @@ export default function IpAllowlistPage() {
               )}
               {allowlist.map((e) => (
                 <TableRow key={e.id}>
-                  <TableCell className="font-mono text-xs">{e.module_key}</TableCell>
-                  <TableCell className="font-mono text-xs">{e.ip_cidr}</TableCell>
-                  <TableCell className="text-sm">{e.label ?? "—"}</TableCell>
+                  <TableCell className="font-mono text-xs">{e.modulo}</TableCell>
+                  <TableCell className="font-mono text-xs">{String(e.ip_cidr)}</TableCell>
+                  <TableCell className="text-sm">{e.rotulo ?? "—"}</TableCell>
                   <TableCell>
                     <Switch
-                      checked={e.enabled}
+                      checked={e.habilitado}
                       onCheckedChange={(v) => toggleEntry(e.id, v)}
                     />
                   </TableCell>
@@ -330,14 +334,14 @@ export default function IpAllowlistPage() {
               {logs.map((l) => (
                 <TableRow key={l.id}>
                   <TableCell className="text-xs">
-                    {new Date(l.created_at).toLocaleString("pt-BR")}
+                    {new Date(l.criado_em).toLocaleString("pt-BR")}
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{l.module_key}</TableCell>
-                  <TableCell className="font-mono text-xs">{l.ip ?? "—"}</TableCell>
-                  <TableCell className="text-xs">{l.user_email ?? "—"}</TableCell>
+                  <TableCell className="font-mono text-xs">{l.modulo}</TableCell>
+                  <TableCell className="font-mono text-xs">{l.ip ? String(l.ip) : "—"}</TableCell>
+                  <TableCell className="text-xs">{l.email ?? "—"}</TableCell>
                   <TableCell>
-                    <Badge variant={l.allowed ? "outline" : "destructive"}>
-                      {l.allowed ? "permitido" : (l.reason ?? "bloqueado")}
+                    <Badge variant={l.permitido ? "outline" : "destructive"}>
+                      {l.permitido ? "permitido" : (l.motivo ?? "bloqueado")}
                     </Badge>
                   </TableCell>
                 </TableRow>

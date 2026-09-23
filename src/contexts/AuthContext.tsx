@@ -2,11 +2,13 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode, useC
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import type { Database } from "@/integrations/supabase/types";
 import { comTempoLimite } from "@/lib/tempoLimite";
 import { ehChaveSensivel } from "@/lib/chavesSensiveis";
-import { lerPerfil, limparPerfilEmCache } from "@/lib/perfilSupabase";
+import { limparPerfilEmCache } from "@/lib/perfilSupabase";
 
-type UserRole = "admin" | "medico" | "porta" | "visitante" | "farmacia" | null;
+// Papel agora vem do enum papel_profissional (schema refatorado → tabela `profissionais`).
+type UserRole = Database["public"]["Enums"]["papel_profissional"] | null;
 type UserStatus = "pending" | "approved" | "rejected" | null;
 
 interface AuthContextType {
@@ -156,56 +158,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (fetchingUserIdRef.current === userId) return;
     fetchingUserIdRef.current = userId;
     try {
-      // As tres consultas pedem a MESMA coisa (o userId) e nao dependem uma da
-      // outra, mas rodavam em cascata: cada uma so comecava depois que a
-      // anterior voltava. Com a latencia do Supabase self-hosted, isso somava
-      // tres viagens de ida e volta ANTES de a primeira tela aparecer.
-      // Em paralelo, o custo passa a ser o da consulta mais lenta.
-      // Auditoria 18/09/2026: a leitura de `profiles` passa por lerPerfil, que
-      // compartilha a mesma ida ao servidor com AuthPage, ProtectedRoute e
-      // ProfileIpGate — antes eram quatro consultas identicas no login.
-      const [rolesRes, profileRes, deptRes] = await comTempoLimite(Promise.all([
-        supabase.from("user_roles").select("role").eq("user_id", userId),
-        lerPerfil(userId),
-        supabase.from("user_departments").select("department").eq("user_id", userId),
-      ]), "carregar permissões", 12_000);
+      // Schema refatorado: papel + vínculo vêm de `profissionais`
+      // (antes: user_roles + profiles.status + user_departments).
+      // RLS permite o próprio usuário ler sua linha (user_id = auth.uid()).
+      const { data: prof, error: profErr } = await supabase
+        .from("profissionais")
+        .select("papel, ativo")
+        .eq("user_id", userId)
+        .maybeSingle();
 
-      const { data: rolesData, error: roleError } = rolesRes;
-      const roleData = rolesData && rolesData.length > 0
-        ? (rolesData.find(r => r.role === 'admin') || rolesData[0])
-        : null;
-
-      if (roleError) {
-        // Sempre loga — falha de role não deve ser silenciosa em produção.
-        console.error("[AuthContext] falha ao buscar role do usuário — acesso bloqueado:", roleError);
-        // Negar acesso completamente: role null + status pending exibe PendingApprovalScreen.
-        // ProtectedRoute só verifica status, não role — por isso ambos precisam ser restritivos.
-        // Antes era setRole("medico"), o que promovia qualquer usuário com falha de rede.
+      if (profErr) {
+        console.error("[AuthContext] falha ao buscar profissional — acesso bloqueado:", profErr);
         setRole(null);
         setStatus("pending");
         setAllowedDepartments([]);
         return;
       }
-      setRole(roleData?.role as UserRole);
 
-      const { data: profileData, error: profileError } = profileRes;
-      if (profileError) {
-        console.error("[AuthContext] falha ao buscar status do usuário:", profileError);
-        // Status "pending" é restritivo — bloqueia acesso sem conceder permissão indevida.
+      if (!prof) {
+        // Autenticado sem linha em profissionais: sem papel → bloqueado.
+        setRole(null);
         setStatus("pending");
-      } else {
-        setStatus(profileData?.status as UserStatus);
+        setAllowedDepartments([]);
+        return;
       }
 
-      const { data: deptData, error: deptError } = deptRes;
-      if (deptError) {
-        // Sempre loga em qualquer ambiente — falha de departamento pode bloquear
-        // acesso legítimo e deve ser visível em produção.
-        console.error("[AuthContext] falha ao buscar departamentos do usuário:", deptError);
-        setAllowedDepartments([]);
-      } else {
-        setAllowedDepartments(deptData?.map(d => d.department) || []);
-      }
+      setRole((prof.papel as UserRole) ?? null);
+      // profissionais não tem workflow pending/approved; `ativo` decide o acesso.
+      setStatus(prof.ativo ? "approved" : "pending");
+      // allowedDepartments (setores) migra junto com o módulo de estrutura física
+      // (profissionais_setores → setores.nome). Stub por ora — super_admin não usa.
+      setAllowedDepartments([]);
     } catch (error) {
       // Sempre loga — erro crítico de autenticação deve ser visível em produção.
       console.error("[AuthContext] falha crítica ao carregar dados do usuário — acesso negado:", error);
@@ -243,23 +226,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let emailToUse = raw.toLowerCase();
 
-    // Resolve identificador (CPF, e-mail ou usuário) → email real via RPC (sem cold start)
-    try {
-      // Com tempo limite: sem ele, um RPC que nao responde deixa o botao
+    if (!isEmail) {
+      // Login por CPF/usuário dependia da RPC resolve_login, que NÃO existe no
+      // schema refatorado. Até uma equivalente ser deployada, só e-mail funciona.
+      // Com tempo limite: sem ele, uma RPC que nao responde deixa o botao
       // "Entrando..." preso para sempre, sem erro e sem mensagem.
-      const { data: resolveData, error: resolveError } = await comTempoLimite<{
-        data: { email?: string } | null; error: unknown;
-      }>(
-        (supabase.rpc as any)("resolve_login", { p_identifier: isCpf ? digits : raw }),
-        "identificar usuário",
-        10_000,
-      );
-      if (resolveError || !(resolveData as any)?.email) {
-        return { error: resolveError ?? new Error("Usuário não encontrado") };
+      try {
+        const { data: resolveData, error: resolveError } = await comTempoLimite<{
+          data: { email?: string } | null; error: unknown;
+        }>(
+          (supabase.rpc as any)("resolve_login", { p_identifier: isCpf ? digits : raw }),
+          "identificar usuário",
+          10_000,
+        );
+        if (resolveError || !(resolveData as any)?.email) {
+          return { error: resolveError ?? new Error("Login por CPF/usuário indisponível — use o e-mail.") };
+        }
+        emailToUse = (resolveData as any).email;
+      } catch (e) {
+        return { error: e };
       }
-      emailToUse = (resolveData as any).email;
-    } catch (e) {
-      return { error: e };
     }
 
     try {

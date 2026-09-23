@@ -29,16 +29,38 @@ export function MergesTab() {
   const [filter, setFilter] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
+  // MIGRAÇÃO: patient_merge_audit não existe → eventos de fusão vivem em
+  // logs_auditoria com tipo_evento='fusao_pacientes'. Mapeamento:
+  //   source_registry_id ← paciente_id (perdedor) / registro_id
+  //   target_registry_id ← paciente_relacionado_id
+  //   source_snapshot    ← dados_antigos (registro arquivado do perdedor)
+  //   payload            ← dados_novos (detalhes/estado da fusão)
+  //   target_snapshot    ← DEGRADADO (não há coluna dedicada) → null
+  //   action             ← acao ?? tipo_evento
+  //   performed_by       ← ator_user_id ?? profissional_id (≠ auth.uid garantido)
+  //   performed_by_email ← email_ator
   const refresh = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("patient_merge_audit")
+        .from("logs_auditoria")
         .select("*")
-        .order("created_at", { ascending: false })
+        .eq("tipo_evento", "fusao_pacientes")
+        .order("criado_em", { ascending: false })
         .limit(200);
       if (error) throw error;
-      setRows((data ?? []) as MergeRow[]);
+      setRows(((data as any[]) ?? []).map((r): MergeRow => ({
+        id: r.id,
+        source_registry_id: r.paciente_id ?? r.registro_id ?? "",
+        target_registry_id: r.paciente_relacionado_id ?? null,
+        action: r.acao ?? r.tipo_evento ?? "fusao_pacientes",
+        source_snapshot: (r.dados_antigos ?? null) as Record<string, unknown> | null,
+        target_snapshot: null,
+        payload: (r.dados_novos ?? null) as Record<string, unknown> | null,
+        performed_by: r.ator_user_id ?? r.profissional_id ?? null,
+        performed_by_email: r.email_ator ?? null,
+        created_at: r.criado_em,
+      })));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao carregar mesclagens");
     } finally {
@@ -141,7 +163,12 @@ export function MergesTab() {
                           <Badge variant="secondary" className="text-xs">{r.action}</Badge>
                         </td>
                         <td className="font-mono truncate max-w-[260px]">
-                          {snapField(r.source_snapshot, "full_name")}
+                          {/* MIGRAÇÃO: snapshot novo pode usar nome_completo/nome_social */}
+                          {snapField(r.source_snapshot, "full_name") !== "—"
+                            ? snapField(r.source_snapshot, "full_name")
+                            : snapField(r.source_snapshot, "nome_completo") !== "—"
+                              ? snapField(r.source_snapshot, "nome_completo")
+                              : snapField(r.source_snapshot, "nome_social")}
                           <span className="text-muted-foreground"> · {r.source_registry_id.slice(0, 8)}</span>
                         </td>
                         <td className="font-mono truncate max-w-[200px]">

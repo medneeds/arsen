@@ -108,29 +108,51 @@ export default function MeuPerfilPage() {
     if (!user?.id) return;
     (async () => {
       setLoading(true);
+      // MIGRAÇÃO: `profiles` (morta) → `profissionais` por `user_id`
+      // (profissionais.id ≠ auth.uid). Mapeamento: full_name→nome,
+      // crm→numero_conselho, cargo→cargo, "perfil de acesso"→papel.
+      // DEGRADADOS (sem coluna em profissionais): username, cpf, phone,
+      // specialty, matricula → lidos/gravados no user_metadata do auth.
       const { data, error } = await supabase
-        .from("profiles")
-        .select(
-          "id, full_name, email, username, cpf, phone, crm, specialty, matricula, cargo, professional_type, access_profile",
-        )
-        .eq("id", user.id)
+        .from("profissionais")
+        .select("nome, email, numero_conselho, cargo, papel")
+        .eq("user_id", user.id)
         .maybeSingle();
       if (error) {
         toast.error("Não foi possível carregar perfil");
         setLoading(false);
         return;
       }
-      const row = (data ?? null) as ProfileRow | null;
+      const prof = data as {
+        nome?: string | null; email?: string | null; numero_conselho?: string | null;
+        cargo?: string | null; papel?: string | null;
+      } | null;
+      const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+      const str = (v: unknown) => (v == null ? null : String(v));
+      const row: ProfileRow = {
+        id: user.id,
+        full_name: prof?.nome ?? str(meta.full_name),
+        email: prof?.email ?? user.email ?? null,
+        username: str(meta.username),
+        cpf: str(meta.cpf),
+        phone: str(meta.phone),
+        crm: prof?.numero_conselho ?? str(meta.crm),
+        specialty: str(meta.specialty),
+        matricula: str(meta.matricula),
+        cargo: prof?.cargo ?? str(meta.cargo),
+        professional_type: str(meta.professional_type),
+        access_profile: prof?.papel ?? null,
+      };
       setProfile(row);
       setForm({
-        full_name: row?.full_name ?? "",
-        username: row?.username ?? "",
-        cpf: row?.cpf ? maskCpf(row.cpf) : "",
-        phone: row?.phone ? maskPhone(row.phone) : "",
-        crm: row?.crm ?? "",
-        specialty: row?.specialty ?? "",
-        matricula: row?.matricula ?? "",
-        cargo: row?.cargo ?? "",
+        full_name: row.full_name ?? "",
+        username: row.username ?? "",
+        cpf: row.cpf ? maskCpf(row.cpf) : "",
+        phone: row.phone ? maskPhone(row.phone) : "",
+        crm: row.crm ?? "",
+        specialty: row.specialty ?? "",
+        matricula: row.matricula ?? "",
+        cargo: row.cargo ?? "",
       });
       setLoading(false);
     })();
@@ -144,22 +166,37 @@ export default function MeuPerfilPage() {
     }
     if (!user?.id) return;
     setSaving(true);
-    const payload = {
-      full_name: form.full_name.trim().toUpperCase(),
-      username: form.username.trim() || null,
-      cpf: form.cpf ? cpfDigits(form.cpf) : null,
-      phone: form.phone ? form.phone.replace(/\D/g, "") : null,
-      crm: form.crm.trim() || null,
-      specialty: form.specialty.trim().toUpperCase() || null,
-      matricula: form.matricula.trim() || null,
+    // MIGRAÇÃO: só nome/numero_conselho(crm)/cargo têm coluna em `profissionais`.
+    // O restante (username, cpf, phone, specialty, matricula) DEGRADADO para o
+    // user_metadata do auth (sem coluna equivalente na tabela).
+    const profPayload = {
+      nome: form.full_name.trim().toUpperCase(),
+      numero_conselho: form.crm.trim() || null,
       cargo: form.cargo.trim().toUpperCase() || null,
     };
-    const { error } = await supabase.from("profiles").update(payload).eq("id", user.id);
+    const { error } = await supabase
+      .from("profissionais")
+      .update(profPayload)
+      .eq("user_id", user.id);
+    let metaError: { message: string } | null = null;
+    if (!error) {
+      const { error: mErr } = await supabase.auth.updateUser({
+        data: {
+          username: form.username.trim() || null,
+          cpf: form.cpf ? cpfDigits(form.cpf) : null,
+          phone: form.phone ? form.phone.replace(/\D/g, "") : null,
+          specialty: form.specialty.trim().toUpperCase() || null,
+          matricula: form.matricula.trim() || null,
+        },
+      });
+      metaError = mErr;
+    }
     setSaving(false);
-    if (error) {
-      if (error.message.includes("cpf")) toast.error("Este CPF já está em uso por outro usuário");
-      else if (error.message.includes("username")) toast.error("Este nome de usuário já está em uso");
-      else toast.error("Não foi possível salvar");
+    if (error || metaError) {
+      const msg = error?.message || metaError?.message || "";
+      if (msg.includes("cpf")) toast.error("Este CPF já está em uso por outro usuário");
+      else if (msg.includes("username")) toast.error("Este nome de usuário já está em uso");
+      else toast.error("Falha ao salvar: " + msg);
       return;
     }
     toast.success("Dados atualizados");

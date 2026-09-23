@@ -10,7 +10,6 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { formatAge } from "@/lib/patientAge";
 import { getNormaZeroMissingFields, NormaZeroBlockedDocument } from "@/components/NormaZeroPrintHeader";
-import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
 import { whitelabel, getInstitutionalHeaderLines } from "@/config/whitelabel";
@@ -51,8 +50,7 @@ interface PatientData {
 }
 
 const FichaAtendimentoPage = () => {
-  const { user } = useAuth();
-  const { currentHospital, currentState } = useHospital();
+  const { currentHospital } = useHospital();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -65,16 +63,21 @@ const FichaAtendimentoPage = () => {
   const [showPrint, setShowPrint] = useState(false);
 
   // Fetch all data for the patient
+  //
+  // MIGRAÇÃO: patientId agora é `internacoes.id`. A ficha inteira é remontada a partir de
+  // internacoes(+pacientes,+leitos,+setores) + evolucoes + sinais_vitais + prescricoes +
+  // solicitacoes_exame + altas + pre_admissoes. As tabelas antigas (patients, patient_registry,
+  // pre_admissions rico, admission_histories, conduct_history, patient_encounters) não existem
+  // mais. Filtros hospital_unit_id/state_id saíram (internacoes é identificada globalmente pelo id).
   useEffect(() => {
     const fetchData = async () => {
-      if (!currentHospital || !currentState) return;
+      if (!patientId) { setLoading(false); return; }
       setLoading(true);
 
       try {
         const allEncounters: Encounter[] = [];
 
-        // 1. Fetch patient basic data from patients table or registry
-        let pd: PatientData = {
+        const pd: PatientData = {
           name: patientName,
           socialName: "",
           birthDate: "",
@@ -82,310 +85,267 @@ const FichaAtendimentoPage = () => {
           sex: "",
           motherName: "",
           address: "",
-          neighborhood: "",
-          city: "",
+          neighborhood: "", // MIGRAÇÃO: pacientes.endereco é campo único → sem bairro
+          city: "",         // MIGRAÇÃO: sem coluna cidade em pacientes
           record: "",
           cns: "",
           cpf: "",
-          race: "",
+          race: "",         // MIGRAÇÃO: sem coluna raça/cor em pacientes
           phone: "",
-          fichaNumber: "",
+          fichaNumber: "",  // MIGRAÇÃO: encounter_code (patient_encounters) morto → sem nº de ficha
           fichaDate: format(new Date(), "dd/MM/yyyy HH:mm:ss"),
         };
 
-        // Try pre_admissions for full patient data
-        const { data: preAdm } = await supabase
-          .from("pre_admissions")
-          .select("*")
-          .eq("hospital_unit_id", currentHospital.id)
-          .eq("state_id", currentState.id)
-          .eq("patient_name", patientName)
-          .order("created_at", { ascending: false })
-          .limit(1);
+        // 1. Internação + paciente + leito + setor
+        const { data: interRow } = await supabase
+          .from("internacoes")
+          .select(
+            "id, status, data_entrada, data_alta, queixa_principal, historia_clinica, hipotese_diagnostica, conduta_inicial, exames_relevantes, pendencias, agenda, criado_em, leito_id, paciente_id, paciente:pacientes(nome_completo, nome_social, cpf, cns, data_nascimento, sexo, nome_mae, telefone, endereco, tipo_sanguineo, alergias, comorbidades, prontuario), leito:leitos(numero, setor:setores(nome, tipo))"
+          )
+          .eq("id", patientId)
+          .maybeSingle();
 
-        if (preAdm && preAdm.length > 0) {
-          const pa = preAdm[0];
-          pd = {
-            ...pd,
-            socialName: pa.social_name || "",
-            birthDate: pa.birth_date ? format(new Date(pa.birth_date + "T12:00:00"), "dd/MM/yyyy") : "",
-            sex: pa.sex || "",
-            motherName: pa.mother_name || "",
-            address: `${pa.address || ""}${pa.neighborhood ? ` — ${pa.neighborhood}` : ""}`,
-            neighborhood: pa.neighborhood || "",
-            city: pa.city || "",
-            record: pa.medical_record || "",
-            cns: pa.cns || "",
-            cpf: pa.cpf || "",
-            phone: pa.phone || "",
-          };
+        const inter = interRow as any;
+        const pac = inter?.paciente || null;
+        const sectorCode: string = inter?.leito?.setor?.tipo || inter?.leito?.setor?.nome || "";
 
-          // Build risk classification encounter
-          const vs = pa.vital_signs as Record<string, string> | null;
-          const vitalsStr = vs
-            ? [
-                vs.pa ? `PA: ${vs.pa} mmHg` : null,
-                vs.fc ? `FC: ${vs.fc} bpm` : null,
-                vs.fr ? `FR: ${vs.fr} irpm` : null,
-                vs.tax ? `Tax: ${vs.tax} °C` : null,
-                vs.sato2 ? `SatO2: ${vs.sato2}%` : null,
-                vs.peso ? `Peso: ${vs.peso} kg` : null,
-                vs.glicemia ? `Glicemia: ${vs.glicemia} mg/dL` : null,
-              ]
-                .filter(Boolean)
-                .join(" | ")
+        if (pac) {
+          pd.name = pac.nome_completo || patientName;
+          pd.socialName = pac.nome_social || "";
+          pd.birthDate = pac.data_nascimento
+            ? format(new Date(pac.data_nascimento + "T12:00:00"), "dd/MM/yyyy")
             : "";
+          pd.sex = pac.sexo || "";
+          pd.motherName = pac.nome_mae || "";
+          pd.address = pac.endereco || "";
+          pd.record = pac.prontuario || "";
+          pd.cns = pac.cns || "";
+          pd.cpf = pac.cpf || "";
+          pd.phone = pac.telefone || "";
+        }
+        if (inter?.data_entrada) {
+          pd.fichaDate = format(new Date(inter.data_entrada), "dd/MM/yyyy HH:mm:ss");
+        }
 
-          if (pa.chief_complaint || pa.risk_classification) {
-            const riskContent = [
-              pa.chief_complaint ? `Queixa principal: ${pa.chief_complaint}` : null,
-              vitalsStr ? `Sinais vitais: ${vitalsStr}` : null,
-              pa.allergies ? `Alergias: ${pa.allergies}` : null,
-              pa.glasgow_score ? `Glasgow: ${pa.glasgow_score}` : null,
-              pa.risk_classification ? `Cor da classificação de risco: ${pa.risk_classification.charAt(0).toUpperCase() + pa.risk_classification.slice(1)}` : null,
-              pa.destination_sector ? `Encaminhamento: ${pa.destination_sector}` : null,
-            ]
-              .filter(Boolean)
-              .join("\n");
+        // Admissão sintetizada a partir de internacoes (substitui admission_histories, morta)
+        if (inter) {
+          const admContent = [
+            inter.queixa_principal ? `# HDA: ${inter.queixa_principal}` : null,
+            inter.historia_clinica || null,
+            inter.conduta_inicial ? `# Conduta: ${inter.conduta_inicial}` : null,
+          ].filter(Boolean).join("\n");
+          if (admContent) {
+            allEncounters.push({
+              id: `adm-${inter.id}`,
+              sector: sectorCode || "PS",
+              professionalName: "",
+              professionalCRM: "",
+              startTime: inter.data_entrada || inter.criado_em,
+              endTime: inter.data_entrada || inter.criado_em,
+              type: "evolucao",
+              content: admContent,
+              diagnoses: inter.hipotese_diagnostica || "",
+              requests: "",
+              outcome: "",
+            });
+          }
+        }
 
+        // 2. Pré-admissões / classificação de risco
+        // MIGRAÇÃO: pre_admissions rico (chief_complaint, vital_signs, allergies, glasgow,
+        // destination_sector) → pre_admissoes só tem classificacao_risco + dados_extraidos_ia (Json).
+        // Extraímos o que houver do JSON da IA; campos ausentes são omitidos.
+        const { data: preAdms } = await supabase
+          .from("pre_admissoes")
+          .select("id, classificacao_risco, dados_extraidos_ia, data_hora, status, criado_em")
+          .eq("internacao_id", patientId)
+          .order("data_hora", { ascending: true });
+
+        (preAdms as any[] | null)?.forEach((pa) => {
+          const ia = (pa.dados_extraidos_ia as Record<string, any>) || {};
+          const risco = pa.classificacao_risco
+            ? String(pa.classificacao_risco).charAt(0).toUpperCase() + String(pa.classificacao_risco).slice(1)
+            : "";
+          const content = [
+            (ia.chief_complaint || ia.queixa_principal) ? `Queixa principal: ${ia.chief_complaint || ia.queixa_principal}` : null,
+            (ia.allergies || ia.alergias) ? `Alergias: ${ia.allergies || ia.alergias}` : null,
+            risco ? `Classificação de risco: ${risco}` : null,
+          ].filter(Boolean).join("\n");
+          if (content) {
             allEncounters.push({
               id: pa.id,
               sector: "Classificação de Risco",
               professionalName: "",
               professionalCRM: "",
-              startTime: pa.risk_classified_at || pa.created_at,
-              endTime: pa.updated_at || pa.created_at,
+              startTime: pa.data_hora || pa.criado_em,
+              endTime: pa.data_hora || pa.criado_em,
               type: "classificacao_risco",
-              content: riskContent,
-              diagnoses: "",
-              requests: "",
-              outcome: pa.destination_sector ? `Encaminhamento: PS ${pa.destination_sector.charAt(0).toUpperCase() + pa.destination_sector.slice(1)}` : "",
-            });
-          }
-        }
-
-        // Try patients table for additional data
-        const { data: patientRow } = await supabase
-          .from("patients")
-          .select("*")
-          .eq("hospital_unit_id", currentHospital.id)
-          .eq("state_id", currentState.id)
-          .eq("name", patientName)
-          .order("created_at", { ascending: false })
-          .limit(1);
-
-        if (patientRow && patientRow.length > 0) {
-          const p = patientRow[0];
-          if (!pd.record && p.medical_record) pd.record = p.medical_record;
-          if (!pd.age && p.age) pd.age = String(p.age);
-
-          // Build evolution encounter from patient data
-          if (p.admission_history) {
-            allEncounters.push({
-              id: `patient-evolution-${p.id}`,
-              sector: sectorLabelFromCode(p.sector),
-              professionalName: "",
-              professionalCRM: "",
-              startTime: p.admission_date || p.created_at,
-              endTime: p.updated_at,
-              type: "evolucao",
-              content: p.admission_history,
-              diagnoses: p.diagnoses || "",
-              requests: "",
-              outcome: p.internment_status === "SOLICITACAO_PENDENTE"
-                ? "Internação"
-                : p.internment_status === "IR_PARA_UTI"
-                ? "UTI"
-                : p.internment_status === "IR_PARA_ENFERMARIA"
-                ? "Enfermaria"
-                : "",
-            });
-          }
-        }
-
-        // Fetch admission history
-        const { data: admHist } = await supabase
-          .from("admission_histories")
-          .select("*")
-          .eq("hospital_unit_id", currentHospital.id)
-          .eq("state_id", currentState.id)
-          .eq("patient_id", patientId || "00000000-0000-0000-0000-000000000000")
-          .order("created_at", { ascending: true });
-
-        if (admHist) {
-          admHist.forEach((ah) => {
-            const content = [
-              ah.chief_complaint ? `# HDA: ${ah.chief_complaint}` : null,
-              ah.clinical_history ? `${ah.clinical_history}` : null,
-              ah.initial_conduct ? `# Conduta: ${ah.initial_conduct}` : null,
-            ]
-              .filter(Boolean)
-              .join("\n");
-
-            if (content) {
-              allEncounters.push({
-                id: ah.id,
-                sector: "PS",
-                professionalName: "",
-                professionalCRM: "",
-                startTime: ah.created_at,
-                endTime: ah.updated_at,
-                type: "evolucao",
-                content,
-                diagnoses: ah.diagnostic_hypothesis || "",
-                requests: "",
-                outcome: "",
-              });
-            }
-          });
-        }
-
-        // Fetch conduct history for evolution entries
-        const { data: conducts } = await supabase
-          .from("conduct_history")
-          .select("*")
-          .eq("hospital_unit_id", currentHospital.id)
-          .eq("state_id", currentState.id)
-          .eq("patient_id", patientId || "00000000-0000-0000-0000-000000000000")
-          .order("created_at", { ascending: true });
-
-        if (conducts && conducts.length > 0) {
-          // Group conducts by timestamp proximity (within 5 minutes = same encounter)
-          const grouped: Encounter[] = [];
-          let current: typeof conducts[0][] = [conducts[0]];
-
-          for (let i = 1; i < conducts.length; i++) {
-            const prev = new Date(conducts[i - 1].created_at).getTime();
-            const curr = new Date(conducts[i].created_at).getTime();
-            if (curr - prev < 300000) {
-              current.push(conducts[i]);
-            } else {
-              grouped.push({
-                id: current[0].id,
-                sector: "PS",
-                professionalName: current[0].changed_by_email?.split("@")[0] || "",
-                professionalCRM: "",
-                startTime: current[0].created_at,
-                endTime: current[current.length - 1].created_at,
-                type: "evolucao",
-                content: current.map((c) => `${c.field_name}: ${c.new_value || ""}`).join("\n"),
-                diagnoses: "",
-                requests: "",
-                outcome: "",
-              });
-              current = [conducts[i]];
-            }
-          }
-          if (current.length > 0) {
-            grouped.push({
-              id: current[0].id,
-              sector: "PS",
-              professionalName: current[0].changed_by_email?.split("@")[0] || "",
-              professionalCRM: "",
-              startTime: current[0].created_at,
-              endTime: current[current.length - 1].created_at,
-              type: "evolucao",
-              content: current.map((c) => `${c.field_name}: ${c.new_value || ""}`).join("\n"),
+              content,
               diagnoses: "",
               requests: "",
               outcome: "",
             });
           }
-          // Don't duplicate if admission_history already covered this
-          if (!patientRow || !patientRow[0]?.admission_history) {
-            allEncounters.push(...grouped);
-          }
-        }
+        });
 
-        // Fetch prescriptions
+        // 3. Evoluções (soap Json) — profissional via profissionais (FK profissional_id)
+        const { data: evos } = await supabase
+          .from("evolucoes")
+          .select("id, data_hora, soap, status, criado_em, atualizado_em, profissional:profissionais(nome, numero_conselho)")
+          .eq("internacao_id", patientId)
+          .order("data_hora", { ascending: true });
+
+        (evos as any[] | null)?.forEach((ev) => {
+          const soap = (ev.soap as Record<string, any>) || {};
+          const content = [
+            soap.subjective ? `S: ${soap.subjective}` : null,
+            soap.objective ? `O: ${soap.objective}` : null,
+            soap.assessment ? `A: ${soap.assessment}` : null,
+            soap.plan ? `P: ${soap.plan}` : null,
+          ].filter(Boolean).join("\n");
+          if (content) {
+            allEncounters.push({
+              id: ev.id,
+              sector: sectorCode || "PS",
+              professionalName: ev.profissional?.nome || "",
+              professionalCRM: ev.profissional?.numero_conselho || "",
+              startTime: ev.data_hora || ev.criado_em,
+              endTime: ev.atualizado_em || ev.data_hora || ev.criado_em,
+              type: "evolucao",
+              content,
+              diagnoses: soap.__diagnostic_hypotheses || "",
+              requests: "",
+              outcome: "",
+            });
+          }
+        });
+
+        // 4. Sinais vitais — registrado_por via profissionais
+        const { data: vitals } = await supabase
+          .from("sinais_vitais")
+          .select("id, data_hora, freq_cardiaca, freq_respiratoria, pressao_sistolica, pressao_diastolica, spo2, temperatura, nivel_consciencia, observacoes, criado_em, profissional:profissionais(nome, numero_conselho)")
+          .eq("internacao_id", patientId)
+          .order("data_hora", { ascending: true });
+
+        (vitals as any[] | null)?.forEach((v) => {
+          const vitalsStr = [
+            (v.pressao_sistolica && v.pressao_diastolica) ? `PA: ${v.pressao_sistolica}/${v.pressao_diastolica} mmHg` : null,
+            v.freq_cardiaca ? `FC: ${v.freq_cardiaca} bpm` : null,
+            v.freq_respiratoria ? `FR: ${v.freq_respiratoria} irpm` : null,
+            v.temperatura ? `Tax: ${v.temperatura} °C` : null,
+            v.spo2 ? `SatO2: ${v.spo2}%` : null,
+            v.nivel_consciencia ? `Consciência: ${v.nivel_consciencia}` : null,
+          ].filter(Boolean).join(" | ");
+          const content = [
+            vitalsStr ? `Sinais vitais: ${vitalsStr}` : null,
+            v.observacoes || null,
+          ].filter(Boolean).join("\n");
+          if (content) {
+            allEncounters.push({
+              id: v.id,
+              sector: sectorCode || "PS",
+              professionalName: v.profissional?.nome || "",
+              professionalCRM: v.profissional?.numero_conselho || "",
+              startTime: v.data_hora || v.criado_em,
+              endTime: v.data_hora || v.criado_em,
+              type: "evolucao",
+              content,
+              diagnoses: "",
+              requests: "",
+              outcome: "",
+            });
+          }
+        });
+
+        // 5. Prescrições (itens Json) — criado_por via profissionais
         const { data: prescriptions } = await supabase
-          .from("prescriptions")
-          .select("*")
-          .eq("hospital_unit_id", currentHospital.id)
-          .eq("state_id", currentState.id)
-          .eq("patient_name", patientName)
-          .order("created_at", { ascending: true });
+          .from("prescricoes")
+          .select("id, itens, status, criado_em, atualizado_em, assinatura_digital, profissional:profissionais(nome, numero_conselho)")
+          .eq("internacao_id", patientId)
+          .order("criado_em", { ascending: true });
 
-        if (prescriptions) {
-          prescriptions.forEach((rx) => {
-            const rxItems = (rx.items as Array<{ name: string; dose: string; route: string; posology: string; category: string; status: string }>) || [];
-            const activeItems = rxItems.filter((i) => i.status !== "suspended");
-            const content = activeItems.map((item, idx) => {
-              const parts = [item.name];
-              if (item.dose && item.dose !== "-") parts.push(item.dose);
-              if (item.route && item.route !== "-") parts.push(item.route);
-              if (item.posology && item.posology !== "-") parts.push(item.posology);
-              return `${idx + 1}. ${parts.join(", ")}`;
-            }).join("\n");
+        (prescriptions as any[] | null)?.forEach((rx) => {
+          const rxItems = (rx.itens as Array<any>) || [];
+          const activeItems = rxItems.filter((i) => i.status !== "suspended");
+          const content = activeItems.map((item, idx) => {
+            const parts = [item.name || item.medication || item.description];
+            if (item.dose && item.dose !== "-") parts.push(item.dose);
+            if (item.route && item.route !== "-") parts.push(item.route);
+            if (item.posology && item.posology !== "-") parts.push(item.posology);
+            return `${idx + 1}. ${parts.filter(Boolean).join(", ")}`;
+          }).join("\n");
 
-            const sig = rx.digital_signature as { doctorName?: string; crm?: string } | null;
+          const sig = rx.assinatura_digital as { doctorName?: string; crm?: string } | null;
 
-            allEncounters.push({
-              id: rx.id,
-              sector: "PS",
-              professionalName: sig?.doctorName || "",
-              professionalCRM: sig?.crm || "",
-              startTime: rx.created_at,
-              endTime: rx.updated_at,
-              type: "prescricao",
-              content: `PRESCRIÇÃO\n${content}`,
-              diagnoses: "",
-              requests: `${activeItems.length} itens prescritos`,
-              outcome: "",
-            });
+          allEncounters.push({
+            id: rx.id,
+            sector: sectorCode || "PS",
+            professionalName: sig?.doctorName || rx.profissional?.nome || "",
+            professionalCRM: sig?.crm || rx.profissional?.numero_conselho || "",
+            startTime: rx.criado_em,
+            endTime: rx.atualizado_em || rx.criado_em,
+            type: "prescricao",
+            content: `PRESCRIÇÃO\n${content}`,
+            diagnoses: "",
+            requests: `${activeItems.length} itens prescritos`,
+            outcome: "",
           });
-        }
+        });
 
-        // Fetch exam requests
+        // 6. Solicitações de exame (itens Json) — solicitado_por via profissionais
         const { data: exams } = await supabase
-          .from("exam_requests")
-          .select("*")
-          .eq("hospital_unit_id", currentHospital.id)
-          .eq("state_id", currentState.id)
-          .eq("patient_name", patientName)
-          .order("created_at", { ascending: true });
+          .from("solicitacoes_exame")
+          .select("id, categoria, itens, status, criado_em, atualizado_em, profissional:profissionais(nome, numero_conselho)")
+          .eq("internacao_id", patientId)
+          .order("criado_em", { ascending: true });
 
-        if (exams) {
-          exams.forEach((ex) => {
-            const items = (ex.items as Array<{ name: string }>) || [];
-            allEncounters.push({
-              id: ex.id,
-              sector: "PS",
-              professionalName: ex.requested_by_name || "",
-              professionalCRM: "",
-              startTime: ex.created_at,
-              endTime: ex.updated_at,
-              type: "evolucao",
-              content: `Solicitação de ${ex.category}: ${items.map((i) => i.name).join(", ")}`,
-              diagnoses: "",
-              requests: `${items.length} exames solicitados`,
-              outcome: ex.status === "completed" ? "Resultado disponível" : "Aguardando",
-            });
+        (exams as any[] | null)?.forEach((ex) => {
+          const items = (ex.itens as Array<{ name?: string }>) || [];
+          allEncounters.push({
+            id: ex.id,
+            sector: sectorCode || "PS",
+            professionalName: ex.profissional?.nome || "",
+            professionalCRM: ex.profissional?.numero_conselho || "",
+            startTime: ex.criado_em,
+            endTime: ex.atualizado_em || ex.criado_em,
+            type: "evolucao",
+            content: `Solicitação de ${ex.categoria}: ${items.map((i) => i.name || "").filter(Boolean).join(", ")}`,
+            diagnoses: "",
+            requests: `${items.length} exames solicitados`,
+            outcome: (ex.status === "concluido" || ex.status === "completed") ? "Resultado disponível" : "Aguardando",
           });
-        }
+        });
+
+        // 7. Altas / documentos de desfecho (discharge_documents → altas)
+        const { data: dischs } = await supabase
+          .from("altas")
+          .select("id, tipo, conteudo, data_hora, numero_documento, crm_assinatura, criado_em")
+          .eq("internacao_id", patientId)
+          .order("data_hora", { ascending: true });
+
+        (dischs as any[] | null)?.forEach((al) => {
+          const c = (al.conteudo as Record<string, any>) || {};
+          const summary = c.summary || c.resumo || c.discharge_summary || "";
+          allEncounters.push({
+            id: al.id,
+            sector: sectorCode || "PS",
+            professionalName: "",
+            professionalCRM: al.crm_assinatura || "",
+            startTime: al.data_hora || al.criado_em,
+            endTime: al.data_hora || al.criado_em,
+            type: "evolucao",
+            content: `DOCUMENTO DE ALTA (${al.tipo})${summary ? `\n${summary}` : ""}`,
+            diagnoses: "",
+            requests: "",
+            outcome: al.numero_documento ? `Documento nº ${al.numero_documento}` : "",
+          });
+        });
 
         // Sort all encounters by time
         allEncounters.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
-        // Get encounter code for ficha number
-        const { data: enc } = await supabase
-          .from("patient_encounters")
-          .select("encounter_code, created_at")
-          .eq("hospital_unit_id", currentHospital.id)
-          .eq("state_id", currentState.id)
-          .eq("patient_name", patientName)
-          .eq("status", "active")
-          .order("created_at", { ascending: false })
-          .limit(1);
-
-        if (enc && enc.length > 0) {
-          pd.fichaNumber = enc[0].encounter_code;
-          pd.fichaDate = format(new Date(enc[0].created_at), "dd/MM/yyyy HH:mm:ss");
-        }
-
-        // Idade ao vivo a partir da data de nascimento — tem prioridade sobre
-        // o campo estático (patients.age, congelado na admissão). pd.birthDate
-        // já vem em dd/mm/yyyy; convertida para ISO antes do cálculo.
+        // Idade ao vivo a partir da data de nascimento. pd.birthDate já vem em
+        // dd/mm/yyyy; convertida para ISO antes do cálculo.
         if (pd.birthDate) {
           const isoBirthDate = pd.birthDate.split("/").reverse().join("-");
           pd.age = formatAge(isoBirthDate) || pd.age;
@@ -402,7 +362,7 @@ const FichaAtendimentoPage = () => {
     };
 
     fetchData();
-  }, [currentHospital, currentState, patientId, patientName]);
+  }, [patientId, patientName]);
 
   const handlePrint = () => {
     setShowPrint(true);

@@ -219,27 +219,61 @@ function notifyCacheSubscribers() {
 }
 
 async function fetchCatalogNow() {
+  // MIGRAÇÃO: medication_catalog → catalogo_medicamentos;
+  // medication_presentations → apresentacoes_medicamento (colunas em pt-BR).
+  // DEGRADADO (sem coluna no schema novo → null):
+  //   catálogo: nome_comercial, lista, notification_type
+  //   apresentação: pharmaceutical_form, default_route, default_dose
+  // Efeitos: o tipo de notificação (Receita Amarela/Azul) passa a ser inferido
+  // só por grupo_farmacologico + controlado (deriveNotificationType); a dose
+  // padrão vinda do catálogo (default_dose) fica em branco.
   const [{ data: catalog, error: e1 }, { data: pres, error: e2 }] = await Promise.all([
     supabase
-      .from("medication_catalog")
-      .select("id, generic_name, nome_comercial, therapeutic_class, pharmacological_group, controlled, high_alert, requires_dilution, notes, lista, notification_type")
-      .order("generic_name"),
+      .from("catalogo_medicamentos")
+      .select("id, nome_generico, classe_terapeutica, grupo_farmacologico, controlado, alta_vigilancia, exige_diluicao, observacoes")
+      .order("nome_generico"),
     // ORDER BY explicito: sem ele o Postgres nao garante a ordem das linhas, e
     // farmacos com mais de uma apresentacao (ex.: Penicilina G Cristalina
     // 5.000.000UI e 10.000.000UI) trocavam de posicao entre carregamentos —
     // o que fazia a mesma tela mostrar ora uma, ora outra.
     supabase
-      .from("medication_presentations")
-      .select("medication_id, form, concentration, unit, route, pharmaceutical_form, default_route, default_dose, standard_dilution, max_daily_dose, infusion_time")
-      .order("medication_id")
-      .order("concentration")
-      .order("route"),
+      .from("apresentacoes_medicamento")
+      .select("medicamento_id, forma, concentracao, unidade, via, diluicao_padrao, dose_maxima_diaria, tempo_infusao")
+      .order("medicamento_id")
+      .order("concentracao")
+      .order("via"),
   ]);
   if (e1) throw e1;
   if (e2) throw e2;
+  const mappedCatalog: CatalogRow[] = (catalog ?? []).map((c: any) => ({
+    id: c.id,
+    generic_name: c.nome_generico,
+    nome_comercial: null,
+    therapeutic_class: c.classe_terapeutica ?? null,
+    pharmacological_group: c.grupo_farmacologico ?? null,
+    controlled: !!c.controlado,
+    high_alert: !!c.alta_vigilancia,
+    requires_dilution: !!c.exige_diluicao,
+    notes: c.observacoes ?? null,
+    lista: null,
+    notification_type: null,
+  }));
+  const mappedPres: PresentationRow[] = (pres ?? []).map((p: any) => ({
+    medication_id: p.medicamento_id,
+    form: p.forma ?? null,
+    concentration: p.concentracao ?? null,
+    unit: p.unidade ?? null,
+    route: p.via ?? null,
+    pharmaceutical_form: null,
+    default_route: null,
+    default_dose: null,
+    standard_dilution: p.diluicao_padrao ?? null,
+    max_daily_dose: p.dose_maxima_diaria ?? null,
+    infusion_time: p.tempo_infusao ?? null,
+  }));
   return {
-    catalog: (catalog ?? []) as CatalogRow[],
-    presentations: (pres ?? []) as PresentationRow[],
+    catalog: mappedCatalog,
+    presentations: mappedPres,
   };
 }
 

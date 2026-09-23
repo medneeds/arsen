@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import { logUserAdminAction } from "@/lib/userAdminAudit";
 import {
@@ -12,97 +13,118 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { UserCog, Loader2, Save } from "lucide-react";
-import { RoleProfileSelector } from "@/components/permissions/RoleProfileSelector";
-import { HospitalUnitPicker } from "@/components/permissions/HospitalUnitPicker";
-import { SectorPermissionsPicker } from "@/components/permissions/SectorPermissionsPicker";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
-  type AppRole,
-  type AccessProfile,
-  ACCESS_PROFILES,
-} from "@/config/userProfiles";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { UserCog, Loader2, Save } from "lucide-react";
 
-interface HospitalUnit {
+// MIGRAÇÃO: profiles/user_roles/access_profile removidos. O papel do
+// profissional é uma coluna única (enum papel_profissional) em `profissionais`.
+type Papel = Database["public"]["Enums"]["papel_profissional"];
+
+// Opções selecionáveis de papel (super_admin/dev ficam de fora — atribuídos manualmente no banco).
+const PAPEL_OPTIONS: { value: Papel; label: string }[] = [
+  { value: "admin", label: "Administrador" },
+  { value: "medico", label: "Médico" },
+  { value: "enfermeiro", label: "Enfermeiro" },
+  { value: "tecnico", label: "Técnico" },
+  { value: "regulador", label: "Regulador" },
+  { value: "farmacia", label: "Farmácia" },
+  { value: "nir", label: "NIR" },
+  { value: "porta", label: "Médico Porta" },
+  { value: "visitante", label: "Visitante" },
+  { value: "coordenador", label: "Coordenador" },
+];
+
+interface Setor {
   id: string;
-  name: string;
-}
-
-interface UserPermissionsDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  userId: string;
-  userName: string;
-  userEmail: string;
-  currentRole: string | null;
-  currentAccessProfile?: string | null;
-  onSaved?: () => void;
+  nome: string;
+  ala_id: string;
+  ativo: boolean;
 }
 
 export function UserPermissionsDialog({
   open,
   onOpenChange,
+  profissionalId,
   userId,
   userName,
   userEmail,
   currentRole,
-  currentAccessProfile,
+  hospitalId,
   onSaved,
-}: UserPermissionsDialogProps) {
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  profissionalId: string;
+  userId: string | null;
+  userName: string;
+  userEmail: string;
+  currentRole: string | null;
+  hospitalId: string;
+  onSaved?: () => void;
+}) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [role, setRole] = useState<AppRole>((currentRole as AppRole) || "medico");
-  const [accessProfile, setAccessProfile] = useState<AccessProfile>(
-    (currentAccessProfile as AccessProfile) || "medico",
-  );
-  const [selectedDepartments, setSelectedDepartments] = useState<Set<string>>(new Set());
-  const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set());
-  const [hospitalUnits, setHospitalUnits] = useState<HospitalUnit[]>([]);
-  // Snapshot inicial para diff de auditoria
-  const initialSnapshotRef = useRef<{
-    role: string; accessProfile: string; departments: string[]; units: string[];
-  } | null>(null);
+  const [papel, setPapel] = useState<Papel>((currentRole as Papel) || "medico");
+  const [setores, setSetores] = useState<Setor[]>([]);
+  const [selectedSetores, setSelectedSetores] = useState<Set<string>>(new Set());
 
-  const profileMeta = ACCESS_PROFILES.find((p) => p.value === accessProfile);
+  // Snapshot inicial para diff de persistência + auditoria
+  const initialSnapshotRef = useRef<{ papel: string; setores: string[] } | null>(null);
 
-  // ── Load current permissions when dialog opens ──
+  // ── Carrega setores do hospital + vínculos atuais do profissional ──
   useEffect(() => {
-    if (!open || !userId) return;
+    if (!open || !profissionalId) return;
     let cancelled = false;
 
     const load = async () => {
       setLoading(true);
       try {
-        const [unitsRes, deptRes, assignRes, profileRes] = await Promise.all([
-          supabase.from("hospital_units").select("id, name").order("name"),
-          supabase.from("user_departments").select("department").eq("user_id", userId),
+        // MIGRAÇÃO: setores não têm hospital_id direto; ligam-se via ala_id → alas.hospital_id.
+        const { data: alas, error: alasError } = await supabase
+          .from("alas")
+          .select("id")
+          .eq("hospital_id", hospitalId);
+        if (alasError) throw alasError;
+        const alaIds = (alas ?? []).map((a) => a.id);
+
+        const [setoresRes, vinculosRes] = await Promise.all([
+          alaIds.length > 0
+            ? supabase
+                .from("setores")
+                .select("id, nome, ala_id, ativo")
+                .in("ala_id", alaIds)
+                .eq("ativo", true)
+                .order("nome")
+            : Promise.resolve({ data: [] as Setor[], error: null }),
+          // MIGRAÇÃO: user_departments → profissionais_setores (chaveado por profissional_id, o PK da linha).
           supabase
-            .from("user_hospital_assignments")
-            .select("hospital_unit_id")
-            .eq("user_id", userId),
-          supabase.from("profiles").select("access_profile").eq("id", userId).maybeSingle(),
+            .from("profissionais_setores")
+            .select("setor_id")
+            .eq("profissional_id", profissionalId),
         ]);
 
         if (cancelled) return;
+        if (setoresRes.error) throw setoresRes.error;
+        if (vinculosRes.error) throw vinculosRes.error;
 
-        if (unitsRes.data) setHospitalUnits(unitsRes.data);
-        const loadedDeps = deptRes.data?.map((d) => d.department) || [];
-        const loadedUnits = assignRes.data?.map((a) => a.hospital_unit_id) || [];
-        setSelectedDepartments(new Set(loadedDeps));
-        setSelectedUnits(new Set(loadedUnits));
-        const loadedRole = (currentRole as AppRole) || "medico";
-        const loadedProfile =
-          ((profileRes.data as { access_profile?: string } | null)?.access_profile as AccessProfile) ||
-          (currentAccessProfile as AccessProfile) ||
-          "medico";
-        setRole(loadedRole);
-        setAccessProfile(loadedProfile);
+        setSetores((setoresRes.data as Setor[]) ?? []);
+        const loadedSetores = (vinculosRes.data ?? []).map((v) => v.setor_id);
+        setSelectedSetores(new Set(loadedSetores));
+
+        const loadedPapel = (currentRole as Papel) || "medico";
+        setPapel(loadedPapel);
         initialSnapshotRef.current = {
-          role: loadedRole,
-          accessProfile: loadedProfile,
-          departments: [...loadedDeps].sort(),
-          units: [...loadedUnits].sort(),
+          papel: loadedPapel,
+          setores: [...loadedSetores].sort(),
         };
       } catch (err) {
         console.error("[UserPermissionsDialog] load error", err);
@@ -116,107 +138,72 @@ export function UserPermissionsDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, userId, currentRole, currentAccessProfile]);
+  }, [open, profissionalId, hospitalId, currentRole]);
 
-  // ── Save: updates role, access_profile, departments, hospital assignments ──
+  const toggleSetor = (setorId: string, checked: boolean) => {
+    setSelectedSetores((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(setorId);
+      else next.delete(setorId);
+      return next;
+    });
+  };
+
+  // ── Salva: papel em profissionais + diff de profissionais_setores ──
   const handleSave = async () => {
     setSaving(true);
     try {
-      // 1) Update role (upsert pattern)
-      const { data: existingRole } = await supabase
-        .from("user_roles")
-        .select("id")
-        .eq("user_id", userId)
-        .maybeSingle();
+      // 1) Atualiza o papel do profissional (coluna única, chaveada pelo PK da linha).
+      const { error: papelError } = await supabase
+        .from("profissionais")
+        .update({ papel })
+        .eq("id", profissionalId);
+      if (papelError) throw papelError;
 
-      if (existingRole) {
-        const { error } = await supabase
-          .from("user_roles")
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .update({ role: role as any })
-          .eq("user_id", userId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("user_roles")
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .insert({ user_id: userId, role: role as any });
-        if (error) throw error;
-      }
+      // 2) Sincroniza profissionais_setores por diff (insere novos, remove retirados).
+      const before = initialSnapshotRef.current?.setores ?? [];
+      const beforeSet = new Set(before);
+      const afterSet = selectedSetores;
 
-      // 2) Update access_profile + access_profiles in profiles.
-      // IMPORTANTE: o trigger `sync_primary_access_profile` sobrescreve
-      // `access_profile` com `access_profiles[1]`. Precisamos garantir que o
-      // perfil escolhido seja o primeiro do array (mantendo os demais como
-      // perfis adicionais para o ProfileSwitcher).
-      const { data: currentProfile } = await supabase
-        .from("profiles")
-        .select("access_profiles")
-        .eq("id", userId)
-        .maybeSingle();
-      const existing = ((currentProfile as { access_profiles?: string[] } | null)?.access_profiles ?? []) as string[];
-      const others = existing.filter((p) => p && p !== accessProfile);
-      const nextProfiles = [accessProfile, ...others];
-      const { error: profileError } = await supabase
-        .from("profiles")
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .update({ access_profile: accessProfile, access_profiles: nextProfiles } as any)
-        .eq("id", userId);
-      if (profileError) throw profileError;
+      const toInsert = [...afterSet].filter((id) => !beforeSet.has(id));
+      const toDelete = [...beforeSet].filter((id) => !afterSet.has(id));
 
-      // 3) Sync user_departments — wipe + reinsert
-      const { error: erroGrav1 } = await supabase.from("user_departments").delete().eq("user_id", userId);
-      if (erroGrav1) throw erroGrav1;
-      if (selectedDepartments.size > 0) {
-        const rows = Array.from(selectedDepartments).map((department) => ({
-          user_id: userId,
-          department,
+      if (toInsert.length > 0) {
+        const rows = toInsert.map((setor_id) => ({
+          profissional_id: profissionalId,
+          setor_id,
         }));
-        const { error: deptError } = await supabase.from("user_departments").insert(rows);
-        if (deptError) throw deptError;
+        const { error } = await supabase.from("profissionais_setores").insert(rows);
+        if (error) throw error;
       }
 
-      // 4) Sync hospital assignments — wipe + reinsert
-      const { error: erroGrav2 } = await supabase.from("user_hospital_assignments").delete().eq("user_id", userId);
-      if (erroGrav2) throw erroGrav2;
-      if (selectedUnits.size > 0) {
-        const rows = Array.from(selectedUnits).map((hospital_unit_id) => ({
-          user_id: userId,
-          hospital_unit_id,
-        }));
-        const { error: unitError } = await supabase
-          .from("user_hospital_assignments")
-          .insert(rows);
-        if (unitError) throw unitError;
+      if (toDelete.length > 0) {
+        const { error } = await supabase
+          .from("profissionais_setores")
+          .delete()
+          .eq("profissional_id", profissionalId)
+          .in("setor_id", toDelete);
+        if (error) throw error;
       }
 
-      // Auditoria de mudanças
-      const before = initialSnapshotRef.current;
-      const afterDeps = Array.from(selectedDepartments).sort();
-      const afterUnits = Array.from(selectedUnits).sort();
-      const after = {
-        role,
-        accessProfile,
-        departments: afterDeps,
-        units: afterUnits,
-      };
-      if (before) {
+      // 3) Auditoria (best-effort).
+      const beforeSnap = initialSnapshotRef.current;
+      const afterSetores = [...afterSet].sort();
+      if (beforeSnap) {
         const changed =
-          before.role !== after.role ||
-          before.accessProfile !== after.accessProfile ||
-          JSON.stringify(before.departments) !== JSON.stringify(after.departments) ||
-          JSON.stringify(before.units) !== JSON.stringify(after.units);
+          beforeSnap.papel !== papel ||
+          JSON.stringify(beforeSnap.setores) !== JSON.stringify(afterSetores);
         if (changed) {
           await logUserAdminAction({
             action: "user.permissions.updated",
             targetUserId: userId,
             targetEmail: userEmail,
             targetName: userName,
-            accessProfile,
-            appRole: role,
-            departments: afterDeps,
-            oldData: before,
-            newData: after,
+            hospitalUnitId: hospitalId,
+            appRole: papel,
+            departments: afterSetores,
+            oldData: beforeSnap,
+            newData: { papel, setores: afterSetores },
           });
         }
       }
@@ -246,11 +233,6 @@ export function UserPermissionsDialog({
             <span className="text-muted-foreground">
               · {userEmail.replace("@sistema.local", "")}
             </span>
-            {profileMeta && (
-              <Badge variant="secondary" className="text-xs ml-1">
-                {profileMeta.shortLabel}
-              </Badge>
-            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -262,48 +244,65 @@ export function UserPermissionsDialog({
         ) : (
           <ScrollArea className="max-h-[65vh]">
             <div className="p-6 space-y-6">
-              <RoleProfileSelector
-                role={role}
-                accessProfile={accessProfile}
-                onRoleChange={setRole}
-                onAccessProfileChange={setAccessProfile}
-              />
+              {/* Papel do profissional */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Papel</Label>
+                <Select value={papel} onValueChange={(v) => setPapel(v as Papel)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o papel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAPEL_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Define o nível de acesso do profissional no sistema.
+                </p>
+              </div>
 
-              <HospitalUnitPicker
-                units={hospitalUnits}
-                selected={selectedUnits}
-                onChange={setSelectedUnits}
-              />
-
-              {/* Sector picker only for profiles that route by sector */}
-              {profileMeta && !profileMeta.skipSectorSelection ? (
-                <SectorPermissionsPicker
-                  selected={selectedDepartments}
-                  onChange={setSelectedDepartments}
-                />
-              ) : (
-                <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-4 text-xs text-muted-foreground">
-                  <p className="font-medium text-foreground mb-1">
-                    Este perfil não exige seleção de setor
+              {/* Setores do hospital */}
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-sm font-medium">Setores</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Selecione os setores aos quais este profissional terá acesso.
                   </p>
-                  <p>
-                    O perfil <strong>{profileMeta?.label}</strong> possui painel próprio com filtros
-                    internos. Você pode opcionalmente restringir setores abaixo se desejar limitar
-                    a visibilidade.
-                  </p>
-                  <details className="mt-3">
-                    <summary className="cursor-pointer text-foreground/80 hover:text-foreground">
-                      Restringir setores manualmente
-                    </summary>
-                    <div className="mt-3">
-                      <SectorPermissionsPicker
-                        selected={selectedDepartments}
-                        onChange={setSelectedDepartments}
-                      />
-                    </div>
-                  </details>
                 </div>
-              )}
+
+                {setores.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-4 text-xs text-muted-foreground">
+                    Nenhum setor ativo encontrado para este hospital.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {setores.map((setor) => {
+                      const checked = selectedSetores.has(setor.id);
+                      return (
+                        <label
+                          key={setor.id}
+                          className="flex items-center gap-2 rounded-md border border-border/60 px-3 py-2 text-sm cursor-pointer hover:bg-muted/40"
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(c) => toggleSetor(setor.id, c === true)}
+                          />
+                          <span>{setor.nome}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* MIGRAÇÃO: gestão de múltiplas unidades hospitalares (antigo
+                  user_hospital_assignments/HospitalUnitPicker) foi omitida — este
+                  diálogo agora opera no escopo de um único hospitalId. O vínculo
+                  profissional↔hospital vive em profissionais_hospitais e é gerido
+                  no fluxo de criação/atribuição do profissional. */}
             </div>
           </ScrollArea>
         )}

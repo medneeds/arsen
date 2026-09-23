@@ -35,13 +35,20 @@ function loadCatalog(): Promise<CidCode[]> {
     // (the table currently has ~255 rows but this is future-proof)
      
     while (true) {
+      // Tabela dedicada `cid10_codes` (mantida com o mesmo nome, a pedido).
+      // code→codigo, description→descricao. A "categoria" de exibição usa
+      // capitulo (capítulo CID) quando presente, senão categoria.
       const { data, error } = await supabase
         .from("cid10_codes")
-        .select("code, description, category")
-        .order("code")
+        .select("codigo, descricao, categoria, capitulo")
+        .order("codigo")
         .range(from, from + PAGE - 1);
       if (error || !data || data.length === 0) break;
-      all.push(...(data as CidCode[]));
+      all.push(...data.map((r: any) => ({
+        code: r.codigo,
+        description: r.descricao,
+        category: r.capitulo ?? r.categoria ?? "",
+      })) as CidCode[]);
       if (data.length < PAGE) break;
       from += PAGE;
     }

@@ -62,6 +62,21 @@ interface PrescriptionWithValidation {
   } | null;
 }
 
+/** Resolve profissionais.id a partir do auth user id (validado_por ≠ auth.uid). */
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from("profissionais")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 const STATUS_CONFIG = {
   pending: { label: "Pendente", color: "bg-warning/15 text-warning-on-soft border-warning-border", icon: Clock },
   approved: { label: "Aprovada", color: "bg-released/15 text-released-on-soft border-released-border", icon: CheckCircle2 },
@@ -71,9 +86,11 @@ const STATUS_CONFIG = {
 
 const ValidacaoFarmaceuticaPage = () => {
   const { user } = useAuth();
-  const { currentHospital, currentState } = useHospital();
+  const { currentHospital } = useHospital();
+  // MIGRAÇÃO: prescricoes/validacoes_prescricao sem hospital_unit_id/state_id →
+  // não há mais filtro por unidade/estado (escopo via RLS). selectedUnit é
+  // mantido só para re-disparar o fetch ao trocar de hospital.
   const selectedUnit = currentHospital?.id;
-  const selectedState = currentState?.id;
   const [prescriptions, setPrescriptions] = useState<PrescriptionWithValidation[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -91,44 +108,66 @@ const ValidacaoFarmaceuticaPage = () => {
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
   const [itemStatus, setItemStatus] = useState<Record<string, "ok" | "alert" | "rejected">>({});
 
+  // MIGRAÇÃO: prescriptions/prescription_validations não têm hospital_unit_id/
+  // state_id → filtro por unidade/estado REMOVIDO (escopo agora via RLS).
+  // Carrega ao montar (e ao trocar de hospital, inofensivo).
   useEffect(() => {
-    if (selectedUnit && selectedState) {
-      fetchPrescriptions();
-    }
-  }, [selectedUnit, selectedState]);
+    fetchPrescriptions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedUnit]);
 
   const fetchPrescriptions = async () => {
-    if (!selectedUnit || !selectedState) return;
     setLoading(true);
     try {
+      // MIGRAÇÃO: prescriptions → prescricoes (itens/versao/criado_em/criado_por).
+      // patient_name/patient_data não têm coluna → nome reconstruído via join
+      // internacoes→pacientes; patient_data DEGRADADO (null).
       const { data: prescriptionsData, error: presError } = await supabase
-        .from("prescriptions")
-        .select("*")
-        .eq("hospital_unit_id", selectedUnit)
-        .eq("state_id", selectedState)
-        .order("created_at", { ascending: false })
+        .from("prescricoes")
+        .select("id, itens, status, criado_em, criado_por, internacao:internacoes(paciente:pacientes(nome_completo, nome_social))")
+        .order("criado_em", { ascending: false })
         .limit(100);
 
       if (presError) throw presError;
 
+      // MIGRAÇÃO: prescription_validations → validacoes_prescricao. validator_name
+      // não tem coluna → reconstruído via join validado_por→profissionais.nome.
       const { data: validationsData, error: valError } = await supabase
-        .from("prescription_validations")
-        .select("*")
-        .eq("hospital_unit_id", selectedUnit)
-        .eq("state_id", selectedState);
+        .from("validacoes_prescricao")
+        .select("*, validador:profissionais!validacoes_prescricao_validado_por_fkey(nome)");
 
       if (valError) throw valError;
 
       const validationMap = new Map<string, any>();
       (validationsData || []).forEach((v: any) => {
-        validationMap.set(v.prescription_id, v);
+        validationMap.set(v.prescricao_id, {
+          id: v.id,
+          status: v.status,
+          notes: v.observacoes ?? null,
+          dose_check_passed: v.checagem_dose_ok,
+          allergy_check_passed: v.checagem_alergia_ok,
+          interaction_check_passed: v.checagem_interacao_ok,
+          dilution_check_passed: v.checagem_diluicao_ok,
+          validation_items: Array.isArray(v.itens_validacao) ? v.itens_validacao : [],
+          validated_by: v.validado_por ?? null,
+          validator_name: v.validador?.nome ?? null,
+          updated_at: v.atualizado_em,
+        });
       });
 
-      const merged: PrescriptionWithValidation[] = (prescriptionsData || []).map((p: any) => ({
-        ...p,
-        items: Array.isArray(p.items) ? p.items : [],
-        validation: validationMap.get(p.id) || null,
-      }));
+      const merged: PrescriptionWithValidation[] = (prescriptionsData || []).map((p: any) => {
+        const pac = p.internacao?.paciente || null;
+        return {
+          id: p.id,
+          patient_name: pac?.nome_social || pac?.nome_completo || "Paciente",
+          created_at: p.criado_em,
+          status: p.status,
+          items: Array.isArray(p.itens) ? p.itens : [],
+          patient_data: null, // DEGRADADO: sem coluna em prescricoes
+          created_by: p.criado_por ?? null,
+          validation: validationMap.get(p.id) || null,
+        };
+      });
 
       setPrescriptions(merged);
     } catch (err) {
@@ -192,7 +231,7 @@ const ValidacaoFarmaceuticaPage = () => {
   };
 
   const handleSubmitValidation = async (finalStatus: "approved" | "rejected" | "requires_changes") => {
-    if (!selectedPrescription || !selectedUnit || !selectedState || !user) return;
+    if (!selectedPrescription || !user) return;
     setValidating(true);
 
     const validationItems = selectedPrescription.items
@@ -204,31 +243,32 @@ const ValidacaoFarmaceuticaPage = () => {
         note: itemNotes[i.id] || "",
       }));
 
+    // MIGRAÇÃO: validacoes_prescricao (colunas em pt-BR). validado_por é
+    // profissionais.id (≠ auth.uid). DEGRADADOS (sem coluna): validator_name,
+    // hospital_unit_id, state_id (escopo via RLS).
+    const validadoPor = await resolveProfissionalId(user.id);
     const payload = {
-      prescription_id: selectedPrescription.id,
-      validated_by: user.id,
-      validator_name: user.email?.split("@")[0]?.toUpperCase() || "FARMÁCIA",
+      prescricao_id: selectedPrescription.id,
+      validado_por: validadoPor,
       status: finalStatus,
-      notes: validationNotes || null,
-      validation_items: validationItems,
-      dose_check_passed: doseCheck,
-      allergy_check_passed: allergyCheck,
-      interaction_check_passed: interactionCheck,
-      dilution_check_passed: dilutionCheck,
-      hospital_unit_id: selectedUnit,
-      state_id: selectedState,
+      observacoes: validationNotes || null,
+      itens_validacao: validationItems as any,
+      checagem_dose_ok: doseCheck,
+      checagem_alergia_ok: allergyCheck,
+      checagem_interacao_ok: interactionCheck,
+      checagem_diluicao_ok: dilutionCheck,
     };
 
     try {
       if (selectedPrescription.validation) {
         const { error } = await supabase
-          .from("prescription_validations")
+          .from("validacoes_prescricao")
           .update(payload)
           .eq("id", selectedPrescription.validation.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from("prescription_validations")
+          .from("validacoes_prescricao")
           .insert(payload as any);
         if (error) throw error;
       }

@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import type { ReceptionPoint } from "@/hooks/useReceptionPost";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
+import { detectUnidentified } from "@/lib/unidentifiedDetector";
 import { printWristband } from "./PatientWristband";
 import { CompletePatientDataDialog } from "./CompletePatientDataDialog";
 import { PromoteNiDialog } from "./PromoteNiDialog";
@@ -73,7 +74,8 @@ interface DailyEncounter {
   created_at: string;
   created_by: string | null;
   reception_point: ReceptionPoint | null;
-  // Enriquecido a partir de patient_registry
+  // MIGRAÇÃO: derivados (is_unidentified via heurística do nome; documents_pending/
+  // partial_identification não existem mais em pacientes → sempre false).
   documents_pending?: boolean;
   partial_identification?: boolean;
   is_unidentified?: boolean;
@@ -187,84 +189,127 @@ export function ReceptionDailyDashboard({
     if (!hospitalId) return;
     setLoading(true);
     try {
+      // MIGRAÇÃO: patient_encounters→internacoes. internacoes NÃO tem
+      // encounter_code, patient_name, registry_id, destination_sector,
+      // triage_status, reception_point nem hospital_unit_id. Buscamos com joins
+      // (pacientes/setores) e degradamos o resto; sem escopo por hospital
+      // (internacoes não tem hospital_id — o filtro por hospitalId foi removido).
       const [encRes, paRes, regRes, auditRes, allAuditRes, sessRes] = await Promise.all([
         supabase
-          .from("patient_encounters")
-          .select("id, encounter_code, patient_name, registry_id, destination_sector, triage_status, status, created_at, created_by, reception_point")
-          .eq("hospital_unit_id", hospitalId)
-          .gte("created_at", periodStart)
-          .order("created_at", { ascending: false }),
+          .from("internacoes")
+          .select("id, status, criado_em, registrado_por, paciente_id, paciente:pacientes!internacoes_paciente_id_fkey(nome_completo, nome_social, prontuario), setor:setores!internacoes_setor_classificacao_id_fkey(nome)")
+          .gte("criado_em", periodStart)
+          .order("criado_em", { ascending: false }),
         supabase
-          .from("pre_admissions" as any)
-          .select("id, patient_name, destination_sector, status, created_at, notes")
-          .eq("hospital_unit_id", hospitalId)
-          .eq("status", "aguardando_leito")
-          .gte("created_at", todayStart)
-          .order("created_at", { ascending: false }),
+          .from("pre_admissoes")
+          .select("id, nome_paciente, status, criado_em, setor:setores!pre_admissoes_setor_destino_id_fkey(nome)")
+          // MIGRAÇÃO: "aguardando_leito" (vocabulário antigo) → "classificado"
+          // (CHECK pre_admissoes_status_check). É a fila aguardando alocação de leito.
+          .eq("status", "classificado")
+          .gte("criado_em", todayStart)
+          .order("criado_em", { ascending: false }),
+        // MIGRAÇÃO: patient_registry→pacientes; sem hospital_unit_id nem
+        // merged_into_registry_id (o merge apaga o perdedor).
         supabase
-          .from("patient_registry")
+          .from("pacientes")
           .select("id", { count: "exact", head: true })
-          .eq("hospital_unit_id", hospitalId)
-          .gte("created_at", monthStart)
-          .is("merged_into_registry_id", null),
+          .gte("criado_em", monthStart),
+        // MIGRAÇÃO: audit_logs→logs_auditoria. user_id→ator_user_id,
+        // table_name→nome_tabela, created_at→criado_em.
         user?.id
           ? supabase
-              .from("audit_logs")
-              .select("table_name, action, record_id, created_at, new_data, user_id")
-              .eq("user_id", user.id)
-              .gte("created_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString())
-              .in("table_name", ["patient_registry", "patient_encounters", "pre_admissions"])
-              .order("created_at", { ascending: false })
+              .from("logs_auditoria")
+              .select("nome_tabela, acao, registro_id, criado_em, dados_novos, ator_user_id")
+              .eq("ator_user_id", user.id)
+              .gte("criado_em", new Date(Date.now() - 24 * 3600 * 1000).toISOString())
+              .in("nome_tabela", ["pacientes", "internacoes", "pre_admissoes"])
+              .order("criado_em", { ascending: false })
               .limit(30)
           : Promise.resolve({ data: [], error: null } as any),
         // Todas ações da equipe HOJE (para painel "Por usuário")
         supabase
-          .from("audit_logs")
-          .select("table_name, action, record_id, created_at, new_data, user_id, user_email")
-          .eq("hospital_unit_id", hospitalId)
-          .gte("created_at", todayStart)
-          .in("table_name", ["patient_registry", "patient_encounters"])
-          .order("created_at", { ascending: false })
+          .from("logs_auditoria")
+          .select("nome_tabela, acao, registro_id, criado_em, dados_novos, ator_user_id, email_ator")
+          .eq("hospital_id", hospitalId)
+          .gte("criado_em", todayStart)
+          .in("nome_tabela", ["pacientes", "internacoes"])
+          .order("criado_em", { ascending: false })
           .limit(500),
-        // Sessões de posto da equipe (hoje)
+        // Sessões de posto da equipe (hoje). MIGRAÇÃO: reception_desk_sessions→
+        // sessoes_recepcao. hospital_unit_id→hospital_id, user_id→profissional_id,
+        // user_name→nome_usuario, reception_point→ponto_recepcao, started_at→
+        // iniciado_em, ended_at→finalizado_em, last_heartbeat_at→ultimo_heartbeat_em.
         supabase
-          .from("reception_desk_sessions" as any)
-          .select("id, user_id, user_name, reception_point, started_at, ended_at, last_heartbeat_at")
-          .eq("hospital_unit_id", hospitalId)
-          .gte("started_at", todayStart)
-          .order("started_at", { ascending: false }),
+          .from("sessoes_recepcao")
+          .select("id, profissional_id, nome_usuario, ponto_recepcao, iniciado_em, finalizado_em, ultimo_heartbeat_em")
+          .eq("hospital_id", hospitalId)
+          .gte("iniciado_em", todayStart)
+          .order("iniciado_em", { ascending: false }),
       ]);
 
       if (encRes.error) throw encRes.error;
-      const baseEncounters = (encRes.data as DailyEncounter[]) || [];
 
-      // Enriquece com features de pendência via patient_registry
-      const registryIds = Array.from(new Set(baseEncounters.map((e) => e.registry_id).filter(Boolean))) as string[];
-      let regMap: Record<string, { documents_pending?: boolean; partial_identification?: boolean; is_unidentified?: boolean }> = {};
-      if (registryIds.length > 0) {
-        const { data: regs } = await supabase
-          .from("patient_registry")
-          .select("id, is_unidentified, unidentified_features")
-          .in("id", registryIds);
-        (regs as any[] | null)?.forEach((r) => {
-          const feats = (r.unidentified_features as any) || {};
-          regMap[r.id] = {
-            is_unidentified: r.is_unidentified,
-            documents_pending: Boolean(feats.documents_pending),
-            partial_identification: Boolean(feats.partial_identification),
-          };
-        });
-      }
-      const enriched = baseEncounters.map((e) => ({
-        ...e,
-        ...(e.registry_id ? regMap[e.registry_id] || {} : {}),
-      }));
-      setTodayEncounters(enriched);
-      setPendingAdmissions((paRes.data as any[]) || []);
+      // Mapeia internacoes → DailyEncounter (shape estável). NI derivado do nome;
+      // documents_pending/partial_identification não existem mais → false.
+      const baseEncounters: DailyEncounter[] = ((encRes.data as any[]) || []).map((row) => {
+        const pac = row.paciente || {};
+        const name = pac.nome_social || pac.nome_completo || "—";
+        return {
+          id: row.id,
+          // MIGRAÇÃO: sem encounter_code — prontuário como identificador visível.
+          encounter_code: pac.prontuario || "",
+          patient_name: name,
+          registry_id: row.paciente_id ?? null,
+          destination_sector: row.setor?.nome ?? null,
+          triage_status: null,
+          status: row.status,
+          created_at: row.criado_em,
+          created_by: row.registrado_por ?? null,
+          reception_point: null,
+          is_unidentified: detectUnidentified(name).isUnidentified,
+          documents_pending: false,
+          partial_identification: false,
+        };
+      });
+      setTodayEncounters(baseEncounters);
+
+      setPendingAdmissions(
+        ((paRes.data as any[]) || []).map((p) => ({
+          id: p.id,
+          patient_name: p.nome_paciente,
+          // MIGRAÇÃO: destination_sector via join setor_destino_id→setores.nome.
+          destination_sector: p.setor?.nome ?? "—",
+          status: p.status,
+          created_at: p.criado_em,
+          // MIGRAÇÃO: pre_admissoes não tem coluna `notes`.
+          notes: null,
+        })),
+      );
       setMonthRegistrations(regRes.count || 0);
-      setMyActions((auditRes.data as ReceptionAction[]) || []);
-      setAllActionsToday((allAuditRes.data as ReceptionAction[]) || []);
-      setDeskSessions((sessRes.data as any[]) || []);
+
+      const mapAction = (a: any): ReceptionAction => ({
+        table_name: a.nome_tabela,
+        action: a.acao ?? "",
+        record_id: a.registro_id ?? null,
+        created_at: a.criado_em,
+        new_data: a.dados_novos,
+        user_id: a.ator_user_id ?? null,
+      });
+      setMyActions(((auditRes.data as any[]) || []).map(mapAction));
+      setAllActionsToday(((allAuditRes.data as any[]) || []).map(mapAction));
+      setDeskSessions(
+        ((sessRes.data as any[]) || []).map((s) => ({
+          id: s.id,
+          // MIGRAÇÃO: profissional_id ≠ auth.uid — a correlação com created_by
+          // (registrado_por) do encounter pode não bater 1:1.
+          user_id: s.profissional_id ?? "",
+          user_name: s.nome_usuario ?? null,
+          reception_point: s.ponto_recepcao as ReceptionPoint,
+          started_at: s.iniciado_em,
+          ended_at: s.finalizado_em,
+          last_heartbeat_at: s.ultimo_heartbeat_em,
+        })),
+      );
     } catch (err: any) {
       console.error("Erro ao carregar painel diário:", err);
       toast.error("Não foi possível carregar painel da recepção", { description: err?.message });
@@ -280,6 +325,10 @@ export function ReceptionDailyDashboard({
   // Realtime: detecta novo encounter direcionado a Sala Vermelha → toca som
   useEffect(() => {
     if (!hospitalId) return;
+    // MIGRAÇÃO: realtime em patient_encounters→internacoes. Sem hospital_id em
+    // internacoes (filtro removido) e sem destination_sector/patient_name/
+    // encounter_code no payload — a detecção de "Sala Vermelha" (som + toast) foi
+    // degradada; apenas recarregamos o painel a cada nova internação.
     const channel = supabase
       .channel(`reception-dash-${hospitalId}`)
       .on(
@@ -287,22 +336,9 @@ export function ReceptionDailyDashboard({
         {
           event: "INSERT",
           schema: "public",
-          table: "patient_encounters",
-          filter: `hospital_unit_id=eq.${hospitalId}`,
+          table: "internacoes",
         },
-        (payload) => {
-          const row = payload.new as any;
-          if (row?.destination_sector === "sala_vermelha") {
-            // Toca beep urgente (3 vezes)
-            playNotificationSound();
-            setTimeout(() => playNotificationSound(), 350);
-            setTimeout(() => playNotificationSound(), 700);
-            toast.error(`SALA VERMELHA — ${row.patient_name}`, {
-              description: `Novo paciente direcionado · ${row.encounter_code}`,
-              duration: 8000,
-            });
-            seenRedRoomIds.current.add(row.id);
-          }
+        () => {
           fetchAll();
         }
       )
@@ -336,18 +372,21 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
       return;
     }
     try {
+      // MIGRAÇÃO: patient_registry→pacientes. full_name→nome_completo,
+      // medical_record→prontuario, birth_date→data_nascimento, sex→sexo,
+      // mother_name→nome_mae.
       const { data } = await supabase
-        .from("patient_registry")
-        .select("full_name, medical_record, birth_date, sex, mother_name")
+        .from("pacientes")
+        .select("nome_completo, nome_social, prontuario, data_nascimento, sexo, nome_mae")
         .eq("id", registryId)
         .maybeSingle();
       if (!data) return;
       printWristband({
-        patientName: (data as any).full_name,
-        medicalRecord: (data as any).medical_record,
-        birthDate: (data as any).birth_date,
-        sex: (data as any).sex,
-        motherName: (data as any).mother_name,
+        patientName: data.nome_social || data.nome_completo,
+        medicalRecord: data.prontuario,
+        birthDate: data.data_nascimento,
+        sex: data.sexo,
+        motherName: data.nome_mae,
         encounterCode,
       });
     } catch (err: any) {
@@ -378,7 +417,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
       (e) => e.documents_pending || e.partial_identification || e.is_unidentified
     ).length;
     const myToday = myActions.filter(
-      (a) => a.table_name === "patient_registry" && a.action === "INSERT"
+      (a) => a.table_name === "pacientes" && a.action === "INSERT"
     ).length;
 
     return { totalToday, waitingAdmission, docsPending, myToday };
@@ -407,7 +446,7 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
 
         // Tempo médio de cadastro: intervalos entre INSERTs consecutivos
         const inserts = allActionsToday
-          .filter((a) => a.user_id === uid && a.table_name === "patient_registry" && a.action === "INSERT")
+          .filter((a) => a.user_id === uid && a.table_name === "pacientes" && a.action === "INSERT")
           .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         let avgRegSec: number | null = null;
         if (inserts.length >= 2) {
@@ -446,8 +485,9 @@ const COALESCE_STATUS = (e: { status: string | null; triage_status: string | nul
 
   const actionLabel = (a: ReceptionAction) => {
     const op = a.action === "INSERT" ? "Criou" : a.action === "UPDATE" ? "Atualizou" : a.action === "DELETE" ? "Removeu" : a.action;
-    const tab = a.table_name === "patient_registry" ? "prontuário" : a.table_name === "patient_encounters" ? "atendimento" : "pré-admissão";
-    const name = a.new_data?.patient_name || a.new_data?.full_name || a.new_data?.encounter_code || "";
+    // MIGRAÇÃO: nome_tabela agora usa nomes pt-BR (pacientes/internacoes/pre_admissoes).
+    const tab = a.table_name === "pacientes" ? "prontuário" : a.table_name === "internacoes" ? "atendimento" : "pré-admissão";
+    const name = a.new_data?.nome_completo || a.new_data?.nome_paciente || a.new_data?.patient_name || a.new_data?.full_name || "";
     return `${op} ${tab}${name ? ` — ${name}` : ""}`;
   };
 

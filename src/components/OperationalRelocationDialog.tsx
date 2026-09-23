@@ -83,19 +83,23 @@ export function OperationalRelocationDialog({
     let cancelled = false;
     setLoading(true);
     (async () => {
-      const { data, error } = await supabase
-        .from("patients")
-        .select("id, bed_number, sector, name")
-        .eq("hospital_unit_id", currentHospital.id)
-        .or("name.is.null,name.eq.")
-        .neq("id", patient.id);
+      // MIGRAÇÃO: patients (leito+paciente numa linha) → leitos. "Leito vago" = linha
+      // `leitos` com status='livre' (o antigo 'vago' é INVÁLIDO no schema novo). Escopo
+      // por hospital via setores→alas.hospital_id; `sector` vem de setores.tipo (código).
+      const { data, error } = await (supabase
+        .from("leitos")
+        .select("id, numero, status, setor:setores!inner(tipo, ala:alas!inner(hospital_id))") as any)
+        .eq("setor.ala.hospital_id", currentHospital.id)
+        .eq("status", "livre");
       if (cancelled) return;
       if (error) {
         console.error("[OperationalReloc] erro ao buscar leitos vagos", error);
       }
-      const rows = (data ?? [])
-        .filter((r: any) => !r.name || String(r.name).trim() === "")
-        .map((r: any) => ({ id: r.id, bed_number: r.bed_number, sector: r.sector }));
+      const rows = ((data ?? []) as any[]).map((r: any) => ({
+        id: r.id,
+        bed_number: r.numero,
+        sector: r.setor?.tipo ?? "",
+      }));
       setVacantBeds(rows);
       setLoading(false);
     })();

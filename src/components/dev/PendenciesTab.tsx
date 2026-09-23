@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+// MIGRAÇÃO: dev_pendencies não existe no schema novo (sem equivalente). O painel
+// degrada para uma lista sempre vazia e a criação fica indisponível — nenhuma
+// referência à tabela morta permanece. Import do supabase removido por não ser mais usado.
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,58 +54,27 @@ export function PendenciesTab() {
     title: "", description: "", category: "", priority: "media" as Priority, tags: "",
   });
 
+  // MIGRAÇÃO: sem tabela dev_pendencies no schema novo → lista sempre vazia.
   const refresh = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("dev_pendencies")
-      .select("*")
-      .order("priority", { ascending: false })
-      .order("created_at", { ascending: false });
-    if (error) toast.error(error.message);
-    else setItems((data ?? []) as Pendency[]);
+    setItems([]);
     setLoading(false);
   };
 
   useEffect(() => { refresh(); }, []);
 
+  // MIGRAÇÃO: criação desativada (sem persistência disponível). Mantido para não
+  // quebrar o handler do diálogo; informa o usuário em vez de gravar.
   const create = async () => {
-    if (!form.title.trim()) { toast.error("Informe o título"); return; }
-    const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from("dev_pendencies").insert({
-      title: form.title.trim(),
-      description: form.description.trim() || null,
-      category: form.category.trim() || null,
-      priority: form.priority,
-      tags: form.tags ? form.tags.split(",").map(t => t.trim()).filter(Boolean) : [],
-      created_by: user?.id ?? null,
-    });
-    if (error) { toast.error(error.message); return; }
-    toast.success("Pendência criada");
+    toast.info("Registro de pendências indisponível nesta versão (sem tabela no schema novo).");
     setOpen(false);
     setForm({ title: "", description: "", category: "", priority: "media", tags: "" });
-    refresh();
   };
 
-  const updateStatus = async (id: string, status: Status) => {
-    const patch: Record<string, unknown> = { status };
-    if (status === "concluida") patch.resolved_at = new Date().toISOString();
-    const { error } = await supabase.from("dev_pendencies").update(patch).eq("id", id);
-    if (error) toast.error(error.message);
-    else refresh();
-  };
-
-  const updatePriority = async (id: string, priority: Priority) => {
-    const { error } = await supabase.from("dev_pendencies").update({ priority }).eq("id", id);
-    if (error) toast.error(error.message);
-    else refresh();
-  };
-
-  const remove = async (id: string) => {
-    if (!confirm("Excluir esta pendência?")) return;
-    const { error } = await supabase.from("dev_pendencies").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else { toast.success("Excluída"); refresh(); }
-  };
+  // MIGRAÇÃO: mutações inalcançáveis (lista vazia) — no-op degradado.
+  const updateStatus = async (_id: string, _status: Status) => { /* sem tabela */ };
+  const updatePriority = async (_id: string, _priority: Priority) => { /* sem tabela */ };
+  const remove = async (_id: string) => { /* sem tabela */ };
 
   const filtered = filterStatus === "todas" ? items : items.filter(i => i.status === filterStatus);
   const counts = {

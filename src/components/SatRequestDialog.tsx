@@ -30,12 +30,13 @@ import { CollapsibleInfoCard } from "@/components/shared/CollapsibleInfoCard";
 import { SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { toast } from "sonner";
-import { comSnapshotDeDocumento } from "@/lib/registrarSolicitacao";
+// MIGRAÇÃO: comSnapshotDeDocumento/resolveActiveEncounterId pertenciam ao fluxo
+// exam_requests (document_payload) e patient_encounters — ambos sem equivalente
+// no schema novo. A gravação passou a ser insert direto em solicitacoes_exame.
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { asUuidOrNull } from "@/lib/utils";
-import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
 
 interface Props {
   open: boolean;
@@ -214,32 +215,28 @@ export function SatRequestDialog({
     if (!open) return;
     (async () => {
       if (user?.id) {
+        // MIGRAÇÃO: profiles → profissionais (full_name→nome, crm→numero_conselho).
         const { data: prof } = await supabase
-          .from("profiles")
-          .select("full_name, crm")
-          .eq("id", user.id)
+          .from("profissionais")
+          .select("nome, numero_conselho")
+          .eq("user_id", user.id)
           .maybeSingle();
-        if (prof?.full_name) setDoctorName(prof.full_name);
-        if (prof?.crm) setDoctorCrm(prof.crm);
+        if ((prof as any)?.nome) setDoctorName((prof as any).nome);
+        if ((prof as any)?.numero_conselho) setDoctorCrm((prof as any).numero_conselho);
       }
+      // MIGRAÇÃO: patientId é internacoes.id. Junta internacao → pacientes para
+      // prontuário e data de nascimento (patients/patient_registry → pacientes).
       const validId = asUuidOrNull(patientId);
       if (validId) {
-        const { data: p } = await supabase
-          .from("patients")
-          .select("medical_record, patient_registry_id")
+        const { data: internacao } = await supabase
+          .from("internacoes")
+          .select("paciente:pacientes(prontuario, data_nascimento)")
           .eq("id", validId)
           .maybeSingle();
-        if (p) {
-          setPatientRecord(p.medical_record || "");
-          if (p.patient_registry_id) {
-            const { data: r } = await supabase
-              .from("patient_registry")
-              .select("birth_date, medical_record")
-              .eq("id", p.patient_registry_id)
-              .maybeSingle();
-            if (r?.birth_date) setPatientBirth(r.birth_date);
-            if (r?.medical_record) setPatientRecord(r.medical_record);
-          }
+        const r: any = (internacao as any)?.paciente || null;
+        if (r) {
+          if (r.prontuario) setPatientRecord(String(r.prontuario));
+          if (r.data_nascimento) setPatientBirth(String(r.data_nascimento).slice(0, 10));
         }
       }
     })();
@@ -277,23 +274,39 @@ export function SatRequestDialog({
       return;
     }
 
+    // MIGRAÇÃO: solicitacoes_exame pendura em internacao_id (uuid real). Sem
+    // internação vinculada não há como gravar (schema novo não tem colunas de
+    // paciente/unidade avulsos).
+    const internacaoId = asUuidOrNull(patientId);
+    if (!internacaoId) {
+      toast.error("Paciente sem internação vinculada — não é possível registrar a solicitação");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const validId = asUuidOrNull(patientId);
-      const encounterId = await resolveActiveEncounterId(patientId);
-      const payload: any = {
-        category: "sat",
-        patient_id: validId,
-        encounter_id: encounterId,
-        patient_name: patientName,
-        patient_bed: patientBed || null,
-        patient_sector: patientSector || null,
-        hospital_unit_id: currentHospital.id,
-        state_id: currentState.id,
-        priority: recommendation.sat ? "urgente" : "rotina",
-        clinical_indication:
+      // MIGRAÇÃO: exam_requests → solicitacoes_exame. Degradados por falta de
+      // coluna: nome/leito/setor do paciente, unidade/estado, encounter_id
+      // (patient_encounters não existe), requested_by_name e document_payload
+      // (snapshot do impresso — reemissão pelo histórico indisponível). Nome/CRM
+      // do médico vão para observacoes; solicitante vira FK profissional.
+      let solicitadoPor: string | null = null;
+      if (user?.id) {
+        const { data: prof } = await supabase
+          .from("profissionais")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        solicitadoPor = (prof as any)?.id ?? null;
+      }
+
+      const { error } = await supabase.from("solicitacoes_exame").insert({
+        internacao_id: internacaoId,
+        categoria: "sat",
+        prioridade: recommendation.sat ? "urgente" : "rotina",
+        indicacao_clinica:
           `${WOUND_LABEL[wound]} | Vacinação: ${VACCINATION_LABEL[vac]} | Conduta: ${recommendation.rationale}`,
-        items: [
+        itens: [
           {
             name: PRODUCT_LABEL[product],
             dose,
@@ -306,24 +319,15 @@ export function SatRequestDialog({
             trauma_at: `${traumaDate}T${traumaTime || "00:00"}`,
           },
         ],
-        notes: [
+        observacoes: [
           `Médico: ${doctorName}${doctorCrm ? " — CRM " + doctorCrm : ""}`,
           observations.trim() && `Obs: ${observations.trim()}`,
         ]
           .filter(Boolean)
           .join("\n"),
-        requested_by: user?.id || null,
-        requested_by_name: doctorName,
-        status: "pending",
-      };
-
-      // Snapshot do documento (fase 3b) — permite reemitir o impresso de SAT
-      // pelo historico. O envelope cuida do caso git != banco: sem a coluna,
-      // regrava sem o snapshot em vez de derrubar a solicitacao.
-      const { error } = await comSnapshotDeDocumento(
-        (extra) => supabase.from("exam_requests").insert({ ...payload, ...extra }).then(r => ({ data: null, error: r.error })),
-        { kind: "sat" as const, version: 1, data: { ...payload } },
-      );
+        solicitado_por: solicitadoPor,
+        status: "pendente",
+      });
       if (error) throw error;
 
       toast.success("Solicitação de SAT registrada");

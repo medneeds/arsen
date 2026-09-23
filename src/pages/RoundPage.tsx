@@ -73,7 +73,8 @@ const STATUS_BADGE_COLORS: Record<string, string> = {
 
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { SectionLoader } from "@/components/SectionLoader";
-import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
+// MIGRAÇÃO: resolveActiveEncounterId removido — a internação (internacoes.id) já é o
+// "encounter"; sessoes_visita.internacao_id recebe selectedPatient.id diretamente.
 const getSectorLabel = (sector: string): string => getSectorDisplayLabel(sector) || sector;
 
 export default function RoundPage() {
@@ -97,32 +98,36 @@ export default function RoundPage() {
   const [loadingSession, setLoadingSession] = useState(false);
   const [syncingPatientId, setSyncingPatientId] = useState<string | null>(null);
 
+  // MIGRAÇÃO: patients→internacoes(+pacientes/leitos/setores). O schema novo não
+  // tem colunas hospital_unit_id/state_id/department/is_vacant/age → os filtros de
+  // hospital/estado/UTI e leito-vago foram removidos (degradado); a "internação
+  // ativa" é aproximada por data_alta IS NULL. Idade vem de pacientes.data_nascimento.
+  const INTERNACAO_OPTION_SELECT = `id, hipotese_diagnostica,
+      paciente:pacientes(nome_completo, nome_social, data_nascimento),
+      leito:leitos(numero),
+      setor:setores(nome, tipo)`;
+
+  const rowToOption = (r: any): PatientOption => {
+    const pac = r.paciente || {};
+    return {
+      id: r.id,
+      name: pac.nome_social || pac.nome_completo || "",
+      // MIGRAÇÃO: `sector` usa setores.tipo (código de setor esperado por getSectorLabel).
+      sector: r.setor?.tipo || "",
+      bed_number: r.leito?.numero || "",
+      age: formatAge(pac.data_nascimento) || null,
+      diagnoses: r.hipotese_diagnostica || null,
+    };
+  };
+
   const fetchPatients = useCallback(async () => {
     if (!currentHospital || !currentState) return;
     const { data } = await supabase
-      .from("patients")
-      .select("id, name, sector, bed_number, age, diagnoses, patient_registry_id")
-      .eq("hospital_unit_id", currentHospital.id)
-      .eq("state_id", currentState.id)
-      .eq("department", "UTI")
-      .eq("is_vacant", false)
-      .order("sector")
-      .order("bed_number");
+      .from("internacoes")
+      .select(INTERNACAO_OPTION_SELECT)
+      .is("data_alta", null);
     if (data) {
-      // Idade ao vivo a partir de patient_registry.birth_date — patients.age
-      // é estático (congelado na admissão). Busca em lote (1 query), não N+1.
-      const rows = data.filter((p) => p.name && p.name.trim());
-      const registryIds = Array.from(new Set(rows.map((p: any) => p.patient_registry_id).filter(Boolean)));
-      const birthDateByRegistryId = new Map<string, string | null>();
-      if (registryIds.length > 0) {
-        const { data: registryRows } = await supabase
-          .from("patient_registry").select("id, birth_date").in("id", registryIds);
-        for (const r of registryRows || []) birthDateByRegistryId.set(r.id, r.birth_date);
-      }
-      setPatients(rows.map((p: any) => ({
-        ...p,
-        age: (p.patient_registry_id && formatAge(birthDateByRegistryId.get(p.patient_registry_id))) || p.age,
-      })));
+      setPatients(data.map(rowToOption).filter((p) => p.name && p.name.trim()));
     }
   }, [currentHospital, currentState]);
 
@@ -132,21 +137,15 @@ export default function RoundPage() {
     setSyncingPatientId(patientId);
     try {
       const { data: fresh, error } = await supabase
-        .from("patients")
-        .select("id, name, sector, bed_number, age, diagnoses, patient_registry_id")
+        .from("internacoes")
+        .select(INTERNACAO_OPTION_SELECT)
         .eq("id", patientId)
         .maybeSingle();
       if (error) throw error;
       if (fresh) {
-        let liveAge = fresh.age;
-        if (fresh.patient_registry_id) {
-          const { data: registryRow } = await supabase
-            .from("patient_registry").select("birth_date").eq("id", fresh.patient_registry_id).maybeSingle();
-          liveAge = formatAge(registryRow?.birth_date) || fresh.age;
-        }
-        const freshWithLiveAge = { ...fresh, age: liveAge } as PatientOption;
-        setPatients((prev) => prev.map((p) => (p.id === freshWithLiveAge.id ? freshWithLiveAge : p)));
-        if (selectedPatient?.id === freshWithLiveAge.id) setSelectedPatient(freshWithLiveAge);
+        const freshOption = rowToOption(fresh);
+        setPatients((prev) => prev.map((p) => (p.id === freshOption.id ? freshOption : p)));
+        if (selectedPatient?.id === freshOption.id) setSelectedPatient(freshOption);
       }
       toast.success("Dados do paciente sincronizados");
     } catch (err: any) {
@@ -166,42 +165,44 @@ export default function RoundPage() {
     if (!selectedPatient || !currentHospital || selectedPatient.id.startsWith("manual_")) return;
     const loadSession = async () => {
       setLoadingSession(true);
+      // MIGRAÇÃO: round_sessions→sessoes_visita (patient_id→internacao_id,
+      // round_date→data_visita, hospital_unit_id→hospital_id, observations→observacoes).
       const { data: session } = await supabase
-        .from("round_sessions")
+        .from("sessoes_visita")
         .select("*")
-        .eq("patient_id", selectedPatient.id)
-        .eq("round_date", roundDate)
-        .eq("hospital_unit_id", currentHospital.id)
+        .eq("internacao_id", selectedPatient.id)
+        .eq("data_visita", roundDate)
+        .eq("hospital_id", currentHospital.id)
         .maybeSingle();
 
       if (session) {
         setSessionId(session.id);
-        setObservations(session.observations || "");
+        setObservations(session.observacoes || "");
 
-        // Load responses
+        // Load responses (round_responses→respostas_visita)
         const { data: respData } = await supabase
-          .from("round_responses")
+          .from("respostas_visita")
           .select("*")
-          .eq("session_id", session.id);
+          .eq("sessao_id", session.id);
 
         const newResponses: ResponseState = {};
         respData?.forEach((r: any) => {
-          newResponses[`${r.section_code}_${r.item_id}`] = {
+          newResponses[`${r.codigo_secao}_${r.item_id}`] = {
             status: r.status,
-            observation: r.observation || "",
+            observation: r.observacao || "",
           };
         });
         setResponses(newResponses);
 
-        // Load goals
+        // Load goals (round_section_goals→metas_secao_visita)
         const { data: goalData } = await supabase
-          .from("round_section_goals")
+          .from("metas_secao_visita")
           .select("*")
-          .eq("session_id", session.id);
+          .eq("sessao_id", session.id);
 
         const newGoals: GoalState = {};
         goalData?.forEach((g: any) => {
-          newGoals[g.section_code] = g.goal || "";
+          newGoals[g.codigo_secao] = g.meta || "";
         });
         setGoals(newGoals);
       } else {
@@ -258,27 +259,27 @@ export default function RoundPage() {
 
     setSaving(true);
     try {
+      // MIGRAÇÃO: profissionais.id ≠ auth.uid — resolve o profissional via user_id.
+      const { data: profRow } = await supabase
+        .from("profissionais").select("id").eq("user_id", user.id).maybeSingle();
+      const profissionalId = (profRow as any)?.id ?? null;
+
       let currentSessionId = sessionId;
 
       if (!currentSessionId) {
         const isManual = selectedPatient.id.startsWith("manual_");
+        // MIGRAÇÃO: round_sessions→sessoes_visita. Colunas denormalizadas do paciente
+        // (patient_name/age/sector/bed), encounter_id, state_id e department NÃO existem
+        // no schema novo → removidas (degradado). internacao_id = a própria internação
+        // (o "encounter" agora é a internação); paciente avulso fica sem internacao_id.
         const { data: newSession, error } = await supabase
-          .from("round_sessions")
+          .from("sessoes_visita")
           .insert({
-            patient_id: isManual ? null : selectedPatient.id,
-            // encounter_id carimbado na origem (helper único) — fecha vazamento
-            // por reuso de leito. Manual não tem encounter. Auditoria 22/07/2026.
-            encounter_id: isManual ? null : await resolveActiveEncounterId(selectedPatient.id),
-            patient_name: selectedPatient.name,
-            patient_age: selectedPatient.age,
-            patient_sector: isManual ? selectedPatient.sector : getSectorLabel(selectedPatient.sector),
-            patient_bed: selectedPatient.bed_number,
-            round_date: roundDate,
-            hospital_unit_id: currentHospital.id,
-            state_id: currentState.id,
-            department: "UTI",
-            observations,
-            created_by: user.id,
+            internacao_id: isManual ? null : selectedPatient.id,
+            data_visita: roundDate,
+            hospital_id: currentHospital.id,
+            observacoes: observations,
+            criado_por: profissionalId,
           } as any)
           .select("id")
           .single();
@@ -288,14 +289,14 @@ export default function RoundPage() {
         setSessionId(currentSessionId);
       } else {
         const { error: erroGrav1 } = await supabase
-          .from("round_sessions")
-          .update({ observations, updated_at: new Date().toISOString() } as any)
+          .from("sessoes_visita")
+          .update({ observacoes: observations, atualizado_em: new Date().toISOString() } as any)
           .eq("id", currentSessionId);
         if (erroGrav1) throw erroGrav1;
       }
 
-      // Delete existing responses and re-insert
-      const { error: erroGrav2 } = await supabase.from("round_responses").delete().eq("session_id", currentSessionId);
+      // Delete existing responses and re-insert (round_responses→respostas_visita)
+      const { error: erroGrav2 } = await supabase.from("respostas_visita").delete().eq("sessao_id", currentSessionId);
       if (erroGrav2) throw erroGrav2;
 
       const responseRows = Object.entries(responses)
@@ -303,33 +304,33 @@ export default function RoundPage() {
         .map(([key, v]) => {
           const [sectionCode, itemIdStr] = [key.substring(0, key.lastIndexOf("_")), key.substring(key.lastIndexOf("_") + 1)];
           return {
-            session_id: currentSessionId,
-            section_code: sectionCode,
+            sessao_id: currentSessionId,
+            codigo_secao: sectionCode,
             item_id: parseInt(itemIdStr),
             status: v.status,
-            observation: v.observation || null,
-            professional_id: user.id,
+            observacao: v.observation || null,
+            profissional_id: profissionalId,
           };
         });
 
       if (responseRows.length > 0) {
-        const { error: respError } = await supabase.from("round_responses").insert(responseRows as any);
+        const { error: respError } = await supabase.from("respostas_visita").insert(responseRows as any);
         if (respError) throw respError;
       }
 
-      // Upsert goals
-      const { error: erroGrav3 } = await supabase.from("round_section_goals").delete().eq("session_id", currentSessionId);
+      // Upsert goals (round_section_goals→metas_secao_visita)
+      const { error: erroGrav3 } = await supabase.from("metas_secao_visita").delete().eq("sessao_id", currentSessionId);
       if (erroGrav3) throw erroGrav3;
       const goalRows = Object.entries(goals)
         .filter(([, v]) => v.trim())
         .map(([sectionCode, goal]) => ({
-          session_id: currentSessionId,
-          section_code: sectionCode,
-          goal,
+          sessao_id: currentSessionId,
+          codigo_secao: sectionCode,
+          meta: goal,
         }));
 
       if (goalRows.length > 0) {
-        const { error: goalError } = await supabase.from("round_section_goals").insert(goalRows as any);
+        const { error: goalError } = await supabase.from("metas_secao_visita").insert(goalRows as any);
         if (goalError) throw goalError;
       }
 

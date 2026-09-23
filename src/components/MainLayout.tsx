@@ -57,9 +57,6 @@ export function MainLayout({ children }: MainLayoutProps) {
             </p>
           </footer>
         </div>
-
-        {/* Trigger global flutuante — sempre visível para abrir/fechar a sidebar em qualquer página */}
-        <FloatingSidebarTrigger />
       </div>
 
       <MobileMenuFab />
@@ -71,34 +68,3 @@ export function MainLayout({ children }: MainLayoutProps) {
   );
 }
 
-/** Botão flutuante persistente que alterna a sidebar.
- *  Esconde-se automaticamente se a página já renderiza outro SidebarTrigger
- *  (evita sobreposição com cabeçalhos próprios como o do Painel do Gestor / NIR). */
-function FloatingSidebarTrigger() {
-  const { state, isMobile } = useSidebar();
-  const [hasPageTrigger, setHasPageTrigger] = useState(false);
-
-  useEffect(() => {
-    const check = () => {
-      // conta triggers que NÃO sejam o flutuante (que tem data-floating="true")
-      const triggers = document.querySelectorAll('[data-sidebar="trigger"]:not([data-floating="true"])');
-      setHasPageTrigger(triggers.length > 0);
-    };
-    check();
-    const obs = new MutationObserver(check);
-    obs.observe(document.body, { childList: true, subtree: true });
-    return () => obs.disconnect();
-  }, []);
-
-  if (isMobile || hasPageTrigger) return null;
-  return (
-    <SidebarTrigger
-      data-floating="true"
-      className={cn(
-        "fixed top-3 z-50 h-9 w-9 rounded-full border bg-background/90 shadow-sm backdrop-blur transition-all hover:bg-accent",
-        state === "expanded" ? "left-[calc(var(--sidebar-width)+0.75rem)]" : "left-3",
-      )}
-      aria-label="Alternar menu lateral"
-    />
-  );
-}

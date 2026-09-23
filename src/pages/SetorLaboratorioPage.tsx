@@ -22,6 +22,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { toSolicitacaoStatusDb, fromSolicitacaoStatusDb } from "@/lib/solicitacaoStatus";
 import { useAuth } from "@/contexts/AuthContext";
 import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { useHospital } from "@/contexts/HospitalContext";
@@ -29,6 +30,60 @@ import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
 
 const getSectorLabel = getSectorDisplayLabel;
+
+// MIGRAÇÃO (Wave3): exam_requests → solicitacoes_exame. A tabela nova pendura só
+// em internacao_id + campos clínicos; nome/leito/setor/solicitante do paciente
+// são reconstruídos via join internacoes→pacientes/leitos/setores/profissionais.
+// Colunas: category→categoria, items→itens, priority→prioridade, results→
+// resultado_texto, result_data→resultado_dados, completed_at→concluido_em,
+// completed_by→concluido_por (FK profissional). Sem coluna: hospital_unit_id/
+// state_id (filtro removido — RLS escopa por hospital do profissional),
+// requested_by_name (via join solicitante). concluido_por não tem relationship
+// declarada em types.ts → nome do concluinte degradado (completed_by = null).
+const SOLICITACAO_SELECT = `
+  *,
+  internacao:internacoes!solicitacoes_exame_internacao_id_fkey(
+    paciente:pacientes(nome_completo, nome_social),
+    leito:leitos(numero),
+    setor:setores(tipo, nome)
+  ),
+  solicitante:profissionais!solicitacoes_exame_solicitado_por_fkey(nome)
+`;
+
+/** Resolve profissionais.id a partir do auth user id (concluido_por ≠ auth.uid). */
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase.from("profissionais").select("id").eq("user_id", userId).maybeSingle();
+    return (data as { id?: string } | null)?.id ?? null;
+  } catch { return null; }
+}
+
+/** Normaliza a linha de solicitacoes_exame para o shape legado ExamRequest. */
+function normalizeSolicitacao(row: any): ExamRequest {
+  const internacao = row?.internacao || {};
+  const paciente = internacao.paciente || {};
+  return {
+    id: row.id,
+    internacao_id: row.internacao_id,
+    patient_id: row.internacao_id,
+    patient_name: paciente.nome_social || paciente.nome_completo || "",
+    patient_sector: internacao.setor?.tipo || null,
+    patient_bed: internacao.leito?.numero || null,
+    category: row.categoria,
+    items: Array.isArray(row.itens) ? row.itens : [],
+    priority: row.prioridade,
+    status: fromSolicitacaoStatusDb(row.status),
+    clinical_indication: row.indicacao_clinica || null,
+    notes: row.observacoes || null,
+    results: row.resultado_texto || null,
+    result_data: row.resultado_dados || null,
+    requested_by_name: row.solicitante?.nome || null,
+    created_at: row.criado_em,
+    completed_at: row.concluido_em || null,
+    completed_by: null, // MIGRAÇÃO: concluido_por é FK sem relationship declarada → nome não resolvido
+  };
+}
 
 // ── Lab exam categories ──
 const LAB_CATEGORIES = [
@@ -61,6 +116,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 
 interface ExamRequest {
   id: string;
+  internacao_id?: string;
+  patient_id?: string;
   patient_name: string;
   patient_sector: string | null;
   patient_bed: string | null;
@@ -100,16 +157,18 @@ const SetorLaboratorioPage = () => {
     if (!selectedHospitalId || !selectedStateId) return;
     setLoading(true);
     try {
+      // MIGRAÇÃO: solicitacoes_exame não tem hospital_unit_id/state_id → filtro por
+      // unidade removido (RLS escopa por hospital do profissional). Paciente
+      // reconstruído via join. Limite para não trazer histórico inteiro.
       const { data, error } = await supabase
-        .from("exam_requests")
-        .select("*")
-        .eq("hospital_unit_id", selectedHospitalId)
-        .eq("state_id", selectedStateId)
-        .eq("category", "laboratorio")
-        .order("created_at", { ascending: false });
+        .from("solicitacoes_exame")
+        .select(SOLICITACAO_SELECT)
+        .eq("categoria", "laboratorio")
+        .order("criado_em", { ascending: false })
+        .limit(500);
 
       if (error) throw error;
-      setRequests((data as ExamRequest[]) || []);
+      setRequests(((data as any[]) || []).map(normalizeSolicitacao));
     } catch (err) {
       console.error("Erro ao carregar requisições:", err);
       toast.error("Não foi possível carregar requisições laboratoriais");
@@ -124,6 +183,8 @@ const SetorLaboratorioPage = () => {
 
   useEffect(() => {
     if (!selectedHospitalId) return;
+    // MIGRAÇÃO: realtime em solicitacoes_exame. Sem coluna hospital_unit_id →
+    // sem filtro por unidade (RLS escopa); refetch por evento (payload não traz joins).
     const channel = supabase
       .channel("lab-requests")
       .on(
@@ -131,8 +192,7 @@ const SetorLaboratorioPage = () => {
         {
           event: "*",
           schema: "public",
-          table: "exam_requests",
-          filter: `hospital_unit_id=eq.${selectedHospitalId}`,
+          table: "solicitacoes_exame",
         },
         () => fetchRequests()
       )
@@ -195,20 +255,23 @@ const SetorLaboratorioPage = () => {
   const handleUpdateStatus = async (requestId: string, newStatus: string) => {
     setUpdatingStatus(true);
     try {
-      const updateData: any = { status: newStatus };
+      // MIGRAÇÃO: colunas novas — results→resultado_texto, result_data→
+      // resultado_dados, completed_at→concluido_em, completed_by→concluido_por
+      // (FK profissional via user_id; e-mail avulso não tem mais coluna).
+      const updateData: any = { status: toSolicitacaoStatusDb(newStatus) };
       if (newStatus === "completed") {
-        updateData.completed_at = new Date().toISOString();
-        updateData.completed_by = user?.email || "laboratorio";
+        updateData.concluido_em = new Date().toISOString();
+        updateData.concluido_por = await resolveProfissionalId(user?.id);
         if (resultText.trim()) {
-          updateData.results = resultText.trim();
+          updateData.resultado_texto = resultText.trim();
         }
         if (resultFiles.length > 0) {
-          updateData.result_data = { files: resultFiles };
+          updateData.resultado_dados = { files: resultFiles };
         }
       }
 
       const { error } = await supabase
-        .from("exam_requests")
+        .from("solicitacoes_exame")
         .update(updateData)
         .eq("id", requestId);
 

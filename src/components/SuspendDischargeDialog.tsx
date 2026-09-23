@@ -65,7 +65,10 @@ export function SuspendDischargeDialog({
     if (submitting) return; // guard de reentrada — duplo clique/Enter antes do re-render (auditoria 22/07/2026)
     setSubmitting(true);
     try {
-      const { error } = await supabase.rpc("suspend_discharge_document", {
+      // MIGRAÇÃO: RPC custom não tipada no schema novo → via (supabase.rpc as any).
+      // A suspensão do documento de alta/óbito continua sendo responsabilidade da RPC
+      // (que reabre a internação e cancela a movimentação vinculada no backend).
+      const { error } = await (supabase.rpc as any)("suspend_discharge_document", {
         p_doc_id: docId,
         p_reason: reason.trim(),
       });

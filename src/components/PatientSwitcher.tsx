@@ -4,6 +4,7 @@ import { ChevronDown, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
+import { formatAge } from "@/lib/patientAge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,24 +56,49 @@ export function PatientSwitcher({ variant = "dark" }: PatientSwitcherProps) {
   const [patients, setPatients] = useState<SectorPatient[]>([]);
 
   // Fetch patients from same sector
+  // MIGRAÇÃO: patients (mega-tabela leito+paciente) → internacoes ATIVAS
+  // (data_alta IS NULL) cujo leito pertence a um setor com `tipo` == código
+  // do setor (SectorType) no hospital atual. name/age/registry via join
+  // pacientes; bed_number via leitos; sector via setores.tipo.
+  // Filtros hospital_unit_id/state_id/is_vacant não têm coluna → substituídos
+  // por setores→alas.hospital_id e pela ausência de coluna is_vacant.
   useEffect(() => {
-    if (!patientSector || !currentHospital || !currentState) return;
+    if (!patientSector || !currentHospital) return;
 
     const fetchSectorPatients = async () => {
-      const { data } = await supabase
-        .from("patients")
-        .select("id, name, bed_number, sector, age, patient_registry_id")
-        .eq("hospital_unit_id", currentHospital.id)
-        .eq("state_id", currentState.id)
-        .eq("sector", patientSector)
-        .eq("is_vacant", false)
-        .order("bed_number");
+      const { data } = await (supabase
+        .from("internacoes")
+        .select(`
+          id, paciente_id,
+          paciente:pacientes ( nome_completo, nome_social, data_nascimento ),
+          leito:leitos!inner (
+            numero,
+            setor:setores!inner ( tipo, ala:alas!inner ( hospital_id ) )
+          )
+        `) as any)
+        .is("data_alta", null)
+        .eq("leito.setor.ala.hospital_id", currentHospital.id)
+        .eq("leito.setor.tipo", patientSector);
 
-      if (data) setPatients(data as SectorPatient[]);
+      if (Array.isArray(data)) {
+        const mapped: SectorPatient[] = data.map((row: any) => {
+          const pac = row.paciente || {};
+          return {
+            id: row.id,
+            name: pac.nome_social || pac.nome_completo || "",
+            bed_number: row.leito?.numero || "",
+            sector: row.leito?.setor?.tipo || patientSector,
+            age: formatAge(pac.data_nascimento),
+            patient_registry_id: row.paciente_id ?? null,
+          };
+        });
+        mapped.sort((a, b) => (a.bed_number || "").localeCompare(b.bed_number || "", undefined, { numeric: true }));
+        setPatients(mapped);
+      }
     };
 
     fetchSectorPatients();
-  }, [patientSector, currentHospital, currentState]);
+  }, [patientSector, currentHospital]);
 
   // Only render when there's a patient context
   if (!patientName) return null;

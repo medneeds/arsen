@@ -3,38 +3,22 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * Resolve o encounter_id ATIVO de um paciente no momento de um INSERT clínico.
  *
- * Contexto (auditoria de sincronização 22/07/2026): vários inserts clínicos
- * gravavam sem encounter_id, e os hooks de leitura toleram "encounter_id IS
- * NULL" para compatibilidade com dado legado — então um leito reusado exibia
- * dados do ocupante anterior. Carimbar o encounter na origem fecha isso.
- *
- * Esta é a MESMA lógica canônica do hook useActiveEncounterId (registry ⊕
- * patient_id), extraída para uso imperativo (dentro de handlers de submit) sem
- * duplicar a query em cada tela. Retorna null quando não há encounter ativo
- * (paciente sem internação aberta) — nesse caso o registro fica NULL, que é o
- * comportamento correto (não há atendimento ao qual vincular).
+ * MIGRAÇÃO: as tabelas patients / patient_registry / patient_encounters NÃO
+ * existem mais. No schema novo o "encontro" É a própria internação — `patientId`
+ * já é `internacoes.id`. Portanto o encounter ativo é o próprio `patientId`,
+ * desde que a internação exista (mesma regra do hook useActiveEncounterId).
+ * A resolução por registry ⊕ patient_id foi removida (tabelas mortas). Mantida a
+ * assinatura para uso imperativo dentro de handlers de submit.
  */
 export async function resolveActiveEncounterId(patientId: string | null | undefined): Promise<string | null> {
   if (!patientId) return null;
   try {
-    const { data: pRow } = await supabase
-      .from("patients")
-      .select("patient_registry_id")
+    const { data } = await supabase
+      .from("internacoes")
+      .select("id")
       .eq("id", patientId)
       .maybeSingle();
-    const registryId = pRow?.patient_registry_id ?? null;
-
-    let q = supabase
-      .from("patient_encounters")
-      .select("id")
-      .neq("status", "closed")
-      .order("admission_date", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .limit(1);
-    q = registryId ? q.eq("registry_id", registryId) : q.eq("patient_id", patientId);
-
-    const { data: encRow } = await q.maybeSingle();
-    return encRow?.id ?? null;
+    return (data as any)?.id ?? null;
   } catch {
     // Resolução é best-effort: falha aqui não deve bloquear o insert clínico.
     return null;
@@ -42,17 +26,12 @@ export async function resolveActiveEncounterId(patientId: string | null | undefi
 }
 
 /**
- * Fecha o encounter ATIVO de um paciente (alta/óbito/transferência externa) de
- * forma correta: resolve o encounter pela regra canônica (registry-first) e
- * fecha por id — NÃO por patient_id (linha-leito).
+ * Fecha o encounter ATIVO de um paciente (alta/óbito/transferência externa).
  *
- * Por quê (auditoria 22/07/2026): os fluxos de alta/óbito e transferência
- * externa fechavam o encounter com `.eq("patient_id", linhaLeito)`. Se o
- * paciente havia sido transferido internamente antes da alta, o repoint pode
- * ter alterado o vínculo patient_id do encounter — e o UPDATE não o encontrava,
- * deixando o encounter ABERTO. Um encounter zumbi aberto faz a próxima
- * readmissão trata-lo como "ativo" e MISTURAR o histórico de dois atendimentos,
- * violando a regra de negócio. Resolver por registry fecha o encounter certo.
+ * MIGRAÇÃO: fechar o encounter agora é encerrar a INTERNAÇÃO. `bedRowId` já é
+ * `internacoes.id`. Não existem mais `status='closed'` nem coluna
+ * `discharge_date`/`updated_at`: o critério de "internação ativa" em todo o app é
+ * `data_alta IS NULL`, então gravamos `data_alta` (atualizado_em é via trigger).
  *
  * Retorna true se um encounter foi fechado (ou já estava), false em erro real.
  */
@@ -64,18 +43,14 @@ export async function closeActiveEncounter(
   try {
     const encounterId = await resolveActiveEncounterId(bedRowId);
     if (!encounterId) {
-      // Sem encounter ativo — nada a fechar (não é erro).
+      // Sem internação — nada a fechar (não é erro).
       return { ok: true, closedId: null };
     }
     const { error } = await supabase
-      .from("patient_encounters")
-      .update({
-        status: "closed",
-        discharge_date: dischargeDate ?? new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
+      .from("internacoes")
+      .update({ data_alta: dischargeDate ?? new Date().toISOString() } as any)
       .eq("id", encounterId)
-      .neq("status", "closed");
+      .is("data_alta", null);
     if (error) return { ok: false, closedId: null, error: error.message };
     return { ok: true, closedId: encounterId };
   } catch (e: any) {

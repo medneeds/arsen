@@ -14,7 +14,33 @@ export {
 } from "@/lib/solicitacaoPayload";
 
 /**
- * Registra uma solicitação em exam_requests. Ponto ÚNICO para as três fichas
+ * MIGRAÇÃO: resolve profissionais.id a partir do auth user id. Os campos `*_por`
+ * do schema novo (solicitado_por) são FK de profissionais.id (≠ auth.uid).
+ */
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from("profissionais")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (data as { id?: string } | null)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * MIGRAÇÃO (Wave3): exam_requests → solicitacoes_exame. A tabela nova pendura em
+ * `internacao_id` (o `patientId` das telas) e só tem campos clínicos. As colunas
+ * de paciente/unidade/solicitante do modelo antigo NÃO existem no schema novo e
+ * foram DEGRADADAS (ver buildSolicitacaoRow em solicitacaoPayload.ts e
+ * MIGRACAO_DEGRADACOES.md). As assinaturas exportadas (registrarSolicitacao,
+ * comSnapshotDeDocumento, SolicitacaoInput, DocumentPayload) foram mantidas
+ * estáveis para os demais callers.
+ *
+ * Registra uma solicitação em solicitacoes_exame. Ponto ÚNICO para as três fichas
  * (geral, APAC e AIH).
  *
  * POR QUE ESTE HELPER EXISTE
@@ -37,27 +63,31 @@ export async function registrarSolicitacao(
   input: SolicitacaoInput,
 ): Promise<string> {
   const comPayload = buildSolicitacaoRow(input);
+  // MIGRAÇÃO: solicitado_por (FK profissionais.id) resolvido a partir de
+  // input.requestedBy (auth user id). Não cabe na função pura buildSolicitacaoRow.
+  (comPayload as Record<string, unknown>).solicitado_por = await resolveProfissionalId(input.requestedBy);
 
   let { data, error } = await supabase
-    .from("exam_requests")
+    .from("solicitacoes_exame")
     .insert(comPayload as never)
     .select("id")
     .single();
 
-  // A migration de document_payload pode ainda não ter sido aplicada neste
-  // banco (git != banco — lição de julho/2026). Se for só isso, grava sem o
-  // snapshot: melhor uma solicitação registrada sem documento reimprimível do
-  // que nenhuma solicitação. O aviso fica no console para não passar batido.
+  // MIGRAÇÃO: solicitacoes_exame não tem coluna document_payload (o snapshot do
+  // impresso não existe no schema novo). buildSolicitacaoRow já não emite a
+  // chave, mas o fallback é mantido por segurança: se algum banco tiver a coluna
+  // e reclamar, regrava sem o snapshot em vez de derrubar a solicitação.
   if (error && input.documentPayload && isMissingDocumentPayloadColumn(error)) {
     console.warn(
-      "[Solicitação] Coluna document_payload ausente neste banco — a migration " +
-        "20260727180000 provavelmente não foi aplicada. Gravando sem o snapshot; " +
-        "esta solicitação NÃO poderá ser reimpressa pelo histórico.",
+      "[Solicitação] Coluna document_payload ausente — o schema novo não guarda " +
+        "snapshot de documento. Gravando sem o snapshot; esta solicitação NÃO " +
+        "poderá ser reimpressa pelo histórico.",
       error,
     );
     const semPayload = buildSolicitacaoRow({ ...input, documentPayload: undefined });
+    (semPayload as Record<string, unknown>).solicitado_por = await resolveProfissionalId(input.requestedBy);
     ({ data, error } = await supabase
-      .from("exam_requests")
+      .from("solicitacoes_exame")
       .insert(semPayload as never)
       .select("id")
       .single());

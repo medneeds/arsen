@@ -27,7 +27,21 @@ import {
 import { format, parseISO, subHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PageTransition } from "@/components/PageTransition";
-import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
+
+/** Resolve profissionais.id a partir do auth user id (registrado_por ≠ auth.uid). */
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from("profissionais")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // ── NEWS2 Calculation ──
 function calculateNEWS2(params: {
@@ -148,6 +162,44 @@ interface VitalRecord {
   recorded_by_name: string | null;
 }
 
+// MIGRAÇÃO: vital_signs→sinais_vitais. A tabela nova só tem PA (sist/diast), FC,
+// FR, SpO2, temperatura, nível de consciência e observações. Todo o resto do
+// VitalRecord (PVC, O2 suplementar, gasometria, laboratório, NEWS2 armazenado,
+// recorded_by_name) NÃO tem coluna → DEGRADADO para null. O NEWS2 é RECALCULADO
+// na leitura a partir dos sinais reais (sem o +2 de O2 suplementar, que não é
+// persistido no schema novo). recorded_by_name vem do join profissionais.nome.
+function mapVital(row: any): VitalRecord {
+  const { score, risk } = calculateNEWS2({
+    respiratoryRate: row.freq_respiratoria ?? undefined,
+    spo2: row.spo2 ?? undefined,
+    temperature: row.temperatura ?? undefined,
+    systolicBp: row.pressao_sistolica ?? undefined,
+    heartRate: row.freq_cardiaca ?? undefined,
+    consciousnessLevel: row.nivel_consciencia ?? undefined,
+  });
+  return {
+    id: row.id,
+    recorded_at: row.data_hora,
+    systolic_bp: row.pressao_sistolica ?? null,
+    diastolic_bp: row.pressao_diastolica ?? null,
+    heart_rate: row.freq_cardiaca ?? null,
+    respiratory_rate: row.freq_respiratoria ?? null,
+    spo2: row.spo2 ?? null,
+    temperature: row.temperatura ?? null,
+    pvc: null,
+    consciousness_level: row.nivel_consciencia ?? null,
+    supplemental_oxygen: null,
+    news2_score: score > 0 ? score : null,
+    news2_risk: score > 0 ? risk : null,
+    ph: null, pco2: null, po2: null, hco3: null, lactate: null, base_excess: null,
+    fio2: null, sao2: null, hemoglobin: null, hematocrit: null, platelets: null,
+    leukocytes: null, creatinine: null, urea: null, sodium: null, potassium: null,
+    pcr: null, procalcitonin: null, inr: null,
+    notes: row.observacoes ?? null,
+    recorded_by_name: row.profissional?.nome ?? null,
+  };
+}
+
 interface PatientOption {
   id: string;
   name: string;
@@ -181,90 +233,95 @@ export default function MonitoramentoClinicoPage() {
   });
 
   // Load patients
+  // MIGRAÇÃO: patients→internacoes(+pacientes,+leitos,+setores). internacoes não
+  // tem hospital_unit_id/state_id → escopo por hospital via leito→setor→ala
+  // (padrão usePatients). Internação ativa = data_alta IS NULL. sector = setores.tipo.
   useEffect(() => {
-    if (!selectedUnit || !selectedState) return;
+    if (!selectedUnit) return;
     const load = async () => {
-      const { data } = await supabase
-        .from("patients")
-        .select("id, name, bed_number, sector")
-        .eq("hospital_unit_id", selectedUnit)
-        .eq("state_id", selectedState)
-        .neq("name", "")
-        .order("bed_number");
-      if (data) setPatients(data);
+      const { data } = await (supabase
+        .from("internacoes")
+        .select(`
+          id, data_alta,
+          paciente:pacientes ( nome_completo, nome_social ),
+          leito:leitos!inner ( numero, setor:setores!inner ( tipo, ala:alas!inner ( hospital_id ) ) )
+        `) as any)
+        .is("data_alta", null)
+        .eq("leito.setor.ala.hospital_id", selectedUnit);
+      const rows = (data || []) as any[];
+      const mapped: PatientOption[] = rows.map((r) => ({
+        id: r.id,
+        name: r.paciente?.nome_social || r.paciente?.nome_completo || "",
+        bed_number: (r.leito?.numero ?? "").toString(),
+        sector: r.leito?.setor?.tipo ?? "",
+      }));
+      mapped.sort((a, b) => (a.bed_number || "").localeCompare(b.bed_number || "", undefined, { numeric: true }));
+      setPatients(mapped);
     };
     load();
-  }, [selectedUnit, selectedState]);
+  }, [selectedUnit]);
 
   // Load vital records
   //
-  // Busca pelo ATENDIMENTO, não pelo leito. Reportado pelos testes (item 4.6):
-  // após transferência interna os sinais vitais sumiam da tela. O dado estava
-  // correto no banco (o insert carimba encounter_id), mas a LEITURA filtrava
-  // por patient_id — que é a linha-LEITO, e muda na transferência. Mesmo padrão
-  // já aplicado no useReceituario. Fallback por patient_id cobre registros
-  // legados sem encounter_id e o caso de não haver atendimento ativo (alta).
-  // (Correção 23/07/2026.)
+  // MIGRAÇÃO: vital_signs→sinais_vitais. `selectedPatientId` já é `internacoes.id`
+  // (o "encounter"), então filtramos direto por `internacao_id` — a resolução por
+  // encounter_id/patient_id (colunas inexistentes) e o helper resolveActiveEncounterId
+  // não são mais necessários. recorded_at→data_hora. Cada linha é traduzida por
+  // mapVital (recalcula NEWS2; demais colunas degradadas).
   useEffect(() => {
     if (!selectedPatientId) { setRecords([]); return; }
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let cancelled = false;
 
+    const SELECT =
+      "id, data_hora, pressao_sistolica, pressao_diastolica, freq_cardiaca, freq_respiratoria, spo2, temperatura, nivel_consciencia, observacoes, registrado_por, profissional:profissionais(nome)";
+
     const load = async () => {
       setLoading(true);
       const since = subHours(new Date(), hoursRange).toISOString();
-      const encId = await resolveActiveEncounterId(selectedPatientId);
-      if (cancelled) return;
 
       // Carrega os últimos 50 registros imediatamente para resposta rápida.
       // Registros mais antigos são incluídos numa segunda query assíncrona.
       const INITIAL_LIMIT = 50;
 
-      let q = supabase
-        .from("vital_signs")
-        .select("*")
-        .gte("recorded_at", since)
-        .order("recorded_at", { ascending: false })
+      const { data: initial } = await supabase
+        .from("sinais_vitais")
+        .select(SELECT)
+        .eq("internacao_id", selectedPatientId)
+        .gte("data_hora", since)
+        .order("data_hora", { ascending: false })
         .limit(INITIAL_LIMIT);
-      q = encId
-        ? q.or(`encounter_id.eq.${encId},and(encounter_id.is.null,patient_id.eq.${selectedPatientId})`)
-        : q.eq("patient_id", selectedPatientId);
-
-      const { data: initial } = await q;
       if (cancelled) return;
-      if (initial) setRecords((initial as unknown as VitalRecord[]).slice().reverse());
+      if (initial) setRecords((initial as any[]).map(mapVital).reverse());
       setLoading(false);
 
       // Segunda query: registros restantes além dos primeiros 50
       if (initial && initial.length === INITIAL_LIMIT) {
-        const oldest = initial[initial.length - 1]?.recorded_at;
+        const oldest = (initial as any[])[initial.length - 1]?.data_hora;
         if (oldest) {
-          let q2 = supabase
-            .from("vital_signs")
-            .select("*")
-            .gte("recorded_at", since)
-            .lt("recorded_at", oldest)
-            .order("recorded_at", { ascending: true });
-          q2 = encId
-            ? q2.or(`encounter_id.eq.${encId},and(encounter_id.is.null,patient_id.eq.${selectedPatientId})`)
-            : q2.eq("patient_id", selectedPatientId);
-          const { data: rest } = await q2;
+          const { data: rest } = await supabase
+            .from("sinais_vitais")
+            .select(SELECT)
+            .eq("internacao_id", selectedPatientId)
+            .gte("data_hora", since)
+            .lt("data_hora", oldest)
+            .order("data_hora", { ascending: true });
           if (!cancelled && rest && rest.length > 0) {
-            setRecords(prev => [...(rest as unknown as VitalRecord[]), ...prev]);
+            setRecords(prev => [...(rest as any[]).map(mapVital), ...prev]);
           }
         }
       }
 
       // Realtime segue o mesmo critério da busca.
       channel = supabase
-        .channel(`vitals-${encId ?? selectedPatientId}`)
+        .channel(`vitals-${selectedPatientId}`)
         .on("postgres_changes", {
           event: "INSERT",
           schema: "public",
-          table: "vital_signs",
-          filter: encId ? `encounter_id=eq.${encId}` : `patient_id=eq.${selectedPatientId}`,
+          table: "sinais_vitais",
+          filter: `internacao_id=eq.${selectedPatientId}`,
         }, (payload) => {
-          setRecords(prev => [...prev, payload.new as unknown as VitalRecord]);
+          setRecords(prev => [...prev, mapVital(payload.new)]);
         })
         .subscribe();
     };
@@ -294,40 +351,27 @@ export default function MonitoramentoClinicoPage() {
     }
 
     const toNum = (v: string) => v ? Number(v) : null;
-    const { score, risk } = computedNEWS2;
+    const { risk } = computedNEWS2;
 
-    // Resolve o encounter ATIVO para carimbar o registro (helper único —
-    // fecha o vazamento por reuso de leito na origem). Auditoria 22/07/2026.
-    const encounterId = await resolveActiveEncounterId(selectedPatientId);
+    // MIGRAÇÃO: vital_signs→sinais_vitais. internacao_id = selectedPatientId
+    // (=internacoes.id). registrado_por resolvido via profissionais.user_id
+    // (≠ auth.uid). DEGRADADO (sem coluna em sinais_vitais → NÃO gravados): PVC,
+    // O2 suplementar, NEWS2 (recalculado na leitura), toda a gasometria e o
+    // laboratório, recorded_by/recorded_by_name, hospital_unit_id, state_id.
+    const registradoPor = await resolveProfissionalId(user?.id);
 
-    const { error } = await supabase.from("vital_signs").insert({
-      patient_id: selectedPatientId,
-      encounter_id: encounterId,
-      hospital_unit_id: selectedUnit,
-      state_id: selectedState,
-      recorded_by: user?.id,
-      recorded_by_name: user?.email?.split("@")[0] || "—",
-      systolic_bp: toNum(form.systolicBp),
-      diastolic_bp: toNum(form.diastolicBp),
-      heart_rate: toNum(form.heartRate),
-      respiratory_rate: toNum(form.respiratoryRate),
+    const { error } = await supabase.from("sinais_vitais").insert({
+      internacao_id: selectedPatientId,
+      registrado_por: registradoPor,
+      pressao_sistolica: toNum(form.systolicBp),
+      pressao_diastolica: toNum(form.diastolicBp),
+      freq_cardiaca: toNum(form.heartRate),
+      freq_respiratoria: toNum(form.respiratoryRate),
       spo2: toNum(form.spo2),
-      temperature: toNum(form.temperature),
-      pvc: toNum(form.pvc),
-      consciousness_level: form.consciousnessLevel,
-      supplemental_oxygen: form.supplementalOxygen,
-      news2_score: score > 0 ? score : null,
-      news2_risk: score > 0 ? risk : null,
-      ph: toNum(form.ph), pco2: toNum(form.pco2), po2: toNum(form.po2),
-      hco3: toNum(form.hco3), lactate: toNum(form.lactate),
-      base_excess: toNum(form.baseExcess), fio2: toNum(form.fio2), sao2: toNum(form.sao2),
-      hemoglobin: toNum(form.hemoglobin), hematocrit: toNum(form.hematocrit),
-      platelets: toNum(form.platelets), leukocytes: toNum(form.leukocytes),
-      creatinine: toNum(form.creatinine), urea: toNum(form.urea),
-      sodium: toNum(form.sodium), potassium: toNum(form.potassium),
-      pcr: toNum(form.pcr), procalcitonin: toNum(form.procalcitonin), inr: toNum(form.inr),
-      notes: form.notes || null,
-    });
+      temperatura: toNum(form.temperature),
+      nivel_consciencia: form.consciousnessLevel,
+      observacoes: form.notes || null,
+    } as any);
 
     if (error) {
       toast.error("Não foi possível salvar registro");

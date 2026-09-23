@@ -16,6 +16,14 @@ export interface PatientNirRequest {
 /**
  * Realtime: solicitação de leito (NIR) mais recente para o paciente.
  * Dispara toast quando o status muda (aprovada/rejeitada/em discussão).
+ *
+ * MIGRAÇÃO: `bed_allocation_requests` → `solicitacoes_leito`. `patientId` é
+ * `internacoes.id` → filtra por `internacao_id`. Colunas:
+ * requested_sector→setor_solicitado_id, rejection_reason→motivo_rejeicao,
+ * created_at→criado_em, reviewed_at→atualizado_em.
+ * DEGRADADO (sem coluna no schema novo): `requested_bed` e
+ * `requesting_doctor_name` → sempre null. `requestedSector` passa a carregar o
+ * ID do setor solicitado (setor_solicitado_id), não mais o nome.
  */
 export function usePatientNirRequest(patientId: string | null) {
   const [request, setRequest] = useState<PatientNirRequest | null>(null);
@@ -29,24 +37,24 @@ export function usePatientNirRequest(patientId: string | null) {
     }
     setLoading(true);
     const { data } = await supabase
-      .from("bed_allocation_requests")
+      .from("solicitacoes_leito")
       .select(
-        "id, status, requested_sector, requested_bed, rejection_reason, requesting_doctor_name, created_at, reviewed_at",
+        "id, status, setor_solicitado_id, motivo_rejeicao, criado_em, atualizado_em",
       )
-      .eq("patient_id", patientId)
-      .order("created_at", { ascending: false })
+      .eq("internacao_id", patientId)
+      .order("criado_em", { ascending: false })
       .limit(1);
     if (data && data.length > 0) {
       const r: any = data[0];
       const next: PatientNirRequest = {
         id: r.id,
         status: r.status,
-        requestedSector: r.requested_sector,
-        requestedBed: r.requested_bed,
-        rejectionReason: r.rejection_reason,
-        requestingDoctorName: r.requesting_doctor_name,
-        createdAt: r.created_at,
-        reviewedAt: r.reviewed_at,
+        requestedSector: r.setor_solicitado_id,
+        requestedBed: null, // MIGRAÇÃO: sem coluna em solicitacoes_leito
+        rejectionReason: r.motivo_rejeicao,
+        requestingDoctorName: null, // MIGRAÇÃO: sem coluna em solicitacoes_leito
+        createdAt: r.criado_em,
+        reviewedAt: r.atualizado_em,
       };
       // Toast em mudança de status (excluindo a primeira carga)
       if (lastStatusRef.current && lastStatusRef.current !== next.status) {
@@ -84,9 +92,10 @@ export function usePatientNirRequest(patientId: string | null) {
     if (!patientId) return;
     const channel = supabase
       .channel(`patient-nir-${patientId}`)
+      // MIGRAÇÃO: realtime em "solicitacoes_leito" filtrando por internacao_id.
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "bed_allocation_requests", filter: `patient_id=eq.${patientId}` },
+        { event: "*", schema: "public", table: "solicitacoes_leito", filter: `internacao_id=eq.${patientId}` },
         () => fetchLatestRef.current(),
       )
       .subscribe();

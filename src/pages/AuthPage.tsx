@@ -21,7 +21,6 @@ import { safeSetItem } from "@/lib/safeStorage";
 import { ArsenMark } from "@/components/brand/ArsenMark";
 import { whitelabel } from "@/config/whitelabel";
 import { comTempoLimite, mensagemDeFalhaDeRede } from "@/lib/tempoLimite";
-import { lerPerfil } from "@/lib/perfilSupabase";
 
 /* ─── Shared chrome ─────────────────────────────────────────────── */
 
@@ -102,69 +101,73 @@ export default function AuthPage() {
         setLoading(false);
         postLoginInFlight.current = false;
       } else {
-        // Login generalista: descobre o perfil/role definidos pelo gestor/admin
-        // a partir do usuário autenticado (suporta login por email, CPF ou usuário).
+        // Login generalista: descobre o papel definido pelo gestor/admin a partir
+        // do usuário autenticado (suporta login por email, CPF ou usuário).
+        // MIGRAÇÃO: `profiles` + `user_roles` (mortas) → `profissionais` por
+        // `user_id`. `access_profile`/`access_profiles` (sistema multi-perfil)
+        // NÃO têm coluna equivalente → DEGRADADOS: lista efetiva sempre vazia
+        // (o ProfileChooser não aparece); a rota de pouso é resolvida só pelo
+        // papel (appRole). `must_change_password` vem do `user_metadata` do auth.
         const { data: sessionData } = await comTempoLimite(
           supabase.auth.getSession(), "recuperar sessão", 10_000,
         );
-        const userId = sessionData?.session?.user?.id ?? null;
-        // Auditoria 18/09/2026: esta e a PRIMEIRA das quatro leituras de
-        // `profiles` do caminho de entrada. Passando por lerPerfil, ela alimenta
-        // as outras tres (AuthContext, ProtectedRoute, ProfileIpGate), que
-        // deixam de ir ao servidor.
-        const [{ data: profileRow }, { data: roleRow }] = userId
-          ? await comTempoLimite(Promise.all([
-              lerPerfil(userId),
+        const sessionUser = sessionData?.session?.user ?? null;
+        const userId = sessionUser?.id ?? null;
+        const { data: profRow } = userId
+          ? await comTempoLimite(
               supabase
-                .from("user_roles")
-                .select("role")
+                .from("profissionais")
+                .select("nome, papel, ativo")
                 .eq("user_id", userId)
                 .maybeSingle(),
-            ]), "carregar perfil", 12_000)
-          : [
-              { data: null as { id?: string; full_name?: string; access_profile?: string; access_profiles?: string[]; must_change_password?: boolean } | null },
-              { data: null as { role?: string } | null },
-            ];
+              "carregar perfil",
+              12_000,
+            )
+          : { data: null as { nome?: string; papel?: string; ativo?: boolean } | null };
 
-        const appRole: string | null = (roleRow as { role?: string } | null)?.role ?? null;
+        const appRole: string | null = (profRow as { papel?: string } | null)?.papel ?? null;
 
-        const accessProfile = (profileRow as { access_profile?: string } | null)?.access_profile ?? null;
-        const accessProfilesList = (profileRow as { access_profiles?: string[] } | null)?.access_profiles ?? [];
-        // Lista efetiva: usa access_profiles se preenchida; senão cai no singular.
-        const effectiveProfiles = (accessProfilesList && accessProfilesList.length > 0)
-          ? accessProfilesList
-          : (accessProfile ? [accessProfile] : []);
+        // MIGRAÇÃO: sem coluna de perfil de acesso em profissionais → os perfis de
+        // acesso vivem no user_metadata do auth (gravados no cadastro/aprovação).
+        // access_profiles = lista (multi-perfil); access_profile = principal.
+        const meta = sessionUser?.user_metadata as { access_profile?: string; access_profiles?: string[] } | undefined;
+        const effectiveProfiles: string[] =
+          Array.isArray(meta?.access_profiles) && meta!.access_profiles!.length
+            ? meta!.access_profiles!
+            : (meta?.access_profile ? [meta.access_profile] : []);
+        if (effectiveProfiles.length > 0) {
+          sessionStorage.setItem("available_access_profiles", JSON.stringify(effectiveProfiles));
+        }
 
-        // Nao se fixa mais departamento no login. "UTI" (sem numero) nao existe
-        // em DEPARTMENT_TO_SECTOR: gravava STORAGE_KEY com valor invalido e
-        // zerava currentSectorCode, o que o proprio DepartmentContext registra
-        // como causa de travamento no carregamento. O setor passa a ser
-        // escolhido de forma explicita em /setores.
+        // MIGRAÇÃO: não força mais setor padrão "UTI" — mantém o último selecionado
+        // (ou em branco, pedindo para selecionar). "UTI" não existe no banco novo.
 
-        // Primeiro acesso: senha padrão 123456 → exige troca + escolha de username
-        const mustChange = (profileRow as { must_change_password?: boolean } | null)?.must_change_password === true;
+        // 🔐 Primeiro acesso: senha padrão 123456 → exige troca + escolha de username.
+        // MIGRAÇÃO: flag lida do user_metadata (não há coluna must_change_password).
+        const mustChange = (sessionUser?.user_metadata as { must_change_password?: boolean } | undefined)?.must_change_password === true;
         if (mustChange && userId) {
           toast.success("Bem-vindo(a) Configure seu acesso.");
           setFirstAccess({
             userId,
-            fullName: (profileRow as { full_name?: string } | null)?.full_name ?? null,
+            fullName: (profRow as { nome?: string } | null)?.nome ?? null,
           });
           setLoading(false);
           return;
         }
 
         if (effectiveProfiles.length > 1) {
-          // Múltiplos perfis → mostra seletor antes de redirecionar.
+          // MIGRAÇÃO: effectiveProfiles é sempre [] no schema novo (sem colunas
+          // de perfil de acesso) — este ramo multi-perfil ficou inalcançável.
           toast.success("Login realizado — escolha o ambiente");
           setChooserProfiles(effectiveProfiles as AccessProfile[]);
           setChooserAppRole(appRole);
-          setChooserUserName((profileRow as { full_name?: string } | null)?.full_name ?? null);
+          setChooserUserName((profRow as { nome?: string } | null)?.nome ?? null);
           setLoading(false);
           return;
         }
 
-        // Caminho único: redireciona direto.
-        const chosen = effectiveProfiles[0] ?? accessProfile ?? null;
+        // Caminho único: redireciona direto (rota pela papel).
+        const chosen = effectiveProfiles[0] ?? null;
         const route = resolveLandingRoute(chosen, appRole);
         setRedirectRoute(route);
         if (chosen) {
@@ -200,17 +203,23 @@ export default function AuthPage() {
         userId={firstAccess.userId}
         fullName={firstAccess.fullName}
         onComplete={async () => {
+          // MIGRAÇÃO: `profiles`/`user_roles` (mortas) → `profissionais` por
+          // `user_id`. Sem colunas de perfil de acesso → lista degradada para [];
+          // a rota é resolvida só pelo papel.
           const { data: prof } = await supabase
-            .from("profiles")
-            .select("access_profile, access_profiles")
-            .eq("id", firstAccess.userId)
+            .from("profissionais")
+            .select("papel")
+            .eq("user_id", firstAccess.userId)
             .maybeSingle();
-          const list = (prof as { access_profiles?: string[] } | null)?.access_profiles ?? [];
-          const single = (prof as { access_profile?: string } | null)?.access_profile ?? null;
-          const eff = list.length > 0 ? list : (single ? [single] : []);
-          const { data: roleRow } = await supabase
-            .from("user_roles").select("role").eq("user_id", firstAccess.userId).maybeSingle();
-          const appRole = (roleRow as { role?: string } | null)?.role ?? null;
+          const appRole = (prof as { papel?: string } | null)?.papel ?? null;
+          // Perfis de acesso vêm do user_metadata do auth.
+          const { data: uData } = await supabase.auth.getUser();
+          const meta = uData?.user?.user_metadata as { access_profile?: string; access_profiles?: string[] } | undefined;
+          const eff: string[] =
+            Array.isArray(meta?.access_profiles) && meta!.access_profiles!.length
+              ? meta!.access_profiles!
+              : (meta?.access_profile ? [meta.access_profile] : []);
+          if (eff.length > 0) sessionStorage.setItem("available_access_profiles", JSON.stringify(eff));
           if (eff.length > 1) {
             setChooserProfiles(eff as AccessProfile[]);
             setChooserAppRole(appRole);

@@ -39,13 +39,16 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
     // (cobrindo prescrições criadas antes das 5h mas validadas depois)
     const since = new Date(clinicalStart.getTime() - 24 * 60 * 60 * 1000);
 
+    // MIGRAÇÃO: prescriptions → prescricoes. patient_name/patient_registry_id/
+    // hospital_unit_id NÃO têm coluna → nome e paciente_id vêm do join
+    // internacoes→pacientes; o filtro por hospital foi REMOVIDO (escopo via RLS).
+    // items→itens, created_at→criado_em, updated_at→atualizado_em.
     const { data, error } = await supabase
-      .from("prescriptions")
-      .select("patient_name, patient_registry_id, status, items, updated_at")
-      .eq("hospital_unit_id", hospitalUnitId)
-      .gte("created_at", since.toISOString())
-      .order("created_at", { ascending: false })
-      .limit(200);
+      .from("prescricoes")
+      .select("status, itens, criado_em, atualizado_em, internacao:internacoes(paciente:pacientes(id, nome_completo, nome_social))")
+      .gte("criado_em", since.toISOString())
+      .order("criado_em", { ascending: false })
+      .limit(500);
 
     if (error || !data) {
       setValidatedRegistryIds(new Set());
@@ -57,10 +60,10 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
 
     const isValidatedInCurrentClinicalDay = (row: any): boolean => {
       // Parse items defensivo
-      const items: any[] = Array.isArray(row.items)
-        ? row.items
-        : typeof row.items === "string"
-          ? (() => { try { return JSON.parse(row.items); } catch { return []; } })()
+      const items: any[] = Array.isArray(row.itens)
+        ? row.itens
+        : typeof row.itens === "string"
+          ? (() => { try { return JSON.parse(row.itens); } catch { return []; } })()
           : [];
 
       // Camada 1 — status explícito de validação
@@ -76,7 +79,7 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
         }
         // Sem validatedAt mas com status validated — assumir que é do dia atual
         // se foi atualizado após o início do dia clínico
-        const updatedAt = row.updated_at ? new Date(row.updated_at) : null;
+        const updatedAt = row.atualizado_em ? new Date(row.atualizado_em) : null;
         if (updatedAt && updatedAt >= clinicalStart) return true;
         // Fallback: assumir validado (compatibilidade com registros antigos)
         return true;
@@ -94,7 +97,7 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
       // Só conta se a prescrição foi criada/atualizada no dia clínico atual
       const active = items.filter((i: any) => i && i.status === "active");
       if (active.length > 0 && active.every((i: any) => !!i.validated)) {
-        const rowDate = row.updated_at;
+        const rowDate = row.atualizado_em || row.criado_em;
         return rowDate ? new Date(rowDate) >= clinicalStart : false;
       }
 
@@ -106,8 +109,11 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
 
     for (const row of data as any[]) {
       if (!isValidatedInCurrentClinicalDay(row)) continue;
-      if (row.patient_registry_id) nextIds.add(String(row.patient_registry_id));
-      if (row.patient_name) nextNames.add(normName(row.patient_name));
+      const pac = row.internacao?.paciente || null;
+      // registryId agora = paciente_id (identidade permanente).
+      if (pac?.id) nextIds.add(String(pac.id));
+      const nome = pac?.nome_social || pac?.nome_completo;
+      if (nome) nextNames.add(normName(nome));
     }
 
     setValidatedRegistryIds(nextIds);
@@ -132,13 +138,14 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
   // Realtime — qualquer mudança na tabela atualiza o mapa
   useEffect(() => {
     if (!hospitalUnitId) return;
+    // MIGRAÇÃO: canal prescriptions → prescricoes. Sem filtro por hospital
+    // (coluna inexistente) → assina todas as mudanças e refaz o fetch (escopo RLS).
     const channel = supabase
-      .channel(`prescriptions-today-${hospitalUnitId}`)
+      .channel(`prescricoes-today-${hospitalUnitId}`)
       .on("postgres_changes", {
         event: "*",
         schema: "public",
-        table: "prescriptions",
-        filter: `hospital_unit_id=eq.${hospitalUnitId}`,
+        table: "prescricoes",
       }, () => fetchAllRef.current())
       .subscribe();
     return () => { supabase.removeChannel(channel); };

@@ -2,7 +2,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Calendar, Building2, RefreshCw } from "lucide-react";
-import type { NirFilters, NirPeriod, SectorScope } from "@/hooks/useNirMetrics";
+import type { NirFilters, NirPeriod } from "@/hooks/useNirMetrics";
+import { useSectorNavigation } from "@/hooks/useSectorNavigation";
+
+// Rótulos amigáveis para os `tipo` de setor do banco.
+const TIPO_LABEL: Record<string, string> = {
+  clinico: "Clínico",
+  cirurgico: "Cirúrgico",
+  triagem: "Triagem",
+};
+const tipoLabel = (t: string) => TIPO_LABEL[t] ?? (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
 
 interface Props {
   filters: NirFilters;
@@ -19,19 +28,15 @@ const PERIODS: { key: NirPeriod; label: string }[] = [
   { key: "30d", label: "30d" },
 ];
 
-// Recortes espelham os blocos de docs/disposicao-setores-leitos-arsen.pdf.
-// Centro Cirurgico e recorte proprio: permanencia de horas e fluxo proprio
-// (preparo, bloco, recuperacao); antes caia em "Enfermaria" por omissao.
-const SCOPES: { key: SectorScope; label: string }[] = [
-  { key: "all", label: "Todos" },
-  { key: "alta_complexidade", label: "UTI/UCI" },
-  { key: "enfermaria", label: "Enfermarias" },
-  { key: "urgencia_horizontal", label: "Urgência e Emergência" },
-  { key: "centro_cirurgico", label: "Centro Cirúrgico" },
-];
-
-
 export function NirGlobalFilters({ filters, onChange, onRefresh, isLoading, actions }: Props) {
+  // MIGRAÇÃO: o Escopo agora vem do BANCO — os `tipo` distintos dos setores reais
+  // (alas→setores), não mais de buckets fixos (UTI/UCI, Enfermarias…).
+  const { sectors: dbSectors } = useSectorNavigation();
+  const tipos = Array.from(new Set(dbSectors.map((s) => s.tipo).filter(Boolean) as string[])).sort();
+  const SCOPES: { key: string; label: string }[] = [
+    { key: "all", label: "Todos" },
+    ...tipos.map((t) => ({ key: t, label: tipoLabel(t) })),
+  ];
   return (
     /*
       Encostado nos KPIs de propósito: borda superior removida e cantos de cima

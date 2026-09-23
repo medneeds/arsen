@@ -153,30 +153,28 @@ export function IndividualSignUpForm({
       }
 
       if (authData.user) {
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .upsert({
-            id: authData.user.id,
-            full_name: validated.fullName,
+        // MIGRAÇÃO: `profiles` + `user_roles` (mortas) → `profissionais`
+        // (papel é coluna de `profissionais`, não há mais tabela de papéis
+        // separada). `profissionais.id ≠ auth.uid`, então o vínculo é por
+        // `user_id`. Colunas mapeadas: full_name→nome, crm→numero_conselho,
+        // cargo→cargo, email→email. `ativo=false` substitui status='pending'.
+        // DEGRADADOS (sem coluna em profissionais): username, phone, specialty,
+        // matricula, professional_type, rqe → permanecem só no user_metadata
+        // gravado no signUp acima.
+        const defaultRole = "medico"; // enum papel_profissional
+        const { error: profError } = await supabase
+          .from("profissionais")
+          .insert({
+            user_id: authData.user.id,
+            nome: validated.fullName,
             email: internalEmail,
-            crm: validated.crm || null,
-            specialty: validated.specialty || null,
-            phone: validated.phone || null,
-            professional_type: validated.professionalType,
-            matricula: validated.matricula || null,
+            papel: defaultRole,
+            numero_conselho: validated.crm || null,
             cargo: validated.cargo || null,
-            status: "pending",
+            ativo: false,
           });
 
-        if (profileError) console.error("Error updating profile:", profileError);
-
-        // Default role based on professional type
-        const defaultRole = formData.professionalType === "medico" ? "medico" : "medico";
-        const { error: roleError } = await supabase
-          .from("user_roles")
-          .insert({ user_id: authData.user.id, role: defaultRole });
-
-        if (roleError) console.error("Error assigning role:", roleError);
+        if (profError) console.error("Error creating profissional:", profError);
 
         await supabase.auth.signOut();
       }

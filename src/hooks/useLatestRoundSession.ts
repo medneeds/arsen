@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 
 export interface LatestRoundSession {
   id: string;
@@ -15,12 +14,18 @@ export interface LatestRoundSession {
 /**
  * Realtime: última sessão do Round Multiprofissional do paciente.
  * Mostra data, número de respostas e metas registradas.
+ *
+ * MIGRAÇÃO: round_sessions→sessoes_visita, round_responses→respostas_visita,
+ * round_section_goals→metas_secao_visita. `patientId` já é `internacoes.id` (=
+ * o "encounter"), então filtramos direto por `internacao_id`. Colunas:
+ * round_date→data_visita, observations→observacoes, created_at→criado_em,
+ * updated_at→atualizado_em, session_id→sessao_id. DEGRADADO: sem colunas
+ * `archived_at`/`encounter_id` em sessoes_visita → os filtros de arquivamento e
+ * de encounter (via useActiveEncounterId) foram removidos.
  */
 export function useLatestRoundSession(patientId: string | null) {
   const [round, setRound] = useState<LatestRoundSession | null>(null);
   const [loading, setLoading] = useState(false);
-  // Fase B.3 — filtra pelo encounter ativo (NULL = legado, segue visível)
-  const { encounterId: activeEncounterId } = useActiveEncounterId(patientId);
 
   const fetchLatest = useCallback(async () => {
     if (!patientId) {
@@ -28,37 +33,31 @@ export function useLatestRoundSession(patientId: string | null) {
       return;
     }
     setLoading(true);
-    let query = supabase
-      .from("round_sessions")
-      .select("id, round_date, observations, created_at, updated_at")
-      .eq("patient_id", patientId)
-      // 🔒 Blindagem: nunca mostrar sessão arquivada (ocupante anterior do leito)
-      .is("archived_at", null);
-    if (activeEncounterId) {
-      query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
-    }
-    const { data } = await query
-      .order("round_date", { ascending: false })
-      .order("updated_at", { ascending: false })
+    const { data } = await supabase
+      .from("sessoes_visita")
+      .select("id, data_visita, observacoes, criado_em, atualizado_em")
+      .eq("internacao_id", patientId)
+      .order("data_visita", { ascending: false })
+      .order("atualizado_em", { ascending: false })
       .limit(1);
     if (data && data.length > 0) {
       const r: any = data[0];
       const [{ count: respCount }, { count: goalCount }] = await Promise.all([
         supabase
-          .from("round_responses")
+          .from("respostas_visita")
           .select("id", { count: "exact", head: true })
-          .eq("session_id", r.id),
+          .eq("sessao_id", r.id),
         supabase
-          .from("round_section_goals")
+          .from("metas_secao_visita")
           .select("id", { count: "exact", head: true })
-          .eq("session_id", r.id),
+          .eq("sessao_id", r.id),
       ]);
       setRound({
         id: r.id,
-        roundDate: r.round_date,
-        observations: r.observations,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at,
+        roundDate: r.data_visita,
+        observations: r.observacoes,
+        createdAt: r.criado_em,
+        updatedAt: r.atualizado_em,
         responsesCount: respCount ?? 0,
         goalsCount: goalCount ?? 0,
       });
@@ -66,7 +65,7 @@ export function useLatestRoundSession(patientId: string | null) {
       setRound(null);
     }
     setLoading(false);
-  }, [patientId, activeEncounterId]);
+  }, [patientId]);
 
   useEffect(() => {
     fetchLatest();
@@ -78,17 +77,17 @@ export function useLatestRoundSession(patientId: string | null) {
       .channel(`patient-round-${patientId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "round_sessions", filter: `patient_id=eq.${patientId}` },
+        { event: "*", schema: "public", table: "sessoes_visita", filter: `internacao_id=eq.${patientId}` },
         () => fetchLatest(),
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "round_responses" },
+        { event: "*", schema: "public", table: "respostas_visita" },
         () => fetchLatest(),
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "round_section_goals" },
+        { event: "*", schema: "public", table: "metas_secao_visita" },
         () => fetchLatest(),
       )
       .subscribe();

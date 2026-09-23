@@ -13,12 +13,26 @@ import { isGhostBed } from "@/hooks/usePatients";
 import { cn } from "@/lib/utils";
 import { MovementConfirmDialog } from "@/components/MovementConfirmDialog";
 
+// MIGRAÇÃO: a mega-tabela `patients` (leito+paciente numa linha) foi substituída por
+// leitos (leito físico) + internacoes (ocupação, com leito_id) + pacientes (identidade).
+// - Um "irmão" agora é uma INTERNAÇÃO ativa (data_alta IS NULL) num leito do mesmo setor.
+// - Um "leito vago" é uma linha de `leitos` sem internação ativa apontando para ela.
+// - Realocar = UPDATE internacoes.leito_id (+ leitos.status vago/ocupado).
+// - Permutar = troca de leito_id entre duas internações ativas.
+// Não há RPC de realocação/permuta no schema novo (verificado em types.ts) → updates diretos.
 interface SiblingRow {
-  id: string;
+  id: string; // internacoes.id
   name: string;
-  bed_number: string;
+  bed_number: string; // leitos.numero
   is_vacant: boolean | null;
   display_order: number | null;
+  leito_id: string; // leitos.id
+}
+
+interface LeitoRow {
+  id: string;
+  numero: string;
+  status: string;
 }
 
 interface BedReallocationDialogProps {
@@ -28,13 +42,12 @@ interface BedReallocationDialogProps {
   onSuccess?: () => void;
 }
 
-type VacantTarget =
-  | { kind: "row"; bed_number: string; row: SiblingRow }
-  | { kind: "slot"; bed_number: string };
+type VacantTarget = { bed_number: string; leito_id: string };
 
 export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }: BedReallocationDialogProps) {
   const [loading, setLoading] = useState(false);
   const [siblings, setSiblings] = useState<SiblingRow[]>([]);
+  const [leitos, setLeitos] = useState<LeitoRow[]>([]);
   const [tab, setTab] = useState<"realocar" | "permutar">("realocar");
   const [selectedTarget, setSelectedTarget] = useState<VacantTarget | null>(null);
   const [selectedSwap, setSelectedSwap] = useState<SiblingRow | null>(null);
@@ -43,41 +56,22 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
 
   const sectorConfig = SECTOR_BED_CONFIG[patient.sector as string];
 
-  const allBeds = useMemo(() => {
-    if (!sectorConfig) return [] as string[];
-    const start = sectorConfig.startNumber ?? 1;
-    const end = start + sectorConfig.maxRegularBeds - 1;
-    const beds: string[] = [];
-    for (let i = start; i <= end; i++) {
-      beds.push(`${sectorConfig.prefix}${String(i).padStart(2, "0")}`);
-    }
-    return beds;
-  }, [sectorConfig]);
+  // Leito atual do paciente (resolvido pela lista de leitos do setor via numero).
+  const currentLeitoId = useMemo(
+    () => leitos.find((l) => l.numero === patient.bedNumber)?.id ?? null,
+    [leitos, patient.bedNumber]
+  );
 
-  // Realocar = leitos vagos: linhas vagas (is_vacant OU name vazio) + slots fixos sem linha alguma
+  // Realocar = leitos do setor SEM internação ativa (e diferente do leito atual).
   const vacantTargets = useMemo<VacantTarget[]>(() => {
-    const byBed = new Map(siblings.map((s) => [s.bed_number, s] as const));
-    const results: VacantTarget[] = [];
-    for (const bed of allBeds) {
-      if (bed === patient.bedNumber) continue;
-      const row = byBed.get(bed);
-      if (!row) {
-        results.push({ kind: "slot", bed_number: bed });
-      } else if (row.is_vacant === true || !row.name?.trim()) {
-        results.push({ kind: "row", bed_number: bed, row });
-      }
-    }
-    // Inclui também leitos vagos fora do range fixo (ex.: extras) já existentes como linhas
-    for (const s of siblings) {
-      if (allBeds.includes(s.bed_number)) continue;
-      if (s.is_vacant === true || !s.name?.trim()) {
-        results.push({ kind: "row", bed_number: s.bed_number, row: s });
-      }
-    }
-    return results.sort((a, b) => a.bed_number.localeCompare(b.bed_number));
-  }, [allBeds, siblings, patient.bedNumber]);
+    const occupiedNumbers = new Set(siblings.map((s) => s.bed_number));
+    return leitos
+      .filter((l) => l.numero !== patient.bedNumber && !occupiedNumbers.has(l.numero))
+      .map((l) => ({ bed_number: l.numero, leito_id: l.id }))
+      .sort((a, b) => a.bed_number.localeCompare(b.bed_number));
+  }, [leitos, siblings, patient.bedNumber]);
 
-  // Permutar = qualquer linha de paciente do setor (vaga ou ocupada), exceto a própria
+  // Permutar = qualquer internação ativa do setor, exceto a própria
   const swapCandidates = useMemo(
     () => [...siblings].sort((a, b) => a.bed_number.localeCompare(b.bed_number)),
     [siblings]
@@ -91,17 +85,66 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
     let cancel = false;
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("patients")
-        .select("id, name, bed_number, is_vacant, display_order")
-        .eq("sector", patient.sector)
-        .neq("id", patient.id);
+      // 1) Resolve o setor. MIGRAÇÃO: usePatientLive mapeia Patient.sector ← setores.nome,
+      //    logo o código do setor está gravado em setores.nome.
+      const { data: setorRows, error: setorErr } = await supabase
+        .from("setores")
+        .select("id")
+        .eq("nome", patient.sector);
       if (cancel) return;
-      if (error) {
-        toast.error("Não foi possível carregar leitos do setor");
-      } else {
-        setSiblings((data ?? []).filter((p) => !!p.bed_number && !isGhostBed(p.bed_number)) as SiblingRow[]);
+      const setorIds = (setorRows ?? []).map((s) => s.id);
+      if (setorErr || setorIds.length === 0) {
+        if (setorErr) toast.error("Falha ao carregar leitos do setor");
+        setLeitos([]);
+        setSiblings([]);
+        setLoading(false);
+        return;
       }
+
+      // 2) Leitos do setor.
+      const { data: leitoRows, error: leitoErr } = await supabase
+        .from("leitos")
+        .select("id, numero, status")
+        .in("setor_id", setorIds);
+      if (cancel) return;
+      if (leitoErr) {
+        toast.error("Falha ao carregar leitos do setor");
+        setLoading(false);
+        return;
+      }
+      const leitoList = (leitoRows ?? []).filter((l) => !!l.numero && !isGhostBed(l.numero)) as LeitoRow[];
+      setLeitos(leitoList);
+
+      // 3) Internações ATIVAS (data_alta IS NULL) nesses leitos, exceto a própria.
+      const leitoIds = leitoList.map((l) => l.id);
+      let sibs: SiblingRow[] = [];
+      if (leitoIds.length > 0) {
+        const { data: interRows, error: interErr } = await supabase
+          .from("internacoes")
+          .select("id, leito_id, paciente:pacientes(nome_completo, nome_social)")
+          .in("leito_id", leitoIds)
+          .is("data_alta", null)
+          .neq("id", patient.id);
+        if (cancel) return;
+        if (interErr) {
+          toast.error("Falha ao carregar internações do setor");
+          setLoading(false);
+          return;
+        }
+        const numeroByLeito = new Map(leitoList.map((l) => [l.id, l.numero] as const));
+        sibs = ((interRows ?? []) as any[]).map((r: any) => {
+          const pac = r.paciente || {};
+          return {
+            id: r.id,
+            name: pac.nome_social || pac.nome_completo || "",
+            bed_number: numeroByLeito.get(r.leito_id) ?? "",
+            is_vacant: false,
+            display_order: null,
+            leito_id: r.leito_id,
+          } as SiblingRow;
+        }).filter((s) => !!s.bed_number);
+      }
+      setSiblings(sibs);
       setLoading(false);
     })();
     return () => {
@@ -109,43 +152,40 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
     };
   }, [open, patient.id, patient.sector]);
 
-  // Move atômico: se a outra ponta tem linha, swap pelos bed_numbers; senão, simples update.
-  const performMove = async (otherRow: SiblingRow | null, targetBed: string) => {
+  // MIGRAÇÃO: move via internacoes.leito_id + leitos.status. `otherRow` != null → permuta
+  // (troca de leito_id entre duas internações); null → realocação para leito vago.
+  const performMove = async (otherRow: SiblingRow | null, targetBed: string, targetLeitoId: string) => {
     setSubmitting(true);
     try {
+      if (!currentLeitoId) throw new Error("Leito atual do paciente não encontrado no setor.");
       if (!otherRow) {
+        // Realocação simples: internação do paciente aponta para o leito destino.
         const { error } = await supabase
-          .from("patients")
-          .update({ bed_number: targetBed, updated_at: new Date().toISOString() })
+          .from("internacoes")
+          .update({ leito_id: targetLeitoId })
           .eq("id", patient.id);
         if (error) throw error;
+        // Atualiza status dos leitos (origem libera, destino ocupa).
+        await supabase.from("leitos").update({ status: "livre" }).eq("id", currentLeitoId);
+        await supabase.from("leitos").update({ status: "ocupado" }).eq("id", targetLeitoId);
       } else {
-        const tempBed = `__SWAP_${Date.now()}`;
-        // 1) tira o paciente atual do caminho
-        let r = await supabase.from("patients").update({ bed_number: tempBed }).eq("id", patient.id);
+        // Permuta: troca leito_id entre as duas internações. Sem RPC atômica disponível
+        // (verificado em types.ts) → dois updates com rollback best-effort.
+        let r = await supabase
+          .from("internacoes")
+          .update({ leito_id: otherRow.leito_id })
+          .eq("id", patient.id);
         if (r.error) throw r.error;
-        // 2) move o outro para o leito original
         r = await supabase
-          .from("patients")
-          .update({ bed_number: patient.bedNumber, updated_at: new Date().toISOString() })
+          .from("internacoes")
+          .update({ leito_id: currentLeitoId })
           .eq("id", otherRow.id);
         if (r.error) {
-          const { error: erroGrav1 } = await supabase.from("patients").update({ bed_number: patient.bedNumber }).eq("id", patient.id);
-          if (erroGrav1) throw erroGrav1;
+          // rollback do primeiro update
+          await supabase.from("internacoes").update({ leito_id: currentLeitoId }).eq("id", patient.id);
           throw r.error;
         }
-        // 3) coloca o paciente atual no leito alvo
-        r = await supabase
-          .from("patients")
-          .update({ bed_number: targetBed, updated_at: new Date().toISOString() })
-          .eq("id", patient.id);
-        if (r.error) {
-          const { error: erroGrav2 } = await supabase.from("patients").update({ bed_number: otherRow.bed_number }).eq("id", otherRow.id);
-          if (erroGrav2) throw erroGrav2;
-          const { error: erroGrav3 } = await supabase.from("patients").update({ bed_number: patient.bedNumber }).eq("id", patient.id);
-          if (erroGrav3) throw erroGrav3;
-          throw r.error;
-        }
+        // Ambos os leitos permanecem ocupados — sem alteração de status.
       }
       toast.success(
         otherRow && otherRow.name?.trim()
@@ -169,11 +209,10 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
   const doConfirm = () => {
     if (tab === "realocar") {
       if (!selectedTarget) return;
-      const otherRow = selectedTarget.kind === "row" ? selectedTarget.row : null;
-      performMove(otherRow, selectedTarget.bed_number);
+      performMove(null, selectedTarget.bed_number, selectedTarget.leito_id);
     } else {
       if (!selectedSwap) return;
-      performMove(selectedSwap, selectedSwap.bed_number);
+      performMove(selectedSwap, selectedSwap.bed_number, selectedSwap.leito_id);
     }
     setConfirmOpen(false);
   };

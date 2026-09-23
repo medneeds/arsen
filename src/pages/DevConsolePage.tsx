@@ -71,7 +71,7 @@ export default function DevConsolePage() {
         <div className="relative max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <SidebarTrigger className="h-9 w-9 text-muted-foreground hover:text-white hover:bg-white/10" />
-            <div className="h-11 w-11 rounded-lg bg-muted grid place-items-center shadow-md ring-1 ring-white/10">
+            <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 grid place-items-center shadow-md ring-1 ring-white/10">
               <Terminal className="h-5 w-5 text-white" />
             </div>
             <div>

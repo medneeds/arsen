@@ -4,7 +4,11 @@ import { AlertTriangle, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { detectUnidentified } from "@/lib/unidentifiedDetector";
 
+// MIGRAÇÃO: shape mantido estável (consumido por AdminDashboardPage). Os dados
+// vêm de `pacientes` e são remapeados: nome_completo→full_name,
+// data_nascimento→birth_date, prontuario→medical_record.
 interface DuplicateMatch {
   id: string;
   full_name: string;
@@ -57,26 +61,36 @@ export function DuplicatePatientWarning({ fullName, birthDate, cpf, onUseExistin
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
+        // MIGRAÇÃO: patient_registry→pacientes. Sem merged_into_registry_id (o
+        // merge apaga o perdedor) e sem is_unidentified (NI derivado do nome — o
+        // filtro de "só identificados" passa a ser client-side via heurística).
         let query = supabase
-          .from("patient_registry")
-          .select("id, full_name, birth_date, cpf, medical_record")
-          .is("merged_into_registry_id", null)
-          .eq("is_unidentified", false)
-          .limit(3);
+          .from("pacientes")
+          .select("id, nome_completo, data_nascimento, cpf, prontuario")
+          .limit(6);
 
         if (enoughCpf) {
           query = query.ilike("cpf", `%${cpfClean}%`);
         } else if (enoughName) {
           const first = nameWords[0];
           const last = nameWords[nameWords.length - 1];
-          query = query.or(`full_name.ilike.%${first}%,full_name.ilike.%${last}%`);
+          query = query.or(`nome_completo.ilike.%${first}%,nome_completo.ilike.%${last}%`);
         }
 
         const { data, error } = await query;
         if (error) throw error;
         if (controller.signal.aborted) return;
 
-        let filtered = (data as DuplicateMatch[]) || [];
+        let filtered: DuplicateMatch[] = ((data as any[]) || [])
+          .filter((r) => !detectUnidentified(r.nome_completo || "").isUnidentified)
+          .slice(0, 3)
+          .map((r) => ({
+            id: r.id,
+            full_name: r.nome_completo,
+            birth_date: r.data_nascimento,
+            cpf: r.cpf,
+            medical_record: r.prontuario,
+          }));
 
         // Alta confiança: nome + data de nascimento coincidem — causa real das duplicatas.
         // Bloqueia o cadastro e exige decisão explícita do usuário.

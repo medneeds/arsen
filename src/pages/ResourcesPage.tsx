@@ -52,7 +52,7 @@ interface Patient {
 const ResourcesPage = () => {
   const { user } = useAuth();
   const { currentDepartment } = useDepartment();
-  const { currentState, currentHospital } = useHospital();
+  const { currentHospital } = useHospital();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -73,7 +73,7 @@ const ResourcesPage = () => {
 
   useEffect(() => {
     loadPatients();
-  }, [currentDepartment]);
+  }, [currentHospital]);
 
   useEffect(() => {
     const patientId = searchParams.get('patientId');
@@ -86,13 +86,24 @@ const ResourcesPage = () => {
     }
   }, [searchParams, patients, selectedPatient]);
 
+  // MIGRAÇÃO: patients→internacoes(+pacientes,+leitos,+setores). internacoes não
+  // tem coluna `department` → o filtro por departamento foi REMOVIDO; o escopo
+  // passa a ser por hospital via leito→setor→ala.hospital_id (padrão usePatients).
+  // Internação ativa = data_alta IS NULL. Colunas: name←paciente.nome_social||
+  // nome_completo, bed_number←leito.numero, sector←setor.tipo (código),
+  // age←formatAge(paciente.data_nascimento) (patient_registry morto),
+  // admission_history←historia_clinica (anamnese), diagnoses←hipotese_diagnostica.
   const loadPatients = async () => {
-    const { data, error } = await supabase
-      .from("patients")
-      .select("id, name, bed_number, sector, age, admission_history, diagnoses, patient_registry_id")
-      .eq("department", currentDepartment)
-      .order("sector", { ascending: true })
-      .order("bed_number", { ascending: true });
+    if (!currentHospital) return;
+    const { data, error } = await (supabase
+      .from("internacoes")
+      .select(`
+        id, historia_clinica, hipotese_diagnostica, data_alta,
+        paciente:pacientes ( nome_completo, nome_social, data_nascimento ),
+        leito:leitos!inner ( numero, setor:setores!inner ( tipo, ala:alas!inner ( hospital_id ) ) )
+      `) as any)
+      .is("data_alta", null)
+      .eq("leito.setor.ala.hospital_id", currentHospital.id);
 
     if (error) {
       if (import.meta.env.DEV) {
@@ -101,20 +112,22 @@ const ResourcesPage = () => {
       return;
     }
 
-    // Idade ao vivo a partir de patient_registry.birth_date — patients.age
-    // é estático (congelado na admissão). Busca em lote (1 query), não N+1.
-    const rows = data || [];
-    const registryIds = Array.from(new Set(rows.map((p: any) => p.patient_registry_id).filter(Boolean)));
-    const birthDateByRegistryId = new Map<string, string | null>();
-    if (registryIds.length > 0) {
-      const { data: registryRows } = await supabase
-        .from("patient_registry").select("id, birth_date").in("id", registryIds);
-      for (const r of registryRows || []) birthDateByRegistryId.set(r.id, r.birth_date);
-    }
-    setPatients(rows.map((p: any) => ({
-      ...p,
-      age: (p.patient_registry_id && formatAge(birthDateByRegistryId.get(p.patient_registry_id))) || p.age,
-    })));
+    const rows = (data || []) as any[];
+    const mapped: Patient[] = rows.map((r) => ({
+      id: r.id,
+      name: (r.paciente?.nome_social || r.paciente?.nome_completo || "").toString(),
+      bed_number: (r.leito?.numero ?? "").toString(),
+      sector: r.leito?.setor?.tipo ?? "",
+      age: formatAge(r.paciente?.data_nascimento) || null,
+      admission_history: r.historia_clinica ?? null,
+      diagnoses: r.hipotese_diagnostica ?? null,
+    }));
+    mapped.sort(
+      (a, b) =>
+        (a.sector || "").localeCompare(b.sector || "") ||
+        (a.bed_number || "").localeCompare(b.bed_number || "", undefined, { numeric: true }),
+    );
+    setPatients(mapped);
   };
 
   const handleImportDiagnoses = () => {
@@ -263,7 +276,7 @@ const ResourcesPage = () => {
       return;
     }
 
-    if (!currentHospital || !currentState) {
+    if (!currentHospital) {
       toast({
         title: "ERRO",
         description: "UNIDADE HOSPITALAR NÃO SELECIONADA",
@@ -272,20 +285,33 @@ const ResourcesPage = () => {
       return;
     }
 
+    // MIGRAÇÃO: internment_requests NÃO existe no schema novo. O alvo do de-para
+    // (internacoes) exige leito_id NOT NULL e não tem colunas para os campos
+    // livres desta "solicitação" (patient_name/age/sex/record/destination/content/
+    // department). Seguindo o padrão do projeto para escritas sem tabela-destino
+    // (patient_movements/patient_versions → logs_auditoria), gravamos a solicitação
+    // em logs_auditoria (tipo_evento='solicitacao_internacao'); os dados ricos
+    // ficam em `dados_novos`. DEGRADADO: patient_sex/patient_record (sempre null),
+    // state_id (sem estado no schema novo). registro_id/internacao_id = a
+    // internação selecionada (patient.id já é internacoes.id).
     const { error } = await supabase
-      .from("internment_requests")
+      .from("logs_auditoria")
       .insert({
-        patient_name: patient.name.toUpperCase(),
-        patient_age: patient.age ? parseInt(patient.age) : null,
-        patient_sex: null,
-        patient_record: null,
-        destination: formData.destination,
-        content: formData.content.toUpperCase(),
-        department: currentDepartment,
-        created_by: currentUser.id,
-        state_id: currentState.id,
-        hospital_unit_id: currentHospital.id,
-      });
+        tipo_evento: "solicitacao_internacao",
+        nome_tabela: "internacoes",
+        registro_id: patient.id,
+        internacao_id: patient.id,
+        ator_user_id: currentUser.id,
+        email_ator: currentUser.email ?? null,
+        hospital_id: currentHospital.id,
+        dados_novos: {
+          patient_name: patient.name.toUpperCase(),
+          patient_age: patient.age ? parseInt(patient.age) : null,
+          destination: formData.destination,
+          content: formData.content.toUpperCase(),
+          department: currentDepartment,
+        },
+      } as any);
 
     if (error) {
       console.error("Erro ao salvar solicitação:", error);

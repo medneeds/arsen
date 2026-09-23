@@ -139,32 +139,33 @@ export function PatientSearchActionsDialog({
       correctionNote = closeRes?.closedId
         ? ` | Atendimento anterior ENCERRADO por correção`
         : ` | Nenhum atendimento anterior encontrado para encerrar`;
-      // Sinaliza o leito anterior para desalocação pelo menu Movimentações — a
-      // liberação em si é passo separado por design do sistema (o leito só vaga
-      // quando o nome é limpo na desalocação).
-      if (activeEncounterInfo?.bedRowId) {
-        await (supabase as any)
-          .from("patients")
-          .update({ admission_status: ADMISSION_STATUS.DISCHARGE_GIVEN, updated_at: new Date().toISOString() })
-          .eq("id", activeEncounterInfo.bedRowId);
-      }
+      // MIGRAÇÃO: não há tabela `patients` nem coluna admission_status no schema
+      // novo — a sinalização do leito anterior para desalocação não tem
+      // equivalente e foi removida. O encerramento lógico do atendimento é feito
+      // por closeActiveEncounter (lib compartilhada).
     } catch (e) {
       console.warn("Falha ao encerrar atendimento anterior na abertura forcada:", e);
       correctionNote = " | FALHA ao encerrar o atendimento anterior";
     }
 
     try {
+      // MIGRAÇÃO: patient_movements→logs_auditoria (isto é auditoria, não uma
+      // movimentação física de leito).
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      const { error: erroNaoBloqueante1 } = await supabase.from("patient_movements").insert({
-        patient_name: patient!.full_name,
-        movement_type: "ABERTURA FORCADA DE ATENDIMENTO — GESTOR/ADMIN",
-        destination: "Novo atendimento forcado sobre atendimento ativo",
-        notes: `Atendimento ativo: #${activeEncounterInfo?.encounterCode ?? "—"} (leito ${activeEncounterInfo?.bedNumber ?? "—"})${correctionNote} | Justificativa: ${forceJustification.trim()} | Confirmado com senha e ciencia do gestor`,
-        created_by: authUser?.id ?? null,
-        hospital_unit_id: hospitalUnitId,
-        state_id: stateId,
-        department,
-      } as any);
+      const { error: erroNaoBloqueante1 } = await supabase.from("logs_auditoria").insert({
+        tipo_evento: "abertura_forcada_atendimento",
+        nome_tabela: "internacoes",
+        acao: null,
+        paciente_id: patient!.id,
+        motivo: `Abertura forçada sobre atendimento ativo${correctionNote} | Justificativa: ${forceJustification.trim()} | Confirmado com senha e ciência do gestor`,
+        dados_novos: {
+          paciente: patient!.full_name,
+          atendimento_anterior: activeEncounterInfo?.encounterCode ?? null,
+          leito_anterior: activeEncounterInfo?.bedNumber ?? null,
+        } as any,
+        ator_user_id: authUser?.id ?? null,
+        hospital_id: hospitalUnitId,
+      });
       // Nao bloqueia o fluxo, mas nao pode sumir: antes o resultado era descartado.
       if (erroNaoBloqueante1) console.warn("[PatientSearchActionsDialog] falha nao-bloqueante ao registrar auditoria de abertura forcada:", erroNaoBloqueante1);
     } catch (e) {
@@ -178,62 +179,51 @@ export function PatientSearchActionsDialog({
 
   /**
    * Verifica se o paciente já tem atendimento ativo antes de prosseguir.
-   * Consulta duas fontes:
-   * 1. patient_encounters — encounter com status active/pending
-   * 2. patients — leito físico ocupado pelo registry_id
+   * MIGRAÇÃO: patient_encounters + patients → `internacoes` (com joins
+   * leitos/setores). "Ativo" = internação sem `data_alta`. registry_id→paciente_id.
+   * Não há mais encounter_code, triage_status nem admission_status → degradados;
+   * o leito físico vem do join leito→setor da própria internação.
    */
   const checkActiveEncounter = useCallback(async () => {
     if (!patient) return;
     setStep("checking");
     try {
-      // 1. Buscar encounter ativo
-      const { data: encData } = await supabase
-        .from("patient_encounters")
-        .select("id, encounter_code, status")
-        .eq("registry_id", patient.id)
-        .in("status", ["active", "pending"])
-        .order("created_at", { ascending: false })
+      const { data: internacao } = await supabase
+        .from("internacoes")
+        .select("id, status, data_alta, leito:leitos!internacoes_leito_id_fkey(numero, setor:setores!leitos_setor_id_fkey(nome, tipo))")
+        .eq("paciente_id", patient.id)
+        .is("data_alta", null)
+        .order("data_entrada", { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (!encData) {
-        // Sem encounter ativo → fluxo normal
+      if (!internacao) {
+        // Sem internação aberta → fluxo normal
         setStep("preadmit_question");
         return;
       }
 
-      // 2. Buscar leito físico vinculado
-      const { data: bedData } = await (supabase as any)
-        .from("patients")
-        .select("id, bed_number, sector, admission_status")
-        .eq("patient_registry_id", patient.id)
-        .eq("is_vacant", false)
-        .maybeSingle();
-
-      const sectorNames: Record<string, string> = {
-        red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2",
-        ucc: "UCC", neuro_01: "Neuro 01", neuro_02: "Neuro 02",
-        clinica_cirurgica: "Clínica Cirúrgica", enfermaria_transicao: "Enf. Transição",
-        enfermaria_vascular: "Enf. Vascular", sala_vermelha: "Sala Vermelha",
-        sala_laranja: "Sala Laranja", observacao_clinica: "Obs. Clínica",
-        internacao_ue: "Posto de Internação", riv: "RIV", cc_bloco: "Centro Cirúrgico",
-      };
-
-      const admStatus = (bedData as any)?.admission_status ?? null;
-      const isObito = admStatus === "obito";
-      const isTransitInternal = admStatus === "transferencia_interna_pendente";
+      const leito = (internacao as any).leito || null;
+      const setor = leito?.setor || null;
+      // MIGRAÇÃO: vocabulário de internacoes.status não é conhecido no front —
+      // "obito" é a melhor aproximação; transferência interna não é mais
+      // sinalizada por status de leito (degradada para false).
+      const isObito = internacao.status === "obito";
 
       setActiveEncounterInfo({
-        encounterId: (encData as any).id,
-        bedRowId: (bedData as any)?.id ?? null,
-        encounterCode: (encData as any).encounter_code ?? null,
-        status: (encData as any).status,
-        bedNumber: (bedData as any)?.bed_number ?? null,
-        sectorCode: (bedData as any)?.sector ?? null,
-        sectorLabel: bedData ? (sectorNames[(bedData as any).sector] ?? (bedData as any).sector) : null,
-        admissionStatus: admStatus,
+        encounterId: internacao.id,
+        // MIGRAÇÃO: bedRowId era patients.id (linha-leito) — sem equivalente.
+        bedRowId: null,
+        // MIGRAÇÃO: internacoes não tem encounter_code.
+        encounterCode: null,
+        status: internacao.status,
+        bedNumber: leito?.numero ?? null,
+        sectorCode: setor?.tipo ?? null,
+        sectorLabel: setor?.nome ?? null,
+        // MIGRAÇÃO: internacoes não tem admission_status.
+        admissionStatus: null,
         isObito,
-        isTransitInternal,
+        isTransitInternal: false,
       });
       setStep("blocked");
     } catch (err) {
@@ -290,149 +280,42 @@ export function PatientSearchActionsDialog({
     }
     setIsSubmitting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
       // ─────────────────────────────────────────────────────────────────
-      // FLUXO CORRIGIDO: Pré-admissão é o ato administrativo que aloca
-      // o paciente e GERA o número de atendimento. O encounter é
-      // consequência da pré-admissão, não o contrário.
+      // MIGRAÇÃO (schema novo):
+      //  - `patient_encounters` não existe: `internacoes` é o conceito
+      //    equivalente, mas exige leito_id NOT NULL — não é possível "abrir
+      //    atendimento" bedless a partir daqui.
+      //  - Não há mais encounter_code, `medical_records`, nem o RPC
+      //    generate_encounter_code_v2 (o nº de atendimento de 12 dígitos foi
+      //    degradado — sem gerador no backend novo).
+      //  - `pre_admissions`→`pre_admissoes`: só existem nome_paciente, cpf, cns,
+      //    data_nascimento, setor_destino_id, status, data_hora. social_name,
+      //    mother_name, sex, medical_record, phone, patient_registry_id,
+      //    hospital_unit_id, state_id, department, notes, destination_sector
+      //    (texto) NÃO existem → degradados.
+      //  - selectedSector é um código de UI (não UUID de `setores`) →
+      //    setor_destino_id degradado para null.
       //
-      // Dois caminhos:
-      //   A) Com sinalização de setor: cria pré-admissão → cria encounter
-      //      vinculado → encounter_code aparece na pré-admissão
-      //   B) Sem sinalização de setor: cria encounter direto (triagem
-      //      sem alocação imediata — semanticamente correto)
+      // Ambos os caminhos passam a registrar apenas a PRÉ-ADMISSÃO
+      // (fila "aguardando_leito"), que é o único registro insertável aqui.
       // ─────────────────────────────────────────────────────────────────
-
-      // 1) Localiza prontuário oficial vinculado ao registry
-      let medicalRecordId: string | null = null;
-      try {
-        const { data: mr } = await supabase
-          .from("medical_records")
-          .select("id")
-          .eq("patient_registry_id", patient.id)
-          .order("created_at", { ascending: true })
-          .limit(1)
-          .maybeSingle();
-        medicalRecordId = (mr as any)?.id ?? null;
-      } catch (e) {
-        console.warn("Falha ao buscar medical_record:", e);
-      }
-
-      // 2) Pré-gera o encounter_code (12 dígitos sequenciais)
-      let preGeneratedCode: string | null = null;
-      if (medicalRecordId) {
-        try {
-          const { data: code } = await (supabase.rpc as any)(
-            "generate_encounter_code_v2",
-            { p_medical_record_id: medicalRecordId, p_data_hora_admissao: new Date().toISOString() },
-          );
-          preGeneratedCode = (code as string) || null;
-        } catch (e) {
-          console.warn("Falha ao pré-gerar código:", e);
-        }
-      }
-
-      let encounterCode: string;
-      let preAdmissionId: string | null = null;
-
-      if (signalPreAdmission && selectedSector) {
-        // ── CAMINHO A: Pré-admissão com setor ─────────────────────────
-        // 3A) Cria a pré-admissão PRIMEIRO — ato administrativo de alocação
-        const { data: pa, error: paErr } = await supabase
-          .from("pre_admissions")
-          .insert({
-            patient_name: patient.full_name,
-            social_name: patient.social_name || null,
-            mother_name: patient.mother_name || null,
-            birth_date: patient.birth_date || null,
-            sex: patient.sex || null,
-            cpf: patient.cpf || null,
-            cns: patient.cns || null,
-            medical_record: patient.medical_record || null,
-            phone: patient.phone || null,
-            patient_registry_id: patient.id,
-            destination_sector: selectedSector.mapTitle,
-            status: "aguardando_leito",
-            hospital_unit_id: hospitalUnitId,
-            state_id: stateId,
-            department,
-            created_by: user?.id,
-            notes: `Pré-admissão administrativa via busca no Mapa de Leitos`,
-          } as any)
-          .select("id")
-          .single();
-
-        if (paErr) throw paErr;
-        preAdmissionId = (pa as any).id ?? null;
-
-        // 4A) Cria o encounter vinculado à pré-admissão.
-        // pre_admission_id é opcional (rastreabilidade). Em bancos onde a coluna
-        // ainda não existe, o insert é refeito sem ela — a readmissão nunca
-        // quebra por causa disso. (Correção 22/07/2026.)
-        const encBasePayload: Record<string, any> = {
-          patient_name: patient.full_name,
-          registry_id: patient.id,
-          medical_record_id: medicalRecordId,
-          encounter_code: preGeneratedCode || undefined,
-          hospital_unit_id: hospitalUnitId,
-          state_id: stateId,
-          department,
-          destination_sector: selectedSector.label || null,
-          status: "active",
-          triage_status: "encaminhado",
-          created_by: user?.id,
-        };
-        const insertEncounter = (extra: Record<string, any>) =>
-          supabase.from("patient_encounters").insert({ ...encBasePayload, ...extra } as any).select().single();
-
-        let { data: enc, error: encErr } = await insertEncounter({ pre_admission_id: preAdmissionId });
-        if (encErr && (encErr.code === "42703" || encErr.code === "PGRST204" || /pre_admission_id/i.test(encErr.message))) {
-          ({ data: enc, error: encErr } = await insertEncounter({}));
-        }
-
-        if (encErr) throw encErr;
-        encounterCode = (enc as any).encounter_code as string;
-
-        // 5A) Atualiza a pré-admissão com o encounter_code gerado
-        if (encounterCode && preAdmissionId) {
-          const { error: erroGrav1 } = await supabase
-            .from("pre_admissions")
-            .update({ notes: `Pré-admissão administrativa via busca no Mapa de Leitos • Atendimento ${encounterCode}` })
-            .eq("id", preAdmissionId);
-          if (erroGrav1) throw erroGrav1;
-        }
-
-      } else {
-        // ── CAMINHO B: Apenas abre atendimento, sem alocar setor ───────
-        // Triagem ou atendimento administrativo sem alocação imediata.
-        // Neste caso o encounter é criado diretamente — sem pré-admissão.
-        const { data: enc, error: encErr } = await supabase
-          .from("patient_encounters")
-          .insert({
-            patient_name: patient.full_name,
-            registry_id: patient.id,
-            medical_record_id: medicalRecordId,
-            encounter_code: preGeneratedCode || undefined,
-            hospital_unit_id: hospitalUnitId,
-            state_id: stateId,
-            department,
-            status: "active",
-            triage_status: "encaminhado",
-            created_by: user?.id,
-          } as any)
-          .select()
-          .single();
-
-        if (encErr) throw encErr;
-        encounterCode = (enc as any).encounter_code as string;
-      }
+      const { error: paErr } = await supabase
+        .from("pre_admissoes")
+        .insert({
+          nome_paciente: patient.full_name,
+          cpf: patient.cpf || null,
+          cns: patient.cns || null,
+          data_nascimento: patient.birth_date || null,
+          setor_destino_id: null,
+          status: "classificado",
+        });
+      if (paErr) throw paErr;
 
       toast({
-        title: signalPreAdmission && selectedSector ? "Pré-admissão registrada" : "Atendimento aberto",
+        title: signalPreAdmission && selectedSector ? "Pré-admissão registrada" : "Pré-admissão registrada (sem setor)",
         description: signalPreAdmission && selectedSector
-          ? `Atend. ${encounterCode} • aguardando leito em ${selectedSector.mapTitle}`
-          : `Código ${encounterCode} • sem alocação de setor`,
+          ? `Aguardando leito em ${selectedSector.mapTitle} (nº de atendimento indisponível no schema novo)`
+          : `Paciente adicionado à fila de pré-admissão`,
       });
 
       handleClose(false);

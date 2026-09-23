@@ -1,6 +1,3 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-
 export type MedicalRecordMode = "legacy" | "auto";
 
 interface UseMedicalRecordModeResult {
@@ -10,35 +7,15 @@ interface UseMedicalRecordModeResult {
 }
 
 /**
- * Lê hospital_units.medical_record_mode da unidade ativa.
- * - "legacy": exige número manual (sistema antigo).
- * - "auto": gera AA-UUU-SSSSSS-DV automaticamente quando vazio.
+ * MIGRAÇÃO: hospital_units → hospitais. A tabela `hospitais` do schema novo NÃO
+ * possui as colunas `medical_record_mode` nem `unit_code` (não há geração
+ * automática de prontuário no backend novo). Ambos DEGRADADOS:
+ *   - `mode` fixo em "legacy" (exige número de prontuário manual);
+ *   - `unitCode` sempre null.
+ * A assinatura é preservada — os consumidores (AdminDashboardPage,
+ * PatientRegistrationDialog) só leem `mode`.
  */
 export function useMedicalRecordMode(hospitalUnitId?: string | null): UseMedicalRecordModeResult {
-  const [mode, setMode] = useState<MedicalRecordMode>("legacy");
-  const [unitCode, setUnitCode] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!hospitalUnitId) return;
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
-      const { data } = await supabase
-        .from("hospital_units")
-        .select("medical_record_mode, unit_code")
-        .eq("id", hospitalUnitId)
-        .maybeSingle();
-      if (cancelled) return;
-      const m = ((data as any)?.medical_record_mode as MedicalRecordMode) || "legacy";
-      setMode(m === "auto" ? "auto" : "legacy");
-      setUnitCode(((data as any)?.unit_code as string) || null);
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [hospitalUnitId]);
-
-  return { mode, loading, unitCode };
+  void hospitalUnitId; // mantido por compatibilidade; sem uso (colunas inexistentes no schema novo)
+  return { mode: "legacy", loading: false, unitCode: null };
 }

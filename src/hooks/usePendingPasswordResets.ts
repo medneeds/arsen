@@ -13,8 +13,9 @@ export function usePendingPasswordResets() {
     queryFn: async () => {
       if (!isAdmin) return 0;
       
+      // MIGRAÇÃO: `password_reset_requests` (morta) → `solicitacoes_redefinicao_senha`.
       const { count, error } = await supabase
-        .from("password_reset_requests")
+        .from("solicitacoes_redefinicao_senha")
         .select("*", { count: "exact", head: true })
         .eq("status", "pending");
 

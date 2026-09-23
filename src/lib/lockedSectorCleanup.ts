@@ -43,7 +43,10 @@ export function maybeRunLockedSectorCleanup(): void {
     try {
       // marca antes para evitar tempestade em re-renders
       localStorage.setItem(STORAGE_KEY, String(Date.now()));
-      await supabase.rpc("cleanup_locked_sector_pending_allocations");
+      // MIGRAÇÃO: RPC custom não tipada no schema novo → chamada via (supabase.rpc as any).
+      // A limpeza grava em log_limpeza_setor_bloqueado (mapeada no schema novo); toda a
+      // lógica vive no SQL da RPC.
+      await (supabase.rpc as any)("cleanup_locked_sector_pending_allocations");
     } catch (err) {
       // silencioso — função pode não estar disponível em ambientes legados
       console.debug("[locked-sector-cleanup] skipped", err);

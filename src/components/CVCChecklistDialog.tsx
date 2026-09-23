@@ -32,7 +32,20 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { formatDateBR } from "@/utils/dateUtils";
-import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
+
+// MIGRAÇÃO (Wave3): discharge_documents → altas (tipo 'cvc_checklist'). A tabela
+// nova tem só internacao_id, tipo, conteudo(Json), numero_documento, assinado_por,
+// crm_assinatura, data_hora. Colunas ricas do modelo antigo (patient_name/bed/
+// sector, encounter_id, signed_by_name, hospital_unit_id, state_id, department)
+// NÃO existem → preservadas em `conteudo`. assinado_por é FK profissionais.id
+// (≠ auth.uid) → resolvido via lookup.
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase.from("profissionais").select("id").eq("user_id", userId).maybeSingle();
+    return (data as { id?: string } | null)?.id ?? null;
+  } catch { return null; }
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -92,7 +105,7 @@ export function CVCChecklistDialog({
   insertedAt = "",
 }: Props) {
   const { user } = useAuth();
-  const { currentHospital, currentState } = useHospital();
+  const { currentHospital } = useHospital(); // MIGRAÇÃO: currentState não usado (sem coluna state_id)
 
   const [resolvedName, setResolvedName] = useState(patientName);
   const [resolvedBed, setResolvedBed] = useState(patientBed);
@@ -152,9 +165,10 @@ export function CVCChecklistDialog({
 
   useEffect(() => {
     if (!open || !user?.id) return;
-    supabase.from("profiles").select("full_name, crm").eq("id", user.id).maybeSingle().then(({ data }) => {
-      if (data?.full_name) setExecutanteNome(data.full_name);
-      if (data?.crm) setExecutanteCRM(data.crm);
+    // MIGRAÇÃO: profiles → profissionais (full_name→nome, crm→numero_conselho).
+    supabase.from("profissionais").select("nome, numero_conselho").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      if ((data as any)?.nome) setExecutanteNome((data as any).nome);
+      if ((data as any)?.numero_conselho) setExecutanteCRM((data as any).numero_conselho);
     });
   }, [open, user?.id]);
 
@@ -178,9 +192,15 @@ export function CVCChecklistDialog({
     if (answered.length < BUNDLE_STEPS.length) {
       toast.warning(`${BUNDLE_STEPS.length - answered.length} ${(BUNDLE_STEPS.length - answered.length) === 1 ? 'etapa' : 'etapas'} do bundle sem resposta`);
     }
-    if (!currentHospital?.id || !currentState?.id) { toast.error("Contexto hospitalar não disponível"); return; }
+    if (!currentHospital?.id) { toast.error("Contexto hospitalar não disponível"); return; }
+    // MIGRAÇÃO: altas.internacao_id é NOT NULL — sem internação vinculada não há
+    // onde gravar o documento.
+    const internacaoId = asUuidOrNull(patientId);
+    if (!internacaoId) { toast.error("Sem internação vinculada — não é possível salvar o checklist."); return; }
     setSaving(true);
     try {
+      // MIGRAÇÃO: campos ricos sem coluna em `altas` preservados em `conteudo`
+      // (patient_name/bed/sector, executante/CRM, department).
       const content = {
         data_procedimento: dataProcedimento,
         data_nascimento: dataNascimento,
@@ -192,25 +212,19 @@ export function CVCChecklistDialog({
         executante: { nome: executanteNome, crm: executanteCRM },
         auditor: { nome: auditorNome, crm: auditorCRM },
         metricas: { total: BUNDLE_STEPS.length, sim: simCount, sim_lembrado: lembradoCount, nao: naoCount, pct_adesao: pctAdesao },
-      };
-      // encounter ativo carimbado (helper canônico via registry) — o documento
-      // pertence ao ATENDIMENTO, não ao leito. Auditoria 22/07/2026.
-      const encounterId = await resolveActiveEncounterId(patientId);
-      const { error } = await supabase.from("discharge_documents").insert({
-        document_type: "cvc_checklist",
-        patient_id: asUuidOrNull(patientId),
-        encounter_id: encounterId,
         patient_name: resolvedName,
         patient_bed: resolvedBed || null,
         patient_sector: resolvedSector || null,
-        content,
-        signed_by: user?.id ?? null,
-        signed_by_name: executanteNome || null,
-        signed_by_crm: executanteCRM || null,
-        signed_at: new Date().toISOString(),
-        hospital_unit_id: currentHospital.id,
-        state_id: currentState.id,
         department: "dispositivos",
+      };
+      const assinadoPor = await resolveProfissionalId(user?.id);
+      const { error } = await supabase.from("altas").insert({
+        tipo: "cvc_checklist",
+        internacao_id: internacaoId,
+        conteudo: content,
+        assinado_por: assinadoPor,
+        crm_assinatura: executanteCRM || null,
+        data_hora: new Date().toISOString(),
       } as any);
       if (error) throw error;
       toast.success("Checklist CVC salvo");

@@ -23,7 +23,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { DevicesCulturesSection } from "@/components/evolution/DevicesCulturesSection";
 import { deviceAlertTone, formatDeviceLabel, type EvolutionDevice } from "@/lib/devicesCatalog";
 import { printEvolution } from "@/lib/printEvolution";
-import { resolvePatientHeader } from "@/lib/resolvePatientHeader";
+import { resolvePatientHeader, resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
@@ -253,9 +253,15 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                   // Fallback: garantir nome antes de resolver header
                   let fallbackName: string | null = evo.patient_name || null;
                   if ((!fallbackName || !fallbackName.trim()) && patientId) {
-                    const { data: pRow } = await supabase
-                      .from("patients").select("name").eq("id", patientId).maybeSingle();
-                    if ((pRow as any)?.name?.trim()) fallbackName = (pRow as any).name.trim();
+                    // MIGRAÇÃO: patients morto → nome via internacoes → pacientes.
+                    const { data: iRow } = await supabase
+                      .from("internacoes")
+                      .select("paciente:pacientes(nome_completo, nome_social)")
+                      .eq("id", patientId)
+                      .maybeSingle();
+                    const pac: any = (iRow as any)?.paciente;
+                    const nm = pac?.nome_social || pac?.nome_completo;
+                    if (nm?.trim()) fallbackName = nm.trim();
                   }
                   const resolved = await resolvePatientHeader(
                     patientId || null,
@@ -263,16 +269,14 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                     hospitalId,
                     (evo as any).patient_registry_id || null,
                   );
+                  // MIGRAÇÃO: leito/setor ATUAIS via resolveCurrentBedSector
+                  // (internacoes → leitos/setores); antes patients.bed_number/sector.
                   let currentBed = evo.patient_bed || undefined;
                   let currentSector = evo.patient_sector || undefined;
                   if (patientId) {
-                    const { data: pRow } = await supabase
-                      .from("patients")
-                      .select("bed_number, sector")
-                      .eq("id", patientId)
-                      .maybeSingle();
-                    if (pRow?.bed_number) currentBed = pRow.bed_number;
-                    if (pRow?.sector) currentSector = pRow.sector;
+                    const live = await resolveCurrentBedSector(patientId);
+                    if (live.bed) currentBed = live.bed;
+                    if (live.sector) currentSector = live.sector;
                   }
                   await printEvolution(evo, {
                     patientName: resolved.name || evo.patient_name,

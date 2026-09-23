@@ -2,19 +2,19 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-const COORD_PROFILES = new Set([
-  "coord_medico",
-  "coord_enfermagem",
-  "coord_multi",
-]);
-
 /**
- * Coordenadores (médico/enfermagem/multi) têm acesso transversal a todos
- * os setores das unidades hospitalares atribuídas, mas em **modo somente
- * leitura** para dados clínicos. Podem apenas validar rounds e liberar leitos.
+ * Coordenadores têm acesso transversal a todos os setores das unidades
+ * hospitalares atribuídas, mas em **modo somente leitura** para dados
+ * clínicos. Podem apenas validar rounds e liberar leitos.
  *
- * Source of truth: server-side `profiles.access_profile` + `user_roles` ('coordenador').
+ * Source of truth: server-side `profissionais.papel === 'coordenador'`.
  * localStorage NÃO é confiável para gating de escrita — RLS é o último guardião.
+ *
+ * MIGRAÇÃO: `profiles.access_profile`/`access_profiles` + `user_roles` (mortas)
+ * → `profissionais.papel` por `user_id`. O sub-tipo do coordenador
+ * (médico/enfermagem/multi) vinha de `access_profile` (coord_medico/…), que não
+ * tem coluna equivalente → `kind` DEGRADADO para `null` (a UI cai no rótulo
+ * genérico "Coord. Multi").
  */
 export function useIsCoordenador(): {
   isCoordenador: boolean;
@@ -37,26 +37,15 @@ export function useIsCoordenador(): {
     }
     setLoading(true);
     supabase
-      .from("profiles")
-      .select("access_profile, access_profiles")
-      .eq("id", user.id)
+      .from("profissionais")
+      .select("papel")
+      .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return;
-        const primary = (data as { access_profile?: string } | null)?.access_profile ?? "";
-        const list = (data as { access_profiles?: string[] | null } | null)?.access_profiles ?? [];
-        const all = [primary, ...(list ?? [])].filter(Boolean);
-        const match = all.find((p) => COORD_PROFILES.has(p));
-        if (match) {
-          const kind = match === "coord_medico"
-            ? "medico"
-            : match === "coord_enfermagem"
-              ? "enfermagem"
-              : "multi";
-          setState({ isCoordenador: true, kind });
-        } else {
-          setState({ isCoordenador: false, kind: null });
-        }
+        const isCoord = (data as { papel?: string } | null)?.papel === "coordenador";
+        // MIGRAÇÃO: sem coluna de sub-tipo → kind degradado para null.
+        setState({ isCoordenador: isCoord, kind: null });
         setLoading(false);
       });
     return () => {

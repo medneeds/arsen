@@ -46,7 +46,7 @@ function buildNotifications(metrics: any): NirNotification[] {
 
   // Sala Vermelha — qualquer ocupação ≥ 80% dispara crítico
   metrics.occupancyBySector
-    ?.filter((s: any) => RED_SECTOR_KEYS.some((k) => s.sector?.toLowerCase().includes(k)))
+    ?.filter((s: any) => RED_SECTOR_KEYS.some((k) => s.sectorTipo?.toLowerCase().includes(k)))
     .forEach((s: any) => {
       if (s.rate >= 80) {
         list.push({
@@ -62,7 +62,7 @@ function buildNotifications(metrics: any): NirNotification[] {
 
   // Demais setores ≥ 80%
   metrics.occupancyBySector
-    ?.filter((s: any) => s.rate >= 80 && !RED_SECTOR_KEYS.some((k) => s.sector?.toLowerCase().includes(k)))
+    ?.filter((s: any) => s.rate >= 80 && !RED_SECTOR_KEYS.some((k) => s.sectorTipo?.toLowerCase().includes(k)))
     .forEach((s: any) => {
       list.push({
         id: `sat-${s.sector}`,

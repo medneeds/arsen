@@ -119,36 +119,35 @@ export default function PacienteHubPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (!ctx.patientId && !registryId) { setEvolvedToday(null); return; }
+      if (!ctx.patientId) { setEvolvedToday(null); setPrescribedToday(null); return; }
       const inicioDoDia = new Date();
       inicioDoDia.setHours(0, 0, 0, 0);
-      let q = supabase
-        .from("clinical_evolutions")
+      // MIGRAÇÃO: clinical_evolutions → evolucoes (ancora por internacao_id;
+      // ctx.patientId = internacoes.id). created_at → data_hora. registry morto.
+      const { data, error } = await supabase
+        .from("evolucoes")
         .select("id")
-        .gte("created_at", inicioDoDia.toISOString())
+        .eq("internacao_id", ctx.patientId)
+        .gte("data_hora", inicioDoDia.toISOString())
         .limit(1);
-      q = registryId ? q.eq("patient_registry_id", registryId) : q.eq("patient_id", ctx.patientId);
-      const { data, error } = await q;
       if (cancelled) return;
       // Erro nao vira "nao evoluiu": ficaria afirmando algo falso sobre o
       // prontuario. Sem resposta confiavel, o card fica neutro.
       setEvolvedToday(error ? null : (data?.length ?? 0) > 0);
 
-      // Prescricao validada hoje. `validated`/`validatedAt` vivem DENTRO do
-      // JSON `items`, entao nao da para filtrar no banco — busca-se a
-      // prescricao mais recente do prontuario e inspeciona-se os itens aqui.
-      if (!registryId) { setPrescribedToday(null); return; }
+      // MIGRAÇÃO: prescriptions → prescricoes (por internacao_id); items→itens;
+      // created_at→criado_em. `validated`/`validatedAt` vivem DENTRO do JSON itens.
       const { data: presc, error: errPresc } = await supabase
-        .from("prescriptions")
-        .select("items, created_at")
-        .eq("patient_registry_id", registryId)
-        .order("created_at", { ascending: false })
+        .from("prescricoes")
+        .select("itens, criado_em")
+        .eq("internacao_id", ctx.patientId)
+        .order("criado_em", { ascending: false })
         .limit(1);
       if (cancelled) return;
       if (errPresc || !presc?.length) { setPrescribedToday(errPresc ? null : false); return; }
-      const itens = Array.isArray(presc[0].items) ? presc[0].items : [];
+      const itens = Array.isArray((presc[0] as any).itens) ? (presc[0] as any).itens : [];
       setPrescribedToday(
-        itens.some((raw) => {
+        itens.some((raw: any) => {
           const it = raw as { validated?: unknown; validatedAt?: unknown };
           if (it?.validated !== true || typeof it?.validatedAt !== "string") return false;
           const d = new Date(it.validatedAt);
@@ -157,7 +156,7 @@ export default function PacienteHubPage() {
       );
     })();
     return () => { cancelled = true; };
-  }, [ctx.patientId, registryId, refreshTick]);
+  }, [ctx.patientId, refreshTick]);
 
 
   // Usar status passado pela URL como valor inicial — evita flash de bloqueio
@@ -225,73 +224,42 @@ export default function PacienteHubPage() {
   const fetchStatus = useCallback(async () => {
     if (!ctx.patientId) { setStatusLoading(false); return; }
     setStatusLoading(true);
+    // MIGRAÇÃO: patients → internacoes (ctx.patientId = internacoes.id).
+    // admission_status → internacoes.status. department/saps_* sem coluna → degradados.
     const { data } = await supabase
-      .from("patients")
-      .select("admission_status, department, saps_pending, saps_pending_since, saps_completed_at")
+      .from("internacoes")
+      .select("status, hipotese_diagnostica, historia_clinica")
       .eq("id", ctx.patientId)
       .maybeSingle();
     const row: any = data || {};
-    let effectiveStatus: AdmissionStatus = (row.admission_status as AdmissionStatus) ?? "admitido";
-    setDepartment(row.department ?? null);
+    let effectiveStatus: AdmissionStatus = (row.status as AdmissionStatus) ?? "admitido";
+    // MIGRAÇÃO: sem coluna department em internacoes → null.
+    setDepartment(null);
 
-    // Defesa em profundidade (self-heal admissão):
-    // Se patients.admission_status='pre_admitido' mas existe admission_histories
-    // ATIVA (não arquivada) com CID primário E HDA preenchidos, a admissão clínica
-    // foi de fato concluída — promove para 'admitido' na UI e cura o flag silenciosamente.
-    // Mesmo padrão do self-heal de SAPS abaixo. Não toca movimentação nem layout.
+    // Self-heal admissão: se status='pre_admitido' mas a internação já tem
+    // hipótese diagnóstica E história clínica preenchidas, a admissão foi de
+    // fato concluída — promove para 'admitido' na UI e cura o status.
+    // (Antes lia admission_histories.cid_primary/clinical_history — morto.)
     if (effectiveStatus === "pre_admitido") {
-      const regId = identifiers.registry?.id;
-      if (regId) {
-        const { data: ah } = await supabase
-          .from("admission_histories")
-          .select("id, cid_primary, clinical_history")
-          .eq("patient_registry_id", regId)
-          .is("archived_at", null)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        const a: any = ah || null;
-        if (a && a.cid_primary && a.clinical_history && String(a.clinical_history).trim().length > 0) {
-          effectiveStatus = "admitido";
-          supabase
-            .from("patients")
-            .update({ admission_status: "admitido" } as any)
-            .eq("id", ctx.patientId)
-            .then(() => { /* self-heal silencioso */ });
-        }
-      }
-    }
-
-    setAdmissionStatus(effectiveStatus);
-
-    let stillPending = !!row.saps_pending && !row.saps_completed_at;
-
-    // Defesa em profundidade: se patients.saps_pending estiver preso (residual),
-    // checa se existe ficha SAPS 3 'completed' do paciente — se sim, libera o gate
-    // clínico e cura o flag silenciosamente (self-heal).
-    if (stillPending) {
-      const { data: sapsRow } = await supabase
-        .from("saps3_assessments" as any)
-        .select("id")
-        .eq("patient_id", ctx.patientId)
-        .eq("status", "completed")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (sapsRow) {
-        stillPending = false;
+      if (row.hipotese_diagnostica && row.historia_clinica && String(row.historia_clinica).trim().length > 0) {
+        effectiveStatus = "admitido";
         supabase
-          .from("patients")
-          .update({ saps_pending: false, saps_completed_at: new Date().toISOString() } as any)
+          .from("internacoes")
+          .update({ status: "ativa" } as any)
           .eq("id", ctx.patientId)
           .then(() => { /* self-heal silencioso */ });
       }
     }
 
-    setSapsPending(stillPending);
-    setSapsSince(row.saps_pending_since ?? null);
+    setAdmissionStatus(effectiveStatus);
+
+    // MIGRAÇÃO: saps_pending/saps_pending_since/saps_completed_at e a ficha
+    // saps3_assessments(status) não têm equivalente persistível no schema novo
+    // (avaliacoes_saps3 não tem coluna status) → SAPS pendente degradado p/ false.
+    setSapsPending(false);
+    setSapsSince(null);
     setStatusLoading(false);
-  }, [ctx.patientId, registryId]);
+  }, [ctx.patientId]);
 
   useEffect(() => { fetchStatus(); }, [fetchStatus]);
 
@@ -351,70 +319,42 @@ export default function PacienteHubPage() {
   const handleGoSaps = async () => {
     const qs = new URLSearchParams();
     Object.entries(ctx).forEach(([k, v]) => v && qs.set(k, v));
-    // Busca a ficha SAPS pendente do paciente para abrir direto no formulário (caminho A)
-    if (ctx.patientId || ctx.patientName) {
-      try {
-        let sapsId: string | null = null;
-
-        // Tentativa 1: por patient_id (ideal)
-        if (ctx.patientId) {
-          const { data } = await supabase
-            .from("saps3_assessments" as any)
-            .select("id")
-            .eq("patient_id", ctx.patientId)
-            .eq("status", "pending")
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          sapsId = (data as any)?.id || null;
-        }
-
-        // Tentativa 2 (fallback p/ fichas legadas com patient_id NULL): por nome
-        if (!sapsId && ctx.patientName) {
-          const { data } = await supabase
-            .from("saps3_assessments" as any)
-            .select("id")
-            .ilike("patient_name", ctx.patientName.trim())
-            .eq("status", "pending")
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          sapsId = (data as any)?.id || null;
-        }
-
-        if (sapsId) qs.set("completeSapsId", sapsId);
-        else qs.set("fromAllocation", "true"); // fallback caminho B
-      } catch {
-        qs.set("fromAllocation", "true");
-      }
-    }
+    // MIGRAÇÃO: saps3_assessments → avaliacoes_saps3, que NÃO tem coluna
+    // `status` (pendente/completa) nem `patient_name` → não dá para localizar
+    // uma ficha "pendente" para abrir direto. Sempre segue o caminho B
+    // (fromAllocation) — a própria página /saps3 resolve a partir da internação.
+    qs.set("fromAllocation", "true");
     navigate(`/saps3?${qs.toString()}`);
   };
 
   const handlePrintAdmission = async () => {
-    if (!ctx.patientId || !registryId) return;
-    const { data: ev } = await supabase
-      .from("clinical_evolutions")
-      .select("soap_data, vital_signs, physical_exam, validated_by_name, created_at")
-      .eq("patient_registry_id", registryId)
-      .eq("evolution_type", "admission")
-      .is("archived_at", null)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const { data: ah } = await supabase
-      .from("admission_histories")
-      .select("cid_primary, cid_secondary, clinical_history, initial_conduct")
-      .eq("patient_registry_id", registryId)
-      .is("archived_at", null)
-      .order("created_at", { ascending: false })
-      .limit(1)
+    if (!ctx.patientId) return;
+    // MIGRAÇÃO: clinical_evolutions → evolucoes (por internacao_id). A evolução
+    // de admissão é identificada por soap.__evolution_type==='admission'; campos
+    // dedicados (vital_signs/validated_by_name) vivem no JSON `soap` (`__`).
+    const { data: evs } = await supabase
+      .from("evolucoes")
+      .select("soap, exame_fisico, data_hora")
+      .eq("internacao_id", ctx.patientId)
+      .order("data_hora", { ascending: false });
+    const ev: any = ((evs as any[]) || []).find((e) => (e.soap as any)?.__evolution_type === "admission") || null;
+    // MIGRAÇÃO: admission_histories → internacoes (historia_clinica/conduta_inicial;
+    // CID sem coluna → usa o preservado no JSON soap.__cid_*).
+    const { data: inter } = await supabase
+      .from("internacoes")
+      .select("historia_clinica, conduta_inicial, hipotese_diagnostica")
+      .eq("id", ctx.patientId)
       .maybeSingle();
 
-    const soap: any = (ev as any)?.soap_data || {};
-    const vs: any = (ev as any)?.vital_signs || {};
-    const pe: any = (ev as any)?.physical_exam || {};
-    const a: any = ah || {};
+    const soap: any = ev?.soap || {};
+    const vs: any = soap.__vital_signs || {};
+    const pe: any = ev?.exame_fisico || {};
+    const a: any = {
+      cid_primary: soap.__cid_primary || "",
+      cid_secondary: soap.__cid_secondary,
+      clinical_history: (inter as any)?.historia_clinica || null,
+      initial_conduct: (inter as any)?.conduta_inicial || null,
+    };
 
     // Leito/setor ATUAIS (após relocações), com fallback para o que veio em ctx.
     const live = await resolveCurrentBedSector(ctx.patientId);
@@ -444,7 +384,7 @@ export default function PacienteHubPage() {
         phone: identifiers.registry?.phone || null,
       },
       hospitalName: currentHospital?.name,
-      doctorName: (ev as any)?.validated_by_name || "Médico Assistente",
+      doctorName: soap.__validated_by_name || "Médico Assistente",
       isUti: ["red", "yellow", "blue", "outside", "uti_01", "uti_02", "uci_01", "uci_02"].includes(ctx.patientSector),
       hda: a.clinical_history || soap.subjective || "",
       vitals: { pa: vs.pa, fc: vs.fc, fr: vs.fr, spo2: vs.spo2, tax: vs.temp, dx: vs.dx },

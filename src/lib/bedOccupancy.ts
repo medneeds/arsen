@@ -48,18 +48,38 @@ export interface OccupyBedResult {
  * Ocupa o primeiro leito vago da faixa do setor; abre um EXTRA se não houver.
  * Lança em caso de falha — o chamador trata e avisa a equipe.
  */
+// MIGRAÇÃO: bed_census/patients → leitos.
+// O modelo antigo guardava cada leito como uma linha `patients` com `is_vacant`;
+// "ocupar" era um UPDATE dessa linha com ~30 colunas clínicas (patientData). No
+// schema novo o leito é uma linha `leitos` (id, numero, status, tipo, setor_id) e a
+// unidade clínica vive em `internacoes`. Aqui apenas marcamos o leito como
+// `ocupado` (status ∈ livre/ocupado/higienizacao/bloqueado/reservado — 'vago' do
+// código antigo é INVÁLIDO, vaga = 'livre'). O `patientData`/`department`/`stateId`
+// NÃO têm coluna em `leitos` e são DEGRADADOS (a admissão clínica é de outro fluxo).
+// O `id` do leito ocupado é devolvido como `patientId` para manter a assinatura.
+// Ver MIGRACAO_DEGRADACOES.md.
 export async function occupyBedInSector(params: OccupyBedParams): Promise<OccupyBedResult> {
-  const { sector, department, hospitalUnitId, stateId, patientData } = params;
+  const { sector, hospitalUnitId } = params;
+
+  // Resolve o setor (do hospital) por código (`tipo`) ou rótulo (`nome`).
+  const { data: setoresData, error: setorErr } = await (supabase
+    .from("setores")
+    .select("id, nome, tipo, ala:alas!inner(hospital_id)") as any)
+    .eq("ala.hospital_id", hospitalUnitId);
+  if (setorErr) throw setorErr;
+  const setorMatch = ((setoresData || []) as any[]).find(
+    (s) => s.tipo === sector || s.nome === sector,
+  );
+  if (!setorMatch) throw new Error(`Setor "${sector}" não encontrado no hospital atual.`);
 
   const { data: rows, error: readErr } = await supabase
-    .from("patients")
-    .select("id, bed_number, is_vacant")
-    .eq("hospital_unit_id", hospitalUnitId)
-    .eq("sector", sector);
+    .from("leitos")
+    .select("id, numero, status")
+    .eq("setor_id", setorMatch.id);
   if (readErr) throw readErr;
 
   const existentes = rows ?? [];
-  const porNumero = new Map(existentes.map((r) => [r.bed_number, r]));
+  const porNumero = new Map(existentes.map((r: any) => [r.numero, r]));
 
   // Faixa oficial do setor, na ordem — o gerador devolve EXTRA quando acaba.
   const faixa: string[] = [];
@@ -72,45 +92,35 @@ export async function occupyBedInSector(params: OccupyBedParams): Promise<Occupy
 
   const vago = faixa
     .map((n) => porNumero.get(n))
-    .find((r) => r && r.is_vacant === true);
+    .find((r: any) => r && r.status === "livre");
 
-  // ── Caminho normal: ocupa a linha vaga ──────────────────────────────────
+  // ── Caminho normal: ocupa o leito livre ─────────────────────────────────
+  // MIGRAÇÃO: patientData/department/display_order/is_vacant não existem em `leitos` → só status.
   if (vago) {
-    const ordem = faixa.indexOf(vago.bed_number) + 1;
     const { error } = await supabase
-      .from("patients")
-      .update({
-        ...patientData,
-        department,
-        is_vacant: false,
-        display_order: ordem,
-        updated_at: new Date().toISOString(),
-      } as never)
+      .from("leitos")
+      .update({ status: "ocupado" })
       .eq("id", vago.id);
     if (error) throw error;
-    return { bedNumber: vago.bed_number, patientId: vago.id, isExtra: false };
+    return { bedNumber: vago.numero, patientId: vago.id, isExtra: false };
   }
 
   // ── Faixa cheia: abre leito extra ───────────────────────────────────────
   const bedNumber = getNextBedNumber(
     sector,
-    existentes.map((r) => r.bed_number),
+    existentes.map((r: any) => r.numero),
   );
   const { data: criado, error } = await supabase
-    .from("patients")
+    .from("leitos")
     .insert({
-      ...patientData,
-      sector,
-      department,
-      hospital_unit_id: hospitalUnitId,
-      state_id: stateId,
-      bed_number: bedNumber,
-      is_vacant: false,
-      display_order: faixa.length + 1,
+      numero: bedNumber,
+      setor_id: setorMatch.id,
+      status: "ocupado",
+      tipo: "maca", // leito EXTRA → CHECK leitos_tipo_check aceita leito | maca
     } as never)
     .select("id")
     .single();
   if (error) throw error;
 
-  return { bedNumber, patientId: criado!.id, isExtra: true };
+  return { bedNumber, patientId: (criado as any)!.id, isExtra: true };
 }

@@ -38,7 +38,8 @@ import type { Patient } from "@/types/patient";
 import { getEffectiveAdmissionDate } from "@/lib/dihCalc";
 import { calcDIH } from "@/lib/dihCalc";
 import { formatDeviceLabel, deviceAlertTone, type EvolutionDevice } from "@/lib/devicesCatalog";
-import { supabase } from "@/integrations/supabase/client";
+// MIGRAÇÃO: supabase removido — as duas escritas diretas em `patients`
+// (uti_weight_kg / uti_devices) foram degradadas (sem coluna equivalente).
 
 interface PatientHeader {
   name: string;
@@ -250,25 +251,11 @@ const EvolucaoPage = () => {
   // paciente real, esses campos ficavam SEMPRE vazios no cabeçalho impresso,
   // não só às vezes. Busca dedicada de peso, mesmo padrão do
   // PrescricaoPage.tsx (patients.uti_weight_kg).
-  const [utiWeightKg, setUtiWeightKg] = useState<string>("");
-  const [weightLoaded, setWeightLoaded] = useState(false);
-  React.useEffect(() => {
-    if (!initialPatientId) { setUtiWeightKg(""); setWeightLoaded(true); return; }
-    let cancelled = false;
-    setWeightLoaded(false);
-    (async () => {
-      const { data } = await supabase
-        .from("patients")
-        .select("uti_weight_kg" as any)
-        .eq("id", initialPatientId)
-        .maybeSingle();
-      if (cancelled) return;
-      const kg = (data as any)?.uti_weight_kg;
-      setUtiWeightKg(kg !== null && kg !== undefined ? String(kg) : "");
-      setWeightLoaded(true);
-    })();
-    return () => { cancelled = true; };
-  }, [initialPatientId]);
+  // MIGRAÇÃO: patients.uti_weight_kg não tem equivalente no schema novo
+  // (pacientes não guarda peso; sinais_vitais é por evento). Peso degradado:
+  // sempre "" e considerado carregado (não bloqueia o aviso de impressão).
+  const [utiWeightKg] = useState<string>("");
+  const [weightLoaded] = useState(true);
 
   const hasPatient = patient.name.trim() !== "";
 
@@ -374,33 +361,10 @@ const EvolucaoPage = () => {
       setShowNewForm(false);
       resetNewForm();
 
-      // BUGFIX (07/08/2026): sincroniza patients.uti_devices com os dispositivos
-      // registrados na evolução. Sem isso, o Painel Clínico e o impresso do Painel
-      // continuavam mostrando o texto livre antigo, independente do que o médico
-      // registrou na Evolução com data/subtipo estruturados.
-      // Converte EvolutionDevice[] → string[] (label + detail) → \n-joined para uti_devices.
-      if (initialPatientId && newDevices.length > 0) {
-        const deviceLines = newDevices
-          .filter((d: EvolutionDevice) => typeof d.label === 'string' && d.label.trim())
-          .map((d: EvolutionDevice) => formatDeviceLabel({ label: d.label, detail: d.detail }));
-        if (deviceLines.length > 0) {
-          // Sincroniza os dispositivos da evolucao para a ficha do paciente.
-          // O resultado era descartado: a evolucao era salva, mas os
-          // dispositivos podiam nao chegar na ficha e o medico veria a lista
-          // desatualizada no leito sem nenhum aviso. A evolucao em si ja foi
-          // gravada, entao nao aborta — avisa.
-          const { error: erroDispositivos } = await supabase
-            .from('patients')
-            .update({ uti_devices: deviceLines.join('\n'), updated_at: new Date().toISOString() })
-            .eq('id', initialPatientId);
-          if (erroDispositivos) {
-            console.error('[EvolucaoPage] dispositivos nao sincronizados para a ficha:', erroDispositivos);
-            toast.error('Evolucao salva, mas os dispositivos nao atualizaram na ficha', {
-              description: 'Revise os dispositivos do paciente.',
-            });
-          }
-        }
-      }
+      // MIGRAÇÃO: a sincronização com patients.uti_devices foi DEGRADADA —
+      // o bloco uti_* não tem coluna equivalente no schema novo. Os
+      // dispositivos ficam preservados dentro do JSON `soap` da própria
+      // evolução (soap.devices, via useEvolutions), fonte usada pelo impresso.
     }
   };
 

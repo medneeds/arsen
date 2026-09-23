@@ -29,7 +29,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
-import { supabase } from "@/integrations/supabase/client";
 import { usePrivacy } from "@/contexts/PrivacyContext";
 import { getNextBedNumber } from "@/utils/bedNaming";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -182,16 +181,21 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
   // O setor persistido pode ter vindo de versão anterior (ou ter sido editado
   // à mão); isSectorType descarta o que não existe hoje, evitando que o mapa
   // abra num setor inválido e que um código errado chegue ao banco.
-  const [activeSector, setActiveSector] = useState<SectorType>(() => {
+  // MIGRAÇÃO: activeSector pode ser um código legado (SectorType) OU o nome de um
+  // setor vindo do banco (alas→setores). usePatients filtra por tipo|nome, e o
+  // mapa casa por p.sector (código) OU p.sectorName (nome do banco).
+  const [activeSector, setActiveSector] = useState<string>(() => {
     const saved = localStorage.getItem("selected_sector");
-    if (isSectorType(saved)) return saved;
-    if (isSectorType(currentSectorCode)) return currentSectorCode;
-    return "red";
+    if (saved) return saved;
+    if (currentSectorCode) return currentSectorCode;
+    // MIGRAÇÃO: sem setor padrão "red"/UTI — em branco mostra todos os leitos
+    // até o usuário escolher um setor.
+    return "";
   });
-  
-  // Sync activeSector when department changes via sidebar
+
+  // Sync activeSector when department changes via sidebar/header
   useEffect(() => {
-    if (isSectorType(currentSectorCode)) {
+    if (currentSectorCode) {
       setActiveSector(currentSectorCode);
     }
   }, [currentSectorCode]);
@@ -478,14 +482,14 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
     }
 
     saveToHistory(patients);
-    
-    // Buscar todos os pacientes deste setor do banco de dados para garantir unicidade
-    const { data: allSectorPatients } = await supabase
-      .from('patients')
-      .select('bed_number')
-      .eq('sector', sector);
-    
-    const existingBedNumbers = (allSectorPatients || []).map(p => p.bed_number);
+
+    // MIGRAÇÃO: tabela `patients` não existe mais (agora internacoes+leitos, sem
+    // coluna `sector`/`bed_number` diretas). Os números de leito do setor já estão
+    // carregados em memória por usePatients(activeSector); derivamos a unicidade
+    // deles em vez de consultar a tabela morta.
+    const existingBedNumbers = patients
+      .filter((p) => p.sector === sector)
+      .map((p) => p.bedNumber);
     const newBedNumber = getNextBedNumber(sector, existingBedNumbers, currentDepartment);
     
     const newPatientData: Omit<Patient, 'id'> = {
@@ -963,7 +967,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
             const map: Record<string, Patient[]> = {
               red: redPatients, yellow: yellowPatients, blue: bluePatients, outside: outsidePatients,
             };
-            return map[activeSector] ?? patients.filter((p) => p.sector === activeSector);
+            return map[activeSector] ?? patients.filter((p) => p.sector === activeSector || p.sectorName === activeSector);
           })()}
           sectorLabel={activeSector?.toUpperCase()}
         />
@@ -1081,7 +1085,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                   ficava sem NENHUMA delas. Quem regula precisava sair para o
                   modulo medico so para imprimir.
                 */
-                const doSetor = patients.filter((p) => p.sector === activeSector);
+                const doSetor = patients.filter((p) => p.sector === activeSector || p.sectorName === activeSector);
                 const ocupados = doSetor.filter((p) => !!p.name?.trim()).length;
                 return (
                   <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border bg-muted/30 px-3 py-2">
@@ -1136,7 +1140,10 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                   sectorFilterLabel={
                     activeSector === "ue_vertical" || activeSector === "ue_horizontal"
                       ? undefined
-                      : SECTOR_VISUAL[activeSector]?.title
+                      // MIGRAÇÃO: setores do banco não têm entrada em SECTOR_VISUAL;
+                      // cai no próprio nome do setor para NÃO exigir classificação de
+                      // risco (isso é só da UE) e ir direto para a pré-admissão.
+                      : (SECTOR_VISUAL[activeSector]?.title ?? activeSector)
                   }
                 />
                 <InternalTransferQueueSection sectorCode={activeSector} />
@@ -1170,6 +1177,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                   sector={activeSector as any}
                   patients={filterPatients(patients.filter(p =>
                     p.sector === activeSector ||
+                    p.sectorName === activeSector || // MIGRAÇÃO: setor do banco (setores.nome)
                     (p as any).department === ({
                       ucc: 'UCC', blue: 'UCI 1', enfermaria_transicao: 'ENFERMARIA DE TRANSIÇÃO',
                       neuro_01: 'NEURO 01', neuro_02: 'NEURO 02', clinica_cirurgica: 'CLÍNICA CIRÚRGICA',
@@ -1185,7 +1193,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                   selectionMode={selectionMode}
                   selectedPatients={selectedPatients}
                   onToggleSelection={handleToggleSelection}
-                  onReorderPatients={(reordered) => handleReorderPatients(activeSector, reordered)}
+                  onReorderPatients={(reordered) => handleReorderPatients(activeSector as any, reordered)}
                   onTransfer={handleTransferPatient}
                   onPrintPatient={handlePrintPatient}
                   onRefetch={refetch}

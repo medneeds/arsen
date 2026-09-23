@@ -29,7 +29,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { SectionLoader } from "@/components/SectionLoader";
 import { supabase } from "@/integrations/supabase/client";
-import { printDischargeDocument, type DischargeDocType, type DischargeDocPayload } from "@/lib/dischargeDocuments";
+import { printDischargeDocument, fromAltaTipoDb, type DischargeDocType, type DischargeDocPayload } from "@/lib/dischargeDocuments";
 import { printEvolution } from "@/lib/printEvolution";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
 import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
@@ -272,17 +272,46 @@ export default function HistoricoPacientePage() {
 
     try {
       if (e.event_type === "evolution") {
+        // MIGRAÇÃO: clinical_evolutions → evolucoes. A linha nova não tem o mesmo
+        // shape do EvolutionRecord (campos dedicados viraram JSON `soap`/`exame_fisico`),
+        // então mapeamos aqui antes de reaproveitar o builder printEvolution — mesma
+        // convenção `__` de useEvolutions.mapEvolution.
         const { data } = await supabase
-          .from("clinical_evolutions")
+          .from("evolucoes")
           .select("*")
           .eq("id", e.event_id)
           .maybeSingle();
         if (!data) { alert("Evolução não encontrada."); setPrintingId(null); return; }
-        // Reaproveita o mesmo builder usado no EvolutionForm/Timeline — evita
-        // remontar o HTML na mão (a versão anterior tinha, inclusive, nomes
-        // de campo de sinais vitais que não batiam com o schema real, então
-        // a linha de sinais vitais nunca aparecia).
-        await printEvolution(data as unknown as EvolutionRecord, {
+        const d = data as any;
+        const soap = (d.soap as any) || {};
+        const evoRecord: EvolutionRecord = {
+          id: d.id,
+          patient_id: d.internacao_id ?? null,
+          patient_registry_id: null,
+          archived_at: null,
+          archive_reason: null,
+          patient_name: soap.__patient_name ?? (patientName ?? ""),
+          patient_bed: soap.__patient_bed ?? (patientBed ?? null),
+          patient_sector: soap.__patient_sector ?? (patientSector ?? null),
+          soap_data: { subjective: "", objective: "", assessment: "", plan: "", ...soap },
+          vital_signs: { pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "", ...(soap.__vital_signs ?? {}) },
+          physical_exam: { general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "", ...((d.exame_fisico as any) ?? {}) },
+          status: (d.status as EvolutionRecord["status"]) ?? "draft",
+          evolution_type: soap.__evolution_type ?? undefined,
+          diagnostic_hypotheses: soap.__diagnostic_hypotheses ?? null,
+          cid_primary: soap.__cid_primary ?? null,
+          cid_secondary: soap.__cid_secondary ?? null,
+          validated_at: soap.__validated_at ?? null,
+          validated_by: soap.__validated_by ?? null,
+          validated_by_name: soap.__validated_by_name ?? null,
+          suspended_at: soap.__suspended_at ?? null,
+          suspension_reason: d.motivo_suspensao ?? null,
+          created_by: soap.__created_by ?? d.profissional_id ?? "",
+          created_by_name: soap.__created_by_name ?? null,
+          created_at: d.criado_em ?? d.data_hora,
+          updated_at: d.atualizado_em ?? d.criado_em ?? d.data_hora,
+        };
+        await printEvolution(evoRecord, {
           patientName: patientName ?? undefined,
           patientBed: patientBed ?? undefined,
           patientSector: patientSector ?? undefined,
@@ -292,12 +321,22 @@ export default function HistoricoPacientePage() {
       }
 
       if (e.event_type === "prescription") {
-        const { data } = await supabase
-          .from("prescriptions")
-          .select("items,patient_data,status,version,created_at,notes")
+        // MIGRAÇÃO: prescriptions → prescricoes. Colunas: itens→items, versao→version,
+        // criado_em→created_at, observacoes→notes. `patient_data` não existe no schema
+        // novo (identidade vem de internacoes→pacientes) → degradado (não usado no impresso).
+        const { data: rx } = await supabase
+          .from("prescricoes")
+          .select("itens,status,versao,criado_em,observacoes")
           .eq("id", e.event_id)
           .maybeSingle();
-        if (!data) { alert("Prescrição não encontrada."); setPrintingId(null); return; }
+        if (!rx) { alert("Prescrição não encontrada."); setPrintingId(null); return; }
+        const data = {
+          items: (rx as any).itens,
+          status: (rx as any).status,
+          version: (rx as any).versao,
+          created_at: (rx as any).criado_em,
+          notes: (rx as any).observacoes,
+        };
         const items = Array.isArray(data.items) ? data.items as any[] : [];
         const rows  = items.map((it: any, i: number) => `
           <tr>
@@ -323,12 +362,17 @@ export default function HistoricoPacientePage() {
       }
 
       if (e.event_type === "exam_request") {
-        const { data } = await supabase
-          .from("exam_requests")
+        // MIGRAÇÃO: exam_requests → solicitacoes_exame (itens→items, categoria→category).
+        // Os despachantes de impressão (printProcedimento/Terapeutico/Requisition) ainda
+        // consomem o shape antigo (request.items/request.category), então adaptamos a
+        // linha para esse shape em vez de editar esses helpers.
+        const { data: sol } = await supabase
+          .from("solicitacoes_exame")
           .select("*")
           .eq("id", e.event_id)
           .maybeSingle();
-        if (!data) { alert("Requisição não encontrada."); setPrintingId(null); return; }
+        if (!sol) { alert("Requisição não encontrada."); setPrintingId(null); return; }
+        const data = { ...(sol as any), items: (sol as any).itens, category: (sol as any).categoria };
         // Reaproveita os mesmos despachantes de impressão da Requisição
         // Unificada — mesmo tratamento de gasometria (Lab), do laudo
         // formal quando existe document_payload real (Procedimento), e do
@@ -346,58 +390,62 @@ export default function HistoricoPacientePage() {
       }
 
       if (e.event_type === "admission_history") {
+        // MIGRAÇÃO: admission_histories (morta) → conteúdo de admissão vive em internacoes.
+        // Ancoramos pela internação (patientId = internacoes.id); se ausente, tenta o
+        // event_id. Colunas: chief_complaint→queixa_principal, clinical_history→
+        // historia_clinica, diagnostic_hypothesis→hipotese_diagnostica, initial_conduct→
+        // conduta_inicial. DEGRADADO: cid_primary/cid_secondary/macro_diagnosis não têm
+        // coluna em internacoes → bloco de CID/diagnóstico removido do impresso.
+        const admInternacaoId = patientId ?? e.event_id;
         const { data } = await supabase
-          .from("admission_histories")
-          .select("chief_complaint,clinical_history,diagnostic_hypothesis,initial_conduct,cid_primary,cid_secondary,macro_diagnosis,created_at")
-          .eq("id", e.event_id)
+          .from("internacoes")
+          .select("queixa_principal,historia_clinica,hipotese_diagnostica,conduta_inicial,data_entrada,criado_em")
+          .eq("id", admInternacaoId)
           .maybeSingle();
         if (!data) { alert("Admissão não encontrada."); setPrintingId(null); return; }
+        const i = data as any;
+        const admDate = i.data_entrada || i.criado_em || e.event_at;
         const html = docHeader("FICHA DE ADMISSÃO") + `
-          <p class="doc-title">Admissão · ${format(new Date(data.created_at), "dd/MM/yyyy 'às' HH:mm")}</p>
-          <div class="grid2">
-            <div><div class="section-lbl">CID Principal</div><div class="section-val">${data.cid_primary ?? "—"}</div></div>
-            <div><div class="section-lbl">CID Secundário</div><div class="section-val">${data.cid_secondary ?? "—"}</div></div>
-          </div>
-          ${data.macro_diagnosis       ? `<div class="section"><div class="section-lbl">Diagnóstico</div><div class="section-val">${data.macro_diagnosis}</div></div>` : ""}
-          ${data.chief_complaint       ? `<div class="section"><div class="section-lbl">Queixa Principal</div><div class="section-val">${data.chief_complaint}</div></div>` : ""}
-          ${data.clinical_history      ? `<div class="section"><div class="section-lbl">História Clínica</div><div class="section-val">${data.clinical_history}</div></div>` : ""}
-          ${data.diagnostic_hypothesis ? `<div class="section"><div class="section-lbl">Hipótese Diagnóstica</div><div class="section-val">${data.diagnostic_hypothesis}</div></div>` : ""}
-          ${data.initial_conduct       ? `<div class="section"><div class="section-lbl">Conduta Inicial</div><div class="section-val">${data.initial_conduct}</div></div>` : ""}
+          <p class="doc-title">Admissão · ${format(new Date(admDate), "dd/MM/yyyy 'às' HH:mm")}</p>
+          ${i.queixa_principal    ? `<div class="section"><div class="section-lbl">Queixa Principal</div><div class="section-val">${i.queixa_principal}</div></div>` : ""}
+          ${i.historia_clinica    ? `<div class="section"><div class="section-lbl">História Clínica</div><div class="section-val">${i.historia_clinica}</div></div>` : ""}
+          ${i.hipotese_diagnostica ? `<div class="section"><div class="section-lbl">Hipótese Diagnóstica</div><div class="section-val">${i.hipotese_diagnostica}</div></div>` : ""}
+          ${i.conduta_inicial     ? `<div class="section"><div class="section-lbl">Conduta Inicial</div><div class="section-val">${i.conduta_inicial}</div></div>` : ""}
         </body></html>`;
         openPrint(html); setPrintingId(null); return;
       }
 
       if (e.event_type === "discharge_document") {
+        // MIGRAÇÃO: discharge_documents → altas (document_type→tipo, content→conteudo).
         const { data } = await supabase
-          .from("discharge_documents")
-          .select("document_type,content")
+          .from("altas")
+          .select("tipo,conteudo")
           .eq("id", e.event_id)
           .maybeSingle();
         if (!data) { alert("Sumário de alta não encontrado."); setPrintingId(null); return; }
         await printDischargeDocument(
-          data.document_type as DischargeDocType,
-          // `content` vem como Json do banco; a conversao direta para o payload
-          // nao e aceita porque os tipos nao se sobrepoem. O `unknown` no meio e
-          // o que o proprio compilador sugere, e deixa explicito que a forma do
-          // JSON e uma suposicao — nao ha garantia de tipo vinda do banco.
-          data.content as unknown as DischargeDocPayload,
+          fromAltaTipoDb((data as any).tipo),
+          (data as any).conteudo as DischargeDocPayload,
         );
         setPrintingId(null);
         return;
       }
 
       if (e.event_type === "documento_medico") {
+        // MIGRAÇÃO: documentos_medicos → altas (tipo/conteudo). Reusa o mesmo
+        // mapeamento do useDocumentoMedico para reconstruir o shape esperado.
         const { data } = await supabase
-          .from("documentos_medicos")
+          .from("altas")
           .select("*")
           .eq("id", e.event_id)
           .maybeSingle();
         if (!data) { alert("Documento não encontrado."); setPrintingId(null); return; }
         const { printDocumentoMedico } = await import("@/lib/documentoMedico");
+        const { mapRow } = await import("@/hooks/useDocumentoMedico");
         // O `hospitalName` era `x ? undefined : undefined` — os dois ramos
         // davam undefined, entao o nome do hospital NUNCA era passado. E o
         // `onPrint` nao existe na assinatura. Passa o hospital de verdade.
-        await printDocumentoMedico(data as any, {
+        await printDocumentoMedico(mapRow(data as any), {
           hospitalName: currentHospital?.name,
         });
         setPrintingId(null);

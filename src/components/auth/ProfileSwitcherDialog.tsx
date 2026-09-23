@@ -44,13 +44,16 @@ export function ProfileSwitcherDialog({ open, onOpenChange }: Props) {
     }
   }, [open]);
 
+  // Admin/super_admin podem alternar entre TODOS os módulos do sistema;
+  // demais usuários veem apenas os perfis liberados no login.
+  const isAdminLike = role === "admin" || role === "super_admin";
   const profiles = useMemo(() => readAvailableProfiles(), [open]);
   const cards = useMemo(
-    () => ACCESS_PROFILES.filter((p) => profiles.includes(p.value)),
-    [profiles],
+    () => (isAdminLike ? ACCESS_PROFILES : ACCESS_PROFILES.filter((p) => profiles.includes(p.value))),
+    [profiles, isAdminLike],
   );
 
-  if (cards.length < 2) return null;
+  if (!isAdminLike && cards.length < 2) return null;
 
   const handleSelect = (p: AccessProfile) => {
     const route = resolveLandingRoute(p, role);

@@ -25,11 +25,20 @@ export interface SpecialSummary {
 
 /**
  * Subscribes (realtime) to special requests for a single patient:
- *  - exam_requests filtered by category in ('hemocomponente','sat','apac')
- *  - culture_results (kind='cultura')
+ *  - solicitacoes_exame filtered by categoria in ('hemocomponente','sat','apac','cultura')
+ *  - resultados_cultura (kind='cultura')
  *
  * Used by PatientCockpit and dedicated pages to keep counts in sync across
  * the Cockpit, /requisicoes (Especiais) and /documentos.
+ *
+ * MIGRAÇÃO (Wave3): exam_requests → solicitacoes_exame; culture_results →
+ * resultados_cultura. Ambas penduram em `internacao_id` (o patientId é a
+ * internação). DEGRADADOS (sem coluna no schema novo): matching por patient_name
+ * e escopo por hospital_unit_id (só internacao_id agora). Parâmetros
+ * `patientName`/`hospitalUnitId` mantidos na assinatura, sem uso.
+ * Colunas: category→categoria, items→itens, clinical_indication→indicacao_clinica,
+ * requested_by_name→join solicitado_por; culture_type→tipo_cultura,
+ * microorganism→microorganismo, uploaded_by_name→join enviado_por, created_at→criado_em.
  */
 export function usePatientSpecialRequests(
   patientId: string | null,
@@ -40,114 +49,97 @@ export function usePatientSpecialRequests(
   const [loading, setLoading] = useState(false);
 
   const fetchAll = useCallback(async () => {
-    if (!hospitalUnitId || (!patientId && !patientName)) {
+    if (!patientId) {
       setItems([]);
       return;
     }
     setLoading(true);
 
-    let examQ = supabase
-      .from("exam_requests")
-      .select("id, category, status, items, created_at, requested_by_name, patient_id, patient_name, clinical_indication")
-      .eq("hospital_unit_id", hospitalUnitId)
-      .in("category", ["hemocomponente", "sat", "apac", "cultura"])
-      .order("created_at", { ascending: false })
+    const examQ = supabase
+      .from("solicitacoes_exame")
+      .select("id, categoria, status, itens, criado_em, indicacao_clinica, solicitante:profissionais!solicitacoes_exame_solicitado_por_fkey(nome)")
+      .eq("internacao_id", patientId)
+      .in("categoria", ["hemocomponente", "sat", "apac", "cultura"])
+      .order("criado_em", { ascending: false })
       .limit(20);
-    if (patientId) examQ = examQ.eq("patient_id", patientId);
-    else if (patientName) examQ = examQ.eq("patient_name", patientName.trim());
 
-    let culQ = supabase
-      .from("culture_results")
-      .select("id, culture_type, status, microorganism, created_at, uploaded_by_name, patient_id, patient_name")
-      .eq("hospital_unit_id", hospitalUnitId)
-      .order("created_at", { ascending: false })
+    const culQ = supabase
+      .from("resultados_cultura")
+      .select("id, tipo_cultura, status, microorganismo, criado_em, enviado:profissionais!resultados_cultura_enviado_por_fkey(nome)")
+      .eq("internacao_id", patientId)
+      .order("criado_em", { ascending: false })
       .limit(20);
-    if (patientId) culQ = culQ.eq("patient_id", patientId);
-    else if (patientName) culQ = culQ.eq("patient_name", patientName.trim());
 
     const [examRes, culRes] = await Promise.all([examQ, culQ]);
 
     const merged: SpecialRequestItem[] = [];
     if (!examRes.error && examRes.data) {
-      examRes.data.forEach((row: any) => {
-        const itemsArr = Array.isArray(row.items) ? row.items : [];
+      (examRes.data as any[]).forEach((row: any) => {
+        const itemsArr = Array.isArray(row.itens) ? row.itens : [];
         const first = itemsArr[0]?.name || itemsArr[0]?.exam || itemsArr[0]?.label || "";
-        let label = first || row.category;
-        if (row.category === "hemocomponente") label = first || "Hemocomponentes";
-        if (row.category === "sat") label = "Profilaxia antitetânica";
-        if (row.category === "apac") label = first || "APAC";
-        if (row.category === "cultura") label = first || "Solicitação de cultura";
+        let label = first || row.categoria;
+        if (row.categoria === "hemocomponente") label = first || "Hemocomponentes";
+        if (row.categoria === "sat") label = "Profilaxia antitetânica";
+        if (row.categoria === "apac") label = first || "APAC";
+        if (row.categoria === "cultura") label = first || "Solicitação de cultura";
         merged.push({
           id: row.id,
-          kind: row.category as SpecialKind,
+          kind: row.categoria as SpecialKind,
           label,
           status: row.status || "pending",
-          createdAt: row.created_at,
-          createdByName: row.requested_by_name,
-          detail: row.clinical_indication || null,
+          createdAt: row.criado_em,
+          createdByName: row.solicitante?.nome || null,
+          detail: row.indicacao_clinica || null,
         });
       });
     }
     if (!culRes.error && culRes.data) {
-      culRes.data.forEach((row: any) => {
+      (culRes.data as any[]).forEach((row: any) => {
         merged.push({
           id: row.id,
           kind: "cultura",
-          label: row.culture_type || "Cultura",
+          label: row.tipo_cultura || "Cultura",
           status: row.status || "pending",
-          createdAt: row.created_at,
-          createdByName: row.uploaded_by_name,
-          detail: row.microorganism || null,
+          createdAt: row.criado_em,
+          createdByName: row.enviado?.nome || null,
+          detail: row.microorganismo || null,
         });
       });
     }
     merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     setItems(merged);
     setLoading(false);
-  }, [patientId, patientName, hospitalUnitId]);
+  }, [patientId]);
 
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
 
   useEffect(() => {
-    if (!hospitalUnitId || (!patientId && !patientName)) return;
+    if (!patientId) return;
+    // MIGRAÇÃO: realtime filtrado por internacao_id nas tabelas novas.
     const channel = supabase
-      .channel(`patient-special-${hospitalUnitId}-${patientId || patientName}`)
+      .channel(`patient-special-${patientId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "exam_requests", filter: `hospital_unit_id=eq.${hospitalUnitId}` },
+        { event: "*", schema: "public", table: "solicitacoes_exame", filter: `internacao_id=eq.${patientId}` },
         (payload) => {
           const row: any = payload.new || payload.old;
           if (!row) return;
-          if (!["hemocomponente", "sat", "apac", "cultura"].includes(row.category)) return;
-          if (
-            (patientId && row.patient_id === patientId) ||
-            (patientName && row.patient_name?.trim() === patientName.trim())
-          ) {
-            fetchAll();
-          }
+          if (!["hemocomponente", "sat", "apac", "cultura"].includes(row.categoria)) return;
+          fetchAll();
         },
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "culture_results", filter: `hospital_unit_id=eq.${hospitalUnitId}` },
-        (payload) => {
-          const row: any = payload.new || payload.old;
-          if (!row) return;
-          if (
-            (patientId && row.patient_id === patientId) ||
-            (patientName && row.patient_name?.trim() === patientName.trim())
-          ) {
-            fetchAll();
-          }
-        },
+        { event: "*", schema: "public", table: "resultados_cultura", filter: `internacao_id=eq.${patientId}` },
+        () => fetchAll(),
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [patientId, patientName, hospitalUnitId, fetchAll]);
+  }, [patientId, fetchAll]);
 
   const summary: SpecialSummary = {
     hemocomponente: items.filter((i) => i.kind === "hemocomponente").length,

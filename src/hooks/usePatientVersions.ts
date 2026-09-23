@@ -13,43 +13,61 @@ export interface PatientVersion {
   snapshot_data: Patient[];
 }
 
+// MIGRAÇÃO: `patient_versions` (tabela morta) → `logs_auditoria` com
+// tipo_evento = 'versao_paciente'. O snapshot da lista de pacientes e a
+// descrição/departamento ficam guardados em `dados_novos` (Json). Campos sem
+// coluna equivalente foram degradados:
+//  - `department` (filtro): logs_auditoria não tem coluna department; guardado
+//    dentro de `dados_novos.department` mas NÃO usado para filtrar (best-effort
+//    em memória, para não perder o dado).
+//  - `state_id`/`hospital_unit_id`: substituídos por `logs_auditoria.hospital_id`.
+const VERSAO_TIPO_EVENTO = 'versao_paciente';
+
 export function usePatientVersions() {
   const [versions, setVersions] = useState<PatientVersion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { currentState, currentHospital } = useHospital();
+  const { currentHospital } = useHospital();
+
+  const mapRow = (row: any): PatientVersion => {
+    const dados = (row?.dados_novos as any) || {};
+    return {
+      id: row.id,
+      created_at: row.criado_em,
+      created_by: row.ator_user_id ?? null,
+      description: dados.description || row.motivo || '',
+      snapshot_data: (dados.snapshot as Patient[]) || [],
+    };
+  };
 
   const fetchVersions = async (department?: string) => {
     try {
       setIsLoading(true);
 
-      if (!currentHospital || !currentState) {
+      if (!currentHospital) {
         setIsLoading(false);
         return;
       }
-      
-      let query = supabase
-        .from('patient_versions')
-        .select('*')
-        .eq('hospital_unit_id', currentHospital.id)
-        .eq('state_id', currentState.id)
-        .order('created_at', { ascending: false });
-      
-      if (department) {
-        query = query.eq('department', department);
-      }
 
-      const { data, error } = await query;
+      const { data, error } = await supabase
+        .from('logs_auditoria')
+        .select('*')
+        .eq('tipo_evento', VERSAO_TIPO_EVENTO)
+        .eq('hospital_id', currentHospital.id)
+        .order('criado_em', { ascending: false });
 
       if (error) throw error;
 
-      const mappedVersions: PatientVersion[] = (data || []).map(v => ({
-        id: v.id,
-        created_at: v.created_at,
-        created_by: v.created_by,
-        description: v.description,
-        snapshot_data: v.snapshot_data as unknown as Patient[],
-      }));
+      let mappedVersions: PatientVersion[] = ((data || []) as any[]).map(mapRow);
+
+      // MIGRAÇÃO: sem coluna `department` em logs_auditoria — filtro best-effort
+      // pelo valor guardado em dados_novos.department.
+      if (department) {
+        mappedVersions = mappedVersions.filter((_v, i) => {
+          const dep = ((data as any[])[i]?.dados_novos as any)?.department;
+          return dep === undefined || dep === department;
+        });
+      }
 
       setVersions(mappedVersions);
     } catch (error) {
@@ -67,39 +85,41 @@ export function usePatientVersions() {
   const saveVersion = async (patients: Patient[], department: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         throw new Error("Usuário não autenticado");
       }
 
-      if (!currentHospital || !currentState) {
+      if (!currentHospital) {
         throw new Error("Hospital unit and state must be selected");
       }
 
       const description = format(new Date(), "dd/MM/yyyy 'às' HH:mm");
 
+      // MIGRAÇÃO (profissionais.id ≠ auth.uid): resolve profissional_id via user_id.
+      const { data: prof } = await supabase
+        .from('profissionais')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
       const { data, error } = await supabase
-        .from('patient_versions')
+        .from('logs_auditoria')
         .insert({
-          created_by: user.id,
-          description,
-          snapshot_data: patients as any,
-          department: department,
-          state_id: currentState.id,
-          hospital_unit_id: currentHospital.id,
-        })
+          tipo_evento: VERSAO_TIPO_EVENTO,
+          nome_tabela: 'internacoes',
+          ator_user_id: user.id,
+          profissional_id: (prof as any)?.id ?? null,
+          hospital_id: currentHospital.id,
+          motivo: description,
+          dados_novos: { snapshot: patients, department, description } as any,
+        } as any)
         .select()
         .single();
 
       if (error) throw error;
 
-      const newVersion: PatientVersion = {
-        id: data.id,
-        created_at: data.created_at,
-        created_by: data.created_by,
-        description: data.description,
-        snapshot_data: data.snapshot_data as unknown as Patient[],
-      };
+      const newVersion: PatientVersion = mapRow(data);
 
       setVersions(prev => [newVersion, ...prev]);
 
@@ -123,9 +143,10 @@ export function usePatientVersions() {
   const deleteVersion = async (versionId: string) => {
     try {
       const { error } = await supabase
-        .from('patient_versions')
+        .from('logs_auditoria')
         .delete()
-        .eq('id', versionId);
+        .eq('id', versionId)
+        .eq('tipo_evento', VERSAO_TIPO_EVENTO);
 
       if (error) throw error;
 

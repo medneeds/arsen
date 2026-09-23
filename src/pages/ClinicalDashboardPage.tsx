@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useIsGestor } from "@/hooks/useIsGestor";
+import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
@@ -49,6 +50,10 @@ interface OccupancyData {
   occupied: number;
 }
 
+// Fallback estático de rótulos por código de setor (setores.tipo). Usado apenas
+// enquanto os setores reais (alas→setores) ainda não carregaram, ou quando não há
+// setor no banco com o `tipo` ativo. A fonte de verdade dos rótulos é setor.nome
+// (useSectorNavigation).
 const SECTOR_LABELS: Record<string, string> = {
   red: "UTI 1",
   yellow: "UTI 2",
@@ -59,14 +64,25 @@ const SECTOR_LABELS: Record<string, string> = {
 const ClinicalDashboardPage = () => {
   const { user } = useAuth();
   const { currentDepartment } = useDepartment();
-  const { currentHospital, currentState } = useHospital();
+  const { currentHospital } = useHospital();
   
   const navigate = useNavigate();
   const isGestor = useIsGestor();
 
+  // Setores reais do banco (alas→setores). O rótulo do setor ativo vem de
+  // setor.nome, casado por setor.tipo (o código guardado em localStorage), em vez
+  // da taxonomia estática (SECTOR_LABELS). Degrada para o fallback estático
+  // enquanto carrega ou se nenhum setor tiver o `tipo` ativo.
+  const { sectors: dbSectors } = useSectorNavigation();
+
   const [activeSector, setActiveSector] = useState<string>(() => {
-    return localStorage.getItem("selected_sector") || "red";
+    return localStorage.getItem("selected_sector") || "";
   });
+
+  const activeSectorLabel =
+    dbSectors.find((s) => s.tipo === activeSector)?.nome ||
+    SECTOR_LABELS[activeSector] ||
+    activeSector;
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [occupancy, setOccupancy] = useState<OccupancyData[]>([]);
   const [pendingBedRequests, setPendingBedRequests] = useState(0);
@@ -81,156 +97,91 @@ const ClinicalDashboardPage = () => {
 
   const fetchDashboardData = async () => {
     try {
-      if (!currentHospital || !currentState) return;
+      if (!currentHospital) return;
       const hospitalUnitId = currentHospital.id;
-      const stateId = currentState.id;
 
-      // Parallel fetches
-      const [patientsRes, bedRequestsRes, movementsRes] = await Promise.all([
-        supabase
-          .from("patients")
-          .select("*")
-          .eq("hospital_unit_id", hospitalUnitId)
-          .eq("state_id", stateId)
-          .eq("department", currentDepartment),
-        supabase
-          .from("bed_allocation_requests")
-          .select("*")
-          .eq("hospital_unit_id", hospitalUnitId)
-          .eq("state_id", stateId)
-          .eq("status", "pending")
-          .order("created_at", { ascending: false })
+      // MIGRAÇÃO: patients/bed_allocation_requests/patient_movements não existem mais.
+      // Ocupação vem de internacoes ativas (data_alta IS NULL) + leitos + setores;
+      // solicitações vêm de solicitacoes_leito. Vínculo com o hospital:
+      // internacoes → leitos → setores → alas.hospital_id.
+      const [internacoesRes, bedRequestsRes] = await Promise.all([
+        (supabase
+          .from("internacoes")
+          .select(`
+            id,
+            data_entrada,
+            leito:leitos!inner (
+              numero,
+              status,
+              setor:setores!inner (
+                nome,
+                tipo,
+                ala:alas!inner ( hospital_id )
+              )
+            ),
+            paciente:pacientes ( nome_completo, nome_social )
+          `) as any)
+          .is("data_alta", null)
+          .eq("leito.setor.ala.hospital_id", hospitalUnitId),
+        (supabase
+          .from("solicitacoes_leito")
+          .select(`
+            id,
+            data_hora,
+            status,
+            setor_solicitado:setores!inner (
+              nome,
+              tipo,
+              ala:alas!inner ( hospital_id )
+            )
+          `) as any)
+          .eq("status", "pendente")
+          .eq("setor_solicitado.ala.hospital_id", hospitalUnitId)
+          .order("data_hora", { ascending: false })
           .limit(10),
-        supabase
-          .from("patient_movements")
-          .select("*")
-          .eq("hospital_unit_id", hospitalUnitId)
-          .eq("state_id", stateId)
-          .order("created_at", { ascending: false })
-          .limit(8),
       ]);
 
-      const allPatients = patientsRes.data || [];
-      const bedRequests = bedRequestsRes.data || [];
-      const allMovements = movementsRes.data || [];
+      const allInternacoes = (internacoesRes.data as any[]) || [];
+      const bedRequests = (bedRequestsRes.data as any[]) || [];
 
-      // Filter by active sector
-      const patients = allPatients.filter((p) => p.sector === activeSector);
-      const movements = allMovements.filter((m) => m.patient_sector === activeSector);
+      // Filtra as internações ativas pelo setor ativo (setores.tipo guarda o código
+      // de setor — red/yellow/blue/...).
+      const internacoes = allInternacoes.filter(
+        (i) => i.leito?.setor?.tipo === activeSector,
+      );
 
-      // Build occupancy data for active sector only
-      // Excluir leitos EXTRA vagos (arquivados pelo gestor) do total.
-      // Leitos EXTRA são temporários — quando removidos ficam como registros
-      // vazios com bedNumber 'EXTRA*'. Não devem contar na capacidade do setor.
-      // Total = capacidade FIXA do setor (SECTOR_BED_CONFIG).
-      // Evita que leitos fora do range configurado (L19, L20...) ou leitos EXTRA
-      // inflacionem o denominador da ocupação.
-      const occupied = patients.filter((p) => p.name && p.name.trim() !== "").length;
-      const total = sectorCapacity(activeSector) || patients.filter((p) => {
-        const bed = (p.bed_number || "").toString().toUpperCase();
-        return !bed.startsWith("EXTRA");
-      }).length;
+      // Ocupação = internações ativas no setor. Total = capacidade FIXA (SECTOR_BED_CONFIG).
+      const occupied = internacoes.length;
+      const total = sectorCapacity(activeSector) || occupied;
       const occData: OccupancyData[] = [{
         sector: activeSector,
-        label: SECTOR_LABELS[activeSector] || activeSector,
+        label: activeSectorLabel,
         total,
         occupied,
       }];
       setOccupancy(occData);
       setPendingBedRequests(bedRequests.length);
-      setRecentMovements(movements);
+
+      // MIGRAÇÃO: patient_movements não tem equivalente fiel (transferencias só modela
+      // leito→leito). "Atividade recente" fica vazia.
+      setRecentMovements([]);
 
       // Build alerts
       const newAlerts: AlertItem[] = [];
 
-      // Discharge predictions
-      patients.forEach((p) => {
-        if (p.uti_discharge_prediction && p.name && p.name.trim() !== "") {
-          newAlerts.push({
-            id: `discharge-${p.id}`,
-            type: "discharge",
-            title: "Previsão de alta",
-            description: p.uti_discharge_prediction,
-            patient: p.name,
-            bed: p.bed_number,
-            sector: SECTOR_LABELS[p.sector] || p.sector,
-            severity: "info",
-          });
-        }
-      });
-
-      // Patients with empty devices (pending fill)
-      patients.forEach((p) => {
-        if (p.name && p.name.trim() !== "" && currentDepartment === "UTI" && (!p.uti_devices || p.uti_devices.trim() === "")) {
-          newAlerts.push({
-            id: `device-${p.id}`,
-            type: "device",
-            title: "Dispositivo pendente",
-            description: `Dispositivos não preenchidos para ${p.name}`,
-            patient: p.name,
-            bed: p.bed_number,
-            sector: SECTOR_LABELS[p.sector] || p.sector,
-            severity: "warning",
-          });
-        }
-      });
-
-      // Pending cultures
-      patients.forEach((p) => {
-        if (p.name && p.name.trim() !== "" && p.uti_cultures_antibiotics && p.uti_cultures_antibiotics.toLowerCase().includes("pendente")) {
-          newAlerts.push({
-            id: `culture-${p.id}`,
-            type: "culture",
-            title: "Resultado de cultura pendente",
-            description: `Cultura pendente para ${p.name}`,
-            patient: p.name,
-            bed: p.bed_number,
-            sector: SECTOR_LABELS[p.sector] || p.sector,
-            severity: "warning",
-          });
-        }
-      });
-
-      // Critical patients
-      patients.forEach((p) => {
-        if (p.clinical_status === "gravíssimo" && p.name && p.name.trim() !== "") {
-          newAlerts.push({
-            id: `critical-${p.id}`,
-            type: "critical",
-            title: "Paciente gravíssimo",
-            description: `${p.name} em estado gravíssimo`,
-            patient: p.name,
-            bed: p.bed_number,
-            sector: SECTOR_LABELS[p.sector] || p.sector,
-            severity: "critical",
-          });
-        }
-      });
-
-      // Allocation status: transfer
-      patients.forEach((p) => {
-        if (p.allocation_status === "aguardando_transferencia" && p.name && p.name.trim() !== "") {
-          newAlerts.push({
-            id: `transfer-${p.id}`,
-            type: "transfer",
-            title: "Aguardando transferência",
-            description: `${p.name} aguardando transferência`,
-            patient: p.name,
-            bed: p.bed_number,
-            sector: SECTOR_LABELS[p.sector] || p.sector,
-            severity: "warning",
-          });
-        }
-      });
-
-      // Bed requests
+      // MIGRAÇÃO: alertas de previsão de alta / dispositivo / cultura / paciente gravíssimo /
+      // aguardando transferência dependiam de campos degradados do paciente
+      // (uti_discharge_prediction, uti_devices, uti_cultures_antibiotics, clinical_status,
+      // allocation_status), que não existem no schema novo. Removidos.
+      // Restam apenas as solicitações de leito (solicitacoes_leito).
       bedRequests.forEach((req) => {
+        const setorNome = req.setor_solicitado?.nome || "setor";
         newAlerts.push({
           id: `bed-${req.id}`,
           type: "bed_request",
           title: "Solicitação de leito",
-          description: `Pedido para ${req.requested_sector}${req.requesting_doctor_name ? ` por ${req.requesting_doctor_name}` : ""}`,
-          timestamp: req.created_at,
+          description: `Pedido para ${setorNome}`,
+          timestamp: req.data_hora,
           severity: "info",
         });
       });
@@ -249,7 +200,7 @@ const ClinicalDashboardPage = () => {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [currentDepartment, activeSector, currentHospital, currentState]);
+  }, [currentDepartment, activeSector, currentHospital]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -324,9 +275,9 @@ const ClinicalDashboardPage = () => {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs font-medium text-muted-foreground tracking-wider">Ocupação {SECTOR_LABELS[activeSector]}</p>
-                          <p className="text-2xl font-semibold text-foreground mt-1">{occupancyRate}%</p>
-                          <p className="text-xs text-muted-foreground">{totalOccupied}/{totalBeds} leitos</p>
+                          <p className="text-[11px] font-medium text-muted-foreground tracking-wider">Ocupação {activeSectorLabel}</p>
+                          <p className="text-2xl font-bold text-foreground mt-1">{occupancyRate}%</p>
+                          <p className="text-[10px] text-muted-foreground">{totalOccupied}/{totalBeds} leitos</p>
                         </div>
                         <div className={cn(
                           "h-10 w-10 rounded-lg flex items-center justify-center",
@@ -407,7 +358,7 @@ const ClinicalDashboardPage = () => {
                   <CardHeader className="pb-3 pt-4 px-4">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 text-primary" />
-                      Ocupação — {SECTOR_LABELS[activeSector]}
+                      Ocupação — {activeSectorLabel}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 pb-4">

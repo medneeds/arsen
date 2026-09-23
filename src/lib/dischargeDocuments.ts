@@ -13,6 +13,19 @@ import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
 export type DischargeDocType = "alta_hospitalar" | "alta_pedido" | "obito";
 
+// MIGRAÇÃO: o CHECK `altas_tipo_check` aceita
+// alta_hospitalar | alta_a_pedido | obito | transferencia_externa.
+// O VM usa "alta_pedido" (sem o "a_") em dezenas de pontos; convertemos só no
+// boundary do banco. O código antigo gravava "alta_pedido" → violava o CHECK
+// ("new row for relation altas violates check constraint altas_tipo_check").
+export function toAltaTipoDb(vm: DischargeDocType | string | null | undefined): string {
+  return vm === "alta_pedido" ? "alta_a_pedido" : (vm ?? "");
+}
+/** `altas.tipo` (banco) → DischargeDocType (VM). */
+export function fromAltaTipoDb(db: string | null | undefined): DischargeDocType {
+  return (db === "alta_a_pedido" ? "alta_pedido" : (db ?? "alta_hospitalar")) as DischargeDocType;
+}
+
 export const DISCHARGE_DOC_LABELS: Record<DischargeDocType, string> = {
   alta_hospitalar: "Sumário de Alta Hospitalar",
   alta_pedido: "Termo de Alta a Pedido",

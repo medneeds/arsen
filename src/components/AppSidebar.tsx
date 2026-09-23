@@ -10,6 +10,10 @@ import {
   BarChart3,
   Shield,
   PanelLeftClose,
+  PanelLeftOpen,
+  Building2,
+  Layers,
+  Palette,
   Stethoscope,
   HeartPulse,
   Activity,
@@ -60,13 +64,13 @@ const ProfileSwitcherDialog = lazy(() =>
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { SECTOR_NAVIGATION } from "@/config/sectorNavigation";
+import { PAPEL_TO_PROFILE } from "@/config/profileDefaults";
 import { useDepartment, type Department } from "@/contexts/DepartmentContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePendingPasswordResets } from "@/hooks/usePendingPasswordResets";
 import { useIsDev } from "@/hooks/useIsDev";
-import { supabase } from "@/integrations/supabase/client";
 import type { AccessProfile } from "@/config/userProfiles";
 import { useIsCoordenador } from "@/hooks/useIsCoordenador";
 import { SidebarPatientSearch } from "@/components/SidebarPatientSearch";
@@ -129,27 +133,11 @@ export function AppSidebar() {
     } catch { /* ignore */ }
   }, []);
 
-  // Mostra o atalho "Trocar perfil" também quando a tela pós-login foi pulada por sessão restaurada.
-  useEffect(() => {
-    if (!user?.id) return;
-    supabase
-      .from("profiles")
-      .select("access_profile, access_profiles")
-      .eq("id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        const row = data as { access_profile?: string | null; access_profiles?: string[] | null } | null;
-        const profiles = row?.access_profiles?.length ? row.access_profiles : (row?.access_profile ? [row.access_profile] : []);
-        setAvailableProfiles(profiles.filter(Boolean) as AccessProfile[]);
-        if (profiles.length > 0) {
-          sessionStorage.setItem("available_access_profiles", JSON.stringify(profiles));
-          if (!sessionStorage.getItem("active_access_profile")) {
-            sessionStorage.setItem("active_access_profile", profiles[0]);
-            safeSetItem("access_profile", profiles[0]);
-          }
-        }
-      });
-  }, [user?.id]);
+  // MIGRAÇÃO: `profiles.access_profile`/`access_profiles` (tabela morta) não têm
+  // coluna equivalente em `profissionais` — o multi-perfil foi degradado em toda
+  // a app. A lista de perfis disponíveis passa a vir apenas do sessionStorage
+  // (populado por login/troca de perfil), lido no efeito acima. Sem consulta ao
+  // banco aqui.
   const availableProfilesCount = availableProfiles.length;
   const hasMultipleProfiles = availableProfilesCount >= 2;
   
@@ -165,9 +153,18 @@ export function AppSidebar() {
   
   // Check if user is BIGDOOR (porta role)
   const isDoorUser = role === "porta";
+  // Super admin / admin do hospital: navegação administrativa vai para a sidebar
+  // (antes eram abas no topo dos painéis). Gate por papel (mais confiável que perfil).
+  const isAdminLike = role === "admin" || role === "super_admin";
 
-  // Access profile from localStorage
-  const accessProfile = typeof window !== 'undefined' ? localStorage.getItem("access_profile") || "medico" : "medico";
+  // Perfil de acesso efetivo: usa o access_profile escolhido (localStorage) e,
+  // se não houver, DERIVA do papel do usuário — assim cada perfil vê o menu do
+  // seu próprio módulo mesmo sem access_profile explícito. (admin/super_admin são
+  // tratados por role no buildFilteredMenu.) O mapa papel→perfil vive em
+  // profileDefaults (PAPEL_TO_PROFILE), compartilhado com resolveLandingRoute
+  // para que o MENU e a ROTA DE POUSO usem exatamente a mesma regra.
+  const storedProfile = typeof window !== "undefined" ? localStorage.getItem("access_profile") : null;
+  const accessProfile = storedProfile || PAPEL_TO_PROFILE[role ?? ""] || "medico";
 
   // ── Menu structure with per-item profile visibility ──
   // Profiles: medico, gestor, multi, administrativo
@@ -198,7 +195,6 @@ export function AppSidebar() {
   // 5. Inteligência e Farmácia (IA + suporte farmacêutico)
   const gestorMenu = [
     // ── Visão Geral ──
-    { title: "Início", icon: LayoutDashboard, link: "/painel-gestor", profiles: ["gestor"] },
     { title: "Painel do Gestor", icon: BarChart3, link: "/painel-gestor", profiles: ["gestor"] },
     {
       title: "Leitos",
@@ -274,7 +270,10 @@ export function AppSidebar() {
 
 
   // ── Build filtered menu based on role + profile ──
-  const buildFilteredMenu = () => {
+  // Menu do MÓDULO atual (segue o access_profile). Para admin/super_admin, o
+  // grupo administrativo é anexado por cima disto em buildFilteredMenu, e o
+  // "Trocar perfil" permite alternar entre os módulos do sistema.
+  const computeProfileMenu = () => {
     // Porta: minimal access
     if (isDoorUser) {
       return [
@@ -400,6 +399,49 @@ export function AppSidebar() {
       .filter(Boolean) as any[];
   };
 
+  // Admin/super_admin: o menu do módulo atual (switchável via "Trocar perfil")
+  // + o grupo administrativo sempre disponível para voltar ao painel.
+  const buildFilteredMenu = () => {
+    const menu = computeProfileMenu();
+    if (role === "super_admin") {
+      return [
+        { title: "Hospitais", icon: Building2, link: "/painel-super-admin", profiles: [accessProfile] },
+        ...menu,
+      ];
+    }
+    if (role === "admin") {
+      const adminItems = [
+        { name: "Estrutura", link: "/painel-admin?tab=estrutura" },
+        { name: "Usuários", link: "/painel-admin?tab=equipe" },
+        { name: "Hospital", link: "/painel-admin?tab=hospital" },
+        { name: "Identidade visual", link: "/painel-admin?tab=branding" },
+      ];
+      // Mescla com qualquer "Administração" já existente no menu do módulo
+      // (ex.: o menu do Gestor tem uma) — evita dois grupos "Administração".
+      const idx = (menu as any[]).findIndex((s) => s?.title === "Administração");
+      if (idx >= 0) {
+        const existing = menu[idx];
+        // Descarta itens redundantes de gestão de usuários (cobertos por "Usuários").
+        const extra = (existing.items || []).filter(
+          (it: any) => !/user-management|gerenciamento de usu/i.test(`${it.link} ${it.name}`) &&
+            !adminItems.some((m) => m.link === it.link),
+        );
+        const merged = { ...existing, icon: existing.icon ?? Shield, items: [...adminItems, ...extra] };
+        // Mantém a "Administração" na MESMA posição (não puxa pra frente) — assim o
+        // "Painel do Gestor" continua sendo o primeiro item do menu.
+        const newMenu = [...(menu as any[])];
+        newMenu[idx] = merged;
+        return newMenu;
+      }
+      // Módulo sem "Administração" própria → grupo administrativo vai ao final.
+      return [
+        ...menu,
+        { title: "Administração", icon: Shield, profiles: [accessProfile], items: adminItems },
+      ];
+    }
+    return menu;
+  };
+
   const menuItems = buildFilteredMenu();
 
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
@@ -521,7 +563,24 @@ export function AppSidebar() {
             </Button>
           )}
         </div>
-        {hasMultipleProfiles && (
+        {/* Expandir/fixar o menu a partir do próprio menu lateral (rail recolhido). */}
+        {isCollapsed && (
+          <div className="mt-2 flex justify-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(true);
+              }}
+              className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg"
+              title="Fixar menu"
+            >
+              <PanelLeftOpen className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        {(hasMultipleProfiles || isAdminLike) && (
           <div className={cn("mt-2 flex", isCollapsed ? "justify-center" : "justify-end")}>
             <Button
               variant="ghost"
@@ -531,13 +590,15 @@ export function AppSidebar() {
                 "relative h-8 border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary",
                 isCollapsed ? "w-8" : "gap-2 px-2 text-xs font-medium"
               )}
-              title="Trocar perfil de acesso"
+              title={isAdminLike ? "Alternar entre os módulos do sistema" : "Trocar perfil de acesso"}
             >
               <Repeat2 className="h-3.5 w-3.5" />
               {!isCollapsed && <span>Trocar perfil</span>}
-              <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-1 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center">
-                {availableProfilesCount}
-              </span>
+              {availableProfilesCount > 1 && (
+                <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-primary text-primary-foreground text-[8px] font-bold flex items-center justify-center">
+                  {availableProfilesCount}
+                </span>
+              )}
             </Button>
           </div>
         )}
@@ -545,7 +606,7 @@ export function AppSidebar() {
 
       <SidebarContent className="gap-0 py-2">
         {/* ── Bloco "Setor Ativo": trio Início / Mapa / Painel sincronizado com o setor ── */}
-        {!["porta","visitante","farmacia","ccih","imagem","laboratorio","administrativo","nir"].includes(accessProfile) && (
+        {role !== "super_admin" && !["porta","visitante","farmacia","ccih","imagem","laboratorio","administrativo","nir","gestor"].includes(accessProfile) && (
           <SidebarGroup className="py-0 my-0 border-b border-border/50">
             <div className={cn(
               "pt-2 pb-2",

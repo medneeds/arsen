@@ -3202,48 +3202,17 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             const currentPendencies = patient.pendencies || [];
             const updatedPendencies = [...currentPendencies, ...templateItems];
             const pendenciesString = updatedPendencies.join('\n');
+            // MIGRAÇÃO: patients → internacoes (pendencies → pendencias). patient.id é internacoes.id.
+            // Não enviar updated_at (coluna inexistente); atualizado_em é gerenciado por trigger.
             const { error } = await supabase
-              .from('patients')
-              .update({ pendencies: pendenciesString, updated_at: new Date().toISOString() })
+              .from('internacoes')
+              .update({ pendencias: pendenciesString })
               .eq('id', patient.id);
             if (error) throw error;
-            const { data: updatedPatient, error: fetchError } = await supabase
-              .from('patients')
-              .select('*')
-              .eq('id', patient.id)
-              .maybeSingle();
-            if (fetchError) throw fetchError;
-            toast.success(`${templateItems.length} ${(templateItems.length) === 1 ? 'item' : 'itens'} do protocolo ${(templateItems.length) === 1 ? 'adicionado' : 'adicionados'}`);
-            if (updatedPatient) {
-              const mappedPatient: Patient = {
-                id: updatedPatient.id,
-                bedNumber: updatedPatient.bed_number,
-                name: updatedPatient.name,
-                age: updatedPatient.age,
-                sector: updatedPatient.sector as SectorType,
-                diagnoses: parseTextArray(updatedPatient.diagnoses),
-                medicalHistory: parseTextArray(updatedPatient.medical_history),
-                relevantExams: parseTextArray(updatedPatient.relevant_exams),
-                pendencies: parseTextArray(updatedPatient.pendencies),
-                schedule: parseTextArray(updatedPatient.schedule),
-                admissionHistory: updatedPatient.admission_history || '',
-                admissionDate: updatedPatient.admission_date || '',
-                internmentStatus: updatedPatient.internment_status as any,
-                internmentNotes: updatedPatient.internment_notes,
-                medicalResponsibility: updatedPatient.medical_responsibility as unknown as MedicalResponsibility | undefined,
-                highlightedPendencies: updatedPatient.highlighted_pendencies || [],
-                utiAdmissionDate: parseTextArray(updatedPatient.uti_admission_date),
-                utiAdmissionReason: parseTextArray(updatedPatient.uti_admission_reason),
-                utiDischargePrediction: parseTextArray(updatedPatient.uti_discharge_prediction),
-                utiAllergies: parseTextArray(updatedPatient.uti_allergies),
-                utiCurrentStatus: parseTextArray(updatedPatient.uti_current_status),
-                utiDevices: parseTextArray(updatedPatient.uti_devices),
-                utiSpecialties: parseTextArray(updatedPatient.uti_specialties),
-                utiCulturesAntibiotics: parseTextArray(updatedPatient.uti_cultures_antibiotics),
-                utiOriginSector: parseTextArray(updatedPatient.uti_origin_sector)
-              };
-              onUpdate(mappedPatient);
-            }
+            toast.success(`${templateItems.length} item(ns) do protocolo adicionado(s)`);
+            // MIGRAÇÃO: re-fetch de `patients.*` + remap removido (tabela morta) —
+            // mescla local no view-model preserva os demais campos vindos do join upstream.
+            onUpdate({ ...patient, pendencies: updatedPendencies });
           } catch (error) {
             console.error('Error:', error);
             toast.error('Erro ao aplicar template terapêutico');
@@ -3265,59 +3234,20 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             const updatedPendencies = [...currentPendencies, ...templates];
             const pendenciesString = updatedPendencies.join('\n');
 
-            // Update database
+            // MIGRAÇÃO: patients → internacoes (pendencies → pendencias). patient.id é internacoes.id.
+            // Não enviar updated_at (coluna inexistente); atualizado_em é gerenciado por trigger.
             const { error } = await supabase
-              .from('patients')
-              .update({ 
-                pendencies: pendenciesString,
-                updated_at: new Date().toISOString()
-              })
+              .from('internacoes')
+              .update({ pendencias: pendenciesString })
               .eq('id', patient.id);
 
             if (error) throw error;
 
-            // Fetch the updated patient data
-            const { data: updatedPatient, error: fetchError } = await supabase
-              .from('patients')
-              .select('*')
-              .eq('id', patient.id)
-              .maybeSingle();
+            toast.success(`${templates.length} template(s) adicionado(s)`);
 
-            if (fetchError) throw fetchError;
-
-            toast.success(`${templates.length} ${(templates.length) === 1 ? 'template' : 'templates'} ${(templates.length) === 1 ? 'adicionado' : 'adicionados'}`);
-            
-            // Update UI with fresh data - map database fields to Patient type
-            if (updatedPatient) {
-              const mappedPatient: Patient = {
-                id: updatedPatient.id,
-                bedNumber: updatedPatient.bed_number,
-                name: updatedPatient.name,
-                age: updatedPatient.age,
-                sector: updatedPatient.sector as SectorType,
-                diagnoses: parseTextArray(updatedPatient.diagnoses),
-                medicalHistory: parseTextArray(updatedPatient.medical_history),
-                relevantExams: parseTextArray(updatedPatient.relevant_exams),
-                pendencies: parseTextArray(updatedPatient.pendencies),
-                schedule: parseTextArray(updatedPatient.schedule),
-                admissionHistory: updatedPatient.admission_history || '',
-                admissionDate: updatedPatient.admission_date || '',
-                internmentStatus: updatedPatient.internment_status as 'SOLICITACAO_PENDENTE' | 'PSM_FAVORAVEL' | 'AGUARDANDO_VAGA' | 'IR_PARA_UTI' | 'IR_PARA_ENFERMARIA' | null,
-                internmentNotes: updatedPatient.internment_notes,
-                medicalResponsibility: updatedPatient.medical_responsibility as unknown as MedicalResponsibility | undefined,
-                highlightedPendencies: updatedPatient.highlighted_pendencies || [],
-                utiAdmissionDate: parseTextArray(updatedPatient.uti_admission_date),
-                utiAdmissionReason: parseTextArray(updatedPatient.uti_admission_reason),
-                utiDischargePrediction: parseTextArray(updatedPatient.uti_discharge_prediction),
-                utiAllergies: parseTextArray(updatedPatient.uti_allergies),
-                utiCurrentStatus: parseTextArray(updatedPatient.uti_current_status),
-                utiDevices: parseTextArray(updatedPatient.uti_devices),
-                utiSpecialties: parseTextArray(updatedPatient.uti_specialties),
-                utiCulturesAntibiotics: parseTextArray(updatedPatient.uti_cultures_antibiotics),
-                utiOriginSector: parseTextArray(updatedPatient.uti_origin_sector)
-              };
-              onUpdate(mappedPatient);
-            }
+            // MIGRAÇÃO: re-fetch de `patients.*` + remap removido (tabela morta) —
+            // mescla local no view-model preserva os demais campos vindos do join upstream.
+            onUpdate({ ...patient, pendencies: updatedPendencies });
           } catch (error) {
             console.error('Error:', error);
             toast.error('Erro ao adicionar templates');
@@ -3339,59 +3269,20 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             const updatedExams = [...currentExams, ...curves];
             const examsString = updatedExams.join('\n');
 
-            // Update database
+            // MIGRAÇÃO: patients → internacoes (relevant_exams → exames_relevantes). patient.id é internacoes.id.
+            // Não enviar updated_at (coluna inexistente); atualizado_em é gerenciado por trigger.
             const { error } = await supabase
-              .from('patients')
-              .update({ 
-                relevant_exams: examsString,
-                updated_at: new Date().toISOString()
-              })
+              .from('internacoes')
+              .update({ exames_relevantes: examsString })
               .eq('id', patient.id);
 
             if (error) throw error;
 
-            // Fetch the updated patient data
-            const { data: updatedPatient, error: fetchError } = await supabase
-              .from('patients')
-              .select('*')
-              .eq('id', patient.id)
-              .maybeSingle();
+            toast.success(`${curves.length} curva(s) adicionada(s)`);
 
-            if (fetchError) throw fetchError;
-
-            toast.success(`${curves.length} ${(curves.length) === 1 ? 'curva' : 'curvas'} ${(curves.length) === 1 ? 'adicionada' : 'adicionadas'}`);
-            
-            // Update UI with fresh data
-            if (updatedPatient) {
-              const mappedPatient: Patient = {
-                id: updatedPatient.id,
-                bedNumber: updatedPatient.bed_number,
-                name: updatedPatient.name,
-                age: updatedPatient.age,
-                sector: updatedPatient.sector as SectorType,
-                diagnoses: parseTextArray(updatedPatient.diagnoses),
-                medicalHistory: parseTextArray(updatedPatient.medical_history),
-                relevantExams: parseTextArray(updatedPatient.relevant_exams),
-                pendencies: parseTextArray(updatedPatient.pendencies),
-                schedule: parseTextArray(updatedPatient.schedule),
-                admissionHistory: updatedPatient.admission_history || '',
-                admissionDate: updatedPatient.admission_date || '',
-                internmentStatus: updatedPatient.internment_status as 'SOLICITACAO_PENDENTE' | 'PSM_FAVORAVEL' | 'AGUARDANDO_VAGA' | 'IR_PARA_UTI' | 'IR_PARA_ENFERMARIA' | null,
-                internmentNotes: updatedPatient.internment_notes,
-                medicalResponsibility: updatedPatient.medical_responsibility as unknown as MedicalResponsibility | undefined,
-                highlightedPendencies: updatedPatient.highlighted_pendencies || [],
-                utiAdmissionDate: parseTextArray(updatedPatient.uti_admission_date),
-                utiAdmissionReason: parseTextArray(updatedPatient.uti_admission_reason),
-                utiDischargePrediction: parseTextArray(updatedPatient.uti_discharge_prediction),
-                utiAllergies: parseTextArray(updatedPatient.uti_allergies),
-                utiCurrentStatus: parseTextArray(updatedPatient.uti_current_status),
-                utiDevices: parseTextArray(updatedPatient.uti_devices),
-                utiSpecialties: parseTextArray(updatedPatient.uti_specialties),
-                utiCulturesAntibiotics: parseTextArray(updatedPatient.uti_cultures_antibiotics),
-                utiOriginSector: parseTextArray(updatedPatient.uti_origin_sector)
-              };
-              onUpdate(mappedPatient);
-            }
+            // MIGRAÇÃO: re-fetch de `patients.*` + remap removido (tabela morta) —
+            // mescla local no view-model preserva os demais campos vindos do join upstream.
+            onUpdate({ ...patient, relevantExams: updatedExams });
           } catch (error) {
             console.error('Error:', error);
             toast.error('Erro ao adicionar curvas de exames');
@@ -3409,57 +3300,18 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
           try {
             const examsString = newExams.join('\n');
 
-            // Update database
+            // MIGRAÇÃO: patients → internacoes (relevant_exams → exames_relevantes). patient.id é internacoes.id.
+            // Não enviar updated_at (coluna inexistente); atualizado_em é gerenciado por trigger.
             const { error } = await supabase
-              .from('patients')
-              .update({ 
-                relevant_exams: examsString,
-                updated_at: new Date().toISOString()
-              })
+              .from('internacoes')
+              .update({ exames_relevantes: examsString })
               .eq('id', patient.id);
 
             if (error) throw error;
 
-            // Fetch the updated patient data
-            const { data: updatedPatient, error: fetchError } = await supabase
-              .from('patients')
-              .select('*')
-              .eq('id', patient.id)
-              .maybeSingle();
-
-            if (fetchError) throw fetchError;
-
-            // Update UI with fresh data
-            if (updatedPatient) {
-              const mappedPatient: Patient = {
-                id: updatedPatient.id,
-                bedNumber: updatedPatient.bed_number,
-                name: updatedPatient.name,
-                age: updatedPatient.age,
-                sector: updatedPatient.sector as SectorType,
-                diagnoses: parseTextArray(updatedPatient.diagnoses),
-                medicalHistory: parseTextArray(updatedPatient.medical_history),
-                relevantExams: parseTextArray(updatedPatient.relevant_exams),
-                pendencies: parseTextArray(updatedPatient.pendencies),
-                schedule: parseTextArray(updatedPatient.schedule),
-                admissionHistory: updatedPatient.admission_history || '',
-                admissionDate: updatedPatient.admission_date || '',
-                internmentStatus: updatedPatient.internment_status as 'SOLICITACAO_PENDENTE' | 'PSM_FAVORAVEL' | 'AGUARDANDO_VAGA' | 'IR_PARA_UTI' | 'IR_PARA_ENFERMARIA' | null,
-                internmentNotes: updatedPatient.internment_notes,
-                medicalResponsibility: updatedPatient.medical_responsibility as unknown as MedicalResponsibility | undefined,
-                highlightedPendencies: updatedPatient.highlighted_pendencies || [],
-                utiAdmissionDate: parseTextArray(updatedPatient.uti_admission_date),
-                utiAdmissionReason: parseTextArray(updatedPatient.uti_admission_reason),
-                utiDischargePrediction: parseTextArray(updatedPatient.uti_discharge_prediction),
-                utiAllergies: parseTextArray(updatedPatient.uti_allergies),
-                utiCurrentStatus: parseTextArray(updatedPatient.uti_current_status),
-                utiDevices: parseTextArray(updatedPatient.uti_devices),
-                utiSpecialties: parseTextArray(updatedPatient.uti_specialties),
-                utiCulturesAntibiotics: parseTextArray(updatedPatient.uti_cultures_antibiotics),
-                utiOriginSector: parseTextArray(updatedPatient.uti_origin_sector)
-              };
-              onUpdate(mappedPatient);
-            }
+            // MIGRAÇÃO: re-fetch de `patients.*` + remap removido (tabela morta) —
+            // mescla local no view-model (ExaminusAI substitui a lista inteira de exames).
+            onUpdate({ ...patient, relevantExams: newExams });
           } catch (error) {
             console.error('Error:', error);
             toast.error('Erro ao importar exames');

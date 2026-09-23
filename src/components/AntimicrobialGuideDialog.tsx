@@ -485,12 +485,26 @@ export function AntimicrobialGuideDialog({
 
   useEffect(() => {
     if (open && patientId) {
+      // MIGRAÇÃO: culture_results → resultados_cultura (ancorada em internacao_id).
+      // Colunas renomeadas mapeadas de volta ao shape legado do componente.
       supabase
-        .from('culture_results')
-        .select('id, culture_type, collection_date, status, microorganism, antibiogram, sensitivity_profile, result_text, created_at')
-        .eq('patient_id', patientId)
-        .order('created_at', { ascending: false })
-        .then(({ data }) => { if (data) setAvailableCultures(data); });
+        .from('resultados_cultura')
+        .select('id, tipo_cultura, data_coleta, status, microorganismo, antibiograma, perfil_sensibilidade, resultado_texto, criado_em')
+        .eq('internacao_id', patientId)
+        .order('criado_em', { ascending: false })
+        .then(({ data }) => {
+          if (data) setAvailableCultures((data as any[]).map(c => ({
+            id: c.id,
+            culture_type: c.tipo_cultura,
+            collection_date: c.data_coleta,
+            status: c.status,
+            microorganism: c.microorganismo,
+            antibiogram: c.antibiograma,
+            sensitivity_profile: c.perfil_sensibilidade,
+            result_text: c.resultado_texto,
+            created_at: c.criado_em,
+          })));
+        });
     }
   }, [open, patientId]);
 
@@ -558,16 +572,19 @@ export function AntimicrobialGuideDialog({
     if (!patientId) return;
     setLoadingImport(prev => ({ ...prev, [entryId]: 'history' }));
     try {
+      // MIGRAÇÃO: admission_histories → internacoes (id = patientId).
+      // chief_complaint→queixa_principal, clinical_history→historia_clinica,
+      // diagnostic_hypothesis→hipotese_diagnostica, initial_conduct→conduta_inicial.
       const { data: admHistory } = await supabase
-        .from('admission_histories')
-        .select('chief_complaint, clinical_history, diagnostic_hypothesis, initial_conduct')
-        .eq('patient_id', patientId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+        .from('internacoes')
+        .select('queixa_principal, historia_clinica, hipotese_diagnostica, conduta_inicial')
+        .eq('id', patientId).maybeSingle();
       if (admHistory) {
         const parts = [
-          admHistory.chief_complaint && `QUEIXA PRINCIPAL: ${admHistory.chief_complaint}`,
-          admHistory.clinical_history && `HISTÓRIA CLÍNICA: ${admHistory.clinical_history}`,
-          admHistory.diagnostic_hypothesis && `HIPÓTESE DIAGNÓSTICA: ${admHistory.diagnostic_hypothesis}`,
-          admHistory.initial_conduct && `CONDUTA INICIAL: ${admHistory.initial_conduct}`,
+          admHistory.queixa_principal && `QUEIXA PRINCIPAL: ${admHistory.queixa_principal}`,
+          admHistory.historia_clinica && `HISTÓRIA CLÍNICA: ${admHistory.historia_clinica}`,
+          admHistory.hipotese_diagnostica && `HIPÓTESE DIAGNÓSTICA: ${admHistory.hipotese_diagnostica}`,
+          admHistory.conduta_inicial && `CONDUTA INICIAL: ${admHistory.conduta_inicial}`,
         ].filter(Boolean).join('\n');
         if (parts) {
           const cur = entries.find(e => e.id === entryId)?.justification || '';
@@ -575,11 +592,8 @@ export function AntimicrobialGuideDialog({
           return;
         }
       }
-      const { data: patientData } = await supabase.from('patients').select('admission_history').eq('id', patientId).maybeSingle();
-      if (patientData?.admission_history) {
-        const cur = entries.find(e => e.id === entryId)?.justification || '';
-        updateEntry(entryId, 'justification', cur + (cur ? '\n\n' : '') + `[HISTÓRIA ADMISSIONAL]\n${patientData.admission_history}`);
-      }
+      // MIGRAÇÃO: patients.admission_history DEGRADADO (sem coluna em internacoes) —
+      // fallback removido; a bridge do view-model já define admissionHistory="".
     } catch (err) { console.error(err); }
     finally { setLoadingImport(prev => ({ ...prev, [entryId]: null })); }
   };
@@ -588,18 +602,20 @@ export function AntimicrobialGuideDialog({
     if (!patientId) return;
     setLoadingImport(prev => ({ ...prev, [entryId]: 'evolution' }));
     try {
+      // MIGRAÇÃO: patients → internacoes (bridge). diagnoses→hipotese_diagnostica,
+      // medical_history→historia_clinica, relevant_exams→exames_relevantes,
+      // pendencies→pendencias. DEGRADADOS: uti_cultures_antibiotics e
+      // uti_current_status (blocos uti_* não têm coluna no schema novo).
       const { data: patientData } = await supabase
-        .from('patients')
-        .select('diagnoses, medical_history, relevant_exams, pendencies, uti_cultures_antibiotics, uti_current_status')
+        .from('internacoes')
+        .select('hipotese_diagnostica, historia_clinica, exames_relevantes, pendencias')
         .eq('id', patientId).maybeSingle();
       if (patientData) {
         const parts = [
-          patientData.diagnoses && `DIAGNÓSTICOS: ${patientData.diagnoses}`,
-          patientData.medical_history && `ANTECEDENTES: ${patientData.medical_history}`,
-          patientData.relevant_exams && `EXAMES RELEVANTES: ${patientData.relevant_exams}`,
-          patientData.uti_cultures_antibiotics && `CULTURAS/ATB: ${patientData.uti_cultures_antibiotics}`,
-          patientData.uti_current_status && `STATUS ATUAL: ${patientData.uti_current_status}`,
-          patientData.pendencies && `PENDÊNCIAS/PROGRAMAÇÕES: ${patientData.pendencies}`,
+          patientData.hipotese_diagnostica && `DIAGNÓSTICOS: ${patientData.hipotese_diagnostica}`,
+          patientData.historia_clinica && `ANTECEDENTES: ${patientData.historia_clinica}`,
+          patientData.exames_relevantes && `EXAMES RELEVANTES: ${patientData.exames_relevantes}`,
+          patientData.pendencias && `PENDÊNCIAS/PROGRAMAÇÕES: ${patientData.pendencias}`,
         ].filter(Boolean).join('\n');
         if (parts) {
           const cur = entries.find(e => e.id === entryId)?.justification || '';

@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { toSexoDb } from "@/lib/sexo";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { useMedicalRecordMode } from "@/hooks/useMedicalRecordMode";
@@ -22,6 +23,7 @@ import {
   shouldEscalateToAi,
   type NiDetection,
 } from "@/lib/unidentifiedDetector";
+import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 
 interface PatientRegistrationDialogProps {
   open: boolean;
@@ -80,16 +82,8 @@ const EMPTY_FORM: PatientFormData = {
   ni_arrival_circumstance: "",
 };
 
-const SECTORS = [
-  "UTI 1", "UTI 2",
-  "UCI 1", "UCI 2",
-  "UCC",
-  "Neuro 01", "Neuro 02",
-  "Clínica Cirúrgica",
-  "Enf. Transição",
-  "Enf. Vascular",
-  "RIV",
-];
+// MIGRAÇÃO (Achado 2): a lista fixa de setores (HMDM) foi removida — os setores
+// agora vêm do banco (alas → setores) via useSectorNavigation.
 
 // Format CPF: 000.000.000-00
 const formatCPF = (v: string) => {
@@ -114,6 +108,12 @@ const isValidCPF = (cpf: string) => {
 };
 
 export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defaultDestinationSector }: PatientRegistrationDialogProps) {
+  // MIGRAÇÃO (Achado 2): a lista de setores para "Pedido de Leito" vinha da
+  // constante hardcoded SECTORS (nomenclatura do HMDM: UTI/UCI/enfermarias…),
+  // que não corresponde aos setores reais do hospital (ex.: Ala A / Ala B).
+  // Agora vem do BANCO (alas → setores) via useSectorNavigation.
+  const { sectors: dbSectors } = useSectorNavigation();
+  const sectorOptions = dbSectors.map((s) => s.nome);
   const [activeTab, setActiveTab] = useState("dados");
   const [form, setForm] = useState<PatientFormData>(() => ({ ...EMPTY_FORM, destination_sector: defaultDestinationSector || "" }));
   const [isExtracting, setIsExtracting] = useState(false);
@@ -375,12 +375,23 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
         toast({ title: "Nome obrigatório", variant: "destructive" });
         return;
       }
-      if (/[^A-Z0-9 -]/.test(form.patient_name)) {
-        toast({ title: "Nome com caracteres inválidos", description: "Remova acentos, cedilha e símbolos do nome do paciente antes de salvar.", variant: "destructive" });
+      // Achado 1: bloqueia caracteres especiais no nome. Permite letras (incl.
+      // acentuadas), espaço, apóstrofo, hífen e ponto — o que cobre nomes reais
+      // (ex.: "D'Motta", "Ana-Maria"); rejeita dígitos e símbolos.
+      if (!/^[\p{L}][\p{L}\s.'-]*$/u.test(form.patient_name.trim())) {
+        toast({
+          title: "Nome inválido",
+          description: "Use apenas letras, espaços, apóstrofo (') e hífen (-). Números e símbolos não são permitidos.",
+          variant: "destructive",
+        });
         return;
       }
-      if (form.mother_name && /[^A-Z0-9 -]/.test(form.mother_name)) {
-        toast({ title: "Nome da mãe com caracteres inválidos", description: "Remova acentos, cedilha e símbolos do nome da mãe antes de salvar.", variant: "destructive" });
+      if (form.mother_name && !/^[\p{L}][\p{L}\s.'-]*$/u.test(form.mother_name.trim())) {
+        toast({
+          title: "Nome da mãe inválido",
+          description: "Use apenas letras, espaços, apóstrofo (') e hífen (-). Números e símbolos não são permitidos.",
+          variant: "destructive",
+        });
         return;
       }
       if (!form.birth_date) {
@@ -423,117 +434,118 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
       const selectedSectors = effectiveDestination.split(", ").filter(Boolean);
       const isUtiDestination = selectedSectors.some(s => s.startsWith("UTI"));
       const hasDestinationSector = selectedSectors.length > 0;
-      // Sempre que houver setor de destino definido (seja vindo do mapa ou escolhido na recepção),
-      // o paciente entra direto em "aguardando_leito" daquele setor.
-      // Classificação de risco fica pendente e pode ser feita depois pelo médico.
-      const status = isUtiDestination
-        ? "aguardando_leito_uti"
-        : hasDestinationSector
-          ? "aguardando_leito"
-          : "pre_admissao";
+      // MIGRAÇÃO: o CHECK `pre_admissoes_status_check` só aceita
+      // pre_admissao | classificado | admitido | cancelado. O vocabulário antigo
+      // (aguardando_leito / aguardando_leito_uti) NÃO existe mais e causava o erro
+      // "violates check constraint pre_admissoes_status_check". De-para: quando já
+      // há setor de destino definido, a pré-admissão entra como `classificado`
+      // (pronta para alocar leito); sem destino, fica `pre_admissao`.
+      const status = hasDestinationSector ? "classificado" : "pre_admissao";
 
       // Generate NI code if unidentified
+      // MIGRAÇÃO: generate_ni_code é RPC custom não tipada → (supabase.rpc as any)
+      // com try/catch e fallback local (pode não existir no backend novo).
       let niCode: string | null = null;
       let finalName = normalizePatientName(form.patient_name);
       if (form.is_unidentified) {
-        const { data: ni, error: niErr } = await (supabase.rpc as any)("generate_ni_code");
-        if (niErr) throw niErr;
-        niCode = ni as string;
+        try {
+          const { data: ni, error: niErr } = await (supabase.rpc as any)("generate_ni_code");
+          if (niErr) throw niErr;
+          niCode = (ni as string) || null;
+        } catch {
+          niCode = null;
+        }
+        if (!niCode) {
+          niCode = `NI-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+        }
         finalName = niCode; // Nome temporário = código NI
       }
 
-      // Generate medical record number
-      // Preserva o prontuário vindo do PIS para auditoria, mas em modo auto+NI
-      // sempre gera um novo número oficial interno (PIS vai para unidentified_features).
-      let prontuario = form.medical_record?.trim() || null;
-      const pisProntuario = prontuario;
+      // MIGRAÇÃO: hospital_units.unit_code + generate_medical_record_number
+      // não existem no schema novo (geração oficial removida). pacientes.prontuario
+      // é NOT NULL → usa o nº informado (PIS/legado) ou um fallback local.
+      const pisProntuario = form.medical_record?.trim() || null;
+      let prontuario = pisProntuario;
       if (form.is_unidentified && mrMode === "auto") {
-        prontuario = null;
+        prontuario = null; // NI em modo auto ganha número novo
       }
       if (!prontuario) {
-        const { data: unitRow, error: unitErr } = await supabase
-          .from("hospital_units").select("unit_code").eq("id", currentHospital.id).maybeSingle();
-        if (unitErr) throw unitErr;
-        const unitCode = (unitRow as any)?.unit_code;
-        if (!unitCode || !/^[0-9]{3}$/.test(unitCode)) {
-          throw new Error("Unidade sem código de 3 dígitos configurado. Contate o administrador.");
-        }
-        const { data: gen, error: genErr } = await (supabase.rpc as any)(
-          "generate_medical_record_number",
-          { p_codigo_unidade: unitCode, p_data_criacao: new Date().toISOString(), p_patient_registry_id: null, p_patient_id: null }
-        );
-        if (genErr) throw genErr;
-        prontuario = gen as string;
+        prontuario = niCode || `PR-${Date.now().toString(36).toUpperCase()}`;
       }
 
-      // Create patient_registry record (single source of truth)
+      // Rastreabilidade NI (sem coluna dedicada → preservada em dados_extraidos_ia).
       const niFeatures = form.is_unidentified ? {
         estimated_age: form.ni_estimated_age || null,
         apparent_sex: form.ni_apparent_sex || null,
         skin_color: form.ni_skin_color || null,
         distinctive_marks: form.ni_distinctive_marks || null,
         arrival_circumstance: form.ni_arrival_circumstance || null,
-        // Rastreabilidade: prontuário e nome originais do PIS quando importado
         pis_medical_record: pisProntuario || null,
-        pis_raw_name: form.medical_record && pisProntuario ? "NÃO IDENTIFICADO (PIS)" : null,
       } : null;
 
-      const { data: registry, error: regErr } = await supabase
-        .from("patient_registry")
+      // MIGRAÇÃO: patient_registry → pacientes (cadastro permanente). Mapa de colunas:
+      //   full_name→nome_completo, social_name→nome_social, mother_name→nome_mae,
+      //   birth_date→data_nascimento, sex→sexo, medical_record→prontuario,
+      //   phone→telefone, address→endereco. DEGRADADOS (sem coluna em pacientes):
+      //   neighborhood/city/state (endereco é campo único → só logradouro), notes,
+      //   hospital_unit_id/state_id/created_by, is_unidentified/unidentified_code/
+      //   unidentified_features → preservados em pre_admissoes.dados_extraidos_ia.
+      const { data: paciente, error: pacErr } = await supabase
+        .from("pacientes")
         .insert({
-          full_name: finalName,
-          social_name: form.social_name?.trim() || null,
-          mother_name: normalizePatientName(form.mother_name || '') || null,
-          birth_date: form.birth_date || null,
-          sex: form.sex || null,
+          nome_completo: finalName,
+          nome_social: form.social_name?.trim() || null,
+          nome_mae: normalizePatientName(form.mother_name || '') || null,
+          data_nascimento: form.birth_date || null,
+          sexo: toSexoDb(form.sex),
           cpf: form.cpf?.replace(/\D/g, "") || null,
           cns: form.cns?.replace(/\D/g, "") || null,
-          medical_record: prontuario,
+          prontuario,
+          telefone: form.phone?.trim() || null,
+          endereco: form.address?.trim() || null,
+        } as any)
+        .select("id")
+        .single();
+      if (pacErr) {
+        if ((pacErr as any).code === "23505") {
+          throw new Error("CPF ou prontuário já cadastrado em outro paciente. Não é possível duplicar.");
+        }
+        throw pacErr;
+      }
+
+      // MIGRAÇÃO: pre_admissions → pre_admissoes. A tabela nova só tem
+      //   nome_paciente, cpf, cns, data_nascimento, classificacao_risco,
+      //   setor_destino_id, dados_extraidos_ia (Json), status, data_hora,
+      //   internacao_id. Todos os demais campos do modelo antigo (social_name,
+      //   mother_name, sex, phone, address, neighborhood/city/state, medical_record,
+      //   notes, department, hospital/state, destination label, paciente_id, NI)
+      //   sem coluna → preservados em dados_extraidos_ia. setor_destino_id não é
+      //   resolvível a partir do rótulo de destino (lista SECTORS) → null.
+      const { error: paErr } = await supabase.from("pre_admissoes").insert({
+        nome_paciente: finalName,
+        cpf: form.cpf?.replace(/\D/g, "") || null,
+        cns: form.cns?.replace(/\D/g, "") || null,
+        data_nascimento: form.birth_date || null,
+        classificacao_risco: null,
+        setor_destino_id: null,
+        status,
+        dados_extraidos_ia: {
+          paciente_id: paciente?.id || null,
+          social_name: form.social_name?.trim() || null,
+          mother_name: form.mother_name?.trim() || null,
+          sex: form.sex || null,
           phone: form.phone?.trim() || null,
           address: form.address?.trim() || null,
           neighborhood: form.neighborhood?.trim() || null,
           city: form.city?.trim() || null,
           state: form.state?.trim() || null,
+          medical_record: prontuario,
+          destination_sector: effectiveDestination || null,
           notes: form.notes?.trim() || null,
-          hospital_unit_id: currentHospital.id,
-          state_id: currentState.id,
-          created_by: userData?.user?.id || null,
+          department: currentDepartment || null,
           is_unidentified: form.is_unidentified,
-          unidentified_code: niCode,
-          unidentified_features: niFeatures,
-        } as any)
-        .select("id")
-        .single();
-      if (regErr) {
-        // Friendly message for unique violation on CPF
-        if ((regErr as any).code === "23505") {
-          throw new Error("CPF já cadastrado em outro paciente. Não é possível duplicar.");
-        }
-        throw regErr;
-      }
-
-      const { error: paErr } = await supabase.from("pre_admissions").insert({
-        patient_name: finalName,
-        social_name: form.social_name?.trim() || null,
-        mother_name: normalizePatientName(form.mother_name || '') || null,
-        birth_date: form.birth_date || null,
-        sex: form.sex || null,
-        cpf: form.cpf?.replace(/\D/g, "") || null,
-        cns: form.cns?.replace(/\D/g, "") || null,
-        medical_record: prontuario,
-        phone: form.phone?.trim() || null,
-        address: form.address?.trim() || null,
-        neighborhood: form.neighborhood?.trim() || null,
-        city: form.city?.trim() || null,
-        state: form.state?.trim() || null,
-        destination_sector: effectiveDestination || null,
-        notes: form.notes?.trim() || null,
-        hospital_unit_id: currentHospital.id,
-        state_id: currentState.id,
-        department: currentDepartment,
-        created_by: userData?.user?.id || null,
-        status,
-        patient_registry_id: registry?.id || null,
+          ni_features: niFeatures,
+        },
       } as any);
       if (paErr) throw paErr;
 
@@ -850,7 +862,12 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
             <div>
               <Label className="text-xs font-medium">Pedido de Leito (selecione um ou mais setores)</Label>
               <div className="grid grid-cols-2 gap-2 mt-2">
-                {SECTORS.map(s => {
+                {sectorOptions.length === 0 && (
+                  <p className="text-xs text-muted-foreground col-span-2">
+                    Nenhum setor cadastrado para este hospital.
+                  </p>
+                )}
+                {sectorOptions.map(s => {
                   const selected = form.destination_sector.split(", ").filter(Boolean);
                   const isChecked = selected.includes(s);
                   return (

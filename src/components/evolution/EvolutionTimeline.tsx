@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { printEvolution } from "@/lib/printEvolution";
 import { PostValidationPrintDialog } from "@/components/PostValidationPrintDialog";
-import { resolvePatientHeader } from "@/lib/resolvePatientHeader";
+import { resolvePatientHeader, resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -186,11 +186,14 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
       // Sem isso: o evo em memória ainda tem os campos vazios (banco não respondeu).
       try {
         const { supabase } = await import("@/integrations/supabase/client");
-        const { data: freshEvo } = await supabase
-          .from("clinical_evolutions")
+        const { mapEvolution } = await import("@/hooks/useEvolutions");
+        // MIGRAÇÃO: clinical_evolutions → evolucoes (colunas pt-BR).
+        const { data: freshEvoRow } = await supabase
+          .from("evolucoes")
           .select("*")
           .eq("id", validatedId)
           .maybeSingle();
+        const freshEvo = freshEvoRow ? mapEvolution(freshEvoRow) : null;
         if (freshEvo) {
           setJustValidatedEvo(freshEvo as unknown as EvolutionRecord);
         } else {
@@ -211,11 +214,18 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     const printWin1 = window.open("", "_blank", "width=1024,height=768");
     if (printWin1) printWin1.document.write("<html><body style='font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#475569'>Preparando evolução…</body></html>");
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
       let fallbackName: string | null = evo.patient_name || null;
       if ((!fallbackName || !fallbackName.trim()) && patientId) {
-        const { data: pRow } = await supabase.from("patients").select("name").eq("id", patientId).maybeSingle();
-        if ((pRow as any)?.name?.trim()) fallbackName = (pRow as any).name.trim();
+        // MIGRAÇÃO: patients morto → nome via internacoes → pacientes.
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: iRow } = await supabase
+          .from("internacoes")
+          .select("paciente:pacientes(nome_completo, nome_social)")
+          .eq("id", patientId)
+          .maybeSingle();
+        const pac: any = (iRow as any)?.paciente;
+        const nm = pac?.nome_social || pac?.nome_completo;
+        if (nm?.trim()) fallbackName = nm.trim();
       }
       const resolved = await resolvePatientHeader(
         patientId || null,
@@ -223,12 +233,14 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
         currentHospital?.id || null,
         (evo as any).patient_registry_id || null,
       );
+      // MIGRAÇÃO: leito/setor ATUAIS via resolveCurrentBedSector
+      // (internacoes → leitos/setores); antes patients.bed_number/sector.
       let currentBed = evo.patient_bed || undefined;
       let currentSector = evo.patient_sector || undefined;
       if (patientId) {
-        const { data: pRow } = await supabase.from("patients").select("bed_number, sector").eq("id", patientId).maybeSingle();
-        if (pRow?.bed_number) currentBed = pRow.bed_number;
-        if (pRow?.sector) currentSector = pRow.sector;
+        const live = await resolveCurrentBedSector(patientId);
+        if (live.bed) currentBed = live.bed;
+        if (live.sector) currentSector = live.sector;
       }
       await printEvolution(evo, {
         patientName: resolved.name || evo.patient_name,
@@ -571,13 +583,19 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         if (printWinBtn) printWinBtn.document.write("<html><body style='font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#475569'>Preparando evolução…</body></html>");
                         // Resolve identidade canônica (registry + guarda anti-NI)
                         try {
-                          const { supabase } = await import("@/integrations/supabase/client");
                           // Fallback: garantir nome antes de resolver header
                           let fallbackName: string | null = evo.patient_name || null;
                           if ((!fallbackName || !fallbackName.trim()) && patientId) {
-                            const { data: pRow } = await supabase
-                              .from("patients").select("name").eq("id", patientId).maybeSingle();
-                            if ((pRow as any)?.name?.trim()) fallbackName = (pRow as any).name.trim();
+                            // MIGRAÇÃO: patients morto → nome via internacoes → pacientes.
+                            const { supabase } = await import("@/integrations/supabase/client");
+                            const { data: iRow } = await supabase
+                              .from("internacoes")
+                              .select("paciente:pacientes(nome_completo, nome_social)")
+                              .eq("id", patientId)
+                              .maybeSingle();
+                            const pac: any = (iRow as any)?.paciente;
+                            const nm = pac?.nome_social || pac?.nome_completo;
+                            if (nm?.trim()) fallbackName = nm.trim();
                           }
                           const resolved = await resolvePatientHeader(
                             patientId || null,
@@ -585,18 +603,14 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             currentHospital?.id || null,
                             (evo as any).patient_registry_id || null,
                           );
-                          // Leito/setor ATUAIS do paciente (após realocações),
-                          // não o snapshot gravado em evo.patient_bed.
+                          // MIGRAÇÃO: leito/setor ATUAIS via resolveCurrentBedSector
+                          // (internacoes → leitos/setores), não o snapshot de evo.patient_bed.
                           let currentBed = evo.patient_bed || undefined;
                           let currentSector = evo.patient_sector || undefined;
                           if (patientId) {
-                            const { data: pRow } = await supabase
-                              .from("patients")
-                              .select("bed_number, sector")
-                              .eq("id", patientId)
-                              .maybeSingle();
-                            if (pRow?.bed_number) currentBed = pRow.bed_number;
-                            if (pRow?.sector) currentSector = pRow.sector;
+                            const live = await resolveCurrentBedSector(patientId);
+                            if (live.bed) currentBed = live.bed;
+                            if (live.sector) currentSector = live.sector;
                           }
                           await printEvolution(evo, {
                             patientName: resolved.name || evo.patient_name,

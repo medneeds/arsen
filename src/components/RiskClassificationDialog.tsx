@@ -193,34 +193,40 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
     try {
       const { data: userData } = await supabase.auth.getUser();
 
+      // MIGRAÇÃO: pre_admissions → pre_admissoes. A tabela nova só tem
+      // `classificacao_risco` + `status` + `dados_extraidos_ia` (Json). Todo o bloco
+      // rico de triagem (vital_signs, glasgow, airway_*, chief_complaint, allergies,
+      // pain_scale, oxygen_therapy, flu_symptoms, triage_notes) e os metadados
+      // risk_classified_at/by NÃO têm coluna → preservados dentro de `dados_extraidos_ia`
+      // (é entrada do usuário, não dado inventado). Ver MIGRACAO_DEGRADACOES.md.
+      const triagem = {
+        chief_complaint: form.chief_complaint.trim() || null,
+        vital_signs: form.vital_signs,
+        glasgow_score: glasgowTotal,
+        glasgow_detail: { eye: form.glasgow_eye, verbal: form.glasgow_verbal, motor: form.glasgow_motor },
+        airway_patent: form.airway_patent,
+        airway_obstruction: form.airway_obstruction,
+        airway_intubated: form.airway_intubated,
+        airway_notes: form.airway_notes.trim() || null,
+        peripheral_perfusion: form.peripheral_perfusion || null,
+        pulse_quality: form.pulse_quality || null,
+        allergies: form.allergies.trim() || null,
+        flu_symptoms: form.flu_symptoms,
+        flu_symptoms_detail: form.flu_symptoms_detail.trim() || null,
+        pain_scale: form.pain_scale,
+        oxygen_therapy: form.oxygen_therapy,
+        oxygen_therapy_detail: form.oxygen_therapy_detail.trim() || null,
+        triage_notes: form.triage_notes.trim() || null,
+        risk_classified_at: new Date().toISOString(),
+        risk_classified_by: userData?.user?.id || null,
+      };
+
       const { error } = await supabase
-        .from("pre_admissions")
+        .from("pre_admissoes")
         .update({
-          risk_classification: selected,
-          risk_classified_at: new Date().toISOString(),
-          risk_classified_by: userData?.user?.id || null,
+          classificacao_risco: selected,
           status: "classificado",
-          chief_complaint: form.chief_complaint.trim() || null,
-          vital_signs: form.vital_signs,
-          glasgow_score: glasgowTotal,
-          glasgow_detail: {
-            eye: form.glasgow_eye,
-            verbal: form.glasgow_verbal,
-            motor: form.glasgow_motor,
-          },
-          airway_patent: form.airway_patent,
-          airway_obstruction: form.airway_obstruction,
-          airway_intubated: form.airway_intubated,
-          airway_notes: form.airway_notes.trim() || null,
-          peripheral_perfusion: form.peripheral_perfusion || null,
-          pulse_quality: form.pulse_quality || null,
-          allergies: form.allergies.trim() || null,
-          flu_symptoms: form.flu_symptoms,
-          flu_symptoms_detail: form.flu_symptoms_detail.trim() || null,
-          pain_scale: form.pain_scale,
-          oxygen_therapy: form.oxygen_therapy,
-          oxygen_therapy_detail: form.oxygen_therapy_detail.trim() || null,
-          triage_notes: form.triage_notes.trim() || null,
+          dados_extraidos_ia: triagem,
         } as any)
         .eq("id", preAdmission.id);
 

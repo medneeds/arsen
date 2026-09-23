@@ -1,8 +1,7 @@
 // @ts-ignore - React module/types are resolved by the app build environment
-import { useEffect, useState, useRef } from "react";
-import { ADMISSION_STATUS } from "@/lib/admissionStatus";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Patient } from "@/types/patient";
+import { Patient, SectorType, isSectorType } from "@/types/patient";
 import { useToast } from "@/hooks/use-toast";
 import { Department } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
@@ -21,15 +20,92 @@ export const isGhostBed = (bedNumber?: string | null) => {
   return GHOST_PREFIXES.some(prefix => bn.startsWith(prefix));
 };
 
+// MIGRAÇÃO: campos multilinha do modelo antigo eram texto separado por '\n'.
+// As colunas equivalentes em `internacoes` mantêm o mesmo formato.
+const splitLines = (value?: string | null): string[] =>
+  value ? value.split('\n').filter(Boolean) : [];
+
 export function usePatients(department?: Department, sector?: string) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { currentState, currentHospital } = useHospital();
   const { user } = useAuth();
-  // Cache (registry_id → birth_date) populado a cada fetchPatients, reaproveitado
-  // pelo mapper dos eventos realtime para não fazer uma query extra por evento.
-  const registryBirthDateCacheRef = useRef<Map<string, string | null>>(new Map());
+
+  // MIGRAÇÃO (profissionais.id ≠ auth.uid): resolve o id do profissional a
+  // partir do user_id do Auth, necessário para colunas *_por (FK profissionais).
+  const resolveProfissionalId = async (userId?: string | null): Promise<string | null> => {
+    if (!userId) return null;
+    const { data } = await supabase
+      .from('profissionais')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  };
+
+  // MIGRAÇÃO central: o "paciente" do mapa de leitos é, na prática, o cruzamento
+  // leito × internação ativa. Cada leito do hospital vira UMA entrada Patient
+  // (ocupada, se houver internação com data_alta IS NULL; senão, vaga).
+  const mapLeitoToPatient = (leito: any): Patient => {
+    const setor = leito?.setor ?? null;
+    const internacoes: any[] = Array.isArray(leito?.internacoes) ? leito.internacoes : [];
+    // Internação ativa = data_alta ainda nula (seleção em JS para não depender de
+    // filtro em recurso aninhado).
+    const active = internacoes.find((i) => i && i.data_alta == null) ?? null;
+    const pac = active?.paciente ?? null;
+
+    // MIGRAÇÃO: Patient.sector é SectorType (código). setores.tipo carrega o
+    // código do tipo de setor; setores.nome é rótulo de exibição. Usamos `tipo`
+    // (cai para nome só se por acaso já for um SectorType válido).
+    const sectorCode = (isSectorType(setor?.tipo)
+      ? setor.tipo
+      : (isSectorType(setor?.nome) ? setor.nome : setor?.tipo)) as SectorType;
+
+    return {
+      id: active ? active.id : leito.id, // ocupado → internacoes.id; vago → leitos.id
+      bedNumber: leito.numero,
+      name: pac ? (pac.nome_social || pac.nome_completo || '') : '',
+      registryId: pac?.id ?? null, // MIGRAÇÃO: registryId aponta para pacientes.id (patient_registry morto)
+      age: formatAge(pac?.data_nascimento) || '',
+      sector: sectorCode,
+      sectorName: setor?.nome ?? undefined, // MIGRAÇÃO: nome real do setor (filtro do mapa por setor do banco)
+      diagnoses: splitLines(active?.hipotese_diagnostica),
+      medicalHistory: splitLines(active?.historia_clinica),
+      relevantExams: splitLines(active?.exames_relevantes),
+      pendencies: splitLines(active?.pendencias),
+      highlightedPendencies: [], // MIGRAÇÃO: sem coluna de destaques no schema novo
+      highlightedDiagnoses: [], // MIGRAÇÃO: idem
+      highlightedMedicalHistory: [], // MIGRAÇÃO: idem
+      highlightedConducts: [], // MIGRAÇÃO: idem
+      schedule: splitLines(active?.agenda),
+      admissionHistory: '', // MIGRAÇÃO: sem coluna equivalente → default vazio
+      admissionDate: active?.data_entrada || '',
+      medicalResponsibility: undefined, // MIGRAÇÃO: sem coluna equivalente
+      displayOrder: 0, // MIGRAÇÃO: sem coluna display_order no schema novo
+      createdBy: undefined, // MIGRAÇÃO: internacoes.registrado_por é profissionais.id, não user_id → não exposto como createdBy
+      internmentStatus: (active?.status as Patient['internmentStatus']) ?? null,
+      internmentNotes: null, // MIGRAÇÃO: sem coluna equivalente
+      isDoorPatient: false, // MIGRAÇÃO: sem coluna equivalente
+      allocationStatus: null, // MIGRAÇÃO: sem coluna equivalente
+      // MIGRAÇÃO: bloco uti_* inteiro sem colunas no schema novo → default vazio.
+      utiAdmissionDate: [],
+      utiDischargePrediction: [],
+      utiAllergies: [],
+      utiAdmissionReason: [],
+      utiCurrentStatus: [],
+      utiDevices: [],
+      utiCulturesAntibiotics: [],
+      utiSpecialties: [],
+      utiOriginSector: [],
+      utiDailyConducts: [],
+      psmStatus: null, // MIGRAÇÃO: sem coluna equivalente
+      clinicalStatus: active ? 'regular' : null, // MIGRAÇÃO: sem coluna → default "regular" (spec)
+      isVacant: !active,
+      admissionStatus: undefined, // MIGRAÇÃO: sem coluna equivalente
+      admittedAt: active?.data_entrada ?? null,
+    };
+  };
 
   const fetchPatients = async () => {
     try {
@@ -38,157 +114,57 @@ export function usePatients(department?: Department, sector?: string) {
         return;
       }
 
-      let query = supabase
-        .from('patients')
-        .select('*')
-        .eq('hospital_unit_id', currentHospital.id)
-        .eq('state_id', currentState.id);
-      
-      if (sector) {
-        // Para setores não-UTI (ex: ucc, neuro_01), alguns pacientes podem ter
-        // sector=NULL e department preenchido (criados antes da padronização).
-        // Buscar por sector OU pelo department correspondente para não perder registros.
-        const SECTOR_TO_DEPT: Record<string, string> = {
-          // UCIs — leitos não monitorizados que podem ter sido criados
-          // com department em vez de sector no banco
-          blue: 'UCI 1',
-          outside: 'UCI 2',
-          ucc: 'UCC',
-          neuro_01: 'NEURO 01',
-          neuro_02: 'NEURO 02',
-          clinica_cirurgica: 'CLÍNICA CIRÚRGICA',
-          enfermaria_transicao: 'ENFERMARIA DE TRANSIÇÃO',
-          enfermaria_vascular: 'ENFERMARIA VASCULAR',
-          sala_vermelha: 'SALA VERMELHA',
-          sala_laranja: 'SALA LARANJA',
-          observacao_clinica: 'OBSERVAÇÃO CLÍNICA',
-          internacao_ue: 'INTERNAÇÃO UE',
-          ue_vertical: 'UE VERTICAL',
-          ue_horizontal: 'UE HORIZONTAL',
-          riv: 'RIV',
-          cc_preparo: 'CC PREPARO',
-          cc_bloco: 'CC BLOCO CIRÚRGICO',
-          cc_rpa: 'CC RPA',
-        };
-        const deptEquivalent = SECTOR_TO_DEPT[sector];
-        if (deptEquivalent) {
-          // OR: sector = 'ucc' OR department = 'UCC'
-          query = query.or(`sector.eq.${sector},department.eq.${deptEquivalent}`);
-        } else {
-          query = query.eq('sector', sector);
-        }
-      } else if (department) {
-        query = query.eq('department', department);
-      }
-      
-      const { data, error } = await query.order('display_order').order('bed_number');
+      // Bed map = leitos do hospital (via setores → alas → hospitais), cada um
+      // com sua internação ativa (data_alta IS NULL), se houver.
+      // (cast por causa do filtro em caminho aninhado — padrão do projeto.)
+      const { data, error } = await (supabase
+        .from('leitos')
+        .select(`
+          id, numero, status, tipo, setor_id, motivo_bloqueio,
+          setor:setores!inner (
+            id, nome, tipo, ala_id,
+            ala:alas!inner ( id, hospital_id )
+          ),
+          internacoes (
+            id, status, data_entrada, data_alta, queixa_principal, historia_clinica,
+            hipotese_diagnostica, conduta_inicial, exames_relevantes, pendencias, agenda,
+            setor_classificacao_id, leito_id, paciente_id, registrado_por,
+            paciente:pacientes (
+              id, nome_completo, nome_social, cpf, cns, data_nascimento, sexo,
+              nome_mae, telefone, endereco, tipo_sanguineo, alergias, comorbidades, prontuario
+            )
+          )
+        `) as any)
+        .eq('setor.ala.hospital_id', currentHospital.id);
 
       if (error) throw error;
 
-      // Busca birth_date de todos os registry_ids em paralelo com o mapeamento
-      const registryIds = Array.from(
-        new Set((data || []).map((p: any) => p.patient_registry_id).filter(Boolean)),
-      );
-      const birthDateByRegistryId = new Map<string, string | null>();
-      if (registryIds.length > 0) {
-        const { data: registryRows } = await supabase
-          .from('patient_registry')
-          .select('id, birth_date')
-          .in('id', registryIds);
-        for (const r of registryRows || []) {
-          birthDateByRegistryId.set(r.id, r.birth_date);
-        }
+      let rows = (data || []) as any[];
+
+      // MIGRAÇÃO: o filtro antigo por `sector` (código) / `department` (rótulo)
+      // não tem coluna direta. Filtramos pelo setor do leito: por `tipo` (código
+      // SectorType) ou `nome`. Quando só há `department`, tentamos casar por
+      // setores.nome (best-effort — não há coluna department no schema novo).
+      if (sector) {
+        rows = rows.filter(
+          (r) => r.setor?.tipo === sector || r.setor?.nome === sector,
+        );
+      } else if (department) {
+        rows = rows.filter((r) => r.setor?.nome === department);
       }
-      // Alimenta o cache compartilhado com os eventos realtime (não substitui
-      // o Map inteiro — soma, para não perder ids resolvidos por outra chamada
-      // concorrente de fetchPatients, ex.: sector e department disparando junto).
-      birthDateByRegistryId.forEach((v, k) => registryBirthDateCacheRef.current.set(k, v));
 
-      const mappedPatients: Patient[] = (data || [])
-        .filter(p => !((p.bed_number || '').startsWith('_GHOST')))  // filtrar leitos ghost residuais
-        .map(p => ({
-        id: p.id,
-        bedNumber: p.bed_number,
-        name: p.name || '',
-        age: formatAge(p.patient_registry_id ? birthDateByRegistryId.get(p.patient_registry_id) : null) || p.age || '',
-        sector: p.sector as 'red' | 'yellow' | 'blue' | 'outside',
-        diagnoses: p.diagnoses ? p.diagnoses.split('\n').filter(Boolean) : [],
-        medicalHistory: p.medical_history ? p.medical_history.split('\n').filter(Boolean) : [],
-        relevantExams: p.relevant_exams ? p.relevant_exams.split('\n').filter(Boolean) : [],
-        pendencies: p.pendencies ? p.pendencies.split('\n').filter(Boolean) : [],
-        highlightedPendencies: p.highlighted_pendencies || [],
-        highlightedDiagnoses: (p as any).highlighted_diagnoses || [],
-        highlightedMedicalHistory: (p as any).highlighted_medical_history || [],
-        highlightedConducts: (p as any).highlighted_conducts || [],
-        schedule: p.schedule ? p.schedule.split('\n').filter(Boolean) : [],
-        admissionHistory: p.admission_history || '',
-        admissionDate: p.admission_date || '',
-        medicalResponsibility: (p.medical_responsibility as unknown) as Patient['medicalResponsibility'],
-        // UTI fields
-        utiAdmissionDate: p.uti_admission_date ? p.uti_admission_date.split('\n').filter(Boolean).map(date => {
-          // Convert ISO timestamp to DD/MM/YYYY format if needed
-          try {
-            const parsedDate = new Date(date);
-            if (!isNaN(parsedDate.getTime())) {
-              const day = String(parsedDate.getDate()).padStart(2, '0');
-              const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
-              const year = parsedDate.getFullYear();
-              return `${day}/${month}/${year}`;
-            }
-          } catch (e) {
-            // If parsing fails, return as is
-          }
-          return date;
-        }) : [],
-        utiDischargePrediction: p.uti_discharge_prediction ? p.uti_discharge_prediction.split('\n').filter(Boolean) : [],
-        utiAllergies: p.uti_allergies ? p.uti_allergies.split('\n').filter(Boolean) : [],
-        utiAdmissionReason: p.uti_admission_reason ? p.uti_admission_reason.split('\n').filter(Boolean) : [],
-        utiCurrentStatus: p.uti_current_status ? p.uti_current_status.split('\n').filter(Boolean) : [],
-        utiDevices: p.uti_devices ? p.uti_devices.split('\n').filter(Boolean) : [],
-        utiCulturesAntibiotics: p.uti_cultures_antibiotics ? p.uti_cultures_antibiotics.split('\n').filter(Boolean) : [],
-        utiSpecialties: p.uti_specialties ? p.uti_specialties.split('\n').filter(Boolean) : [],
-        utiOriginSector: p.uti_origin_sector ? p.uti_origin_sector.split('\n').filter(Boolean) : [],
-        utiDailyConducts: (p as any).uti_daily_conducts ? (p as any).uti_daily_conducts.split('\n').filter(Boolean) : [],
-        displayOrder: p.display_order ?? 0,
-        isDoorPatient: p.is_door_patient ?? false,
-        allocationStatus: p.allocation_status as Patient['allocationStatus'],
-        createdBy: p.created_by || undefined,
-        psmStatus: p.psm_status as Patient['psmStatus'],
-        clinicalStatus: (p as any).clinical_status as Patient['clinicalStatus'],
-        isVacant: (p as any).is_vacant ?? false,
-        // Leito vago NUNCA carrega admission_status (evita "admitido fantasma" pós-alta/óbito).
-        // Sem fallback para 'admitido' quando admission_status é NULL: null significa que o
-        // status não foi registrado — é diferente de 'admitido'. O fallback anterior causava
-        // bloqueio duro indevido em leitos com status residual nulo (ex.: pós-alta com flag não gravado).
-        admissionStatus: (p as any).is_vacant
-          ? undefined
-          : ((p as any).admission_status as Patient['admissionStatus']) ?? undefined,
-        admittedAt: (p as any).admitted_at ?? null,
-        registryId: (p as any).patient_registry_id ?? null,
-      }));
+      const mappedPatients: Patient[] = rows
+        .filter((leito) => !isGhostBed(leito.numero))
+        .map(mapLeitoToPatient);
 
-      // Filtrar leitos residuais/fantasma que NÃO devem aparecer no mapa nem na contagem.
-      // Padrões conhecidos:
-      //   ARQ-*       → leito arquivado (histórico)
-      //   ARCHIVED-*  → leito extra arquivado por fallback do deletePatient
-      //   _GHOST_*    → leito fantasma — delete falhou, registro órfão no banco
-      // Todos permanecem no banco para preservar auditoria de patient_movements.
-      const visiblePatients = mappedPatients.filter(p => {
-        const bn = (p.bedNumber || '').toUpperCase();
-        return !GHOST_PREFIXES.some(prefix => bn.startsWith(prefix));
-      });
-
-      // Sort by display_order first, then by bed_number as tiebreaker
-      const sortedPatients = visiblePatients.sort((a, b) => {
-        const orderDiff = (a.displayOrder || 0) - (b.displayOrder || 0);
-        if (orderDiff !== 0) return orderDiff;
-        // Tiebreaker: sort by bed number numerically
-        const extractNumber = (bedNumber: string) => {
-          const match = bedNumber.match(/\d+/);
-          return match ? parseInt(match[0], 10) : 0;
-        };
-        return extractNumber(a.bedNumber) - extractNumber(b.bedNumber);
-      });
+      // Ordena por número do leito (numérico). MIGRAÇÃO: sem display_order.
+      const extractNumber = (bedNumber: string) => {
+        const match = (bedNumber || '').match(/\d+/);
+        return match ? parseInt(match[0], 10) : 0;
+      };
+      const sortedPatients = mappedPatients.sort(
+        (a, b) => extractNumber(a.bedNumber) - extractNumber(b.bedNumber),
+      );
 
       setPatients(sortedPatients);
     } catch (error) {
@@ -205,81 +181,74 @@ export function usePatients(department?: Department, sector?: string) {
 
   const updatePatient = async (patientId: string, updates: Partial<Patient>) => {
     try {
-      const dbUpdates: any = {};
-      
-      // Leito pode mudar apenas por fluxos próprios de transferência/realocação.
-      if (updates.bedNumber !== undefined) dbUpdates.bed_number = updates.bedNumber;
-      if (updates.name !== undefined) dbUpdates.name = normalizePatientName(updates.name);
-      if (updates.age !== undefined) dbUpdates.age = typeof updates.age === 'number' ? updates.age.toString() : updates.age;
-      if (updates.sector !== undefined) dbUpdates.sector = updates.sector;
-      if (updates.diagnoses !== undefined) dbUpdates.diagnoses = updates.diagnoses.join('\n');
-      if (updates.medicalHistory !== undefined) dbUpdates.medical_history = updates.medicalHistory.join('\n');
-      if (updates.relevantExams !== undefined) dbUpdates.relevant_exams = updates.relevantExams.join('\n');
-      if (updates.pendencies !== undefined) dbUpdates.pendencies = updates.pendencies.join('\n');
-      if (updates.highlightedPendencies !== undefined) dbUpdates.highlighted_pendencies = updates.highlightedPendencies;
-      if (updates.highlightedDiagnoses !== undefined) dbUpdates.highlighted_diagnoses = updates.highlightedDiagnoses;
-      if (updates.highlightedMedicalHistory !== undefined) dbUpdates.highlighted_medical_history = updates.highlightedMedicalHistory;
-      if (updates.highlightedConducts !== undefined) dbUpdates.highlighted_conducts = updates.highlightedConducts;
-      if (updates.schedule !== undefined) dbUpdates.schedule = updates.schedule.join('\n');
-      if (updates.admissionHistory !== undefined) dbUpdates.admission_history = updates.admissionHistory || null;
-      // admission_date é IMUTÁVEL via updatePatient genérico.
-      // Só pode ser alterado por:
-      //   1. createPatient (primeira admissão / alocação)
-      //   2. AdmissionDateEditor (Edição Avançada, com auditoria em patient_admission_date_history)
-      // Qualquer save do mapa de leitos (compacto/detalhado) NÃO toca admission_date.
-      if (updates.medicalResponsibility !== undefined) dbUpdates.medical_responsibility = updates.medicalResponsibility;
-      if (updates.displayOrder !== undefined) dbUpdates.display_order = updates.displayOrder;
-      // UTI fields
-      if (updates.utiAdmissionDate !== undefined) {
-        // Convert DD/MM/YYYY format back to ISO format for database storage
-        if (updates.utiAdmissionDate.length === 0) {
-          dbUpdates.uti_admission_date = null;
-        } else {
-          dbUpdates.uti_admission_date = updates.utiAdmissionDate.map(date => {
-            try {
-              // Check if it's already in DD/MM/YYYY format
-              const parts = date.split('/');
-              if (parts.length === 3) {
-                const [day, month, year] = parts;
-                const isoDate = new Date(`${year}-${month}-${day}`);
-                if (!isNaN(isoDate.getTime())) {
-                  return isoDate.toISOString();
-                }
-              }
-            } catch (e) {
-              // If parsing fails, return as is
-            }
-            return date;
-          }).join('\n');
+      const target = patients.find((p) => p.id === patientId);
+
+      // Campos clínicos da internação.
+      const internacaoUpdates: Record<string, any> = {};
+      if (updates.diagnoses !== undefined) internacaoUpdates.hipotese_diagnostica = updates.diagnoses.join('\n');
+      if (updates.medicalHistory !== undefined) internacaoUpdates.historia_clinica = updates.medicalHistory.join('\n');
+      if (updates.relevantExams !== undefined) internacaoUpdates.exames_relevantes = updates.relevantExams.join('\n');
+      if (updates.pendencies !== undefined) internacaoUpdates.pendencias = updates.pendencies.join('\n');
+      if (updates.schedule !== undefined) internacaoUpdates.agenda = updates.schedule.join('\n');
+      if (updates.internmentStatus !== undefined) internacaoUpdates.status = updates.internmentStatus;
+
+      // Campos de cadastro do paciente.
+      const pacienteUpdates: Record<string, any> = {};
+      // MIGRAÇÃO: `name` é derivado (nome_social || nome_completo); ao gravar,
+      // atualizamos nome_completo.
+      if (updates.name !== undefined) pacienteUpdates.nome_completo = normalizePatientName(updates.name);
+
+      // Campos do leito.
+      const leitoUpdates: Record<string, any> = {};
+      if (updates.bedNumber !== undefined) leitoUpdates.numero = updates.bedNumber;
+
+      // MIGRAÇÃO: campos sem coluna no schema novo — NÃO gravados (mantidos só no
+      // estado local para a UI): age, highlighted*, medicalResponsibility,
+      // displayOrder, todo o bloco uti_*, psmStatus, clinicalStatus, isVacant,
+      // admissionHistory, sector, allocationStatus, isDoorPatient.
+      // admission_date permanece IMUTÁVEL via updatePatient (regra pré-migração).
+
+      const isOccupied = target ? !target.isVacant : true;
+
+      if (isOccupied && Object.keys(internacaoUpdates).length > 0) {
+        const { error } = await supabase
+          .from('internacoes')
+          .update(internacaoUpdates)
+          .eq('id', patientId); // patientId = internacoes.id quando ocupado
+        if (error) throw error;
+      }
+
+      if (
+        isOccupied &&
+        (Object.keys(pacienteUpdates).length > 0 || Object.keys(leitoUpdates).length > 0)
+      ) {
+        // Precisamos de paciente_id / leito_id — não estão no view-model Patient.
+        const { data: intc } = await supabase
+          .from('internacoes')
+          .select('paciente_id, leito_id')
+          .eq('id', patientId)
+          .maybeSingle();
+        const paciente_id = (intc as any)?.paciente_id;
+        const leito_id = (intc as any)?.leito_id;
+        if (paciente_id && Object.keys(pacienteUpdates).length > 0) {
+          const { error } = await supabase.from('pacientes').update(pacienteUpdates).eq('id', paciente_id);
+          if (error) throw error;
+        }
+        if (leito_id && Object.keys(leitoUpdates).length > 0) {
+          const { error } = await supabase.from('leitos').update(leitoUpdates).eq('id', leito_id);
+          if (error) throw error;
         }
       }
-      if (updates.utiDischargePrediction !== undefined) dbUpdates.uti_discharge_prediction = updates.utiDischargePrediction.length > 0 ? updates.utiDischargePrediction.join('\n') : null;
-      if (updates.utiAllergies !== undefined) dbUpdates.uti_allergies = updates.utiAllergies.length > 0 ? updates.utiAllergies.join('\n') : null;
-      if (updates.utiAdmissionReason !== undefined) dbUpdates.uti_admission_reason = updates.utiAdmissionReason.length > 0 ? updates.utiAdmissionReason.join('\n') : null;
-      if (updates.utiCurrentStatus !== undefined) dbUpdates.uti_current_status = updates.utiCurrentStatus.length > 0 ? updates.utiCurrentStatus.join('\n') : null;
-      if (updates.utiDevices !== undefined) dbUpdates.uti_devices = updates.utiDevices.length > 0 ? updates.utiDevices.join('\n') : null;
-      if (updates.utiCulturesAntibiotics !== undefined) dbUpdates.uti_cultures_antibiotics = updates.utiCulturesAntibiotics.length > 0 ? updates.utiCulturesAntibiotics.join('\n') : null;
-      if (updates.utiSpecialties !== undefined) dbUpdates.uti_specialties = updates.utiSpecialties.length > 0 ? updates.utiSpecialties.join('\n') : null;
-      if (updates.utiOriginSector !== undefined) dbUpdates.uti_origin_sector = updates.utiOriginSector.length > 0 ? updates.utiOriginSector.join('\n') : null;
-      if (updates.utiDailyConducts !== undefined) dbUpdates.uti_daily_conducts = updates.utiDailyConducts.length > 0 ? updates.utiDailyConducts.join('\n') : null;
-      if (updates.psmStatus !== undefined) dbUpdates.psm_status = updates.psmStatus;
-      if (updates.clinicalStatus !== undefined) dbUpdates.clinical_status = updates.clinicalStatus;
-      if (updates.isVacant !== undefined) dbUpdates.is_vacant = updates.isVacant;
 
-      console.log('Updating patient:', patientId); // dados clínicos NÃO são logados (LGPD — auditoria 22/07/2026)
-
-      const { error } = await supabase
-        .from('patients')
-        .update(dbUpdates)
-        .eq('id', patientId);
-
-      if (error) {
-        console.error('Supabase update error:', error);
-        throw error;
+      if (!isOccupied && Object.keys(leitoUpdates).length > 0) {
+        // Leito vago: patientId = leitos.id.
+        const { error } = await supabase.from('leitos').update(leitoUpdates).eq('id', patientId);
+        if (error) throw error;
       }
 
-      // Update local state
-      setPatients(prev => prev.map(p => 
+      console.log('Updating patient:', patientId); // dados clínicos NÃO são logados (LGPD)
+
+      setPatients(prev => prev.map(p =>
         p.id === patientId ? { ...p, ...updates } : p
       ));
 
@@ -298,112 +267,58 @@ export function usePatients(department?: Department, sector?: string) {
     }
   };
 
-  const createPatient = async (patient: Omit<Patient, 'id'>, departmentValue?: Department) => {
+  const createPatient = async (patient: Omit<Patient, 'id'>, _departmentValue?: Department) => {
     try {
       if (!currentHospital || !currentState) {
         throw new Error('Hospital unit and state must be selected');
       }
 
-      const dbData: any = {
-        bed_number: patient.bedNumber,
-        name: normalizePatientName(patient.name),
-        age: typeof patient.age === 'number' ? patient.age.toString() : patient.age,
-        sector: patient.sector,
-        diagnoses: patient.diagnoses.join('\n'),
-        medical_history: patient.medicalHistory.join('\n'),
-        relevant_exams: patient.relevantExams.join('\n'),
-        pendencies: patient.pendencies.join('\n'),
-        highlighted_pendencies: patient.highlightedPendencies || [],
-        schedule: patient.schedule.join('\n'),
-        admission_history: patient.admissionHistory,
-        admission_date: patient.admissionDate,
-        department: departmentValue || department || 'URGÊNCIA E EMERGÊNCIA ADULTO',
-        state_id: currentState.id,
-        hospital_unit_id: currentHospital.id,
-        medical_responsibility: patient.medicalResponsibility || null,
-        created_by: user?.id || null,
-      };
+      // Resolve o setor (do hospital atual) que corresponde ao código/rótulo do leito.
+      const { data: setoresData, error: setoresError } = await (supabase
+        .from('setores')
+        .select('id, nome, tipo, ala:alas!inner(hospital_id)') as any)
+        .eq('ala.hospital_id', currentHospital.id);
+      if (setoresError) throw setoresError;
 
-      // Add UTI fields if they exist
-      if (patient.utiAdmissionDate && patient.utiAdmissionDate.length > 0) {
-        dbData.uti_admission_date = patient.utiAdmissionDate.map(date => {
-          try {
-            const parts = date.split('/');
-            if (parts.length === 3) {
-              const [day, month, year] = parts;
-              const isoDate = new Date(`${year}-${month}-${day}`);
-              if (!isNaN(isoDate.getTime())) {
-                return isoDate.toISOString();
-              }
-            }
-          } catch (e) {
-            // If parsing fails, return as is
-          }
-          return date;
-        }).join('\n');
+      const wanted = patient.sector as string;
+      const setorMatch = ((setoresData || []) as any[]).find(
+        (s) => s.tipo === wanted || s.nome === wanted,
+      );
+      if (!setorMatch) {
+        throw new Error(`Setor "${wanted}" não encontrado no hospital atual.`);
       }
-      if (patient.utiDischargePrediction && patient.utiDischargePrediction.length > 0) dbData.uti_discharge_prediction = patient.utiDischargePrediction.join('\n');
-      if (patient.utiAllergies && patient.utiAllergies.length > 0) dbData.uti_allergies = patient.utiAllergies.join('\n');
-      if (patient.utiAdmissionReason && patient.utiAdmissionReason.length > 0) dbData.uti_admission_reason = patient.utiAdmissionReason.join('\n');
-      if (patient.utiCurrentStatus && patient.utiCurrentStatus.length > 0) dbData.uti_current_status = patient.utiCurrentStatus.join('\n');
-      if (patient.utiDevices && patient.utiDevices.length > 0) dbData.uti_devices = patient.utiDevices.join('\n');
-      if (patient.utiCulturesAntibiotics && patient.utiCulturesAntibiotics.length > 0) dbData.uti_cultures_antibiotics = patient.utiCulturesAntibiotics.join('\n');
-      if (patient.utiSpecialties && patient.utiSpecialties.length > 0) dbData.uti_specialties = patient.utiSpecialties.join('\n');
-      if (patient.utiOriginSector && patient.utiOriginSector.length > 0) dbData.uti_origin_sector = patient.utiOriginSector.join('\n');
-      if (patient.utiDailyConducts && patient.utiDailyConducts.length > 0) dbData.uti_daily_conducts = patient.utiDailyConducts.join('\n');
 
-      const { data, error } = await supabase
-        .from('patients')
-        .insert(dbData)
+      const criadoPor = await resolveProfissionalId(user?.id);
+
+      // MIGRAÇÃO: createPatient agora cria um LEITO (leitos são a nova unidade
+      // física). A admissão clínica (paciente + internação) NÃO é criada aqui —
+      // pacientes.prontuario é obrigatório e não há gerador de prontuário
+      // disponível neste hook; a admissão pertence ao fluxo dedicado. Os campos
+      // clínicos recebidos em `patient` NÃO são persistidos (só ecoados na UI).
+      const { data: leito, error } = await supabase
+        .from('leitos')
+        .insert({
+          numero: patient.bedNumber,
+          setor_id: setorMatch.id,
+          status: 'livre',
+          tipo: 'leito', // CHECK leitos_tipo_check: leito | maca ('comum' violava)
+          criado_por: criadoPor,
+        })
         .select()
         .single();
 
       if (error) throw error;
 
       const newPatient: Patient = {
-        id: data.id,
-        bedNumber: data.bed_number,
-        name: data.name || '',
-        age: data.age || '',
-        sector: data.sector as 'red' | 'yellow' | 'blue' | 'outside',
-        diagnoses: data.diagnoses ? data.diagnoses.split('\n').filter(Boolean) : [],
-        medicalHistory: data.medical_history ? data.medical_history.split('\n').filter(Boolean) : [],
-        relevantExams: data.relevant_exams ? data.relevant_exams.split('\n').filter(Boolean) : [],
-        pendencies: data.pendencies ? data.pendencies.split('\n').filter(Boolean) : [],
-        highlightedPendencies: data.highlighted_pendencies || [],
-        schedule: data.schedule ? data.schedule.split('\n').filter(Boolean) : [],
-        admissionHistory: data.admission_history || '',
-        admissionDate: data.admission_date || '',
-        medicalResponsibility: (data.medical_responsibility as unknown) as Patient['medicalResponsibility'],
-        // UTI fields
-        utiAdmissionDate: data.uti_admission_date ? data.uti_admission_date.split('\n').filter(Boolean).map(date => {
-          try {
-            const parsedDate = new Date(date);
-            if (!isNaN(parsedDate.getTime())) {
-              const day = String(parsedDate.getDate()).padStart(2, '0');
-              const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
-              const year = parsedDate.getFullYear();
-              return `${day}/${month}/${year}`;
-            }
-          } catch (e) {
-            // If parsing fails, return as is
-          }
-          return date;
-        }) : [],
-        utiDischargePrediction: data.uti_discharge_prediction ? data.uti_discharge_prediction.split('\n').filter(Boolean) : [],
-        utiAllergies: data.uti_allergies ? data.uti_allergies.split('\n').filter(Boolean) : [],
-        utiAdmissionReason: data.uti_admission_reason ? data.uti_admission_reason.split('\n').filter(Boolean) : [],
-        utiCurrentStatus: data.uti_current_status ? data.uti_current_status.split('\n').filter(Boolean) : [],
-        utiDevices: data.uti_devices ? data.uti_devices.split('\n').filter(Boolean) : [],
-        utiCulturesAntibiotics: data.uti_cultures_antibiotics ? data.uti_cultures_antibiotics.split('\n').filter(Boolean) : [],
-        utiSpecialties: data.uti_specialties ? data.uti_specialties.split('\n').filter(Boolean) : [],
-        utiOriginSector: data.uti_origin_sector ? data.uti_origin_sector.split('\n').filter(Boolean) : [],
-        utiDailyConducts: (data as any).uti_daily_conducts ? (data as any).uti_daily_conducts.split('\n').filter(Boolean) : [],
-        createdBy: data.created_by || undefined,
-        isVacant: (data as any).is_vacant ?? false,
+        // Leito recém-criado (vago): id = leitos.id.
+        ...(patient as Patient),
+        id: (leito as any).id,
+        bedNumber: (leito as any).numero,
+        sector: patient.sector,
+        isVacant: true,
+        createdBy: user?.id || undefined,
       };
 
-      // Add to local state immediately for instant UI update
       setPatients(prev => [...prev, newPatient]);
 
       toast({
@@ -423,18 +338,12 @@ export function usePatients(department?: Department, sector?: string) {
     }
   };
 
-  // IMPORTANT: leitos são fixos. "Excluir" não remove a linha — apenas esvazia o paciente,
-  // mantendo o leito disponível como vago no mapa. Assim, qualquer chamada antiga de
-  // delete simplesmente desaloca o paciente.
+  // IMPORTANT: leitos são fixos. "Excluir" um leito fixo não remove a linha —
+  // encerra a internação ativa (data_alta) e devolve o leito à higienização,
+  // mantendo-o disponível como vago no mapa. Leitos EXTRA (macas) são removidos.
   const deletePatient = async (patientId: string, options = { showToast: true, updateLocalState: true }) => {
     try {
-      // Detectar leito extra (maca extra) — para esses, EXCLUIR a linha do banco
-      // (leitos extras não são fixos do setor; podem ser removidos do mapa).
-      // Para leitos fixos, apenas esvazia (vacate) mantendo o leito disponível.
-      const target = patients.find(p => p.id === patientId);
-      // Leito é "extra/deletável" se começa com EXTRA, _GHOST_ ou ARCHIVED-
-      // _GHOST_ e ARCHIVED- são prefixos de versões anteriores do fallback de deleção
-      // que ficaram no banco sem ser removidos. Devem ser deletados normalmente.
+      const target = patients.find((p) => p.id === patientId);
       const bedNumberUpper = (target?.bedNumber || '').toUpperCase();
       const isExtra = target
         ? (isExtraBed(target.bedNumber)
@@ -442,221 +351,69 @@ export function usePatients(department?: Department, sector?: string) {
             || bedNumberUpper.startsWith('ARCHIVED-'))
         : false;
 
-      if (isExtra) {
-        console.log('Hard-deleting extra bed row:', patientId);
+      // MIGRAÇÃO: a RPC `archive_patient_bed_data` e as checagens em
+      // `patient_encounters` / `patient_movements` (tabelas mortas) foram
+      // removidas. O histórico clínico agora fica preservado na própria
+      // internação encerrada (data_alta preenchida) e nas tabelas filhas
+      // (evolucoes, sinais_vitais, ...) que continuam apontando para ela.
 
-        // Blindagem: leito extra órfão (marcado como ocupado mas sem nome,
-        // sem registro de paciente, sem prontuário e sem encounters vinculados)
-        // pode ser excluído diretamente — é resíduo de criação incompleta.
-        let looksOrphan = false;
-        if (!target?.isVacant && !target?.name?.trim()) {
-          const { data: dbRow, error: dbErr } = await supabase
-            .from('patients')
-            .select('patient_registry_id, medical_record')
-            .eq('id', patientId)
-            .maybeSingle();
-          if (dbErr) {
-            console.error('Erro ao checar leito extra órfão:', dbErr);
-            throw dbErr;
-          }
-          looksOrphan = !dbRow?.patient_registry_id && !dbRow?.medical_record?.trim();
-        }
+      if (target && !target.isVacant) {
+        // Ocupado → patientId = internacoes.id. Encerra a internação e obtém o leito.
+        const { data: closed, error } = await supabase
+          .from('internacoes')
+          .update({ data_alta: new Date().toISOString(), status: 'alta' })
+          .eq('id', patientId)
+          .select('leito_id')
+          .maybeSingle();
+        if (error) throw error;
 
-        if (!target?.isVacant && !looksOrphan) {
-          throw new Error('Leito extra ocupado deve ser desalocado antes da exclusão.');
-        }
-
-        if (!target?.isVacant && looksOrphan) {
-          const { count: encCount, error: encErr } = await supabase
-            .from('patient_encounters')
-            .select('id', { count: 'exact', head: true })
-            .eq('patient_id', patientId);
-          if (encErr) {
-            console.error('Erro ao checar encounters de leito extra órfão:', encErr);
-            throw encErr;
-          }
-          if ((encCount ?? 0) > 0) {
-            throw new Error('Leito extra ocupado deve ser desalocado antes da exclusão.');
+        const leitoId = (closed as any)?.leito_id;
+        if (leitoId) {
+          if (isExtra) {
+            // Leito extra: libera e remove a linha do leito.
+            await supabase.from('leitos').delete().eq('id', leitoId);
+          } else {
+            await supabase.from('leitos').update({ status: 'higienizacao' }).eq('id', leitoId);
           }
         }
-
-        const archivedBedNumber = `ARCHIVED-EXTRA-${target.sector}-${Date.now()}`;
-
-        // ═══ PRESERVAÇÃO DE HISTÓRICO (auditoria 22/07/2026, achado #1) ═══
-        // DELETE em patients dispara ON DELETE CASCADE em vital_signs,
-        // patient_encounters, round_sessions, conduct_history, culture_results,
-        // admission_histories e bed_allocation_requests. Um leito extra que já
-        // teve paciente com ALTA mantém o patient_id vinculado a esse histórico
-        // (alta não reponta — não há destino), então o DELETE apagaria os
-        // sinais vitais, o atendimento e as culturas daquele internamento.
-        // Regra: existindo QUALQUER encounter vinculado, o leito é ARQUIVADO
-        // (bed_number ARCHIVED-*, escondido do mapa pela policy) — nunca
-        // deletado. DELETE real só para leito extra sem histórico algum.
-        if (!looksOrphan) {
-          const { count: histCount, error: histErr } = await supabase
-            .from('patient_encounters')
-            .select('id', { count: 'exact', head: true })
-            .eq('patient_id', patientId);
-          if (histErr) {
-            console.error('[deletePatient] falha ao checar histórico do leito extra:', histErr);
-            throw histErr;
-          }
-          if ((histCount ?? 0) > 0) {
-            const { error: archErr } = await supabase
-              .from('patients')
-              .update({
-                bed_number: archivedBedNumber,
-                is_vacant: true,
-                name: '',
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', patientId)
-              .eq('is_vacant', true);
-            if (archErr) {
-              console.error('[deletePatient] falha ao arquivar leito extra com histórico:', archErr);
-              throw archErr;
-            }
-            if (options.updateLocalState) {
-              setPatients(prev => prev.filter(p => p.id !== patientId));
-            }
-            if (options.showToast) {
-              toast({
-                title: "Leito extra removido",
-                description: `${target?.bedNumber ?? 'Leito'} foi removido do setor. O histórico clínico do atendimento foi preservado.`,
-              });
-            }
-            return;
-          }
-        }
-
-        // DELETE por ID — sem filtro de prefixo no bed_number para cobrir EXTRA*,
-        // _GHOST_* e ARCHIVED-* (prefixos de versões anteriores do fallback).
-        // Validação de segurança: só deleta se is_vacant=true (ou órfão).
-        const deleteQuery = supabase
-          .from('patients')
-          .delete()
-          .eq('id', patientId);
-
-        const { data: deletedRows, error } = await (looksOrphan
-          ? deleteQuery.select('id')
-          : deleteQuery.eq('is_vacant', true).select('id'));
-
-        if (error || !deletedRows?.length) {
-          console.error('[deletePatient] delete extra/ghost bed failed — trying archive fallback:', error);
-          // Fallback: renomeia para ARCHIVED- para que o filtro do frontend o esconda
-          let archiveQuery = supabase
-            .from('patients')
-            .update({
-              bed_number: archivedBedNumber,
-              is_vacant: true,
-              name: '',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', patientId);
-          // Órfão: não exige is_vacant (pode estar marcado como ocupado sem paciente real)
-          if (!looksOrphan) archiveQuery = (archiveQuery as any).eq('is_vacant', true);
-          const { error: archiveError } = await archiveQuery;
-
-          if (archiveError) {
-            console.error('[deletePatient] archive fallback also failed:', archiveError);
-            throw archiveError;
-          }
-        }
-
-        if (options.updateLocalState) {
-          setPatients(prev => prev.filter(p => p.id !== patientId));
-        }
-
-        if (options.showToast) {
-          toast({
-            title: "Leito extra excluído",
-            description: `${target?.bedNumber ?? 'Leito'} foi removido do setor.`,
-          });
-        }
-        return;
-      }
-
-      console.log('Vacating bed for:', patientId);
-
-      // 🔒 ARQUIVAR todos os dados clínicos ANTES de liberar o leito
-      // Garante que o próximo paciente nesse leito não veja dados do anterior.
-      console.log('Archiving clinical data before vacate:', patientId);
-      const { data: archiveResult, error: archiveError } = await supabase
-        .rpc('archive_patient_bed_data', {
-          p_patient_id: patientId,
-          p_reason: 'frontend_vacate_bed',
-        });
-      if (archiveError) {
-        console.error('Erro ao arquivar dados clínicos antes de liberar leito:', archiveError);
-        if (options.showToast) {
-          toast({
-            title: "Erro ao arquivar dados",
-            description: "Não foi possível arquivar os dados clínicos. Operação abortada por segurança.",
-            variant: "destructive",
-          });
-        }
-        throw new Error(`Falha ao arquivar dados clínicos: ${archiveError.message}`);
-      }
-      console.log('Archive done for:', patientId); // resultado completo não é logado (LGPD)
-
-      const vacantPayload = {
-        name: '',
-        age: null as any,
-        diagnoses: null,
-        medical_history: null,
-        relevant_exams: null,
-        pendencies: null,
-        schedule: null,
-        admission_history: null,
-        admission_date: null,
-        medical_responsibility: null,
-        uti_admission_date: null,
-        uti_discharge_prediction: null,
-        uti_allergies: null,
-        uti_admission_reason: null,
-        uti_current_status: null,
-        uti_devices: null,
-        uti_cultures_antibiotics: null,
-        uti_specialties: null,
-        uti_origin_sector: null,
-        uti_daily_conducts: null,
-        internment_status: null,
-        internment_notes: null,
-        clinical_status: null,
-        is_palliative: false,
-        isolation_precautions: null,
-        hospital_discharge_prediction: null,
-        psm_status: null,
-        allocation_status: null,
-        is_door_patient: false,
-        is_vacant: true,
-        patient_registry_id: null,
-        medical_record: null,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { error } = await supabase
-        .from('patients')
-        .update(vacantPayload)
-        .eq('id', patientId);
-
-      if (error) {
-        console.error('Supabase vacate error:', error);
-        throw error;
+      } else if (isExtra) {
+        // Leito extra VAGO → patientId = leitos.id: remove a linha do leito.
+        const { error } = await supabase.from('leitos').delete().eq('id', patientId);
+        if (error) throw error;
+      } else {
+        // Leito fixo já vago → apenas garante status vago (patientId = leitos.id).
+        const { error } = await supabase.from('leitos').update({ status: 'livre' }).eq('id', patientId);
+        if (error) throw error;
       }
 
       if (options.updateLocalState) {
-        setPatients(prev => prev.map(p => (
-          p.id === patientId
-            ? ({ ...p, name: '', diagnoses: [], medicalHistory: [], relevantExams: [], pendencies: [], schedule: [], admissionHistory: '' } as unknown as Patient)
-            : p
-        )));
+        if (isExtra) {
+          setPatients(prev => prev.filter(p => p.id !== patientId));
+        } else {
+          setPatients(prev => prev.map(p => (
+            p.id === patientId
+              ? ({
+                  ...p,
+                  name: '',
+                  diagnoses: [],
+                  medicalHistory: [],
+                  relevantExams: [],
+                  pendencies: [],
+                  schedule: [],
+                  admissionHistory: '',
+                  isVacant: true,
+                } as unknown as Patient)
+              : p
+          )));
+        }
       }
 
       if (options.showToast) {
         toast({
-          title: "Leito desocupado",
-          description: "Os dados do paciente foram removidos. O leito permanece disponível no mapa.",
+          title: isExtra ? "Leito extra excluído" : "Leito desocupado",
+          description: isExtra
+            ? `${target?.bedNumber ?? 'Leito'} foi removido do setor.`
+            : "Os dados do paciente foram removidos. O leito permanece disponível no mapa.",
         });
       }
     } catch (error) {
@@ -673,139 +430,64 @@ export function usePatients(department?: Department, sector?: string) {
   };
 
   /**
-   * Libera o leito de um paciente que ainda NÃO concluiu a admissão hospitalar
-   * (admissionStatus === 'pre_admitido'). Diferente de `deletePatient`:
-   *  - Registra a ação em `patient_movements` (movement_type = 'LIBERAÇÃO PRÉ-ADMISSÃO')
-   *    com snapshot e vínculo ao prontuário, garantindo auditoria.
-   *  - PRESERVA `patient_registry_id` no histórico do movimento — o prontuário
-   *    do paciente continua existindo e pode ser reaberto a qualquer momento.
-   *  - Zera apenas os campos clínicos do leito, deixando-o disponível para
-   *    nova alocação no mapa.
+   * Libera o leito de um paciente pré-admissão / pós-alta sinalizada.
+   * MIGRAÇÃO: a auditoria em `patient_movements` (tabela morta) foi trocada por
+   * um registro em `logs_auditoria`. A RPC `archive_patient_bed_data` e a
+   * ramificação por `patients.admission_status` (coluna inexistente) foram
+   * removidas — a função encerra a internação, libera o leito e audita.
    */
   const releaseBedPreAdmission = async (
     patientId: string,
     opts: { reason?: string; reasonNote?: string } = {},
   ) => {
     try {
-      const target = patients.find((p) => p.id === patientId);
-      const dbRow = target as any;
       if (!currentHospital || !currentState) {
         throw new Error('Hospital e estado precisam estar selecionados.');
       }
+      const target = patients.find((p) => p.id === patientId);
 
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      const patientDepartment = (dbRow?.department as string) || department || 'URGÊNCIA E EMERGÊNCIA ADULTO';
+      const profissionalId = await resolveProfissionalId(authUser?.id);
 
-      // Busca o registro atual para snapshot + patient_registry_id
-      const { data: full } = await supabase
-        .from('patients')
-        .select('*')
-        .eq('id', patientId)
-        .maybeSingle();
+      let leitoId: string | null = null;
+      let pacienteId: string | null = null;
 
-      const currentStatus = (full as any)?.admission_status;
-      const isPostDischargeRelease =
-        currentStatus === ADMISSION_STATUS.DISCHARGE_GIVEN
-        || currentStatus === ADMISSION_STATUS.DEATH
-        || currentStatus === ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING
-        || currentStatus === ADMISSION_STATUS.EXTERNAL_TRANSFER_PENDING;
-      const isExceptionalRelease = currentStatus === ADMISSION_STATUS.ADMITTED;
-
-      // 1) Audita a ação
-      const reasonLabel = opts.reason || 'Liberação de pré-admissão';
-      const noteLines = [reasonLabel, opts.reasonNote].filter(Boolean).join(' — ');
-      const movementType = isExceptionalRelease
-        ? 'LIBERAÇÃO ADMINISTRATIVA EXCEPCIONAL'
-        : isPostDischargeRelease
-          ? 'LIBERAÇÃO PÓS-ALTA/ÓBITO'
-          : 'LIBERAÇÃO PRÉ-ADMISSÃO';
-      const destinationLabel = isExceptionalRelease
-        ? 'PRONTUÁRIO PRESERVADO — LEITO LIBERADO SEM ALTA FORMAL'
-        : currentStatus === ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING
-          ? 'TRANSFERÊNCIA INTERNA SINALIZADA — LEITO DE ORIGEM LIBERADO'
-        : currentStatus === ADMISSION_STATUS.EXTERNAL_TRANSFER_PENDING
-          ? 'TRANSFERÊNCIA EXTERNA SINALIZADA — LEITO LIBERADO'
-        : 'PRONTUÁRIO PRESERVADO — LEITO LIBERADO';
-      const { error: movementError } = await supabase.from('patient_movements').insert({
-        patient_id: patientId,
-        patient_registry_id: (full as any)?.patient_registry_id ?? null,
-        patient_name: (full as any)?.name || target?.name || '',
-        patient_bed: (full as any)?.bed_number || target?.bedNumber || null,
-        patient_sector: (full as any)?.sector || target?.sector || null,
-        movement_type: movementType,
-        destination: destinationLabel,
-        notes: noteLines || null,
-        responsible_doctor: null,
-        created_by: authUser?.id ?? null,
-        patient_snapshot: full as any,
-        department: patientDepartment,
-        state_id: currentState.id,
-        hospital_unit_id: currentHospital.id,
-        // Esta função É a liberação efetiva — fecha o ciclo de release_status
-        // para não deixar movimento em 'pending_release' órfão para sempre.
-        release_status: 'released',
-        released_at: new Date().toISOString(),
-        released_by: authUser?.id ?? null,
-      });
-      if (movementError) throw movementError;
-
-      // 2) Zera os campos clínicos do leito (preserva o leito no mapa)
-      // 🔒 ARQUIVAR todos os dados clínicos ANTES de liberar o leito
-      console.log('Archiving clinical data before pre-admission release for patient:', patientId);
-      const { error: archiveError } = await supabase
-        .rpc('archive_patient_bed_data', {
-          p_patient_id: patientId,
-          p_reason: 'frontend_release_bed_pre_admission',
-        });
-      if (archiveError) {
-        console.error('Erro ao arquivar dados clínicos antes de liberar leito (pré-admissão):', archiveError);
-        throw new Error(`Falha ao arquivar dados clínicos: ${archiveError.message}`);
+      if (target && !target.isVacant) {
+        // Ocupado → patientId = internacoes.id. Encerra a internação.
+        const { data: closed, error } = await supabase
+          .from('internacoes')
+          .update({ data_alta: new Date().toISOString(), status: 'alta' })
+          .eq('id', patientId)
+          .select('leito_id, paciente_id')
+          .maybeSingle();
+        if (error) throw error;
+        leitoId = (closed as any)?.leito_id ?? null;
+        pacienteId = (closed as any)?.paciente_id ?? null;
+      } else {
+        // Vago → patientId = leitos.id.
+        leitoId = patientId;
       }
 
-      const vacantPayload = {
-        name: '',
-        age: null as any,
-        diagnoses: null,
-        medical_history: null,
-        relevant_exams: null,
-        pendencies: null,
-        schedule: null,
-        admission_history: null,
-        admission_date: null,
-        medical_responsibility: null,
-        uti_admission_date: null,
-        uti_discharge_prediction: null,
-        uti_allergies: null,
-        uti_admission_reason: null,
-        uti_current_status: null,
-        uti_devices: null,
-        uti_cultures_antibiotics: null,
-        uti_specialties: null,
-        uti_origin_sector: null,
-        uti_daily_conducts: null,
-        internment_status: null,
-        internment_notes: null,
-        clinical_status: null,
-        is_palliative: false,
-        isolation_precautions: null,
-        hospital_discharge_prediction: null,
-        psm_status: null,
-        allocation_status: null,
-        is_door_patient: false,
-        is_vacant: true,
-        // Importante: zeramos os ponteiros no leito, mas o registry continua intacto no banco
-        patient_registry_id: null,
-        medical_record: null,
-        admission_status: null,
-        admitted_at: null,
-        updated_at: new Date().toISOString(),
-      };
+      if (leitoId) {
+        const { error: leitoErr } = await supabase.from('leitos').update({ status: 'livre' }).eq('id', leitoId);
+        if (leitoErr) throw leitoErr;
+      }
 
-      const { error } = await supabase
-        .from('patients')
-        .update(vacantPayload)
-        .eq('id', patientId);
-      if (error) throw error;
+      // Auditoria da liberação em logs_auditoria.
+      const motivo = [opts.reason || 'Liberação de leito', opts.reasonNote]
+        .filter(Boolean)
+        .join(' — ');
+      await supabase.from('logs_auditoria').insert({
+        tipo_evento: 'liberacao_leito',
+        nome_tabela: 'internacoes',
+        registro_id: patientId,
+        internacao_id: target && !target.isVacant ? patientId : null,
+        paciente_id: pacienteId,
+        ator_user_id: authUser?.id ?? null,
+        profissional_id: profissionalId,
+        motivo: motivo || null,
+        hospital_id: currentHospital.id,
+      } as any);
 
       setPatients((prev) =>
         prev.map((p) =>
@@ -844,9 +526,7 @@ export function usePatients(department?: Department, sector?: string) {
 
       toast({
         title: 'Leito liberado',
-        description: isPostDischargeRelease
-          ? 'Leito desocupado no mapa. A sinalização foi concluída e o prontuário permanece preservado no histórico.'
-          : 'Pré-admissão removida do mapa. O prontuário do paciente foi preservado e continua disponível no histórico.',
+        description: 'Leito desocupado no mapa. O prontuário do paciente foi preservado no histórico.',
       });
     } catch (error) {
       console.error('Error releasing pre-admission bed:', error);
@@ -860,13 +540,13 @@ export function usePatients(department?: Department, sector?: string) {
   };
 
   const reorderPatients = async (reorderedPatients: Patient[]) => {
-    // Update display_order for each patient based on new position
+    // MIGRAÇÃO: não existe coluna display_order no schema novo. A reordenação
+    // passa a ser apenas otimista/local (não persistida). Assinatura preservada.
     const updates = reorderedPatients.map((patient, index) => ({
       id: patient.id,
       display_order: index,
     }));
 
-    // Update local state IMMEDIATELY (optimistic update)
     setPatients(prev => {
       const updatedPatients = prev.map(p => {
         const orderUpdate = updates.find(u => u.id === p.id);
@@ -874,211 +554,58 @@ export function usePatients(department?: Department, sector?: string) {
       });
       return updatedPatients.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
     });
-
-    // Persist to database in parallel (background)
-    try {
-      await Promise.all(
-        updates.map(update =>
-          supabase
-            .from('patients')
-            .update({ display_order: update.display_order })
-            .eq('id', update.id)
-        )
-      );
-    } catch (error) {
-      console.error('Error persisting reorder:', error);
-      toast({
-        title: "Erro ao reordenar",
-        description: "Não foi possível salvar a nova ordem.",
-        variant: "destructive",
-      });
-    }
   };
-
-  // Helper function to map database record to Patient object
-  const mapRecordToPatient = (record: any): Patient => ({
-    id: record.id,
-    bedNumber: record.bed_number,
-    name: record.name || '',
-    age: formatAge(
-      record.patient_registry_id
-        ? registryBirthDateCacheRef.current.get(record.patient_registry_id)
-        : null,
-    ) || record.age || '',
-    sector: record.sector as 'red' | 'yellow' | 'blue' | 'outside',
-    diagnoses: record.diagnoses ? record.diagnoses.split('\n').filter(Boolean) : [],
-    medicalHistory: record.medical_history ? record.medical_history.split('\n').filter(Boolean) : [],
-    relevantExams: record.relevant_exams ? record.relevant_exams.split('\n').filter(Boolean) : [],
-    pendencies: record.pendencies ? record.pendencies.split('\n').filter(Boolean) : [],
-    highlightedPendencies: record.highlighted_pendencies || [],
-    highlightedDiagnoses: record.highlighted_diagnoses || [],
-    highlightedMedicalHistory: record.highlighted_medical_history || [],
-    highlightedConducts: record.highlighted_conducts || [],
-    schedule: record.schedule ? record.schedule.split('\n').filter(Boolean) : [],
-    admissionHistory: record.admission_history || '',
-    admissionDate: record.admission_date || '',
-    medicalResponsibility: (record.medical_responsibility as unknown) as Patient['medicalResponsibility'],
-    utiAdmissionDate: record.uti_admission_date ? record.uti_admission_date.split('\n').filter(Boolean).map((date: string) => {
-      try {
-        const parsedDate = new Date(date);
-        if (!isNaN(parsedDate.getTime())) {
-          const day = String(parsedDate.getDate()).padStart(2, '0');
-          const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
-          const year = parsedDate.getFullYear();
-          return `${day}/${month}/${year}`;
-        }
-      } catch (e) {}
-      return date;
-    }) : [],
-    utiDischargePrediction: record.uti_discharge_prediction ? record.uti_discharge_prediction.split('\n').filter(Boolean) : [],
-    utiAllergies: record.uti_allergies ? record.uti_allergies.split('\n').filter(Boolean) : [],
-    utiAdmissionReason: record.uti_admission_reason ? record.uti_admission_reason.split('\n').filter(Boolean) : [],
-    utiCurrentStatus: record.uti_current_status ? record.uti_current_status.split('\n').filter(Boolean) : [],
-    utiDevices: record.uti_devices ? record.uti_devices.split('\n').filter(Boolean) : [],
-    utiCulturesAntibiotics: record.uti_cultures_antibiotics ? record.uti_cultures_antibiotics.split('\n').filter(Boolean) : [],
-    utiSpecialties: record.uti_specialties ? record.uti_specialties.split('\n').filter(Boolean) : [],
-    utiOriginSector: record.uti_origin_sector ? record.uti_origin_sector.split('\n').filter(Boolean) : [],
-    utiDailyConducts: record.uti_daily_conducts ? record.uti_daily_conducts.split('\n').filter(Boolean) : [],
-    displayOrder: record.display_order ?? 0,
-    isDoorPatient: record.is_door_patient ?? false,
-    allocationStatus: record.allocation_status as Patient['allocationStatus'],
-    createdBy: record.created_by || undefined,
-    psmStatus: record.psm_status as Patient['psmStatus'],
-    clinicalStatus: record.clinical_status as Patient['clinicalStatus'],
-    isVacant: record.is_vacant ?? false,
-    admissionStatus: record.is_vacant
-      ? undefined
-      : ((record.admission_status as Patient['admissionStatus']) ?? undefined),
-    admittedAt: record.admitted_at ?? null,
-  });
 
   useEffect(() => {
     if (!currentHospital || !currentState) return;
 
     fetchPatients();
 
-    // Subscribe to realtime changes with simplified filter
+    // PERF: a query do mapa (leitos + joins) custa ~1s por request contra o
+    // gateway (HTTP/1.1 + TLS caro na VPS). Antes, CADA evento de realtime
+    // disparava um refetch imediato — numa operação ativa (várias internações/
+    // leitos mudando) isso recarregava o mapa a cada segundo, travando a tela.
+    // Agora os eventos são COALESCIDOS: uma rajada de mudanças vira um único
+    // refetch após um curto intervalo de silêncio (debounce).
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+        fetchPatients();
+      }, 800);
+    };
+
+    // MIGRAÇÃO realtime: canal antigo em `patients` trocado por `internacoes` +
+    // `leitos`. O payload não traz os joins (setor/paciente), então cada evento
+    // agenda um refetch debounced (mais simples e robusto que o mapper incremental).
     const channelName = `patients-changes-${currentHospital.id}-${sector || department || 'all'}`;
     const channel = supabase
       .channel(channelName)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'patients',
-          filter: `hospital_unit_id=eq.${currentHospital.id}`,
-        },
-        (payload) => {
-          console.log('Realtime patient change:', payload.eventType); // auditoria 18/09: nao despejar o registro do paciente no console
-          
-          const eventType = payload.eventType;
-          
-          if (eventType === 'INSERT') {
-            const newRecord = payload.new as any;
-            const SECTOR_TO_DEPT_INS: Record<string, string> = {
-              blue: 'UCI 1', outside: 'UCI 2', ucc: 'UCC',
-              red: 'UTI 1', yellow: 'UTI 2',
-              enfermaria_transicao: 'ENFERMARIA DE TRANSIÇÃO',
-              enfermaria_vascular: 'ENFERMARIA VASCULAR',
-              neuro_01: 'NEURO 01', neuro_02: 'NEURO 02',
-              clinica_cirurgica: 'CLÍNICA CIRÚRGICA',
-            };
-            const deptEqIns = sector ? SECTOR_TO_DEPT_INS[sector] : null;
-            const matchesIns = sector
-              ? (newRecord.sector === sector || (deptEqIns && newRecord.department === deptEqIns))
-              : (!department || newRecord.department === department);
-            if (!matchesIns) return;
-            // Ignora leitos fantasma/arquivados via realtime também
-            const newBn = ((newRecord.bed_number || '') as string).toUpperCase();
-            if (GHOST_PREFIXES.some(prefix => newBn.startsWith(prefix))) return;
-
-            const newPatient = mapRecordToPatient(newRecord);
-            setPatients(prev => {
-              if (prev.some(p => p.id === newPatient.id)) return prev;
-              return [...prev, newPatient].sort((a, b) => {
-                const orderDiff = (a.displayOrder || 0) - (b.displayOrder || 0);
-                if (orderDiff !== 0) return orderDiff;
-                const extractNum = (bn: string) => { const m = bn.match(/\d+/); return m ? parseInt(m[0], 10) : 0; };
-                return extractNum(a.bedNumber) - extractNum(b.bedNumber);
-              });
-            });
-          } else if (eventType === 'UPDATE') {
-            const updatedRecord = payload.new as any;
-            // Se o leito foi renomeado para um prefixo fantasma, remove da lista
-            const updatedBn = ((updatedRecord.bed_number || '') as string).toUpperCase();
-            if (GHOST_PREFIXES.some(prefix => updatedBn.startsWith(prefix))) {
-              setPatients(prev => prev.filter(p => p.id !== updatedRecord.id));
-              return;
-            }
-
-            // Replicar a lógica OR do fetch: sector OU department equivalente
-            const SECTOR_TO_DEPT: Record<string, string> = {
-              blue: 'UCI 1', outside: 'UCI 2', ucc: 'UCC',
-              red: 'UTI 1', yellow: 'UTI 2',
-              enfermaria_transicao: 'ENFERMARIA DE TRANSIÇÃO',
-              enfermaria_vascular: 'ENFERMARIA VASCULAR',
-              neuro_01: 'NEURO 01', neuro_02: 'NEURO 02',
-              clinica_cirurgica: 'CLÍNICA CIRÚRGICA',
-              sala_vermelha: 'SALA VERMELHA', sala_laranja: 'SALA LARANJA',
-              observacao_clinica: 'OBSERVAÇÃO CLÍNICA',
-              ue_vertical: 'UE VERTICAL', ue_horizontal: 'UE HORIZONTAL',
-              riv: 'RIV', cc_preparo: 'CC PREPARO',
-              cc_bloco: 'CC BLOCO CIRÚRGICO', cc_rpa: 'CC RPA',
-            };
-            const deptEquivalent = sector ? SECTOR_TO_DEPT[sector] : null;
-
-            // Paciente pertence ao setor atual?
-            const matchesSector = sector
-              ? (updatedRecord.sector === sector || (deptEquivalent && updatedRecord.department === deptEquivalent))
-              : (!department || updatedRecord.department === department);
-
-            if (!matchesSector) {
-              // Paciente saiu do setor — remover da lista
-              setPatients(prev => prev.filter(p => p.id !== updatedRecord.id));
-              return;
-            }
-            
-            const updatedPatient = mapRecordToPatient(updatedRecord);
-            setPatients(prev => {
-              // Check if patient exists in current list
-              const exists = prev.some(p => p.id === updatedPatient.id);
-              if (exists) {
-                // Update in-place without re-sorting to preserve current position
-                return prev.map(p => p.id === updatedPatient.id ? updatedPatient : p);
-              } else {
-                // Patient was moved to this department, add to list and sort
-                const sortFn = (a: Patient, b: Patient) => {
-                  const orderDiff = (a.displayOrder || 0) - (b.displayOrder || 0);
-                  if (orderDiff !== 0) return orderDiff;
-                  const extractNum = (bn: string) => { const m = bn.match(/\d+/); return m ? parseInt(m[0], 10) : 0; };
-                  return extractNum(a.bedNumber) - extractNum(b.bedNumber);
-                };
-                return [...prev, updatedPatient].sort(sortFn);
-              }
-            });
-          } else if (eventType === 'DELETE') {
-            const deletedId = (payload.old as any).id;
-            setPatients(prev => prev.filter(p => p.id !== deletedId));
-          }
-        }
+        { event: '*', schema: 'public', table: 'internacoes' },
+        () => { scheduleRefetch(); },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'leitos' },
+        () => { scheduleRefetch(); },
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          // Ao reconectar após queda, faz refetch imediato para recuperar
-          // UPDATEs que possam ter sido perdidos durante a instabilidade.
-          // Isso garante que pendências e outros campos atualizados offline
-          // apareçam assim que o WebSocket voltar.
+          // Ao (re)conectar, faz refetch imediato para recuperar mudanças que
+          // possam ter sido perdidas durante uma instabilidade anterior.
+          console.log('[usePatients] Realtime SUBSCRIBED — mapa atualiza em tempo real');
           fetchPatients();
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          // Qualquer falha dispara refetch manual — o canal será recriado
-          // pelo Supabase automaticamente; o refetch garante consistência
-          // enquanto a reconexão não completou.
-          fetchPatients();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('[usePatients] Realtime problema:', status, '— fazendo refetch manual');
+          scheduleRefetch();
         }
       });
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, [department, sector, currentHospital, currentState]);

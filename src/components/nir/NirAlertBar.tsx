@@ -29,12 +29,12 @@ const toneStyles: Record<AlertItem["tone"], string> = {
 export function NirAlertBar({ metrics, onOpenAlert }: Props) {
   // Saturacao de alta complexidade (UTI/UCI).
   //
-  // Antes: find(s => s.sector.includes("uti")). occupancyBySector guarda o
-  // CODIGO do setor, e os codigos das UTIs sao "red" e "yellow" — nenhum
-  // contem "uti". O alerta NUNCA disparava. Mesmo antipadrao de substring que
-  // classificou o bloco cirurgico como enfermaria.
+  // occupancyBySector agora e chaveado pelo NOME REAL do setor; a classificacao
+  // de cobertura continua vindo do CODIGO taxonomico, exposto em `sectorTipo`.
+  // (Antes classificava por s.sector, que passou a ser o nome e nao existe no
+  // mapa de cobertura.)
   const highComplexity = metrics.occupancyBySector.filter(
-    (s) => getSectorCoverage(s.sector)?.group === "alta_complexidade",
+    (s) => getSectorCoverage(s.sectorTipo)?.group === "alta_complexidade",
   );
   const utiSector = highComplexity.reduce<typeof highComplexity[number] | undefined>(
     (pior, s) => (!pior || s.rate > pior.rate ? s : pior),

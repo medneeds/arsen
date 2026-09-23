@@ -103,10 +103,12 @@ type PlanItem = { table: string; pk: string[]; parts: { path: string }[]; rows_e
 
 // Mesmo array replicado no backend (supabase/functions/backup-create/index.ts).
 // Usado só para exibir badge "config" na UI.
+// MIGRAÇÃO: nomes atualizados para as tabelas do schema novo (badge "config" apenas).
+// user_roles não tem equivalente (papel vive em profissionais.papel) → removido.
 const SPECIAL_TABLES = new Set<string>([
-  "profiles", "user_roles", "user_departments", "user_hospital_assignments",
-  "institution_branding", "hospital_units", "states", "system_maintenance_mode",
-  "cid10_codes",
+  "profissionais", "profissionais_setores", "profissionais_hospitais",
+  "identidade_visual_hospital", "hospitais", "setores", "modo_manutencao",
+  "codigos_referencia",
 ]);
 
 function formatBytes(n: number | null) {
@@ -187,12 +189,13 @@ export function BackupRestoreTab() {
   const [forceUnlockReason, setForceUnlockReason] = useState("");
 
   async function loadMaintenance() {
+    // MIGRAÇÃO: system_maintenance_mode → modo_manutencao; is_active → ativo.
     const { data } = await supabase
-      .from("system_maintenance_mode")
-      .select("is_active")
+      .from("modo_manutencao")
+      .select("ativo")
       .eq("id", 1)
       .maybeSingle();
-    setMaintenanceActive(!!(data as any)?.is_active);
+    setMaintenanceActive(!!(data as any)?.ativo);
   }
 
   async function handleForceUnlock() {
@@ -216,32 +219,74 @@ export function BackupRestoreTab() {
 
 
 
+  // MIGRAÇÃO: backup_jobs → jobs_backup. Colunas em pt-br mapeadas para o view-model
+  // (interface BackupJob mantida estável para todo o render abaixo).
   async function loadJobs() {
     const { data, error } = await supabase
-      .from("backup_jobs")
+      .from("jobs_backup")
       .select("*")
-      .order("created_at", { ascending: false })
+      .order("criado_em", { ascending: false })
       .limit(50);
-    if (error) { toast.error("Não foi possível carregar backups"); return; }
-    setJobs((data as unknown as BackupJob[]) ?? []);
+    if (error) { toast.error("Falha ao carregar backups: " + error.message); return; }
+    setJobs(((data as any[]) ?? []).map((r): BackupJob => ({
+      id: r.id,
+      created_at: r.criado_em,
+      created_by_email: r.criado_por_email ?? null,
+      status: r.status,
+      progress: r.progresso ?? null,
+      storage_path: r.caminho_armazenamento ?? null,
+      file_size_bytes: r.tamanho_bytes ?? null,
+      table_counts: r.contagem_linhas ?? null,
+      auth_user_count: r.contagem_usuarios_auth ?? null,
+      checksum_sha256: r.checksum_sha256 ?? null,
+      duration_ms: r.duracao_ms ?? null,
+      reason: r.motivo ?? null,
+      error: r.erro ?? null,
+      finished_at: r.finalizado_em ?? null,
+      manifest: r.manifesto ?? null,
+    })));
   }
+  // MIGRAÇÃO: backup_audit → auditoria_backup.
   async function loadAudit() {
     const { data, error } = await supabase
-      .from("backup_audit")
+      .from("auditoria_backup")
       .select("*")
-      .order("created_at", { ascending: false })
+      .order("criado_em", { ascending: false })
       .limit(100);
     if (error) { console.warn(error); return; }
-    setAudit((data as unknown as BackupAudit[]) ?? []);
+    setAudit(((data as any[]) ?? []).map((r): BackupAudit => ({
+      id: r.id,
+      created_at: r.criado_em,
+      actor_email: r.ator_email ?? null,
+      action: r.acao,
+      backup_job_id: r.job_backup_id ?? null,
+      restore_job_id: r.job_restauracao_id ?? null,
+      result: r.resultado ?? null,
+      duration_ms: r.duracao_ms ?? null,
+      error: r.erro ?? null,
+    })));
   }
+  // MIGRAÇÃO: restore_jobs → jobs_restauracao; dry_run → somente_teste; report → relatorio.
   async function loadRestoreJobs() {
     const { data, error } = await supabase
-      .from("restore_jobs")
+      .from("jobs_restauracao")
       .select("*")
-      .order("created_at", { ascending: false })
+      .order("criado_em", { ascending: false })
       .limit(50);
     if (error) { console.warn(error); return; }
-    setRestoreJobs((data as unknown as RestoreJob[]) ?? []);
+    setRestoreJobs(((data as any[]) ?? []).map((r): RestoreJob => ({
+      id: r.id,
+      created_at: r.criado_em,
+      created_by_email: r.criado_por_email ?? null,
+      backup_job_id: r.job_backup_id ?? null,
+      dry_run: r.somente_teste ?? null,
+      status: r.status,
+      progress: r.progresso,
+      report: r.relatorio,
+      reason: r.motivo ?? null,
+      error: r.erro ?? null,
+      duration_ms: r.duracao_ms ?? null,
+    })));
   }
   async function loadAllTables() {
     setTablesLoading(true);

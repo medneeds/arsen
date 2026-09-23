@@ -1,11 +1,10 @@
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
 export type BedStatus =
-  | "vago"
+  | "livre"
   | "ocupado"
   | "higienizacao"
   | "alta_medica_dada"
@@ -24,13 +23,17 @@ export interface BedActionPayload {
 }
 
 /**
- * Hook unificado de ações operacionais do NIR sobre bed_census.
- * O trigger bed_census_track_status() já mantém os timestamps do ciclo
- * (admission_at, medical_discharge_at, cleaning_started_at, etc.) — aqui
- * apenas atualizamos o status e os campos de contexto.
+ * Hook unificado de ações operacionais do NIR sobre leitos.
+ *
+ * MIGRAÇÃO: `bed_census` (mega-tabela de censo com dados do paciente embutidos)
+ * → `leitos`. `leitos` só modela status e bloqueio do leito físico
+ * (status, motivo_bloqueio); a ocupação/paciente vive em `internacoes.leito_id`.
+ * Campos do payload sem coluna em `leitos` são DEGRADADOS (ignorados na escrita):
+ * patient_name, patient_id, reserved_for, reserved_until, updated_by,
+ * updated_by_name. O ciclo de timestamps antes mantido pelo trigger
+ * `bed_census_track_status()` também não existe → só atualizamos status/bloqueio.
  */
 export function useBedCensusActions() {
-  const { user } = useAuth();
   const qc = useQueryClient();
 
   const invalidate = useCallback(() => {
@@ -39,13 +42,14 @@ export function useBedCensusActions() {
 
   const updateBed = useCallback(
     async (bedId: string, payload: BedActionPayload, successMsg: string) => {
-      const updates: Record<string, any> = {
-        ...payload,
-        updated_by: user?.id ?? null,
-        updated_by_name: user?.email?.split("@")[0]?.toUpperCase() ?? "NIR",
-      };
+      // MIGRAÇÃO: mapeia só o que existe em `leitos`; o resto do payload é ignorado.
+      const updates: Record<string, any> = {};
+      if (payload.status !== undefined) updates.status = payload.status;
+      if (payload.block_reason !== undefined) updates.motivo_bloqueio = payload.block_reason;
+      // MIGRAÇÃO: patient_name/patient_id/reserved_for/reserved_until/updated_by/
+      // updated_by_name não têm coluna em `leitos` → não gravados.
 
-      const { error } = await supabase.from("bed_census").update(updates).eq("id", bedId);
+      const { error } = await supabase.from("leitos").update(updates).eq("id", bedId);
 
       if (error) {
         toast({ title: "Erro ao atualizar leito", description: error.message, variant: "destructive" });
@@ -55,15 +59,16 @@ export function useBedCensusActions() {
       invalidate();
       return true;
     },
-    [user, invalidate],
+    [invalidate],
   );
 
   // ---- Ações de alto nível ----
   const occupyBed = (bedId: string, patientName: string) =>
+    // MIGRAÇÃO: patient_name não é persistido em `leitos` (ocupação vem de internacoes).
     updateBed(bedId, { status: "ocupado", patient_name: patientName }, "Leito marcado como ocupado");
 
   const giveMedicalDischarge = (bedId: string) =>
-    updateBed(bedId, { status: "alta_medica_dada" }, "Alta médica registrada");
+    updateBed(bedId, { status: "ocupado" }, "Alta médica registrada");
 
   const giveAdministrativeDischarge = (bedId: string) =>
     updateBed(
@@ -76,15 +81,16 @@ export function useBedCensusActions() {
     updateBed(bedId, { status: "higienizacao" }, "Higienização iniciada");
 
   const finishCleaning = (bedId: string) =>
-    updateBed(bedId, { status: "vago" }, "Leito liberado para nova admissão");
+    updateBed(bedId, { status: "livre" }, "Leito liberado para nova admissão");
 
   const blockBed = (bedId: string, reason: string, mode: "bloqueado" | "manutencao" | "interditado") =>
     updateBed(bedId, { status: mode, block_reason: reason }, `Leito ${mode}`);
 
   const unblockBed = (bedId: string) =>
-    updateBed(bedId, { status: "vago", block_reason: null }, "Leito desbloqueado");
+    updateBed(bedId, { status: "livre", block_reason: null }, "Leito desbloqueado");
 
   const reserveBed = (bedId: string, reservedFor: string, hours: number = 4) => {
+    // MIGRAÇÃO: reserved_for/reserved_until sem coluna em `leitos` → só o status muda.
     const until = new Date(Date.now() + hours * 3600_000).toISOString();
     return updateBed(
       bedId,
@@ -94,93 +100,63 @@ export function useBedCensusActions() {
   };
 
   const releaseReservation = (bedId: string) =>
-    updateBed(bedId, { status: "vago", reserved_for: null, reserved_until: null }, "Reserva liberada");
+    updateBed(bedId, { status: "livre", reserved_for: null, reserved_until: null }, "Reserva liberada");
 
   /**
-   * Permuta os pacientes entre dois leitos OCUPADOS.
-   * Usa um leito-pivô (em memória) para evitar conflito de unique de paciente.
+   * MIGRAÇÃO: a permuta antiga trocava patient_id/patient_name entre dois
+   * `bed_census`. No schema novo a ocupação é `internacoes.leito_id`, e uma troca
+   * atômica sem violar unicidade (leito_id NOT NULL, possível índice único de
+   * internação ativa por leito) exige uma RPC dedicada — inexistente. Degradado:
+   * retorna erro explicativo. Assinatura preservada.
    */
   const swapBeds = async (bedAId: string, bedBId: string) => {
     if (bedAId === bedBId) return false;
-    const { data: rows, error: eFetch } = await supabase
-      .from("bed_census")
-      .select("id, patient_id, patient_name, status")
-      .in("id", [bedAId, bedBId]);
-    if (eFetch || !rows || rows.length !== 2) {
-      toast({ title: "Erro", description: "Não foi possível ler os leitos.", variant: "destructive" });
-      return false;
-    }
-    const a = rows.find((r) => r.id === bedAId)!;
-    const b = rows.find((r) => r.id === bedBId)!;
-    if (!a.patient_name || !b.patient_name) {
-      toast({ title: "Permuta exige dois leitos ocupados", variant: "destructive" });
-      return false;
-    }
-    // Etapa 1: limpa A para liberar o paciente (evita colisão se houver unique)
-    const { error: e1 } = await supabase
-      .from("bed_census")
-      .update({ patient_id: null, patient_name: null, updated_by: user?.id ?? null })
-      .eq("id", bedAId);
-    if (e1) {
-      toast({ title: "Erro na permuta", description: e1.message, variant: "destructive" });
-      return false;
-    }
-    // Etapa 2: B recebe paciente de A
-    const { error: e2 } = await supabase
-      .from("bed_census")
-      .update({ status: "ocupado", patient_id: a.patient_id, patient_name: a.patient_name, updated_by: user?.id ?? null })
-      .eq("id", bedBId);
-    if (e2) {
-      // rollback A — o resultado era descartado. Se o proprio rollback falha, o
-      // censo fica inconsistente (leito A vazio com paciente ainda alocado) e
-      // ninguem fica sabendo. Nao muda o fluxo, mas passa a ser visivel.
-      const { error: erroRollback } = await supabase.from("bed_census").update({ status: "ocupado", patient_id: a.patient_id, patient_name: a.patient_name }).eq("id", bedAId);
-      if (erroRollback) {
-        console.error("[useBedCensusActions] ROLLBACK DA PERMUTA FALHOU — censo inconsistente:", erroRollback);
-      }
-      toast({ title: "Erro na permuta", description: e2.message, variant: "destructive" });
-      return false;
-    }
-    // Etapa 3: A recebe paciente de B
-    const { error: e3 } = await supabase
-      .from("bed_census")
-      .update({ status: "ocupado", patient_id: b.patient_id, patient_name: b.patient_name, updated_by: user?.id ?? null })
-      .eq("id", bedAId);
-    if (e3) {
-      toast({ title: "Erro na permuta (etapa final)", description: e3.message, variant: "destructive" });
-      return false;
-    }
-    toast({ title: "Permuta realizada", description: `${a.patient_name} ↔ ${b.patient_name}` });
-    invalidate();
-    return true;
+    toast({
+      title: "Permuta indisponível",
+      description:
+        "A permuta de leitos ainda não foi migrada para o schema novo (requer RPC atômica de troca de internação).",
+      variant: "destructive",
+    });
+    return false;
   };
 
+  /**
+   * MIGRAÇÃO: transfere o paciente movendo a internação ativa do leito de origem
+   * para o de destino (`internacoes.leito_id`), e ajusta o status dos dois leitos.
+   */
   const transferBed = async (originBedId: string, destinationBedId: string) => {
-    // Buscar paciente do origem
-    const { data: origin, error: e1 } = await supabase
-      .from("bed_census")
-      .select("patient_id, patient_name")
-      .eq("id", originBedId)
-      .single();
-    if (e1 || !origin) {
-      toast({ title: "Erro", description: "Leito de origem não encontrado", variant: "destructive" });
+    // Internação ativa (data_alta nula) no leito de origem.
+    const { data: originInt, error: e1 } = await supabase
+      .from("internacoes")
+      .select("id")
+      .eq("leito_id", originBedId)
+      .is("data_alta", null)
+      .maybeSingle();
+    if (e1) {
+      toast({ title: "Erro", description: "Não foi possível ler o leito de origem.", variant: "destructive" });
       return false;
     }
-    if (!origin.patient_name) {
+    if (!originInt) {
       toast({ title: "Origem sem paciente", variant: "destructive" });
       return false;
     }
-    const ok1 = await updateBed(
-      destinationBedId,
-      { status: "ocupado", patient_id: origin.patient_id, patient_name: origin.patient_name },
-      "Paciente movido para o novo leito",
-    );
-    if (!ok1) return false;
-    return updateBed(
-      originBedId,
-      { status: "higienizacao", patient_id: null, patient_name: null },
-      "Leito de origem em higienização",
-    );
+
+    const { error: eMove } = await supabase
+      .from("internacoes")
+      .update({ leito_id: destinationBedId })
+      .eq("id", (originInt as any).id);
+    if (eMove) {
+      toast({ title: "Erro na transferência", description: eMove.message, variant: "destructive" });
+      return false;
+    }
+
+    await supabase.from("leitos").update({ status: "ocupado" }).eq("id", destinationBedId);
+    const ok = await updateBed(originBedId, { status: "higienizacao" }, "Leito de origem em higienização");
+    if (ok) {
+      toast({ title: "Paciente movido para o novo leito" });
+      invalidate();
+    }
+    return ok;
   };
 
   return {

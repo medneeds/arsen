@@ -47,12 +47,14 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+// MIGRAÇÃO: view-model interno estável; os dados vêm de `logs_auditoria` e são
+// mapeados para estes nomes no queryFn (ver de-para abaixo).
 interface AuditLog {
   id: string;
   user_id: string | null;
   user_email: string | null;
   user_role: string | null;
-  action: 'INSERT' | 'UPDATE' | 'DELETE' | 'SELECT' | 'LOGIN' | 'LOGOUT';
+  action: 'INSERT' | 'UPDATE' | 'DELETE' | 'SELECT' | 'LOGIN' | 'LOGOUT' | null;
   table_name: string;
   record_id: string | null;
   old_data: any;
@@ -73,15 +75,17 @@ const ACTION_LABELS: Record<string, { label: string; color: string; icon: React.
   LOGOUT: { label: "Logout", color: "bg-warning-soft text-warning-on-soft border-warning-border", icon: <User className="h-3 w-3" /> },
 };
 
+// MIGRAÇÃO: chaves repontadas para os nomes de tabela do schema novo
+// (nome_tabela em logs_auditoria). Rótulo é só apresentação; nome cru é o fallback.
 const TABLE_LABELS: Record<string, string> = {
-  patients: "Pacientes",
-  patient_movements: "Movimentações",
-  patient_versions: "Versões",
-  shift_handovers: "Passagens de Plantão",
-  sepsis_protocols: "Protocolos de Sepse",
-  dhd_patients: "Pacientes DHD",
-  internment_requests: "Solicitações de Internação",
-  bed_allocation_requests: "Solicitações de Leito",
+  internacoes: "Internações",
+  transferencias: "Transferências",
+  pacientes: "Pacientes",
+  passagens_plantao: "Passagens de Plantão",
+  protocolos_sepse: "Protocolos de Sepse",
+  pacientes_dhd: "Pacientes DHD",
+  solicitacoes_leito: "Solicitações de Leito",
+  altas: "Altas / Óbitos",
 };
 
 export default function AuditLogsPage() {
@@ -97,11 +101,13 @@ export default function AuditLogsPage() {
     queryFn: async () => {
       if (!currentHospital?.id) return [];
 
+      // MIGRAÇÃO: audit_logs → logs_auditoria (hospital_unit_id→hospital_id,
+      // created_at→criado_em). Colunas mapeadas para o view-model AuditLog abaixo.
       const { data, error } = await supabase
-        .from('audit_logs')
+        .from('logs_auditoria')
         .select('*')
-        .eq('hospital_unit_id', currentHospital.id)
-        .order('created_at', { ascending: false })
+        .eq('hospital_id', currentHospital.id)
+        .order('criado_em', { ascending: false })
         .limit(500);
 
       if (error) {
@@ -109,7 +115,22 @@ export default function AuditLogsPage() {
         return [];
       }
 
-      return data as AuditLog[];
+      return (data ?? []).map((r: any): AuditLog => ({
+        id: r.id,
+        user_id: r.ator_user_id,
+        user_email: r.email_ator,
+        user_role: r.papel_ator,
+        action: r.acao,
+        table_name: r.nome_tabela,
+        record_id: r.registro_id,
+        old_data: r.dados_antigos,
+        new_data: r.dados_novos,
+        changed_fields: r.campos_alterados,
+        hospital_unit_id: r.hospital_id,
+        state_id: null, // MIGRAÇÃO: sem coluna equivalente em logs_auditoria
+        department: null, // MIGRAÇÃO: sem coluna equivalente em logs_auditoria
+        created_at: r.criado_em,
+      }));
     },
     enabled: !!currentHospital?.id,
   });
@@ -305,7 +326,7 @@ export default function AuditLogsPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredLogs.map((log) => {
-                      const actionInfo = ACTION_LABELS[log.action] || ACTION_LABELS.SELECT;
+                      const actionInfo = ACTION_LABELS[log.action ?? "SELECT"] || ACTION_LABELS.SELECT;
                       return (
                         <TableRow key={log.id} className="hover:bg-muted">
                           <TableCell className="text-xs">
@@ -363,10 +384,10 @@ export default function AuditLogsPage() {
                                         <p className="text-xs text-muted-foreground font-medium">Data/Hora</p>
                                         <p className="text-sm font-medium">{formatDate(selectedLog.created_at)}</p>
                                       </div>
-                                      <div className="bg-muted rounded-lg p-3">
-                                        <p className="text-xs text-muted-foreground font-medium">Ação</p>
-                                        <Badge className={`${ACTION_LABELS[selectedLog.action]?.color} mt-1`}>
-                                          {ACTION_LABELS[selectedLog.action]?.label}
+                                      <div className="bg-gray-50 rounded-lg p-3">
+                                        <p className="text-[10px] text-gray-500 font-medium">Ação</p>
+                                        <Badge className={`${ACTION_LABELS[selectedLog.action ?? "SELECT"]?.color} mt-1`}>
+                                          {ACTION_LABELS[selectedLog.action ?? "SELECT"]?.label}
                                         </Badge>
                                       </div>
                                       <div className="bg-muted rounded-lg p-3">

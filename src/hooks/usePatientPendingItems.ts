@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
+import { fromSolicitacaoStatusDb } from "@/lib/solicitacaoStatus";
 
 export interface PatientPendingItem {
   id: string;
@@ -13,13 +13,20 @@ export interface PatientPendingItem {
 }
 
 /**
- * Subscribes (realtime) to exam_requests and culture_results for a single patient.
- * Used in the clinical Cockpit's "Exames" tab to surface pending/completed counts
- * without forcing the user to leave the current page.
+ * Subscribes (realtime) to solicitacoes_exame and resultados_cultura for a single
+ * patient. Used in the clinical Cockpit's "Exames" tab to surface pending/completed
+ * counts without forcing the user to leave the current page.
  *
- * Matching strategy:
- *  - exam_requests: prefer patient_id; fall back to patient_name + hospital_unit_id.
- *  - culture_results: same — patient_id, then patient_name + hospital_unit_id.
+ * MIGRAÇÃO (Wave3): exam_requests → solicitacoes_exame; culture_results →
+ * resultados_cultura. Ambas penduram em `internacao_id` (o patientId das telas é
+ * a internação). DEGRADADOS (sem coluna no schema novo):
+ *  - matching por patient_name + hospital_unit_id (só internacao_id agora);
+ *  - filtro por encounter ativo (a internação JÁ é o encounter → useActiveEncounterId removido);
+ *  - `archived_at` (blindagem por leito reusado) inexistente → filtro removido.
+ * Parâmetros `patientName`/`hospitalUnitId` mantidos na assinatura por
+ * compatibilidade, mas não são mais usados.
+ * Colunas: category→categoria, items→itens, culture_type→tipo_cultura,
+ * microorganism→microorganismo, created_at→criado_em.
  */
 export function usePatientPendingItems(
   patientId: string | null,
@@ -28,60 +35,45 @@ export function usePatientPendingItems(
 ) {
   const [items, setItems] = useState<PatientPendingItem[]>([]);
   const [loading, setLoading] = useState(false);
-  // Fase B.2 — filtra exames/culturas pelo encounter ativo (igual ao ativo OU NULL legado)
-  const { encounterId: activeEncounterId } = useActiveEncounterId(patientId);
 
   const fetch = useCallback(async () => {
-    if (!hospitalUnitId || (!patientId && !patientName)) {
+    if (!patientId) {
       setItems([]);
       return;
     }
     setLoading(true);
 
-    const encounterOr = patientId && activeEncounterId
-      ? `encounter_id.eq.${activeEncounterId},encounter_id.is.null`
-      : null;
-
     // Exams
-    let examQuery = supabase
-      .from("exam_requests")
-      .select("id, category, status, items, created_at, patient_id, patient_name")
-      .eq("hospital_unit_id", hospitalUnitId)
-      // 🔒 Blindagem: nunca mostrar requisição arquivada (ocupante anterior do leito)
-      .is("archived_at", null)
-      .order("created_at", { ascending: false })
+    const examQuery = supabase
+      .from("solicitacoes_exame")
+      .select("id, categoria, status, itens, criado_em")
+      .eq("internacao_id", patientId)
+      .order("criado_em", { ascending: false })
       .limit(20);
-    if (patientId) examQuery = examQuery.eq("patient_id", patientId);
-    else if (patientName) examQuery = examQuery.eq("patient_name", patientName.trim());
-    if (encounterOr) examQuery = examQuery.or(encounterOr);
 
     // Cultures
-    let culQuery = supabase
-      .from("culture_results")
-      .select("id, culture_type, status, microorganism, created_at, patient_id, patient_name")
-      .eq("hospital_unit_id", hospitalUnitId)
-      // 🔒 Blindagem: nunca mostrar cultura arquivada
-      .is("archived_at", null)
-      .order("created_at", { ascending: false })
+    const culQuery = supabase
+      .from("resultados_cultura")
+      .select("id, tipo_cultura, status, microorganismo, criado_em")
+      .eq("internacao_id", patientId)
+      .order("criado_em", { ascending: false })
       .limit(20);
-    if (patientId) culQuery = culQuery.eq("patient_id", patientId);
-    else if (patientName) culQuery = culQuery.eq("patient_name", patientName.trim());
-    if (encounterOr) culQuery = culQuery.or(encounterOr);
 
     const [examRes, culRes] = await Promise.all([examQuery, culQuery]);
 
     const merged: PatientPendingItem[] = [];
     if (!examRes.error && examRes.data) {
       examRes.data.forEach((row: any) => {
-        const itemsArr = Array.isArray(row.items) ? row.items : [];
+        const itemsArr = Array.isArray(row.itens) ? row.itens : [];
         const firstName = itemsArr[0]?.name || itemsArr[0]?.exam || "Exame";
         merged.push({
           id: row.id,
           kind: "exam",
-          category: row.category || "laboratorio",
-          status: row.status || "pending",
+          category: row.categoria || "laboratorio",
+          // DB (pendente/em_andamento/concluido/cancelado) → VM (pending/…)
+          status: fromSolicitacaoStatusDb(row.status),
           label: itemsArr.length > 1 ? `${firstName} +${itemsArr.length - 1}` : firstName,
-          createdAt: row.created_at,
+          createdAt: row.criado_em,
         });
       });
     }
@@ -90,18 +82,19 @@ export function usePatientPendingItems(
         merged.push({
           id: row.id,
           kind: "culture",
-          category: row.culture_type || "cultura",
-          status: row.status || "pending",
-          label: row.microorganism || row.culture_type || "Cultura",
-          createdAt: row.created_at,
-          critical: Boolean(row.microorganism),
+          category: row.tipo_cultura || "cultura",
+          // resultados_cultura.status ∈ pendente|liberado|contaminado → VM pending/completed
+          status: row.status === "pendente" || !row.status ? "pending" : "completed",
+          label: row.microorganismo || row.tipo_cultura || "Cultura",
+          createdAt: row.criado_em,
+          critical: Boolean(row.microorganismo),
         });
       });
     }
     merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     setItems(merged);
     setLoading(false);
-  }, [patientId, patientName, hospitalUnitId, activeEncounterId]);
+  }, [patientId]);
 
   const fetchRef = useRef(fetch);
   useEffect(() => { fetchRef.current = fetch; }, [fetch]);
@@ -111,40 +104,25 @@ export function usePatientPendingItems(
   }, [fetch]);
 
   useEffect(() => {
-    if (!hospitalUnitId || (!patientId && !patientName)) return;
+    if (!patientId) return;
+    // MIGRAÇÃO: realtime filtrado por internacao_id nas tabelas novas.
     const channel = supabase
-      .channel(`patient-pending-${hospitalUnitId}-${patientId || patientName}`)
+      .channel(`patient-pending-${patientId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "exam_requests", filter: `hospital_unit_id=eq.${hospitalUnitId}` },
-        (payload) => {
-          const row: any = payload.new || payload.old;
-          if (
-            (patientId && row?.patient_id === patientId) ||
-            (patientName && row?.patient_name?.trim() === patientName.trim())
-          ) {
-            fetchRef.current();
-          }
-        },
+        { event: "*", schema: "public", table: "solicitacoes_exame", filter: `internacao_id=eq.${patientId}` },
+        () => fetchRef.current(),
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "culture_results", filter: `hospital_unit_id=eq.${hospitalUnitId}` },
-        (payload) => {
-          const row: any = payload.new || payload.old;
-          if (
-            (patientId && row?.patient_id === patientId) ||
-            (patientName && row?.patient_name?.trim() === patientName.trim())
-          ) {
-            fetchRef.current();
-          }
-        },
+        { event: "*", schema: "public", table: "resultados_cultura", filter: `internacao_id=eq.${patientId}` },
+        () => fetchRef.current(),
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [patientId, patientName, hospitalUnitId]);
+  }, [patientId]);
 
   const summary = {
     pendingExams: items.filter((i) => i.kind === "exam" && i.status === "pending").length,

@@ -62,16 +62,17 @@ export function EditDhdPatientDialog({
     try {
       setSaving(true);
 
+      // MIGRAÇÃO: pacientes_dhd não tem colunas patient_name/patient_age/
+      // medication_schedule → removidos do payload (não persistidos). Os inputs do
+      // diálogo permanecem para não quebrar o layout, mas só diagnostico/datas/
+      // relatorio_dhd são gravados. end_date agora é NOT NULL (data_fim).
       const { error } = await supabase
-        .from("dhd_patients")
+        .from("pacientes_dhd")
         .update({
-          patient_name: formData.patient_name,
-          patient_age: formData.patient_age || null,
-          diagnosis: formData.diagnosis || null,
-          start_date: formData.start_date,
-          end_date: formData.end_date || null,
-          medication_schedule: formData.medication_schedule,
-          dhd_report: formData.dhd_report || null,
+          diagnostico: formData.diagnosis || null,
+          data_inicio: formData.start_date,
+          data_fim: formData.end_date,
+          relatorio_dhd: formData.dhd_report || null,
         })
         .eq("id", patient.id);
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -48,14 +49,17 @@ export function PasswordConfirmDialog({
 
       setDisplayIdentity("CARREGANDO IDENTIFICAÇÃO…");
 
+      // MIGRAÇÃO: `profiles` (morta) → `profissionais` por `user_id`
+      // (profissionais.id ≠ auth.uid). full_name→nome.
       const { data } = await supabase
-        .from("profiles")
-        .select("full_name, email")
-        .eq("id", user.id)
+        .from("profissionais")
+        .select("nome, email")
+        .eq("user_id", user.id)
         .maybeSingle();
 
       if (!active) return;
-      const label = [data?.full_name, data?.email ?? user.email].filter(Boolean).join(" • ");
+      const prof = data as { nome?: string | null; email?: string | null } | null;
+      const label = [prof?.nome, prof?.email ?? user.email].filter(Boolean).join(" • ");
       setDisplayIdentity(label || user.email || "USUÁRIO AUTENTICADO");
     };
 
@@ -77,22 +81,31 @@ export function PasswordConfirmDialog({
     }
     setLoading(true);
     try {
-      // Verifica a senha no backend usando o ID autenticado pelo token atual.
-      // Não depende do e-mail salvo no cliente, não faz novo login e não troca a sessão.
-      const { data, error } = await supabase.functions.invoke("verify-user-password", {
-        body: { password },
+      // MIGRAÇÃO: a edge function `verify-user-password` não está disponível no
+      // backend novo. Validamos a senha CLIENTE-SIDE com um client efêmero
+      // (persistSession:false + storageKey próprio) → não troca a sessão atual
+      // nem faz login de verdade no app; só confirma a senha no GoTrue.
+      const email = user.email;
+      if (!email) {
+        toast.error("Sua conta não tem e-mail de acesso para validar a senha.");
+        setLoading(false);
+        return;
+      }
+      const url = import.meta.env.VITE_SUPABASE_URL as string;
+      const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+      const verifier = createClient(url, key, {
+        auth: { persistSession: false, autoRefreshToken: false, storageKey: "arsen-pwd-verify" },
       });
+      const { error } = await verifier.auth.signInWithPassword({ email, password });
+      // Encerra a sessão efêmera (não afeta a sessão principal do app).
+      try { await verifier.auth.signOut(); } catch { /* noop */ }
 
-      if (error || data?.ok !== true) {
-        const reason = error?.context?.status === 401 ? "invalid_session" : data?.error;
-        if (reason === "invalid_password") {
+      if (error) {
+        const msg = (error.message || "").toLowerCase();
+        if (msg.includes("invalid login") || msg.includes("credentials")) {
           toast.error("Senha incorreta", { description: "Verifique e tente novamente." });
-        } else if (reason === "invalid_session") {
-          toast.error("Sessão expirada", { description: "Faça login novamente." });
         } else {
-          toast.error("Não foi possível validar a senha", {
-            description: "Tente novamente em instantes.",
-          });
+          toast.error("Não foi possível validar a senha", { description: "Tente novamente em instantes." });
         }
         setLoading(false);
         return;

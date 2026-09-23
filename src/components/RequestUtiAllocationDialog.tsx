@@ -245,60 +245,48 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
     setIsSubmitting(true);
 
     try {
-      const internalSector = utiSectorMap[targetUti];
-      
-      // Get next bed number for UTI "outside" sector
-      const { data: existingPatients } = await supabase
-        .from('patients')
-        .select('bed_number')
-        .eq('department', 'UTI')
-        .eq('sector', 'outside');
+      // MIGRAÇÃO: patients + bed_allocation_requests → pre_admissoes.
+      // O fluxo antigo criava um "paciente porta" na mega-tabela `patients` (setor
+      // 'outside', is_door_patient) e uma solicitação de leito. No schema novo não há
+      // `patients`, e `solicitacoes_leito` exige `internacao_id` NOT NULL (não existe
+      // internação para um paciente ainda não admitido). O equivalente honesto é uma
+      // PRÉ-ADMISSÃO aguardando leito de UTI: gravamos em `pre_admissoes`
+      // (nome_paciente, setor_destino_id, status) com o bloco clínico rico preservado em
+      // `dados_extraidos_ia` (entrada do usuário). Bloco uto_*/door/allocation/bed number
+      // são DEGRADADOS. Ver MIGRACAO_DEGRADACOES.md.
+      const requestedSectorCode = utiSectorMap[targetUti]; // "UTI 1"→blue, "UTI 2"→yellow
 
-      const bedNumbers = (existingPatients || [])
-        .map(p => parseInt(p.bed_number.substring(1)))
-        .filter(n => !isNaN(n));
-      const maxBedNumber = bedNumbers.length > 0 ? Math.max(...bedNumbers) : 0;
-      const newBedNumber = `S${String(maxBedNumber + 1).padStart(2, '0')}`;
+      // Resolve o setor de destino (por código `tipo`) no hospital atual.
+      let setorDestinoId: string | null = null;
+      const { data: setoresData } = await (supabase
+        .from("setores")
+        .select("id, tipo, ala:alas!inner(hospital_id)") as any)
+        .eq("ala.hospital_id", currentHospital.id);
+      const match = ((setoresData || []) as any[]).find((s) => s.tipo === requestedSectorCode);
+      setorDestinoId = match?.id ?? null;
 
-      // Create patient in "outside" sector for UTI department
-      const patientData: Omit<Patient, 'id'> = {
-        bedNumber: newBedNumber,
-        name: patientName.toUpperCase(),
-        age: patientAge ? parseInt(patientAge) || patientAge : "",
-        sector: "outside",
-        diagnoses: diagnoses.filter(d => d.trim()),
-        medicalHistory: antecedentes.filter(a => a.trim()),
-        relevantExams: exams.filter(e => e.trim()),
-        pendencies: pendencies.filter(p => p.trim()),
-        schedule: [],
-        admissionHistory: admissionHistory,
-        admissionDate: new Date().toISOString().slice(0, 16).replace('T', ' '),
-        highlightedPendencies: [],
-        isDoorPatient: true,
-        allocationStatus: 'pending',
-        utiOriginSector: originSector ? [originSector.toUpperCase()] : [],
-        utiAdmissionDate: [],
-        utiDischargePrediction: [],
-        utiAllergies: [],
-        utiAdmissionReason: [],
-        utiCurrentStatus: [],
-        utiDevices: [],
-        utiCulturesAntibiotics: [],
-        utiSpecialties: [],
+      const dadosExtraidos = {
+        origin_sector: originSector ? originSector.toUpperCase() : null,
+        sex: patientSex || null,
+        medical_record: patientRecord || null,
+        requesting_doctor_name: requestingDoctorName.toUpperCase() || null,
+        requesting_office_number: requestingOfficeNumber || null,
+        diagnoses: diagnoses.filter((d) => d.trim()),
+        medical_history: antecedentes.filter((a) => a.trim()),
+        relevant_exams: exams.filter((e) => e.trim()),
+        pendencies: pendencies.filter((p) => p.trim()),
+        admission_history: admissionHistory || null,
+        target_uti: targetUti,
       };
 
-      // Create patient
-      const createdPatient = await createPatient(patientData, "UTI");
-
-      // Create allocation request - passes patientId, sector, bed, doctorName, officeNumber
-      const requestedSector = targetUti === "UTI 1" ? "blue" : "yellow";
-      await createRequest(
-        createdPatient.id,
-        requestedSector,
-        undefined,
-        requestingDoctorName.toUpperCase() || undefined,
-        requestingOfficeNumber || undefined
-      );
+      const { error } = await supabase.from("pre_admissoes").insert({
+        nome_paciente: patientName.toUpperCase(),
+        data_nascimento: null,
+        setor_destino_id: setorDestinoId,
+        status: "classificado",
+        dados_extraidos_ia: dadosExtraidos,
+      } as any);
+      if (error) throw error;
 
       toast({
         title: "Solicitação enviada",

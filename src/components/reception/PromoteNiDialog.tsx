@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toSexoDb } from "@/lib/sexo";
 import { useAuth } from "@/contexts/AuthContext";
 import { normalizePatientName, normalizePatientNameInput } from "@/utils/normalizePatientName";
 import {
@@ -25,11 +26,16 @@ interface Props {
 
 /**
  * Promove um paciente NI (Não Identificado) → identificado:
- * - Atualiza o MESMO registry com nome real, CPF/CNS/DN
- * - Mantém vínculo com encounters/medical_records existentes (não duplica)
- * - Marca is_unidentified=false e registra no patient_merge_audit (action='promote_ni')
+ * - Atualiza o MESMO paciente com nome real, CPF/CNS/DN
+ * - Mantém vínculo com internações existentes (não duplica)
+ * - Registra a identificação em logs_auditoria (tipo_evento='promocao_ni')
  *
- * Diferente de "merge" (que une 2 registries diferentes), este fluxo apenas COMPLEMENTA o NI existente.
+ * Diferente de "merge" (que une 2 pacientes diferentes), este fluxo apenas COMPLEMENTA o NI existente.
+ *
+ * MIGRAÇÃO: `patient_registry`→`pacientes`. Não há mais coluna `is_unidentified`/
+ * `unidentified_features`/`unidentified_code`: o estado "NI" passa a ser DERIVADO do
+ * nome (heurística detectUnidentified). Ao gravar o nome real, o paciente deixa de ser
+ * detectado como NI — a "promoção" é implícita. `patient_merge_audit`→`logs_auditoria`.
  */
 export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niName, onPromoted }: Props) {
   const { user } = useAuth();
@@ -50,7 +56,7 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
     if (!open || !niRegistryId) return;
     setLoading(true);
     supabase
-      .from("patient_registry")
+      .from("pacientes")
       .select("*")
       .eq("id", niRegistryId)
       .maybeSingle()
@@ -58,13 +64,13 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
         if (data) {
           setSnapshot(data);
           // Pré-preenche com o que já tiver
-          setFullName(data.full_name?.startsWith("NÃO IDENTIFICADO") ? "" : data.full_name || "");
+          setFullName(data.nome_completo?.startsWith("NÃO IDENTIFICADO") ? "" : data.nome_completo || "");
           setCpf(data.cpf || "");
           setCns(data.cns || "");
-          setBirthDate(data.birth_date || "");
-          setMotherName(data.mother_name || "");
-          setPhone(data.phone || "");
-          setSex((data.sex as any) || "I");
+          setBirthDate(data.data_nascimento || "");
+          setMotherName(data.nome_mae || "");
+          setPhone(data.telefone || "");
+          setSex((data.sexo as any) || "I");
           setNotes("");
         }
         setLoading(false);
@@ -82,17 +88,18 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
     setSaving(true);
     try {
       // 1) Verifica duplicidade por CPF se informado
+      // MIGRAÇÃO: `pacientes` não tem `merged_into_registry_id` (o merge apaga o
+      // perdedor). Filtro de "não mesclado" removido. medical_record→prontuario.
       if (cpf.trim()) {
         const { data: dup } = await supabase
-          .from("patient_registry")
-          .select("id, full_name, medical_record")
+          .from("pacientes")
+          .select("id, nome_completo, prontuario")
           .eq("cpf", cpf.trim())
           .neq("id", niRegistryId)
-          .is("merged_into_registry_id", null)
           .maybeSingle();
         if (dup) {
           toast.error("CPF já cadastrado", {
-            description: `Existe outro paciente: ${(dup as any).full_name} (${(dup as any).medical_record || "sem prontuário"}). Use o fluxo de merge no painel administrativo.`,
+            description: `Existe outro paciente: ${dup.nome_completo} (${dup.prontuario || "sem prontuário"}). Use o fluxo de merge no painel administrativo.`,
             duration: 6000,
           });
           setSaving(false);
@@ -100,56 +107,45 @@ export function PromoteNiDialog({ open, onOpenChange, niRegistryId, niCode, niNa
         }
       }
 
-      // 2) Atualiza registry: tira flag NI, preenche identificação real
+      // 2) Atualiza o paciente com a identificação real.
+      // MIGRAÇÃO: não há `is_unidentified`/`unidentified_features` — gravar o nome
+      // real já faz o paciente deixar de ser detectado como NI (heurística no nome).
+      // O contexto da promoção (notas/quem/quando) vai só para logs_auditoria.
       const { error: updErr } = await supabase
-        .from("patient_registry")
+        .from("pacientes")
         .update({
-          full_name: normalizePatientName(fullName),
+          nome_completo: normalizePatientName(fullName),
           cpf: cpf.trim() || null,
           cns: cns.trim() || null,
-          birth_date: birthDate || null,
-          mother_name: normalizePatientName(motherName) || null,
-          phone: phone.trim() || null,
-          sex,
-          is_unidentified: false,
-          // Mantém unidentified_code histórico para rastreio, mas tira a flag.
-          unidentified_features: {
-            ...(snapshot.unidentified_features || {}),
-            documents_pending: false,
-            partial_identification: false,
-            promoted_at: new Date().toISOString(),
-            promoted_by: user?.id,
-            promoted_from_ni_code: snapshot.unidentified_code,
-            promotion_notes: notes.trim() || null,
-          },
+          data_nascimento: birthDate || null,
+          nome_mae: normalizePatientName(motherName) || null,
+          telefone: phone.trim() || null,
+          sexo: toSexoDb(sex),
         })
         .eq("id", niRegistryId);
       if (updErr) throw updErr;
 
-      // 3) Atualiza patient_name nos encounters/movements vinculados
-      const { error: erroGrav1 } = await supabase
-        .from("patient_encounters")
-        .update({ patient_name: normalizePatientName(fullName) })
-        .eq("registry_id", niRegistryId);
-      if (erroGrav1) throw erroGrav1;
+      // MIGRAÇÃO: `internacoes` não tem coluna de nome do paciente (o nome vive só
+      // em `pacientes`, já atualizado acima) — passo de propagar patient_name removido.
 
-      // 4) Audit no patient_merge_audit (action='promote_ni')
-      const { error: erroGrav2 } = await supabase.from("patient_merge_audit" as any).insert({
-        action: "promote_ni",
-        source_registry_id: niRegistryId,
-        target_registry_id: niRegistryId,
-        source_snapshot: snapshot,
-        target_snapshot: {
-          full_name: normalizePatientName(fullName),
+      // 3) Audit em logs_auditoria (patient_merge_audit não existe mais).
+      await supabase.from("logs_auditoria").insert({
+        tipo_evento: "promocao_ni",
+        nome_tabela: "pacientes",
+        acao: "UPDATE",
+        registro_id: niRegistryId,
+        paciente_id: niRegistryId,
+        dados_antigos: snapshot as any,
+        dados_novos: {
+          nome_completo: normalizePatientName(fullName),
           cpf: cpf.trim() || null,
           cns: cns.trim() || null,
-          birth_date: birthDate || null,
-        },
-        payload: { notes: notes.trim() || null },
-        performed_by: user?.id,
-        performed_by_email: user?.email,
-      } as any);
-      if (erroGrav2) throw erroGrav2;
+          data_nascimento: birthDate || null,
+        } as any,
+        motivo: notes.trim() || null,
+        ator_user_id: user?.id ?? null,
+        email_ator: user?.email ?? null,
+      });
 
       toast.success("Paciente identificado com sucesso", {
         description: `${fullName.trim().toUpperCase()} — vínculos com atendimentos preservados.`,

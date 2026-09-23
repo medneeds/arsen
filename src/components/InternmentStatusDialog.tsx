@@ -89,23 +89,24 @@ export function InternmentStatusDialog({
     setIsSubmitting(true);
 
     try {
-      // Get current patient data to update pendencies
-      const { data: patientData, error: fetchError } = await supabase
-        .from("patients")
-        .select("pendencies")
+      // MIGRAÇÃO: patients → internacoes (patientId = internacoes.id).
+      // internment_status/internment_notes NÃO têm coluna no schema novo →
+      // DEGRADADOS (não persistidos; o status segue no estado local e alimenta
+      // o botão AIH + o texto auto-adicionado às pendências). A pendência gerada
+      // É persistida em internacoes.pendencias (texto por linha, não JSON).
+      const { data: interData, error: fetchError } = await supabase
+        .from("internacoes")
+        .select("pendencias")
         .eq("id", patientId)
         .single();
 
       if (fetchError) throw fetchError;
 
-      // Parse existing pendencies
+      // Pendências em internacoes são texto por linha (não JSON).
       let currentPendencies: string[] = [];
-      if (patientData.pendencies) {
-        try {
-          currentPendencies = JSON.parse(patientData.pendencies);
-        } catch {
-          currentPendencies = [];
-        }
+      const raw = (interData as any)?.pendencias;
+      if (typeof raw === "string" && raw.trim()) {
+        currentPendencies = raw.split("\n").map((s) => s.trim()).filter(Boolean);
       }
 
       // Map status to pendency text
@@ -125,14 +126,11 @@ export function InternmentStatusDialog({
         }
       }
 
-      // Update patient with new status and updated pendencies
       const { error } = await supabase
-        .from("patients")
+        .from("internacoes")
         .update({
-          internment_status: status || null,
-          internment_notes: notes || null,
-          pendencies: JSON.stringify(currentPendencies),
-        })
+          pendencias: currentPendencies.join("\n"),
+        } as any)
         .eq("id", patientId);
 
       if (error) throw error;
@@ -157,36 +155,16 @@ export function InternmentStatusDialog({
   };
 
   const handleClear = async () => {
-    setIsSubmitting(true);
-
-    try {
-      const { error } = await supabase
-        .from("patients")
-        .update({
-          internment_status: null,
-          internment_notes: null,
-        })
-        .eq("id", patientId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Status removido",
-        description: "Status de internação foi removido",
-      });
-
-      onSuccess?.();
-      handleClose();
-    } catch (error) {
-      console.error("Error clearing internment status:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível remover o status",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    // MIGRAÇÃO: internment_status/internment_notes não têm coluna em internacoes
+    // → nada a remover no banco (campos degradados). Limpa apenas o estado local.
+    setStatus("");
+    setNotes("");
+    toast({
+      title: "Status removido",
+      description: "Status de internação foi removido",
+    });
+    onSuccess?.();
+    handleClose();
   };
 
   const handleClose = () => {

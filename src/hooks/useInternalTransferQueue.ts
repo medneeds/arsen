@@ -21,6 +21,14 @@ export interface InternalTransferRequestRow {
   hospital_unit_id: string;
 }
 
+// MIGRAÇÃO: `internal_transfer_requests` (tabela morta) não existe no schema novo.
+// A sinalização de transferência interna passou a ser gravada em `logs_auditoria`
+// (tipo_evento='sinalizacao_transferencia_interna'), pois `transferencias` exige
+// leito_destino_id NOT NULL e não modela uma sinalização sem leito de destino.
+// Esta fila lê esses eventos. DEGRADADO: o schema novo não marca conclusão/
+// cancelamento no log, então mostramos a sinalização mais recente por internação
+// (dedupe por internacao_id) e todas ficam como 'pending'. Sem coluna de hospital
+// confiável no log → escopo por hospital fica a cargo da RLS (hoje 1 hospital).
 export function useInternalTransferQueue(sectorCode?: string | null) {
   const { currentHospital } = useHospital();
   const [rows, setRows] = useState<InternalTransferRequestRow[]>([]);
@@ -29,15 +37,44 @@ export function useInternalTransferQueue(sectorCode?: string | null) {
   const refresh = useCallback(async () => {
     if (!currentHospital?.id) return;
     setLoading(true);
-    let q = (supabase as any)
-      .from("internal_transfer_requests")
-      .select("*")
-      .eq("hospital_unit_id", currentHospital.id)
-      .eq("status", "pending")
-      .order("signaled_at", { ascending: true });
-    if (sectorCode) q = q.eq("target_sector_code", sectorCode);
-    const { data, error } = await q;
-    if (!error) setRows((data ?? []) as InternalTransferRequestRow[]);
+    const { data, error } = await supabase
+      .from("logs_auditoria")
+      .select("id, internacao_id, criado_em, ator_user_id, motivo, dados_novos")
+      .eq("tipo_evento", "sinalizacao_transferencia_interna")
+      .order("criado_em", { ascending: false })
+      .limit(500);
+
+    if (!error && data) {
+      const seen = new Set<string>();
+      const mapped: InternalTransferRequestRow[] = [];
+      for (const log of data as any[]) {
+        const dn = (log.dados_novos as any) || {};
+        // Dedupe: só a sinalização mais recente de cada internação.
+        const key = log.internacao_id || log.id;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        if (sectorCode && dn.target_sector_code !== sectorCode) continue;
+        mapped.push({
+          id: log.id,
+          source_patient_id: log.internacao_id,
+          source_bed: dn.source_bed ?? null,
+          source_sector: dn.source_sector ?? null,
+          patient_name: dn.patient_snapshot?.name ?? dn.patient_snapshot?.nome ?? "",
+          patient_snapshot: dn.patient_snapshot ?? null,
+          encounter_code: null, // MIGRAÇÃO: sem encounter_code no schema novo
+          target_sector_code: dn.target_sector_code,
+          target_sector_label: dn.target_sector_label ?? null,
+          classification: dn.classification,
+          requires_saps: !!dn.requires_saps,
+          reason: log.motivo ?? null,
+          status: "pending",
+          signaled_by: log.ator_user_id ?? null,
+          signaled_at: log.criado_em,
+          hospital_unit_id: currentHospital.id,
+        });
+      }
+      setRows(mapped);
+    }
     setLoading(false);
   }, [currentHospital?.id, sectorCode]);
 
@@ -50,7 +87,7 @@ export function useInternalTransferQueue(sectorCode?: string | null) {
     if (!currentHospital?.id) return;
     const ch = supabase
       .channel(`itr-${currentHospital.id}-${sectorCode ?? "all"}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "internal_transfer_requests" }, () => refreshRef.current())
+      .on("postgres_changes", { event: "*", schema: "public", table: "logs_auditoria" }, () => refreshRef.current())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [currentHospital?.id, sectorCode]);

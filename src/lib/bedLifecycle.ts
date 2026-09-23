@@ -1,24 +1,23 @@
 /**
  * src/lib/bedLifecycle.ts
  *
- * Fonte única de movimentações de leito.
+ * Fonte única de movimentações de leito / desfechos clínicos.
  *
- * Separa CLARAMENTE:
- *   - ATO MÉDICO (Painel Clínico) — `signalClinicalDecision` / `revokeClinicalDecision`
- *     Apenas sinaliza no `patients.admission_status` e registra em `patient_movements`.
- *     NÃO toca `bed_number` / `sector` / dados clínicos.
- *
- *   - ATO ADMINISTRATIVO (Mapa de Leitos) — `executeBedRelease` /
- *     `executeOperationalRelocation`
- *     Libera o leito físico (zera dados clínicos do slot, preservando o
- *     prontuário longitudinal) ou move o paciente entre leitos por motivo
- *     operacional (sem decisão clínica), sempre com `repointPatientHistory`.
- *
- * Todos os movimentos gravam `metadata.flow_version = 'v2_unified'` para
- * facilitar auditoria e migração futura.
+ * MIGRAÇÃO (schema novo):
+ *   - A tabela `patients` (mega-tabela de leito+clínica) NÃO existe mais. O estado
+ *     clínico da internação vive em `internacoes` (status, data_alta). O estado
+ *     físico do leito vive em `leitos` (status). O paciente é `pacientes`.
+ *   - `patient_movements` (trilha de auditoria) → degradada para `logs_auditoria`
+ *     (a nova `transferencias` só modela transferência leito→leito e não cabe em
+ *     desfechos como alta/óbito). `patient_encounters` não existe: o fechamento do
+ *     atendimento passa a ser representado por `internacoes.data_alta`.
+ *   - Fluxo administrativo sequencial (executeOperationalRelocation) dependia
+ *     inteiramente da mega-tabela `patients` + RPC `archive_patient_bed_data` +
+ *     `repointPatientHistory`; o caminho feliz é a RPC atômica, e o fallback foi
+ *     degradado (ver MIGRACAO_DEGRADACOES.md).
+ *   - `patientId` == `internacoes.id`. `*_por`/ator referenciam profissionais/auth.
  */
 import { supabase } from "@/integrations/supabase/client";
-import { repointPatientHistory } from "@/lib/repointPatientHistory";
 
 export type ClinicalDecisionKind =
   | "alta_medica"
@@ -42,6 +41,13 @@ const KIND_TO_MOVEMENT_TYPE: Record<ClinicalDecisionKind, string> = {
   obito: "OBITO",
   evasao: "EVASAO",
 };
+
+/** Desfechos que encerram a internação (gravam data_alta). */
+const FINAL_KINDS: ReadonlySet<ClinicalDecisionKind> = new Set([
+  "alta_medica",
+  "obito",
+  "transf_externa",
+]);
 
 export interface SignalDecisionPayload {
   patientId: string;
@@ -67,6 +73,41 @@ export interface LifecycleResult {
   error?: string;
 }
 
+/** MIGRAÇÃO: registra a trilha de auditoria em logs_auditoria (substitui patient_movements). */
+async function recordAudit(entry: {
+  internacaoId: string;
+  tipoEvento: string;
+  atorUserId: string | null;
+  hospitalId?: string | null;
+  motivo?: string | null;
+  dados?: any;
+}): Promise<string | undefined> {
+  try {
+    const { data, error } = await supabase
+      .from("logs_auditoria")
+      .insert({
+        tipo_evento: entry.tipoEvento,
+        nome_tabela: "internacoes",
+        registro_id: entry.internacaoId,
+        internacao_id: entry.internacaoId,
+        ator_user_id: entry.atorUserId,
+        hospital_id: entry.hospitalId ?? null,
+        motivo: entry.motivo ?? null,
+        dados_novos: entry.dados ?? null,
+      } as any)
+      .select("id")
+      .single();
+    if (error) {
+      console.warn("[bedLifecycle] falha ao gravar logs_auditoria (não-bloqueante):", error);
+      return undefined;
+    }
+    return (data as any)?.id;
+  } catch (e) {
+    console.warn("[bedLifecycle] exceção ao gravar logs_auditoria (não-bloqueante):", e);
+    return undefined;
+  }
+}
+
 /** Painel Clínico → marca decisão. NÃO libera leito. */
 export async function signalClinicalDecision(
   kind: ClinicalDecisionKind,
@@ -74,66 +115,49 @@ export async function signalClinicalDecision(
 ): Promise<LifecycleResult> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    const movement = await supabase
-      .from("patient_movements")
-      .insert({
-        patient_id: payload.patientId,
-        patient_name: payload.patientName,
-        patient_bed: payload.patientBed ?? null,
-        patient_sector: payload.patientSector ?? null,
-        movement_type: KIND_TO_MOVEMENT_TYPE[kind],
-        destination: payload.destination ?? null,
-        notes: payload.notes ?? null,
-        responsible_doctor: payload.responsibleDoctor ?? null,
-        created_by: user?.id ?? null,
-        patient_snapshot: payload.patientSnapshot ?? null,
-        department: payload.department ?? null,
-        state_id: payload.stateId,
-        hospital_unit_id: payload.hospitalUnitId,
-        metadata: {
-          flow_version: "v2_unified",
-          stage: "signal",
-          kind,
-          signaled_by: user?.id ?? null,
-          target_sector: payload.targetSector ?? null,
-          target_bed: payload.targetBed ?? null,
-          nir_requested: !!payload.nirRequested,
-        } as any,
-      })
-      .select("id")
-      .single();
-    if (movement.error) throw movement.error;
+
+    // Atualiza o estado da internação (substitui patients.admission_status).
+    // Desfechos finais também carimbam data_alta (substitui o fechamento do encounter).
+    const interUpdate: Record<string, unknown> = {
+      status: KIND_TO_STATUS[kind],
+    };
+    if (FINAL_KINDS.has(kind)) {
+      interUpdate.data_alta = new Date().toISOString();
+    }
 
     const { error: statusErr } = await supabase
-      .from("patients")
-      .update({
-        admission_status: KIND_TO_STATUS[kind],
-        updated_at: new Date().toISOString(),
-      })
+      .from("internacoes")
+      .update(interUpdate as any)
       .eq("id", payload.patientId);
     if (statusErr) throw statusErr;
 
-    // Encerra o encounter apenas nos desfechos finais da internação.
-    // Regra de negócio: 1 internação = 1 atendimento até alta, óbito ou transferência externa.
-    // Transferência interna e evasão NÃO encerram o atendimento.
-    if (kind === "alta_medica" || kind === "obito" || kind === "transf_externa") {
-      const { error: encErr } = await supabase
-        .from("patient_encounters")
-        .update({
-          status: "closed",
-          discharge_date: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("patient_id", payload.patientId)
-        .neq("status", "closed");
-      if (encErr) {
-        // Não bloqueia a sinalização clínica — o desfecho já foi registrado.
-        // O encounter poderá ser encerrado manualmente se necessário.
-        console.error("[signalClinicalDecision] falha ao encerrar encounter:", encErr);
-      }
-    }
+    // MIGRAÇÃO: patient_movements → logs_auditoria. Campos ricos (bed/sector/
+    // destination/snapshot/metadata) preservados dentro de dados_novos.
+    const movementId = await recordAudit({
+      internacaoId: payload.patientId,
+      tipoEvento: `decisao_clinica:${KIND_TO_MOVEMENT_TYPE[kind]}`,
+      atorUserId: user?.id ?? null,
+      hospitalId: payload.hospitalUnitId,
+      motivo: payload.notes ?? null,
+      dados: {
+        flow_version: "v2_unified",
+        stage: "signal",
+        kind,
+        patient_name: payload.patientName,
+        patient_bed: payload.patientBed ?? null,
+        patient_sector: payload.patientSector ?? null,
+        destination: payload.destination ?? null,
+        target_sector: payload.targetSector ?? null,
+        target_bed: payload.targetBed ?? null,
+        responsible_doctor: payload.responsibleDoctor ?? null,
+        nir_requested: !!payload.nirRequested,
+        department: payload.department ?? null,
+        state_id: payload.stateId,
+        patient_snapshot: payload.patientSnapshot ?? null,
+      },
+    });
 
-    return { ok: true, movementId: movement.data?.id };
+    return { ok: true, movementId };
   } catch (err: any) {
     console.error("[signalClinicalDecision] erro", err);
     return { ok: false, error: err?.message ?? "Erro desconhecido" };
@@ -157,42 +181,33 @@ export async function revokeClinicalDecision(
 ): Promise<LifecycleResult> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    const movement = await supabase
-      .from("patient_movements")
-      .insert({
-        patient_id: payload.patientId,
-        patient_name: payload.patientName,
-        patient_bed: payload.patientBed ?? null,
-        patient_sector: payload.patientSector ?? null,
-        movement_type: "REVOGACAO_DECISAO",
-        destination: null,
-        notes: payload.reason,
-        responsible_doctor: null,
-        created_by: user?.id ?? null,
-        department: payload.department ?? null,
-        state_id: payload.stateId,
-        hospital_unit_id: payload.hospitalUnitId,
-        metadata: {
-          flow_version: "v2_unified",
-          stage: "revoke",
-          revoked_by: user?.id ?? null,
-        } as any,
-      })
-      .select("id")
-      .single();
-    if (movement.error) throw movement.error;
 
     // Volta para admitido — leito ainda não foi liberado, paciente segue ativo.
+    // Limpa data_alta caso a decisão revogada fosse um desfecho final.
     const { error: statusErr } = await supabase
-      .from("patients")
-      .update({
-        admission_status: "admitido",
-        updated_at: new Date().toISOString(),
-      })
+      .from("internacoes")
+      .update({ status: "ativa", data_alta: null } as any)
       .eq("id", payload.patientId);
     if (statusErr) throw statusErr;
 
-    return { ok: true, movementId: movement.data?.id };
+    const movementId = await recordAudit({
+      internacaoId: payload.patientId,
+      tipoEvento: "decisao_clinica:REVOGACAO_DECISAO",
+      atorUserId: user?.id ?? null,
+      hospitalId: payload.hospitalUnitId,
+      motivo: payload.reason,
+      dados: {
+        flow_version: "v2_unified",
+        stage: "revoke",
+        patient_name: payload.patientName,
+        patient_bed: payload.patientBed ?? null,
+        patient_sector: payload.patientSector ?? null,
+        department: payload.department ?? null,
+        state_id: payload.stateId,
+      },
+    });
+
+    return { ok: true, movementId };
   } catch (err: any) {
     console.error("[revokeClinicalDecision] erro", err);
     return { ok: false, error: err?.message ?? "Erro desconhecido" };
@@ -209,9 +224,20 @@ export interface OperationalRelocationPayload {
 }
 
 /**
- * Mapa de Leitos → remanejamento operacional (reforma, manutenção,
- * isolamento, conforto). SEM decisão clínica, MAS preserva 100% do
- * histórico via `repointPatientHistory`.
+ * Mapa de Leitos → remanejamento operacional (reforma, manutenção, isolamento,
+ * conforto). SEM decisão clínica.
+ *
+ * Caminho feliz: RPC atômica `execute_operational_relocation_atomic` (executa no
+ * banco a movimentação + auditoria).
+ *
+ * MIGRAÇÃO: o fallback sequencial original dependia inteiramente da mega-tabela
+ * `patients` (cópia de ~40 colunas clínicas entre slots), da RPC
+ * `archive_patient_bed_data` e de `repointPatientHistory` — todos ligados a
+ * tabelas mortas. No schema novo, a movimentação de leito é um UPDATE em
+ * `internacoes.leito_id` (+ `leitos.status`) que exige o leito destino resolvido,
+ * o que não é derivável dos ids de slot `patients` deste payload. Portanto o
+ * fallback foi degradado: se a RPC não existir, retornamos erro explicativo.
+ * Ver MIGRACAO_DEGRADACOES.md.
  */
 export async function executeOperationalRelocation(
   payload: OperationalRelocationPayload,
@@ -220,10 +246,9 @@ export async function executeOperationalRelocation(
     return { ok: false, error: "Leito de origem e destino são iguais." };
   }
 
-  // Tenta primeiro a RPC atômica (execute_operational_relocation_atomic).
-  // Se a migration ainda não foi aplicada no banco, a RPC não existe e o erro
-  // PostgreSQL retorna code="42883" (function does not exist). Nesse caso,
-  // cai automaticamente para o fluxo sequencial original — sem impacto em produção.
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // RPC desconhecida (não tipada) → chamada via (supabase.rpc as any).
   const { data: atomicData, error: atomicErr } = await (supabase as any).rpc(
     "execute_operational_relocation_atomic",
     {
@@ -233,200 +258,20 @@ export async function executeOperationalRelocation(
       p_hospital_unit_id:  payload.hospitalUnitId,
       p_state_id:          payload.stateId,
       p_department:        payload.department ?? null,
-      p_created_by:        (await supabase.auth.getUser()).data?.user?.id ?? null,
+      p_created_by:        user?.id ?? null,
     },
   );
 
   if (!atomicErr) {
-    // RPC atômica executou com sucesso
     return { ok: true, movementId: atomicData?.movement_id ?? undefined };
   }
 
-  // 42883 = function does not exist — migration ainda não aplicada
-  const isRpcMissing =
-    (atomicErr as any)?.code === "42883" ||
-    (atomicErr?.message ?? "").includes("does not exist");
-
-  if (!isRpcMissing) {
-    // Erro real da RPC (não é "função não encontrada") — propaga
-    console.error("[executeOperationalRelocation] erro na RPC atômica:", atomicErr);
-    return { ok: false, error: atomicErr?.message ?? "Erro desconhecido" };
-  }
-
-  // Fallback: fluxo sequencial original (migration ainda não foi aplicada)
-  console.warn("[executeOperationalRelocation] RPC atômica não encontrada — usando fluxo sequencial");
-
-  try {
-    if (payload.sourcePatientId === payload.targetPatientId) {
-      return { ok: false, error: "Leito de origem e destino são iguais." };
-    }
-
-    // 1) Buscar slot de origem (todos os campos clínicos)
-    const { data: source, error: srcErr } = await supabase
-      .from("patients")
-      .select("*")
-      .eq("id", payload.sourcePatientId)
-      .maybeSingle();
-    if (srcErr) throw srcErr;
-    if (!source) throw new Error("Leito de origem não encontrado.");
-
-    // 2) Copiar dados clínicos para slot destino
-    const clinicalFields = {
-      name: (source as any).name,
-      age: (source as any).age ?? null,
-      diagnoses: (source as any).diagnoses ?? null,
-      medical_history: (source as any).medical_history ?? null,
-      relevant_exams: (source as any).relevant_exams ?? null,
-      pendencies: (source as any).pendencies ?? null,
-      schedule: (source as any).schedule ?? null,
-      admission_history: (source as any).admission_history ?? null,
-      admission_date: (source as any).admission_date ?? null,
-      highlighted_diagnoses: (source as any).highlighted_diagnoses ?? null,
-      highlighted_medical_history: (source as any).highlighted_medical_history ?? null,
-      highlighted_pendencies: (source as any).highlighted_pendencies ?? null,
-      highlighted_conducts: (source as any).highlighted_conducts ?? null,
-      medical_responsibility: (source as any).medical_responsibility ?? null,
-      // Auditoria de preservação (16/07/2026): campos que não eram copiados
-      is_palliative: (source as any).is_palliative ?? false,
-      isolation_precautions: (source as any).isolation_precautions ?? null,
-      hospital_discharge_prediction: (source as any).hospital_discharge_prediction ?? null,
-      is_door_patient: (source as any).is_door_patient ?? false,
-      uti_admission_date: (source as any).uti_admission_date ?? null,
-      uti_discharge_prediction: (source as any).uti_discharge_prediction ?? null,
-      uti_allergies: (source as any).uti_allergies ?? null,
-      uti_admission_reason: (source as any).uti_admission_reason ?? null,
-      uti_current_status: (source as any).uti_current_status ?? null,
-      uti_devices: (source as any).uti_devices ?? null,
-      uti_cultures_antibiotics: (source as any).uti_cultures_antibiotics ?? null,
-      uti_specialties: (source as any).uti_specialties ?? null,
-      uti_origin_sector: (source as any).uti_origin_sector ?? null,
-      uti_daily_conducts: (source as any).uti_daily_conducts ?? null,
-      uti_weight_kg: (source as any).uti_weight_kg ?? null,
-      internment_status: (source as any).internment_status ?? null,
-      internment_notes: (source as any).internment_notes ?? null,
-      clinical_status: (source as any).clinical_status ?? null,
-      psm_status: (source as any).psm_status ?? null,
-      patient_registry_id: (source as any).patient_registry_id ?? null,
-      medical_record: (source as any).medical_record ?? null,
-      admission_status: (source as any).admission_status ?? null,
-      admitted_at: (source as any).admitted_at ?? null,
-      is_vacant: false,
-      updated_at: new Date().toISOString(),
-    };
-
-    const { error: tgtErr } = await supabase
-      .from("patients")
-      .update(clinicalFields)
-      .eq("id", payload.targetPatientId);
-    if (tgtErr) throw tgtErr;
-
-    // 3) Repointar histórico (evoluções/prescrições/exames/etc.)
-    const repoint = await repointPatientHistory(
-      payload.sourcePatientId,
-      payload.targetPatientId,
-      `Remanejamento operacional: ${payload.reason}`,
-    );
-    if (!repoint.ok) {
-      throw new Error(repoint.error ?? "Falha ao migrar histórico clínico. Operação abortada.");
-    }
-
-    // 4) Zerar slot origem
-    // 🔒 ARQUIVAR todos os dados clínicos do leito de ORIGEM antes de liberá-lo
-    // (a transferência interna SEM ALTA usa repointPatientHistory, que ocorre em
-    // outra função e migra patient_id; aqui é liberação operacional)
-    console.log('Archiving clinical data for operational relocation source:', payload.sourcePatientId);
-    const { error: archiveError } = await supabase.rpc('archive_patient_bed_data', {
-      p_patient_id: payload.sourcePatientId,
-      p_reason: 'operational_relocation_source_release',
-    });
-    if (archiveError) {
-      console.error('[executeOperationalRelocation] erro ao arquivar:', archiveError);
-      return { ok: false, error: `Falha ao arquivar dados clínicos: ${archiveError.message}` };
-    }
-
-    const { error: clearErr } = await supabase
-      .from("patients")
-      .update({
-        name: "",
-        age: null,
-        diagnoses: null,
-        medical_history: null,
-        relevant_exams: null,
-        pendencies: null,
-        schedule: null,
-        admission_history: null,
-        admission_date: null,
-        highlighted_diagnoses: null,
-        highlighted_medical_history: null,
-        highlighted_pendencies: null,
-        highlighted_conducts: null,
-        medical_responsibility: null,
-        uti_admission_date: null,
-        uti_discharge_prediction: null,
-        uti_allergies: null,
-        uti_admission_reason: null,
-        uti_current_status: null,
-        uti_devices: null,
-        uti_cultures_antibiotics: null,
-        uti_specialties: null,
-        uti_origin_sector: null,
-        uti_daily_conducts: null,
-        uti_weight_kg: null,
-        internment_status: null,
-        internment_notes: null,
-        clinical_status: null,
-        psm_status: null,
-        patient_registry_id: null,
-        medical_record: null,
-        admission_status: null,
-        admitted_at: null,
-        is_vacant: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", payload.sourcePatientId);
-    if (clearErr) throw clearErr;
-
-    // 5) Auditoria
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data: target } = await supabase
-      .from("patients")
-      .select("bed_number, sector")
-      .eq("id", payload.targetPatientId)
-      .maybeSingle();
-    const movement = await supabase
-      .from("patient_movements")
-      .insert({
-        patient_id: payload.targetPatientId,
-        patient_name: (source as any).name,
-        patient_bed: (source as any).bed_number,
-        patient_sector: (source as any).sector,
-        movement_type: "REMANEJAMENTO_OPERACIONAL",
-        destination: target
-          ? `${(target as any).sector} • Leito ${(target as any).bed_number}`
-          : null,
-        notes: payload.reason,
-        created_by: user?.id ?? null,
-        patient_snapshot: source as any,
-        department: payload.department ?? null,
-        state_id: payload.stateId,
-        hospital_unit_id: payload.hospitalUnitId,
-        metadata: {
-          flow_version: "v2_unified",
-          stage: "operational_relocation",
-          source_bed: (source as any).bed_number,
-          source_sector: (source as any).sector,
-          target_bed: (target as any)?.bed_number ?? null,
-          target_sector: (target as any)?.sector ?? null,
-          executed_by: user?.id ?? null,
-        } as any,
-      })
-      .select("id")
-      .single();
-    if (movement.error) throw movement.error;
-
-    return { ok: true, movementId: movement.data?.id };
-  } catch (err: any) {
-    console.error("[executeOperationalRelocation] erro no fluxo sequencial:", err);
-    return { ok: false, error: err?.message ?? "Erro desconhecido" };
-  }
+  // MIGRAÇÃO: fallback sequencial degradado (dependia de `patients`, tabela morta).
+  console.error("[executeOperationalRelocation] RPC indisponível/erro:", atomicErr);
+  return {
+    ok: false,
+    error:
+      atomicErr?.message ??
+      "Remanejamento operacional indisponível: requer a RPC execute_operational_relocation_atomic no schema novo.",
+  };
 }

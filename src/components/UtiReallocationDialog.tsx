@@ -24,7 +24,7 @@ import { useDepartment } from "@/contexts/DepartmentContext";
 import { ArrowRightLeft, BedDouble, Check, User, MapPin, ClipboardList, Eye, History, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MovementConfirmDialog } from "@/components/MovementConfirmDialog";
-import { classifyTransfer, requiresSaps, requiresNewAdmission, classificationLabel } from "@/lib/sectorComplexity";
+import { classifyTransfer, requiresSaps, classificationLabel } from "@/lib/sectorComplexity";
 import { isExtraBed } from "@/utils/bedNaming";
 
 interface UtiReallocationDialogProps {
@@ -130,142 +130,60 @@ export function UtiReallocationDialog({
       const isSameUnit = targetUnit === currentUtiUnit;
       const originalBedNumber = patient.bedNumber;
 
-      // Classificação de complexidade do movimento.
-      // O destino aqui é sempre UTI 1 (red) ou UTI 2 (yellow) — críticos.
-      const destinationSectorCode = targetBedPatient.sector;
-      const transferClass = classifyTransfer(patient.sector, destinationSectorCode);
-      const needsSaps = requiresSaps(transferClass);
-      const needsNewAdmission = requiresNewAdmission(transferClass);
-
-      // Status do destino:
-      // - Escalada crítica (→ UTI/UCI 2) → 'saps_pendente' + nova admissão
-      // - Escalada intermediária (→ UCI 1) → 'pre_admitido' + nova admissão
-      // - Lateral/desescalada → preserva status atual (continuidade)
-      const destinationAdmissionStatus = needsSaps
-        ? 'saps_pendente'
-        : needsNewAdmission
-        ? 'pre_admitido'
-        : (patient.admissionStatus ?? 'admitido');
-
-      // ORDEM CORRIGIDA: repoint ANTES de qualquer update no banco.
-      // Antes: update target → repoint → clear source (se repoint falhasse,
-      //   dados já estavam escritos no destino — estado inconsistente).
-      // Agora: repoint → update target → clear source (atômico: se repoint
-      //   falhar, nada foi escrito e a operação pode ser repetida).
-      const { repointPatientHistory } = await import("@/lib/repointPatientHistory");
-      const repointFirst = await repointPatientHistory(
-        patient.id,
-        targetBedPatient.id,
-        `Realocação UTI: ${originalBedNumber} → ${targetBedPatient.bedNumber}`,
-      );
-      if (!repointFirst.ok) {
-        throw new Error(repointFirst.error ?? "Falha ao migrar histórico clínico. Nenhuma alteração foi feita — tente novamente.");
-      }
-
-      // Step 1: Move patient data to the target bed (update target bed with patient data)
-      const { error: targetError } = await supabase
-        .from('patients')
-        .update({
-          name: patient.name,
-          age: patient.age?.toString() || null,
-          diagnoses: patient.diagnoses?.join('\n') || null,
-          medical_history: patient.medicalHistory?.join('\n') || null,
-          relevant_exams: patient.relevantExams?.join('\n') || null,
-          pendencies: patient.pendencies?.join('\n') || null,
-          schedule: patient.schedule?.join('\n') || null,
-          admission_history: patient.admissionHistory || null,
-          admission_date: patient.admissionDate || null,
-          highlighted_diagnoses: patient.highlightedDiagnoses || null,
-          highlighted_medical_history: patient.highlightedMedicalHistory || null,
-          highlighted_pendencies: patient.highlightedPendencies || null,
-          highlighted_conducts: patient.highlightedConducts || null,
-          uti_admission_date: patient.utiAdmissionDate?.join('\n') || null,
-          uti_discharge_prediction: patient.utiDischargePrediction?.join('\n') || null,
-          uti_allergies: patient.utiAllergies?.join('\n') || null,
-          uti_admission_reason: patient.utiAdmissionReason?.join('\n') || null,
-          uti_current_status: patient.utiCurrentStatus?.join('\n') || null,
-          uti_devices: patient.utiDevices?.join('\n') || null,
-          uti_cultures_antibiotics: patient.utiCulturesAntibiotics?.join('\n') || null,
-          uti_specialties: patient.utiSpecialties?.join('\n') || null,
-          uti_origin_sector: patient.utiOriginSector?.join('\n') || null,
-          uti_daily_conducts: patient.utiDailyConducts?.join('\n') || null,
-          clinical_status: patient.clinicalStatus || null,
-          psm_status: patient.psmStatus || null,
-          // Preserva flag de desfecho (óbito/alta/transferência pendente) ao mover paciente entre leitos,
-          // OU marca 'saps_pendente' quando for escalada de não-crítico para crítico.
-          admission_status: destinationAdmissionStatus,
-          // Em escalada: admitted_at é null até conclusão da admissão clínica
-          admitted_at: needsNewAdmission ? null : undefined,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', targetBedPatient.id);
-
-      if (targetError) throw targetError;
-
-      // Regra de negócio: encounter não encerra em transferência interna.
-      // O número de atendimento é preservado até alta, óbito ou transferência externa.
-
-      // Repoint já foi executado antes do update (ver acima)
-
-      // Step 2: Clear the original bed (make it empty)
-      const { error: sourceError } = await supabase
-        .from('patients')
-        .update({
-          name: '',
-          age: null,
-          diagnoses: null,
-          medical_history: null,
-          relevant_exams: null,
-          pendencies: null,
-          schedule: null,
-          admission_history: null,
-          admission_date: null,
-          highlighted_diagnoses: null,
-          highlighted_medical_history: null,
-          highlighted_pendencies: null,
-          highlighted_conducts: null,
-          uti_admission_date: null,
-          uti_discharge_prediction: null,
-          uti_allergies: null,
-          uti_admission_reason: null,
-          uti_current_status: null,
-          uti_devices: null,
-          uti_cultures_antibiotics: null,
-          uti_specialties: null,
-          uti_origin_sector: null,
-          uti_daily_conducts: null,
-          clinical_status: null,
-          psm_status: null,
-          // Limpa flag de desfecho na origem para não deixar tarja órfã caso o leito seja reocupado.
-          admission_status: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', patient.id);
-
-      if (sourceError) throw sourceError;
-
-      // Register movement
+      // MIGRAÇÃO: patients (leito+paciente numa linha) + patient_movements → schema novo.
+      // Realocar = mover a INTERNAÇÃO (patient.id == internacoes.id) para o leito de
+      // destino (targetBedPatient.id == leitos.id, leito vago). O histórico clínico
+      // segue a internação (mesmo id), então a cópia de ~30 colunas clínicas e o
+      // repointPatientHistory do modelo antigo foram DEGRADADOS/removidos. Bloco uti_*,
+      // clinical_status, psm_status, admission_status, highlights não têm coluna → não
+      // gravados. Ver MIGRACAO_DEGRADACOES.md.
       const { data: { user } } = await supabase.auth.getUser();
 
-      try {
-        const { error: movErr } = await supabase
-          .from('patient_movements')
-          .insert({
-            patient_name: patient.name,
-            patient_bed: originalBedNumber,
-            patient_sector: patient.sector,
-            movement_type: isSameUnit ? 'REALOCAÇÃO' : 'TRANSFERÊNCIA',
-            destination: `${targetUnit} - Leito ${targetBedPatient.bedNumber}`,
-            notes: `Realocação de ${currentUtiUnit} Leito ${originalBedNumber} para ${targetUnit} Leito ${targetBedPatient.bedNumber}`,
-            created_by: user?.id,
-            patient_snapshot: patient as any,
-            department: currentDepartment,
-            state_id: currentState.id,
-            hospital_unit_id: currentHospital.id,
-          });
-        if (movErr) console.error("[UtiReallocationDialog] falha ao registrar patient_movements:", movErr);
-      } catch (e) {
-        console.error("[UtiReallocationDialog] falha ao registrar patient_movements:", e);
+      // Resolve o leito de origem (internacoes.leito_id da internação sendo movida).
+      const { data: internacaoRow, error: intErr } = await supabase
+        .from('internacoes')
+        .select('leito_id')
+        .eq('id', patient.id)
+        .maybeSingle();
+      if (intErr) throw intErr;
+      const origemLeitoId = (internacaoRow as any)?.leito_id as string | undefined;
+
+      const targetLeitoId = targetBedPatient.id;
+
+      // Move a internação para o leito de destino.
+      const { error: moveErr } = await supabase
+        .from('internacoes')
+        .update({ leito_id: targetLeitoId })
+        .eq('id', patient.id);
+      if (moveErr) throw moveErr;
+
+      // Ajusta status dos leitos: origem → livre, destino → ocupado.
+      if (origemLeitoId) {
+        await supabase.from('leitos').update({ status: 'livre' }).eq('id', origemLeitoId);
+      }
+      await supabase.from('leitos').update({ status: 'ocupado' }).eq('id', targetLeitoId);
+
+      // Registra a transferência leito→leito (agora possível: leito_origem/destino NOT NULL).
+      // MIGRAÇÃO: substitui o insert em patient_movements. Snapshot/department/hospital
+      // não têm coluna em `transferencias` → degradados.
+      if (origemLeitoId) {
+        try {
+          const { data: prof } = await supabase
+            .from('profissionais').select('id').eq('user_id', user?.id ?? '').maybeSingle();
+          const { error: transfErr } = await supabase
+            .from('transferencias')
+            .insert({
+              internacao_id: patient.id,
+              leito_origem_id: origemLeitoId,
+              leito_destino_id: targetLeitoId,
+              motivo: `Realocação de ${currentUtiUnit} Leito ${originalBedNumber} para ${targetUnit} Leito ${targetBedPatient.bedNumber}`,
+              status: 'concluida',
+              solicitado_por: (prof as any)?.id ?? null,
+            } as any);
+          if (transfErr) console.error("[UtiReallocationDialog] falha ao registrar transferencia:", transfErr);
+        } catch (e) {
+          console.error("[UtiReallocationDialog] falha ao registrar transferencia:", e);
+        }
       }
 
       toast({

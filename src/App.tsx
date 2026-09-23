@@ -1,8 +1,10 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Routes, Route, Navigate, useSearchParams, useLocation } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/MainLayout";
 import { IpRestricted } from "@/components/IpRestricted";
@@ -13,6 +15,7 @@ import { HelpTourProvider } from "@/contexts/HelpTourContext";
 import { HelpTourButton } from "@/components/help/HelpTourButton";
 import { HelpTourOverlay } from "@/components/help/HelpTourOverlay";
 import { MaintenanceModeBanner } from "@/components/MaintenanceModeBanner";
+import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { UnsavedPrescriptionProvider } from "@/contexts/UnsavedPrescriptionContext";
 
 // Telas críticas (eager): impactam first paint do app
@@ -92,6 +95,8 @@ const DevConsolePage = lazy(() => import("./pages/DevConsolePage"));
 const HistoricoPacientePage = lazy(() => import("./pages/HistoricoPacientePage"));
 const ApresentacaoPage = lazy(() => import("./pages/ApresentacaoPage"));
 const IpAllowlistPage = lazy(() => import("./pages/admin/IpAllowlistPage"));
+const HospitaisAdminPage = lazy(() => import("./pages/admin/HospitaisAdminPage"));
+const AdminHospitalPage = lazy(() => import("./pages/admin/AdminHospitalPage"));
 const Relatorio1Page = lazy(() => import("./pages/Relatorio1Page"));
 const RelatorioJunhoPage = lazy(() => import("./pages/RelatorioJunhoPage"));
 const Apresentacao1Page = lazy(() => import("./pages/Apresentacao1Page"));
@@ -118,6 +123,11 @@ const PageFallback = () => <PageLoader />;
 // atendimento fica fora do sistema (Direcao Clinica, 20/08/2026). Os perfis
 // que abriam na fila de triagem passam ao painel clinico padrao.
 function ProfileHomeRedirect() {
+  const { role } = useAuth();
+  // super_admin não tem hospital/setor — vai direto ao painel dele.
+  if (role === "super_admin") return <Navigate to="/painel-super-admin" replace />;
+  // admin de hospital → painel administrativo (gestão do hospital), não o clínico.
+  if (role === "admin") return <Navigate to="/painel-admin" replace />;
   const profile = typeof window !== "undefined" ? localStorage.getItem("access_profile") || "medico" : "medico";
   if (profile === "ccih") return <Navigate to="/ccih" replace />;
   if (profile === "imagem") return <Navigate to="/setor-imagem" replace />;
@@ -127,6 +137,45 @@ function ProfileHomeRedirect() {
   if (profile === "gestor") return <Navigate to="/painel-gestor" replace />;
   if (profile === "farmacia") return <Navigate to="/validacao-farmaceutica" replace />;
   return <ClinicalDashboardPage />;
+}
+
+/**
+ * 🔒 Bootstrap do super_admin (primeiro acesso do sistema).
+ *
+ * Antes de qualquer decisão de rota (login inclusive), consulta a RPC
+ * `existe_super_admin()` (callable por anon). Enquanto resolve, mostra loading.
+ * Se NÃO existir super_admin, a ÚNICA rota acessível é `/setup` — qualquer outro
+ * path (inclusive `/auth`) é redirecionado pra lá. Quando existir, as rotas
+ * normais voltam e `/setup` se auto-redireciona pro login (lógica no SetupPage).
+ *
+ * Fail-open: se a própria checagem falhar (RPC ainda não deployada / rede),
+ * libera as rotas normais em vez de travar o app inteiro.
+ */
+function BootstrapGate({ children }: { children: React.ReactNode }) {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["existe-super-admin"],
+    queryFn: async () => {
+      // existe_super_admin ainda não está no types.ts gerado → cast até regenerar.
+      const { data, error } = await (supabase.rpc as any)("existe_super_admin");
+      if (error) throw error;
+      return Boolean(data);
+    },
+    staleTime: Infinity,
+    retry: 1,
+  });
+
+  if (isLoading) return <PageFallback />;
+
+  if (!isError && data === false) {
+    return (
+      <Routes>
+        <Route path="/setup" element={<SetupPage />} />
+        <Route path="*" element={<Navigate to="/setup" replace />} />
+      </Routes>
+    );
+  }
+
+  return <>{children}</>;
 }
 
 /**
@@ -202,6 +251,7 @@ const App = () => {
           <HelpTourProvider>
             <Toaster />
             <Sonner />
+            <ImpersonationBanner />
             <MaintenanceModeBanner />
             {/* Contem erros de renderizacao e de efeitos. Sem ele, qualquer
                 excecao nao tratada desmontava a arvore inteira e o usuario via
@@ -209,6 +259,7 @@ const App = () => {
                 em volta das rotas: cobre todas as telas, mas preserva toasts e
                 provedores, para que a mensagem de erro consiga renderizar. */}
             <Suspense fallback={<PageFallback />}>
+            <BootstrapGate>
             <ErrorBoundary>
             <Routes>
               <Route path="/welcome" element={<LandingPage />} />
@@ -288,6 +339,11 @@ const App = () => {
               <Route path="/historico-paciente" element={<ProtectedRoute><HistoricoPageWrapper /></ProtectedRoute>} />
               <Route path="/dev-console" element={<ProtectedRoute><MainLayout><IpRestricted moduleKey="dev_console" moduleLabel="Console Dev"><DevConsolePage /></IpRestricted></MainLayout></ProtectedRoute>} />
               <Route path="/admin/ip-allowlist" element={<ProtectedRoute><MainLayout><IpAllowlistPage /></MainLayout></ProtectedRoute>} />
+              {/* Painel do super_admin (Feature 1). Sem MainLayout — super_admin não tem hospital/shell clínico.
+                  Guarda de papel super_admin virá com a migração do AuthContext para `profissionais`. */}
+              <Route path="/painel-super-admin" element={<ProtectedRoute><HospitaisAdminPage /></ProtectedRoute>} />
+              {/* Painel administrativo do hospital (admin da unidade): estrutura, dados, branding. */}
+              <Route path="/painel-admin" element={<ProtectedRoute><AdminHospitalPage /></ProtectedRoute>} />
               <Route path="/relatorio-1" element={<Relatorio1Page />} />
               <Route path="/relatorio-junho" element={<RelatorioJunhoPage />} />
               <Route path="/apresentacao-1" element={<Apresentacao1Page />} />
@@ -295,6 +351,7 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
             </ErrorBoundary>
+            </BootstrapGate>
             </Suspense>
             <HelpTourButton />
             <HelpTourOverlay />

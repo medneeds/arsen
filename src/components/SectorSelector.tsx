@@ -13,13 +13,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState, useMemo } from "react";
 import { SECTOR_NAVIGATION, type NavSectorGroup } from "@/config/sectorNavigation";
+import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 import { safeSetItem } from "@/lib/safeStorage";
 
-// Hierarquia vem de src/config/sectorNavigation.ts (fonte unica compartilhada
-// com a AppSidebar). Nao declarar lista local aqui.
+// Hierarquia vem DIRETO DO BANCO (alas → setores) via useSectorNavigation.
+// A lista estática de sectorNavigation.ts é só fallback enquanto carrega / se
+// o hospital ainda não tem alas/setores cadastrados.
 type SectorGroup = NavSectorGroup;
-
-const SECTOR_HIERARCHY: SectorGroup[] = SECTOR_NAVIGATION;
 
 interface SectorSelectorProps {
   /** Visual variant: light for body, dark for header */
@@ -43,6 +43,10 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
   const { currentDepartment, currentSectorLabel, setCurrentDepartment } = useDepartment();
   const { role } = useAuth();
   const [open, setOpen] = useState(false);
+
+  // Alas/setores reais do banco; cai no estático só se ainda não há cadastro.
+  const { groups: dbGroups, isEmpty: dbEmpty } = useSectorNavigation();
+  const SECTOR_HIERARCHY: SectorGroup[] = dbEmpty || dbGroups.length === 0 ? SECTOR_NAVIGATION : dbGroups;
 
   // Perfil Gestor enxerga visão consolidada — opção "Todos os setores" disponível
   const accessProfile =

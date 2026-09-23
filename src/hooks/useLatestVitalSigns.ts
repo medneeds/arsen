@@ -1,7 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 
 export interface LatestVitalSigns {
   id: string;
@@ -21,14 +19,22 @@ export interface LatestVitalSigns {
 
 /**
  * Realtime: último registro de sinais vitais do paciente.
- * Dispara toasts quando outro usuário registra valores críticos.
+ *
+ * MIGRAÇÃO: vital_signs→sinais_vitais. `patientId` já é `internacoes.id` →
+ * filtro direto por `internacao_id`. Colunas: recorded_at→data_hora,
+ * systolic_bp→pressao_sistolica, diastolic_bp→pressao_diastolica,
+ * heart_rate→freq_cardiaca, respiratory_rate→freq_respiratoria,
+ * temperature→temperatura; recorded_by_name→join profissionais.nome (via
+ * registrado_por, ≠ auth.uid). DEGRADADO (sem coluna em sinais_vitais):
+ * news2_score, news2_risk, lactate, potassium → null; e as colunas
+ * archived_at/encounter_id (filtros removidos). Por consequência, os toasts de
+ * valores críticos no realtime (que dependiam de news2_risk/lactate/potassium)
+ * foram removidos.
  */
 export function useLatestVitalSigns(patientId: string | null, patientName?: string | null) {
   const [vitals, setVitals] = useState<LatestVitalSigns | null>(null);
   const [loading, setLoading] = useState(false);
   const lastSeenIdRef = useRef<string | null>(null);
-  // Fase B.3 — filtra pelo encounter ativo (NULL = legado, segue visível)
-  const { encounterId: activeEncounterId } = useActiveEncounterId(patientId);
 
   const fetchLatest = useCallback(async () => {
     if (!patientId) {
@@ -36,48 +42,38 @@ export function useLatestVitalSigns(patientId: string | null, patientName?: stri
       return;
     }
     setLoading(true);
-    let query = supabase
-      .from("vital_signs")
-      .select(
-        "id, recorded_at, recorded_by_name, systolic_bp, diastolic_bp, heart_rate, respiratory_rate, spo2, temperature, news2_score, news2_risk, lactate, potassium",
-      )
-      .eq("patient_id", patientId)
-      // 🔒 Blindagem: nunca mostrar dados arquivados (ocupante anterior do leito)
-      .is("archived_at", null);
-    if (activeEncounterId) {
-      query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
-    }
-    const { data, error } = await query
-      .order("recorded_at", { ascending: false })
+    const SELECT =
+      "id, data_hora, pressao_sistolica, pressao_diastolica, freq_cardiaca, freq_respiratoria, spo2, temperatura, registrado_por, profissional:profissionais(nome)";
+    const { data, error } = await supabase
+      .from("sinais_vitais")
+      .select(SELECT)
+      .eq("internacao_id", patientId)
+      .order("data_hora", { ascending: false })
       .limit(1);
-
-    // ❌ Fallback por patient_name REMOVIDO — causava cross-contamination
-    // entre pacientes com nomes iguais/parecidos em unidades diferentes.
-    // Se patient_id não bate, a fonte da verdade é o stamp do trigger.
 
     if (!error && data && data.length > 0) {
       const r: any = data[0];
       setVitals({
         id: r.id,
-        recordedAt: r.recorded_at,
-        recordedByName: r.recorded_by_name,
-        systolicBp: r.systolic_bp,
-        diastolicBp: r.diastolic_bp,
-        heartRate: r.heart_rate,
-        respiratoryRate: r.respiratory_rate,
+        recordedAt: r.data_hora,
+        recordedByName: r.profissional?.nome ?? null,
+        systolicBp: r.pressao_sistolica,
+        diastolicBp: r.pressao_diastolica,
+        heartRate: r.freq_cardiaca,
+        respiratoryRate: r.freq_respiratoria,
         spo2: r.spo2,
-        temperature: r.temperature,
-        news2Score: r.news2_score,
-        news2Risk: r.news2_risk,
-        lactate: r.lactate,
-        potassium: r.potassium,
+        temperature: r.temperatura,
+        news2Score: null, // MIGRAÇÃO: sem coluna em sinais_vitais
+        news2Risk: null, // MIGRAÇÃO: sem coluna em sinais_vitais
+        lactate: null, // MIGRAÇÃO: sem coluna em sinais_vitais
+        potassium: null, // MIGRAÇÃO: sem coluna em sinais_vitais
       });
       lastSeenIdRef.current = r.id;
     } else {
       setVitals(null);
     }
     setLoading(false);
-  }, [patientId, patientName, activeEncounterId]);
+  }, [patientId, patientName]);
 
   const fetchLatestRef = useRef(fetchLatest);
   useEffect(() => { fetchLatestRef.current = fetchLatest; }, [fetchLatest]);
@@ -92,27 +88,12 @@ export function useLatestVitalSigns(patientId: string | null, patientName?: stri
       .channel(`patient-vitals-${patientId}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "vital_signs", filter: `patient_id=eq.${patientId}` },
+        { event: "INSERT", schema: "public", table: "sinais_vitais", filter: `internacao_id=eq.${patientId}` },
         (payload: any) => {
           const row = payload.new;
           if (!row || row.id === lastSeenIdRef.current) return;
-          // Toast crítico se valores extremos
-          if (row.news2_risk === "high") {
-            toast.warning("Sinais vitais críticos registrados", {
-              description: `NEWS2 ${row.news2_score} (alto)${row.recorded_by_name ? ` • por ${row.recorded_by_name}` : ""}`,
-              duration: 7000,
-            });
-          } else if (row.lactate && Number(row.lactate) > 4) {
-            toast.error("Lactato elevado registrado", {
-              description: `Lactato ${row.lactate} mmol/L`,
-              duration: 7000,
-            });
-          } else if (row.potassium && (Number(row.potassium) > 6 || Number(row.potassium) < 2.5)) {
-            toast.error("Potássio crítico registrado", {
-              description: `K+ ${row.potassium} mEq/L`,
-              duration: 7000,
-            });
-          }
+          // MIGRAÇÃO: toasts de valores críticos removidos — news2_risk/lactate/
+          // potassium não existem em sinais_vitais (o payload não os traz).
           fetchLatestRef.current();
         },
       )

@@ -102,45 +102,49 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
     if (!currentHospital?.id) return;
     setIsLoading(true);
     try {
+      // MIGRAÇÃO: patient_registry → pacientes. Mapeamento de colunas:
+      //   full_name→nome_completo, social_name→nome_social, birth_date→data_nascimento,
+      //   sex→sexo, mother_name→nome_mae, medical_record→prontuario,
+      //   created_at→criado_em, updated_at→atualizado_em.
+      // DEGRADADOS (sem coluna em pacientes): city (endereco é campo único),
+      // is_unidentified / unidentified_code (bloco NI) e merged_into_registry_id
+      // (filtro de fusão) → filtros de tipo(NI)/cidade/merged removidos.
       let query = supabase
-        .from("patient_registry")
-        .select("id, medical_record, full_name, social_name, cpf, cns, birth_date, sex, city, mother_name, is_unidentified, unidentified_code, created_at, updated_at", { count: "exact" })
-        .is("merged_into_registry_id", null);
+        .from("pacientes")
+        .select("id, prontuario, nome_completo, nome_social, cpf, cns, data_nascimento, sexo, nome_mae, criado_em, atualizado_em", { count: "exact" });
 
-      // Busca: nome, CPF, CNS, prontuário, NI code
+      // Busca: nome, CPF, CNS, prontuário (NI code degradado)
       if (search.trim()) {
         const q = search.trim();
         query = query.or(
-          `full_name.ilike.%${q}%,cpf.ilike.%${q}%,cns.ilike.%${q}%,medical_record.ilike.%${q}%,unidentified_code.ilike.%${q}%`
+          `nome_completo.ilike.%${q}%,cpf.ilike.%${q}%,cns.ilike.%${q}%,prontuario.ilike.%${q}%`
         );
       }
 
-      if (typeFilter === "identified") query = query.eq("is_unidentified", false);
-      if (typeFilter === "unidentified") query = query.eq("is_unidentified", true);
-      if (sexFilter !== "all") query = query.eq("sex", sexFilter);
-      if (cityFilter.trim()) query = query.ilike("city", `%${cityFilter.trim()}%`);
-      if (dateFrom) query = query.gte("created_at", `${dateFrom}T00:00:00`);
-      if (dateTo) query = query.lte("created_at", `${dateTo}T23:59:59`);
+      // typeFilter (identified/unidentified): sem coluna is_unidentified → sem efeito.
+      if (sexFilter !== "all") query = query.eq("sexo", sexFilter);
+      // cityFilter: pacientes.endereco é campo único (sem coluna city) → degradado.
+      if (dateFrom) query = query.gte("criado_em", `${dateFrom}T00:00:00`);
+      if (dateTo) query = query.lte("criado_em", `${dateTo}T23:59:59`);
 
-      // Idade — converte para range de birth_date
+      // Idade — converte para range de data_nascimento
       const today = new Date();
       if (ageMax) {
-        // birth_date >= hoje - (ageMax+1) anos + 1 dia (aprox.) → simplificamos
         const minBirth = new Date(today.getFullYear() - parseInt(ageMax) - 1, today.getMonth(), today.getDate() + 1);
-        query = query.gte("birth_date", minBirth.toISOString().slice(0, 10));
+        query = query.gte("data_nascimento", minBirth.toISOString().slice(0, 10));
       }
       if (ageMin) {
         const maxBirth = new Date(today.getFullYear() - parseInt(ageMin), today.getMonth(), today.getDate());
-        query = query.lte("birth_date", maxBirth.toISOString().slice(0, 10));
+        query = query.lte("data_nascimento", maxBirth.toISOString().slice(0, 10));
       }
 
       // Ordenação
       switch (sortKey) {
-        case "full_name_asc": query = query.order("full_name", { ascending: true }); break;
-        case "full_name_desc": query = query.order("full_name", { ascending: false }); break;
-        case "created_asc": query = query.order("created_at", { ascending: true }); break;
-        case "created_desc": query = query.order("created_at", { ascending: false }); break;
-        case "updated_desc": query = query.order("updated_at", { ascending: false }); break;
+        case "full_name_asc": query = query.order("nome_completo", { ascending: true }); break;
+        case "full_name_desc": query = query.order("nome_completo", { ascending: false }); break;
+        case "created_asc": query = query.order("criado_em", { ascending: true }); break;
+        case "created_desc": query = query.order("criado_em", { ascending: false }); break;
+        case "updated_desc": query = query.order("atualizado_em", { ascending: false }); break;
       }
 
       // Paginação
@@ -149,7 +153,23 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
       const { data, count, error } = await query.range(from, to);
 
       if (error) throw error;
-      setRows((data as PatientRow[]) || []);
+      const mapped: PatientRow[] = ((data as any[]) || []).map((r) => ({
+        id: r.id,
+        medical_record: r.prontuario ?? null,
+        full_name: r.nome_completo,
+        social_name: r.nome_social ?? null,
+        cpf: r.cpf ?? null,
+        cns: r.cns ?? null,
+        birth_date: r.data_nascimento ?? null,
+        sex: r.sexo ?? null,
+        city: null, // MIGRAÇÃO: sem coluna (endereco é campo único)
+        mother_name: r.nome_mae ?? null,
+        is_unidentified: false, // MIGRAÇÃO: sem coluna NI no schema novo
+        unidentified_code: null,
+        created_at: r.criado_em,
+        updated_at: r.atualizado_em,
+      }));
+      setRows(mapped);
       setTotal(count || 0);
     } catch (err: any) {
       console.error("Erro ao carregar prontuários:", err);
@@ -187,7 +207,10 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
     }
     setIsPromoting(true);
     try {
-      const { error } = await supabase.rpc("promote_unidentified_patient", {
+      // MIGRAÇÃO: RPC custom não tipada em types.ts → chamada via (supabase.rpc as any).
+      // O bloco NI foi degradado (pacientes não tem is_unidentified), então o botão
+      // "Identificar" não aparece na prática; a RPC pode nem existir no backend novo.
+      const { error } = await (supabase.rpc as any)("promote_unidentified_patient", {
         p_ni_id: promoteTarget.id,
         p_full_name: normalizePatientName(promoteForm.full_name),
         p_birth_date: promoteForm.birth_date || null,

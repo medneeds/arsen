@@ -28,15 +28,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { asUuidOrNull } from "@/lib/utils";
 import { SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
 import { usePatientLive } from "@/hooks/usePatientLive";
-import { resolveActiveEncounterId } from "@/lib/resolveActiveEncounter";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { toast } from "sonner";
-import { comSnapshotDeDocumento } from "@/lib/registrarSolicitacao";
 import {
   PrintableCultureRequest,
   printCultureRequest,
   type CultureRequestData,
 } from "./PrintableCultureRequest";
+
+// MIGRAÇÃO (Wave3): exam_requests → solicitacoes_exame (categoria 'cultura', igual
+// ao comportamento original). A tabela nova pendura em internacao_id e só tem
+// campos clínicos. DEGRADADOS (sem coluna): patient_name/bed/sector, hospital_unit_id/
+// state_id, encounter_id, requested_by_name, document_payload (snapshot →
+// reimpressão pelo histórico indisponível). O nome do médico solicitante vai em
+// observacoes. solicitado_por é FK profissionais.id (≠ auth.uid) → resolvido via lookup.
+/** Resolve profissionais.id a partir do auth user id. */
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase.from("profissionais").select("id").eq("user_id", userId).maybeSingle();
+    return (data as { id?: string } | null)?.id ?? null;
+  } catch { return null; }
+}
 
 interface Props {
   open: boolean;
@@ -90,7 +103,7 @@ export function CultureRequestDialog({
   patientSector,
 }: Props) {
   const { user } = useAuth();
-  const { currentHospital, currentState } = useHospital();
+  const { currentHospital } = useHospital(); // MIGRAÇÃO: currentState não usado (sem coluna state_id)
   const [previewMode, setPreviewMode] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [selection, setSelection] = useState<SelectionState>({});
@@ -158,16 +171,17 @@ export function CultureRequestDialog({
   ]);
 
   // Pré-preenche médico solicitante
+  // MIGRAÇÃO: profiles → profissionais (full_name→nome) via user_id.
   useEffect(() => {
     if (!open || !user) return;
     (async () => {
       const { data: prof } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", user.id)
+        .from("profissionais")
+        .select("nome")
+        .eq("user_id", user.id)
         .maybeSingle();
-      if (prof?.full_name) {
-        setData((d) => ({ ...d, requested_by_name: prof.full_name }));
+      if ((prof as any)?.nome) {
+        setData((d) => ({ ...d, requested_by_name: (prof as any).nome }));
       }
     })();
   }, [open, user]);
@@ -213,8 +227,11 @@ export function CultureRequestDialog({
   const isMinor = age !== null && age < 18;
 
   const persistRequest = async (): Promise<string | null> => {
-    if (!currentHospital?.id || !currentState?.id) {
-      toast.error("Selecione hospital/estado para salvar");
+    // MIGRAÇÃO: solicitacoes_exame.internacao_id é NOT NULL e não há mais colunas
+    // de paciente avulso — sem UUID de internação real não há onde gravar.
+    const internacaoId = asUuidOrNull(patientId);
+    if (!internacaoId) {
+      toast.error("Sem internação vinculada — não é possível salvar a solicitação de cultura.");
       return null;
     }
     if (!data.patient_name?.trim()) {
@@ -227,22 +244,15 @@ export function CultureRequestDialog({
       return null;
     }
     try {
-      // encounter ativo carimbado na origem (helper canônico via registry) —
-      // isola a requisição no atendimento atual, não no leito. Auditoria 22/07.
-      const encounterId = await resolveActiveEncounterId(patientId);
+      const solicitadoPor = await resolveProfissionalId(user?.id);
       const payload: any = {
-        category: "cultura",
-        patient_id: asUuidOrNull(patientId),
-        encounter_id: encounterId,
-        patient_name: data.patient_name,
-        patient_bed: data.patient_bed || null,
-        patient_sector: data.patient_sector || null,
-        hospital_unit_id: currentHospital.id,
-        state_id: currentState.id,
-        priority: "rotina",
-        clinical_indication: data.clinical_indication || null,
-        items,
-        notes: [
+        categoria: "cultura",
+        internacao_id: internacaoId,
+        prioridade: "rotina",
+        indicacao_clinica: data.clinical_indication || null,
+        itens: items,
+        observacoes: [
+          data.requested_by_name ? `Médico: ${data.requested_by_name}` : null,
           data.antibiotic_use ? `Uso ATB: ${data.antibiotic_use}` : null,
           data.hospitalized_last_30d != null
             ? `Internado 30d: ${data.hospitalized_last_30d ? "Sim" : "Não"}`
@@ -252,34 +262,23 @@ export function CultureRequestDialog({
             : null,
           isMinor && data.mother_name ? `Mãe: ${data.mother_name}` : null,
         ].filter(Boolean).join("\n") || null,
-        requested_by: user?.id || null,
-        requested_by_name: data.requested_by_name || null,
-        status: "pending",
+        solicitado_por: solicitadoPor,
+        status: "pendente",
       };
-      // Snapshot do documento (fase 3b) — permite reemitir o impresso de
-      // cultura pelo historico. Envelope cuida do caso git != banco.
-      const snapshot = { kind: "cultura" as const, version: 1, data: { ...data } };
 
       if (savedId) {
-        const { error } = await comSnapshotDeDocumento(
-          (extra) => supabase.from("exam_requests").update({ ...payload, ...extra }).eq("id", savedId).then(r => ({ data: null, error: r.error })),
-          snapshot,
-        );
+        const { error } = await supabase.from("solicitacoes_exame").update(payload).eq("id", savedId);
         if (error) throw error;
         return savedId;
       }
-      const { data: inserted, error } = await comSnapshotDeDocumento<{ id: string }>(
-        (extra) => supabase
-          .from("exam_requests")
-          .insert({ ...payload, ...extra })
-          .select("id")
-          .single()
-          .then(r => ({ data: r.data as { id: string } | null, error: r.error })),
-        snapshot,
-      );
+      const { data: inserted, error } = await supabase
+        .from("solicitacoes_exame")
+        .insert(payload)
+        .select("id")
+        .single();
       if (error) throw error;
-      setSavedId(inserted.id);
-      return inserted.id;
+      setSavedId((inserted as { id: string }).id);
+      return (inserted as { id: string }).id;
     } catch (e: any) {
       console.error("[CultureRequestDialog] persist error", e);
       toast.error(e?.message || "Erro ao salvar solicitação");

@@ -1,8 +1,12 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
-import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
+
+// MIGRAÇÃO: clinical_evolutions → evolucoes (ancorada por internacao_id).
+// patient_registry/patient_encounters mortos: removidos os filtros por
+// registry/encounter/hospital/archived_at. `patientId` já é internacoes.id.
+// Campos dedicados do modelo antigo (created_by_name, validated_at) vivem
+// dentro do JSON `soap` (chaves `__`, convenção de useEvolutions).
 
 export interface LatestEvolutionDevice {
   id: string;
@@ -35,18 +39,16 @@ export interface LatestEvolutionSummary {
  */
 export function useLatestEvolution(
   patientId: string | null,
+  // patientName/hospitalUnitId mantidos na assinatura por compatibilidade dos
+  // consumidores; sem uso após a migração (evolucoes ancora só por internacao_id).
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   patientName: string | null,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   hospitalUnitId: string | null,
 ) {
   const [evolution, setEvolution] = useState<LatestEvolutionSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const lastSeenIdRef = useRef<string | null>(null);
-
-  // Fase B.1 — isola pelo atendimento ativo
-  const { encounterId: activeEncounterId } = useActiveEncounterId(patientId);
-
-  // 🔒 Documentação segue o paciente: priorizamos patient_registry_id quando resolvido.
-  const { registryId: resolvedRegistryId } = useResolvedRegistryId(patientId);
 
   /**
    * O SOAP é digitado num editor rico — os campos vêm como HTML
@@ -99,44 +101,29 @@ export function useLatestEvolution(
   };
 
   const fetch = useCallback(async () => {
-    if (!hospitalUnitId || (!patientId && !patientName)) {
+    if (!patientId) {
       setEvolution(null);
       return;
     }
     setLoading(true);
-    let q = supabase
-      .from("clinical_evolutions")
-      .select("id, status, soap_data, created_at, created_by_name, validated_at, patient_id, patient_name")
-      .eq("hospital_unit_id", hospitalUnitId)
-      // ⚠️ ignora evoluções arquivadas (ocupante anterior do leito, reverts).
-      .is("archived_at", null)
-      .order("created_at", { ascending: false })
+    const { data, error } = await supabase
+      .from("evolucoes")
+      .select("id, status, soap, data_hora, criado_em")
+      .eq("internacao_id", patientId)
+      .order("data_hora", { ascending: false })
       .limit(1);
-    if (patientId) {
-      if (resolvedRegistryId) {
-        q = q.or(
-          `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${patientId})`,
-        );
-      } else {
-        q = q.eq("patient_id", patientId);
-      }
-      if (activeEncounterId) {
-        q = q.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
-      }
-    } else if (patientName) q = q.eq("patient_name", patientName.trim());
 
-    const { data, error } = await q;
     if (!error && data && data.length > 0) {
       const row: any = data[0];
-      const soap: any = row.soap_data || {};
+      const soap: any = row.soap || {};
       setEvolution({
         id: row.id,
         status: row.status || "draft",
-        createdAt: row.created_at,
-        createdByName: row.created_by_name,
-        validatedAt: row.validated_at,
-        preview: buildPreview(row.soap_data),
-        fullText: buildFullText(row.soap_data),
+        createdAt: row.criado_em || row.data_hora,
+        createdByName: soap.__created_by_name ?? null,
+        validatedAt: soap.__validated_at ?? null,
+        preview: buildPreview(soap),
+        fullText: buildFullText(soap),
         devices: Array.isArray(soap.devices) ? soap.devices : [],
         culturesHtml: typeof soap.culturesHtml === "string" ? soap.culturesHtml : "",
       });
@@ -145,34 +132,32 @@ export function useLatestEvolution(
       setEvolution(null);
     }
     setLoading(false);
-  }, [patientId, patientName, hospitalUnitId, activeEncounterId, resolvedRegistryId]);
+  }, [patientId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
   useEffect(() => {
-    if (!hospitalUnitId || (!patientId && !patientName)) return;
-    const key = patientId || `${hospitalUnitId}-${patientName}`;
+    if (!patientId) return;
+    // MIGRAÇÃO: realtime em "evolucoes" (antes "clinical_evolutions"),
+    // filtrado por internacao_id.
     const channel = supabase
-      .channel(`patient-evolution-${key}`)
+      .channel(`patient-evolution-${patientId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "clinical_evolutions", filter: `hospital_unit_id=eq.${hospitalUnitId}` },
+        { event: "*", schema: "public", table: "evolucoes", filter: `internacao_id=eq.${patientId}` },
         (payload: any) => {
           const row = payload.new || payload.old;
           if (!row) return;
-          const matches =
-            (patientId && row.patient_id === patientId) ||
-            (patientName && row.patient_name?.trim() === patientName.trim());
-          if (!matches) return;
 
           // Toast on new evolution by someone else
           if (
             payload.eventType === "INSERT" &&
             row.id !== lastSeenIdRef.current
           ) {
+            const createdByName = (row.soap as any)?.__created_by_name;
             toast.info("Nova evolução clínica registrada", {
-              description: row.created_by_name
-                ? `Por ${row.created_by_name}`
+              description: createdByName
+                ? `Por ${createdByName}`
                 : "Atualize para visualizar",
               duration: 5000,
             });
@@ -182,7 +167,7 @@ export function useLatestEvolution(
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [patientId, patientName, hospitalUnitId, fetch]);
+  }, [patientId, fetch]);
 
   return { evolution, loading, refresh: fetch };
 }

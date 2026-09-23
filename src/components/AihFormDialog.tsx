@@ -132,61 +132,54 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
 
   const loadDoctorProfile = async () => {
     if (!user) return;
-    const { data } = await supabase.from("profiles").select("full_name, crm").eq("id", user.id).maybeSingle();
+    // MIGRAÇÃO: profiles → profissionais. full_name→nome, crm→numero_conselho.
+    const { data } = await supabase
+      .from("profissionais")
+      .select("nome, numero_conselho")
+      .eq("user_id", user.id)
+      .maybeSingle();
     if (data) {
-      setDoctorName(data.full_name || "");
-      setDoctorCRM(data.crm || "");
+      setDoctorName(data.nome || "");
+      setDoctorCRM(data.numero_conselho || "");
     }
   };
 
   const loadPatientData = async () => {
     setLoadingPatient(true);
     try {
-      // Try patient_registry first (via patients.medical_record)
-      const { data: patient } = await supabase
-        .from("patients")
-        .select("medical_record, name, age")
+      // MIGRAÇÃO: patients + patient_registry → internacoes + paciente:pacientes.
+      // patientId é o id da internação; os dados de cadastro vêm de pacientes.
+      const { data } = await supabase
+        .from("internacoes")
+        .select("paciente:pacientes(prontuario, cns, data_nascimento, sexo, nome_mae, telefone, endereco)")
         .eq("id", patientId)
         .maybeSingle();
-
-      if (patient?.medical_record) {
-        const { data: registry } = await supabase
-          .from("patient_registry")
-          .select("*")
-          .eq("medical_record", patient.medical_record)
-          .maybeSingle();
-
-        if (registry) {
-          setPatientCNS(registry.cns || "");
-          setPatientDOB(registry.birth_date || "");
-          setPatientSex(registry.sex || "");
-          setPatientMotherName(registry.mother_name || "");
-          setPatientPhone(registry.phone || "");
-          setPatientAddress(registry.address || "");
-          setPatientCity(registry.city || "São Luís");
-          setPatientRecord(registry.medical_record || "");
-          return;
-        }
+      const pac = (data as any)?.paciente;
+      if (pac) {
+        setPatientCNS(pac.cns || "");
+        setPatientDOB(pac.data_nascimento || "");
+        setPatientSex(pac.sexo || "");
+        setPatientMotherName(pac.nome_mae || "");
+        setPatientPhone(pac.telefone || "");
+        setPatientAddress(pac.endereco || "");
+        setPatientRecord(pac.prontuario || "");
+        // MIGRAÇÃO: pacientes não guarda cidade — mantém default "São Luís".
+        return;
       }
 
-      // Fallback: try pre_admissions
+      // Fallback: pre_admissoes por nome. DEGRADADOS: sex, mother_name, phone,
+      // address, city, medical_record (sem colunas em pre_admissoes).
       const { data: preAdm } = await supabase
-        .from("pre_admissions")
-        .select("*")
-        .ilike("patient_name", `%${patientName}%`)
-        .order("created_at", { ascending: false })
+        .from("pre_admissoes")
+        .select("cns, data_nascimento")
+        .ilike("nome_paciente", `%${patientName}%`)
+        .order("data_hora", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (preAdm) {
-        setPatientCNS(preAdm.cns || "");
-        setPatientDOB(preAdm.birth_date || "");
-        setPatientSex(preAdm.sex || "");
-        setPatientMotherName(preAdm.mother_name || "");
-        setPatientPhone(preAdm.phone || "");
-        setPatientAddress(preAdm.address || "");
-        setPatientCity(preAdm.city || "São Luís");
-        setPatientRecord(preAdm.medical_record || "");
+        setPatientCNS((preAdm as any).cns || "");
+        setPatientDOB((preAdm as any).data_nascimento || "");
       }
     } catch (err) {
       console.error("Error loading patient data:", err);
@@ -198,16 +191,19 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
   const importAdmission = async () => {
     setImportingAdmission(true);
     try {
+      // MIGRAÇÃO: admission_histories → internacoes (id = patientId).
+      // chief_complaint→queixa_principal, clinical_history→historia_clinica,
+      // diagnostic_hypothesis→hipotese_diagnostica, initial_conduct→conduta_inicial.
       const { data } = await supabase
-        .from("admission_histories")
-        .select("chief_complaint, clinical_history, diagnostic_hypothesis, initial_conduct")
-        .eq("patient_id", patientId)
+        .from("internacoes")
+        .select("queixa_principal, historia_clinica, hipotese_diagnostica, conduta_inicial")
+        .eq("id", patientId)
         .maybeSingle();
       if (!data) { toast.error("Nenhuma admissão encontrada"); return; }
-      if (data.chief_complaint) setSignsSymptoms(prev => prev ? prev + "\n" + data.chief_complaint : data.chief_complaint);
-      if (data.clinical_history) setConditions(prev => prev ? prev + "\n" + data.clinical_history : data.clinical_history);
-      if (data.diagnostic_hypothesis) setDiagnosisInitial(data.diagnostic_hypothesis);
-      if (data.initial_conduct) setConditions(prev => prev ? prev + "\n" + data.initial_conduct : data.initial_conduct);
+      if (data.queixa_principal) setSignsSymptoms(prev => prev ? prev + "\n" + data.queixa_principal : data.queixa_principal);
+      if (data.historia_clinica) setConditions(prev => prev ? prev + "\n" + data.historia_clinica : data.historia_clinica);
+      if (data.hipotese_diagnostica) setDiagnosisInitial(data.hipotese_diagnostica);
+      if (data.conduta_inicial) setConditions(prev => prev ? prev + "\n" + data.conduta_inicial : data.conduta_inicial);
       toast.success("Dados da admissão importados");
     } catch { toast.error("Não foi possível importar admissão"); }
     finally { setImportingAdmission(false); }
@@ -216,15 +212,17 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
   const importEvolution = async () => {
     setImportingEvolution(true);
     try {
-      const { data: patient } = await supabase
-        .from("patients")
-        .select("diagnoses, medical_history, relevant_exams, pendencies")
+      // MIGRAÇÃO: patients → internacoes (bridge). diagnoses→hipotese_diagnostica,
+      // medical_history→historia_clinica, relevant_exams→exames_relevantes.
+      const { data: enc } = await supabase
+        .from("internacoes")
+        .select("hipotese_diagnostica, historia_clinica, exames_relevantes")
         .eq("id", patientId)
         .maybeSingle();
-      if (!patient) { toast.error("Dados não encontrados"); return; }
-      if (patient.diagnoses) setDiagnosisInitial(patient.diagnoses);
-      if (patient.relevant_exams) setExamResults(prev => prev ? prev + "\n" + patient.relevant_exams : patient.relevant_exams);
-      if (patient.medical_history) setConditions(prev => prev ? prev + "\n" + patient.medical_history : patient.medical_history);
+      if (!enc) { toast.error("Dados não encontrados"); return; }
+      if (enc.hipotese_diagnostica) setDiagnosisInitial(enc.hipotese_diagnostica);
+      if (enc.exames_relevantes) setExamResults(prev => prev ? prev + "\n" + enc.exames_relevantes : enc.exames_relevantes);
+      if (enc.historia_clinica) setConditions(prev => prev ? prev + "\n" + enc.historia_clinica : enc.historia_clinica);
       toast.success("Dados da evolução importados");
     } catch { toast.error("Não foi possível importar evolução"); }
     finally { setImportingEvolution(false); }

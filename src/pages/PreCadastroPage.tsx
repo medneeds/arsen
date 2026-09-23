@@ -118,17 +118,16 @@ export default function PreCadastroPage() {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase
-        .from("hospital_units")
-        .select("id, name")
-        .order("name");
+      // Lista pública de hospitais ativos. A tabela `hospitais` tem RLS que bloqueia
+      // anon, então usamos a RPC SECURITY DEFINER hospitais_publico() (id, nome).
+      const { data, error } = await (supabase.rpc as any)("hospitais_publico");
       if (!error && data) {
-        setUnits(data as HospitalUnit[]);
-        // Auto-select Socorrão 1 (HMDM) if found
-        const hmdm = (data as HospitalUnit[]).find((u) =>
-          /socorr[aã]o\s*1|hmdm/i.test(u.name),
-        );
+        const list = (data as { id: string; nome: string }[]).map((u) => ({ id: u.id, name: u.nome }));
+        setUnits(list);
+        // Auto-seleciona se houver só uma unidade, ou o HMDM/Socorrão 1 quando presente.
+        const hmdm = list.find((u) => /socorr[aã]o\s*1|hmdm/i.test(u.name));
         if (hmdm) setForm((f) => ({ ...f, hospitalUnitId: hmdm.id }));
+        else if (list.length === 1) setForm((f) => ({ ...f, hospitalUnitId: list[0].id }));
       }
       setLoadingUnits(false);
     })();
@@ -162,18 +161,17 @@ export default function PreCadastroPage() {
     }
     setSubmitting(true);
     try {
-      // Verifica duplicidade rápida (CPF pendente)
+      // Verifica duplicidade rápida (CPF pendente/aprovado). Anon não lê a tabela por
+      // RLS, então usamos a RPC pre_cadastro_cpf_em_uso() (retorna o status ou null).
       const cpfDigits = onlyDigits(form.cpf);
-      const { data: existing } = await supabase
-        .from("pre_registration_requests")
-        .select("id, status")
-        .eq("cpf", cpfDigits)
-        .in("status", ["pending", "approved"])
-        .maybeSingle();
+      const { data: existingStatus } = await (supabase.rpc as any)(
+        "pre_cadastro_cpf_em_uso",
+        { p_cpf: cpfDigits },
+      );
 
-      if (existing) {
+      if (existingStatus) {
         toast.error(
-          existing.status === "approved"
+          existingStatus === "aprovado"
             ? "Já existe um cadastro aprovado para este CPF."
             : "Já existe uma solicitação pendente para este CPF.",
         );
@@ -181,16 +179,18 @@ export default function PreCadastroPage() {
         return;
       }
 
-      const { error } = await supabase.from("pre_registration_requests").insert({
-        full_name: form.fullName.trim().toUpperCase(),
+      // Insert sem RETURNING (return=minimal): a policy de INSERT permite anon,
+      // mas RETURNING exigiria a policy de SELECT (que bloqueia anon).
+      const { error } = await supabase.from("solicitacoes_pre_cadastro").insert({
+        nome_completo: form.fullName.trim().toUpperCase(),
         email: form.email.trim().toLowerCase(),
         cpf: cpfDigits,
-        phone: onlyDigits(form.phone),
+        telefone: onlyDigits(form.phone),
         crm: form.crm.trim() || null,
-        access_profile: form.accessProfile,
-        hospital_unit_id: form.hospitalUnitId,
-        justification: form.justification.trim() || null,
-        status: "pending",
+        perfil_acesso: form.accessProfile,
+        hospital_id: form.hospitalUnitId,
+        justificativa: form.justification.trim() || null,
+        status: "pendente",
         user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
       });
       if (error) throw error;

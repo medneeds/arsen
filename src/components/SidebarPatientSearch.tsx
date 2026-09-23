@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { SECTOR_DISPLAY, SECTOR_TO_DEPARTMENT, type Department } from "@/contexts/DepartmentContext";
 import { formatBedDisplay } from "@/utils/bedNaming";
+import { formatAge } from "@/lib/patientAge";
 
 interface PacienteEncontrado {
   id: string;
@@ -53,31 +54,45 @@ export function SidebarPatientSearch({
     const meuPedido = ++pedidoRef.current;
     setBuscando(true);
     const timer = window.setTimeout(async () => {
-      const escapado = termoLimpo.replace(/[%_]/g, "\\$&");
-      const padrao = `%${escapado}%`;
-      const { data, error } = await supabase
-        .from("patients")
-        .select("id, name, bed_number, sector, medical_record, age, is_vacant")
-        .eq("hospital_unit_id", currentHospital.id)
-        .eq("state_id", currentState.id)
-        .eq("is_vacant", false)
-        .or(`name.ilike.${padrao},medical_record.ilike.${padrao}`)
-        .order("name")
-        .limit(6);
+      // MIGRAÇÃO: patients (morta) → internacoes ativas + pacientes/leitos/setores.
+      // Filtro OR entre colunas de tabelas unidas é frágil no PostgREST — busca
+      // as internações ativas do hospital e filtra nome/prontuário no cliente.
+      const termoLower = termoLimpo.toLowerCase();
+      const { data, error } = await (supabase
+        .from("internacoes")
+        .select(`
+          id, status,
+          paciente:pacientes ( nome_completo, prontuario, data_nascimento ),
+          leito:leitos!inner (
+            numero,
+            setor:setores!inner (
+              tipo, nome,
+              ala:alas!inner ( hospital_id )
+            )
+          )
+        `) as any)
+        .eq("status", "ativa")
+        .eq("leito.setor.ala.hospital_id", currentHospital.id)
+        .limit(200);
       if (meuPedido !== pedidoRef.current) return;
       if (!error) {
+        const filtrados = (data ?? []).filter((p: any) => {
+          const nome = (p.paciente?.nome_completo ?? "").toLowerCase();
+          const prontuario = (p.paciente?.prontuario ?? "").toLowerCase();
+          return nome.includes(termoLower) || prontuario.includes(termoLower);
+        }).slice(0, 6);
         setResultados(
-          (data ?? []).map((p) => {
-            const codigo = (p.sector as string) ?? "";
+          filtrados.map((p: any) => {
+            const codigo = (p.leito?.setor?.tipo as string) ?? "";
             return {
               id: p.id as string,
-              name: (p.name as string) || "Sem nome",
-              bedNumber: (p.bed_number as string) ?? "",
+              name: (p.paciente?.nome_completo as string) || "Sem nome",
+              bedNumber: (p.leito?.numero as string) ?? "",
               sectorCode: codigo,
-              sectorLabel: SECTOR_DISPLAY[codigo] ?? codigo,
+              sectorLabel: p.leito?.setor?.nome || SECTOR_DISPLAY[codigo] || codigo,
               department: (SECTOR_TO_DEPARTMENT[codigo] ?? "") as Department,
-              medicalRecord: (p.medical_record as string) ?? null,
-              age: p.age ? String(p.age) : null,
+              medicalRecord: (p.paciente?.prontuario as string) ?? null,
+              age: formatAge(p.paciente?.data_nascimento) ?? null,
             };
           })
         );

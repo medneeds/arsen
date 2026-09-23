@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { toSexoDb } from "@/lib/sexo";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment, departmentForSector } from "@/contexts/DepartmentContext";
 import { normalizePatientName } from "@/utils/normalizePatientName";
@@ -27,10 +28,88 @@ import { format, addDays, differenceInCalendarDays, startOfDay } from "date-fns"
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
-import { PisRegistrySyncDialog, computePisDiff, type PisSourceRow } from "@/components/PisRegistrySyncDialog";
+// MIGRAÇÃO: PisRegistrySyncDialog (sincronizava patient_registry — tabela morta) removido.
+
+// MIGRAÇÃO: profissional_id (profissionais.id) ≠ auth.uid — resolvido via profissionais.user_id.
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from("profissionais")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// MIGRAÇÃO: Patient.sector ← setores.nome (usePatientLive) → o código do setor está em setores.nome.
+async function resolveSetorId(code: string): Promise<string | null> {
+  if (!code) return null;
+  try {
+    const { data } = await supabase
+      .from("setores")
+      .select("id")
+      .eq("nome", code)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const bedSortNumber = (s: string) => {
+  const m = (s || "").match(/\d+/);
+  return m ? parseInt(m[0], 10) : 0;
+};
+
+// MIGRAÇÃO: os leitos agora vêm DO BANCO (tabela `leitos` do setor). A lista de
+// leitos para alocação é a real (numero + status), não mais gerada por
+// SECTOR_BED_CONFIG. O config legado só é usado como fallback quando o setor
+// ainda não tem leitos cadastrados. "EXTRA" (maca extra) é sempre ofertado.
+async function loadSectorBeds(
+  setorId: string | null,
+  code: string,
+): Promise<{ beds: string[]; occupied: string[]; full: boolean }> {
+  let rows: { numero: string; status: string; internacoes?: { data_alta: string | null }[] }[] = [];
+  if (setorId) {
+    // Inclui internações do leito para derivar ocupação da INTERNAÇÃO ATIVA
+    // (fonte da verdade), mesmo que leitos.status esteja dessincronizado.
+    const { data } = await supabase
+      .from("leitos")
+      .select("numero, status, internacoes(data_alta)")
+      .eq("setor_id", setorId);
+    rows = ((data as any[]) || []).filter((r) => !!r?.numero);
+  }
+  // Ocupado = status indisponível OU tem internação ativa (data_alta null).
+  const hasActive = (r: any) => (r.internacoes || []).some((i: any) => !i.data_alta);
+  const occupied = rows.filter((r) => r.status !== "livre" || hasActive(r)).map((r) => r.numero);
+
+  if (rows.length > 0) {
+    const beds = rows.map((r) => r.numero).sort((a, b) => bedSortNumber(a) - bedSortNumber(b));
+    const freeCount = beds.length - occupied.length;
+    return { beds: [...beds, "EXTRA"], occupied, full: freeCount <= 0 };
+  }
+
+  // Fallback legado: setor sem leitos no banco → gera pela config antiga.
+  const config = SECTOR_BED_CONFIG[code];
+  if (config) {
+    const start = config.startNumber ?? 1;
+    const end = start + config.maxRegularBeds - 1;
+    const beds: string[] = [];
+    for (let i = start; i <= end; i++) beds.push(`${config.prefix}${String(i).padStart(2, "0")}`);
+    const freeCount = beds.filter((b) => !occupied.includes(b)).length;
+    return { beds: [...beds, "EXTRA"], occupied, full: freeCount <= 0 };
+  }
+  return { beds: ["EXTRA"], occupied, full: false };
+}
 
 interface PreAdmissionFull {
   id: string;
+  /** MIGRAÇÃO: paciente já criado no cadastro da pré-admissão (dados_extraidos_ia.paciente_id). */
+  paciente_id?: string | null;
   patient_name: string;
   social_name?: string | null;
   birth_date: string | null;
@@ -61,6 +140,52 @@ interface PreAdmissionFull {
   triage_notes: string | null;
   notes: string | null;
   created_at: string;
+}
+
+// MIGRAÇÃO: pre_admissoes só tem colunas de identificação/triagem básicas
+// (nome_paciente, cpf, cns, data_nascimento, classificacao_risco, setor_destino_id,
+// dados_extraidos_ia Json, status, data_hora). Todo o bloco clínico rico do modelo
+// antigo (vital_signs, glasgow, allergies, chief_complaint, airway_*, oxygen_therapy,
+// triage_notes, sex, mother_name, phone, medical_record, social_name, notes...) NÃO
+// tem coluna → é lido de `dados_extraidos_ia` (Json) quando presente, senão degrada a
+// null e a seção correspondente da UI simplesmente não renderiza.
+function mapPreAdmissao(raw: any): PreAdmissionFull {
+  const ia = (raw?.dados_extraidos_ia as any) || {};
+  const pick = <T,>(k: string): T | null => (ia[k] ?? null);
+  return {
+    id: raw.id,
+    paciente_id: pick<string>("paciente_id"),
+    patient_name: raw.nome_paciente,
+    social_name: pick<string>("social_name"),
+    birth_date: raw.data_nascimento ?? null,
+    sex: pick<string>("sex"),
+    medical_record: pick<string>("medical_record"),
+    cpf: raw.cpf ?? null,
+    cns: raw.cns ?? null,
+    mother_name: pick<string>("mother_name"),
+    phone: pick<string>("phone"),
+    destination_sector: null, // setor_destino_id é id, não label → degradado
+    status: raw.status,
+    risk_classification: raw.classificacao_risco ?? null,
+    chief_complaint: pick<string>("chief_complaint"),
+    vital_signs: ia.vital_signs ?? null,
+    glasgow_score: pick<number>("glasgow_score"),
+    glasgow_detail: ia.glasgow_detail ?? null,
+    airway_patent: pick<boolean>("airway_patent"),
+    airway_obstruction: pick<boolean>("airway_obstruction"),
+    airway_intubated: pick<boolean>("airway_intubated"),
+    allergies: pick<string>("allergies"),
+    flu_symptoms: pick<boolean>("flu_symptoms"),
+    flu_symptoms_detail: pick<string>("flu_symptoms_detail"),
+    peripheral_perfusion: pick<string>("peripheral_perfusion"),
+    pulse_quality: pick<string>("pulse_quality"),
+    pain_scale: pick<number>("pain_scale"),
+    oxygen_therapy: pick<boolean>("oxygen_therapy"),
+    oxygen_therapy_detail: pick<string>("oxygen_therapy_detail"),
+    triage_notes: pick<string>("triage_notes"),
+    notes: pick<string>("notes"),
+    created_at: raw.criado_em ?? raw.data_hora ?? new Date().toISOString(),
+  };
 }
 
 interface AdmitPatientDialogProps {
@@ -112,9 +237,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [extraBedRequested, setExtraBedRequested] = useState(false);
   const [bedsLoaded, setBedsLoaded] = useState(false);
 
-  // Sincronização PIS → patient_registry antes de admitir
-  const [pisSyncOpen, setPisSyncOpen] = useState(false);
-  const [pisSyncSkipped, setPisSyncSkipped] = useState(false);
+  // MIGRAÇÃO: estados da sincronização PIS → patient_registry removidos (tabela morta).
 
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment, currentSectorCode } = useDepartment();
@@ -136,48 +259,28 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     // Sugestão automática: agora (editável pelo usuário antes de confirmar)
     setAdmissionDate(new Date());
 
-    if (!currentHospital?.id || !currentState?.id || !preAdmission?.id) return;
+    // MIGRAÇÃO: internacoes/pacientes/leitos/setores não têm hospital_unit_id/state_id —
+    // o gate por currentHospital/currentState foi removido (contextos não são mais chave).
+    if (!preAdmission?.id) return;
 
     const fetchAll = async () => {
-      // Parallel: fetch pre-admission data + occupied beds
-      const [preAdmRes, bedsRes] = await Promise.all([
+      // MIGRAÇÃO: pre_admissions → pre_admissoes. Ocupação de leitos vem de `leitos`
+      // (status='ocupado') do setor, resolvido via setores.nome === código do setor.
+      const setorId = await resolveSetorId(storedSector);
+      const [preAdmRes, bedsInfo] = await Promise.all([
         supabase
-          .from("pre_admissions")
+          .from("pre_admissoes")
           .select("*")
           .eq("id", preAdmission.id)
           .single(),
-        supabase
-          .from("patients")
-          .select("bed_number")
-          .eq("hospital_unit_id", currentHospital.id)
-          .eq("state_id", currentState.id)
-          // Sem filtro por department: a chave do leito e (unidade, setor,
-          // numero). Filtrar por department SUBCONTA os ocupados e o dialog
-          // acaba oferecendo leito que ja tem paciente.
-          .eq("sector", storedSector)
-          .or("is_vacant.is.null,is_vacant.eq.false"),
+        loadSectorBeds(setorId, storedSector),
       ]);
 
-      if (preAdmRes.data) setFullData(preAdmRes.data as unknown as PreAdmissionFull);
+      if (preAdmRes.data) setFullData(mapPreAdmissao(preAdmRes.data as any));
 
-      const occupied = (bedsRes.data || []).map(p => p.bed_number);
-      setOccupiedBeds(occupied);
-
-      const config = SECTOR_BED_CONFIG[storedSector];
-      if (config) {
-        const start = config.startNumber ?? 1;
-        const end = start + config.maxRegularBeds - 1;
-        const beds: string[] = [];
-        let freeCount = 0;
-        for (let i = start; i <= end; i++) {
-          const bedNum = `${config.prefix}${String(i).padStart(2, '0')}`;
-          beds.push(bedNum);
-          if (!occupied.includes(bedNum)) freeCount++;
-        }
-        beds.push("EXTRA");
-        setAvailableBeds(beds);
-        setSectorFullAlert(freeCount === 0);
-      }
+      setOccupiedBeds(bedsInfo.occupied);
+      setAvailableBeds(bedsInfo.beds);
+      setSectorFullAlert(bedsInfo.full);
       setBedsLoaded(true);
     };
     fetchAll();
@@ -190,35 +293,12 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     setExtraBedRequested(false);
     setBedsLoaded(false);
 
-    if (!currentHospital?.id || !currentState?.id) return;
-
-    const { data } = await supabase
-      .from("patients")
-      .select("bed_number")
-      .eq("hospital_unit_id", currentHospital.id)
-      .eq("state_id", currentState.id)
-      // Sem filtro por department — ver nota acima.
-      .eq("sector", newSector)
-      .or("is_vacant.is.null,is_vacant.eq.false");
-
-    const occupied = (data || []).map(p => p.bed_number);
-    setOccupiedBeds(occupied);
-
-    const config = SECTOR_BED_CONFIG[newSector];
-    if (config) {
-      const start = config.startNumber ?? 1;
-      const end = start + config.maxRegularBeds - 1;
-      const beds: string[] = [];
-      let freeCount = 0;
-      for (let i = start; i <= end; i++) {
-        const bedNum = `${config.prefix}${String(i).padStart(2, '0')}`;
-        beds.push(bedNum);
-        if (!occupied.includes(bedNum)) freeCount++;
-      }
-      beds.push("EXTRA");
-      setAvailableBeds(beds);
-      setSectorFullAlert(freeCount === 0);
-    }
+    // MIGRAÇÃO: leitos vêm do banco (tabela `leitos` do setor, via setores.nome === código).
+    const setorId = await resolveSetorId(newSector);
+    const bedsInfo = await loadSectorBeds(setorId, newSector);
+    setOccupiedBeds(bedsInfo.occupied);
+    setAvailableBeds(bedsInfo.beds);
+    setSectorFullAlert(bedsInfo.full);
     setBedsLoaded(true);
   };
 
@@ -234,7 +314,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     selectedSector === "outside";
 
   const handleAdmit = async () => {
-    if (!selectedSector || !fullData || !currentHospital?.id || !currentState?.id) return;
+    // MIGRAÇÃO: gate por currentHospital/currentState removido (sem colunas no schema novo).
+    if (!selectedSector || !fullData) return;
     if (!isUtiAdmission && !selectedBed) return;
 
     // Bloqueia data/hora de admissão futura
@@ -247,35 +328,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       return;
     }
 
-    // Sincronização PIS → patient_registry (antes da admissão)
-    // Se houver registry vinculado e divergência, abre diff. Se o usuário pular, segue direto.
-    if (!pisSyncSkipped && (fullData as any).patient_registry_id) {
-      try {
-        const { data: regRow } = await supabase
-          .from("patient_registry")
-          .select("id, full_name, social_name, mother_name, birth_date, sex, cpf, cns, phone, address, neighborhood, city, state, medical_record")
-          .eq("id", (fullData as any).patient_registry_id)
-          .maybeSingle();
-        const pisSrc: PisSourceRow = {
-          patient_name: fullData.patient_name,
-          social_name: fullData.social_name ?? null,
-          mother_name: fullData.mother_name,
-          birth_date: fullData.birth_date,
-          sex: fullData.sex,
-          cpf: fullData.cpf,
-          cns: fullData.cns,
-          phone: fullData.phone,
-          medical_record: fullData.medical_record,
-        };
-        const diff = computePisDiff(regRow as any, pisSrc);
-        if (diff.length > 0) {
-          setPisSyncOpen(true);
-          return;
-        }
-      } catch (e) {
-        console.warn("[admit-pis-check] ignorado:", e);
-      }
-    }
+    // MIGRAÇÃO: sincronização PIS → patient_registry REMOVIDA (patient_registry morto).
+    // O bloco de diff/PisRegistrySyncDialog não tem tabela de destino no schema novo.
 
     setIsSubmitting(true);
     try {
@@ -299,14 +353,12 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           return;
         }
 
+        // MIGRAÇÃO: pre_admissions → pre_admissoes. Colunas destination_sector/destination_bed/
+        // notes NÃO existem → degradadas (o leito/setor escolhidos seguem apenas via URL para o
+        // SAPS 3, que conclui a admissão). Persistimos só o status.
         const { error: updateError } = await supabase
-          .from("pre_admissions")
-          .update({
-            status: "aguardando_leito_uti",
-            destination_sector: destinationSectorLabel,
-            destination_bed: finalBedUti,
-            notes: admissionNotes || fullData.notes || null,
-          })
+          .from("pre_admissoes")
+          .update({ status: "classificado" })
           .eq("id", fullData.id);
 
         if (updateError) throw updateError;
@@ -346,154 +398,132 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         finalBed = `EXTRA${nextExtra}`;
       }
 
-      // Modelo de leitos fixos: cada leito já existe como linha "vaga" em patients.
-      // Procuramos a linha existente do leito e atualizamos (ocupando-a).
-      // Se não existir (ex.: leitos EXTRA dinâmicos), fazemos INSERT.
-      const { data: existingBedRow } = await supabase
-        .from("patients")
-        .select("id, is_vacant")
-        .eq("hospital_unit_id", currentHospital.id)
-        .eq("state_id", currentState.id)
-        // CAUSA RAIZ das duplicatas de leito: filtrar por department aqui
-        // fazia a busca NAO encontrar a linha do leito quando o contexto de
-        // departamento divergia do gravado (ex.: admitir na UCC com contexto
-        // "UTI"), o codigo concluia que o leito nao existia e INSERIA outra
-        // linha. Resultado em producao: L08, L31 e L32 da UCC duplicados,
-        // cada par com uma linha ocupada e outra vaga.
-        // A chave real do leito e (hospital_unit_id, sector, bed_number) — a
-        // mesma da constraint patients_unit_sector_bed_key.
-        .eq("sector", selectedSector)
-        .eq("bed_number", finalBed)
+      // MIGRAÇÃO: a mega-tabela `patients` (leito+paciente) foi substituída por
+      // leitos + pacientes + internacoes. Admitir = garantir leito → garantir paciente →
+      // criar internação apontando para ambos → marcar leito ocupado.
+      const setorId = await resolveSetorId(selectedSector);
+      if (!setorId) {
+        throw new Error(`Setor "${selectedSector}" não encontrado no cadastro (setores). Configure o setor antes de admitir.`);
+      }
+
+      // 1) Leito: localiza a linha do leito pelo (setor_id, numero); cria se não existir
+      //    (ex.: leitos EXTRA dinâmicos). Bloqueia se já estiver ocupado.
+      const { data: existingLeito } = await supabase
+        .from("leitos")
+        .select("id, status")
+        .eq("setor_id", setorId)
+        .eq("numero", finalBed)
         .maybeSingle();
 
-      if (existingBedRow && existingBedRow.is_vacant === false) {
+      if (existingLeito && existingLeito.status === "ocupado") {
         throw new Error(`Leito ${finalBed} já está ocupado. Atualize o mapa e selecione outro leito.`);
       }
 
-      // ARQUIVAMENTO DEFENSIVO: antes de admitir novo paciente, garantir que
-      // dados do ocupante anterior do leito estejam arquivados e encounter fechado.
-      // Seguro mesmo para leitos vagos (archive em leito limpo não faz nada).
-      if (existingBedRow?.id) {
-        const { error: defArchiveErr } = await supabase.rpc('archive_patient_bed_data', {
-          p_patient_id: existingBedRow.id,
-          p_reason: 'defensive_pre_admission_cleanup',
+      let leitoId = (existingLeito as any)?.id ?? null;
+      if (!leitoId) {
+        const { data: newLeito, error: leitoErr } = await supabase
+          .from("leitos")
+          .insert({
+            setor_id: setorId,
+            numero: finalBed,
+            status: "livre",
+            tipo: finalBed.startsWith("EXTRA") ? "maca" : "leito",
+          })
+          .select("id")
+          .single();
+        if (leitoErr) throw leitoErr;
+        leitoId = (newLeito as any).id;
+      }
+
+      // MIGRAÇÃO: arquivamento defensivo (RPC archive_patient_bed_data) REMOVIDO — a RPC não
+      // existe no backend novo e a colisão de ocupante não ocorre (leito só ocupa via internação).
+
+      // 2) Paciente: REAPROVEITA o paciente já criado no cadastro da pré-admissão
+      //    (dados_extraidos_ia.paciente_id); senão por CPF; senão pelo prontuário
+      //    já gravado (medical_record). Só cria um novo se nada casar — evita o
+      //    "duplicate key pacientes_prontuario_key" que ocorria ao recriar o paciente.
+      let pacienteId: string | null = fullData.paciente_id ?? null;
+      if (pacienteId) {
+        // Confirma que o paciente ainda existe (id pode estar obsoleto).
+        const { data: byId } = await supabase.from("pacientes").select("id").eq("id", pacienteId).maybeSingle();
+        pacienteId = (byId as any)?.id ?? null;
+      }
+      if (!pacienteId && fullData.cpf) {
+        const { data: existingPac } = await supabase
+          .from("pacientes")
+          .select("id")
+          .eq("cpf", fullData.cpf)
+          .maybeSingle();
+        pacienteId = (existingPac as any)?.id ?? null;
+      }
+      if (!pacienteId && fullData.medical_record) {
+        const { data: byProntuario } = await supabase
+          .from("pacientes")
+          .select("id")
+          .eq("prontuario", fullData.medical_record)
+          .maybeSingle();
+        pacienteId = (byProntuario as any)?.id ?? null;
+      }
+      if (!pacienteId) {
+        // MIGRAÇÃO: pacientes.prontuario é NOT NULL e pre_admissoes não carrega prontuário/
+        // medical_record próprio → usa medical_record (de dados_extraidos_ia) / cpf / cns como
+        // identificador, com fallback derivado do id da pré-admissão. Nenhum dado clínico inventado.
+        const prontuario =
+          fullData.medical_record || fullData.cpf || fullData.cns || `PA-${String(fullData.id).slice(0, 8)}`;
+        const { data: newPac, error: pacErr } = await supabase
+          .from("pacientes")
+          .insert({
+            nome_completo: fullData.patient_name,
+            nome_social: fullData.social_name ?? null,
+            cpf: fullData.cpf ?? null,
+            cns: fullData.cns ?? null,
+            data_nascimento: fullData.birth_date ?? null,
+            sexo: toSexoDb(fullData.sex),
+            nome_mae: fullData.mother_name ?? null,
+            telefone: fullData.phone ?? null,
+            alergias: fullData.allergies ?? null,
+            prontuario,
+          })
+          .select("id")
+          .single();
+        if (pacErr) throw pacErr;
+        pacienteId = (newPac as any).id;
+      }
+
+      // 3) Internação. patient.id (view-model) === internacoes.id.
+      // MIGRAÇÃO/DEGRADADO: sem colunas para o bloco uti_*, clinical_status, admission_status,
+      // admitted_at, is_vacant, previsão de alta, medical_responsibility, highlights, saps_*,
+      // department, hospital/state → não gravados. queixa/alergias/pendências mapeadas para
+      // internacoes. status='pre_admitido' preserva o significado do antigo admission_status.
+      const registradoPor = await resolveProfissionalId(user?.id);
+      const { error: interErr } = await supabase
+        .from("internacoes")
+        .insert({
+          paciente_id: pacienteId,
+          leito_id: leitoId,
+          setor_classificacao_id: setorId,
+          data_entrada: (admissionDate ?? new Date()).toISOString(),
+          status: "ativa",
+          queixa_principal: fullData.chief_complaint || null,
+          historia_clinica: fullData.allergies ? `Alergias: ${fullData.allergies}` : null,
+          pendencias: admissionNotes || null,
+          registrado_por: registradoPor,
         });
-        if (defArchiveErr) {
-          console.warn('[admit] arquivamento defensivo falhou (não-bloqueante):', defArchiveErr);
-        }
-      }
+      if (interErr) throw interErr;
 
-      const patientPayload = {
-        // ── Identificação do novo paciente ──────────────────────────────────
-        name: normalizePatientName(fullData.patient_name),
-        age: age ? `${age}a` : null,
-        bed_number: finalBed,
-        sector: selectedSector,
-        // O department do LEITO vem do setor de destino, nunca do contexto de
-        // quem admite. Gravar currentDepartment aqui trocava o departamento da
-        // linha do leito conforme o seletor do usuario — origem das linhas de
-        // `ucc` com 'UTI' e de `outside` com 'OUTROS'.
-        department: departmentForSector(selectedSector, currentDepartment),
-        hospital_unit_id: currentHospital.id,
-        state_id: currentState.id,
-        created_by: user?.id,
-        medical_record: (fullData as any).medical_record ?? null,
-        patient_registry_id: (fullData as any).patient_registry_id ?? null,
+      // 4) Ocupa o leito.
+      await supabase.from("leitos").update({ status: "ocupado" }).eq("id", leitoId);
 
-        // ── Admissão ────────────────────────────────────────────────────────
-        admission_date: (admissionDate ?? new Date()).toISOString(),
-        uti_admission_date: (admissionDate ?? new Date()).toISOString(),
-        admission_status: 'pre_admitido',
-        admitted_at: null,
-        is_vacant: false,
+      // MIGRAÇÃO: vínculo de medical_records ao paciente REMOVIDO (medical_records morto;
+      // prontuário vive em pacientes.prontuario).
 
-        // ── Dados clínicos iniciais (do formulário de pré-admissão) ─────────
-        clinical_status: fullData.risk_classification === "vermelho" ? "grave" : null,
-        diagnoses: fullData.chief_complaint || null,
-        medical_history: fullData.allergies ? `Alergias: ${fullData.allergies}` : null,
-        pendencies: admissionNotes || null,
-        uti_discharge_prediction: noDischargePrediction
-          ? "Sem previsão"
-          : dischargeDate
-          ? format(dischargeDate, "dd/MM/yyyy")
-          : null,
-        uti_allergies: (fullData as any).allergies || null,
-        uti_weight_kg: (fullData as any).weight_kg ?? null,
-        uti_origin_sector: (fullData as any).origin_sector || null,
-        uti_admission_reason: fullData.chief_complaint || null,
-
-        // ── RESET COMPLETO: campos clínicos do ocupante anterior ─────────────
-        // Todos esses campos DEVEM ser null para um paciente recém-admitido.
-        admission_history: null,
-        allocation_status: null,
-        highlighted_conducts: null,
-        highlighted_diagnoses: null,
-        highlighted_medical_history: null,
-        highlighted_pendencies: null,
-        hospital_discharge_prediction: null,
-        internment_notes: null,
-        internment_status: null,
-        is_door_patient: false,
-        is_palliative: false,
-        isolation_precautions: null,
-        medical_responsibility: null,
-        psm_status: null,
-        relevant_exams: null,
-        saps_acknowledged_at: null,
-        saps_acknowledged_by: null,
-        saps_completed_at: null,
-        saps_pending: false,
-        saps_pending_since: null,
-        schedule: null,
-        uti_cultures_antibiotics: null,
-        uti_current_status: null,
-        uti_daily_conducts: null,
-        uti_devices: null,
-        uti_specialties: null,
-      };
-
-      let insertedPatient: { id: string } | null = null;
-      let patientError: any = null;
-      if (existingBedRow?.id) {
-        const { data, error } = await supabase
-          .from("patients")
-          .update(patientPayload)
-          .eq("id", existingBedRow.id)
-          .select("id")
-          .single();
-        insertedPatient = data as any;
-        patientError = error;
-      } else {
-        const { data, error } = await supabase
-          .from("patients")
-          .insert(patientPayload)
-          .select("id")
-          .single();
-        insertedPatient = data as any;
-        patientError = error;
-      }
-
-      if (patientError) throw patientError;
-
-      // Vincula medical_records (prontuário legado/PIS) ao patients.id recém-admitido
-      const newPatientId = insertedPatient?.id;
-      const registryId = (fullData as any).patient_registry_id ?? null;
-      const recordNumber = (fullData as any).medical_record ?? null;
-      if (newPatientId && (registryId || recordNumber)) {
-        const mrQuery = supabase.from("medical_records").update({ patient_id: newPatientId });
-        if (registryId) {
-          await mrQuery.eq("patient_registry_id", registryId).is("patient_id", null);
-        } else if (recordNumber) {
-          await mrQuery.eq("numero_prontuario", recordNumber).is("patient_id", null);
-        }
-      }
-
+      // 5) Atualiza a pré-admissão. destination_sector/destination_bed inexistentes → degradados;
+      // setor_destino_id (id do setor) e internacao_id são preservados.
       const { error: updateError } = await supabase
-        .from("pre_admissions")
+        .from("pre_admissoes")
         .update({
           status: "admitido",
-          destination_sector: selectedSector,
-          destination_bed: finalBed,
+          setor_destino_id: setorId,
         })
         .eq("id", fullData.id);
 
@@ -974,29 +1004,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         </DialogFooter>
       </DialogContent>
     </Dialog>
-
-    <PisRegistrySyncDialog
-      open={pisSyncOpen}
-      onOpenChange={setPisSyncOpen}
-      registryId={(fullData as any)?.patient_registry_id ?? null}
-      patientId={null}
-      pisSource={fullData ? {
-        patient_name: fullData.patient_name,
-        social_name: fullData.social_name ?? null,
-        mother_name: fullData.mother_name,
-        birth_date: fullData.birth_date,
-        sex: fullData.sex,
-        cpf: fullData.cpf,
-        cns: fullData.cns,
-        phone: fullData.phone,
-        medical_record: fullData.medical_record,
-      } : null}
-      contextLabel="Puxada da pré-admissão"
-      onResolved={() => {
-        setPisSyncSkipped(true);
-        setTimeout(() => { void handleAdmit(); }, 50);
-      }}
-    />
+    {/* MIGRAÇÃO: PisRegistrySyncDialog removido — sincronizava PIS → patient_registry (tabela
+        morta). Sem destino no schema novo; a identidade vem direto de pacientes. */}
     </>
   );
 }

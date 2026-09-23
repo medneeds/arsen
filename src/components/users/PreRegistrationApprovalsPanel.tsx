@@ -29,6 +29,13 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -46,32 +53,63 @@ import {
   ClipboardList,
   Copy,
 } from "lucide-react";
-import { ACCESS_PROFILE_LABEL_MAP, PROFILE_TO_ROLE_HINT } from "@/config/userProfiles";
+import { ACCESS_PROFILE_LABEL_MAP } from "@/config/userProfiles";
 import { logUserAdminAction } from "@/lib/userAdminAudit";
+
+// MIGRAÇÃO: pre_registration_requests → solicitacoes_pre_cadastro (colunas em pt-BR).
+// hospital_units(id,name) → hospitais(id,nome). status agora é pt: pendente|aprovado|reprovado.
+type PreStatus = "pendente" | "aprovado" | "reprovado";
 
 interface PreReq {
   id: string;
-  full_name: string;
+  nome_completo: string;
   email: string;
   cpf: string;
-  phone: string;
+  telefone: string;
   crm: string | null;
-  access_profile: string;
-  hospital_unit_id: string | null;
-  justification: string | null;
-  status: "pending" | "approved" | "rejected";
-  reviewer_notes: string | null;
-  reviewed_by: string | null;
-  reviewed_at: string | null;
-  created_user_id: string | null;
-  created_at: string;
-  hospital_unit_name?: string | null;
+  perfil_acesso: string;
+  hospital_id: string | null;
+  justificativa: string | null;
+  status: PreStatus;
+  observacoes_avaliador: string | null;
+  avaliado_por: string | null;
+  avaliado_em: string | null;
+  usuario_criado_id: string | null;
+  criado_em: string;
+  hospital_nome?: string | null;
 }
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
-  pending: { label: "Pendente", cls: "bg-warning/10 text-warning-on-soft border-warning/20" },
-  approved: { label: "Aprovado", cls: "bg-released/10 text-released-on-soft border-released/20" },
-  rejected: { label: "Recusado", cls: "bg-critical/10 text-critical-on-soft border-critical/20" },
+  pendente: { label: "Pendente", cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
+  aprovado: { label: "Aprovado", cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
+  reprovado: { label: "Recusado", cls: "bg-red-500/10 text-red-700 border-red-500/20" },
+};
+
+// MIGRAÇÃO: aprovação é feita pela edge function "aprovar-pre-cadastro", que exige
+// um "papel" do sistema. Opções válidas (exclui super_admin/admin/dev).
+const PAPEL_OPTIONS: { value: string; label: string }[] = [
+  { value: "medico", label: "Médico" },
+  { value: "enfermeiro", label: "Enfermeiro" },
+  { value: "tecnico", label: "Técnico" },
+  { value: "coordenador", label: "Coordenador" },
+  { value: "farmacia", label: "Farmácia" },
+  { value: "regulador", label: "Regulador" },
+  { value: "nir", label: "NIR" },
+  { value: "porta", label: "Porta" },
+  { value: "visitante", label: "Visitante" },
+];
+
+// Melhor palpite de papel a partir do perfil_acesso solicitado.
+const guessPapel = (perfil: string): string => {
+  const p = (perfil || "").toLowerCase();
+  if (p === "medico") return "medico";
+  if (p === "ccih") return "enfermeiro";
+  if (p.startsWith("coord_")) return "coordenador";
+  if (p === "gestor") return "coordenador";
+  if (p === "farmacia") return "farmacia";
+  if (p === "nir") return "nir";
+  if (p === "imagem" || p === "laboratorio") return "tecnico";
+  return "medico";
 };
 
 const formatCpf = (d: string) =>
@@ -81,42 +119,46 @@ const formatPhone = (d: string) =>
     ? d.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
     : d.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
 
-// Senha padrão de PRIMEIRO ACESSO. Todo usuário aprovado recebe esta senha
-// e DEVE trocá-la (e escolher um username) no primeiro login.
-const FIRST_ACCESS_PASSWORD = "123456";
+interface ApprovalResult {
+  email: string;
+  nome: string;
+  tempPassword: string;
+  aviso?: string;
+}
 
-export function PreRegistrationApprovalsPanel() {
+export function PreRegistrationApprovalsPanel(_props?: { hospitalId?: string }) {
   const { user } = useAuth();
   const [items, setItems] = useState<PreReq[]>([]);
-  const [units, setUnits] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"pending" | "approved" | "rejected" | "all">("pending");
+  const [tab, setTab] = useState<PreStatus | "all">("pendente");
   const [search, setSearch] = useState("");
 
   const [target, setTarget] = useState<PreReq | null>(null);
   const [decision, setDecision] = useState<"approve" | "reject" | null>(null);
   const [note, setNote] = useState("");
-  const [tempPassword, setTempPassword] = useState("");
+  const [papel, setPapel] = useState("medico");
   const [acting, setActing] = useState(false);
+  // Credenciais retornadas pela edge function após aprovação (mostradas ao admin).
+  const [result, setResult] = useState<ApprovalResult | null>(null);
 
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const [{ data, error }, { data: us }] = await Promise.all([
+      // MIGRAÇÃO: SELECT já é RLS-scoped ao hospital do admin automaticamente.
+      const [{ data, error }, { data: hs }] = await Promise.all([
         supabase
-          .from("pre_registration_requests")
+          .from("solicitacoes_pre_cadastro")
           .select("*")
-          .order("created_at", { ascending: false }),
-        supabase.from("hospital_units").select("id, name"),
+          .order("criado_em", { ascending: false }),
+        supabase.from("hospitais").select("id, nome"),
       ]);
       if (error) throw error;
-      const unitMap: Record<string, string> = {};
-      (us || []).forEach((u: any) => (unitMap[u.id] = u.name));
-      setUnits(unitMap);
+      const hospMap: Record<string, string> = {};
+      (hs || []).forEach((h: any) => (hospMap[h.id] = h.nome));
       setItems(((data as any) || []).map((d: any) => ({
         ...d,
-        hospital_unit_name: d.hospital_unit_id ? unitMap[d.hospital_unit_id] : null,
-      })));
+        hospital_nome: d.hospital_id ? hospMap[d.hospital_id] : null,
+      })) as PreReq[]);
     } catch (e) {
       console.error(e);
       toast.error("Não foi possível carregar pré-cadastros");
@@ -128,9 +170,9 @@ export function PreRegistrationApprovalsPanel() {
   useEffect(() => { fetchItems(); }, []);
 
   const counters = useMemo(() => ({
-    pending: items.filter(i => i.status === "pending").length,
-    approved: items.filter(i => i.status === "approved").length,
-    rejected: items.filter(i => i.status === "rejected").length,
+    pendente: items.filter(i => i.status === "pendente").length,
+    aprovado: items.filter(i => i.status === "aprovado").length,
+    reprovado: items.filter(i => i.status === "reprovado").length,
     all: items.length,
   }), [items]);
 
@@ -141,7 +183,7 @@ export function PreRegistrationApprovalsPanel() {
       .filter(i => {
         if (!term) return true;
         return (
-          i.full_name.toLowerCase().includes(term) ||
+          i.nome_completo.toLowerCase().includes(term) ||
           i.email.toLowerCase().includes(term) ||
           i.cpf.includes(term.replace(/\D/g, "")) ||
           (i.crm || "").toLowerCase().includes(term)
@@ -153,14 +195,15 @@ export function PreRegistrationApprovalsPanel() {
     setTarget(item);
     setDecision(type);
     setNote("");
-    setTempPassword(type === "approve" ? FIRST_ACCESS_PASSWORD : "");
+    setResult(null);
+    setPapel(type === "approve" ? guessPapel(item.perfil_acesso) : "medico");
   };
 
   const close = () => {
     setTarget(null);
     setDecision(null);
     setNote("");
-    setTempPassword("");
+    setResult(null);
   };
 
   const submit = async () => {
@@ -168,80 +211,85 @@ export function PreRegistrationApprovalsPanel() {
     setActing(true);
     try {
       if (decision === "approve") {
-        if (!tempPassword || tempPassword.length < 6) {
-          toast.error("Senha provisória inválida (mín. 6 caracteres).");
-          setActing(false);
-          return;
-        }
-        // Cria usuário via edge function existente
-        const session = await supabase.auth.getSession();
-        const accessToken = session.data.session?.access_token;
-        if (!accessToken) throw new Error("Sessão expirada.");
+        // MIGRAÇÃO: criação de conta + marcação 'aprovado' via edge function
+        // "aprovar-pre-cadastro" (não usar mais admin-create-user).
+        const session = (await supabase.auth.getSession()).data.session;
+        if (!session) throw new Error("Sessão expirada.");
 
-        const res = await supabase.functions.invoke("admin-create-user", {
+        const res = await supabase.functions.invoke("aprovar-pre-cadastro", {
           body: {
-            mode: "password",
-            email: target.email,
-            password: tempPassword,
-            fullName: target.full_name,
-            cpf: target.cpf,
-            phone: target.phone,
-            crm: target.crm,
-            accessProfile: target.access_profile,
-            role: PROFILE_TO_ROLE_HINT[target.access_profile as keyof typeof PROFILE_TO_ROLE_HINT] || "medico",
-            hospitalUnitId: target.hospital_unit_id,
-            departments: [],
-            skipDepartmentCheck: true,
+            solicitacaoId: target.id,
+            papel,
+            observacoes: note.trim() || undefined,
           },
+          headers: { Authorization: `Bearer ${session.access_token}` },
         });
-        if (res.error) throw res.error;
-        const data = res.data as { success?: boolean; userId?: string; error?: string };
-        if (!data?.success) throw new Error(data?.error || "Falha ao criar usuário");
 
-        const { error: upErr } = await supabase
-          .from("pre_registration_requests")
-          .update({
-            status: "approved",
-            reviewer_notes: note.trim() || null,
-            reviewed_by: user?.id,
-            reviewed_at: new Date().toISOString(),
-            created_user_id: data.userId,
-          })
-          .eq("id", target.id);
-        if (upErr) throw upErr;
+        if (res.error) {
+          // A mensagem real costuma vir em error.context.body (JSON string).
+          let msg = res.error.message || "Falha ao aprovar pré-cadastro";
+          try {
+            const body = (res.error as any)?.context?.body;
+            if (body) {
+              const parsed = typeof body === "string" ? JSON.parse(body) : body;
+              if (parsed?.error) msg = parsed.error;
+            }
+          } catch { /* mantém msg padrão */ }
+          throw new Error(msg);
+        }
+
+        const data = res.data as {
+          success?: boolean;
+          email?: string;
+          nome?: string;
+          tempPassword?: string;
+          error?: string;
+          aviso?: string;
+        };
+        if (!data?.success) throw new Error(data?.error || "Falha ao aprovar pré-cadastro");
 
         await logUserAdminAction({
           action: "prereg.approved",
-          targetUserId: data.userId,
-          targetEmail: target.email,
-          targetName: target.full_name,
-          accessProfile: target.access_profile,
-          hospitalUnitId: target.hospital_unit_id,
-          metadata: { source: "pre-registration", note: note.trim() || undefined },
+          targetEmail: data.email || target.email,
+          targetName: data.nome || target.nome_completo,
+          accessProfile: target.perfil_acesso,
+          appRole: papel,
+          hospitalUnitId: target.hospital_id,
+          metadata: { source: "pre-registration", note: note.trim() || undefined, papel },
         });
 
-        toast.success("Pré-cadastro aprovado e usuário criado.");
+        setResult({
+          email: data.email || target.email,
+          nome: data.nome || target.nome_completo,
+          tempPassword: data.tempPassword || "",
+          aviso: data.aviso,
+        });
+        toast.success("Pré-cadastro aprovado e conta criada.");
+        fetchItems();
+        // Mantém o diálogo aberto para exibir a senha provisória.
       } else {
+        // MIGRAÇÃO: recusa é um UPDATE direto (RLS).
         const { error } = await supabase
-          .from("pre_registration_requests")
+          .from("solicitacoes_pre_cadastro")
           .update({
-            status: "rejected",
-            reviewer_notes: note.trim() || null,
-            reviewed_by: user?.id,
-            reviewed_at: new Date().toISOString(),
+            status: "reprovado",
+            observacoes_avaliador: note.trim() || null,
+            avaliado_por: user?.id,
+            avaliado_em: new Date().toISOString(),
           })
           .eq("id", target.id);
         if (error) throw error;
         await logUserAdminAction({
           action: "prereg.rejected",
           targetEmail: target.email,
-          targetName: target.full_name,
+          targetName: target.nome_completo,
+          hospitalUnitId: target.hospital_id,
           metadata: { source: "pre-registration", note: note.trim() || undefined },
         });
         toast.success("Pré-cadastro recusado.");
+        close();
+        fetchItems();
       }
-      close();
-      fetchItems();
     } catch (e: any) {
       console.error(e);
       toast.error(e.message || "Erro ao processar decisão");
@@ -251,17 +299,17 @@ export function PreRegistrationApprovalsPanel() {
   };
 
   const renderRow = (i: PreReq) => {
-    const meta = STATUS_META[i.status] || STATUS_META.pending;
+    const meta = STATUS_META[i.status] || STATUS_META.pendente;
     return (
       <TableRow key={i.id} className="hover:bg-muted/30">
         <TableCell>
           <div className="flex flex-col">
-            <span className="font-medium">{i.full_name}</span>
+            <span className="font-medium">{i.nome_completo}</span>
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Mail className="h-3 w-3" /> {i.email}
             </span>
             <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Phone className="h-3 w-3" /> {formatPhone(i.phone)}
+              <Phone className="h-3 w-3" /> {formatPhone(i.telefone)}
             </span>
           </div>
         </TableCell>
@@ -279,23 +327,23 @@ export function PreRegistrationApprovalsPanel() {
           <div className="flex flex-col gap-1 text-xs">
             <Badge variant="outline" className="w-fit gap-1">
               <ClipboardList className="h-3 w-3" />
-              {ACCESS_PROFILE_LABEL_MAP[i.access_profile as keyof typeof ACCESS_PROFILE_LABEL_MAP] || i.access_profile}
+              {ACCESS_PROFILE_LABEL_MAP[i.perfil_acesso as keyof typeof ACCESS_PROFILE_LABEL_MAP] || i.perfil_acesso}
             </Badge>
-            {i.hospital_unit_name && (
+            {i.hospital_nome && (
               <span className="flex items-center gap-1 text-muted-foreground">
-                <Building2 className="h-3 w-3" /> {i.hospital_unit_name}
+                <Building2 className="h-3 w-3" /> {i.hospital_nome}
               </span>
             )}
           </div>
         </TableCell>
         <TableCell>
           <Badge variant="outline" className={`${meta.cls} gap-1`}>{meta.label}</Badge>
-          <div className="text-xs text-muted-foreground mt-1">
-            {format(new Date(i.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+          <div className="text-[10px] text-muted-foreground mt-1">
+            {format(new Date(i.criado_em), "dd/MM/yyyy HH:mm", { locale: ptBR })}
           </div>
         </TableCell>
         <TableCell className="text-right">
-          {i.status === "pending" && (
+          {i.status === "pendente" && (
             <div className="flex items-center justify-end gap-1">
               <Button
                 size="sm"
@@ -315,9 +363,9 @@ export function PreRegistrationApprovalsPanel() {
               </Button>
             </div>
           )}
-          {i.status !== "pending" && i.reviewer_notes && (
+          {i.status !== "pendente" && i.observacoes_avaliador && (
             <span className="text-xs text-muted-foreground italic">
-              "{i.reviewer_notes}"
+              "{i.observacoes_avaliador}"
             </span>
           )}
         </TableCell>
@@ -359,9 +407,9 @@ export function PreRegistrationApprovalsPanel() {
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { k: "pending", label: "Pendentes", icon: Clock, cls: "amber" },
-          { k: "approved", label: "Aprovados", icon: CheckCircle2, cls: "emerald" },
-          { k: "rejected", label: "Recusados", icon: XCircle, cls: "red" },
+          { k: "pendente", label: "Pendentes", icon: Clock, cls: "amber" },
+          { k: "aprovado", label: "Aprovados", icon: CheckCircle2, cls: "emerald" },
+          { k: "reprovado", label: "Recusados", icon: XCircle, cls: "red" },
           { k: "all", label: "Total", icon: ClipboardList, cls: "muted" },
         ].map(({ k, label, icon: Icon, cls }) => (
           <Card
@@ -400,19 +448,19 @@ export function PreRegistrationApprovalsPanel() {
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
         <TabsList>
-          <TabsTrigger value="pending" className="gap-2">
+          <TabsTrigger value="pendente" className="gap-2">
             <Clock className="h-4 w-4" />
             Pendentes
-            {counters.pending > 0 && (
-              <Badge variant="destructive" className="ml-1 h-5 px-2 text-xs">
-                {counters.pending}
+            {counters.pendente > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-[10px]">
+                {counters.pendente}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="approved" className="gap-2">
+          <TabsTrigger value="aprovado" className="gap-2">
             <CheckCircle2 className="h-4 w-4" /> Aprovados
           </TabsTrigger>
-          <TabsTrigger value="rejected" className="gap-2">
+          <TabsTrigger value="reprovado" className="gap-2">
             <XCircle className="h-4 w-4" /> Recusados
           </TabsTrigger>
           <TabsTrigger value="all">Todos</TabsTrigger>
@@ -468,51 +516,79 @@ export function PreRegistrationApprovalsPanel() {
               )}
             </DialogTitle>
             <DialogDescription>
-              {target?.full_name} • {target?.email}
+              {target?.nome_completo} • {target?.email}
             </DialogDescription>
           </DialogHeader>
 
-          {target && (
+          {/* Resultado da aprovação: senha provisória retornada pela edge function. */}
+          {result ? (
+            <div className="space-y-3 text-sm">
+              <div className="rounded-md border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 p-3 space-y-2">
+                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                  Conta criada para {result.nome}
+                </p>
+                <div className="text-xs text-muted-foreground">{result.email}</div>
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <div>
+                    <Label className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                      Senha provisória
+                    </Label>
+                    <p className="font-mono text-2xl font-bold tracking-widest text-emerald-700 dark:text-emerald-400">
+                      {result.tempPassword || "—"}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={!result.tempPassword}
+                    onClick={() => {
+                      navigator.clipboard.writeText(result.tempPassword);
+                      toast.success("Senha copiada");
+                    }}
+                  >
+                    <Copy className="h-3.5 w-3.5 mr-1" /> Copiar
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Repasse esta senha ao profissional. Ele deverá trocá-la no primeiro acesso.
+                </p>
+              </div>
+              {result.aviso && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 p-3 text-xs text-amber-700 dark:text-amber-400 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" /> {result.aviso}
+                </div>
+              )}
+            </div>
+          ) : target && (
             <div className="space-y-3 text-sm">
               <div className="rounded-md border p-3 bg-muted/30 space-y-1 text-xs">
-                <div><b>CPF:</b> {formatCpf(target.cpf)} • <b>Telefone:</b> {formatPhone(target.phone)}</div>
+                <div><b>CPF:</b> {formatCpf(target.cpf)} • <b>Telefone:</b> {formatPhone(target.telefone)}</div>
                 {target.crm && <div><b>CRM:</b> {target.crm}</div>}
-                <div><b>Função pretendida:</b> {ACCESS_PROFILE_LABEL_MAP[target.access_profile as keyof typeof ACCESS_PROFILE_LABEL_MAP]}</div>
-                {target.hospital_unit_name && <div><b>Unidade:</b> {target.hospital_unit_name}</div>}
-                {target.justification && (
+                <div><b>Função pretendida:</b> {ACCESS_PROFILE_LABEL_MAP[target.perfil_acesso as keyof typeof ACCESS_PROFILE_LABEL_MAP] || target.perfil_acesso}</div>
+                {target.hospital_nome && <div><b>Unidade:</b> {target.hospital_nome}</div>}
+                {target.justificativa && (
                   <div className="pt-1 border-t mt-1">
-                    <b>Justificativa:</b> <span className="italic">{target.justification}</span>
+                    <b>Justificativa:</b> <span className="italic">{target.justificativa}</span>
                   </div>
                 )}
               </div>
 
               {decision === "approve" && (
-                <div className="rounded-md border border-released-border bg-released-soft p-3 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <Label className="text-xs uppercase tracking-wide text-released-on-soft">
-                        Senha de primeiro acesso
-                      </Label>
-                      <p className="font-mono text-2xl font-semibold tracking-widest text-released-on-soft">
-                        {FIRST_ACCESS_PASSWORD}
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(FIRST_ACCESS_PASSWORD);
-                        toast.success("Senha copiada");
-                      }}
-                    >
-                      <Copy className="h-3.5 w-3.5 mr-1" /> Copiar
-                    </Button>
-                  </div>
+                <div className="space-y-2">
+                  <Label>Papel no sistema</Label>
+                  <Select value={papel} onValueChange={setPapel}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o papel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAPEL_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-muted-foreground">
-                    Padrão institucional. O usuário fará login com CPF ou e-mail + esta senha,
-                    e será obrigado a definir uma <b>nova senha</b> e um <b>nome de usuário</b>{" "}
-                    no primeiro acesso.
+                    A senha provisória será gerada e exibida após a aprovação.
                   </p>
                 </div>
               )}
@@ -534,16 +610,22 @@ export function PreRegistrationApprovalsPanel() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={close} disabled={acting}>Cancelar</Button>
-            <Button
-              onClick={submit}
-              disabled={acting}
-              className={decision === "approve" ? "bg-released hover:bg-released" : "bg-critical hover:bg-critical"}
-            >
-              {acting ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> :
-                decision === "approve" ? <CheckCircle2 className="h-4 w-4 mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}
-              Confirmar {decision === "approve" ? "aprovação" : "recusa"}
-            </Button>
+            {result ? (
+              <Button onClick={close}>Concluir</Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={close} disabled={acting}>Cancelar</Button>
+                <Button
+                  onClick={submit}
+                  disabled={acting}
+                  className={decision === "approve" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}
+                >
+                  {acting ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> :
+                    decision === "approve" ? <CheckCircle2 className="h-4 w-4 mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}
+                  Confirmar {decision === "approve" ? "aprovação" : "recusa"}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

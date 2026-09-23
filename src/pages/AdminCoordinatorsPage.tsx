@@ -46,16 +46,12 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Plus, Trash2, UserCog, Loader2, Building2, Shield } from "lucide-react";
 
-interface State {
-  id: string;
-  name: string;
-  abbreviation: string;
-}
-
+// MIGRAÇÃO: hospital_units→hospitais; profiles/user_roles/user_hospital_assignments→
+// profissionais(+profissionais_hospitais). Não há tabela `states` nem coluna state_id
+// em hospitais no schema novo → o conceito de "estado/UF" foi degradado (removido).
 interface HospitalUnit {
   id: string;
   name: string;
-  state_id: string;
 }
 
 interface Profile {
@@ -85,7 +81,6 @@ const DEPARTMENTS = [
 export default function AdminCoordinatorsPage() {
   const [coordinators, setCoordinators] = useState<CoordinatorAssignment[]>([]);
   const [availableUsers, setAvailableUsers] = useState<Profile[]>([]);
-  const [states, setStates] = useState<State[]>([]);
   const [units, setUnits] = useState<HospitalUnit[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -96,75 +91,61 @@ export default function AdminCoordinatorsPage() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [filterUnit, setFilterUnit] = useState<string>("all");
-  const [selectedState, setSelectedState] = useState<string>("");
 
   useEffect(() => {
     fetchData();
   }, []);
 
+  // MIGRAÇÃO: um "profissional" (profissionais) é a fonte da verdade de perfil + papel.
+  const profToProfile = (p: any): Profile => ({
+    id: p.id,
+    full_name: p.nome ?? null,
+    email: p.email ?? null,
+    // MIGRAÇÃO: crm ← profissionais.numero_conselho (não há coluna crm dedicada).
+    crm: p.numero_conselho ?? null,
+    status: p.ativo ? "approved" : "inactive",
+  });
+
   const fetchData = async () => {
     try {
-      // Buscar estados
-      const { data: statesData } = await supabase
-        .from("states")
-        .select("*")
-        .order("name");
-      setStates(statesData || []);
-
-      // Buscar unidades
+      // Buscar unidades (hospital_units→hospitais)
       const { data: unitsData } = await supabase
-        .from("hospital_units")
-        .select("*")
-        .order("name");
-      setUnits(unitsData || []);
+        .from("hospitais")
+        .select("id, nome")
+        .order("nome");
+      const mappedUnits: HospitalUnit[] = (unitsData || []).map((u: any) => ({ id: u.id, name: u.nome }));
+      setUnits(mappedUnits);
 
-      // Buscar atribuições de coordenadores (user_hospital_assignments)
+      // Buscar atribuições de coordenadores (user_hospital_assignments→profissionais_hospitais)
       const { data: assignmentsData } = await supabase
-        .from("user_hospital_assignments")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .from("profissionais_hospitais")
+        .select("id, profissional_id, hospital_id, criado_em, profissional:profissionais(id, nome, email, numero_conselho, papel, ativo)")
+        .order("criado_em", { ascending: false });
 
-      // Buscar perfis dos usuários atribuídos
-      const userIds = [...new Set(assignmentsData?.map((a) => a.user_id) || [])];
-      let profilesMap: Record<string, Profile> = {};
-
-      if (userIds.length > 0) {
-        const { data: profilesData } = await supabase
-          .from("profiles")
-          .select("*")
-          .in("id", userIds);
-
-        profilesData?.forEach((p) => {
-          profilesMap[p.id] = p;
-        });
-      }
-
-      // Mapear dados
-      const coordinatorsWithDetails = (assignmentsData || []).map((assignment) => ({
-        ...assignment,
-        profile: profilesMap[assignment.user_id],
-        hospital_unit: unitsData?.find((u) => u.id === assignment.hospital_unit_id),
-      }));
+      // MIGRAÇÃO: mantém apenas vínculos de profissionais com papel 'coordenador'.
+      const coordinatorsWithDetails: CoordinatorAssignment[] = (assignmentsData || [])
+        .filter((a: any) => a.profissional?.papel === "coordenador")
+        .map((a: any) => ({
+          id: a.id,
+          user_id: a.profissional_id,
+          hospital_unit_id: a.hospital_id,
+          created_at: a.criado_em,
+          profile: a.profissional ? profToProfile(a.profissional) : undefined,
+          hospital_unit: mappedUnits.find((u) => u.id === a.hospital_id),
+        }));
 
       setCoordinators(coordinatorsWithDetails);
 
-      // Buscar usuários aprovados que são admins para seleção
-      const { data: adminRoles } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "admin");
+      // Buscar profissionais elegíveis a coordenador (papel admin/coordenador, ativos)
+      // MIGRAÇÃO: substitui user_roles(role='admin') + profiles(status='approved').
+      const { data: adminProfiles } = await supabase
+        .from("profissionais")
+        .select("id, nome, email, numero_conselho, papel, ativo")
+        .in("papel", ["admin", "coordenador"])
+        .eq("ativo", true)
+        .order("nome");
 
-      const adminUserIds = adminRoles?.map((r) => r.user_id) || [];
-
-      if (adminUserIds.length > 0) {
-        const { data: adminProfiles } = await supabase
-          .from("profiles")
-          .select("*")
-          .in("id", adminUserIds)
-          .eq("status", "approved");
-
-        setAvailableUsers(adminProfiles || []);
-      }
+      setAvailableUsers((adminProfiles || []).map(profToProfile));
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
       toast.error("Não foi possível carregar dados");
@@ -175,7 +156,6 @@ export default function AdminCoordinatorsPage() {
 
   const handleOpenDialog = () => {
     setFormData({ user_id: "", hospital_unit_id: "", departments: [] });
-    setSelectedState("");
     setIsDialogOpen(true);
   };
 
@@ -196,13 +176,14 @@ export default function AdminCoordinatorsPage() {
 
     setIsSaving(true);
     try {
-      // Verificar se já existe atribuição
+      // MIGRAÇÃO: formData.user_id agora é profissionais.id; a atribuição vive em
+      // profissionais_hospitais (profissional_id + hospital_id).
       const { data: existing } = await supabase
-        .from("user_hospital_assignments")
+        .from("profissionais_hospitais")
         .select("id")
-        .eq("user_id", formData.user_id)
-        .eq("hospital_unit_id", formData.hospital_unit_id)
-        .single();
+        .eq("profissional_id", formData.user_id)
+        .eq("hospital_id", formData.hospital_unit_id)
+        .maybeSingle();
 
       if (existing) {
         toast.error("Este usuário já está atribuído a esta unidade");
@@ -212,24 +193,18 @@ export default function AdminCoordinatorsPage() {
 
       // Inserir atribuição de unidade
       const { error: assignmentError } = await supabase
-        .from("user_hospital_assignments")
+        .from("profissionais_hospitais")
         .insert({
-          user_id: formData.user_id,
-          hospital_unit_id: formData.hospital_unit_id,
+          profissional_id: formData.user_id,
+          hospital_id: formData.hospital_unit_id,
         });
 
       if (assignmentError) throw assignmentError;
 
-      // Inserir departamentos se selecionados
-      if (formData.departments.length > 0) {
-        const deptInserts = formData.departments.map((dept) => ({
-          user_id: formData.user_id,
-          department: dept,
-        }));
-
-        const { error: erroGrav1 } = await supabase.from("user_departments").insert(deptInserts);
-        if (erroGrav1) throw erroGrav1;
-      }
+      // MIGRAÇÃO: "Setores de Acesso" usava user_departments (nomes de departamento).
+      // No schema novo o vínculo é profissionais_setores (setor_id UUID) e os nomes
+      // fixos de DEPARTMENTS não mapeiam para setores → seleção NÃO é persistida
+      // (degradado; ver MIGRACAO_DEGRADACOES.md).
 
       toast.success("Coordenador atribuído com sucesso");
       setIsDialogOpen(false);
@@ -245,7 +220,7 @@ export default function AdminCoordinatorsPage() {
   const handleDelete = async (assignmentId: string) => {
     try {
       const { error } = await supabase
-        .from("user_hospital_assignments")
+        .from("profissionais_hospitais")
         .delete()
         .eq("id", assignmentId);
 
@@ -258,18 +233,13 @@ export default function AdminCoordinatorsPage() {
     }
   };
 
-  const filteredUnitsForDialog = selectedState
-    ? units.filter((u) => u.state_id === selectedState)
-    : [];
+  // MIGRAÇÃO: sem estado/UF no schema novo — o seletor lista todas as unidades.
+  const filteredUnitsForDialog = units;
 
   const filteredCoordinators =
     filterUnit === "all"
       ? coordinators
       : coordinators.filter((c) => c.hospital_unit_id === filterUnit);
-
-  const getStateName = (stateId: string) => {
-    return states.find((s) => s.id === stateId)?.abbreviation || "";
-  };
 
   return (
     <MainLayout>
@@ -324,35 +294,12 @@ export default function AdminCoordinatorsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Estado *</Label>
-                  <Select
-                    value={selectedState}
-                    onValueChange={(value) => {
-                      setSelectedState(value);
-                      setFormData({ ...formData, hospital_unit_id: "" });
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {states.map((state) => (
-                        <SelectItem key={state.id} value={state.id}>
-                          {state.name} ({state.abbreviation})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
                   <Label>Unidade Hospitalar *</Label>
                   <Select
                     value={formData.hospital_unit_id}
                     onValueChange={(value) =>
                       setFormData({ ...formData, hospital_unit_id: value })
                     }
-                    disabled={!selectedState}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a unidade" />
@@ -440,7 +387,7 @@ export default function AdminCoordinatorsPage() {
                     <SelectItem value="all">Todas as unidades</SelectItem>
                     {units.map((unit) => (
                       <SelectItem key={unit.id} value={unit.id}>
-                        {unit.name} ({getStateName(unit.state_id)})
+                        {unit.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -464,7 +411,6 @@ export default function AdminCoordinatorsPage() {
                     <TableHead>Coordenador</TableHead>
                     <TableHead>CRM</TableHead>
                     <TableHead>Unidade</TableHead>
-                    <TableHead>Estado</TableHead>
                     <TableHead>Atribuído em</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -484,11 +430,6 @@ export default function AdminCoordinatorsPage() {
                           <Building2 className="h-4 w-4 text-muted-foreground" />
                           {coord.hospital_unit?.name || "N/A"}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {getStateName(coord.hospital_unit?.state_id || "")}
-                        </Badge>
                       </TableCell>
                       <TableCell>
                         {format(new Date(coord.created_at), "dd/MM/yyyy", {
