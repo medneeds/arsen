@@ -63,7 +63,7 @@ async function resolveProfissionalId(userId: string | null | undefined): Promise
 
 const DOC_MEDICO_TIPOS = ["atestado", "relatorio", "termo"];
 
-function mapRow(r: any, fallbackName?: string | null): DocumentoMedicoData {
+export function mapRow(r: any, fallbackName?: string | null): DocumentoMedicoData {
   const c = (r.conteudo ?? {}) as Record<string, any>;
   return {
     id: r.id,

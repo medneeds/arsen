@@ -3990,8 +3990,24 @@ function PrintAfterSubmitReqDialog({
 
   React.useEffect(() => {
     if (!open || !reqId) return;
-    supabase.from("exam_requests").select("*").eq("id", reqId).maybeSingle()
-      .then(({ data }) => { if (data) setReq(data); });
+    // MIGRAÇÃO: exam_requests → solicitacoes_exame (colunas pt-BR). Mapeia para
+    // o shape em inglês que buildRequisitionGuideHtml espera.
+    supabase.from("solicitacoes_exame").select("*").eq("id", reqId).maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        const d = data as any;
+        setReq({
+          id: d.id,
+          patient_id: d.internacao_id,
+          category: d.categoria,
+          items: d.itens,
+          clinical_indication: d.indicacao_clinica,
+          priority: d.prioridade,
+          status: d.status,
+          notes: d.observacoes,
+          created_at: d.criado_em,
+        });
+      });
   }, [open, reqId]);
 
   const handlePrint = async () => {

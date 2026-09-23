@@ -432,17 +432,20 @@ export default function HistoricoPacientePage() {
       }
 
       if (e.event_type === "documento_medico") {
+        // MIGRAÇÃO: documentos_medicos → altas (tipo/conteudo). Reusa o mesmo
+        // mapeamento do useDocumentoMedico para reconstruir o shape esperado.
         const { data } = await supabase
-          .from("documentos_medicos")
+          .from("altas")
           .select("*")
           .eq("id", e.event_id)
           .maybeSingle();
         if (!data) { alert("Documento não encontrado."); setPrintingId(null); return; }
         const { printDocumentoMedico } = await import("@/lib/documentoMedico");
+        const { mapRow } = await import("@/hooks/useDocumentoMedico");
         // O `hospitalName` era `x ? undefined : undefined` — os dois ramos
         // davam undefined, entao o nome do hospital NUNCA era passado. E o
         // `onPrint` nao existe na assinatura. Passa o hospital de verdade.
-        await printDocumentoMedico(data as any, {
+        await printDocumentoMedico(mapRow(data as any), {
           hospitalName: currentHospital?.name,
         });
         setPrintingId(null);

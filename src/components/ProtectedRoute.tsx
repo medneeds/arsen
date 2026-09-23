@@ -1,6 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { SessionTimeoutProvider } from "./SessionTimeoutProvider";
 // Sob demanda: so aparece para usuario com cadastro pendente, mas arrastava
 // framer-motion (22 usos) para o pacote de entrada de TODA a aplicacao.

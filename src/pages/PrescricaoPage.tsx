@@ -7057,22 +7057,6 @@ const PrescricaoPage = () => {
         const isValidated = d.status !== 'draft' || !!d.digital_signature || hasValidatedItem;
         return { ...d, items, digital_signature: d.digital_signature as unknown as DigitalSignature | null, isValidated };
       }));
-
-      // Separa validadas e rascunhos do plantão atual
-      const validated = allRows.filter((d: any) => d.isValidated);
-      const draftsThisShift = allRows.filter((d: any) =>
-        !d.isValidated &&
-        new Date(d.created_at).getTime() >= clinicalDayStartMs
-      );
-
-      // Só o rascunho mais recente do plantão atual (maior created_at)
-      const latestDraft = draftsThisShift.length > 0
-        ? [draftsThisShift.reduce((a: any, b: any) =>
-            new Date(a.created_at) > new Date(b.created_at) ? a : b
-          )]
-        : [];
-
-      setSavedPrescriptions([...validated, ...latestDraft]);
     } catch (err) {
       console.error('Error fetching prescriptions:', err);
     } finally {

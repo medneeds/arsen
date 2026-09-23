@@ -232,7 +232,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Com tempo limite: sem ele, uma RPC que nao responde deixa o botao
       // "Entrando..." preso para sempre, sem erro e sem mensagem.
       try {
-        const { data: resolveData, error: resolveError } = await comTempoLimite(
+        const { data: resolveData, error: resolveError } = await comTempoLimite<{
+          data: { email?: string } | null; error: unknown;
+        }>(
           (supabase.rpc as any)("resolve_login", { p_identifier: isCpf ? digits : raw }),
           "identificar usuário",
           10_000,
