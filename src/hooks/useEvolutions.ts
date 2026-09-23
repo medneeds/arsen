@@ -90,7 +90,7 @@ async function resolveProfissionalId(userId: string | null | undefined): Promise
 }
 
 /** Mapeia uma linha `evolucoes` para o view-model estável EvolutionRecord. */
-function mapEvolution(d: any): EvolutionRecord {
+export function mapEvolution(d: any): EvolutionRecord {
   const soap = (d.soap as any) || {};
   return {
     id: d.id,

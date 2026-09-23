@@ -186,11 +186,14 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
       // Sem isso: o evo em memória ainda tem os campos vazios (banco não respondeu).
       try {
         const { supabase } = await import("@/integrations/supabase/client");
-        const { data: freshEvo } = await supabase
-          .from("clinical_evolutions")
+        const { mapEvolution } = await import("@/hooks/useEvolutions");
+        // MIGRAÇÃO: clinical_evolutions → evolucoes (colunas pt-BR).
+        const { data: freshEvoRow } = await supabase
+          .from("evolucoes")
           .select("*")
           .eq("id", validatedId)
           .maybeSingle();
+        const freshEvo = freshEvoRow ? mapEvolution(freshEvoRow) : null;
         if (freshEvo) {
           setJustValidatedEvo(freshEvo as unknown as EvolutionRecord);
         } else {

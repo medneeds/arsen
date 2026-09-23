@@ -249,8 +249,6 @@ export interface NutritionStructured {
   nutZeroReason?: string;
   nutWaterVolPerAdmin?: string;
   nutWaterFreq?: string;
-  dietProfile?: string;
-  nutAccess?: string;
 }
 
 /**
