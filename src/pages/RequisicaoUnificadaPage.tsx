@@ -141,6 +141,22 @@ const UTI_COMBOS: UtiCombo[] = [
     },
   },
   {
+    id: "enfermaria-transicao",
+    label: "Enfermaria de Transição",
+    description: "Rotina Enfermaria + eletrólitos adicionais (cálcio e magnésio)",
+    icon: Clock,
+    scope: "enfermaria",
+    color: "text-released-on-soft",
+    bg: "bg-released/10",
+    border: "border-released-border",
+    categories: {
+      laboratorio: [
+        "Hemograma Completo", "Ureia", "Creatinina", "Sódio", "Potássio", "PCR",
+        "Cálcio", "Magnésio",
+      ],
+    },
+  },
+  {
     id: "regulacao-dialitica",
     label: "Regulação Dialítica",
     description: "Painel para regulação de paciente dialítico — sorologias, eletrólitos e tipagem sanguínea",
