@@ -142,7 +142,7 @@ const UTI_COMBOS: UtiCombo[] = [
   },
   {
     id: "enfermaria-transicao",
-    label: "Enfermaria de Transição",
+    label: "Transição de Cuidados",
     description: "Rotina Enfermaria + eletrólitos adicionais (cálcio e magnésio)",
     icon: Clock,
     scope: "enfermaria",
