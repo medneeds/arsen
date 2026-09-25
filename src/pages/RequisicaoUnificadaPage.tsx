@@ -140,6 +140,31 @@ const UTI_COMBOS: UtiCombo[] = [
       ],
     },
   },
+  {
+    id: "regulacao-dialitica",
+    label: "Regulação Dialítica",
+    description: "Painel para regulação de paciente dialítico — sorologias, eletrólitos e tipagem sanguínea",
+    icon: Droplet,
+    scope: "all",
+    color: "text-foreground",
+    bg: "bg-primary/10",
+    border: "border-border",
+    categories: {
+      laboratorio: [
+        "Saturação de Transferrina",
+        "Anti-HBs",
+        "Hemograma Completo",
+        "Sódio",
+        "Potássio",
+        "Fósforo",
+        "Cálcio",
+        "HBsAg",
+        "Ferritina",
+        "Anti-HCV",
+        "Tipagem Sanguínea (ABO/Rh)",
+      ],
+    },
+  },
 ];
 
 // Setores classificados como UTI para filtro de combos
@@ -155,7 +180,7 @@ const CATEGORIES = {
     color: "text-foreground",
     bg: "bg-primary/10",
     presets: [
-      { group: "Hemograma", items: ["Hemograma Completo", "Hemoglobina", "Hematócrito", "Plaquetas", "Leucograma", "Reticulócitos", "VHS", "Ferritina", "Ferro Sérico", "Transferrina", "Saturação de Transferrina", "Vitamina B12", "Ácido Fólico", "Eletroforese de Hemoglobina", "Coombs Direto", "Coombs Indireto"] },
+      { group: "Hemograma", items: ["Hemograma Completo", "Hemoglobina", "Hematócrito", "Plaquetas", "Leucograma", "Reticulócitos", "VHS", "Ferritina", "Ferro Sérico", "Transferrina", "Saturação de Transferrina", "Vitamina B12", "Ácido Fólico", "Eletroforese de Hemoglobina", "Coombs Direto", "Coombs Indireto", "Tipagem Sanguínea (ABO/Rh)"] },
       { group: "Bioquímica", items: ["Glicemia", "Glicemia Pós-prandial", "Hemoglobina Glicada (HbA1c)", "Ureia", "Creatinina", "Sódio", "Potássio", "Cloro", "Cálcio", "Cálcio Iônico", "Magnésio", "Fósforo", "TGO", "TGP", "Gama-GT", "Fosfatase Alcalina", "Bilirrubina Total e Frações", "Albumina", "Proteínas Totais e Frações", "PCR", "Amilase", "Lipase", "DHL", "CPK", "CK-MB", "Ácido Úrico", "Colesterol Total", "HDL", "LDL", "Triglicerídeos", "Osmolaridade Sérica"] },
       { group: "Coagulação", items: ["TAP/INR", "TTPA", "Fibrinogênio", "D-Dímero", "Tempo de Trombina", "Antitrombina III", "Atividade de Protrombina"] },
       { group: "Gasometria", items: ["Gasometria Arterial", "Gasometria Venosa", "Lactato", "Saturação Venosa Central (SvcO2)"] },
